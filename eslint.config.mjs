@@ -19,8 +19,34 @@ const windowPanelsImportRestriction = {
             message:
                 "Import window components only via the registry's componentImport (features/window-panels/registry/windowRegistry.ts). Direct imports break bundle splitting. See .claude/skills/window-panels/SKILL.md.",
         },
+        {
+            group: ['*supabase*storage*', '*storage*Bucket*'],
+            message:
+                'Direct Supabase Storage usage is banned. Use the universal file handler from features/file-handler instead — it covers anonymous, authenticated, owned, shared, and public files in one API. See features/file-handler/FEATURE.md.',
+        },
     ],
 };
+
+// All file flows must funnel through features/file-handler. ESLint cannot
+// fully prevent direct supabase.storage member access (no AST rule for that
+// without a custom plugin), but `no-restricted-syntax` catches the canonical
+// `supabase.storage.from(...)` shape and the `getPublicUrl` / `createSignedUrl`
+// member calls. Combined with the runtime guardrail in
+// utils/supabase/client.ts, new violations are caught immediately.
+const fileHandlerSyntaxRestrictions = [
+    {
+        selector:
+            "MemberExpression[object.name=/^(supabase|client|createClient)$/][property.name='storage']",
+        message:
+            'Direct supabase.storage usage is banned. Use the universal file handler (features/file-handler) instead.',
+    },
+    {
+        selector:
+            "CallExpression[callee.property.name='getPublicUrl'][callee.object.callee.property.name='from']",
+        message:
+            'Direct supabase Storage getPublicUrl is banned. Use the universal file handler — it picks the right URL automatically.',
+    },
+];
 
 export default [
     ...nextCoreWebVitals,
@@ -81,6 +107,16 @@ export default [
                         'window.prompt is banned. Use a <Dialog /> with an <Input />. See CLAUDE.md.',
                 },
             ],
+            'no-restricted-syntax': ['warn', ...fileHandlerSyntaxRestrictions],
+        },
+    },
+    {
+        files: [
+            'features/file-handler/**/*',
+            'features/files/**/*',
+        ],
+        rules: {
+            'no-restricted-syntax': 'off',
         },
     },
     {
