@@ -39,7 +39,9 @@ This feature is the **single source of resistance** for file flows: direct const
 
 **Tables read:** `cld_files`, `cld_file_permissions`, `cld_share_links` (all via existing `features/files` selectors and REST client).
 
-**Tables written:** `cld_files` (via `Files.uploadFile`), optional `file_handler_events` (telemetry — migration pending).
+**Tables written:** `cld_files` (via `Files.uploadFile`).
+
+**Servers touched:** Python only (`server.app.matrxserver.com/files/*` and `/share/*`). The handler never crosses through Next.js. No `/api/files/*`, no `/api/share/*`, no `/api/images/upload`. Telemetry lives on the Python side.
 
 **Key types** (`features/file-handler/types.ts`):
 - `FileSource` — discriminated union over every input shape (16 variants).
@@ -119,17 +121,7 @@ When uploading, `inheritActiveScope: true` (default) reads `selectOrganizationId
 
 ### CORS-aware transport
 
-S3 signed URLs are CORS-blocked for `fetch()`. `NormalizedFile.capabilities.transportSafeForFetch` is `false` for those, and `preferFetchableUrl()` falls back to the same-origin proxy `/api/files/{id}/proxy` instead.
-
----
-
-## Telemetry
-
-Every interesting event writes to `public.file_handler_events` (Supabase, RLS-restricted to the authenticated user's own rows). Per the project's telemetry rule, telemetry goes to the database — no Sentry, no third parties.
-
-Events: `resolve | upload_started | upload_completed | upload_failed | signed_url_minted | signed_url_refreshed | signed_url_expired | access_denied | share_link_invalid | external_fetch_failed | cors_fallback_to_proxy | mime_sniff | magic_bytes_unknown | stream_event_normalized`.
-
-The `file_handler_events` migration is pending. Until it lands, telemetry no-ops in production and logs in development.
+S3 signed URLs are CORS-blocked for `fetch()`. `NormalizedFile.capabilities.transportSafeForFetch` is `false` for those; `preferFetchableUrl()` falls back to Python's authenticated download endpoint (`{BACKEND_URL}/files/{id}/download`) — never to a Next.js proxy. The browser talks to Python (or the CDN) directly.
 
 ---
 
@@ -191,4 +183,13 @@ These are tracked in `features/files/migration/INVENTORY.md`.
 
 ## Change log
 
-- **2026-05-07** — Phases 0–4 + 7 (partial) + 8 shipped. Handler core complete with input adapters (16), resolver (with hydration + access decision + signed-URL minting + expiry wheel + magic-byte sniffing), output adapters (11), upload path with org-scope routing, stream-event normalization, React hooks, error taxonomy, and ESLint guardrails. Deleted three orphaned `@deprecated` sessionStorage backup functions in `audioStorageService.ts`. Migration of active `supabase.storage` call sites and the 5 duplication clusters is queued as Phases 5–6 (one PR per cluster).
+- **2026-05-07** — Direct-to-Python doctrine + obliteration round.
+  - Removed the entire telemetry module and all `recordTelemetry` calls (Python owns telemetry).
+  - All output URLs now point directly at Python (`{BACKEND}/files/{id}/download`, `{BACKEND}/share/{token}`). No Next.js hops.
+  - Deleted `hooks/usePublicFileUpload.ts` and the `public-chat-uploads` Supabase bucket — public chat now uses the universal handler with the user's anonymous Supabase auth UUID. Same code path as authenticated callers.
+  - Deleted Next.js routes: `app/api/admin/feedback/images`, `app/api/share/[token]/file`, `app/api/code-files/upload`, `app/api/code-files/download`. Their callers (FeedbackDetailDialog, FeedbackTable, ShareLinkDialog, cloudUpload, code-files virtual source, s3Service) now talk to Python directly.
+  - Deleted `lib/code-files/objectStore.ts` (legacy server-side dual-mode path).
+  - Migrated `features/transcripts/service/audioStorageService.ts`, `transcriptsService.ts`, `CreateTranscriptModal.tsx` off the `user-private-assets` bucket. Audio recordings + uploads now land in `cld_files` under `Transcripts/Recordings` and `Transcripts/Uploads`. `audio_file_path` columns now hold cld_files UUIDs.
+  - Deleted the legacy `attachments` bucket branch in `features/tasks/services/taskService.ts`. Task attachments are cloud-files only.
+  - Rewrote `features/agents/redux/execution-system/instance-resources/resource-source.ts` to defer to handler primitives (`normalize`, `preferIdentityLocator`). The agent attachment lifecycle is now on the same single system as everything else.
+- **2026-05-07** — Phases 0–4 + 7 (partial) + 8 shipped. Handler core complete with input adapters (16), resolver (with hydration + access decision + signed-URL minting + expiry wheel + magic-byte sniffing), output adapters (11), upload path with org-scope routing, stream-event normalization, React hooks, error taxonomy, and ESLint guardrails.

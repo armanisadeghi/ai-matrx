@@ -25,7 +25,6 @@ import {
 } from "@/features/agent-context/redux/appContextSlice";
 import { FileUploadError } from "./errors";
 import { fromCloudFile } from "./input/normalize";
-import { recordTelemetry } from "./intelligence/telemetry";
 import type { FileSource, NormalizedFile, UploadOpts } from "./types";
 
 const DEFAULT_FOLDER = "Inbox";
@@ -45,9 +44,6 @@ export async function uploadInternal(
   const filePath = `${folderPath}/${file.name}`;
 
   const metadata = stampScope(opts.metadata ?? {}, opts.inheritActiveScope ?? true);
-
-  const start = Date.now();
-  recordTelemetry({ event: "upload_started", mime: file.type });
 
   try {
     const { data } = opts.onProgress
@@ -71,27 +67,10 @@ export async function uploadInternal(
           metadata,
         });
 
-    recordTelemetry({
-      event: "upload_completed",
-      fileId: data.file_id,
-      mime: file.type,
-      durationMs: Date.now() - start,
-    });
-
-    // The upload response is an `FileUploadResponse` (slim — no
-    // visibility/owner/permissions). Fetch the full FileRecord so the
-    // returned NormalizedFile reflects exactly what the cloud-files
-    // slice will render.
     const { data: full } = await Files.getFile(data.file_id);
     const cloudFile = apiFileRecordToCloudFile(full);
     return fromCloudFile(cloudFile, source);
   } catch (err) {
-    recordTelemetry({
-      event: "upload_failed",
-      mime: file.type,
-      error: err instanceof Error ? err.message : String(err),
-      durationMs: Date.now() - start,
-    });
     throw new FileUploadError(
       err instanceof Error ? err.message : "Upload failed",
       { cause: err },

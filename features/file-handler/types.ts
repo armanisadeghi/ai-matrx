@@ -369,36 +369,6 @@ export interface UploadOpts {
 }
 
 // ===========================================================================
-// Telemetry — every interesting handler event written to public.file_handler_events
-// ===========================================================================
-
-export type TelemetryEvent =
-  | "resolve"
-  | "upload_started"
-  | "upload_completed"
-  | "upload_failed"
-  | "signed_url_minted"
-  | "signed_url_refreshed"
-  | "signed_url_expired"
-  | "access_denied"
-  | "share_link_invalid"
-  | "external_fetch_failed"
-  | "cors_fallback_to_proxy"
-  | "mime_sniff"
-  | "magic_bytes_unknown"
-  | "stream_event_normalized";
-
-export interface TelemetryPayload {
-  event: TelemetryEvent;
-  fileId?: string;
-  origin?: FileOrigin;
-  mime?: string;
-  durationMs?: number;
-  error?: string;
-  meta?: Record<string, unknown>;
-}
-
-// ===========================================================================
 // Re-exports so callsites import from one place
 // ===========================================================================
 

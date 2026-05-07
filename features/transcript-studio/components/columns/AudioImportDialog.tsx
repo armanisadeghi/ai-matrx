@@ -196,7 +196,7 @@ export function AudioImportDialog({
         setProgressLabel(status);
       });
       setProgressLabel("Transcribing…");
-      const signedUrl = await getAudioUrl(upload.path, 600);
+      const signedUrl = await getAudioUrl(upload.fileId);
       const data = await transcribeStorageUrl(signedUrl);
       const count = await ingestSegments(
         data.segments ?? [],

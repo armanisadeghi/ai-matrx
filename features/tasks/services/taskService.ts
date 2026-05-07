@@ -277,59 +277,37 @@ export async function uploadTaskAttachment(
   }
 }
 
-/** Detects cloud-files UUID format so migration can run alongside legacy rows. */
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isCloudFileId(filePath: string): boolean {
-  return UUID_REGEX.test(filePath);
-}
-
 /**
  * Resolve an attachment's `file_path` column to a URL that can be opened in
- * the browser. Async because the cloud-files system only vends short-lived
- * signed URLs. Falls back to the legacy public-URL path for rows that pre-date
- * the Phase 9 migration.
+ * the browser. The handler auto-refreshes signed URLs before they expire.
  */
-export async function getAttachmentUrl(filePath: string): Promise<string> {
-  if (isCloudFileId(filePath)) {
-    try {
-      const { data } = await FilesApi.Files.getSignedUrl(filePath, {
-        expiresIn: 3600,
-      });
-      return data.url;
-    } catch (err) {
-      console.error("Error resolving cloud-files signed URL:", err);
-      return "";
-    }
+export async function getAttachmentUrl(fileId: string): Promise<string> {
+  try {
+    const { data } = await FilesApi.Files.getSignedUrl(fileId, {
+      expiresIn: 3600,
+    });
+    return data.url;
+  } catch (err) {
+    console.error("Error resolving cloud-files signed URL:", err);
+    return "";
   }
-  // Legacy: supabase.storage path. Left for backwards compat until legacy
-  // rows are purged in Phase 11.
-  const { data } = supabase.storage.from("attachments").getPublicUrl(filePath);
-  return data.publicUrl;
 }
 
 export async function deleteTaskAttachment(
   attachmentId: string,
-  filePath: string,
+  fileId: string,
 ): Promise<boolean> {
   try {
-    if (isCloudFileId(filePath)) {
-      const store = getStore();
-      if (store) {
-        try {
-          const dispatch = store.dispatch as AppDispatch;
-          await dispatch(
-            cloudDeleteFile({ fileId: filePath, hardDelete: false }),
-          ).unwrap();
-        } catch (err) {
-          // Non-fatal — the DB row still gets removed, and the realtime
-          // subscription + trash tab let the user recover/purge.
-          console.error("cloud-files delete failed:", err);
-        }
+    const store = getStore();
+    if (store) {
+      try {
+        const dispatch = store.dispatch as AppDispatch;
+        await dispatch(
+          cloudDeleteFile({ fileId, hardDelete: false }),
+        ).unwrap();
+      } catch (err) {
+        console.error("cloud-files delete failed:", err);
       }
-    } else {
-      // Legacy storage path.
-      await supabase.storage.from("attachments").remove([filePath]);
     }
     const { error } = await supabase
       .from("ctx_task_attachments")

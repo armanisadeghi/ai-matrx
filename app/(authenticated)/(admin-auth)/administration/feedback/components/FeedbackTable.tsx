@@ -158,46 +158,22 @@ const stageToDialogTab: Record<PipelineStage, string> = {
 function ImagePreviewModal({
     open,
     onOpenChange,
-    feedbackId,
+    imageUrls,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    feedbackId: string | null;
+    imageUrls: string[];
 }) {
-    const [signedUrls, setSignedUrls] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
-        if (open && feedbackId) {
-            setIsLoading(true);
-            setCurrentIndex(0);
-            fetch(`/api/admin/feedback/images?feedback_id=${feedbackId}`)
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.success && data.signed_urls) {
-                        setSignedUrls(
-                            data.signed_urls
-                                .filter((item: { signed_url: string | null }) => item.signed_url)
-                                .map((item: { signed_url: string }) => item.signed_url)
-                        );
-                    }
-                })
-                .catch(console.error)
-                .finally(() => setIsLoading(false));
-        } else {
-            setSignedUrls([]);
-        }
-    }, [open, feedbackId]);
+        if (open) setCurrentIndex(0);
+    }, [open]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden bg-black/95">
-                {isLoading ? (
-                    <div className="flex items-center justify-center h-96">
-                        <Loader2 className="h-8 w-8 animate-spin text-white" />
-                    </div>
-                ) : signedUrls.length === 0 ? (
+                {imageUrls.length === 0 ? (
                     <div className="flex items-center justify-center h-96 text-white/60">
                         No images found
                     </div>
@@ -206,27 +182,27 @@ function ImagePreviewModal({
                         <div className="flex items-center justify-center min-h-[400px] max-h-[80vh]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src={signedUrls[currentIndex]}
+                                src={imageUrls[currentIndex]}
                                 alt={`Screenshot ${currentIndex + 1}`}
                                 className="max-w-full max-h-[80vh] object-contain"
                             />
                         </div>
-                        {signedUrls.length > 1 && (
+                        {imageUrls.length > 1 && (
                             <>
                                 <button
-                                    onClick={() => setCurrentIndex((i) => (i === 0 ? signedUrls.length - 1 : i - 1))}
+                                    onClick={() => setCurrentIndex((i) => (i === 0 ? imageUrls.length - 1 : i - 1))}
                                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
                                 >
                                     <ChevronLeft className="h-5 w-5" />
                                 </button>
                                 <button
-                                    onClick={() => setCurrentIndex((i) => (i === signedUrls.length - 1 ? 0 : i + 1))}
+                                    onClick={() => setCurrentIndex((i) => (i === imageUrls.length - 1 ? 0 : i + 1))}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
                                 >
                                     <ChevronRight className="h-5 w-5" />
                                 </button>
                                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
-                                    {currentIndex + 1} / {signedUrls.length}
+                                    {currentIndex + 1} / {imageUrls.length}
                                 </div>
                             </>
                         )}
@@ -245,7 +221,7 @@ export default function FeedbackTable() {
     const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(null);
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
-    const [imagePreviewFeedbackId, setImagePreviewFeedbackId] = useState<string | null>(null);
+    const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
     // Pipeline stage (primary filter) — initial value overridden by useEffect below
     const [activeStage, setActiveStage] = useState<PipelineStage>('untriaged');
@@ -361,9 +337,9 @@ export default function FeedbackTable() {
         setDetailDialogOpen(true);
     };
 
-    const handleViewImages = (e: React.MouseEvent, feedbackId: string) => {
+    const handleViewImages = (e: React.MouseEvent, urls: string[] | null | undefined) => {
         e.stopPropagation();
-        setImagePreviewFeedbackId(feedbackId);
+        setImagePreviewUrls(urls ?? []);
         setImagePreviewOpen(true);
     };
 
@@ -1023,7 +999,7 @@ export default function FeedbackTable() {
                                                     )}
                                                     {item.image_urls && item.image_urls.length > 0 && (
                                                         <button
-                                                            onClick={(e) => handleViewImages(e, item.id)}
+                                                            onClick={(e) => handleViewImages(e, item.image_urls)}
                                                             className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-xs"
                                                             title="View screenshots"
                                                         >
@@ -1094,7 +1070,7 @@ export default function FeedbackTable() {
             <ImagePreviewModal
                 open={imagePreviewOpen}
                 onOpenChange={setImagePreviewOpen}
-                feedbackId={imagePreviewFeedbackId}
+                imageUrls={imagePreviewUrls}
             />
         </>
     );

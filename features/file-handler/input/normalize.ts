@@ -11,6 +11,7 @@
 
 import type { CloudFile } from "@/features/files/types";
 import { classify } from "../utils/classify";
+import { pythonShareUrl } from "../utils/python-base";
 import {
   EPHEMERAL_CAPS,
   EXTERNAL_CAPS,
@@ -329,7 +330,7 @@ function fromShareLink(
 ): NormalizedFile {
   return {
     shareToken: source.token,
-    url: `/api/share/${encodeURIComponent(source.token)}/file`,
+    url: pythonShareUrl(source.token),
     origin: "public",
     capabilities: PUBLIC_CAPS,
     meta: classify({ mime: source.mime }),

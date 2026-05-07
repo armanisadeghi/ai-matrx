@@ -161,8 +161,6 @@ export default function FeedbackDetailDialog({
 
   const [activeTab, setActiveTab] = useState(initialTab || "submission");
   const [isSaving, setIsSaving] = useState(false);
-  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
-  const [isLoadingImages, setIsLoadingImages] = useState(false);
 
   // Admin decision form state (editable fields)
   const [decision, setDecision] = useState<AdminDecision>(
@@ -481,28 +479,6 @@ export default function FeedbackDetailDialog({
     }
   }, [item, comments]);
 
-  const fetchSignedUrls = useCallback(async (feedbackId: string) => {
-    setIsLoadingImages(true);
-    try {
-      const res = await fetch(
-        `/api/admin/feedback/images?feedback_id=${feedbackId}`,
-      );
-      const data = await res.json();
-      if (data.success && data.signed_urls) {
-        const urlMap: Record<string, string> = {};
-        for (const urlItem of data.signed_urls) {
-          if (urlItem.signed_url) {
-            urlMap[urlItem.original_url] = urlItem.signed_url;
-          }
-        }
-        setSignedUrls(urlMap);
-      }
-    } catch (error) {
-      console.error("Error fetching signed URLs:", error);
-    } finally {
-      setIsLoadingImages(false);
-    }
-  }, []);
 
   const loadComments = useCallback(async () => {
     setIsLoadingComments(true);
@@ -566,7 +542,6 @@ export default function FeedbackDetailDialog({
   // Reset UI interaction state only when a completely different item is opened
   useEffect(() => {
     setActiveTab(initialTab || "submission");
-    setSignedUrls({});
     setComments([]);
     setNewComment("");
     setPendingTestResult(null);
@@ -575,14 +550,7 @@ export default function FeedbackDetailDialog({
     setUserReviewMessage("");
     setUserMessages([]);
     setUserReplyText("");
-  }, [feedback.id, initialTab]); // Only reset on different item, NOT on updated_at changes
-
-  // Fetch images when dialog opens
-  useEffect(() => {
-    if (open && item.image_urls && item.image_urls.length > 0) {
-      fetchSignedUrls(item.id);
-    }
-  }, [open, item.id, item.image_urls, fetchSignedUrls]);
+  }, [feedback.id, initialTab]);
 
   // Fetch comments when comments tab is selected
   useEffect(() => {
@@ -1134,26 +1102,20 @@ export default function FeedbackDetailDialog({
                       <ImageIcon className="w-4 h-4" />
                       Screenshots ({item.image_urls.length})
                     </label>
-                    {isLoadingImages ? (
-                      <div className="flex items-center justify-center py-8 text-muted-foreground">
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        Loading images...
-                      </div>
-                    ) : (
+                    {(
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {item.image_urls.map((url, index) => {
-                          const resolvedUrl = signedUrls[url] || url;
                           return (
                             <a
                               key={index}
-                              href={resolvedUrl}
+                              href={url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative aspect-video rounded-lg overflow-hidden border border-border hover:border-primary transition-colors group"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                src={resolvedUrl}
+                                src={url}
                                 alt={`Screenshot ${index + 1}`}
                                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
                               />

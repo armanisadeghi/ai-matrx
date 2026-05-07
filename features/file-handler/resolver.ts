@@ -35,7 +35,6 @@ import { decideForOwnedFile } from "./intelligence/access";
 import { watchExpiry } from "./intelligence/expiry-wheel";
 import { mintSignedUrl } from "./intelligence/refresh";
 import { sniffMimeFromBlob } from "./intelligence/magic-bytes";
-import { recordTelemetry } from "./intelligence/telemetry";
 import { fromCloudFile } from "./input/normalize";
 import { classify } from "./utils/classify";
 import type { NormalizedFile } from "./types";
@@ -72,13 +71,6 @@ export async function resolve(
     result = await sniffIfPossible(result);
   }
 
-  recordTelemetry({
-    event: "resolve",
-    fileId: result.fileId,
-    origin: result.origin,
-    mime: result.meta.mime,
-  });
-
   return result;
 }
 
@@ -107,18 +99,9 @@ async function hydrateFromFileId(
     } catch (err) {
       const status = (err as { status?: number })?.status;
       if (status === 404) {
-        recordTelemetry({
-          event: "access_denied",
-          fileId: file.fileId,
-          error: "not_found",
-        });
         throw new FileNotFoundError(undefined, { fileId: file.fileId });
       }
       if (status === 403) {
-        recordTelemetry({
-          event: "access_denied",
-          fileId: file.fileId,
-        });
         throw new FileAccessDeniedError(undefined, { fileId: file.fileId });
       }
       throw err;
@@ -195,11 +178,7 @@ async function sniffIfPossible(
     if (!res.ok) return file;
     const blob = await res.blob();
     const sniffed = await sniffMimeFromBlob(blob);
-    if (!sniffed) {
-      recordTelemetry({ event: "magic_bytes_unknown" });
-      return file;
-    }
-    recordTelemetry({ event: "mime_sniff", mime: sniffed });
+    if (!sniffed) return file;
     return {
       ...file,
       meta: classify({

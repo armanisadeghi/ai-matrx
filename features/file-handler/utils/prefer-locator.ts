@@ -7,6 +7,10 @@
  */
 
 import type { NormalizedFile } from "../types";
+import {
+  pythonFileDownloadUrl,
+  pythonShareUrl,
+} from "./python-base";
 
 export function preferIdentityLocator(
   file: NormalizedFile,
@@ -19,15 +23,19 @@ export function preferIdentityLocator(
 }
 
 /**
- * Pick the best URL for a `<img src>` consumer. Order:
- *   1. Public CDN URL (permanent, CDN-cached)
- *   2. Share-link URL (stable, indefinite)
- *   3. Signed S3 URL (1h, refreshable)
- *   4. data: URI (last resort, large)
+ * Pick the best URL for a `<img src>` / `<video src>` / `<audio src>`
+ * consumer. Order:
+ *   1. Public CDN URL (permanent, CDN-cached) — already on `file.url`
+ *      when the file is public AND server has CDN enabled.
+ *   2. Signed S3 URL we already minted — already on `file.url`.
+ *   3. Python share resolver — for share-link sources.
+ *   4. data: URI — last resort.
+ *
+ * No Next.js hops. The browser talks to Python (or CDN) directly.
  */
 export function preferDisplayUrl(file: NormalizedFile): string | null {
   if (file.url) return file.url;
-  if (file.shareToken) return `/share/${file.shareToken}`;
+  if (file.shareToken) return pythonShareUrl(file.shareToken);
   if (file.base64 && file.meta.mime) {
     return `data:${file.meta.mime};base64,${file.base64}`;
   }
@@ -36,13 +44,14 @@ export function preferDisplayUrl(file: NormalizedFile): string | null {
 
 /**
  * Pick the best URL for a `fetch()` consumer. Signed S3 URLs are CORS-
- * blocked, so when `transportSafeForFetch` is false and we have a
- * fileId, route through the same-origin proxy.
+ * blocked, so when `transportSafeForFetch` is false we route through
+ * Python's authenticated download endpoint — same Python backend the
+ * cloud-files REST client already uses, no Next.js involvement.
  */
 export function preferFetchableUrl(file: NormalizedFile): string | null {
   if (file.capabilities.transportSafeForFetch && file.url) return file.url;
-  if (file.fileId) return `/api/files/${file.fileId}/proxy`;
-  if (file.shareToken) return `/api/share/${file.shareToken}/file`;
+  if (file.fileId) return pythonFileDownloadUrl(file.fileId);
+  if (file.shareToken) return pythonShareUrl(file.shareToken);
   if (file.url) return file.url;
   if (file.base64 && file.meta.mime) {
     return `data:${file.meta.mime};base64,${file.base64}`;

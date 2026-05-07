@@ -44,6 +44,7 @@ import {
   uploadFileWithProgress as Files_uploadFileWithProgress,
 } from "@/features/files/api/files";
 import { createFileShareLink } from "@/features/files/api/share-links";
+import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
 import {
   newRequestId,
   type ResponseMeta,
@@ -193,19 +194,12 @@ function buildShareUrl(token: string): string {
 }
 
 /**
- * Build the public DIRECT-FILE URL for a share token. This is the
- * URL that 302s to the signed S3 URL — embed in `<img src>`,
- * `<video src>`, or any binary-consuming surface. The `/share/<token>`
- * page URL renders the HTML landing page instead, which is fine for
- * "click to view metadata" but useless for hot-linking.
- *
- * Path mirrors the route at `app/api/share/[token]/file/route.ts` —
- * keep these in sync if the route ever moves.
+ * Build the public DIRECT-FILE URL for a share token — points at Python's
+ * `/share/{token}` resolver, which 302s to the signed S3 URL. No Next.js
+ * hop. Embed in `<img src>`, `<video src>`, downloads, Slack unfurls, etc.
  */
 function buildDirectShareUrl(token: string): string {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin.replace(/\/$/, "")}/api/share/${encodeURIComponent(token)}/file`;
+  return pythonShareUrl(token);
 }
 
 // ─── Upload primitive (no Redux side effects) ────────────────────────────

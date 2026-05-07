@@ -21,7 +21,6 @@ import {
   FileNotFoundError,
   isS3ExpiredError,
 } from "../errors";
-import { recordTelemetry } from "./telemetry";
 
 export interface RefreshResult {
   url: string;
@@ -32,28 +31,17 @@ export async function mintSignedUrl(
   fileId: string,
   expiresInSec = 3600,
 ): Promise<RefreshResult> {
-  const start = Date.now();
   try {
     const { data } = await Files.getSignedUrl(fileId, { expiresIn: expiresInSec });
-    const expiresAt = Date.now() + data.expires_in * 1000;
-    recordTelemetry({
-      event: "signed_url_minted",
-      fileId,
-      durationMs: Date.now() - start,
-    });
-    return { url: data.url, expiresAt };
+    return {
+      url: data.url,
+      expiresAt: Date.now() + data.expires_in * 1000,
+    };
   } catch (err) {
     const status = (err as { status?: number })?.status;
-    if (status === 404) {
-      recordTelemetry({ event: "access_denied", fileId, error: "not_found" });
-      throw new FileNotFoundError(undefined, { fileId });
-    }
+    if (status === 404) throw new FileNotFoundError(undefined, { fileId });
     if (status === 403) {
-      if (isS3ExpiredError(err)) {
-        recordTelemetry({ event: "signed_url_expired", fileId });
-        throw new FileExpiredError(undefined, { fileId });
-      }
-      recordTelemetry({ event: "access_denied", fileId });
+      if (isS3ExpiredError(err)) throw new FileExpiredError(undefined, { fileId });
       throw new FileAccessDeniedError(undefined, { fileId });
     }
     throw err;
