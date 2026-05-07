@@ -57,6 +57,7 @@ import {
   buildCloudImageSource,
   resolveCloudFileUrl,
 } from "@/components/image/cloud/resolveCloudFileUrl";
+import { buildCloudFilesBrowsePayload } from "@/components/image/cloud/cloudFilesBrowsePayload";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { toast } from "sonner";
 import { CloudFilesBrowserTable } from "./CloudFilesBrowserTable";
@@ -157,26 +158,16 @@ export function CloudFilesTab({
         const imageRows = fileRows.filter((f) =>
           isImageMime(resolveMime(f.mimeType, f.fileName)),
         );
-        const resolved = await Promise.all(
-          imageRows.map((f) =>
-            resolveCloudFileUrl(store, f.id).catch(() => null),
-          ),
-        );
-        const urls: string[] = [];
-        const alts: string[] = [];
-        let initialIndex = 0;
-        for (let i = 0; i < imageRows.length; i += 1) {
-          const url = resolved[i];
-          if (!url) continue;
-          if (imageRows[i].id === file.id) initialIndex = urls.length;
-          urls.push(url);
-          alts.push(imageRows[i].fileName);
-        }
-        if (urls.length === 0) {
+        const payload = await buildCloudFilesBrowsePayload({
+          imageRows,
+          activeFileId: file.id,
+          resolveUrl: (fileId) => resolveCloudFileUrl(store, fileId),
+        });
+        if (payload.images.length === 0) {
           toast.error("Couldn't load that image");
           return;
         }
-        browse({ images: urls, alts, initialIndex, title: file.fileName });
+        browse({ ...payload, title: file.fileName });
       } finally {
         setResolvingId(null);
       }
