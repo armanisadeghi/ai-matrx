@@ -10,7 +10,8 @@ import { useToastManager } from '@/hooks/useToastManager';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { useSignedUrl } from '../hooks/useSignedUrl';
+import { useFileSrc } from '@/features/file-handler/hooks/useFileSrc';
+import type { FileSource } from '@/features/file-handler/types';
 import { Slider } from '@/components/ui/slider';
 import {
     DropdownMenu,
@@ -40,11 +41,13 @@ export function TranscriptViewer() {
     // Playback speed options
     const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2, 3];
 
-    // Get signed URL for audio
-    const { url: audioUrl, isLoading: isLoadingUrl, error: urlError } = useSignedUrl(activeTranscript?.audio_file_path, {
-        bucket: 'user-private-assets', // Assuming this is where it is
-        expiresIn: 3600
-    });
+    // Get signed URL for audio. The handler auto-refreshes before expiry.
+    const audioSource: FileSource | null = activeTranscript?.audio_file_path
+        ? { kind: "file_id", fileId: activeTranscript.audio_file_path }
+        : null;
+    const audioUrl = useFileSrc(audioSource);
+    const isLoadingUrl = !audioUrl && !!audioSource;
+    const urlError: string | null = null;
 
     useEffect(() => {
         if (activeTranscript) {

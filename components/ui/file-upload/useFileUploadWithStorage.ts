@@ -99,17 +99,13 @@ interface UploadResult {
   /**
    * **Direct, embeddable URL for the file bytes.**
    *
-   * Resolves via `/api/share/<token>/file` which 302-redirects to a
-   * freshly signed storage URL on every hit. This is the right URL to
-   * drop into:
+   * Points at Python's `{BACKEND}/share/{token}` resolver, which 302-
+   * redirects to a freshly signed S3 URL on every hit. Drop into:
    *   - `<img src>`, `<video src>`, `<audio src>`, `<iframe src>`
    *   - `<a href download>`
    *   - any markdown image / OG-image meta tag / external embed
    *
-   * It is NOT the HTML "view-file landing page" — for that, use
-   * `pageUrl` below. The historical bug was returning the page URL here,
-   * which made `<img src>` render a broken icon because the page is
-   * HTML, not bytes.
+   * Not the HTML landing page — for that, use `pageUrl`.
    *
    * Prefer `fileId` for AI API payloads (cheaper — no redirect dance).
    */

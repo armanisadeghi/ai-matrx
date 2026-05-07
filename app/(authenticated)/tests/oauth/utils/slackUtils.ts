@@ -97,38 +97,6 @@ export async function fetchUsersList(token: string) {
 }
 
 /**
- * Upload a file to a Slack channel
- */
-export async function uploadFile(token: string, channelId: string, file: File, comment?: string) {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('channels', channelId);
-  formData.append('token', token); // Add token to formData
-
-  if (comment) {
-    formData.append('initial_comment', comment);
-  }
-
-  const response = await fetch('/api/slack-upload', {
-    method: 'POST',
-    body: formData
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to upload file: ${errorText}`);
-  }
-
-  const data = await response.json();
-
-  if (!data.ok) {
-    throw new Error(data.error || 'Failed to upload file');
-  }
-
-  return data;
-}
-
-/**
  * Fetch channel history from Slack API
  */
 export async function getChannelHistory(token: string, channelId: string) {

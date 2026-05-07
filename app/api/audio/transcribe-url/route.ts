@@ -2,7 +2,10 @@
  * URL-based Audio Transcription API Route
  *
  * For audio files > 4.5 MB that cannot be POSTed directly through Vercel.
- * Client uploads the file to Supabase Storage, then passes the signed URL here.
+ * Client uploads to cld_files via the universal file handler, mints a
+ * signed URL (`fileHandler.use(...).as({ kind: "html_src" })` or via
+ * `Files.getSignedUrl`), and passes that URL here. Groq fetches the
+ * bytes directly. Server-side because GROQ_API_KEY is a secret.
  * Groq Developer Plan supports up to 100 MB via URL parameter.
  */
 
@@ -19,7 +22,30 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+// Allowlist for URLs Groq is permitted to fetch: our Python backend tiers
+// + AWS S3 signed URLs (which the backend emits for cld_files reads).
+// Prevents this route from being used as an arbitrary URL fetch oracle.
+const ALLOWED_URL_HOSTS = [
+  process.env.NEXT_PUBLIC_BACKEND_URL_PROD,
+  process.env.NEXT_PUBLIC_BACKEND_URL_DEV,
+  process.env.NEXT_PUBLIC_BACKEND_URL_STAGING,
+  process.env.NEXT_PUBLIC_BACKEND_URL_LOCAL,
+  process.env.NEXT_PUBLIC_BACKEND_URL_GPU,
+]
+  .filter((v): v is string => typeof v === "string" && v.length > 0)
+  .map((v) => v.replace(/\/$/, ""));
+
+function isAllowedUrl(url: string): boolean {
+  if (ALLOWED_URL_HOSTS.some((host) => url.startsWith(host))) return true;
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith(".amazonaws.com")) return true;
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 const MAX_RETRIES = 3;
 const RETRYABLE_CODES = new Set([429, 500, 502, 503, 504]);
 
@@ -109,9 +135,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!url.startsWith(SUPABASE_URL)) {
+    if (!isAllowedUrl(url)) {
       return NextResponse.json(
-        { error: "URL must point to our Supabase Storage domain" },
+        { error: "URL is not on the transcription allowlist (cld_files signed URLs only)." },
         { status: 400 },
       );
     }

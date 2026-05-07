@@ -1,6 +1,5 @@
 import {useState, useEffect} from 'react';
 import {SlackChannel, SlackClient, SlackMessage} from '../slackClientUtils';
-import FileUpload from './FileUpload';
 
 const SlackManager: React.FC = () => {
   const [token, setToken] = useState('');
@@ -11,7 +10,7 @@ const SlackManager: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [savedTokens, setSavedTokens] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'message' | 'upload'>('message');
+  const [activeTab, setActiveTab] = useState<'message'>('message');
 
   // Load saved tokens on the component mount
   useEffect(() => {
@@ -142,34 +141,6 @@ const SlackManager: React.FC = () => {
     }
   };
 
-  const handleFileUploadSuccess = (result: any) => {
-    console.log({result});
-    // Extract file name from result if available
-    const fileName = result.files && result.files.length > 0
-        ? result.files[0].name || 'unnamed file'
-        : 'file';
-
-    setSuccess(`File "${fileName}" uploaded successfully!`);
-    setTimeout(() => setSuccess(''), 5000);
-  };
-
-  const handleFileUploadError = (err: Error) => {
-    // Handle specific Slack errors
-    if (err.message?.includes('not_in_channel')) {
-      setError('Bot is not in this channel. Try inviting it first using /invite @YourBotName');
-    } else if (err.message?.includes('channel_not_found')) {
-      setError('Channel not found. Please select a valid channel.');
-    } else if (err.message?.includes('invalid_auth')) {
-      setError('Authentication failed. Your token may be invalid or expired.');
-    } else if (err.message?.includes('timed out')) {
-      setError('Upload timed out. Try again or check your network connection.');
-    } else {
-      setError(`Failed to upload file: ${err.message}`);
-    }
-
-    setTimeout(() => setError(''), 5000);
-  };
-
   // Get selected channel name for display purposes
   const getSelectedChannelName = () => {
     const channel = channels.find(c => c.id === selectedChannel);
@@ -274,55 +245,32 @@ const SlackManager: React.FC = () => {
             >
               Send Message
             </button>
-            <button
-                onClick={() => setActiveTab('upload')}
-                className={`px-3 py-2 font-medium text-sm rounded-t-lg ${
-                    activeTab === 'upload'
-                        ? 'bg-gray-700 text-white border-b-2 border-blue-500'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-            >
-              Upload File
-            </button>
           </nav>
         </div>
 
         {/* Tab Content */}
         <div className="mb-8 p-4 rounded-lg shadow border border-gray-500">
-          {activeTab === 'message' ? (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Send a Message</h2>
-                <div className="mb-4">
-                  <label className="block mb-2">Message:</label>
-                  <textarea
-                      value={message}
-                      onChange={handleMessageChange}
-                      placeholder="Type your message here..."
-                      className="w-full p-2 border rounded h-32 bg-transparent"
-                      disabled={loading}
-                  />
-                </div>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Send a Message</h2>
+            <div className="mb-4">
+              <label className="block mb-2">Message:</label>
+              <textarea
+                  value={message}
+                  onChange={handleMessageChange}
+                  placeholder="Type your message here..."
+                  className="w-full p-2 border rounded h-32 bg-transparent"
+                  disabled={loading}
+              />
+            </div>
 
-                <button
-                    onClick={sendMessage}
-                    className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 disabled:bg-gray-400 transition-colors"
-                    disabled={loading || !token || !selectedChannel || !message}
-                >
-                  {loading ? 'Sending...' : 'Send Message'}
-                </button>
-              </div>
-          ) : (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Upload a File</h2>
-                <FileUpload
-                    token={token}
-                    channelId={selectedChannel}
-                    onSuccess={handleFileUploadSuccess}
-                    onError={handleFileUploadError}
-                    disabled={!token || !selectedChannel}
-                />
-              </div>
-          )}
+            <button
+                onClick={sendMessage}
+                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 disabled:bg-gray-400 transition-colors"
+                disabled={loading || !token || !selectedChannel || !message}
+            >
+              {loading ? 'Sending...' : 'Send Message'}
+            </button>
+          </div>
         </div>
 
         {/* Status Messages */}

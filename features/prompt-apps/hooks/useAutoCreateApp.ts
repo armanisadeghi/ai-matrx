@@ -306,22 +306,6 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
           throw new Error("No data returned from database");
         }
 
-        // Generate favicon in background (non-blocking)
-        setProgress("Generating app icon...");
-        try {
-          await fetch("/api/prompt-apps/generate-favicon", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              appId: appData.id,
-              name: metadata.name,
-            }),
-          });
-        } catch (faviconError) {
-          // Non-fatal — app was created, favicon can be regenerated later
-          console.warn("Favicon generation failed:", faviconError);
-        }
-
         setProgress("App created successfully!");
 
         onSuccessRef.current?.(appData.id);

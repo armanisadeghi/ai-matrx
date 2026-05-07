@@ -132,12 +132,10 @@ export interface CloudUploadSuccess {
    */
   shareUrl?: string;
   /**
-   * The PUBLIC DIRECT URL for the file bytes, e.g.
-   * `https://app.example.com/api/share/<token>/file`. This route 302-
-   * redirects to a freshly signed storage URL each time it's hit, so
-   * `<img src>`, `<a href download>`, and any other binary-consuming
-   * surface works correctly. **Use this** anywhere you want the file
-   * itself to be the response.
+   * The PUBLIC DIRECT URL for the file bytes — points at Python's
+   * `{BACKEND}/share/{token}` resolver, which 302-redirects to a freshly
+   * signed S3 URL each time it's hit. Embed in `<img src>`, `<a href
+   * download>`, Slack/Notion unfurls, OG images. No Next.js hop.
    *
    * Populated whenever `shareUrl` is — they always go in pairs because
    * both are derived from the same share token.
