@@ -16,7 +16,7 @@
  *     route to dedicated top-level folders.
  *
  * Scheduled for deletion in Phase 11 once callers migrate to
- * `useUploadAndShare` / `useUploadAndGet` from `@/features/files/hooks`.
+ * `useFileUpload` from `@/features/file-handler/hooks/useFileUpload`.
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";

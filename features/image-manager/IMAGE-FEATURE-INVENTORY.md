@@ -153,7 +153,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 - **Image proxies**:
   - `app/api/proxy-image/route.ts` (older, no caching headers).
   - `app/api/image-proxy/route.ts` (Cache-Control + CORP for cross-origin embedding).
-- **Feedback screenshots** → `app/api/admin/feedback/images/route.ts` — signed URL proxy for admin-only feedback item screenshots.
+- **Feedback screenshots** — admin views render `feedback.image_urls` directly. Old screenshots from the deleted Supabase Storage bucket are unrecoverable (per project doctrine: anything in Supabase has no value once the new system is wired). New uploads land in cld_files like everything else.
 - **Screenshot capture** → `hooks/useScreenshot.ts` (wraps `useScreenCapture` → `html-to-image`), `hooks/useScreenCapture.ts`. Uses `utils/image/imageCompression.ts` + `generateThumbnail`. Used by feedback flow and AdminIndicator.
 - **Voice avatars** → `features/audio/voice/voiceImages.ts` + `ImageLoader.tsx` + `VoiceModal.tsx` — image collateral for voice picker; not a managed surface.
 - **`components/matrx/parallax-scroll/**`** — visual parallax of image URLs (used by `image-editing/gallery` legacy page).
@@ -207,13 +207,11 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
 
 ## 5. Storage / pipeline / API surfaces
 
-- **`/api/images/upload`** → `app/api/images/upload/route.ts` — multi-variant Sharp pipeline (presets `social`, `cover`, `avatar`, `logo`, `favicon`, `square`). Variants land in `Images/<folder>/<uuid>/` via `Api.uploadAndShare`; defaults `visibility=public` → permanent CDN URLs.
+- **`/api/images/upload`** → `app/api/images/upload/route.ts` — multi-variant Sharp pipeline (presets `social`, `cover`, `avatar`, `logo`, `favicon`, `square`). Variants land in `Images/<folder>/<uuid>/` via `Api.Server.uploadAndShare`; defaults `visibility=public` → permanent CDN URLs. (Allowed exception to "no Next.js file routes" because it only writes to cld_files and Sharp is a server-only library.)
 - **`/api/images/studio/process`** → `app/api/images/studio/process/route.ts` — Sharp batch processor for the Image Studio convert flow. Returns base64 data URLs (no storage write).
-- **`/api/images/studio/save`** → `app/api/images/studio/save/route.ts` — auth-gated persistence of selected studio variants to Supabase Storage under `userContent/{userId}/{folder}/{sessionUuid}/`.
 - **`/api/unsplash`** → `app/api/unsplash/route.ts` — Unsplash search/random/collections via `UNSPLASH_ACCESS_KEY`.
 - **`/api/proxy-image`** and **`/api/image-proxy`** → external image proxies (CORS / cross-origin embedding). The two routes overlap; the `image-proxy` variant is the better one (Cache-Control, CORP).
-- **`/api/admin/feedback/images`** → signed URL proxy for feedback screenshots.
-- **`/api/agent-apps/generate-favicon`** and **`/api/prompt-apps/generate-favicon`** → procedurally-generated favicons saved via cloud-files.
+- **`/api/agent-apps/generate-favicon`** → procedurally-generated favicon, uploaded to cld_files via `Api.Server.uploadAndShare`. (The legacy `/api/prompt-apps/generate-favicon` was deleted along with prompt-apps deprecation.)
 - **OG image generation** → file-based `app/(public)/canvas/shared/[token]/opengraph-image.tsx` using Next.js `ImageResponse`.
 - **Cloud-files folder conventions** (`features/files/utils/folder-conventions.ts`):
   - `Images` (top-level drawer)
@@ -222,7 +220,7 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
   - `Images/Avatars`
   - `Images/Generated` (AI / studio outputs)
   - `Images/Uploads`, `Images/Uploads/Public`, `Images/Uploads/Private` (legacy aliases mapped from `ImageManager.saveTo`).
-- **No legacy Supabase buckets remain in active use for images** — everything routes through `features/files` (`Api.uploadAndShare`, `useFileUpload`, `useUploadAndShare`). The `bucket`/`path` legacy props on `ImageManager` and `PasteImageHandler` are remapped to cloud-files folder paths.
+- **No Supabase Storage anywhere** — every image upload routes through the universal file handler (`fileHandler.upload`, `useFileUpload`) which calls Python's `/files/upload`. Server-side routes (e.g. `/api/images/upload` for Sharp variants) use `Api.Server.uploadAndShare`. The `bucket`/`path` legacy props on `ImageManager` and `PasteImageHandler` are remapped to cloud-files folder paths.
 - **CDN migration** → `scripts/migrate-public-assets-to-cdn.ts` + `lib/cdn-assets.ts` constants.
 - **Compression / utils** → `utils/image/imageCompression.ts` (canvas resize/quality + thumbnail).
 - **Hooks** → `hooks/images/{useImage,useImageDimensions,useDownloadImage,useUnsplashGallery,useUnsplashSearch}.ts`.

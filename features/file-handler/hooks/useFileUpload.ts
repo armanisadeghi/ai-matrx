@@ -1,14 +1,12 @@
 /**
  * features/file-handler/hooks/useFileUpload.ts
  *
- * The single React-side upload primitive. Replaces:
- *   - `useFileUpload` in `features/files`
- *   - `useFileUploadWithStorage` in `components/ui/file-upload`
- *   - `useUploadAndShare`, `useUploadAndGet` in `features/files/hooks`
- *   - `usePublicFileUpload` (public chat → cloud-files anonymous lane)
+ * The single React-side upload primitive. Goes through `cloudUpload`
+ * (the underlying Python POST + optimistic Redux dispatch + optional
+ * share-link creation) — there is no other upload path.
  *
  * Anonymous users (visitors on `/p/[slug]`) work via the standard cloud-
- * files JWT path because Supabase still issues an anonymous auth ID for
+ * files JWT path because Supabase issues an anonymous auth UUID for
  * them. The handler does not branch on anonymous vs authenticated.
  */
 

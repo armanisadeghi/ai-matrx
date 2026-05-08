@@ -9,11 +9,10 @@
  * Hierarchy: real folder tree via `code_file_folders.parent_folder_id`.
  * Files at the root have `folder_id = null`.
  *
- * Storage caveat: large rows historically migrated their content to S3 and
- * stored an `s3_key` + `s3_bucket` instead of inline text. The existing
- * `lib/code-files/objectStore.ts` handles that. The adapter prefers inline
- * `content` when present and falls back to the object store via the existing
- * universal file handler when `s3_key` is set (a cld_files UUID).
+ * Storage caveat: large rows store their content in cld_files. `s3_key`
+ * holds a cld_files UUID, `s3_bucket = "cloud-files"`. The adapter
+ * prefers inline `content` when present and falls back to the universal
+ * file handler when `s3_key` is set.
  */
 
 "use client";

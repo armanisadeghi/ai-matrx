@@ -4,9 +4,10 @@
  * Typed REST client for the Python image-ops endpoints.
  *
  * These endpoints take/produce cloud_file_ids — no raw bytes. The browser
- * uploads the source via `useUploadAndShare` (existing pattern), gets a
- * cloud_file_id back, sends it here, gets a new cloud_file_id back, then
- * renders the result via the standard cloud-files render path.
+ * uploads the source via the universal handler (`fileHandler.upload(...)`
+ * / `useFileUpload`), gets a cloud_file_id back, sends it here, gets a
+ * new cloud_file_id back, then renders the result via the standard
+ * cloud-files render path.
  *
  * The auth/header pattern is identical to features/files/api/client.ts
  * (Supabase JWT, X-Request-Id). When the Python team implements the routes,

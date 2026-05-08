@@ -7,21 +7,19 @@
  *
  * Why this exists
  * ───────────────
- * Before this file, six different code paths uploaded files (legacy
- * `useFileUploadWithStorage`, `useUploadAndGet`, `useUploadAndShare`,
- * the `uploadFiles` thunk dispatched directly, the imperative
- * `uploadAndShare`, and the server-side `Api.Server.uploadAndShare`).
- * Some of them called `ensureFolderPath` which queries
- * `supabase.from("cld_folders")` from the browser — that triggers RLS
- * policy evaluation on `cld_file_permissions` which contains a known
- * recursion bug (Postgres error 42P17).
+ * The single underlying upload primitive. Public callers go through the
+ * universal file handler (`fileHandler.upload(...)` /
+ * `useFileUpload`), which calls this. Server-side routes use
+ * `Api.Server.uploadAndShare` which wraps the same Python `/files/upload`
+ * endpoint with a server context.
  *
- * Rule from now on: **every upload in the app goes through one of these
- * functions.** Never call `supabase.from("cld_*").upsert(...)` or
- * `ensureFolderPath` from a code path whose goal is "upload a file." The
- * Python backend auto-creates any missing folders when you POST a
- * full `file_path` — the browser never needs to touch `cld_folders`
- * directly. That sidesteps the RLS recursion AND keeps logic centralized.
+ * Rule: **every upload in the app goes through `cloudUpload` (this file)
+ * via the universal handler, OR through `Api.Server.uploadAndShare`.**
+ * Never call `supabase.from("cld_*").upsert(...)` or `ensureFolderPath`
+ * from a code path whose goal is "upload a file." The Python backend
+ * auto-creates any missing folders when you POST a full `file_path` —
+ * the browser never needs to touch `cld_folders` directly. That
+ * sidesteps the known RLS recursion bug AND keeps logic centralized.
  *
  * What this module owns:
  *   • Resolving a logical `file_path` from caller-supplied options.

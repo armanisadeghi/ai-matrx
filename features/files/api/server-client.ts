@@ -268,8 +268,9 @@ export async function downloadFile(
 
 // ---------------------------------------------------------------------------
 // Helper: "upload + create indefinite share link in one call" — the
-// server-side mirror of useUploadAndShare. Perfect for asset-upload routes
-// (favicons, banners) where the goal is a stable URL to persist in a DB row.
+// server-side mirror of `fileHandler.upload({ ..., createShareLink: true })`.
+// Perfect for asset-upload routes (favicons, banners) where the goal is
+// a stable URL to persist in a DB row.
 // ---------------------------------------------------------------------------
 
 export interface ServerUploadAndShareResult {

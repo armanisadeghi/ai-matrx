@@ -366,6 +366,24 @@ export interface UploadOpts {
   inheritActiveScope?: boolean;
   /** Per-byte progress callback. */
   onProgress?: (loaded: number, total: number) => void;
+
+  /**
+   * If true, the handler also creates a permanent share link after upload.
+   * The returned NormalizedFile carries `shareToken` + `url` pointing at
+   * Python's `{BACKEND}/share/{token}` resolver (no Next.js hop, no
+   * expiry — embed in `<img src>`, persist to DB columns, etc.).
+   */
+  createShareLink?: boolean;
+  /** Default "read". `admin` is not valid for share links. */
+  shareLinkPermissionLevel?: "read" | "write";
+  shareLinkExpiresAt?: string | null;
+  shareLinkMaxUses?: number | null;
+  /**
+   * Override origin for the returned share URL. Defaults to
+   * `window.location.origin`. Rare — useful for SSR/worker contexts that
+   * synthesize their own origin.
+   */
+  appOrigin?: string;
 }
 
 // ===========================================================================

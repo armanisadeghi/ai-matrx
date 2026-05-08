@@ -1,21 +1,24 @@
 /**
  * features/file-handler/upload.ts
  *
- * Phase 3: turn an ephemeral source (Blob/File/buffer/data URI/external URL)
- * into a durably-persisted NormalizedFile by uploading through the
- * cloud-files REST endpoint. The handler is the SINGLE write path —
- * no callsite calls `Files.uploadFile` directly anymore.
+ * The single write path. Coerces a `FileSource` into a `File`, then runs
+ * it through `cloudUpload` (which dispatches optimistic Redux updates,
+ * calls Python's `/files/upload`, and optionally creates a share link in
+ * the same round-trip). The returned `NormalizedFile` reflects the new
+ * `cld_files` row and carries the share-link URL when requested.
  *
- * Org-scope routing (a `cld_files` invariant on this project): when
- * `inheritActiveScope` is on (default), the active organization /
- * project / task ids from the appContext slice are stamped into
- * `metadata.scope` so each row carries its scope context. The Python
- * backend reads this and writes the columns. Existing files are
- * unaffected.
+ * Org-scope routing: when `inheritActiveScope` is on (default), the
+ * active organization / project / task ids from the appContext slice
+ * are stamped into `metadata.scope` so each row carries its scope
+ * context. The Python backend reads this and writes the columns.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState, AppDispatch } from "@/lib/redux/store";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import {
+  cloudUpload,
+  isCloudUploadFailure,
+} from "@/features/files/upload/cloudUpload";
 import * as Files from "@/features/files/api/files";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import {
@@ -40,42 +43,65 @@ export async function uploadInternal(
     );
   }
 
-  const folderPath = opts.folderPath ?? defaultFolderForSource(source);
-  const filePath = `${folderPath}/${file.name}`;
-
-  const metadata = stampScope(opts.metadata ?? {}, opts.inheritActiveScope ?? true);
-
-  try {
-    const { data } = opts.onProgress
-      ? await Files.uploadFileWithProgress(
-          {
-            file,
-            filePath,
-            visibility: opts.visibility,
-            shareWith: opts.shareWith,
-            shareLevel: opts.shareLevel,
-            metadata,
-          },
-          (event) => opts.onProgress!(event.loaded, event.total),
-        )
-      : await Files.uploadFile({
-          file,
-          filePath,
-          visibility: opts.visibility,
-          shareWith: opts.shareWith,
-          shareLevel: opts.shareLevel,
-          metadata,
-        });
-
-    const { data: full } = await Files.getFile(data.file_id);
-    const cloudFile = apiFileRecordToCloudFile(full);
-    return fromCloudFile(cloudFile, source);
-  } catch (err) {
+  const store = getStoreSingleton();
+  if (!store) {
     throw new FileUploadError(
-      err instanceof Error ? err.message : "Upload failed",
-      { cause: err },
+      "Cannot upload: redux store not yet initialized",
     );
   }
+  const dispatch = store.dispatch as AppDispatch;
+
+  const folderPath = opts.folderPath ?? defaultFolderForSource(source);
+  const metadata = stampScope(
+    opts.metadata ?? {},
+    opts.inheritActiveScope ?? true,
+  );
+
+  const result = await cloudUpload(
+    file,
+    {
+      folderPath: folderPath.replace(/^\/+|\/+$/g, ""),
+      visibility: opts.visibility ?? "private",
+      shareWith: opts.shareWith,
+      shareLevel: opts.shareLevel,
+      metadata,
+      onProgress: opts.onProgress
+        ? (event) => opts.onProgress!(event.loaded, event.total)
+        : undefined,
+      createShareLink: opts.createShareLink,
+      shareLinkPermissionLevel: opts.shareLinkPermissionLevel,
+      shareLinkExpiresAt: opts.shareLinkExpiresAt,
+      shareLinkMaxUses: opts.shareLinkMaxUses,
+    },
+    dispatch,
+  );
+
+  if (isCloudUploadFailure(result)) {
+    throw new FileUploadError(result.error);
+  }
+
+  // cloudUpload returns slim metadata. Fetch the full row so the
+  // returned NormalizedFile reflects every column the cloudFiles slice
+  // will see (visibility/owner/permissions/checksum/...).
+  const { data: full } = await Files.getFile(result.fileId);
+  const cloudFile = apiFileRecordToCloudFile(full);
+  const normalized = fromCloudFile(cloudFile, source);
+
+  // Stitch on the share-link fields — cloudUpload created them in the
+  // same round-trip as the upload.
+  if (result.shareToken) {
+    const shareUrl =
+      opts.appOrigin && result.shareToken
+        ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
+        : result.shareUrl ?? "";
+    return {
+      ...normalized,
+      shareToken: result.shareToken,
+      url: result.directUrl ?? shareUrl ?? normalized.url,
+    };
+  }
+
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
