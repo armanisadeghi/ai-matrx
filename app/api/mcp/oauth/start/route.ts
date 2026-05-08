@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
 
   const { data: server, error: serverError } = await supabase
     .from("tl_mcp_server")
-    .select("endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes")
+    .select(
+      "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes",
+    )
     .eq("id", serverId)
     .single();
 
@@ -88,17 +90,24 @@ export async function GET(req: NextRequest) {
     let clientId: string | undefined;
     let clientSecret: string | undefined;
 
-    // Strategy 1: Use pre-registered client_id from the catalog DB
-    // Many vendors (GitHub, Figma, Sentry, Vercel) require a pre-registered
-    // OAuth app — DCR and CIMD won't work with them.
+    // Strategy 1: Use pre-registered client_id from the catalog DB.
+    // Also look up the matching client_secret from env vars.
     if (server.oauth_client_id) {
       clientId = server.oauth_client_id;
+      const slugUpper = server.slug.toUpperCase().replace(/-/g, "_");
+      clientSecret =
+        process.env[`MCP_SECRET_${slugUpper}`] ??
+        process.env[`${slugUpper}_CLIENT_SECRET`] ??
+        undefined;
       console.log(
-        `[MCP OAuth] Using pre-registered client_id from catalog: ${clientId}`,
+        `[MCP OAuth] Using pre-registered client_id: ${clientId}` +
+          (clientSecret ? " (secret found)" : " (no secret)"),
       );
     }
 
-    // Strategy 2: Try Dynamic Client Registration if available
+    // Strategy 2: Try Dynamic Client Registration if available.
+    // DCR auto-registers our app with the vendor and returns credentials.
+    // We cache the result in the DB so we don't re-register next time.
     if (!clientId && authServer.registration_endpoint) {
       try {
         console.log(
@@ -115,6 +124,15 @@ export async function GET(req: NextRequest) {
         clientId = reg.client_id;
         clientSecret = reg.client_secret;
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
+
+        // Cache DCR result in catalog so we reuse it on subsequent connects
+        await supabase
+          .from("tl_mcp_server")
+          .update({
+            oauth_client_id: clientId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", serverId);
       } catch (dcrErr) {
         console.warn(
           `[MCP OAuth] DCR failed (will try CIMD fallback):`,
