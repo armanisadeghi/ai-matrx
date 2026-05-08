@@ -26,13 +26,21 @@ export async function buildCloudFilesBrowsePayload({
   const images: string[] = [];
   const alts: string[] = [];
   let initialIndex = 0;
+  let activeResolved = false;
 
   for (let i = 0; i < imageRows.length; i += 1) {
     const resolvedUrl = resolved[i];
     if (!resolvedUrl) continue;
-    if (imageRows[i].id === activeFileId) initialIndex = images.length;
+    if (imageRows[i].id === activeFileId) {
+      initialIndex = images.length;
+      activeResolved = true;
+    }
     images.push(resolvedUrl.url);
     alts.push(imageRows[i].fileName);
+  }
+
+  if (!activeResolved) {
+    return { images: [], alts: [], initialIndex: 0 };
   }
 
   return { images, alts, initialIndex };
