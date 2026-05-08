@@ -41,6 +41,7 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
 import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
 import { isImageMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   CloudFileRecord,
   CloudFolderRecord,
@@ -82,6 +83,7 @@ export function CloudFilesBrowserTable({
   onActivateFile,
 }: CloudFilesBrowserTableProps) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const rows = useMemo(
     () => buildCloudFilesBrowserRows({ folders, files }),
     [folders, files],
@@ -222,31 +224,21 @@ export function CloudFilesBrowserTable({
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
       <div className="h-full overflow-auto">
-        <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-background">
-            <tr className="border-b text-xs text-muted-foreground">
-              <th className="w-8 px-3 py-2 text-left">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all"
-                />
-              </th>
-              <HeaderCell label="Name" className="min-w-[320px]" />
-              <HeaderCell label="Type" className="w-[180px]" />
-              <HeaderCell label="Owner" className="w-[140px]" />
-              <HeaderCell label="Size" className="w-[120px]" />
-              <HeaderCell label="Modified" className="w-[140px]" />
-              <HeaderCell label="Access" className="w-[150px]" />
-              <th className="w-10 px-2 py-2 text-right">
-                <MoreHorizontal className="ml-auto h-4 w-4" />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+        {isMobile ? (
+          <div className="space-y-2 p-3">
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="flex min-h-[40px] w-full items-center justify-between rounded-lg border border-border bg-card/50 px-3 text-sm font-medium"
+            >
+              <span>{allSelected ? "Clear selection" : "Select all"}</span>
+              <span className="text-xs text-muted-foreground">
+                {rows.length} item{rows.length !== 1 ? "s" : ""}
+              </span>
+            </button>
             {rows.map((row) =>
               row.kind === "folder" ? (
-                <CloudFolderBrowserRow
+                <MobileFolderRow
                   key={row.folder.id}
                   folder={row.folder}
                   selected={selectedIds.includes(row.folder.id)}
@@ -263,7 +255,7 @@ export function CloudFilesBrowserTable({
                   }
                 />
               ) : (
-                <CloudFileBrowserRow
+                <MobileFileRow
                   key={row.file.id}
                   file={row.file}
                   selected={selectedIds.includes(row.file.id)}
@@ -282,8 +274,73 @@ export function CloudFilesBrowserTable({
                 />
               ),
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0 z-10 bg-background">
+              <tr className="border-b text-xs text-muted-foreground">
+                <th className="w-8 px-3 py-2 text-left">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all"
+                  />
+                </th>
+                <HeaderCell label="Name" className="min-w-[320px]" />
+                <HeaderCell label="Type" className="w-[180px]" />
+                <HeaderCell label="Owner" className="w-[140px]" />
+                <HeaderCell label="Size" className="w-[120px]" />
+                <HeaderCell label="Modified" className="w-[140px]" />
+                <HeaderCell label="Access" className="w-[150px]" />
+                <th className="w-10 px-2 py-2 text-right">
+                  <MoreHorizontal className="ml-auto h-4 w-4" />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) =>
+                row.kind === "folder" ? (
+                  <CloudFolderBrowserRow
+                    key={row.folder.id}
+                    folder={row.folder}
+                    selected={selectedIds.includes(row.folder.id)}
+                    ownerLabel={
+                      row.folder.ownerId === currentUserId ? "You" : "—"
+                    }
+                    onToggleSelected={() => toggleSelected(row.folder.id)}
+                    onOpen={() => onOpenFolder(row.folder.id)}
+                    onShare={() =>
+                      setShareTarget({
+                        resourceId: row.folder.id,
+                        resourceType: "folder",
+                      })
+                    }
+                  />
+                ) : (
+                  <CloudFileBrowserRow
+                    key={row.file.id}
+                    file={row.file}
+                    selected={selectedIds.includes(row.file.id)}
+                    imageSelected={selectedImageIds.has(`cloud:${row.file.id}`)}
+                    disabled={disabledFileIds?.has(row.file.id) ?? false}
+                    resolving={resolvingId === row.file.id}
+                    ownerLabel={
+                      row.file.ownerId === currentUserId ? "You" : "—"
+                    }
+                    onToggleSelected={() => toggleSelected(row.file.id)}
+                    onActivate={() => onActivateFile(row.file)}
+                    onShare={() =>
+                      setShareTarget({
+                        resourceId: row.file.id,
+                        resourceType: "file",
+                      })
+                    }
+                  />
+                ),
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {selectedIds.length > 0 ? (
@@ -323,6 +380,181 @@ export function CloudFilesBrowserTable({
         />
       ) : null}
     </div>
+  );
+}
+
+function MobileFolderRow({
+  folder,
+  selected,
+  ownerLabel,
+  onToggleSelected,
+  onOpen,
+  onShare,
+}: {
+  folder: CloudFolderRecord;
+  selected: boolean;
+  ownerLabel: string;
+  onToggleSelected: () => void;
+  onOpen: () => void;
+  onShare: () => void;
+}) {
+  const actions = useFolderActions(folder.id);
+  return (
+    <div
+      className={cn(
+        "rounded-lg border bg-card p-3",
+        selected ? "border-primary/50 bg-primary/10" : "border-border",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelected}
+          aria-label={`Select ${folder.folderName}`}
+        />
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <FileIcon isFolder size={22} />
+          <span className="truncate text-sm font-semibold">
+            {folder.folderName}
+          </span>
+        </button>
+        <MobileRowMenu
+          onShare={onShare}
+          onCopyLink={async () => actions.copyShareUrl()}
+        />
+      </div>
+      <div className="mt-2 flex items-center gap-2 pl-8 text-xs text-muted-foreground">
+        <span>Folder</span>
+        <span aria-hidden>•</span>
+        <span>{ownerLabel}</span>
+        <span aria-hidden>•</span>
+        <span>{formatRelativeTime(folder.updatedAt)}</span>
+      </div>
+    </div>
+  );
+}
+
+function MobileFileRow({
+  file,
+  selected,
+  imageSelected,
+  disabled,
+  resolving,
+  ownerLabel,
+  onToggleSelected,
+  onActivate,
+  onShare,
+}: {
+  file: CloudFileRecord;
+  selected: boolean;
+  imageSelected: boolean;
+  disabled: boolean;
+  resolving: boolean;
+  ownerLabel: string;
+  onToggleSelected: () => void;
+  onActivate: () => void;
+  onShare: () => void;
+}) {
+  const actions = useFileActions(file.id);
+  const mime = resolveMime(file.mimeType, file.fileName);
+  const showThumb = isImageMime(mime) || isVideoMime(mime);
+  return (
+    <div
+      className={cn(
+        "rounded-lg border bg-card p-3",
+        selected && "border-primary/50 bg-primary/10",
+        imageSelected && "ring-1 ring-primary/40",
+        disabled && "opacity-70",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelected}
+          aria-label={`Select ${file.fileName}`}
+        />
+        <button
+          type="button"
+          disabled={disabled || resolving}
+          onClick={onActivate}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/40">
+            {showThumb ? (
+              <MediaThumbnail file={file} iconSize={18} className="h-full w-full" />
+            ) : (
+              <FileIcon fileName={file.fileName} size={18} />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold">
+              {file.fileName}
+            </span>
+            <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <TypeBadge label={extensionLabel(file.fileName)} />
+              <span>{formatFileSize(file.fileSize)}</span>
+            </span>
+          </span>
+          {resolving ? (
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          ) : disabled ? (
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          ) : null}
+        </button>
+        <MobileRowMenu
+          onShare={onShare}
+          onCopyLink={async () => actions.copyShareUrl()}
+        />
+      </div>
+      <div className="mt-2 flex items-center gap-2 pl-8 text-xs text-muted-foreground">
+        <span>{getCloudFileKindLabel(file)}</span>
+        <span aria-hidden>•</span>
+        <span>{ownerLabel}</span>
+        <span aria-hidden>•</span>
+        <span>{formatRelativeTime(file.updatedAt)}</span>
+      </div>
+    </div>
+  );
+}
+
+function MobileRowMenu({
+  onShare,
+  onCopyLink,
+}: {
+  onShare: () => void;
+  onCopyLink: () => Promise<string | null>;
+}) {
+  const handleCopy = async () => {
+    const url = await onCopyLink();
+    if (url) toast.success("Link copied");
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label="More actions"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onShare}>
+          <Share2 className="mr-2 h-3.5 w-3.5" />
+          Share
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => void handleCopy()}>
+          <Copy className="mr-2 h-3.5 w-3.5" />
+          Copy link
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

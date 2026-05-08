@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-07`
+**Last updated:** `2026-05-08`
 
 ---
 
@@ -197,6 +197,10 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-05-09` — Corrected `/images/public-search` mobile UX after screenshot review: Images navigation now opens as an opaque full-width bottom sheet, Public Search no longer nests scroll containers, and Unsplash mobile filters use bottom-sheet option rows instead of mobile tabs/generic sheets.
+- `2026-05-08` — Tightened `/images` mobile landing chrome to match the Agents page: moved the Images title/actions into the shared shell header, removed the duplicate fixed top strip, and replaced mobile hero/card grids with compact action rows.
+- `2026-05-08` — Mobile responsiveness pass for `/images/*`: replaced the mobile sidebar affordance with an Agents-style bottom action bar and grouped navigation sheet, compacted landing pages into mobile rows, moved key Manager/Studio options into bottom sheets, added mobile file rows for All Files, and exposed Image Studio preset/export panels through mobile drawers.
+- `2026-05-08` — Added `docs/superpowers/plans/2026-05-08-images-mobile-responsive.md` to track the full `/images` mobile responsiveness pass using the Agents main page as the mobile standard.
 - `2026-05-07` — My Cloud image bulk selection: extracted image grid/list renderers, added per-image bulk checkboxes, wired a shared floating selection toolbar for download/move/visibility/delete/cancel, and reused the official empty-state card for empty results.
 - `2026-05-07` — Browse-mode image preview gained icon-only rotate-left, rotate-right, flip-horizontal, and flip-vertical controls in the shared Image Viewer window.
 - `2026-05-07` — My Cloud search now uses the official `SearchInput`, matching Public Search while preserving the existing filename filter behavior.

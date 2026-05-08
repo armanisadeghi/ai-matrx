@@ -127,7 +127,7 @@ export function EditAiToolbar({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex items-center gap-1.5 border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
         <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
           <Sparkles className="h-3 w-3" />
           AI assist
@@ -138,7 +138,7 @@ export function EditAiToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7"
+              className="h-8 shrink-0"
               onClick={handleSuggestEdits}
               disabled={busy !== null}
             >
@@ -158,7 +158,7 @@ export function EditAiToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7"
+              className="h-8 shrink-0"
               onClick={handleBgRemove}
               disabled={busy !== null}
             >
@@ -178,7 +178,7 @@ export function EditAiToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7"
+              className="h-8 shrink-0"
               onClick={() => handleUpscale(2)}
               disabled={busy !== null}
             >
@@ -198,7 +198,7 @@ export function EditAiToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7"
+              className="h-8 shrink-0"
               onClick={() => handleUpscale(4)}
               disabled={busy !== null}
             >
@@ -213,10 +213,10 @@ export function EditAiToolbar({
           <TooltipContent>Upscale 4×</TooltipContent>
         </Tooltip>
 
-        <div className="flex-1" />
+        <div className="hidden md:block flex-1" />
 
         {editOpen ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <input
               autoFocus
               value={editPrompt}
@@ -229,12 +229,13 @@ export function EditAiToolbar({
                 }
               }}
               placeholder='e.g. "make it sunset", "change shirt to blue"'
-              className="h-7 w-72 rounded-md border border-border bg-background px-2 text-xs"
+              className="h-8 w-56 md:w-72 rounded-md border border-border bg-background px-2 text-xs"
+              style={{ fontSize: "16px" }}
               disabled={busy !== null}
             />
             <Button
               size="sm"
-              className="h-7"
+              className="h-8 shrink-0"
               onClick={handleEditPrompt}
               disabled={busy !== null || !editPrompt.trim()}
             >
@@ -247,7 +248,7 @@ export function EditAiToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7"
+              className="h-8 shrink-0"
               onClick={() => {
                 setEditOpen(false);
                 setEditPrompt("");
@@ -262,7 +263,7 @@ export function EditAiToolbar({
               <Button
                 variant="default"
                 size="sm"
-                className="h-7"
+                className="h-8 shrink-0"
                 onClick={() => setEditOpen(true)}
                 disabled={busy !== null}
               >

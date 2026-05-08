@@ -35,7 +35,7 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
 
     const { toast } = useToast();
     const observer = useRef<IntersectionObserver | null>(null);
-    const [searchQuery, setSearchQuery] = useState(initialSearchTerm || '');
+    const [searchQuery, setSearchQuery] = useState(initialSearchTerm || 'ai');
     const [isSharing, setIsSharing] = useState(false);
 
     // Perform initial search when component mounts
@@ -100,9 +100,18 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
     });
 
     return (
-        <div className="container-fluid p-2 space-y-4">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Unsplash</h1>
-            
+        <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold text-foreground">
+                        {searchQuery.trim() ? `Results for "${searchQuery.trim()}"` : 'Search Unsplash'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground" aria-live="polite">
+                        {loading ? 'Searching...' : `${photos.length} images loaded`}
+                    </p>
+                </div>
+            </div>
+
             <MobileUnsplashSearch
                 onSearch={handleSearchChange}
                 loading={loading}

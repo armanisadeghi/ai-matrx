@@ -60,7 +60,7 @@ export function ProfilePhotoTab() {
   };
 
   return (
-    <div className="h-full overflow-auto p-4 space-y-4">
+    <div className="h-full overflow-auto overscroll-contain p-3 md:p-4 space-y-4">
       <header className="flex items-center gap-3 rounded-lg border border-border bg-card/40 p-3">
         <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
           {currentAvatar ? (

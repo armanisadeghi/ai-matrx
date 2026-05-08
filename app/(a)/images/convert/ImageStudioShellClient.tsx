@@ -34,8 +34,8 @@ function ConvertShellSkeleton() {
           ))}
         </div>
       </div>
-      <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto p-4 md:p-5 space-y-4">
-        <Skeleton className="h-[260px] w-full rounded-2xl" />
+      <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto p-3 md:p-5 space-y-4">
+        <Skeleton className="h-[220px] md:h-[260px] w-full rounded-lg md:rounded-2xl" />
       </div>
       <div className="hidden lg:flex flex-col w-80 xl:w-96 min-h-0 border-l border-border p-3 gap-3">
         <Skeleton className="h-8 w-32" />

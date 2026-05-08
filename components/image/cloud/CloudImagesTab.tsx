@@ -33,11 +33,17 @@ import {
   Grid3x3,
   List as ListIcon,
   Lock,
+  SlidersHorizontal,
   Trash2,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { SearchInput } from "@/components/official/SearchInput";
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@/components/official/bottom-sheet/BottomSheet";
 import { Button } from "@/components/ui/button";
 import EmptyStateCard from "@/components/official/cards/EmptyStateCard";
 import { FloatingSelectionToolbar } from "@/components/shared/FloatingSelectionToolbar";
@@ -148,6 +154,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     "download" | "move" | "visibility" | "delete" | null
   >(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
 
   // Persist the view mode whenever it changes.
   useEffect(() => {
@@ -363,17 +370,27 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="h-full flex flex-col">
-        <div className="border-b border-border px-4 py-2.5 pr-14 flex items-center gap-3 flex-wrap">
+        <div className="border-b border-border px-3 md:px-4 py-2.5 md:pr-14 flex items-center gap-2 md:gap-3 flex-wrap">
           <SearchInput
             value={query}
             onValueChange={setQuery}
             placeholder="Search your images..."
-            className="min-w-[260px] flex-1"
+            className="min-w-0 flex-1"
             inputClassName="h-9 bg-background text-base"
             showClearButton={true}
             autoFocus={false}
           />
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setMobileOptionsOpen(true)}
+            className="h-9 w-9 shrink-0 md:hidden"
+            aria-label="Image view options"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
+          <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
             <Button
               type="button"
               variant={showRecentsOnly ? "default" : "outline"}
@@ -386,7 +403,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             </Button>
             <ViewModeToggle value={viewMode} onChange={setViewMode} />
             <div
-              className="hidden h-9 items-center rounded-md border border-border/80 bg-card/70 px-2.5 text-xs font-medium text-muted-foreground shadow-sm sm:flex"
+              className="flex h-9 items-center rounded-md border border-border/80 bg-card/70 px-2.5 text-xs font-medium text-muted-foreground shadow-sm"
               aria-label={`${imageCountLabel} loaded`}
               aria-live="polite"
             >
@@ -395,7 +412,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 space-y-6">
+        <div className="flex-1 overflow-auto p-3 md:p-4 space-y-4 md:space-y-6 overscroll-contain">
           {providedUrls && providedUrls.length > 0 ? (
             <section>
               <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
@@ -577,6 +594,80 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <BottomSheet
+          open={mobileOptionsOpen}
+          onOpenChange={setMobileOptionsOpen}
+          title="Image options"
+        >
+          <BottomSheetHeader
+            title="Image options"
+            trailing={
+              <button
+                type="button"
+                onClick={() => setMobileOptionsOpen(false)}
+                className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+              >
+                Done
+              </button>
+            }
+          />
+          <BottomSheetBody className="px-4 pb-5">
+            <div className="space-y-5">
+              <div>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  View
+                </h3>
+                <div className="overflow-hidden rounded-xl border border-border bg-card/60">
+                  {VIEW_OPTIONS.map((opt, index) => {
+                    const Icon = opt.icon;
+                    const active = viewMode === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setViewMode(opt.id)}
+                        className={cn(
+                          "flex min-h-[48px] w-full items-center gap-3 px-3 text-left",
+                          index > 0 && "border-t border-border",
+                          active ? "text-primary" : "text-foreground",
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="flex-1 text-[15px] font-medium">
+                          {opt.label}
+                        </span>
+                        {active ? (
+                          <span className="text-xs text-primary">Current</span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowRecentsOnly((v) => !v)}
+                className={cn(
+                  "flex min-h-[48px] w-full items-center gap-3 rounded-xl border border-border bg-card/60 px-3 text-left",
+                  showRecentsOnly && "border-primary/40 text-primary",
+                )}
+              >
+                <Clock className="h-4 w-4" />
+                <span className="flex-1 text-[15px] font-medium">
+                  Recent images only
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {showRecentsOnly ? "On" : "Off"}
+                </span>
+              </button>
+
+              <div className="rounded-xl border border-border bg-card/60 px-3 py-3 text-sm text-muted-foreground">
+                {imageCountLabel} loaded
+              </div>
+            </div>
+          </BottomSheetBody>
+        </BottomSheet>
       </div>
     </TooltipProvider>
   );

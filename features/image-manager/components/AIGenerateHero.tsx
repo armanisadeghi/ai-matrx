@@ -30,7 +30,7 @@ export function AIGenerateHero() {
   };
 
   return (
-    <div className="h-full flex items-center justify-center p-8">
+    <div className="h-full flex items-start md:items-center justify-center overflow-y-auto overscroll-contain p-4 md:p-8">
       <div className="text-center max-w-md">
         <div className="mx-auto h-14 w-14 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
           <Sparkles className="h-7 w-7" />
@@ -48,7 +48,7 @@ export function AIGenerateHero() {
             variant="outline"
             size="sm"
             onClick={handleOpenDefaults}
-            className="gap-1.5"
+          className="min-h-[44px] gap-1.5 md:min-h-0"
           >
             <Settings className="h-3.5 w-3.5" />
             Set generation defaults

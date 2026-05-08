@@ -56,7 +56,7 @@ export function StudioLibraryTab() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="border-b border-border px-4 py-2 flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+      <header className="border-b border-border px-3 md:px-4 py-2 flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
         <Library className="h-3.5 w-3.5 text-fuchsia-500" />
         <span className="truncate">
           Studio saves under{" "}
@@ -72,7 +72,7 @@ export function StudioLibraryTab() {
           href="/images/library"
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 px-2 h-6 rounded-md text-[11px] font-medium hover:bg-accent hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 px-2 min-h-[32px] md:h-6 rounded-md text-[11px] font-medium hover:bg-accent hover:text-foreground transition-colors"
           title="Open the full Images library page in a new tab"
         >
           Library
@@ -91,7 +91,7 @@ export function StudioLibraryTab() {
         {resolving ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            <span className="text-sm">Opening Studio library…</span>
+            <span className="text-sm">Opening Studio library...</span>
           </div>
         ) : (
           // Re-key on the resolved folderId so the tab's internal state
