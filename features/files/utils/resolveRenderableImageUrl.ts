@@ -45,7 +45,7 @@ export async function resolveRenderableImageUrl(
   const now = options.now ?? Date.now;
 
   if (normalized.publicUrl) {
-    return remember(normalized.cacheKey ?? normalized.publicUrl, {
+    return remember(normalized.publicUrl, {
       url: normalized.publicUrl,
       expiresAt: null,
     });

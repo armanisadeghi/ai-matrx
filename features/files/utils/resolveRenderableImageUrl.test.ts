@@ -86,4 +86,30 @@ describe("resolveRenderableImageUrl", () => {
     expect(result.url).toBe("https://signed.example.com/from-record");
     expect(getSignedUrl).toHaveBeenCalledWith("file-1", { expiresIn: 3600 });
   });
+
+  it("does not reuse a public cloud file URL after the record no longer has publicUrl", async () => {
+    const getSignedUrl = jest
+      .fn()
+      .mockResolvedValueOnce({ url: "https://signed.example.com/private", expires_in: 3600 });
+
+    const publicResult = await resolveRenderableImageUrl(
+      {
+        id: "cloud:file-1",
+        publicUrl: "https://cdn.example.com/public-cover.jpg",
+      },
+      { getSignedUrl, now: () => 1_000 },
+    );
+    const privateResult = await resolveRenderableImageUrl(
+      {
+        id: "file-1",
+        fileName: "cover.jpg",
+        publicUrl: null,
+      },
+      { getSignedUrl, now: () => 2_000 },
+    );
+
+    expect(publicResult.url).toBe("https://cdn.example.com/public-cover.jpg");
+    expect(privateResult.url).toBe("https://signed.example.com/private");
+    expect(getSignedUrl).toHaveBeenCalledTimes(1);
+  });
 });
