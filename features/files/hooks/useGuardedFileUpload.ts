@@ -1,13 +1,17 @@
 /**
- * features/files/hooks/useFileUpload.ts
+ * features/files/hooks/useGuardedFileUpload.ts
  *
- * Thin ergonomic wrapper around the upload pipeline. Routes through
- * the app-level `<UploadGuardHost/>` so every user-driven upload
- * gets the duplicate-detection pre-flight + resolution dialog.
+ * Multi-file upload with the duplicate-detection guard dialog. Routes
+ * through the app-level `<UploadGuardHost/>` so every user-driven
+ * upload gets the duplicate-detection pre-flight + resolution dialog.
  *
- * Returns the same shape it always has so existing consumers compile
- * unchanged. The new `cancelled` flag tells callers when the user
- * dismissed the duplicate dialog (no files uploaded).
+ * Distinct from `useFileUpload` in `features/file-handler/hooks/` —
+ * that's the universal single-file primitive. Use this hook when:
+ *   - The user picks multiple files at once
+ *   - You want the duplicate-detection dialog UX
+ *
+ * Use the handler's `useFileUpload` for everything else (single-file
+ * paste, drag-drop into a chat input, programmatic uploads).
  */
 
 "use client";
@@ -16,7 +20,7 @@ import { useCallback } from "react";
 import { requestUpload } from "@/features/files/upload/UploadGuardHost";
 import type { UploadFilesArg } from "@/features/files/types";
 
-export interface UseFileUploadResult {
+export interface UseGuardedFileUploadResult {
   upload: (
     files: File[],
     options?: Omit<UploadFilesArg, "files">,
@@ -29,9 +33,9 @@ export interface UseFileUploadResult {
   }>;
 }
 
-export function useFileUpload(
+export function useGuardedFileUpload(
   defaults: Partial<Omit<UploadFilesArg, "files">> = {},
-): UseFileUploadResult {
+): UseGuardedFileUploadResult {
   const upload = useCallback(
     async (
       files: File[],

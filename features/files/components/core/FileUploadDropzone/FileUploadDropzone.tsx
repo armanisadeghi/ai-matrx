@@ -18,7 +18,7 @@ import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveUploads } from "@/features/files/redux/selectors";
-import { useFileUpload } from "@/features/files/hooks/useFileUpload";
+import { useGuardedFileUpload } from "@/features/files/hooks/useGuardedFileUpload";
 import { UploadProgressList } from "./UploadProgressList";
 import type { UploadFilesArg } from "@/features/files/types";
 import { extractErrorMessage } from "@/utils/errors";
@@ -55,7 +55,7 @@ export function FileUploadDropzone({
   onUploaded,
   onError,
 }: FileUploadDropzoneProps) {
-  const { upload } = useFileUpload({ parentFolderId, visibility });
+  const { upload } = useGuardedFileUpload({ parentFolderId, visibility });
   const activeUploads = useAppSelector(selectActiveUploads);
   const [pasteHighlight, setPasteHighlight] = useState(false);
 
