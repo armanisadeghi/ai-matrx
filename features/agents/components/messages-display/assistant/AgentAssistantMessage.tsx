@@ -115,12 +115,10 @@ export function AgentAssistantMessage({
       "tool_result",
     ]);
     const mediaBlocks = extractContentBlocks(record).filter(
-      (b) => !EXCLUDED.has((b as { type?: string }).type ?? ""),
+      (b) => !EXCLUDED.has(b.type ?? ""),
     );
     if (mediaBlocks.length === 0) return undefined;
-    return normalizeContentBlocks(
-      mediaBlocks as Array<Record<string, unknown>>,
-    );
+    return normalizeContentBlocks(mediaBlocks);
   }, [record]);
 
   const canRetry = Boolean(messageId);

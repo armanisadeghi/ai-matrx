@@ -20,10 +20,7 @@ import {
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectSort,
-  selectViewMode,
-} from "@/features/files/redux/selectors";
+import { selectSort, selectViewMode } from "@/features/files/redux/selectors";
 import { moveFile } from "@/features/files/redux/thunks";
 import { setSort } from "@/features/files/redux/slice";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
@@ -48,8 +45,14 @@ export interface FileListProps {
 const SORT_LABELS: Record<SortBy, string> = {
   name: "Name",
   updated_at: "Modified",
+  created_at: "Created",
   size: "Size",
   type: "Type",
+  extension: "Extension",
+  mime: "MIME",
+  path: "Path",
+  owner: "Owner",
+  version: "Version",
 };
 
 export function FileList({
@@ -181,9 +184,7 @@ export function FileList({
                   record={file}
                   kind="file"
                   selected={selection.isSelected(file.id)}
-                  onClick={(e) =>
-                    selection.handleClick(file.id, e, orderedIds)
-                  }
+                  onClick={(e) => selection.handleClick(file.id, e, orderedIds)}
                   onDoubleClick={() => onActivateFile?.(file.id)}
                   onRename={
                     onRenameRequest ? () => onRenameRequest(file.id) : undefined
@@ -203,8 +204,7 @@ export function FileList({
           <div
             className="flex-1 overflow-auto p-3 grid gap-3"
             style={{
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(112px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))",
               contentVisibility: "auto",
             }}
             role="grid"

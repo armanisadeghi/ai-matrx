@@ -35,7 +35,7 @@ async function searchUnsplashPhotos(
   query: string,
   page: number,
   perPage: number,
-): Promise<{ ok: true; results: Photo[] } | { ok: false; error: string }> {
+): Promise<{ results: Photo[]; error: string | null }> {
   try {
     const params = new URLSearchParams({
       action: "searchPhotos",
@@ -48,7 +48,7 @@ async function searchUnsplashPhotos(
       cache: "no-store",
     });
     if (!res.ok) {
-      return { ok: false, error: `Unsplash request failed (${res.status})` };
+      return { results: [], error: `Unsplash request failed (${res.status})` };
     }
     const payload: unknown = await res.json();
     if (
@@ -60,15 +60,15 @@ async function searchUnsplashPhotos(
     ) {
       const response = (payload as { response?: { results?: Photo[] } })
         .response;
-      return { ok: true, results: response?.results ?? [] };
+      return { results: response?.results ?? [], error: null };
     }
     return {
-      ok: false,
+      results: [],
       error: "Unsplash returned an unexpected payload shape.",
     };
   } catch (err) {
     return {
-      ok: false,
+      results: [],
       error: err instanceof Error ? err.message : "Unknown error",
     };
   }
@@ -178,23 +178,26 @@ export function PublicImageSearch({
 
       setLoading(true);
       try {
-        const result = await searchUnsplashPhotos(query, pageNum, 15);
-        if (result.ok) {
-          if (pageNum === 1) {
-            setPhotos(result.results);
-          } else {
-            setPhotos((prev) => [...prev, ...result.results]);
-          }
-          setHasMore(result.results.length > 0);
-        } else {
-          console.error("Unsplash search failed:", result.error);
+        const { results, error } = await searchUnsplashPhotos(
+          query,
+          pageNum,
+          15,
+        );
+        if (error) {
+          console.error("Unsplash search failed:", error);
           toast({
             title: "Search failed",
-            description:
-              result.error ?? "Unable to fetch images. Please try again.",
+            description: error ?? "Unable to fetch images. Please try again.",
             variant: "destructive",
           });
+          return;
         }
+        if (pageNum === 1) {
+          setPhotos(results);
+        } else {
+          setPhotos((prev) => [...prev, ...results]);
+        }
+        setHasMore(results.length > 0);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";

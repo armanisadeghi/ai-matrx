@@ -13,7 +13,7 @@ import {
   selectAllDiscoveredMcpTools,
   selectMcpDiscoveries,
 } from "@/features/agents/redux/mcp/mcp.slice";
-import type { McpToolSchema } from "@/features/agents/services/mcp-client";
+import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 
 // ─── useMcpCatalog ───────────────────────────────────────────────────────────
 

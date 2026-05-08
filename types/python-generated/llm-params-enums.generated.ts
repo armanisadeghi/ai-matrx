@@ -4,6 +4,12 @@
  * or GET /schema/bundle/llm-params-enums-ts.
  */
 
+export type LLMParamBackground = "auto" | "opaque" | "transparent";
+
+export type LLMParamInputFidelity = "high" | "low";
+
+export type LLMParamModeration = "auto" | "low";
+
 export type LLMParamReasoningEffort = "auto" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
 export type LLMParamReasoningSummary = "concise" | "detailed" | "never" | "auto" | "always";
@@ -11,3 +17,5 @@ export type LLMParamReasoningSummary = "concise" | "detailed" | "never" | "auto"
 export type LLMParamThinkingLevel = "minimal" | "low" | "medium" | "high";
 
 export type LLMParamToolChoice = "none" | "auto" | "required";
+
+export type LLMParamVideoAction = "generate" | "edit" | "extend";

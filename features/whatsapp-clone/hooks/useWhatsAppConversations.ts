@@ -11,6 +11,7 @@ import type { ConversationWithDetails } from "@/features/messaging/types";
 import { getMockConversations } from "../mock-data/conversations";
 import type { WAConversation } from "../types";
 import { useWhatsAppDataMode } from "./WhatsAppDataModeProvider";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export interface UseWhatsAppConversationsReturn {
   conversations: WAConversation[];
@@ -25,7 +26,8 @@ function adaptConversation(
   selfUserId: string | null,
 ): WAConversation {
   const lastMsg = c.last_message;
-  const lastIsOwn = !!lastMsg && !!selfUserId && lastMsg.sender_id === selfUserId;
+  const lastIsOwn =
+    !!lastMsg && !!selfUserId && lastMsg.sender_id === selfUserId;
   const otherParticipant = c.participants?.find(
     (p) => p.user_id !== selfUserId,
   );
@@ -45,7 +47,6 @@ function adaptConversation(
     lastMessageIsOwn: lastIsOwn,
     unreadCount: c.unread_count ?? 0,
     online: false,
-    lastSeenAt: otherParticipant?.user ? null : null,
   };
 }
 
@@ -56,7 +57,7 @@ export function useWhatsAppConversations(): UseWhatsAppConversationsReturn {
   const liveConversations = useAppSelector(selectConversations);
   const liveIsLoading = useAppSelector(selectMessagingIsLoading);
   const liveError = useAppSelector(selectMessagingError);
-  const selfUserId = useAppSelector((s) => s.user?.id ?? null);
+  const selfUserId = useAppSelector(selectUserId);
 
   if (mode === "mock") {
     return {

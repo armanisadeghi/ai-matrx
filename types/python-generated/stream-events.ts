@@ -431,6 +431,14 @@ export interface MemoryReflectorCompletedData {
   duration_ms?: number | null;
 }
 
+export interface PartialImageData {
+  type?: "partial_image";
+  b64_json: string;
+  partial_index: number;
+  progress?: number;
+  mime_type?: string;
+}
+
 export interface PodcastCompleteData {
   type?: "podcast_complete";
   show_id: string;
@@ -512,6 +520,7 @@ export type TypedDataPayload =
   | MemoryErrorData
   | MemoryObserverCompletedData
   | MemoryReflectorCompletedData
+  | PartialImageData
   | PodcastCompleteData
   | PodcastStageData
   | QuestionnaireDisplayData

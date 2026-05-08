@@ -369,9 +369,10 @@ export function FileContextMenu({
   const handleOpenRagViewer = useCallback(async () => {
     try {
       const { getJson } = await import("@/features/files/api/client");
-      const { data } = await getJson<{ document_id: string | null; found: boolean }>(
-        `/api/document/by-cld-file/${encodeURIComponent(fileId)}`,
-      );
+      const { data } = await getJson<{
+        document_id: string | null;
+        found: boolean;
+      }>(`/api/document/by-cld-file/${encodeURIComponent(fileId)}`);
       if (data.found && data.document_id) {
         window.open(`/rag/viewer/${data.document_id}`, "_blank", "noopener");
       } else {
@@ -395,7 +396,7 @@ export function FileContextMenu({
         <DropdownMenuTrigger asChild disabled={disabled}>
           {children}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-64">
           {isInMulti ? (
             // Batch mode — operates on the whole selection. The single-file
             // items (Rename, Show versions, File info, Visibility) don't
@@ -557,7 +558,7 @@ export function FileContextMenu({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => void handleOpenRagViewer()}>
                     <FileSearch className="mr-2 h-4 w-4" />
-                    Open in 4-pane RAG viewer
+                    Advanced RAG viewer
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleReprocess}>
                     <RotateCw className="mr-2 h-4 w-4" />

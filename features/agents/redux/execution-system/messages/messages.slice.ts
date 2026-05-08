@@ -20,13 +20,14 @@
  * There is no separate display shape and no legacy `turns[]` array. Any
  * component that needs a view projection reads `selectConversationMessages`
  * and derives display text from `MessageRecord.content` (which is the
- * `CxContentBlock[]` the server stores).
+ * `MessagePart[]` the server stores — the python-generated discriminated
+ * union; narrow at the selector boundary via `parseMessageContent`).
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
 import type { Json } from "@/types/database.types";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
 // =============================================================================
@@ -38,7 +39,11 @@ export interface MessageRecord {
   conversationId: string;
   agentId: string | null;
   role: "system" | "user" | "assistant";
-  /** CxContentBlock[] as stored in cx_message.content. */
+  /**
+   * Stored as `Json` to match the Supabase row shape verbatim. At runtime this
+   * is a `MessagePart[]` — narrow it via `parseMessageContent(record.content)`
+   * (or use `extractContentBlocks` from the selectors).
+   */
   content: Json;
   contentHistory: Json | null;
   userContent: Json | null;
@@ -143,8 +148,8 @@ const messagesSlice = createSlice({
       action: PayloadAction<{
         conversationId: string;
         clientTempId: string;
-        /** CxContentBlock[] — the same shape cx_message.content uses. */
-        content: CxContentBlock[];
+        /** `MessagePart[]` — the same shape `cx_message.content` uses. */
+        content: MessagePart[];
         position: number;
         agentId?: string | null;
       }>,

@@ -31,7 +31,6 @@ export default async function AgentRunRoute({
           currentPath={currentPath}
         />
       </PageHeader>
-      test
       <AgentRunnerPage agentId={id} />
     </>
   );

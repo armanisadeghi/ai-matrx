@@ -1359,6 +1359,42 @@
     "title": "VideoOutputData",
     "type": "object"
   },
+  "PartialImageData": {
+    "additionalProperties": false,
+    "description": "Streaming partial image during image generation.\n\nEmitted by providers that support progressive image streaming (gpt-image-2\nvia ``partial_images=N`` + ``stream=True``). The final image still arrives\nvia ``ImageOutputData`` once generation completes; partials are intended\nfor the UI to render a low-fidelity preview while the user waits.\n\n``b64_json`` carries the base64-encoded raw image bytes (always PNG/JPEG/\nWEBP per the model's ``output_format``). ``progress`` is a 0..1 float;\n``partial_index`` is monotonically increasing per generation.",
+    "properties": {
+      "type": {
+        "const": "partial_image",
+        "default": "partial_image",
+        "title": "Type",
+        "type": "string"
+      },
+      "b64_json": {
+        "title": "B64 Json",
+        "type": "string"
+      },
+      "partial_index": {
+        "title": "Partial Index",
+        "type": "integer"
+      },
+      "progress": {
+        "default": 0,
+        "title": "Progress",
+        "type": "number"
+      },
+      "mime_type": {
+        "default": "image/png",
+        "title": "Mime Type",
+        "type": "string"
+      }
+    },
+    "required": [
+      "b64_json",
+      "partial_index"
+    ],
+    "title": "PartialImageData",
+    "type": "object"
+  },
   "ConversationLabeledData": {
     "additionalProperties": false,
     "properties": {

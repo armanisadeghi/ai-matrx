@@ -46,10 +46,7 @@ export function CloudFileMetadataSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-sm overflow-y-auto"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-sm overflow-y-auto">
         {file ? (
           <>
             <SheetHeader>
@@ -70,23 +67,13 @@ export function CloudFileMetadataSheet({
             </div>
 
             <dl className="mt-4 space-y-3 text-sm">
-              <Row
-                label="Size"
-                value={formatFileSize(file.fileSize)}
-              />
-              <Row
-                label="Type"
-                value={file.mimeType || "—"}
-                mono
-              />
+              <Row label="Size" value={formatFileSize(file.fileSize)} />
+              <Row label="Type" value={file.mimeType || "—"} mono />
               <Row
                 label="Visibility"
                 value={visibilityLabel(file.visibility)}
               />
-              <Row
-                label="Version"
-                value={`v${file.currentVersion}`}
-              />
+              <Row label="Version" value={`v${file.currentVersion}`} />
               <Row label="Path" value={file.filePath || "/"} mono />
               <Row
                 label="Updated"
@@ -115,8 +102,8 @@ function visibilityLabel(v: CloudFileRecord["visibility"]): string {
       return "Public";
     case "private":
       return "Private";
-    case "unlisted":
-      return "Unlisted";
+    case "shared":
+      return "Shared";
     default:
       return v;
   }
@@ -172,11 +159,7 @@ function Row({
   );
 }
 
-function ExtendedMetadata({
-  metadata,
-}: {
-  metadata: Record<string, unknown>;
-}) {
+function ExtendedMetadata({ metadata }: { metadata: Record<string, unknown> }) {
   // Skip empty bags; show only primitive values to keep this tight.
   const entries = Object.entries(metadata ?? {}).filter(([, v]) => {
     return (

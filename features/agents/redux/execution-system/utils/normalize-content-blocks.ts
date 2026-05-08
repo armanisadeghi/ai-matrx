@@ -1,158 +1,384 @@
 import { v4 as uuidv4 } from "uuid";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type {
+  RenderBlockPayload,
+  MessagePart,
+  ImageMediaPart,
+  AudioMediaPart,
+  VideoMediaPart,
+  DocumentMediaPart,
+  YouTubeMediaPart,
+} from "@/types/python-generated/stream-events";
 
 /**
- * Mapping from legacy DB "media" kind values to the canonical stream-protocol type.
- * Extend this map when new media kinds appear in the DB.
+ * Normalizes `cx_message.content[]` items into the canonical `RenderBlockPayload`
+ * shape consumed by the renderer pipeline.
+ *
+ * Input  — `MessagePart[]`, the python-generated discriminated union that
+ *          authoritatively describes every shape that can live in
+ *          `cx_message.content`. Use `parseMessageContent(record.content)` at
+ *          the selector boundary to get a value of this type.
+ * Output — `RenderBlockPayload[]`, the python-generated stream-protocol shape
+ *          consumed by `BlockRenderer` (and the `serverProcessedBlocks` slot
+ *          on `EnhancedChatMarkdown`).
+ *
+ * Every `MessagePart` variant is handled explicitly. The `never` exhaustiveness
+ * check inside `normalizeSingle` triggers a compile-time error if Python adds
+ * a new variant we haven't mapped here, and the same is true for media `kind`
+ * inside `normalizeMedia`.
+ *
+ * Call this at the Redux boundary — in thunks, reducers, or selectors — so
+ * every consumer downstream sees a single shape.
  */
-const MEDIA_KIND_TO_BLOCK_TYPE: Record<string, string> = {
-  audio: "audio_output",
-  image: "image_output",
-  video: "video_output",
-  file: "file_output",
-};
-
-/**
- * Types that are already in RenderBlockPayload-compatible shape
- * (i.e. they came from the stream protocol and were persisted as-is).
- */
-const KNOWN_STREAM_TYPES = new Set([
-  "audio_output",
-  "image_output",
-  "video_output",
-  "search_results",
-  "search_error",
-  "function_result",
-  "workflow_step",
-  "categorization_result",
-  "fetch_results",
-  "podcast_complete",
-  "podcast_stage",
-  "scrape_batch_complete",
-  "structured_input_warning",
-  "display_questionnaire",
-  "unknown_data_event",
-]);
-
-/**
- * Block types stored in the DB `content` column that carry their main text
- * in a `text` field rather than `content`. Normalized with text → content
- * so BlockRenderer can read `block.content` uniformly.
- */
-const TEXT_FIELD_BLOCK_TYPES = new Set(["thinking", "reasoning"]);
-
-/**
- * User-input block types (attachments sent to the server).
- * Wrapped in RenderBlockPayload envelope with their original type preserved.
- */
-const USER_INPUT_TYPES = new Set([
-  "image",
-  "audio",
-  "video",
-  "document",
-  "youtube_video",
-  "input_webpage",
-  "input_notes",
-  "input_task",
-  "input_table",
-  "input_list",
-  "input_data",
-]);
-
-function isAlreadyNormalized(block: Record<string, unknown>): boolean {
-  return (
-    typeof block.blockId === "string" &&
-    typeof block.blockIndex === "number" &&
-    typeof block.type === "string" &&
-    typeof block.status === "string"
-  );
+export function normalizeContentBlocks(
+  rawBlocks: MessagePart[],
+): RenderBlockPayload[] {
+  return rawBlocks.map((block, i) => normalizeSingle(block, i));
 }
 
-function normalizeSingle(
-  raw: Record<string, unknown>,
+function newId(prefix: string): string {
+  return `${prefix}_${uuidv4()}`;
+}
+
+function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
+  switch (raw.type) {
+    case "text":
+      return {
+        blockId: raw.id ?? newId("db_text"),
+        blockIndex: index,
+        type: "text",
+        status: "complete",
+        content: raw.text ?? null,
+        data: null,
+        metadata: raw.metadata,
+      };
+
+    case "thinking":
+      // BlockRenderer reads the displayable body from `block.content`. The
+      // `text` field on ThinkingPart carries that body — move it across.
+      return {
+        blockId: raw.id ?? newId("db_thinking"),
+        blockIndex: index,
+        type: "thinking",
+        status: "complete",
+        content: raw.text ?? "",
+        data: {
+          provider: raw.provider ?? null,
+          signature: raw.signature ?? null,
+          signature_encoding: raw.signature_encoding ?? null,
+          summary: raw.summary ?? [],
+        },
+        metadata: raw.metadata,
+      };
+
+    case "tool_call":
+      return {
+        blockId: newId("db_tool_call"),
+        blockIndex: index,
+        type: "tool_call",
+        status: "complete",
+        content: null,
+        data: {
+          call_id: raw.call_id ?? null,
+          name: raw.name ?? null,
+          arguments: raw.arguments ?? {},
+        },
+        metadata: raw.metadata,
+      };
+
+    case "tool_result":
+      return {
+        blockId: newId("db_tool_result"),
+        blockIndex: index,
+        type: "tool_result",
+        status: "complete",
+        content: null,
+        data: {
+          call_id: raw.call_id ?? null,
+          tool_use_id: raw.tool_use_id ?? null,
+          name: raw.name ?? null,
+          is_error: raw.is_error ?? false,
+          output_chars: raw.output_chars ?? null,
+          output_preview: raw.output_preview ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "media":
+      return normalizeMedia(raw, index);
+
+    case "code_exec":
+      return {
+        blockId: newId("db_code_exec"),
+        blockIndex: index,
+        type: "code_exec",
+        status: "complete",
+        content: raw.code ?? null,
+        data: { language: raw.language ?? null },
+        metadata: raw.metadata,
+      };
+
+    case "code_result":
+      return {
+        blockId: newId("db_code_result"),
+        blockIndex: index,
+        type: "code_result",
+        status: "complete",
+        content: raw.output ?? null,
+        data: { outcome: raw.outcome ?? null },
+        metadata: raw.metadata,
+      };
+
+    case "web_search":
+      return {
+        blockId: raw.id ?? newId("db_web_search"),
+        blockIndex: index,
+        type: "web_search",
+        status: "complete",
+        content: null,
+        data: { id: raw.id ?? null, status: raw.status ?? null },
+        metadata: raw.metadata,
+      };
+
+    case "input_webpage":
+      return {
+        blockId: newId("input_webpage"),
+        blockIndex: index,
+        type: "input_webpage",
+        status: "complete",
+        content: null,
+        data: {
+          urls: raw.urls ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "input_notes":
+      return {
+        blockId: newId("input_notes"),
+        blockIndex: index,
+        type: "input_notes",
+        status: "complete",
+        content: null,
+        data: {
+          note_ids: raw.note_ids ?? null,
+          template: raw.template ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "input_task":
+      return {
+        blockId: newId("input_task"),
+        blockIndex: index,
+        type: "input_task",
+        status: "complete",
+        content: null,
+        data: {
+          task_ids: raw.task_ids ?? null,
+          template: raw.template ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "input_table":
+      return {
+        blockId: newId("input_table"),
+        blockIndex: index,
+        type: "input_table",
+        status: "complete",
+        content: null,
+        data: {
+          bookmarks: raw.bookmarks ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "input_list":
+      return {
+        blockId: newId("input_list"),
+        blockIndex: index,
+        type: "input_list",
+        status: "complete",
+        content: null,
+        data: {
+          bookmarks: raw.bookmarks ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "input_data":
+      return {
+        blockId: newId("input_data"),
+        blockIndex: index,
+        type: "input_data",
+        status: "complete",
+        content: null,
+        data: {
+          refs: raw.refs ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "input_context":
+      return {
+        blockId: newId("input_context"),
+        blockIndex: index,
+        type: "input_context",
+        status: "complete",
+        content: null,
+        data: {
+          context_id: raw.context_id ?? null,
+          context_name: raw.context_name ?? null,
+          context_data: raw.context_data ?? null,
+          convert_to_text: raw.convert_to_text ?? null,
+          optional_context: raw.optional_context ?? null,
+          keep_fresh: raw.keep_fresh ?? null,
+          editable: raw.editable ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case undefined:
+      // Pydantic emits parts without a `type` field when a union default
+      // collapses; shouldn't normally happen but is shape-legal in
+      // MessagePart. Preserve everything for inspection.
+      return makeUnknown(raw, index, "missing_type");
+
+    default: {
+      // Compile-time exhaustiveness — any new MessagePart variant in Python
+      // surfaces here as a TS error until a case is added above.
+      const _exhaustive: never = raw;
+      void _exhaustive;
+      return makeUnknown(raw as MessagePart, index, "unhandled_type");
+    }
+  }
+}
+
+type AnyMediaPart =
+  | ImageMediaPart
+  | AudioMediaPart
+  | VideoMediaPart
+  | DocumentMediaPart
+  | YouTubeMediaPart;
+
+function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
+  switch (raw.kind) {
+    case "image":
+      // Matches `ImageOutputData` (url + mime_type).
+      return {
+        blockId: newId("db_image_output"),
+        blockIndex: index,
+        type: "image_output",
+        status: "complete",
+        content: null,
+        data: {
+          type: "image_output",
+          url: raw.url ?? null,
+          file_uri: raw.file_uri ?? null,
+          mime_type: raw.mime_type ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "audio":
+      // Matches `AudioOutputData` (url + mime_type), with transcription
+      // preserved alongside.
+      return {
+        blockId: newId("db_audio_output"),
+        blockIndex: index,
+        type: "audio_output",
+        status: "complete",
+        content: null,
+        data: {
+          type: "audio_output",
+          url: raw.url ?? null,
+          file_uri: raw.file_uri ?? null,
+          mime_type: raw.mime_type ?? null,
+          transcription_result: raw.transcription_result ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "video":
+      // Matches `VideoOutputData` (url + mime_type).
+      return {
+        blockId: newId("db_video_output"),
+        blockIndex: index,
+        type: "video_output",
+        status: "complete",
+        content: null,
+        data: {
+          type: "video_output",
+          url: raw.url ?? null,
+          file_uri: raw.file_uri ?? null,
+          mime_type: raw.mime_type ?? null,
+        },
+        metadata: raw.metadata,
+      };
+
+    case "document":
+      // No canonical "*_output" type for documents — fall back to the
+      // documented `unknown_data_event` shape rather than inventing one.
+      return makeUnknown(raw, index, "media_document");
+
+    case "youtube":
+      // Same reasoning as `document`: no canonical render type for YouTube
+      // embeds in the python-generated set today.
+      return makeUnknown(raw, index, "media_youtube");
+
+    case undefined:
+      return makeUnknown(raw, index, "media_missing_kind");
+
+    default: {
+      const _exhaustive: never = raw;
+      void _exhaustive;
+      return makeUnknown(raw as AnyMediaPart, index, "media_unhandled_kind");
+    }
+  }
+}
+
+function makeUnknown(
+  raw: MessagePart,
   index: number,
+  reason: string,
 ): RenderBlockPayload {
-  if (isAlreadyNormalized(raw)) {
-    return raw as unknown as RenderBlockPayload;
-  }
-
-  const rawType = typeof raw.type === "string" ? raw.type : "";
-
-  // Already a known stream-protocol type but missing structural fields
-  if (KNOWN_STREAM_TYPES.has(rawType)) {
-    return {
-      blockId: (raw.blockId as string) ?? `db_${rawType}_${uuidv4()}`,
-      blockIndex: (raw.blockIndex as number) ?? index,
-      type: rawType,
-      status: "complete",
-      content: (raw.content as string | null) ?? null,
-      data: (raw.data as Record<string, unknown> | null) ?? raw,
-    };
-  }
-
-  // Legacy DB shape: { type: "media", kind: "audio", url, mime_type, ... }
-  if (rawType === "media" && typeof raw.kind === "string") {
-    const resolvedType =
-      MEDIA_KIND_TO_BLOCK_TYPE[raw.kind] ?? "unknown_data_event";
-    const { type: _t, kind: _k, ...rest } = raw;
-    return {
-      blockId: `db_${resolvedType}_${uuidv4()}`,
-      blockIndex: index,
-      type: resolvedType,
-      status: "complete",
-      content: null,
-      data: { type: resolvedType, ...rest } as Record<string, unknown>,
-    };
-  }
-
-  // DB blocks that carry their text payload in a `text` field (e.g. thinking, reasoning).
-  // Move `text` → `content` so BlockRenderer reads it from the standard location.
-  if (TEXT_FIELD_BLOCK_TYPES.has(rawType)) {
-    const textContent = typeof raw.text === "string" ? raw.text : "";
-    const { type: _t, text: _txt, ...rest } = raw;
-    return {
-      blockId: `db_${rawType}_${uuidv4()}`,
-      blockIndex: index,
-      type: rawType,
-      status: "complete",
-      content: textContent,
-      data: rest as Record<string, unknown>,
-    };
-  }
-
-  // User-input block types (attachments) — wrap in the envelope as-is
-  if (USER_INPUT_TYPES.has(rawType)) {
-    const { type: _t, ...rest } = raw;
-    return {
-      blockId: `input_${rawType}_${uuidv4()}`,
-      blockIndex: index,
-      type: rawType,
-      status: "complete",
-      content: null,
-      data: rest as Record<string, unknown>,
-    };
-  }
-
-  // Fallback: wrap any unrecognised block as unknown_data_event
   return {
-    blockId: `db_unknown_${uuidv4()}`,
+    blockId: newId("db_unknown"),
     blockIndex: index,
     type: "unknown_data_event",
     status: "complete",
     content: null,
-    data: { ...raw, _dataType: rawType || "unknown" },
+    data: {
+      ...(raw as Record<string, unknown>),
+      _dataType:
+        typeof (raw as { type?: unknown }).type === "string"
+          ? (raw as { type: string }).type
+          : reason,
+    },
+    metadata: raw.metadata,
   };
-}
-
-/**
- * Normalizes an array of raw DB content blocks into the canonical
- * RenderBlockPayload shape used by the streaming pipeline.
- *
- * Call this at the Redux boundary — in thunks or reducers — so that
- * every consumer downstream sees a single type.
- */
-export function normalizeContentBlocks(
-  rawBlocks: Array<Record<string, unknown>>,
-): RenderBlockPayload[] {
-  return rawBlocks.map((block, i) => normalizeSingle(block, i));
 }

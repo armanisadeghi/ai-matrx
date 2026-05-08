@@ -4,7 +4,8 @@
  * Every selector reads from `byId + orderedIds`. There is no bridge to any
  * legacy turn shape — consumers receive `MessageRecord` (matching
  * `cx_message.Row`) and derive display text from `record.content`, which is
- * the authoritative `CxContentBlock[]` the server stores.
+ * the authoritative `MessagePart[]` the server stores (per the
+ * python-generated discriminated union).
  */
 
 import { createSelector } from "@reduxjs/toolkit";
@@ -16,12 +17,12 @@ import type {
   ContentSegmentDbTool,
   ContentSegmentThinking,
 } from "../active-requests/active-requests.selectors";
-import type {
-  ToolCallPart,
-  ThinkingPart,
-  MessagePart,
+import {
+  parseMessageContent,
+  type ToolCallPart,
+  type ThinkingPart,
+  type MessagePart,
 } from "@/types/python-generated/stream-events";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
 const EMPTY_RECORDS: MessageRecord[] = [];
@@ -198,15 +199,20 @@ export function extractFlatText(record: MessageRecord | undefined): string {
 }
 
 /**
- * Returns the content blocks as `CxContentBlock[]` — the same shape the
- * server stores in `cx_message.content`.
+ * Returns the content blocks as `MessagePart[]` — the python-generated
+ * discriminated union that authoritatively describes `cx_message.content`.
+ *
+ * `record.content` is typed as `Json` at the slice level (matches Supabase),
+ * so this selector is the single place we narrow it. Use `parseMessageContent`
+ * from the python-generated module so new Python variants flow through here
+ * automatically.
  */
 export function extractContentBlocks(
   record: MessageRecord | undefined,
-): CxContentBlock[] {
+): MessagePart[] {
   if (!record) return [];
   return Array.isArray(record.content)
-    ? (record.content as unknown as CxContentBlock[])
+    ? parseMessageContent(record.content)
     : [];
 }
 
@@ -323,7 +329,9 @@ export const selectMessageInterleavedContent = (
             // and would shadow real args coming from the stub. Both the
             // cx_tool_call row AND the cx_message stub are authoritative —
             // either may carry the full arguments.
-            const isPopulatedObject = (v: unknown): v is Record<string, unknown> =>
+            const isPopulatedObject = (
+              v: unknown,
+            ): v is Record<string, unknown> =>
               !!v &&
               typeof v === "object" &&
               !Array.isArray(v) &&
@@ -331,13 +339,12 @@ export const selectMessageInterleavedContent = (
 
             const obsArgs = toolCallRecord?.arguments;
             const stubArgs = tc.arguments;
-            const resolvedArguments: Record<string, unknown> = isPopulatedObject(
-              obsArgs,
-            )
-              ? obsArgs
-              : isPopulatedObject(stubArgs)
-                ? stubArgs
-                : {};
+            const resolvedArguments: Record<string, unknown> =
+              isPopulatedObject(obsArgs)
+                ? obsArgs
+                : isPopulatedObject(stubArgs)
+                  ? stubArgs
+                  : {};
 
             const resolvedResult =
               toolCallRecord?.outputPreview ?? toolCallRecord?.output ?? null;
