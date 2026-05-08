@@ -3,8 +3,8 @@
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
-import { EnhancedFileDetails } from "@/utils/file-operations/constants";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface UploadedFile {
@@ -31,6 +31,17 @@ interface UploadedFile {
 interface UploadResourcePickerProps {
     onBack: () => void;
     onSelect: (files: UploadedFile[]) => void;
+}
+
+function classifyForLegacy(mimeType: string): string {
+    if (!mimeType) return "unknown";
+    const t = mimeType.toLowerCase();
+    if (t.startsWith("image/")) return "image";
+    if (t.startsWith("video/")) return "video";
+    if (t.startsWith("audio/")) return "audio";
+    if (t.startsWith("text/") || t === "application/json") return "text";
+    if (t === "application/pdf") return "pdf";
+    return "other";
 }
 
 interface FileStatus {
@@ -115,12 +126,8 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const {
-        uploadMultipleToPrivateUserAssets,
-        error: hookError,
-        isLoading,
-        lastErrorRef,
-    } = useFileUploadWithStorage("userContent", "prompt-attachments");
+    const { upload, uploading: isLoading, error: hookErrorObj } = useFileUpload();
+    const hookError = hookErrorObj?.message ?? null;
 
     const isProcessing = fileStatuses.some((f) => f.status === "compressing" || f.status === "uploading");
 
@@ -179,45 +186,43 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
         setFileStatuses([...updatedStatuses]);
 
         try {
-            const results = await uploadMultipleToPrivateUserAssets(filesToUpload);
-
-            if (!results || results.length === 0) {
-                // Read the synchronous ref first — `hookError` is React state
-                // and lags one render after the failure. Without this, users
-                // saw the previous error (or a generic message) instead of
-                // the one that just happened.
-                const errMsg =
-                    lastErrorRef.current ||
-                    hookError ||
-                    "Upload failed. The file may exceed the storage limit or an unexpected error occurred.";
-                for (let i = 0; i < updatedStatuses.length; i++) {
-                    updatedStatuses[i] = { ...updatedStatuses[i], status: "error", errorMessage: errMsg };
-                }
-                setFileStatuses([...updatedStatuses]);
-                setUploadError(errMsg);
-                return;
+            const results: UploadedFile[] = [];
+            for (const file of filesToUpload) {
+                const normalized = await upload(
+                    { kind: "file", file },
+                    {
+                        folderPath: "Shared Assets/prompt-attachments",
+                        visibility: "private",
+                        createShareLink: true,
+                        shareLinkPermissionLevel: "read",
+                    },
+                );
+                const url = normalized.url ?? "";
+                results.push({
+                    fileId: normalized.fileId,
+                    url,
+                    type: classifyForLegacy(file.type),
+                    mime_type: normalized.meta.mime ?? file.type,
+                    details: getFileDetailsByUrl(
+                        url,
+                        {
+                            eTag: "",
+                            size: file.size,
+                            mimetype: file.type,
+                            cacheControl: "max-age=3600",
+                            lastModified: new Date(file.lastModified).toISOString(),
+                            contentLength: file.size,
+                        } as never,
+                        normalized.fileId,
+                    ),
+                });
             }
 
             for (let i = 0; i < updatedStatuses.length; i++) {
                 updatedStatuses[i] = { ...updatedStatuses[i], status: "done" };
             }
             setFileStatuses([...updatedStatuses]);
-
-            // Carry the real RFC MIME (`"image/jpeg"`) on each emitted
-            // result alongside the FE classification token (`"image"`).
-            // Downstream consumers (resource-source.readMime) require the
-            // real MIME — bare classification tokens are explicitly
-            // rejected as MIME values to prevent `mime_type: "image"`
-            // from leaking onto outbound AI API payloads.
-            const enriched: UploadedFile[] = results.map((r, i) => ({
-                ...r,
-                mime_type:
-                    (r as { mime_type?: string }).mime_type ??
-                    r.details?.mimetype ??
-                    filesToUpload[i]?.type ??
-                    undefined,
-            }));
-            onSelect(enriched);
+            onSelect(results);
         } catch (error) {
             const errMsg = error instanceof Error
                 ? error.message
@@ -231,7 +236,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
             setFileStatuses([...updatedStatuses]);
             setUploadError(errMsg);
         }
-    }, [uploadMultipleToPrivateUserAssets, hookError, onSelect]);
+    }, [upload, onSelect]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();

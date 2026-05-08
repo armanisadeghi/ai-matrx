@@ -33,7 +33,7 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import { selectSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import {
   addResource,
@@ -97,8 +97,7 @@ export function AgentTextarea({
   const showExpand = !singleRow && (isExpanded || charCount > 80);
 
   // ── File upload ─────────────────────────────────────────────────────────────
-  const { uploadMultipleToPrivateUserAssets, lastErrorRef } =
-    useFileUploadWithStorage(uploadBucket, uploadPath);
+  const { upload } = useFileUpload();
 
   const handleSend = useCallback(() => {
     if (disableSend) return;
@@ -113,27 +112,20 @@ export function AgentTextarea({
   const handlePasteImage = useCallback(
     async (file: File) => {
       try {
-        const results = await uploadMultipleToPrivateUserAssets([file]);
-        if (!results || results.length === 0) {
-          // Hook caught the error and returned an empty array; surface
-          // the synchronous reason instead of a generic message.
-          const reason = lastErrorRef.current ?? "Upload failed";
-          toast.error(`Couldn't upload pasted image: ${reason}`);
-          return;
-        }
-        const result = results[0] as
-          | { url?: string; fileId?: string }
-          | undefined;
-        if (!result) return;
-        // Prefer the cld_files UUID — outbound API requests resolve much
-        // faster against `file_id` than against a `/share/<token>` URL,
-        // and avoid attaching legacy URL-parsed metadata to the payload.
-        // Fall back to `url` only when an upload result somehow lacks an
-        // id (defensive — shouldn't happen with the cloud-files path).
-        const source = result.fileId
-          ? fileIdToMediaRef(result.fileId, file.type)
-          : result.url
-            ? { url: result.url, mime_type: file.type }
+        const normalized = await upload(
+          { kind: "file", file },
+          {
+            folderPath: uploadPath ? `${uploadBucket}/${uploadPath}` : uploadBucket,
+            visibility: "private",
+            createShareLink: true,
+            shareLinkPermissionLevel: "read",
+          },
+        );
+        // Prefer the cld_files UUID — backend resolves much faster.
+        const source = normalized.fileId
+          ? fileIdToMediaRef(normalized.fileId, file.type)
+          : normalized.url
+            ? { url: normalized.url, mime_type: file.type }
             : null;
         if (!source) return;
         const resourceId = `res_${Date.now()}_paste`;
@@ -157,7 +149,7 @@ export function AgentTextarea({
         toast.error(`Couldn't upload pasted image: ${reason}`);
       }
     },
-    [conversationId, dispatch, uploadMultipleToPrivateUserAssets, lastErrorRef],
+    [conversationId, dispatch, upload, uploadBucket, uploadPath],
   );
 
   useClipboardPaste({

@@ -75,7 +75,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
 import { toast } from "sonner";
 import type { PromptSettings } from "@/features/prompts/types/core";
@@ -317,27 +317,31 @@ export function ConversationInput({
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
 
   // ── File upload ────────────────────────────────────────────────────────────
-  const { uploadFile, isLoading: isUploading, lastErrorRef } =
-    useFileUploadWithStorage(uploadBucket, uploadPath);
+  const { upload, uploading: isUploading } = useFileUpload();
 
   const handleFilesSelected = useCallback(
     async (files: FileList | File[]) => {
       const filesArray = Array.from(files);
+      const folderPath = uploadPath
+        ? `${uploadBucket}/${uploadPath}`
+        : uploadBucket;
       for (const file of filesArray) {
         try {
-          const result = await uploadFile(file);
-          if (!result) {
-            const reason = lastErrorRef.current ?? "Upload failed";
-            toast.error(`Couldn't upload ${file.name}: ${reason}`);
-            continue;
-          }
+          const normalized = await upload(
+            { kind: "file", file },
+            {
+              folderPath,
+              visibility: "private",
+              createShareLink: true,
+              shareLinkPermissionLevel: "read",
+            },
+          );
           const blockType = uploadMimeToBlockType(file.type);
-          // Prefer cld_files UUID — see fileIdToMediaRef in features/files/redux/converters.
-          // Backend resolves `file_id` directly without following a share-link redirect,
-          // and we don't ship the legacy URL-parsed metadata bloat with every request.
-          const source = result.fileId
-            ? fileIdToMediaRef(result.fileId, file.type)
-            : { url: result.url, mime_type: file.type };
+          // Prefer cld_files UUID — backend resolves it directly without
+          // a share-link redirect, and we don't ship URL-parsed metadata.
+          const source = normalized.fileId
+            ? fileIdToMediaRef(normalized.fileId, file.type)
+            : { url: normalized.url ?? "", mime_type: file.type };
           dispatch(
             addResource({
               conversationId,
@@ -351,7 +355,7 @@ export function ConversationInput({
         }
       }
     },
-    [dispatch, conversationId, uploadFile, lastErrorRef],
+    [dispatch, conversationId, upload, uploadBucket, uploadPath],
   );
 
   const handleResourceSelected = useCallback(

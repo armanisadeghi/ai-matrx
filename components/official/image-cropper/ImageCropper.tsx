@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { toast } from 'sonner';
-import { useFileUploadWithStorage } from '@/components/ui/file-upload/useFileUploadWithStorage';
+import { useFileUpload } from '@/features/file-handler/hooks/useFileUpload';
 
 // Default aspect ratio options
 const DEFAULT_ASPECT_RATIOS = [
@@ -55,8 +55,7 @@ const ImageCropper = ({
   
   // Upload state
   const [isProcessing, setIsProcessing] = useState(false);
-  const { uploadMultipleToPublicUserAssets, isLoading, lastErrorRef } =
-    useFileUploadWithStorage("user-public-assets");
+  const { upload, uploading: isLoading } = useFileUpload();
 
   const handleCropAreaComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -161,21 +160,22 @@ const ImageCropper = ({
         { type: 'image/jpeg' }
       );
       
-      // Upload the cropped image
-      const uploadResults = await uploadMultipleToPublicUserAssets([file]);
+      // Upload the cropped image via the universal handler.
+      const normalized = await upload(
+        { kind: "file", file },
+        {
+          folderPath: "Shared Assets",
+          visibility: "public",
+          createShareLink: true,
+          shareLinkPermissionLevel: "read",
+        },
+      );
 
-      if (uploadResults && uploadResults.length > 0) {
-        // Get the URL from the first result
-        const uploadedUrl = uploadResults[0].url;
-
-        // Pass the URL back to the parent component
-        onComplete(uploadedUrl);
-
-        // Close the dialog
+      if (normalized.url) {
+        onComplete(normalized.url);
         setIsOpen(false);
       } else {
-        const reason = lastErrorRef.current ?? 'Upload failed';
-        toast.error(`Couldn't save cropped image: ${reason}`);
+        toast.error("Couldn't save cropped image: no URL returned");
       }
     } catch (e) {
       const reason = e instanceof Error ? e.message : 'Failed to crop image';

@@ -76,7 +76,7 @@ import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
 import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
@@ -311,32 +311,33 @@ export function ConversationInput({
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
 
   // ── File upload ────────────────────────────────────────────────────────────
-  const { uploadFile, isLoading: isUploading, lastErrorRef } =
-    useFileUploadWithStorage(uploadBucket, uploadPath);
+  const { upload, uploading: isUploading } = useFileUpload();
 
   const handleFilesSelected = useCallback(
     async (files: FileList | File[]) => {
       const filesArray = Array.from(files);
+      const folderPath = uploadPath
+        ? `${uploadBucket}/${uploadPath}`
+        : uploadBucket;
       for (const file of filesArray) {
         try {
-          const result = await uploadFile(file);
-          if (!result) {
-            // Hook caught the error and returned null; read the
-            // synchronous ref to get the real backend reason.
-            const reason = lastErrorRef.current ?? "Upload failed";
-            toast.error(`Couldn't upload ${file.name}: ${reason}`);
-            continue;
-          }
-          // Store the cld_files UUID as `id` (and keep `url` for back-compat).
-          // When this resource is later submitted to the backend, the AI
-          // payload builder prefers the file_id over the share URL — see
-          // selectResourcePayloads in features/agents/redux/execution-system/
-          // instance-resources/instance-resources.selectors.ts.
+          const normalized = await upload(
+            { kind: "file", file },
+            {
+              folderPath,
+              visibility: "private",
+              createShareLink: true,
+              shareLinkPermissionLevel: "read",
+            },
+          );
+          // Store the cld_files UUID as `id` and the share URL as `url`.
+          // When the resource is submitted to the AI, the payload builder
+          // prefers `file_id` over the URL.
           const resource: Resource = {
             type: file.type.startsWith("image/") ? "image_link" : "file",
             data: {
-              id: result.fileId,
-              url: result.url,
+              id: normalized.fileId,
+              url: normalized.url,
               filename: file.name,
               mime_type: file.type,
               size: file.size,
@@ -351,7 +352,7 @@ export function ConversationInput({
         }
       }
     },
-    [dispatch, sessionId, uploadFile, lastErrorRef],
+    [dispatch, sessionId, upload, uploadBucket, uploadPath],
   );
 
   const handleResourceSelected = useCallback(
