@@ -524,7 +524,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                 type="button"
                 disabled={bulkBusy !== null}
                 className={cn(
-                  "flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+                  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+                  "max-md:w-9 max-md:justify-center max-md:px-0",
                   "text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
                 )}
               >
@@ -533,7 +534,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                 ) : (
                   <Lock className="h-3.5 w-3.5" />
                 )}
-                Visibility
+                <span className="max-md:hidden">Visibility</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-44">
@@ -559,7 +560,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             onClick={() => setConfirmDelete(true)}
             disabled={bulkBusy !== null}
             className={cn(
-              "flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+              "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+              "max-md:w-9 max-md:justify-center max-md:px-0",
               "text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
@@ -568,7 +570,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             ) : (
               <Trash2 className="h-3.5 w-3.5" />
             )}
-            Delete
+            <span className="max-md:hidden">Delete</span>
           </button>
         </FloatingSelectionToolbar>
         <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

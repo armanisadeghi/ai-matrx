@@ -37,12 +37,12 @@ export function StudioLandingHero() {
           aria-hidden
           className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent"
         />
-        <div className="relative container mx-auto px-4 sm:px-6 md:px-10 py-5 md:py-16 max-w-[1400px]">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-4">
+        <div className="relative container mx-auto px-5 sm:px-6 md:px-10 py-4 md:py-16 max-w-[1400px]">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-2 md:mb-4">
             <Atom className="h-3.5 w-3.5" />
             <span className="uppercase tracking-wider">Image Studio</span>
           </div>
-          <h1 className="text-2xl md:text-5xl font-bold tracking-tight max-w-3xl">
+          <h1 className="max-w-3xl text-[1.65rem] font-bold leading-[1.08] tracking-tight md:text-5xl md:leading-tight">
             Drop one image in.
             <br />
             <span className="text-primary">
@@ -55,10 +55,10 @@ export function StudioLandingHero() {
             renamed for you. One upload, every size you&rsquo;ll ever need.
           </p>
 
-          <div className="flex flex-wrap gap-2 md:gap-3 mt-4 md:mt-6">
+          <div className="mt-4 grid grid-cols-2 gap-2 md:mt-6 md:flex md:flex-wrap md:gap-3">
             <Link
               href="/images/convert"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 md:px-5 py-2 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors"
+              className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-primary/90 md:col-auto md:min-h-[40px] md:justify-start md:px-5"
             >
               <Upload className="h-4 w-4" />
               Start converting
@@ -66,21 +66,24 @@ export function StudioLandingHero() {
             </Link>
             <Link
               href="/images/presets"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border px-4 md:px-5 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50 md:justify-start md:px-5"
             >
               <Layers className="h-4 w-4" />
-              Browse all {presetCount} presets
+              <span className="truncate md:hidden">All {presetCount} presets</span>
+              <span className="hidden md:inline">
+                Browse all {presetCount} presets
+              </span>
             </Link>
             <Link
               href="/images/from-base64"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border px-4 md:px-5 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50 md:justify-start md:px-5"
             >
               <Braces className="h-4 w-4" />
               Paste base64
             </Link>
             <Link
               href="/images/library"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border px-4 md:px-5 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50 md:justify-start md:px-5"
             >
               <CloudUpload className="h-4 w-4" />
               My library
@@ -88,7 +91,7 @@ export function StudioLandingHero() {
           </div>
 
           {/* Stat row */}
-          <div className="mt-5 md:mt-10 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 max-w-3xl">
+          <div className="mt-4 grid max-w-3xl grid-cols-2 gap-2 md:mt-10 md:grid-cols-4 md:gap-4">
             <Stat value={`${presetCount}+`} label="Presets" />
             <Stat value={categoryCount} label="Categories" />
             <Stat value={bundleCount} label="One-click bundles" />
@@ -98,8 +101,8 @@ export function StudioLandingHero() {
       </section>
 
       {/* Feature grid */}
-      <section className="container mx-auto px-3 sm:px-6 md:px-10 py-5 md:py-14 max-w-[1400px]">
-        <h2 className="text-lg md:text-2xl font-semibold tracking-tight mb-3 md:mb-6">
+      <section className="container mx-auto px-5 sm:px-6 md:px-10 py-4 md:py-14 max-w-[1400px]">
+        <h2 className="text-base md:text-2xl font-semibold tracking-tight mb-2 md:mb-6">
           Built for real workflows
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
@@ -143,7 +146,7 @@ export function StudioLandingHero() {
       </section>
 
       {/* Preset legend */}
-      <section className="container mx-auto px-3 sm:px-6 md:px-10 pb-6 md:pb-12 max-w-[1400px]">
+      <section className="container mx-auto px-5 sm:px-6 md:px-10 pb-6 md:pb-12 max-w-[1400px]">
         <div className="rounded-lg md:rounded-2xl border border-border bg-card p-4 md:p-6">
           <div className="flex items-start justify-between gap-6 flex-wrap mb-4">
             <div>
@@ -173,7 +176,7 @@ export function StudioLandingHero() {
       </section>
 
       {/* Workflow walkthrough */}
-      <section className="container mx-auto px-3 sm:px-6 md:px-10 pb-8 md:pb-16 max-w-[1400px]">
+      <section className="container mx-auto px-5 sm:px-6 md:px-10 pb-8 md:pb-16 max-w-[1400px]">
         <h2 className="text-lg md:text-2xl font-semibold tracking-tight mb-3 md:mb-6">
           The 30-second workflow
         </h2>
@@ -210,11 +213,11 @@ export function StudioLandingHero() {
 
 function Stat({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-lg md:rounded-xl border border-border bg-card/60 backdrop-blur px-3 md:px-4 py-2.5 md:py-3">
-      <div className="text-xl md:text-3xl font-bold tracking-tight">
+    <div className="rounded-lg md:rounded-xl border border-border bg-card/60 backdrop-blur px-3 py-2 md:px-4 md:py-3">
+      <div className="text-xl font-bold tracking-tight md:text-3xl">
         {value}
       </div>
-      <div className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground md:text-xs md:tracking-wider">
         {label}
       </div>
     </div>

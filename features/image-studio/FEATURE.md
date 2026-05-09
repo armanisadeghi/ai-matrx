@@ -247,6 +247,7 @@ flow is generate → keep editing without an upload round-trip.
 
 ## Change Log
 
+- **2026-05-09** — Tightened the `/images/studio` mobile landing: smaller headline rhythm, full-width primary CTA, compact two-column secondary actions, denser stat cards, and reduced mobile section spacing while preserving the desktop hero layout.
 - **2026-05-05** — Refactored `ImageStudioHeader` to mirror the `AgentHeader` pattern: the top-level component is now a Server Component shell wrapped in `<PageHeader>` (single `children`) that splits desktop/mobile via CSS (`lg:hidden` / `hidden lg:flex`). Extracted two client islands:
   - `ImageStudioHeaderDesktop.tsx` — existing back + title + nav (reads `usePathname()`).
   - `ImageStudioHeaderMobile.tsx` — proper mobile UX: back chevron + tappable title pill that opens a `BottomSheet` listing every route with active checkmark. Replaces the previous "centered title with no way to switch routes" placeholder.

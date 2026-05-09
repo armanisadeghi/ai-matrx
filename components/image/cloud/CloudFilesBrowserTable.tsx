@@ -23,6 +23,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -36,7 +43,10 @@ import {
 import { openFolderPicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
-import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+import {
+  ShareLinkDialog,
+  ShareLinkDialogBody,
+} from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
 import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
@@ -45,6 +55,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   CloudFileRecord,
   CloudFolderRecord,
+  ResourceType,
   Visibility,
 } from "@/features/files/types";
 import {
@@ -370,14 +381,25 @@ export function CloudFilesBrowserTable({
       />
 
       {shareTarget ? (
-        <ShareLinkDialog
-          open={!!shareTarget}
-          onOpenChange={(open) => {
-            if (!open) setShareTarget(null);
-          }}
-          resourceId={shareTarget.resourceId}
-          resourceType={shareTarget.resourceType}
-        />
+        isMobile ? (
+          <MobileShareLinkDrawer
+            open={!!shareTarget}
+            onOpenChange={(open) => {
+              if (!open) setShareTarget(null);
+            }}
+            resourceId={shareTarget.resourceId}
+            resourceType={shareTarget.resourceType}
+          />
+        ) : (
+          <ShareLinkDialog
+            open={!!shareTarget}
+            onOpenChange={(open) => {
+              if (!open) setShareTarget(null);
+            }}
+            resourceId={shareTarget.resourceId}
+            resourceType={shareTarget.resourceType}
+          />
+        )
       ) : null}
     </div>
   );
@@ -928,6 +950,41 @@ function TypeBadge({ label }: { label: string }) {
 function extensionLabel(fileName: string) {
   const ext = fileName.split(".").pop();
   return ext ? ext.slice(0, 4).toUpperCase() : "FILE";
+}
+
+function MobileShareLinkDrawer({
+  open,
+  onOpenChange,
+  resourceId,
+  resourceType,
+  appOrigin,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  resourceId: string;
+  resourceType: ResourceType;
+  appOrigin?: string;
+}) {
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Share link</DrawerTitle>
+          <DrawerDescription>
+            Anyone with the link will be able to{" "}
+            {resourceType === "folder" ? "view the folder" : "access this file"}.
+          </DrawerDescription>
+        </DrawerHeader>
+        <div className="overflow-y-auto px-4 pb-6">
+          <ShareLinkDialogBody
+            resourceId={resourceId}
+            resourceType={resourceType}
+            appOrigin={appOrigin}
+          />
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
 }
 
 async function runWithConcurrency<T>(

@@ -202,6 +202,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 - `2026-05-09` — Removed `Profile Photo` from the shared Images navigation registry so it no longer appears in desktop or mobile Images menus; the route remains directly accessible.
 - `2026-05-09` — Removed the `Profile Photo` tile from the `/images` landing page Studio section.
 - `2026-05-09` — `/images/edit` now uses the official `<ImageAssetUploader>` as its no-source upload surface, passing the uploaded private square variant into the editor.
+- `2026-05-09` — Fixed My Cloud mobile bulk-selection actions by making the floating selection toolbar icon-first and lifted above the Images mobile dock on small screens.
 - `2026-05-09` — Follow-up mobile shell cohesion pass: split the Images mobile command bar/navigation sheet, added route-aware bottom actions, wired Upload's command action to the native picker, and flattened All Files mobile rows toward the main Files list pattern.
 - `2026-05-09` — Corrected `/images/public-search` mobile UX after screenshot review: Images navigation now opens as an opaque full-width bottom sheet, Public Search no longer nests scroll containers, and Unsplash mobile filters use bottom-sheet option rows instead of mobile tabs/generic sheets.
 - `2026-05-08` — Tightened `/images` mobile landing chrome to match the Agents page: moved the Images title/actions into the shared shell header, removed the duplicate fixed top strip, and replaced mobile hero/card grids with compact action rows.
