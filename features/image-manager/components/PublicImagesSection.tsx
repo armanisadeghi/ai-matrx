@@ -31,6 +31,7 @@ import {
   type PresetCover,
 } from "@/features/canvas/social/preset-covers";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
+import { OPEN_PUBLIC_SEARCH_FILTERS_EVENT } from "@/features/image-manager/mobileEvents";
 
 type ThemeFilter = "all" | PresetCover["theme"];
 
@@ -63,6 +64,13 @@ export function PublicImagesSection({
         : PRESET_COVERS.filter((c) => c.theme === theme),
     [theme],
   );
+
+  React.useEffect(() => {
+    const handler = () => setFilterOpen(true);
+    window.addEventListener(OPEN_PUBLIC_SEARCH_FILTERS_EVENT, handler);
+    return () =>
+      window.removeEventListener(OPEN_PUBLIC_SEARCH_FILTERS_EVENT, handler);
+  }, []);
 
   const handleCoverClick = (cover: PresetCover) => {
     // Browse mode: open in floating viewer with the full filtered strip.

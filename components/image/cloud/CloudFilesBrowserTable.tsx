@@ -225,11 +225,11 @@ export function CloudFilesBrowserTable({
     <div className="relative h-full min-h-0 overflow-hidden">
       <div className="h-full overflow-auto">
         {isMobile ? (
-          <div className="space-y-2 p-3">
+          <div className="border-t border-border/70">
             <button
               type="button"
               onClick={toggleAll}
-              className="flex min-h-[40px] w-full items-center justify-between rounded-lg border border-border bg-card/50 px-3 text-sm font-medium"
+              className="flex min-h-[42px] w-full items-center justify-between border-b border-border/70 px-4 text-sm font-medium"
             >
               <span>{allSelected ? "Clear selection" : "Select all"}</span>
               <span className="text-xs text-muted-foreground">
@@ -402,8 +402,8 @@ function MobileFolderRow({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-3",
-        selected ? "border-primary/50 bg-primary/10" : "border-border",
+        "border-b border-border/70 px-4 py-3",
+        selected && "bg-primary/10",
       )}
     >
       <div className="flex items-center gap-3">
@@ -427,7 +427,7 @@ function MobileFolderRow({
           onCopyLink={async () => actions.copyShareUrl()}
         />
       </div>
-      <div className="mt-2 flex items-center gap-2 pl-8 text-xs text-muted-foreground">
+      <div className="mt-1 flex items-center gap-2 pl-[3.25rem] text-xs text-muted-foreground">
         <span>Folder</span>
         <span aria-hidden>•</span>
         <span>{ownerLabel}</span>
@@ -465,9 +465,9 @@ function MobileFileRow({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-3",
-        selected && "border-primary/50 bg-primary/10",
-        imageSelected && "ring-1 ring-primary/40",
+        "border-b border-border/70 px-4 py-3",
+        selected && "bg-primary/10",
+        imageSelected && "bg-primary/5",
         disabled && "opacity-70",
       )}
     >
@@ -483,7 +483,7 @@ function MobileFileRow({
           onClick={onActivate}
           className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/40">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/40">
             {showThumb ? (
               <MediaThumbnail file={file} iconSize={18} className="h-full w-full" />
             ) : (
@@ -510,7 +510,7 @@ function MobileFileRow({
           onCopyLink={async () => actions.copyShareUrl()}
         />
       </div>
-      <div className="mt-2 flex items-center gap-2 pl-8 text-xs text-muted-foreground">
+      <div className="mt-1 flex items-center gap-2 pl-[3.25rem] text-xs text-muted-foreground">
         <span>{getCloudFileKindLabel(file)}</span>
         <span aria-hidden>•</span>
         <span>{ownerLabel}</span>

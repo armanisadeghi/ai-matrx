@@ -11,19 +11,14 @@
  * bar. Navigation lives in a bottom sheet grouped by Manager and Studio.
  */
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ArrowRight,
   ImageIcon,
-  Menu,
   PanelLeftClose,
-  Plus,
-  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -35,10 +30,11 @@ import {
   IMAGES_GROUP_LABELS,
   IMAGES_ROOT_PATH,
   IMAGES_ROUTES,
-  findImagesRoute,
   type ImagesGroup,
   type ImagesRoute,
 } from "./imagesRoutes";
+import { ImagesMobileCommandBar } from "./ImagesMobileCommandBar";
+import { ImagesMobileNavSheet } from "./ImagesMobileNavSheet";
 
 const STORAGE_KEY_COLLAPSED = "images:sidebar-collapsed";
 
@@ -109,9 +105,6 @@ function ImagesMobileChrome({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const activeRoute = useMemo(() => findImagesRoute(pathname), [pathname]);
-  const currentLabel = activeRoute?.label ?? "Images";
-
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -123,155 +116,18 @@ function ImagesMobileChrome({ pathname }: { pathname: string }) {
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-40 pb-safe md:hidden">
-        <div className="container mx-auto max-w-[1800px] px-4">
-          <div className="flex items-center gap-2 rounded-full p-2 shell-glass-dock">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpen(true)}
-              className="relative h-10 w-10 shrink-0 rounded-full shell-glass"
-              aria-label="Open Images sections"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full px-3 text-left shell-glass active:scale-[0.99]"
-              aria-label={`Current Images section: ${currentLabel}`}
-            >
-              <Search className="h-4 w-4 shrink-0 text-glass-foreground" />
-              <span className="min-w-0 flex-1 truncate text-sm text-glass-foreground">
-                {currentLabel}
-              </span>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </button>
-
-            <Button
-              type="button"
-              size="icon"
-              onClick={() => navigate("/images/upload")}
-              disabled={isPending || pathname === "/images/upload"}
-              className="h-10 w-10 shrink-0 rounded-full shell-glass bg-primary hover:bg-primary/90"
-              aria-label="Upload image"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {open ? (
-        <div className="fixed inset-0 z-50 md:hidden" role="presentation">
-          <button
-            type="button"
-            className="absolute inset-0 bg-background/70 backdrop-blur-[2px]"
-            aria-label="Close Images sections"
-            onClick={() => setOpen(false)}
-          />
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label="Images sections"
-            className="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-hidden rounded-t-2xl border border-border bg-background shadow-2xl"
-          >
-            <div className="mx-auto mt-3 h-1.5 w-10 rounded-full bg-muted-foreground/35" />
-            <div className="flex min-h-[48px] items-center px-3 pb-2 pt-1">
-              <div className="min-w-[44px]" />
-              <h2 className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold">
-                Images
-              </h2>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="min-h-[44px] min-w-[44px] px-1 text-[15px] text-primary active:opacity-70"
-              >
-                Done
-              </button>
-            </div>
-            <nav
-              className="max-h-[calc(82dvh-4rem)] space-y-5 overflow-y-auto overscroll-contain px-3 pb-safe"
-              aria-label="Images sections"
-            >
-              {GROUP_ORDER.map((group) => (
-                <MobileGroup
-                  key={group}
-                  group={group}
-                  pathname={pathname}
-                  disabled={isPending}
-                  onNavigate={navigate}
-                />
-              ))}
-            </nav>
-          </section>
-        </div>
-      ) : null}
+      <ImagesMobileCommandBar
+        pathname={pathname}
+        onOpenSections={() => setOpen(true)}
+      />
+      <ImagesMobileNavSheet
+        open={open}
+        pathname={pathname}
+        disabled={isPending}
+        onClose={() => setOpen(false)}
+        onNavigate={navigate}
+      />
     </>
-  );
-}
-
-function MobileGroup({
-  group,
-  pathname,
-  disabled,
-  onNavigate,
-}: {
-  group: ImagesGroup;
-  pathname: string;
-  disabled: boolean;
-  onNavigate: (path: string) => void;
-}) {
-  const items = IMAGES_ROUTES.filter((route) => route.group === group);
-  if (items.length === 0) return null;
-
-  return (
-    <section>
-      <h3 className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {IMAGES_GROUP_LABELS[group]}
-      </h3>
-      <div className="overflow-hidden rounded-xl border border-border/80 bg-card/45">
-        {items.map((route, index) => {
-          const Icon = route.Icon;
-          const isActive = pathname === route.path;
-          return (
-            <button
-              key={route.path}
-              type="button"
-              onClick={() => onNavigate(route.path)}
-              disabled={disabled || isActive}
-              aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "flex min-h-[48px] w-full items-center gap-3 px-3 text-left transition-colors",
-                index > 0 && "border-t border-border/70",
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground active:bg-muted/70",
-              )}
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/70">
-                <Icon
-                  className={cn(
-                    "h-4 w-4",
-                    isActive ? "text-primary" : route.iconColor,
-                  )}
-                />
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
-                {route.label}
-              </span>
-              {isActive ? (
-                <span className="text-xs text-primary">Current</span>
-              ) : (
-                <ArrowRight className="h-4 w-4 text-muted-foreground/70" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 

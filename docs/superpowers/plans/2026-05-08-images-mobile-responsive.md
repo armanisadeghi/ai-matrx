@@ -32,6 +32,8 @@
 
 - [x] Replace the current floating mobile menu button with a bottom action bar patterned after `AgentsGrid` and `MobileActionBar`.
 - [x] Move route navigation into a bottom sheet grouped by Manager and Studio.
+- [x] Split the mobile command bar and navigation sheet into dedicated components so route-aware actions stay consistent across `/images/*`.
+- [x] Make the bottom command bar contextual: Upload opens the file picker on `/images/upload`, Public Search opens filters, and file browsers route users to Upload.
 - [x] Add a route-aware mobile title/action strip through the shared shell header; Images no longer renders a second fixed top mobile menu.
 - [x] Make the `/images` layout use one content scroll root on mobile and avoid nested shell scrolling.
 - [x] Confirm desktop sidebar collapse behavior still works.
@@ -63,8 +65,8 @@
 
 - [x] Public Search: move cover themes and Unsplash filters into bottom sheets, keep search visible, remove nested page/component scrolling, and avoid mobile tabs.
 - [x] My Cloud: move view mode, bulk selection, sort/filter, and secondary actions into bottom sheets; keep image grid/list touch targets stable.
-- [x] All Files: consolidate file filters/actions into bottom sheets; avoid table-style overflow on mobile.
-- [x] Upload: make drag/drop secondary on mobile and prioritize picker, paste, and recent upload actions.
+- [x] All Files: consolidate file filters/actions into bottom sheets; avoid table-style overflow on mobile; flatten mobile rows to match the Files list rhythm.
+- [x] Upload: make drag/drop secondary on mobile and prioritize picker, paste, and recent upload actions; bottom command primary opens the native picker.
 - [x] Branded: make preset selection a bottom sheet or compact horizontal control with large tap targets.
 - [x] Tools: convert card grid into dense action rows grouped by current tools and beta tools; put tool options in bottom sheets.
 

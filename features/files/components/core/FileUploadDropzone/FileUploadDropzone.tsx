@@ -41,6 +41,8 @@ export interface FileUploadDropzoneProps {
   className?: string;
   onUploaded?: (fileIds: string[]) => void;
   onError?: (message: string) => void;
+  /** Optional window event name that opens the native file picker. */
+  pickerEventName?: string;
 }
 
 export function FileUploadDropzone({
@@ -54,6 +56,7 @@ export function FileUploadDropzone({
   className,
   onUploaded,
   onError,
+  pickerEventName,
 }: FileUploadDropzoneProps) {
   const { upload } = useFileUpload({ parentFolderId, visibility });
   const activeUploads = useAppSelector(selectActiveUploads);
@@ -106,6 +109,13 @@ export function FileUploadDropzone({
     accept: acceptMap,
     maxSize,
   });
+
+  useEffect(() => {
+    if (!pickerEventName || typeof window === "undefined") return;
+    const handler = () => openPicker();
+    window.addEventListener(pickerEventName, handler);
+    return () => window.removeEventListener(pickerEventName, handler);
+  }, [openPicker, pickerEventName]);
 
   // Clipboard paste — images only.
   useEffect(() => {

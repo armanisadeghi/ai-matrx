@@ -47,6 +47,7 @@ import {
 } from "@/components/image/cloud/resolveCloudFileUrl";
 import type { Visibility } from "@/features/files/types";
 import { Base64DecoderShell } from "@/features/image-studio/components/Base64DecoderShell";
+import { OPEN_UPLOAD_PICKER_EVENT } from "@/features/image-manager/mobileEvents";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -207,6 +208,7 @@ export function CloudUploadTab({
           accept={accept}
           mode="inline"
           enablePaste
+          pickerEventName={OPEN_UPLOAD_PICKER_EVENT}
           onUploaded={handleUploaded}
           onError={handleError}
         />
