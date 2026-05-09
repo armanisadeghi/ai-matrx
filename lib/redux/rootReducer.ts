@@ -82,6 +82,7 @@ import agentContentBlockReducer from "@/features/agents/redux/agent-content-bloc
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
+import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import agentConsumersReducer from "@/features/agents/redux/agent-consumers/slice";
 import toolsReducer from "@/features/agents/redux/tools/tools.slice";
 
@@ -275,6 +276,7 @@ export const slimReducerMap = {
   skl: sklReducer,
   agentConnectionsUi: agentConnectionsUiReducer,
   agentApp: agentAppReducer,
+  agentAppConsumers: agentAppConsumersReducer,
   agentConsumers: agentConsumersReducer,
   tools: toolsReducer,
 
