@@ -16,13 +16,16 @@
 import Link from "next/link";
 import {
   AppWindow,
-  ArrowRight,
+  Code,
   Copy,
   ExternalLink,
   Globe,
+  History,
+  Link as LinkIcon,
   Loader2,
   Lock,
   Pencil,
+  Settings as SettingsIcon,
   Trash2,
 } from "lucide-react";
 import IconButton from "@/components/official/IconButton";
@@ -74,7 +77,10 @@ export function AgentAppCard({
 }: AgentAppCardProps) {
   const isDisabled = isDuplicating || isDeleting || isNavigating;
   const isArchived = app.status === "archived";
-  const editHref = `/agent-apps/${app.id}`;
+  const manageHref = `/agent-apps/${app.id}`;
+  const codeHref = `/agent-apps/${app.id}/code`;
+  const versionsHref = `/agent-apps/${app.id}/versions`;
+  const settingsHref = `/agent-apps/${app.id}/settings`;
   const viewHref = `/p/${app.slug}`;
 
   return (
@@ -89,7 +95,7 @@ export function AgentAppCard({
       onClick={(e) => {
         if (isDisabled || isAnyNavigating) return;
         if (e.metaKey || e.ctrlKey) {
-          window.open(editHref, "_blank");
+          window.open(manageHref, "_blank");
           return;
         }
         onEdit(app);
@@ -186,7 +192,7 @@ export function AgentAppCard({
             />
           </Link>
           <Link
-            href={editHref}
+            href={manageHref}
             tabIndex={-1}
             onClick={(e) => {
               e.stopPropagation();
@@ -196,7 +202,52 @@ export function AgentAppCard({
           >
             <IconButton
               icon={Pencil}
-              tooltip="Manage app"
+              tooltip="Manage"
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              disabled={isDisabled}
+            />
+          </Link>
+          <Link
+            href={codeHref}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              icon={Code}
+              tooltip="Edit code"
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              disabled={isDisabled}
+            />
+          </Link>
+          <Link
+            href={versionsHref}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              icon={History}
+              tooltip="Versions"
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              disabled={isDisabled}
+            />
+          </Link>
+          <Link
+            href={settingsHref}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              icon={SettingsIcon}
+              tooltip="Settings"
               size="sm"
               variant="ghost"
               tooltipSide="top"
@@ -216,7 +267,7 @@ export function AgentAppCard({
             iconClassName={isDuplicating ? "animate-spin" : ""}
           />
           <IconButton
-            icon={ArrowRight}
+            icon={LinkIcon}
             tooltip="Copy public URL"
             size="sm"
             variant="ghost"

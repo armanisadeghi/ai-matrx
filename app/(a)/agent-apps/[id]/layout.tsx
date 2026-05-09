@@ -1,7 +1,8 @@
-import { ReactNode } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import { ReactNode, Suspense } from "react";
 import type { Metadata } from "next";
+import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import { getAgentApp } from "@/lib/agent-apps/data";
+import { AgentAppHydratorServer } from "@/features/agent-apps/route/AgentAppHydratorServer";
 
 export async function generateMetadata({
   params,
@@ -9,34 +10,13 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = (await createClient()) as unknown as {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => {
-          single: () => Promise<{
-            data: { name?: string; tagline?: string; description?: string } | null;
-          }>;
-        };
-      };
-    };
-  };
-
-  const { data: app } = await supabase
-    .from("aga_apps")
-    .select("name, tagline, description")
-    .eq("id", id)
-    .single();
-
-  const name =
-    app?.name && app.name.trim() !== "" ? app.name.trim() : "Agent App";
+  const app = await getAgentApp(id).catch(() => null);
+  const name = app?.name?.trim() || "Agent App";
   const rawDesc = app?.tagline || app?.description;
   const description =
     rawDesc && rawDesc.trim() !== ""
       ? rawDesc.slice(0, 120)
-      : "Edit and manage your AI-powered agent application";
+      : "Manage your AI-powered agent application";
 
   return createDynamicRouteMetadata("/agent-apps", {
     title: name,
@@ -45,14 +25,22 @@ export async function generateMetadata({
   });
 }
 
-export default function AgentAppIdLayout({
+export default async function AgentAppIdLayout({
   children,
+  params,
 }: {
   children: ReactNode;
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   return (
     <>
       <span className="shell-hide-dock" aria-hidden="true" />
+      {/* Hydrate the agent-app row into Redux for every sub-route. Streamed in
+          a Suspense boundary so it never blocks the layout shell. */}
+      <Suspense fallback={null}>
+        <AgentAppHydratorServer appId={id} />
+      </Suspense>
       {children}
     </>
   );

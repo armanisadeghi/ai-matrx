@@ -1,45 +1,29 @@
-import { createClient } from "@/utils/supabase/server";
-import { notFound } from "next/navigation";
-import { AgentAppEditPageClient } from "./AgentAppEditPageClient";
-import type { AgentApp } from "@/features/agent-apps/types";
+import { getAgentApp } from "@/lib/agent-apps/data";
+import { AgentAppOverviewContent } from "@/features/agent-apps/route/AgentAppOverviewContent";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
+
+export const metadata = { title: "Manage" };
 
 interface AgentAppPageProps {
   params: Promise<{ id: string }>;
 }
 
-function isUUID(str: string): boolean {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-}
-
-export default async function AgentAppPage({ params }: AgentAppPageProps) {
+export default async function AgentAppOverviewPage({
+  params,
+}: AgentAppPageProps) {
   const { id } = await params;
-  const supabase = (await createClient()) as unknown as {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => {
-          single: () => Promise<{ data: AgentApp | null; error: unknown }>;
-        };
-      };
-    };
-  };
+  // Trigger the data fetch (and notFound on miss). The layout's hydrator
+  // owns Redux seeding; this server fetch primarily exists so 404s render
+  // as the route's not-found.tsx instead of an empty Redux state.
+  const app = await getAgentApp(id);
 
-  const isId = isUUID(id);
-  const column = isId ? "id" : "slug";
-
-  const { data: app, error } = await supabase
-    .from("aga_apps")
-    .select("*")
-    .eq(column, id)
-    .single();
-
-  if (error || !app) {
-    notFound();
-  }
-
-  return <AgentAppEditPageClient app={app} />;
+  return (
+    <>
+      <PageHeader>
+        <AgentAppHeader appId={app.id} appName={app.name} active="overview" />
+      </PageHeader>
+      <AgentAppOverviewContent appId={app.id} />
+    </>
+  );
 }
