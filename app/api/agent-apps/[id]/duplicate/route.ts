@@ -1,6 +1,25 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * POST /api/agent-apps/[id]/duplicate
+ *
+ * Creates a copy of the source app under the current user.
+ *
+ * Two important details:
+ *
+ * 1. The slug-uniqueness check uses the admin client (bypasses RLS) so it
+ *    actually sees collisions that belong to *other* users. The previous
+ *    version used the user-scoped client; if a colliding slug existed but
+ *    was hidden by RLS, the loop would exit "all clear" and the insert
+ *    would die on the DB unique constraint with a swallowed error.
+ *
+ * 2. The error response forwards the Postgres message (in dev) and logs
+ *    full detail server-side. The previous version returned a flat
+ *    "Failed to duplicate agent app" with no breadcrumbs, making
+ *    debugging duplicate-collision races impossible.
+ */
 export async function POST(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
@@ -8,6 +27,7 @@ export async function POST(
   try {
     const { id } = await context.params;
     const supabase = (await createClient()) as unknown as any;
+    const admin = createAdminClient() as unknown as any;
 
     const {
       data: { user },
@@ -18,6 +38,8 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // RLS scoping is fine here — the user must already be able to read the
+    // source row to duplicate it.
     const { data: original, error: fetchError } = await supabase
       .from("aga_apps")
       .select("*")
@@ -31,19 +53,25 @@ export async function POST(
       );
     }
 
+    // ── Resolve a unique slug. Admin client so the SELECT sees ALL rows. ──
     const baseSlug = `${original.slug}-copy`;
     let slug = baseSlug;
     let attempt = 0;
-
-    while (true) {
-      const { data: existing } = await supabase
+    const MAX_ATTEMPTS = 25;
+    while (attempt < MAX_ATTEMPTS) {
+      const { data: existing, error: slugCheckError } = await admin
         .from("aga_apps")
         .select("id")
         .eq("slug", slug)
         .maybeSingle();
-
+      if (slugCheckError) {
+        console.error(
+          "[agent-apps duplicate] slug-check error:",
+          slugCheckError,
+        );
+        break; // fall through to the insert; DB unique constraint will catch a real collision
+      }
       if (!existing) break;
-
       attempt++;
       slug = `${baseSlug}-${attempt}`;
     }
@@ -68,6 +96,7 @@ export async function POST(
         layout_config: original.layout_config,
         styling_config: original.styling_config,
         status: "draft",
+        is_public: false,
         rate_limit_per_ip: original.rate_limit_per_ip,
         rate_limit_window_hours: original.rate_limit_window_hours,
         rate_limit_authenticated: original.rate_limit_authenticated,
@@ -77,8 +106,19 @@ export async function POST(
       .single();
 
     if (insertError) {
+      console.error("[agent-apps duplicate] insert error:", insertError);
+      const dev = process.env.NODE_ENV !== "production";
       return NextResponse.json(
-        { error: "Failed to duplicate agent app" },
+        {
+          error: "Failed to duplicate agent app",
+          details: dev
+            ? {
+                message: insertError.message,
+                code: insertError.code,
+                hint: insertError.hint,
+              }
+            : undefined,
+        },
         { status: 500 },
       );
     }
@@ -86,8 +126,13 @@ export async function POST(
     return NextResponse.json({ success: true, app: newApp });
   } catch (error) {
     console.error("POST /api/agent-apps/[id]/duplicate error:", error);
+    const dev = process.env.NODE_ENV !== "production";
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details:
+          dev && error instanceof Error ? { message: error.message } : undefined,
+      },
       { status: 500 },
     );
   }
