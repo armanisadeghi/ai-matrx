@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Globe, Loader2, Lock, Save, Trash2 } from "lucide-react";
+import { Copy, Globe, Loader2, Lock, Save, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,9 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { siteConfig } from "@/config/extras/site";
+import { AgentAppCategoryPicker } from "@/features/agent-apps/components/inputs/AgentAppCategoryPicker";
+import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
@@ -58,20 +61,15 @@ export function AgentAppSettingsContent({
   const [name, setName] = useState(app?.name ?? "");
   const [tagline, setTagline] = useState(app?.tagline ?? "");
   const [description, setDescription] = useState(app?.description ?? "");
-  const [category, setCategory] = useState(app?.category ?? "");
-  const [tagsText, setTagsText] = useState(
-    Array.isArray(app?.tags) ? (app?.tags ?? []).join(", ") : "",
-  );
   const [savingField, setSavingField] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!app) return;
     setName(app.name);
     setTagline(app.tagline ?? "");
     setDescription(app.description ?? "");
-    setCategory(app.category ?? "");
-    setTagsText(Array.isArray(app.tags) ? app.tags.join(", ") : "");
   }, [app?.id]);
 
   const saveField = useCallback(
@@ -100,6 +98,21 @@ export function AgentAppSettingsContent({
   const handleStatusChange = (value: AppStatus) => saveField("status", value);
   const handlePublicChange = (checked: boolean) =>
     saveField("is_public", checked);
+  const handleCategoryChange = (next: string | null) =>
+    saveField("category", next);
+  const handleTagsChange = (next: string[]) => saveField("tags", next);
+
+  const handleCopyUrl = async () => {
+    if (!app) return;
+    try {
+      await navigator.clipboard.writeText(`${siteConfig.url}/p/${app.slug}`);
+      setCopied(true);
+      toast.success("Public URL copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
 
   const handleDelete = async () => {
     if (!app) return;
@@ -185,43 +198,66 @@ export function AgentAppSettingsContent({
               />
             </FieldGroup>
 
-            <FieldGroup
-              label="Category"
-              busy={savingField === "category"}
-              onSave={() => saveField("category", category.trim() || null)}
-              dirty={(category ?? "") !== (app.category ?? "")}
-            >
-              <Input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Education, Productivity"
-                className="text-[16px]"
+            <div className="space-y-1.5">
+              <Label className="text-sm">Category</Label>
+              <AgentAppCategoryPicker
+                value={app.category}
+                onChange={handleCategoryChange}
+                disabled={savingField === "category"}
               />
-            </FieldGroup>
+              <p className="text-xs text-muted-foreground">
+                Pick a system category or type your own. Saves immediately.
+              </p>
+            </div>
 
-            <FieldGroup
-              label="Tags"
-              hint="Comma-separated. Free-form."
-              busy={savingField === "tags"}
-              onSave={() => {
-                const next = tagsText
-                  .split(",")
-                  .map((t) => t.trim())
-                  .filter(Boolean);
-                saveField("tags", next);
-              }}
-              dirty={
-                tagsText.trim() !==
-                (Array.isArray(app.tags) ? app.tags.join(", ") : "")
-              }
-            >
-              <Input
-                value={tagsText}
-                onChange={(e) => setTagsText(e.target.value)}
-                placeholder="research, kids, math"
-                className="text-[16px]"
+            <div className="space-y-1.5">
+              <Label className="text-sm">Tags</Label>
+              <AgentAppTagsInput
+                value={Array.isArray(app.tags) ? app.tags : []}
+                onChange={handleTagsChange}
+                disabled={savingField === "tags"}
+                placeholder="Add a tag and press Enter…"
               />
-            </FieldGroup>
+              <p className="text-xs text-muted-foreground">
+                Press Enter or comma to add. Click X to remove. Saves
+                immediately.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Public URL display (slug editing TBD — destructive, separate flow) */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Public URL</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
+              <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-sm font-mono text-muted-foreground whitespace-nowrap">
+                {siteConfig.url}/p/
+              </span>
+              <span
+                className="text-sm font-mono text-foreground truncate flex-1"
+                title={app.slug}
+              >
+                {app.slug}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground"
+                aria-label="Copy public URL"
+                title="Copy"
+              >
+                <Copy className={copied ? "w-3.5 h-3.5 text-emerald-500" : "w-3.5 h-3.5"} />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Changing the slug breaks every existing public link to this
+              app. The slug is read-only here for now; we&apos;ll add a
+              guarded rename flow in a follow-up.
+            </p>
           </CardContent>
         </Card>
 
