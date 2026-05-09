@@ -86,7 +86,7 @@ function TopBar({
                             "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
                             activeTab === "my"
                                 ? "bg-primary text-primary-foreground"
-                                : "text-glass-foreground hover:shell-glass"
+                                : "text-muted-foreground hover:matrx-glass-thin-border"
                         )}
                     >
                         Mine
@@ -103,7 +103,7 @@ function TopBar({
                             "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
                             activeTab === "public"
                                 ? "bg-primary text-primary-foreground"
-                                : "text-glass-foreground hover:shell-glass"
+                                : "text-muted-foreground hover:matrx-glass-thin-border"
                         )}
                     >
                         Public
@@ -116,9 +116,9 @@ function TopBar({
                     </button>
                 </div>
 
-                {/* Search — shell-glass per spec */}
-                <div className="flex-1 flex items-center gap-1.5 h-8 px-2.5 rounded-full shell-glass min-w-0">
-                    <Search className="h-3.5 w-3.5 text-glass-foreground flex-shrink-0" />
+                {/* Search — matrx-glass-thin-border per spec */}
+                <div className="flex-1 flex items-center gap-1.5 h-8 px-2.5 rounded-full matrx-glass-thin-border min-w-0">
+                    <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                     <input
                         type="text"
                         value={local}
@@ -128,16 +128,16 @@ function TopBar({
                         className="flex-1 bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground min-w-0"
                     />
                     {local && (
-                        <button onClick={() => handleChange("")} className="flex-shrink-0 text-glass-foreground active:opacity-70">
+                        <button onClick={() => handleChange("")} className="flex-shrink-0 text-muted-foreground active:opacity-70">
                             <X className="h-3 w-3" />
                         </button>
                     )}
                 </div>
 
-                {/* Filter — shell-glass per spec */}
+                {/* Filter — matrx-glass-thin-border per spec */}
                 <button
                     onClick={onFilterClick}
-                    className="flex-shrink-0 relative h-8 w-8 flex items-center justify-center rounded-full shell-glass text-glass-foreground active:opacity-70 transition-opacity"
+                    className="flex-shrink-0 relative h-8 w-8 flex items-center justify-center rounded-full matrx-glass-thin-border text-muted-foreground active:opacity-70 transition-opacity"
                 >
                     <SlidersHorizontal className="h-3.5 w-3.5" />
                     {activeFilterCount > 0 && (

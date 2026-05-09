@@ -4,150 +4,87 @@
 
 ---
 
-## What broke (and what got fixed)
+## The single upload primitive
 
-The Phase 11 cloud-files migration introduced a subtle but devastating
-issue: every layer in the upload chain was **swallowing errors and
-replacing them with the filename**. So when a 4.7 MB PNG failed to
-upload, the user saw `screenshot.png` as the error message — not the
-actual cause (CORS, 413, 401, etc.).
+Every file flow goes through the **universal file handler** at
+`features/file-handler`. There is one upload primitive — anything else is wrong.
 
-Fixed in this round (2026-04-24):
+```ts
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 
-1. **`uploadFiles` thunk** — `failed` array changed from `string[]`
-   (filenames) to `Array<{ name: string; error: string }>`. Real backend
-   errors now propagate.
-2. **`useFileUploadWithStorage`** — gained a `lastErrorRef` callers can
-   read synchronously after `await` so toast messages show the real
-   reason.
-3. **`useUploadAndGet` / `useUploadAndShare` / `uploadAndShare`** — were
-   calling `failed.join(", ")` on the old shape; would have rendered
-   `[object Object]` once the type changed. Now correctly extract the
-   real message.
-4. **`FeedbackWindow` paste handler + `UploadResourcePicker`** — now
-   surface the real error in the toast and the per-file error slot.
-5. **Debug page** at `/ssr/demos/file-upload-debug` — exhaustive
-   consumer-pattern harness.
+const { upload, uploading, progress, error } = useFileUpload();
+
+const normalized = await upload(
+  { kind: "file", file },
+  {
+    folderPath: "Images",
+    visibility: "private",
+    createShareLink: true,                 // optional; sets shareToken on result
+    shareLinkPermissionLevel: "read",      // optional; "read" by default
+  },
+);
+
+// normalized.fileId       — cld_files UUID
+// normalized.url          — best display URL (CDN > share link > signed)
+// normalized.shareToken   — set when createShareLink was true
+// normalized.meta.mime    — sniffed/derived MIME
+```
+
+For one-off uploads outside React (thunks, server code), call the handler
+directly:
+
+```ts
+import { fileHandler } from "@/features/file-handler/handler";
+
+const normalized = await fileHandler.upload(
+  { kind: "blob", blob, fileName: "screenshot.png" },
+  { folderPath: "Inbox/Pasted" },
+);
+```
+
+For server-side routes (Next.js API handlers operating on cld_files), use
+`Api.Server.uploadAndShare` with a server context built from the user's
+session JWT — see `features/files/api/server-client.ts`.
 
 ---
 
-## How to diagnose an upload failure now
+## How to diagnose a failure
 
-1. **Open `/ssr/demos/file-upload-debug`.**
-   - Top of page shows the active backend URL and your JWT/userId so
-     you know who you are and where you're pointing.
-   - Server picker switches between Production / Localhost / etc. —
-     the same selector the rest of the app reads.
+1. **Check the Error subclass.** The handler throws specific errors from
+   `@/features/file-handler/errors`:
+   - `FileUploadError` — generic upload failure (wraps backend message)
+   - `FileAccessDeniedError` — auth/RLS denied the request
+   - `FileExpiredError` — signed URL aged out (the resolver auto-refreshes,
+     so this rarely surfaces; if it does, the file is fine, just retry)
+   - `FileNotFoundError` — fileId missing from cld_files
+   - `FileDeletedError` — file is in trash
 
-2. **Pick a file (or paste an image).**
-   - Any file works. For images, the page also auto-runs the
-     public-assets path on paste.
+2. **Read the message.** Common patterns:
+   - `Failed to fetch` → backend unreachable (CORS, network, server down).
+   - `HTTP 401` → JWT missing or expired; refresh the session.
+   - `HTTP 413` → file too large (current cap 100 MB).
+   - `HTTP 403` → RLS / permissions.
+   - `cloud_sync_unavailable` → `NEXT_PUBLIC_BACKEND_URL_*` env not set.
+   - `File uploaded but share link couldn't be created: ...` → upload
+     succeeded; the post-upload share-link create failed.
 
-3. **Click "Run all" to fire every pattern in sequence.**
-   - Each pattern logs a row with: timestamp, pattern name, target
-     folder, success/failure, duration, raw error if any, fileId &
-     shareUrl on success.
-   - Expand any row to see the full request/response.
-
-4. **Read the error.**
-   - Common patterns:
-     - `Failed to fetch` → backend unreachable (CORS, network, server
-       down).
-     - `HTTP 401` → JWT missing or expired; refresh the session.
-     - `HTTP 413` → file too large (current cap 100 MB).
-     - `HTTP 403` → RLS / permissions.
-     - `cloud_sync_unavailable` → `NEXT_PUBLIC_BACKEND_URL_*` env not
-       set.
-     - `File uploaded but share link couldn't be created: ...` → upload
-       succeeded; the post-upload share-link create failed (often
-       another auth issue or RLS on `cld_share_links`).
-
----
-
-## The five known-good upload patterns
-
-If you're writing code that uploads files, use ONE of these. The audit
-subagent flags any new code that uses a different pattern.
-
-### 1. `useFileUploadWithStorage` (legacy compat)
-
-For consumers that already exist and shouldn't be migrated yet.
-
-```ts
-const { uploadToPublicUserAssets, lastErrorRef } =
-  useFileUploadWithStorage("user-public-assets", "feedback-images");
-
-const result = await uploadToPublicUserAssets(file);
-if (!result) toast.error(lastErrorRef.current ?? "Upload failed");
-```
-
-### 2. `useUploadAndGet` (preferred for chat/agent attachments)
-
-Clean, returns the fileId. Throws on failure.
-
-```ts
-const { upload } = useUploadAndGet();
-try {
-  const { fileId } = await upload({ file, folderPath: "Chat Attachments" });
-  // ... use fileId
-} catch (err) {
-  toast.error(err.message);
-}
-```
-
-### 3. `useUploadAndShare` (preferred for public-link assets)
-
-Returns fileId + permanent share URL.
-
-```ts
-const { upload } = useUploadAndShare();
-try {
-  const { fileId, shareUrl } = await upload({ file, folderPath: "Images" });
-  // shareUrl is `/share/:token` — safe to persist into DB rows
-} catch (err) {
-  toast.error(err.message);
-}
-```
-
-### 4. `uploadFiles` thunk (direct dispatch — for thunks/effects)
-
-```ts
-const result = await dispatch(uploadFiles({
-  files: [file],
-  parentFolderId,
-  visibility: "private",
-})).unwrap();
-if (result.failed.length > 0) {
-  toast.error(result.failed[0].error); // <-- not just the filename!
-}
-```
-
-### 5. `Api.Server.uploadAndShare` (server-side route handlers)
-
-```ts
-import { Api } from "@/features/files";
-
-const ctx = Api.Server.createServerContext({
-  accessToken: session.access_token,
-});
-const { fileId, shareUrl } = await Api.Server.uploadAndShare(ctx, {
-  file: bytes,
-  filePath: `${folderForAgentApp(appId)}/favicon.svg`,
-  contentType: "image/svg+xml",
-  appOrigin: req.nextUrl.origin,
-});
-```
+3. **Confirm the backend is up.** Hit `{BACKEND}/health` from a curl. If
+   the server is fine but uploads still fail, it's a JWT or CORS issue.
 
 ---
 
 ## What's forbidden
 
-- ❌ `supabase.storage.from(...).upload(...)` — legacy. The new system
-  is the ONLY valid path.
-- ❌ Direct `fetch("/files/upload", ...)` — use the typed client
-  (`Api.uploadFile` / `Api.uploadFileWithProgress`) instead.
-- ❌ Custom retry/queue layers around uploads. The thunks already
-  handle progress, concurrency, and rollback.
+- **`supabase.storage.from(...).upload(...)`** — banned. ESLint catches the
+  call shape; the handler is the only valid path.
+- **`fetch("/api/files/...")`, `fetch("/api/share/...")`, etc.** — Next.js
+  has no file routes. Files go directly browser ↔ Python.
+- **Direct `Files.uploadFile` (the typed Python client)** outside
+  `features/file-handler/` and `features/files/upload/`. Always go through
+  `fileHandler.upload(...)`.
+- **Custom retry/queue layers around uploads.** The handler already
+  handles progress, dispatches optimistic Redux updates, and emits typed
+  errors.
 
 If you find code using any of these, fix it or open a ticket.
 

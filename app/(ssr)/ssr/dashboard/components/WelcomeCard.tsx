@@ -23,10 +23,10 @@ export default function WelcomeCard({ user }: WelcomeCardProps) {
   const greeting = getGreeting();
 
   return (
-    <div className="shell-glass-card px-4 sm:px-6 py-4 mx-4 sm:mx-6 rounded-2xl flex items-center gap-4">
+    <div className="matrx-glass-card px-4 sm:px-6 py-4 mx-4 sm:mx-6 rounded-2xl flex items-center gap-4">
       <div
         className="relative flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0 overflow-hidden"
-        style={{ background: "var(--shell-glass-bg-hover)" }}
+        style={{ background: "var(--matrx-glass-bg-hover)" }}
       >
         {user?.avatarUrl ? (
           <Image

@@ -1,34 +1,30 @@
 /**
  * features/agents/redux/execution-system/instance-resources/resource-source.ts
  *
- * Shared adapter that converts a resource-picker–emitted `resource.data`
- * into the value we hand to the `addResource` reducer.
+ * Bridge between resource-picker output and the universal file handler.
+ * Used to be ~135 lines of MIME-sniffing + locator-picking; that logic
+ * now lives in `features/file-handler` so this file is just shape coercion.
  *
  * Two responsibilities:
- *   1. `refineBlockType` — given a base blockType from the picker (often
- *      `"document"` because the picker only knows it's a "file") plus the
- *      raw resource data, narrow it to the right media block when the
- *      data carries a real image/video/audio MIME. Without this, an
- *      uploaded JPEG goes to the backend as `{ type: "document", ... }`
- *      and the AI model never sees it as an image.
+ *   1. `refineBlockType` — narrows `"document"` → image/audio/video when
+ *      the data carries a real image/video/audio MIME. Forwards to the
+ *      handler's classifier so a freshly-uploaded JPEG goes to the AI as
+ *      an image, not a document.
  *
- *   2. `resourceDataToSource` — for media block types, synthesize a
- *      `MediaRef` (`file_id` preferred, then `file_uri`, then `url`) so
- *      the payload selector emits the right field on the outbound API
- *      content block. Sending `file_id` lets the backend skip the
- *      share-link redirect.
+ *   2. `resourceDataToSource` — produces the value stored on the
+ *      `ManagedResource.source` field. For media blocks it normalizes to
+ *      a `MediaRef` (file_id > file_uri > url) using the handler's own
+ *      `preferIdentityLocator`. Non-media block types pass through.
  *
- * Non-media block types (text, notes, tasks, table, list, etc.) pass
- * through unchanged.
- *
- * Used by:
- *   - features/agents/components/inputs/resources/SmartAgentResourcePickerButton.tsx
- *   - features/cx-chat/components/user-input/ConversationInput.tsx
- *   - any other resource-picker → addResource bridge
+ * No fork: every shape coercion the picker → agents path needs goes
+ * through `@/features/file-handler/*`.
  */
 
 import type { MediaRef } from "@/features/files/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+import { preferIdentityLocator } from "@/features/file-handler/utils/prefer-locator";
+import type { FileSource, NormalizedFile } from "@/features/file-handler/types";
+import { normalize } from "@/features/file-handler/input/normalize";
 
 const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "image",
@@ -37,19 +33,21 @@ const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "document",
 ]);
 
-/**
- * Pull a "best guess" raw MIME from the heterogeneous `resource.data`
- * shapes the pickers deliver. Order of preference:
- *   1. `mime_type` / `mimeType`           — explicit MIME (canonical)
- *   2. `metadata.mimetype`                — Storage Metadata shape
- *   3. `details.mimetype`                 — EnhancedFileDetails shape
- *   4. `type` IF it looks like a real MIME (contains a slash, e.g.
- *      "image/jpeg" — `FilesResourcePicker.FileSelection.type` carries
- *      this). Do NOT accept the bare classification token like "image"
- *      or "audio" as a MIME — those came from `classifyFileType()` in
- *      `useFileUploadWithStorage` and must NOT flow to the backend as
- *      `mime_type`. The backend expects RFC-compliant `type/subtype`.
- */
+function pickFileSource(d: Record<string, unknown>): FileSource | null {
+  const fileId =
+    typeof d.fileId === "string"
+      ? d.fileId
+      : typeof d.id === "string"
+        ? d.id
+        : null;
+  const mime = readMime(d);
+  if (fileId) return { kind: "file_id", fileId, mime };
+  if (typeof d.file_uri === "string")
+    return { kind: "file_uri", fileUri: d.file_uri, mime };
+  if (typeof d.url === "string") return { kind: "external_url", url: d.url, mime };
+  return null;
+}
+
 function readMime(d: Record<string, unknown>): string | undefined {
   if (typeof d.mime_type === "string" && d.mime_type) return d.mime_type;
   if (typeof d.mimeType === "string" && d.mimeType) return d.mimeType;
@@ -61,26 +59,14 @@ function readMime(d: Record<string, unknown>): string | undefined {
   if (details && typeof details.mimetype === "string" && details.mimetype) {
     return details.mimetype;
   }
-  // Only accept `type` if it looks like a real MIME (`image/jpeg`).
-  // Reject the bare classification tokens ("image" / "video" / "audio" /
-  // "document" / "text" / "pdf" / "other" / "unknown" / "file") that
-  // `classifyFileType()` produces — those are FE display classes, not
-  // RFC MIME types.
   if (typeof d.type === "string" && d.type.includes("/")) return d.type;
   return undefined;
 }
 
 /**
- * Narrow a picker-supplied blockType to the right media kind when the
- * underlying data carries an image / video / audio MIME. Pickers that
- * just know "the user picked a file" deliver `Resource.type = "file"`
- * which the agent system maps to blockType `"document"` — but for a
- * JPEG that means the AI never sees it as an image. This function
- * upgrades `"document"` → `"image"` / `"audio"` / `"video"` based on
- * what the data actually is.
- *
- * Non-document block types (text, notes, tasks, etc.) and explicit
- * media types pass through unchanged.
+ * Narrow `"document"` to `"image"` / `"audio"` / `"video"` when the
+ * underlying data carries a real media MIME. Defers to the handler's
+ * classifier — same registry, same rules.
  */
 export function refineBlockType(
   blockType: ResourceBlockType,
@@ -88,48 +74,41 @@ export function refineBlockType(
 ): ResourceBlockType {
   if (blockType !== "document") return blockType;
   if (!data || typeof data !== "object") return blockType;
-  const mime = readMime(data as Record<string, unknown>);
-  if (!mime) return blockType;
-  const lower = mime.toLowerCase();
-  if (lower.startsWith("image/")) return "image";
-  if (lower.startsWith("video/")) return "video";
-  if (lower.startsWith("audio/")) return "audio";
-  return blockType;
+  const source = pickFileSource(data as Record<string, unknown>);
+  if (!source) return blockType;
+  const normalized: NormalizedFile = normalize(source);
+  switch (normalized.meta.category) {
+    case "IMAGE":
+      return "image";
+    case "AUDIO":
+      return "audio";
+    case "VIDEO":
+      return "video";
+    default:
+      return blockType;
+  }
 }
 
+/**
+ * Convert a picker payload into the `source` value stored on a
+ * ManagedResource. For media blocks, returns a canonical `MediaRef`.
+ * Identical to what `fileHandler.toMediaRef(source)` would produce on
+ * outbound — kept synchronous because the slice reducer needs it inline.
+ */
 export function resourceDataToSource(
   blockType: ResourceBlockType,
   data: unknown,
 ): unknown {
   if (!MEDIA_BLOCK_TYPES.has(blockType)) return data;
   if (!data || typeof data !== "object") return data;
-
-  const d = data as Record<string, unknown>;
-  // Pickers may deliver the cld_files UUID under either `fileId` (the
-  // newer canonical field, surfaced by `useFileUploadWithStorage` and
-  // `FilesResourcePicker`) or `id` (FileResourceData / older shapes).
-  // Either way we want it as `file_id` in the MediaRef.
-  const fileId =
-    typeof d.fileId === "string"
-      ? d.fileId
-      : typeof d.id === "string"
-        ? d.id
-        : null;
-  const mime = readMime(d);
-  if (fileId) {
-    const ref: MediaRef = { file_id: fileId };
-    if (mime) ref.mime_type = mime;
-    return ref;
-  }
-  if (typeof d.file_uri === "string") {
-    const ref: MediaRef = { file_uri: d.file_uri };
-    if (mime) ref.mime_type = mime;
-    return ref;
-  }
-  if (typeof d.url === "string") {
-    const ref: MediaRef = { url: d.url };
-    if (mime) ref.mime_type = mime;
-    return ref;
-  }
-  return data;
+  const source = pickFileSource(data as Record<string, unknown>);
+  if (!source) return data;
+  const normalized: NormalizedFile = normalize(source);
+  const locator = preferIdentityLocator(normalized);
+  const ref: MediaRef = {};
+  if (locator.file_id) ref.file_id = locator.file_id;
+  if (locator.file_uri) ref.file_uri = locator.file_uri;
+  if (locator.url) ref.url = locator.url;
+  if (normalized.meta.mime) ref.mime_type = normalized.meta.mime;
+  return ref;
 }

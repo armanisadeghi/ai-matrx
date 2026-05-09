@@ -1,75 +1,75 @@
-import React, { useState, useRef } from 'react';
-import { Image, Upload, X } from 'lucide-react';
-import { toast } from 'sonner';
-import { useFileUploadWithStorage } from '@/components/ui/file-upload/useFileUploadWithStorage';
+import React, { useState, useRef } from "react";
+import { Image, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 
 interface ImageUploadFieldProps {
   value?: string;
   onChange: (url: string) => void;
   label: string;
-  bucket: string;
-  path: string;
+  /**
+   * Logical folder path under cld_files (e.g. "Images/Banners"). The
+   * Python backend creates intermediate folders atomically.
+   */
+  folderPath: string;
 }
 
 const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   value,
   onChange,
   label,
-  bucket,
-  path
+  folderPath,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  
-  const { uploadFile, error, lastErrorRef } = useFileUploadWithStorage(bucket, path);
+
+  const { upload, error } = useFileUpload();
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    const file = files[0];
 
-    const file = files[0]; // Only take the first file
-
-    // Validate file is an image
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file.');
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
       return;
     }
 
     try {
       setIsUploading(true);
-
-      // Upload the file using the provided hook
-      const result = await uploadFile(file);
-
-      if (result && result.url) {
-        onChange(result.url);
+      const normalized = await upload(
+        { kind: "file", file },
+        {
+          folderPath,
+          visibility: "public",
+          createShareLink: true,
+          shareLinkPermissionLevel: "read",
+        },
+      );
+      const url = normalized.url;
+      if (url) {
+        onChange(url);
       } else {
-        const reason = lastErrorRef.current ?? 'Upload failed';
-        toast.error(`Upload failed: ${reason}`);
+        toast.error("Upload failed: no URL returned");
       }
     } catch (err) {
-      const reason = err instanceof Error ? err.message : 'Upload failed';
-      console.error('Upload error:', err);
+      const reason = err instanceof Error ? err.message : "Upload failed";
+      // eslint-disable-next-line no-console
+      console.error("Upload error:", err);
       toast.error(`Upload failed: ${reason}`);
     } finally {
       setIsUploading(false);
-      // Clear the input value so the same file can be uploaded again if needed
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
 
-  const handleClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
+  const handleClick = () => fileInputRef.current?.click();
   const handleClearImage = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the parent's onClick
-    onChange('');
+    e.stopPropagation();
+    onChange("");
   };
 
   return (
@@ -77,11 +77,11 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       <label className="text-sm font-medium text-gray-900 dark:text-gray-100">
         {label}
       </label>
-      
+
       <div
         className={`border-2 border-dashed rounded-lg transition-colors cursor-pointer
-          ${isHovering || isUploading ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/10' : 'border-gray-300 dark:border-gray-600'}
-          ${value ? 'h-64' : 'h-40'} 
+          ${isHovering || isUploading ? "border-rose-400 bg-rose-50 dark:bg-rose-900/10" : "border-gray-300 dark:border-gray-600"}
+          ${value ? "h-64" : "h-40"}
           relative overflow-hidden`}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -94,7 +94,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           accept="image/*"
           onChange={handleUpload}
         />
-        
+
         {isUploading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="animate-pulse text-rose-500 dark:text-rose-400 flex flex-col items-center">
@@ -104,13 +104,14 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           </div>
         ) : value ? (
           <div className="relative h-full w-full group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={value}
               alt="App Banner"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
-              <button 
+              <button
                 className="p-2 rounded-full bg-white text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={handleClearImage}
               >
@@ -126,11 +127,11 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           </div>
         )}
       </div>
-      
+
       {error && (
-        <p className="text-red-500 text-xs mt-1">{error}</p>
+        <p className="text-red-500 text-xs mt-1">{error.message}</p>
       )}
-      
+
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
         Upload an image for your app banner. This will be displayed on the app card.
       </p>

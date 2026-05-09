@@ -87,12 +87,38 @@ export async function refreshAccessToken(
     const body = new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: typedCred.refresh_token,
-      client_id: typedCred.oauth_client_id ?? "",
     });
+
+    // Look up client_secret from env for Basic Auth
+    const { data: serverRow } = await supabase
+      .from("tl_mcp_server")
+      .select("slug")
+      .eq("id", serverId)
+      .single();
+
+    const slugUpper = serverRow?.slug?.toUpperCase().replace(/-/g, "_");
+    const clientSecret = slugUpper
+      ? (process.env[`MCP_SECRET_${slugUpper}`] ??
+        process.env[`${slugUpper}_CLIENT_SECRET`] ??
+        undefined)
+      : undefined;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+
+    if (clientSecret && typedCred.oauth_client_id) {
+      const credentials = Buffer.from(
+        `${typedCred.oauth_client_id}:${clientSecret}`,
+      ).toString("base64");
+      headers["Authorization"] = `Basic ${credentials}`;
+    } else {
+      body.set("client_id", typedCred.oauth_client_id ?? "");
+    }
 
     const response = await fetch(typedCred.oauth_token_endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers,
       body: body.toString(),
       signal: AbortSignal.timeout(15_000),
     });

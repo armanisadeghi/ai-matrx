@@ -154,14 +154,14 @@ export function MobileActionBar({
     return (
       <div className="fixed bottom-0 left-0 right-0 pb-safe z-40">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px]">
-          <div className="flex items-center gap-2 p-2 rounded-full shell-glass-dock">
+          <div className="flex items-center gap-2 p-2 rounded-full matrx-glass-core">
             {/* Filter Button */}
             {showFilterButton && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleFilterClick}
-                className="h-10 w-10 flex-shrink-0 rounded-full shell-glass relative"
+                className="h-10 w-10 flex-shrink-0 rounded-full matrx-glass-thin-border relative"
               >
                 <SlidersHorizontal className="h-5 w-5" />
                 {hasActiveFilters && (
@@ -173,10 +173,10 @@ export function MobileActionBar({
             {/* Compact Search Bar */}
             <div
               onClick={handleSearchActivate}
-              className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full shell-glass cursor-pointer"
+              className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full matrx-glass-thin-border cursor-pointer"
             >
-              <Search className="h-4 w-4 text-glass-foreground" />
-              <span className="text-sm text-glass-foreground truncate">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground truncate">
                 {localSearchValue || searchPlaceholder}
               </span>
               {showVoiceSearch && (
@@ -198,7 +198,7 @@ export function MobileActionBar({
               <Button
                 size="icon"
                 onClick={onPrimaryAction}
-                className="h-10 w-10 flex-shrink-0 rounded-full shell-glass bg-primary hover:bg-primary/90"
+                className="h-10 w-10 flex-shrink-0 rounded-full matrx-glass-thin-border bg-primary hover:bg-primary/90"
                 aria-label={primaryActionLabel}
               >
                 {primaryActionIcon}
@@ -213,9 +213,9 @@ export function MobileActionBar({
   // Search Active State - MOVED TO TOP for mobile keyboard visibility
   // KEY UX FIX: Fixed to top instead of bottom so keyboard doesn't cover it
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 shell-glass">
+    <div className="fixed top-0 left-0 right-0 z-50 matrx-glass-thin-border">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] py-3">
-        <div className="flex items-center gap-2 p-2 rounded-full shell-glass">
+        <div className="flex items-center gap-2 p-2 rounded-full matrx-glass-thin-border">
           {/* Search Input Container */}
           <div className="flex-1 flex items-center gap-2 h-10 px-3">
             <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />

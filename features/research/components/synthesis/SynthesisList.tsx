@@ -272,7 +272,7 @@ export default function SynthesisList() {
     <button
       onClick={handleRunProjectSynthesis}
       disabled={stream.isStreaming}
-      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full shell-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors shrink-0"
+      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors shrink-0"
     >
       {stream.isStreaming ? (
         <Loader2 className="h-3 w-3 animate-spin" />

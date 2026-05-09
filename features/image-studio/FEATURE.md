@@ -63,7 +63,7 @@ features/image-studio/
 │   ├── shared/
 │   │   ├── types.ts               ImageSource, ModeShellProps, SaveResult
 │   │   ├── use-image-source.ts    File | URL | cloudFileId → loadable URL
-│   │   └── save-edited-image.ts   blob → cloud-files via useUploadAndShare
+│   │   └── save-edited-image.ts   blob → cloud-files via fileHandler.upload
 │   ├── edit/
 │   │   ├── EditModeShell.tsx      Filerobot 5.0 editor + AI assist toolbar
 │   │   └── EditAiToolbar.tsx      Suggest edits / Remove BG / Upscale / AI edit
@@ -109,7 +109,7 @@ app/api/images/studio/
    - Click **Download** on a tile → single file to disk.
    - Tick tiles + click **Selected** → JSZip bundle of just those.
    - Click **All** → JSZip bundle of everything.
-   - Type a folder name + click **Save all to library** → POSTs all data URLs to `/api/images/studio/save` which writes them to Supabase under `{userId}/{folder}/{sessionUuid}/`.
+   - Type a folder name + click **Save all to library** → `useImageStudio.saveAll()` ensures the destination folder via `ensureFolderPath` and uploads each variant directly through the universal file handler under `Images/Generated/{folder}/<source-name>/{filename}`. (The legacy `/api/images/studio/save` Next.js route was deleted in the 2026-05-07 file-handler refactor.)
 6. The Library page (server component) lists every saved session by reading the user's storage folder.
 
 ## Preset catalog
@@ -141,10 +141,7 @@ Every preset declares: `id`, `name`, `usage` (where it's used), `width`, `height
 - PNG: `compressionLevel: 9` (quality is not configurable — always lossless)
 - Returns base64 data URLs so the client can preview + download WITHOUT storage writes.
 
-`app/api/images/studio/save/route.ts` accepts JSON `{ folder, variants: [{ filename, dataUrl, presetId }] }`.
-- Auth-gated against `supabase.auth.getUser()`.
-- Writes each variant to `userContent/{userId}/{folder}/{sessionUuid}/{filename}`.
-- Returns public URLs.
+**Save flow (post-refactor):** `useImageStudio.saveAll(folder, opts)` (`features/image-studio/hooks/useImageStudio.ts`) drives the persistence path. It calls `ensureFolderPath` to create `Images/Generated/{folder}/<source-name>/` in cloud-files, then dispatches one upload per variant through the universal file handler. Each variant lands as a `cld_files` row with `visibility: "public"` (default — gives permanent CDN URLs); a private mode is supported by passing `{ visibility: "private" }`. The legacy `/api/images/studio/save` Next.js route is gone — there is no Next.js hop in this path anymore.
 
 ## SSR / perf
 
@@ -171,9 +168,10 @@ interface ModeShellProps {
 
 `useImageSource` resolves the three source kinds to a single browser-loadable
 URL (with object-URL lifecycle for `File` sources). `saveEditedImage` wraps
-canvas/dataURL output as a `File` and pushes it through the standard
-`useUploadAndShare` upload pipeline — so every mode produces a `cloud_file_id`
-+ persistent share URL on save, no special storage code per mode.
+canvas/dataURL output as a `File` and pushes it through the universal file
+handler (`fileHandler.upload(...)` with `createShareLink: true`) — so every
+mode produces a `cloud_file_id` + persistent share URL on save, no special
+storage code per mode.
 
 ### Edit mode (Filerobot 5.0.1)
 
@@ -232,7 +230,7 @@ flow is generate → keep editing without an upload round-trip.
 1. User pastes a string into the textarea — either a `data:image/...;base64,...` URL or just the raw base64 payload. Whitespace, newlines, and the URL-safe alphabet (`-`/`_`) are normalised before decoding.
 2. `decodeBase64Image()` (`utils/decode-base64.ts`) decodes via `atob`, then sniffs the actual MIME type from magic bytes (PNG `89 50 4E 47`, JPEG `FF D8 FF`, GIF, RIFF/WebP, ISOBMFF/AVIF, BMP, ICO, SVG via leading text). Magic bytes win over the declared header — a mismatch surfaces a yellow warning in the UI.
 3. The resulting `Blob` is wrapped in an object URL and rendered into a square preview card with a checkered transparency background. Image dimensions are decoded asynchronously via an `<img>` element.
-4. On Save, the blob is wrapped as a `File` and pushed through `useUploadAndShare` → `cloudUpload` (the same primitive every other feature uses), which:
+4. On Save, the blob is wrapped as a `File` and pushed through the universal file handler (`fileHandler.upload(...)` with `createShareLink: true` → `cloudUpload` under the hood — the same primitive every other feature uses), which:
    - Creates the canonical folder hierarchy `Images/Generated/{folder}` server-side.
    - Persists the file as a versioned cloud asset.
    - Returns a permanent `shareUrl` (NOT a signed Supabase URL — these don't expire) safe to paste into apps, notes, or DB columns.

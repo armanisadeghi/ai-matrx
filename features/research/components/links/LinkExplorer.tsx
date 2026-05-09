@@ -79,7 +79,7 @@ export default function LinkExplorer() {
 
     return (
         <div className="p-3 sm:p-4 space-y-3">
-            <div className="flex items-center gap-2 rounded-full shell-glass px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
                 <span className="text-xs font-medium text-foreground/80">Links</span>
                 <span className="text-[10px] text-muted-foreground tabular-nums">{filtered.length}/{linkList.length}</span>
                 <div className="flex-1 relative">
@@ -88,7 +88,7 @@ export default function LinkExplorer() {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search url, text, source..."
-                        className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full shell-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+                        className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full matrx-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
                         style={{ fontSize: '16px' }}
                     />
                 </div>
@@ -96,7 +96,7 @@ export default function LinkExplorer() {
                     <button
                         onClick={() => handleAddToScope()}
                         disabled={adding}
-                        className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full shell-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors shrink-0"
+                        className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors shrink-0"
                     >
                         {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
                         Add {selected.size}

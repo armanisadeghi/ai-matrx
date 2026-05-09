@@ -77,7 +77,7 @@ export function AutonomyControl({ topicId, value, onSaved }: Props) {
           type="button"
           className={cn(
             "inline-flex items-center gap-1 h-7 rounded-full px-2 text-[11px] font-medium",
-            "shell-glass-card text-muted-foreground hover:text-foreground transition-colors",
+            "matrx-glass-card text-muted-foreground hover:text-foreground transition-colors",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
           )}
         >

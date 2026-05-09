@@ -38,7 +38,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/utils/supabase/client";
 import { RecordingInterface } from "./RecordingInterface";
 import { RecordingPreview } from "./RecordingPreview";
-import { saveAudioToStorage } from "../service/audioStorageService";
+import { saveAudioToStorage, getAudioUrl, downloadAudioBlob } from "../service/audioStorageService";
 import { saveDraftTranscript } from "../service/transcriptsService";
 import { TranscriptSegment } from "../types";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -188,28 +188,17 @@ export function CreateTranscriptModal({
         },
       );
 
-      setAudioStoragePath(uploadResult.path);
+      setAudioStoragePath(uploadResult.fileId);
 
-      // Get signed URL for preview
-      const { data: urlData } = await supabase.storage
-        .from("user-private-assets")
-        .createSignedUrl(uploadResult.path, 3600);
-
-      if (urlData) {
-        setAudioUrl(urlData.signedUrl);
-      }
+      // Get a signed URL for preview through the universal handler.
+      const previewUrl = await getAudioUrl(uploadResult.fileId);
+      setAudioUrl(previewUrl);
 
       // CRITICAL STEP 2: Transcribe the audio
       setStep("process");
 
       // Download the audio we just uploaded to send to Groq
-      const { data: audioData, error: downloadError } = await supabase.storage
-        .from("user-private-assets")
-        .download(uploadResult.path);
-
-      if (downloadError || !audioData) {
-        throw new Error("Failed to download audio for transcription");
-      }
+      const audioData = await downloadAudioBlob(uploadResult.fileId);
 
       const result = await transcribe(audioData);
 
@@ -242,7 +231,7 @@ export function CreateTranscriptModal({
           duration: result.duration || duration,
           language: result.language,
         },
-        audio_file_path: uploadResult.path,
+        audio_file_path: uploadResult.fileId,
       });
 
       setDraftTranscriptId(draft.id);
@@ -298,32 +287,18 @@ export function CreateTranscriptModal({
     setStep("process");
 
     try {
-      // 1. Download the file from Supabase Storage using the client
-      // The file is in a private bucket, so we need to use Supabase client to download it
+      // 1. Download the audio bytes via the universal file handler.
       let audioBlob: Blob;
 
-      if (uploadedFile.details?.path && uploadedFile.details?.filename) {
-        // Construct the full file path
-        const filePath = `${uploadedFile.details.path}/${uploadedFile.details.filename}`;
-
-        // Download from Supabase Storage
-        const { data, error } = await supabase.storage
-          .from("user-private-assets")
-          .download(filePath);
-
-        if (error || !data) {
-          throw new Error("Failed to download audio file for transcription");
-        }
-
-        audioBlob = data;
+      if (uploadedFile.fileId) {
+        audioBlob = await downloadAudioBlob(uploadedFile.fileId);
       } else if (uploadedFile.url) {
-        // Fallback: try fetching with the URL (might be signed)
         const response = await fetch(uploadedFile.url);
         if (!response.ok)
           throw new Error("Failed to download audio for transcription");
         audioBlob = await response.blob();
       } else {
-        throw new Error("No file path or URL available");
+        throw new Error("No fileId or URL available");
       }
 
       // 2. Transcribe
@@ -351,9 +326,7 @@ export function CreateTranscriptModal({
           duration: result.duration,
           language: result.language,
         },
-        audio_file_path: uploadedFile.details?.path
-          ? `${uploadedFile.details.path}/${uploadedFile.details.filename}`
-          : uploadedFile.details?.filename || null,
+        audio_file_path: uploadedFile.fileId ?? null,
       });
 
       toast.success("Transcript created successfully");
@@ -362,8 +335,6 @@ export function CreateTranscriptModal({
     } catch (error: any) {
       console.error("Processing failed:", error);
       toast.error(error.message || "Failed to process transcript");
-      // Go back to details so they can try again or save without transcription?
-      // Staying on process step allows viewing the error.
     }
   };
 
@@ -374,13 +345,11 @@ export function CreateTranscriptModal({
       await createTranscript({
         title: title.trim() || "Untitled Transcript",
         description: description.trim(),
-        segments: [], // Empty segments
+        segments: [],
         folder_name: folder,
         source_type: sourceType,
         tags: [],
-        audio_file_path: uploadedFile.details?.path
-          ? `${uploadedFile.details.path}/${uploadedFile.details.filename}`
-          : uploadedFile.details?.filename || null,
+        audio_file_path: uploadedFile.fileId ?? null,
       });
       toast.success("Transcript saved (without transcription)");
       await refreshTranscripts();
@@ -462,8 +431,7 @@ export function CreateTranscriptModal({
               </div>
 
               <FileUploadWithStorage
-                bucket="user-private-assets"
-                path="transcripts"
+                path="Transcripts/Uploads"
                 saveTo="private"
                 onUploadComplete={handleUploadComplete}
                 multiple={false}

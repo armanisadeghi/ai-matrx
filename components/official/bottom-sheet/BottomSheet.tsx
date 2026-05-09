@@ -35,10 +35,10 @@ function BottomSheet({
         <DrawerPrimitive.Content
           className="fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh]"
           style={{
-            background: "var(--glass-bg-subtle)",
+            background: "var(--matrx-glass-bg)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid var(--glass-border)",
+            border: "1px solid var(--matrx-glass-border-color)",
             borderBottom: "none",
           }}
         >
@@ -75,7 +75,7 @@ function BottomSheetHeader({
         <button
           onClick={onBack}
           className={cn(
-            "h-8 w-8 rounded-full shell-glass flex items-center justify-center transition-all active:scale-95",
+            "h-8 w-8 rounded-full matrx-glass-thin-border flex items-center justify-center transition-all active:scale-95",
             showBack ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           aria-hidden={!showBack}

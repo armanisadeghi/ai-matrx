@@ -32,7 +32,7 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { submitFeedback, getUserFeedback } from "@/actions/feedback.actions";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import {
   FileUploadWithStorage,
   type UploadedFileResult,
@@ -197,8 +197,7 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
   }, []);
 
   // ── Image upload ─────────────────────────────────────────────────────────
-  const { uploadToPublicUserAssets, lastErrorRef: uploadErrorRef } =
-    useFileUploadWithStorage("user-public-assets", "feedback-images");
+  const { upload: handlerUpload } = useFileUpload();
 
   const { captureTab, captureScreen, isCapturing } = useScreenCapture({
     hideSelectors: [".feedback-window-panel"],
@@ -226,16 +225,21 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
   const uploadFile = useCallback(
     async (file: File, slotId: string) => {
       try {
-        const result = await uploadToPublicUserAssets(file);
-        if (result?.url) {
-          resolveSlot(slotId, result.url);
+        const normalized = await handlerUpload(
+          { kind: "file", file },
+          {
+            folderPath: "Shared Assets/feedback-images",
+            visibility: "public",
+            createShareLink: true,
+            shareLinkPermissionLevel: "read",
+          },
+        );
+        if (normalized.url) {
+          resolveSlot(slotId, normalized.url);
           toast.success("Screenshot attached!");
         } else {
-          // The hook caught the error internally and returned null;
-          // surface the real reason from the synchronous ref.
-          const reason = uploadErrorRef.current ?? "Upload failed";
-          errorSlot(slotId, reason);
-          toast.error(`Upload failed: ${reason}`);
+          errorSlot(slotId, "no URL returned");
+          toast.error("Upload failed: no URL returned");
         }
       } catch (err) {
         const reason =
@@ -244,7 +248,7 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
         toast.error(`Upload failed: ${reason}`);
       }
     },
-    [uploadToPublicUserAssets, resolveSlot, errorSlot, uploadErrorRef],
+    [handlerUpload, resolveSlot, errorSlot],
   );
 
   const handleTabCapture = useCallback(async () => {
@@ -286,14 +290,21 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
     async (file: File) => {
       const slotId = addPendingSlot();
       try {
-        const result = await uploadToPublicUserAssets(file);
-        if (result?.url) {
-          resolveSlot(slotId, result.url);
+        const normalized = await handlerUpload(
+          { kind: "file", file },
+          {
+            folderPath: "Shared Assets/feedback-images",
+            visibility: "public",
+            createShareLink: true,
+            shareLinkPermissionLevel: "read",
+          },
+        );
+        if (normalized.url) {
+          resolveSlot(slotId, normalized.url);
           toast.success("Image pasted and uploaded");
         } else {
-          const reason = uploadErrorRef.current ?? "Upload failed";
-          errorSlot(slotId, reason);
-          toast.error(`Paste upload failed: ${reason}`);
+          errorSlot(slotId, "no URL returned");
+          toast.error("Paste upload failed: no URL returned");
         }
       } catch (err) {
         const reason =
@@ -302,13 +313,7 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
         toast.error(`Paste upload failed: ${reason}`);
       }
     },
-    [
-      addPendingSlot,
-      uploadToPublicUserAssets,
-      resolveSlot,
-      errorSlot,
-      uploadErrorRef,
-    ],
+    [addPendingSlot, handlerUpload, resolveSlot, errorSlot],
   );
 
   // Ctrl+V paste handler

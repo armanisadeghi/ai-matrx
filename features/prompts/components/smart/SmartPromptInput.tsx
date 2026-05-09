@@ -31,7 +31,8 @@ import { ResourceChips } from "../resource-display/ResourceChips";
 import type { Resource } from "../../types/resources";
 import ResourcePreviewSheet from "../resource-display/ResourcePreviewSheet";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { fileHandler } from "@/features/file-handler/handler";
+import type { NormalizedFile } from "@/features/file-handler/types";
 import {
   selectIsDebugMode,
   showResourceDebugIndicator,
@@ -176,8 +177,33 @@ export function SmartPromptInput({
   }, [isDebugMode, resources.length, dispatch, runId]);
 
   // File upload hook for paste support
-  const { uploadMultipleToPrivateUserAssets, lastErrorRef: uploadErrorRef } =
-    useFileUploadWithStorage(uploadBucket, uploadPath);
+  // Upload via the universal handler. Adapter matches the legacy
+  // `uploadFn(files): Promise<UploadResult[]>` signature consumed by
+  // the prompt-execution `uploadAndAddFileResource` thunk.
+  const uploadAdapter = useCallback(
+    async (
+      files: File[],
+    ): Promise<Array<{ fileId?: string; url: string }>> => {
+      const folderPath = uploadPath
+        ? `${uploadBucket}/${uploadPath}`
+        : uploadBucket;
+      const out: Array<{ fileId?: string; url: string }> = [];
+      for (const file of files) {
+        const normalized: NormalizedFile = await fileHandler.upload(
+          { kind: "file", file },
+          {
+            folderPath,
+            visibility: "private",
+            createShareLink: true,
+            shareLinkPermissionLevel: "read",
+          },
+        );
+        out.push({ fileId: normalized.fileId, url: normalized.url ?? "" });
+      }
+      return out;
+    },
+    [uploadBucket, uploadPath],
+  );
 
   // Voice transcription hook
   const {
@@ -252,13 +278,6 @@ export function SmartPromptInput({
       if (!runId) return;
 
       try {
-        const results = await uploadMultipleToPrivateUserAssets([file]);
-        if (!results || results.length === 0) {
-          const reason = uploadErrorRef.current ?? "Upload failed";
-          toast.error(`Couldn't upload pasted image: ${reason}`);
-          return;
-        }
-        // Use the upload thunk instead
         const { uploadAndAddFileResource } = await import(
           "@/lib/redux/prompt-execution/thunks/resourceThunks"
         );
@@ -268,7 +287,7 @@ export function SmartPromptInput({
             file,
             bucket: uploadBucket,
             path: uploadPath,
-            uploadFn: uploadMultipleToPrivateUserAssets,
+            uploadFn: uploadAdapter,
           }),
         );
       } catch (error) {
@@ -278,14 +297,7 @@ export function SmartPromptInput({
         toast.error(`Couldn't upload pasted image: ${reason}`);
       }
     },
-    [
-      runId,
-      dispatch,
-      uploadBucket,
-      uploadPath,
-      uploadMultipleToPrivateUserAssets,
-      uploadErrorRef,
-    ],
+    [runId, dispatch, uploadBucket, uploadPath, uploadAdapter],
   );
 
   // Setup clipboard paste

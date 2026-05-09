@@ -349,7 +349,7 @@ export function AgentsGrid() {
 
             {/* Search */}
             <div className="flex-1 relative">
-              <div className="flex items-center gap-3 p-1 rounded-full shell-glass hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-3 p-1 rounded-full matrx-glass-thin-border hover:shadow-xl transition-shadow">
                 <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <input
                   type="text"
@@ -407,7 +407,7 @@ export function AgentsGrid() {
             <Link href="/agents/new">
               <Button
                 size="icon"
-                className="h-8 w-8 rounded-full shell-glass hover:shadow-xl bg-primary hover:bg-primary/90 shrink-0"
+                className="h-8 w-8 rounded-full matrx-glass-thin-border hover:shadow-xl bg-primary hover:bg-primary/90 shrink-0"
                 title="Create new agent"
               >
                 <Plus className="h-4 w-4" />
@@ -627,7 +627,7 @@ export function AgentsGrid() {
               <div
                 className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-white/[0.06] space-y-2"
                 style={{
-                  background: "var(--glass-bg-subtle)",
+                  background: "var(--matrx-glass-bg)",
                   backdropFilter: "blur(20px)",
                 }}
               >
@@ -697,7 +697,7 @@ export function AgentsGrid() {
               <div
                 className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-white/[0.06] space-y-2"
                 style={{
-                  background: "var(--glass-bg-subtle)",
+                  background: "var(--matrx-glass-bg)",
                   backdropFilter: "blur(20px)",
                 }}
               >

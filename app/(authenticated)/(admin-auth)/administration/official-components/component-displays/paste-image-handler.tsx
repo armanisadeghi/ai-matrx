@@ -1,24 +1,26 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ComponentEntry } from '../parts/component-list';
-import { ComponentDisplayWrapper } from '../component-usage';
-import { PasteImageHandler } from '@/components/ui/file-upload/PasteImageHandler';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Clipboard, CheckCircle2 } from 'lucide-react';
+import React, { useState } from "react";
+import { ComponentEntry } from "../parts/component-list";
+import { ComponentDisplayWrapper } from "../component-usage";
+import { PasteImageHandler } from "@/components/ui/file-upload/PasteImageHandler";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Clipboard, CheckCircle2 } from "lucide-react";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
 }
 
-export default function PasteImageHandlerDisplay({ component }: ComponentDisplayProps) {
+export default function PasteImageHandlerDisplay({
+  component,
+}: ComponentDisplayProps) {
   if (!component) return null;
 
   // The `url` we store + render into <img src> is the EMBEDDABLE direct
-  // URL (`/api/share/<token>/file`). The `pageUrl` (`/share/<token>`)
-  // is the HTML landing page — useful as a clickable link, but NOT for
-  // <img src>. Showing both helps anyone copy/pasting this code see
-  // the difference.
+  // URL (`{BACKEND}/share/<token>/download`, served by Python). The
+  // `pageUrl` (`/share/<token>`) is the HTML landing page on this app —
+  // useful as a clickable link, but NOT for <img src>. Showing both
+  // helps anyone copy/pasting this code see the difference.
   const [pastedImages, setPastedImages] = useState<
     Array<{ url: string; type: string; fileId?: string; pageUrl?: string }>
   >([]);
@@ -30,7 +32,7 @@ export default function PasteImageHandlerDisplay({ component }: ComponentDisplay
     fileId?: string;
     pageUrl?: string;
   }) => {
-    console.log('Image pasted:', result);
+    console.log("Image pasted:", result);
     setPastedImages((prev) => [...prev, result]);
   };
 
@@ -100,7 +102,14 @@ function MyComponent() {
                   Try Pasting an Image Here
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Copy an image (screenshot, image file, etc.) and press <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+V</kbd> or <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">Cmd+V</kbd>
+                  Copy an image (screenshot, image file, etc.) and press{" "}
+                  <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">
+                    Ctrl+V
+                  </kbd>{" "}
+                  or{" "}
+                  <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">
+                    Cmd+V
+                  </kbd>
                 </p>
               </div>
               {isProcessing && (
@@ -117,7 +126,9 @@ function MyComponent() {
           <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
             <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
             <AlertDescription className="text-green-800 dark:text-green-300">
-              <p className="font-semibold mb-2">Successfully uploaded {pastedImages.length} pasted image(s):</p>
+              <p className="font-semibold mb-2">
+                Successfully uploaded {pastedImages.length} pasted image(s):
+              </p>
               <div className="space-y-3">
                 {pastedImages.map((image, idx) => (
                   <div key={idx} className="space-y-1.5">
@@ -170,9 +181,12 @@ function MyComponent() {
 
         <Alert className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
           <AlertDescription className="text-yellow-800 dark:text-yellow-300 text-xs">
-            <strong>Tip:</strong> This component is perfect for quick image uploads from:
+            <strong>Tip:</strong> This component is perfect for quick image
+            uploads from:
             <ul className="list-disc list-inside mt-1 space-y-1">
-              <li>Screenshot tools (Windows Snipping Tool, macOS Screenshot, etc.)</li>
+              <li>
+                Screenshot tools (Windows Snipping Tool, macOS Screenshot, etc.)
+              </li>
               <li>Image editing software (Photoshop, GIMP, etc.)</li>
               <li>Browser images (right-click → copy image)</li>
               <li>Any application that copies images to clipboard</li>
@@ -183,4 +197,3 @@ function MyComponent() {
     </ComponentDisplayWrapper>
   );
 }
-

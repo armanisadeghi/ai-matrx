@@ -16,7 +16,7 @@
 //
 // Rules enforced by .shell-header-inject CSS:
 //   - The injection wrapper is always background:transparent, no border, no shadow.
-//   - Children render their own glass via shell-glass — the container never does.
+//   - Children render their own glass via matrx-glass-thin-border — the container never does.
 //   - Content must be self-contained; never pass in an element that carries a bg-* class
 //     at the root level.
 //

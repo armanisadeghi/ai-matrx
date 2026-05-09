@@ -18,7 +18,7 @@ function AdminSidebarItems() {
       <div
         style={{
           height: 1,
-          background: "var(--shell-glass-border)",
+          background: "var(--matrx-glass-border-color)",
           margin: "0.5rem 0.25rem",
         }}
       />

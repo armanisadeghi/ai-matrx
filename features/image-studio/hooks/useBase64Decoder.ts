@@ -10,8 +10,9 @@
  *      and creates an object URL preview.
  *   3. Image natural dimensions are decoded asynchronously.
  *   4. On `save()`, the Blob is wrapped as a File and pushed through the
- *      cloud-files upload primitive (`useUploadAndShare`) which returns a
- *      persistent share URL safe to paste into apps / notes / DBs.
+ *      universal file handler (`useFileUpload` with `createShareLink:
+ *      true`) which returns a persistent share URL safe to paste into
+ *      apps / notes / DBs.
  *
  * No backend hop for the decode step — base64 is already a browser-native
  * format. The only network call is the cloud upload, which goes through the
@@ -27,7 +28,7 @@ import {
   type SupportedMimeType,
 } from "../utils/decode-base64";
 import { slugifyFilename } from "../utils/slugify-filename";
-import { useUploadAndShare } from "@/features/files/hooks/useUploadAndShare";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 const DEFAULT_FILENAME_BASE = "decoded";
@@ -93,7 +94,7 @@ export interface UseBase64DecoderResult {
 export function useBase64Decoder(
   options: UseBase64DecoderOptions = {},
 ): UseBase64DecoderResult {
-  const { upload } = useUploadAndShare();
+  const { upload } = useFileUpload();
 
   const [input, setInputState] = useState("");
   const [decoded, setDecoded] = useState<DecodedImageState | null>(null);
@@ -248,26 +249,33 @@ export function useBase64Decoder(
         type: decoded.mimeType,
       });
 
-      const result = await upload({
-        file,
-        folderPath,
-        visibility: "private",
-        permissionLevel: "read",
-        metadata: {
-          source: "image-studio-from-base64",
-          mime_type: decoded.mimeType,
-          declared_mime_type: decoded.declaredMimeType,
-          had_data_url_prefix: decoded.hadDataUrlPrefix,
-          width: decoded.width,
-          height: decoded.height,
+      const normalized = await upload(
+        { kind: "file", file },
+        {
+          folderPath,
+          visibility: "private",
+          createShareLink: true,
+          shareLinkPermissionLevel: "read",
+          metadata: {
+            source: "image-studio-from-base64",
+            mime_type: decoded.mimeType,
+            declared_mime_type: decoded.declaredMimeType,
+            had_data_url_prefix: decoded.hadDataUrlPrefix,
+            width: decoded.width,
+            height: decoded.height,
+          },
         },
-      });
+      );
+
+      if (!normalized.fileId || !normalized.shareToken) {
+        throw new Error("Upload returned no fileId/shareToken");
+      }
 
       const next: SaveResult = {
-        fileId: result.fileId,
-        shareUrl: result.shareUrl,
-        shareToken: result.shareToken,
-        filePath: result.filePath,
+        fileId: normalized.fileId,
+        shareUrl: normalized.url ?? `/share/${normalized.shareToken}`,
+        shareToken: normalized.shareToken,
+        filePath: `${folderPath}/${filename}`,
       };
       setSaveResult(next);
       return next;

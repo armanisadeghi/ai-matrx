@@ -77,8 +77,8 @@ For each of the 3 items in `batch`:
 
 > **CRITICAL: If `image_urls` is not null, you MUST view every screenshot BEFORE analyzing the item.** Screenshots are the single most reliable source of truth — they show exactly what the user saw. Failing to view screenshots has caused agents to fix the wrong component entirely. This is a non-negotiable step.
 
-- Fetch signed URLs: `GET /api/admin/feedback/images?feedback_id=<uuid>`
-- Open **every** signed URL in the browser and study what is shown
+- The `image_urls` array contains direct, embeddable URLs — open them as-is. Most are permanent Supabase public URLs (`/storage/v1/object/public/user-public-assets/...`); newer items use the share-link byte endpoint (`https://server.app.matrxserver.com/share/<token>/download`). Both render directly without any signing.
+- Open **every** URL in the browser and study what is shown
 - Cross-reference what you see in the screenshot with the user's description
 - The screenshot determines what component/element is actually involved — not the route
 

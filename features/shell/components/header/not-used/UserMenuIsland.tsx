@@ -77,8 +77,8 @@ export default function UserMenuIsland({ userData }: UserMenuIslandProps) {
       <div className="flex items-center justify-center w-[60px] h-11">
         <button
           className={cn(
-            "shell-auth-island shell-glass shell-tactile cursor-pointer",
-            open && "!bg-[var(--shell-glass-bg-active)]",
+            "shell-auth-island matrx-glass-thin-border shell-tactile cursor-pointer",
+            open && "!bg-[var(--matrx-glass-bg-active)]",
           )}
           onClick={() => setOpen(!open)}
           aria-label="User menu"
@@ -122,11 +122,11 @@ export default function UserMenuIsland({ userData }: UserMenuIslandProps) {
               priority
             />
           ) : user?.name ? (
-            <span className="w-[22px] h-[22px] rounded-full bg-[var(--shell-glass-bg-active)] flex items-center justify-center text-[10px] font-semibold text-[var(--shell-nav-text)]">
+            <span className="w-[22px] h-[22px] rounded-full bg-[var(--matrx-glass-bg-active)] flex items-center justify-center text-[10px] font-semibold text-[var(--shell-nav-text)]">
               {user.name.charAt(0).toUpperCase()}
             </span>
           ) : (
-            <span className="w-[22px] h-[22px] rounded-full animate-pulse bg-[var(--shell-glass-bg-active)]" />
+            <span className="w-[22px] h-[22px] rounded-full animate-pulse bg-[var(--matrx-glass-bg-active)]" />
           )}
         </button>
       </div>

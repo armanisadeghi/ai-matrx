@@ -1389,13 +1389,13 @@ export default function NotesWorkspace({
       {/* ── Header center: View mode buttons via PageHeader ────────── */}
       {activeNoteId && activeCached && (
         <PageHeader>
-          <div className="shell-glass flex items-center gap-0.5 rounded-full p-0.5">
+          <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
             <button
               className={cn(
                 "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
                 "[&_svg]:w-3.5 [&_svg]:h-3.5",
                 editorMode === "plain"
-                  ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                   : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
               )}
               onClick={() => setEditorMode("plain")}
@@ -1408,7 +1408,7 @@ export default function NotesWorkspace({
                 "[&_svg]:w-3.5 [&_svg]:h-3.5",
                 "max-lg:hidden",
                 editorMode === "split"
-                  ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                   : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
               )}
               onClick={() => setEditorMode("split")}
@@ -1421,7 +1421,7 @@ export default function NotesWorkspace({
                 "[&_svg]:w-3.5 [&_svg]:h-3.5",
                 "max-lg:hidden",
                 editorMode === "wysiwyg"
-                  ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                   : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
               )}
               onClick={() => setEditorMode("wysiwyg")}
@@ -1434,7 +1434,7 @@ export default function NotesWorkspace({
                 "[&_svg]:w-3.5 [&_svg]:h-3.5",
                 "max-lg:hidden",
                 editorMode === "markdown-split"
-                  ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                   : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
               )}
               onClick={() => setEditorMode("markdown-split")}
@@ -1446,7 +1446,7 @@ export default function NotesWorkspace({
                 "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
                 "[&_svg]:w-3.5 [&_svg]:h-3.5",
                 editorMode === "preview"
-                  ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                   : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
               )}
               onClick={() => setEditorMode("preview")}
@@ -1688,7 +1688,7 @@ export default function NotesWorkspace({
                   {/* Chevron back — mobile only, same tap target as sidebar icon buttons */}
                   <div className="notes-search-tap lg:hidden">
                     <button
-                      className="flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full shell-glass shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
+                      className="flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full matrx-glass-thin-border shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
                       onClick={goBack}
                       aria-label="Back to notes"
                     >
@@ -1699,7 +1699,7 @@ export default function NotesWorkspace({
                   {/* Title input — fills remaining space, same glass pill as search input */}
                   <div className="notes-search-input-wrap">
                     <input
-                      className="notes-title-input w-full h-[1.875rem] px-3 shell-glass rounded-full placeholder:text-muted-foreground/60 outline-none transition-colors min-w-0 truncate"
+                      className="notes-title-input w-full h-[1.875rem] px-3 matrx-glass-thin-border rounded-full placeholder:text-muted-foreground/60 outline-none transition-colors min-w-0 truncate"
                       style={{ fontSize: "16px" }}
                       type="text"
                       value={activeLabel}
@@ -1713,9 +1713,9 @@ export default function NotesWorkspace({
                   <div className="notes-search-tap">
                     <button
                       className={cn(
-                        "flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full shell-glass shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5",
+                        "flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full matrx-glass-thin-border shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5",
                         showNoteOptions &&
-                          "bg-(--shell-glass-bg-active)! text-foreground",
+                          "bg-(--matrx-glass-bg-active)! text-foreground",
                       )}
                       onClick={() => setShowNoteOptions((v) => !v)}
                       aria-label="Note options"

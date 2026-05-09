@@ -31,6 +31,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
 import * as Files from "@/features/files/api/files";
+import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
 import type { Visibility } from "@/features/files/types";
 
 export interface FileActionHandlers {
@@ -50,9 +51,10 @@ export interface FileActionHandlers {
   download: () => Promise<void>;
   /**
    * Copies a public, embeddable URL to clipboard. The URL is backed by a
-   * persistent share token (read-only by default) and routes through the
-   * `/api/share/<token>/file` redirect, so it works as an `<img src>`,
-   * direct download, or anywhere else a recipient needs the bytes.
+   * persistent share token (read-only by default) and points directly at
+   * Python's public byte-streaming endpoint `{BACKEND}/share/<token>/download`,
+   * so it works as an `<img src>`, direct download, or anywhere else a
+   * recipient needs the bytes — no Next.js hop, no proxy.
    *
    * If the file already has an active read-only share link, that one is
    * reused. Otherwise a new one is created on demand. The link is
@@ -128,7 +130,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
   const deleteAction = useCallback(
     async (opts?: { hard?: boolean }) => {
       if (isVirtual) {
-        await dispatch(deleteAny({ id: fileId, hard: opts?.hard ?? false })).unwrap();
+        await dispatch(
+          deleteAny({ id: fileId, hard: opts?.hard ?? false }),
+        ).unwrap();
         return;
       }
       await dispatch(
@@ -189,9 +193,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
 
       // Default path — return a persistent public URL backed by a share
       // token. Reuses an existing active read-only link when present;
-      // otherwise creates one. The URL routes through the
-      // `/api/share/<token>/file` redirect so it works as an `<img src>`,
-      // raw download, or anywhere else.
+      // otherwise creates one. The URL points at Python's public
+      // `{BACKEND}/share/<token>/download` endpoint so it works as an
+      // `<img src>`, raw download, or anywhere else — no Next.js hop.
       let token: string | undefined;
 
       // Look in the slice first to avoid a needless network round-trip.
@@ -208,7 +212,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
         // Cache may be cold (no one has opened the Share dialog this
         // session). Load before deciding to create — keeps us from
         // accidentally creating duplicate links.
-        await dispatch(loadShareLinks({ resourceId: fileId })).unwrap().catch(() => undefined);
+        await dispatch(loadShareLinks({ resourceId: fileId }))
+          .unwrap()
+          .catch(() => undefined);
         const refreshed = selectActiveShareLinksForResource(
           store.getState(),
           fileId,
@@ -232,9 +238,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
 
       if (!token) return null;
 
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "";
-      const url = `${origin}/api/share/${token}/file`;
+      const url = pythonShareUrl(token);
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         try {
           await navigator.clipboard.writeText(url);

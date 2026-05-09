@@ -616,23 +616,6 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "form",
-      label: "Form",
-      content: (
-        <GenericSliceViewer sliceKey="form" state={completeState.form} />
-      ),
-    },
-    {
-      id: "testRoutes",
-      label: "Test Routes",
-      content: (
-        <GenericSliceViewer
-          sliceKey="testRoutes"
-          state={completeState.testRoutes}
-        />
-      ),
-    },
-    {
       id: "flashcardChat",
       label: "Flashcard Chat",
       content: (

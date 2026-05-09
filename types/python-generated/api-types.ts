@@ -7825,26 +7825,17 @@ export interface components {
         };
         /** Body_compress_pdf_utilities_pdf_compress_post */
         Body_compress_pdf_utilities_pdf_compress_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** Body_extract_text_from_pdf_utilities_pdf_extract_text_post */
         Body_extract_text_from_pdf_utilities_pdf_extract_text_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** Body_put_file_cloud_files_put_put */
         Body_put_file_cloud_files_put_put: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
             /**
              * File Path
@@ -7854,10 +7845,7 @@ export interface components {
         };
         /** Body_upload_file_files_upload_post */
         Body_upload_file_files_upload_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
             /** File Path */
             file_path: string;
@@ -7888,26 +7876,17 @@ export interface components {
         };
         /** Body_upload_podcast_image_media_podcast_upload_image_post */
         Body_upload_podcast_image_media_podcast_upload_image_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** Body_upload_podcast_video_media_podcast_upload_video_post */
         Body_upload_podcast_video_media_podcast_upload_video_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** Body_upload_vision_master_media_upload_post */
         Body_upload_vision_master_media_upload_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
             /** Vision Class */
             vision_class?: string | null;
@@ -8140,6 +8119,24 @@ export interface components {
             quality?: string | null;
             /** Count */
             count?: number | null;
+            /** Aspect Ratio */
+            aspect_ratio?: string | null;
+            /** Background */
+            background?: ("auto" | "opaque" | "transparent") | null;
+            /** Output Compression */
+            output_compression?: number | null;
+            /** Moderation */
+            moderation?: ("auto" | "low") | null;
+            /** Input Fidelity */
+            input_fidelity?: ("high" | "low") | null;
+            /** Partial Images */
+            partial_images?: number | null;
+            /** Stream Partial Images */
+            stream_partial_images?: boolean | null;
+            /** Style */
+            style?: string | null;
+            /** Reference Strength */
+            reference_strength?: number | null;
             /** Tts Voice */
             tts_voice?: string | {
                 [key: string]: string;
@@ -8148,6 +8145,10 @@ export interface components {
             audio_format?: string | null;
             /** Seconds */
             seconds?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Resolution */
+            resolution?: string | null;
             /** Fps */
             fps?: number | null;
             /** Steps */
@@ -8174,6 +8175,39 @@ export interface components {
             image_loras?: unknown[] | null;
             /** Disable Safety Checker */
             disable_safety_checker?: boolean | null;
+            /** Audio Enabled */
+            audio_enabled?: boolean | null;
+            /** Enhance Prompt */
+            enhance_prompt?: boolean | null;
+            /** Image Input */
+            image_input?: unknown | null;
+            /** Image Inputs */
+            image_inputs?: unknown[] | null;
+            /** Mask */
+            mask?: unknown | null;
+            /** Last Frame Image */
+            last_frame_image?: unknown | null;
+            /** Video Input */
+            video_input?: unknown | null;
+            /** Video Action */
+            video_action?: ("generate" | "edit" | "extend") | null;
+            /**
+             * Custom Tools
+             * @default []
+             */
+            custom_tools: {
+                [key: string]: unknown;
+            }[];
+            /** Mcp Servers */
+            mcp_servers?: string[] | null;
+            /** Compaction Settings */
+            compaction_settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** Detected Contexts */
+            detected_contexts?: {
+                [key: string]: string;
+            } | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Project Id */
@@ -8236,13 +8270,6 @@ export interface components {
              * @default []
              */
             client_tools: string[];
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: {
-                [key: string]: unknown;
-            }[];
             ide_state?: components["schemas"]["IdeState"] | null;
             sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
@@ -10340,6 +10367,24 @@ export interface components {
             quality?: string | null;
             /** Count */
             count?: number | null;
+            /** Aspect Ratio */
+            aspect_ratio?: string | null;
+            /** Background */
+            background?: ("auto" | "opaque" | "transparent") | null;
+            /** Output Compression */
+            output_compression?: number | null;
+            /** Moderation */
+            moderation?: ("auto" | "low") | null;
+            /** Input Fidelity */
+            input_fidelity?: ("high" | "low") | null;
+            /** Partial Images */
+            partial_images?: number | null;
+            /** Stream Partial Images */
+            stream_partial_images?: boolean | null;
+            /** Style */
+            style?: string | null;
+            /** Reference Strength */
+            reference_strength?: number | null;
             /** Tts Voice */
             tts_voice?: string | {
                 [key: string]: string;
@@ -10348,6 +10393,10 @@ export interface components {
             audio_format?: string | null;
             /** Seconds */
             seconds?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Resolution */
+            resolution?: string | null;
             /** Fps */
             fps?: number | null;
             /** Steps */
@@ -10374,6 +10423,34 @@ export interface components {
             image_loras?: unknown[] | null;
             /** Disable Safety Checker */
             disable_safety_checker?: boolean | null;
+            /** Audio Enabled */
+            audio_enabled?: boolean | null;
+            /** Enhance Prompt */
+            enhance_prompt?: boolean | null;
+            /** Image Input */
+            image_input?: unknown | null;
+            /** Image Inputs */
+            image_inputs?: unknown[] | null;
+            /** Mask */
+            mask?: unknown | null;
+            /** Last Frame Image */
+            last_frame_image?: unknown | null;
+            /** Video Input */
+            video_input?: unknown | null;
+            /** Video Action */
+            video_action?: ("generate" | "edit" | "extend") | null;
+            /** Custom Tools */
+            custom_tools?: unknown[] | null;
+            /** Mcp Servers */
+            mcp_servers?: string[] | null;
+            /** Compaction Settings */
+            compaction_settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** Detected Contexts */
+            detected_contexts?: {
+                [key: string]: string;
+            } | null;
         };
         /** LegalSearchRequest */
         LegalSearchRequest: {
@@ -26219,7 +26296,10 @@ export interface operations {
     };
     download_shared_file_share__share_token__download_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description When True (default), image/video/audio/pdf are served as Content-Disposition: inline so they render in <img>/<video>/<audio>/preview tags. When False, force Content-Disposition: attachment to trigger a browser download. Executable types (HTML, SVG, JS) are always forced to attachment regardless. */
+                inline?: boolean;
+            };
             header?: never;
             path: {
                 share_token: string;
@@ -26228,14 +26308,35 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description File bytes streamed with the file's canonical Content-Type and a Content-Disposition matching the requested inline / attachment mode. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "*/*": string;
                 };
+            };
+            /** @description Redirect to the public CDN URL when the shared file is public and CDN is configured. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Share token resolves to a non-file resource (e.g. a folder) and cannot be downloaded. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Share token is unknown, expired, exhausted, deactivated, or points to a deleted file. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

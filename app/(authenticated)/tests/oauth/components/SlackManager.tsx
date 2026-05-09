@@ -4,8 +4,7 @@ import {
   initializeSlackData,
   getChannelHistory,
   sendMessage,
-  joinChannel,
-  uploadFile
+  joinChannel
 } from '../utils/slackUtils';
 
 interface SlackManagerProps {
@@ -24,10 +23,8 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
   const [botInfo, setBotInfo] = useState<any>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [uploadingFile, setUploadingFile] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const accessToken = 'tokenData' in tokenData ? tokenData.access_token : tokenData.access_token;
@@ -153,35 +150,6 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
     }
   };
 
-  // Handle file upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !selectedChannel || uploadingFile) return;
-
-    const file = files[0];
-
-    try {
-      setUploadingFile(true);
-      setError(null);
-
-      await uploadFile(accessToken, selectedChannel, file);
-
-      // Refresh messages
-      const result = await getChannelHistory(accessToken, selectedChannel);
-      setMessages(result.messages.reverse());
-
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload file');
-      console.error('Error uploading file:', err);
-    } finally {
-      setUploadingFile(false);
-    }
-  };
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -444,35 +412,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <div>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        onChange={handleFileUpload}
-                        disabled={uploadingFile || !selectedChannel}
-                    />
-                    <button
-                        type="button"
-                        className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded inline-flex items-center"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingFile || !selectedChannel}
-                    >
-                      {uploadingFile ? (
-                          <>
-                            <span className="animate-spin h-3 w-3 border-b-2 border-gray-600 rounded-full mr-1"></span>
-                            Uploading...
-                          </>
-                      ) : (
-                          <>
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            Attach File
-                          </>
-                      )}
-                    </button>
-                  </div>
+                  <div />
 
                   {error && (
                       <div className="text-sm text-red-600">

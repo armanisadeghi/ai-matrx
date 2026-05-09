@@ -18034,6 +18034,30 @@ export type Database = {
           },
         ]
       }
+      wc_user_claim_bookmarks: {
+        Row: {
+          claim_id: string
+          created_at: string
+          label: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          label?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          label?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wf_checkpoint: {
         Row: {
           channel_values: Json

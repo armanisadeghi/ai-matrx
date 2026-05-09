@@ -132,7 +132,7 @@ export default function MobileRouteMenuSlot() {
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="h-10 rounded-lg bg-[var(--shell-glass-bg)] animate-pulse"
+                    className="h-10 rounded-lg bg-[var(--matrx-glass-bg)] animate-pulse"
                   />
                 ))}
               </div>

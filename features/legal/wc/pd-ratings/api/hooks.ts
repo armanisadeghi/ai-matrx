@@ -80,7 +80,10 @@ function unwrap<T>(result: ApiCallResult<T>): T {
 }
 
 export function useOccupationalCodes(
-  options?: Omit<UseQueryOptions<OccupationalCodesResponse>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseQueryOptions<OccupationalCodesResponse>,
+    "queryKey" | "queryFn"
+  >,
 ) {
   const dispatch = useAppDispatch();
   return useQuery<OccupationalCodesResponse>({
@@ -121,7 +124,10 @@ export function useImpairments(
 
 export function useImpairmentSearch(
   phrase: string,
-  options?: Omit<UseQueryOptions<ImpairmentSearchResponse>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseQueryOptions<ImpairmentSearchResponse>,
+    "queryKey" | "queryFn"
+  >,
 ) {
   const dispatch = useAppDispatch();
   const trimmed = phrase.trim();
@@ -135,7 +141,7 @@ export function useImpairmentSearch(
         callApi({
           path: `${WC_RATINGS_BASE}/impairments/search` as never,
           method: "POST",
-          body: { phrase: trimmed } satisfies ImpairmentSearch as never,
+          body: { phrases: [trimmed] } satisfies ImpairmentSearch as never,
         }),
       );
       return unwrap(result as ApiCallResult<ImpairmentSearchResponse>);
@@ -204,7 +210,11 @@ export function useReportInjuries(reportId: string | undefined) {
 
 export function useStatelessCalculate() {
   const dispatch = useAppDispatch();
-  return useMutation<StatelessRatingResponse, WcRatingsError, StatelessCalculate>({
+  return useMutation<
+    StatelessRatingResponse,
+    WcRatingsError,
+    StatelessCalculate
+  >({
     mutationFn: async (body) => {
       const result = await dispatch(
         callApi({
@@ -313,7 +323,10 @@ export function useEnsureReport() {
         const existingResult = existing as ApiCallResult<WcReportRead>;
         if (existingResult.error) throw new WcRatingsError(existingResult);
         qc.setQueryData(QK.reportForClaim(claimId), existingResult.data);
-        qc.setQueryData(QK.report(existingResult.data!.id), existingResult.data);
+        qc.setQueryData(
+          QK.report(existingResult.data!.id),
+          existingResult.data,
+        );
         return existingResult.data!;
       }
       throw new WcRatingsError(createdResult);

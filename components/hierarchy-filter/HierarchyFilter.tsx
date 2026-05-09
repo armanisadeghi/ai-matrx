@@ -48,7 +48,7 @@ export function HierarchyFilter({
 
   if (isLoading && !filter.data) {
     return (
-      <div className={cn('flex items-center gap-1.5 p-1 rounded-full shell-glass', className)}>
+      <div className={cn('flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border', className)}>
         <Skeleton className="h-6 w-[100px] rounded-full" />
         <Skeleton className="h-6 w-[90px] rounded-full" />
         {showSearch && <Skeleton className="h-6 flex-1 min-w-[120px] rounded-full" />}
@@ -72,7 +72,7 @@ export function HierarchyFilter({
 
   return (
     <div className={cn(
-      'flex items-center gap-1.5 p-1 rounded-full shell-glass',
+      'flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border',
       className,
     )}>
       <HierarchyFilterPill
@@ -102,7 +102,7 @@ export function HierarchyFilter({
       {hasSelection && (
         <button
           onClick={resetAll}
-          className="inline-flex items-center justify-center h-5 w-5 rounded-full shell-glass-card text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center justify-center h-5 w-5 rounded-full matrx-glass-card text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Reset filters"
         >
           <RotateCcw className="h-2.5 w-2.5" />
@@ -112,7 +112,7 @@ export function HierarchyFilter({
       {showSearch && (
         <>
           <div className="w-px h-4 bg-border/30 mx-0.5" />
-          <div className="flex-1 flex items-center gap-1.5 min-w-0 h-6 px-2 rounded-full shell-glass-card">
+          <div className="flex-1 flex items-center gap-1.5 min-w-0 h-6 px-2 rounded-full matrx-glass-card">
             <Search className="h-3 w-3 text-muted-foreground shrink-0" />
             <input
               type="text"

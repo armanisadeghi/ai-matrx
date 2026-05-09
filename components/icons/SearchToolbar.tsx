@@ -43,7 +43,7 @@ function SearchTapLabel({ htmlFor }: { htmlFor: string }) {
       className="flex h-11 w-11 items-center justify-center bg-transparent transition-transform active:scale-95 outline-none cursor-pointer"
       aria-label="Open search"
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-full shell-glass transition-colors">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full matrx-glass-thin-border transition-colors">
         <SearchIcon className="w-4 h-4 text-foreground" />
       </div>
     </label>
@@ -63,7 +63,7 @@ function InputBar({
 }) {
   return (
     <div className={`stb-input-bar ${className ?? ""}`}>
-      <div className="stb-input-bar-inner shell-glass">
+      <div className="stb-input-bar-inner matrx-glass-thin-border">
         <SearchIcon className="stb-search-icon-sm text-foreground" />
         <input
           type="search"
@@ -159,7 +159,7 @@ export function SearchGroup({
     <>
       <input type="checkbox" className="stb-toggle" id={checkboxId} />
       <div className={`stb-group ${fillClass} ${expandClass} ${className ?? ""}`.trim()}>
-        <div className="stb-group-pill shell-glass">
+        <div className="stb-group-pill matrx-glass-thin-border">
           <div className="stb-group-icons">
             {children}
           </div>
@@ -193,7 +193,7 @@ export function SearchGroupTrigger({ id }: { id: string }) {
       className="stb-group-trigger flex h-11 w-11 items-center justify-center bg-transparent outline-none cursor-pointer"
       aria-label="Search"
     >
-      <div className="flex h-6 w-6 items-center justify-center rounded-full shell-glass transition-[background,transform] active:scale-95">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full matrx-glass-thin-border transition-[background,transform] active:scale-95">
         <SearchIcon className="w-4 h-4 text-foreground" />
       </div>
     </label>

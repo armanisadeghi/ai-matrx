@@ -232,20 +232,6 @@ export function CreatePromptAppForm({
           throw new Error("No data returned from database");
         }
 
-        // Generate favicon in background (non-blocking)
-        try {
-          await fetch("/api/prompt-apps/generate-favicon", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              appId: data.id,
-              name,
-            }),
-          });
-        } catch (faviconError) {
-          console.warn("Favicon generation failed:", faviconError);
-        }
-
         setSuccess(true);
 
         // Call onSuccess callback if provided, otherwise redirect

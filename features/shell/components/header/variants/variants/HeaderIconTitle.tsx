@@ -65,7 +65,7 @@ export default function HeaderIconTitle({
 
       {/* ─── Center: Icon + Title lockup — flex:1, content centered within ─── */}
       <div className="hdr-structured-center">
-        <div className="hdr-icontitle-lockup shell-glass">
+        <div className="hdr-icontitle-lockup matrx-glass-thin-border">
           <LucideIcon
             name={icon}
             size={15}

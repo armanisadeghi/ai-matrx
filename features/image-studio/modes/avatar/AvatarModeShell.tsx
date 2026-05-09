@@ -12,7 +12,7 @@
  *     centroid of detected faces and fits the circle around it)
  *
  * Save pipeline: crop → 512² PNG (high-quality avatar source) → upload via
- * useUploadAndShare into `Images/Avatars/`. The standard
+ * the universal handler into `Images/Avatars/`. The standard
  * `/api/images/upload?preset=avatar` route resizes into the 400/128/48
  * variants for downstream consumption — that part is unchanged.
  */

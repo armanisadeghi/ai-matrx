@@ -28,7 +28,7 @@ export default function MobileDockShell({
   label = "Quick navigation",
 }: MobileDockShellProps) {
   return (
-    <nav className="shell-dock shell-glass-dock" aria-label={label}>
+    <nav className="shell-dock matrx-glass-core" aria-label={label}>
       {children}
     </nav>
   );

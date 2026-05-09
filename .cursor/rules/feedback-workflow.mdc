@@ -42,7 +42,7 @@ For each item from `get_untriaged_feedback()`:
 
 **A. View screenshots FIRST (mandatory if `image_urls` is not null)**
 
-Fetch signed URLs via `GET /api/admin/feedback/images?feedback_id=<uuid>`, open every one, and study them. Screenshots are the most reliable source of truth — they show exactly what the user saw. Skipping this step has caused agents to misidentify the component and fix the wrong thing entirely.
+Open every URL in `image_urls` as-is and study them — they're already direct, embeddable URLs (Supabase public URLs for older items, `${BACKEND}/share/<token>/download` for newer ones). No signing step is needed; the legacy `/api/admin/feedback/images` proxy was deleted in the 2026-05-07 file-handler refactor. Screenshots are the most reliable source of truth — they show exactly what the user saw. Skipping this step has caused agents to misidentify the component and fix the wrong thing entirely.
 
 **B. Read the item fields** — `description`, `feedback_type`, `username`, `route`
 

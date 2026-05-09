@@ -2,13 +2,13 @@
 
 /**
  * Audio import dialog for the Raw column. Three sources:
- *   - **File**: drag-drop or browse a local audio/video file.
- *   - **URL**: paste a direct media URL. Supabase Storage URLs go straight
- *     to `/api/audio/transcribe-url`; other URLs are gated to Cloud Files
- *     for now (we can add a server-side fetcher later).
- *   - **Cloud Files**: opens the existing Cloud Files window so the user
- *     can pick a file they've already uploaded; that path then comes back
- *     as a Supabase Storage URL.
+ *   - **File**: drag-drop or browse a local audio/video file. Uploads
+ *     through the universal file handler into cld_files, then transcribes.
+ *   - **URL**: paste a cld_files signed URL (mint via the handler or via
+ *     `Files.getSignedUrl`). The transcribe route allowlist accepts
+ *     Python backend + AWS S3 signed URLs only.
+ *   - **Cloud Files**: opens the Cloud Files window so the user can pick
+ *     a file they've already uploaded.
  *
  * Each whisper segment in the transcription response becomes one
  * `studio_raw_segments` row, with `t_start/t_end` shifted so imported
@@ -196,7 +196,7 @@ export function AudioImportDialog({
         setProgressLabel(status);
       });
       setProgressLabel("Transcribing…");
-      const signedUrl = await getAudioUrl(upload.path, 600);
+      const signedUrl = await getAudioUrl(upload.fileId);
       const data = await transcribeStorageUrl(signedUrl);
       const count = await ingestSegments(
         data.segments ?? [],
@@ -379,14 +379,14 @@ export function AudioImportDialog({
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste a Supabase Storage URL"
+              placeholder="Paste a cld_files signed URL"
               autoFocus
               disabled={busy}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
             <p className="text-[11px] text-muted-foreground">
-              For now we only transcribe URLs that point to your Supabase
-              Storage. To import from a public link (e.g. YouTube), download
+              For now we only transcribe URLs that point to your cloud
+              files. To import from a public link (e.g. YouTube), download
               the audio first and use the Upload tab.
             </p>
             <div className="flex items-center justify-end gap-1.5">

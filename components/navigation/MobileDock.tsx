@@ -144,7 +144,7 @@ export function MobileDock({ items, className }: MobileDockProps) {
       >
         <div
           ref={navRef}
-          className="relative flex items-stretch shell-glass-card rounded-[22px] shadow-lg border border-white/[0.08] mb-2 pointer-events-auto"
+          className="relative flex items-stretch matrx-glass-card rounded-[22px] shadow-lg border border-white/[0.08] mb-2 pointer-events-auto"
         >
           {/* Sliding pill indicator — fills the active slot */}
           {pill && (

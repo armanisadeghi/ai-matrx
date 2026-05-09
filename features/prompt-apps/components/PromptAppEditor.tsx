@@ -28,7 +28,6 @@ import {
   Copy,
   Check,
   Image,
-  RefreshCw,
   AlertCircle,
   ArrowDownToLine,
   Upload,
@@ -142,7 +141,6 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
     app.rate_limit_authenticated.toString(),
   );
   const [editFaviconUrl, setEditFaviconUrl] = useState(app.favicon_url || "");
-  const [isRegeneratingFavicon, setIsRegeneratingFavicon] = useState(false);
   const [isIframeLoading, setIsIframeLoading] = useState(false);
   const [promptName, setPromptName] = useState<string | null>(null);
   const [promptUpdatedAt, setPromptUpdatedAt] = useState<string | null>(null);
@@ -167,32 +165,6 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
     });
   };
 
-  // Regenerate favicon from app name
-  const handleRegenerateFavicon = async () => {
-    setIsRegeneratingFavicon(true);
-    try {
-      const response = await fetch("/api/prompt-apps/generate-favicon", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          appId: app.id,
-          name: editName || app.name,
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setEditFaviconUrl(result.faviconUrl);
-        setApp({ ...app, favicon_url: result.faviconUrl });
-        toast.success("Favicon generated!");
-      } else {
-        toast.error(result.error || "Failed to generate favicon");
-      }
-    } catch {
-      toast.error("Failed to generate favicon");
-    } finally {
-      setIsRegeneratingFavicon(false);
-    }
-  };
 
   // Fetch the prompt name and check if prompt has been updated since app was last saved
   useEffect(() => {
@@ -285,31 +257,6 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
     if (error) {
       toast.error("Failed to publish app");
       return;
-    }
-
-    // Auto-generate favicon on publish if none exists
-    if (!app.favicon_url) {
-      try {
-        const response = await fetch("/api/prompt-apps/generate-favicon", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ appId: app.id, name: app.name }),
-        });
-        const result = await response.json();
-        if (result.success) {
-          setEditFaviconUrl(result.faviconUrl);
-          setApp({
-            ...app,
-            status: "published",
-            favicon_url: result.faviconUrl,
-          });
-          toast.success("App published with auto-generated icon!");
-          router.refresh();
-          return;
-        }
-      } catch {
-        // Non-fatal — app was published, favicon is nice-to-have
-      }
     }
 
     toast.success("App published!");
@@ -1097,27 +1044,10 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
                         <Upload className="w-3.5 h-3.5" />
                         <span className="ml-1.5">Upload</span>
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRegenerateFavicon}
-                        disabled={isRegeneratingFavicon}
-                        title="Generate icon from app name"
-                        className="flex-shrink-0"
-                      >
-                        {isRegeneratingFavicon ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        )}
-                        <span className="ml-1.5">Generate</span>
-                      </Button>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Auto-generated from app name on creation. Click Upload to
-                      drop a custom image, Generate to regenerate from the name,
-                      or paste any URL into the field.
+                      Click Upload to drop a custom image, or paste any URL
+                      into the field.
                     </p>
                   </div>
                 </CardContent>

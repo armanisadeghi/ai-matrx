@@ -3,7 +3,8 @@
 import React, { useState, useCallback, useRef } from "react";
 import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePublicFileUpload, PublicUploadResult } from "@/hooks/usePublicFileUpload";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import type { NormalizedFile } from "@/features/file-handler/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PublicResource, PublicResourceType } from "../../types/content";
 
@@ -87,8 +88,8 @@ async function compressPdfFile(file: globalThis.File, targetSizeMB = 50): Promis
     }
 }
 
-// 50 MB — Supabase default bucket limit; auto-compress images/PDFs above 10 MB
-const SUPABASE_LIMIT = 50 * 1024 * 1024;
+// Hard 50 MB ceiling matches the cloud-files free tier; auto-compress images/PDFs above 10 MB
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 const COMPRESS_THRESHOLD = 10 * 1024 * 1024;
 
 export function PublicUploadResourcePicker({ onBack, onSelect }: PublicUploadResourcePickerProps) {
@@ -97,27 +98,26 @@ export function PublicUploadResourcePicker({ onBack, onSelect }: PublicUploadRes
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { uploadFile, isUploading, error: hookError, clearError } = usePublicFileUpload({
-        bucket: "public-chat-uploads",
-        path: "chat-attachments",
-        maxSizeMB: 50,
-    });
+    const { upload, uploading, error: hookError, reset } = useFileUpload();
+
+    const clearError = useCallback(() => reset(), [reset]);
 
     const isProcessing = fileStatuses.some((f) => f.status === "compressing" || f.status === "uploading");
 
-    const uploadResultToResource = useCallback((result: PublicUploadResult): PublicResource => {
-        const mimeType = result.type || "";
+    const normalizedToResource = useCallback((normalized: NormalizedFile, originalName: string, originalSize: number): PublicResource => {
+        const mimeType = normalized.meta.mime ?? "";
         let resourceType: PublicResourceType = "file";
         if (mimeType.startsWith("image/")) resourceType = "image_link";
         else if (mimeType.startsWith("audio/")) resourceType = "audio";
 
+        const url = normalized.url ?? (normalized.fileId ? `cld_files:${normalized.fileId}` : "");
         return {
             type: resourceType,
             data: {
-                url: result.url,
-                filename: result.filename,
+                url,
+                filename: normalized.meta.fileName ?? originalName,
                 mime_type: mimeType,
-                size: result.size,
+                size: normalized.meta.sizeBytes ?? originalSize,
                 type: mimeType,
             },
         };
@@ -130,7 +130,7 @@ export function PublicUploadResourcePicker({ onBack, onSelect }: PublicUploadRes
         clearError();
 
         // Pre-validate: reject files exceeding 50 MB before attempting anything
-        const oversized = files.filter((f) => f.size > SUPABASE_LIMIT);
+        const oversized = files.filter((f) => f.size > MAX_UPLOAD_BYTES);
         if (oversized.length > 0) {
             const names = oversized.map((f) => `${f.name} (${formatBytes(f.size)})`).join(", ");
             setUploadError(
@@ -182,13 +182,15 @@ export function PublicUploadResourcePicker({ onBack, onSelect }: PublicUploadRes
             updatedStatuses[i] = { ...updatedStatuses[i], status: "uploading" };
             setFileStatuses([...updatedStatuses]);
 
-            const result = await uploadFile(fileToUpload);
-
-            if (result) {
-                resources.push(uploadResultToResource(result));
+            try {
+                const normalized = await upload(
+                    { kind: "file", file: fileToUpload },
+                    { folderPath: "Public Chat Uploads", visibility: "public" },
+                );
+                resources.push(normalizedToResource(normalized, fileToUpload.name, fileToUpload.size));
                 updatedStatuses[i] = { ...updatedStatuses[i], status: "done" };
-            } else {
-                const errMsg = hookError || "Upload failed. The file may exceed storage limits or was rejected by the server.";
+            } catch (err) {
+                const errMsg = err instanceof Error ? err.message : "Upload failed.";
                 updatedStatuses[i] = { ...updatedStatuses[i], status: "error", errorMessage: errMsg };
                 setUploadError(errMsg);
             }
@@ -199,7 +201,7 @@ export function PublicUploadResourcePicker({ onBack, onSelect }: PublicUploadRes
         if (resources.length > 0) {
             onSelect(resources);
         }
-    }, [uploadFile, uploadResultToResource, hookError, clearError, onSelect]);
+    }, [upload, normalizedToResource, clearError, onSelect]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -234,7 +236,8 @@ export function PublicUploadResourcePicker({ onBack, onSelect }: PublicUploadRes
     }, [clearError]);
 
     const hasErrors = fileStatuses.some((f) => f.status === "error");
-    const displayError = uploadError || (!isUploading && hookError);
+    const isUploading = uploading;
+    const displayError = uploadError || (!isUploading && hookError ? hookError.message : null);
 
     return (
         <div className="flex flex-col max-h-[min(460px,70dvh)]">

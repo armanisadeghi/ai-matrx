@@ -173,7 +173,7 @@
   white-space: nowrap;
 }
 .notes-toolbar-overflow-item:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-text-hover);
 }
 .notes-toolbar-overflow-item--active { color: hsl(38 92% 50%); }
@@ -191,10 +191,10 @@
   gap: 0;
   border-radius: 9999px;
   overflow: hidden;
-  background: var(--shell-glass-bg);
+  background: var(--matrx-glass-bg);
   backdrop-filter: blur(5px) saturate(1.8) brightness(1.1);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
+  border: var(--matrx-glass-border-width-thin) solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
   transition:
     width var(--shell-duration-normal) var(--shell-ease-spring),
     flex var(--shell-duration-normal) var(--shell-ease-spring),

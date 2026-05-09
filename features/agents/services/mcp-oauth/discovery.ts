@@ -200,6 +200,7 @@ export async function registerDynamicClient(
     grantTypes?: string[];
     responseTypes?: string[];
     scope?: string;
+    tokenEndpointAuthMethod?: string;
   },
 ): Promise<DynamicClientRegistrationResult> {
   const body: Record<string, unknown> = {
@@ -207,7 +208,8 @@ export async function registerDynamicClient(
     client_name: params.clientName ?? "AI Matrx",
     grant_types: params.grantTypes ?? ["authorization_code", "refresh_token"],
     response_types: params.responseTypes ?? ["code"],
-    token_endpoint_auth_method: "none",
+    token_endpoint_auth_method:
+      params.tokenEndpointAuthMethod ?? "client_secret_basic",
   };
 
   if (params.scope) {

@@ -277,7 +277,7 @@ export default function MultiFileCodeEditor({
     setAiModalConfig(null);
   };
 
-  const handleAICodeChange = (newCode: string, version?: number) => {
+  const handleAICodeChange = (newCode: string, _fileId: string | null) => {
     onChange?.(activeFile, newCode);
   };
 
@@ -576,21 +576,22 @@ export default function MultiFileCodeEditor({
       {/* AI Code Editor Modal — agent-system. v2 (current_code) and v3
           (dynamic_context) collapse to the same SmartCodeEditorModal; the
           agent UUID selects which variable receives the code. */}
-      {aiModalConfig && (() => {
-        const agent = agentForPromptKey(aiModalConfig.builtinId);
-        return (
-          <SmartCodeEditorModal
-            open={true}
-            onOpenChange={handleCloseAIModal}
-            agents={[agent]}
-            defaultPickerAgentId={agent.id}
-            initialCode={code}
-            language={monacoLanguage}
-            onCodeChange={handleAICodeChange}
-            title={aiModalConfig.title}
-          />
-        );
-      })()}
+      {aiModalConfig &&
+        (() => {
+          const agent = agentForPromptKey(aiModalConfig.builtinId);
+          return (
+            <SmartCodeEditorModal
+              open={true}
+              onOpenChange={handleCloseAIModal}
+              agents={[agent]}
+              defaultPickerAgentId={agent.id}
+              initialCode={code}
+              language={monacoLanguage}
+              onCodeChange={handleAICodeChange}
+              title={aiModalConfig.title}
+            />
+          );
+        })()}
     </div>
   );
 }

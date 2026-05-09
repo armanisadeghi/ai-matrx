@@ -6,24 +6,20 @@ import { useState } from 'react';
 import { BrokerSlackClient } from './components/BrokerSlackClient';
 import { SlackAuthentication } from './components/SlackAuthentication';
 import { ChannelSelector } from './components/ChannelSelector';
-import { BrokerFileUploader } from './components/BrokerFileUploader';
 import { BrokerFormExample } from './components/BrokerForm';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { brokerSelectors } from '@/lib/redux/brokerSlice';
 import { SLACK_BROKER_IDS } from './components/BrokerSlackClient';
-import { MessageSquare, Upload, Users, Hash, Bell } from 'lucide-react';
+import { MessageSquare, Users, Hash } from 'lucide-react';
 
-// Define the available tabs for Slack functionality
-type SlackTab = 'files' | 'messages' | 'users' | 'channels';
+type SlackTab = 'messages' | 'users' | 'channels';
 
 export default function SlackWithBrokersPage() {
-    // Get token to determine authentication state
-    const token = useAppSelector(state => 
+    const token = useAppSelector(state =>
         brokerSelectors.selectText(state, SLACK_BROKER_IDS.token)
     );
-    
-    // State for the active tab
-    const [activeTab, setActiveTab] = useState<SlackTab>('files');
+
+    const [activeTab, setActiveTab] = useState<SlackTab>('messages');
     
     return (
         <div className="p-6 space-y-6 bg-slate-100 dark:bg-slate-900">
@@ -43,19 +39,7 @@ export default function SlackWithBrokersPage() {
                     <div className="mt-6">
                         {/* Tab Navigation */}
                         <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
-                            <button 
-                                onClick={() => setActiveTab('files')}
-                                className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 ${
-                                    activeTab === 'files' 
-                                        ? 'border-slate-600 text-slate-800 dark:border-slate-400 dark:text-slate-200' 
-                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                }`}
-                            >
-                                <Upload className="w-4 h-4" />
-                                <span>File Upload</span>
-                            </button>
-                            
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('messages')}
                                 className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 ${
                                     activeTab === 'messages' 
@@ -94,13 +78,6 @@ export default function SlackWithBrokersPage() {
                         
                         {/* Tab Content */}
                         <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md">
-                            {/* Files Tab */}
-                            {activeTab === 'files' && (
-                                <div className="p-6">
-                                    <BrokerFileUploader />
-                                </div>
-                            )}
-                            
                             {/* Messages Tab */}
                             {activeTab === 'messages' && (
                                 <div className="p-6">

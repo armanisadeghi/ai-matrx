@@ -4,8 +4,9 @@
  * Every mode follows the same lifecycle:
  *   1. Receive a source (File, URL, or cloud_file_id).
  *   2. Let the user manipulate it.
- *   3. On Save, upload the result via `useUploadAndShare` and report back
- *      with the new cloud file id + share URL.
+ *   3. On Save, upload the result via the universal handler (with
+ *      `createShareLink: true`) and report back with the new cloud
+ *      file id + share URL.
  *
  * Modes are mounted from full-page routes AND from modal dialogs (e.g. Notes
  * "edit this image" → opens Edit mode in a modal). Both call paths use the

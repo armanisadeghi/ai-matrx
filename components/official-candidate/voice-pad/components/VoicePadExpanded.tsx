@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback, useState } from "react";
-import { Mic, Plus, Minus, Type, Trash2, X } from "lucide-react";
+import { Mic, Plus, Minus, Type, X } from "lucide-react";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { cn } from "@/lib/utils";
@@ -89,21 +89,19 @@ export function VoicePadFooterRight({
       >
         <Plus />
       </button>
-      <div className="mx-0.5 h-3 w-px bg-border/50" />
-      {hasContent && (
-        <ContentActionBar
-          content={text}
-          title="Voice Pad Transcript"
-          hideSpeaker
-          hidePencil
-        />
+      {(hasContent || entries.length > 0) && (
+        <>
+          <div className="mx-0.5 h-3 w-px bg-border/50" />
+          <ContentActionBar
+            content={text}
+            title="Voice Pad Transcript"
+            hideSpeaker
+            hidePencil
+            onDelete={onClearAll}
+            deleteAriaLabel="Clear"
+          />
+        </>
       )}
-      <ActionFeedbackButton
-        icon={<Trash2 />}
-        tooltip="Clear"
-        onClick={onClearAll}
-        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-      />
     </>
   );
 }

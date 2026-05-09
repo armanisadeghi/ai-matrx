@@ -210,7 +210,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
             <div
                 className={`w-full ${
                     isFullScreen
-                        ? "fixed inset-0 z-50 flex items-center justify-center p-2 shell-glass cursor-pointer"
+                        ? "fixed inset-0 z-50 flex items-center justify-center p-2 matrx-glass-thin-border cursor-pointer"
                         : "py-3"
                 }`}
                 onClick={isFullScreen ? () => setIsFullScreen(false) : undefined}

@@ -29,7 +29,6 @@
   --color-secondary-foreground: hsl(var(--secondary-foreground));
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-glass-foreground: hsl(var(--glass-foreground));
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
@@ -114,6 +113,23 @@
     0px 2px 3px -1px rgba(0, 0, 0, 0.1), 0px 1px 0px 0px rgba(25, 28, 33, 0.02),
     0px 0px 0px 1px rgba(25, 28, 33, 0.08);
 
+  /* Matrx Glass — atomic Tailwind utilities generated from --matrx-glass-* tokens.
+     Compose at callsites:
+       bg-glass / hover:bg-glass-hover / active:bg-glass-active   (tinted fill)
+       border border-glass-edge                                    (stroke colour)
+       backdrop-blur-glass backdrop-saturate-glass                 (the physical glass effect)
+       shadow-glass / shadow-glass-lg                              (elevation)
+     Dark mode flows through automatically — the leaf --matrx-glass-* token is
+     what gets re-declared in `.dark`. */
+  --color-glass: var(--matrx-glass-bg);
+  --color-glass-hover: var(--matrx-glass-bg-hover);
+  --color-glass-active: var(--matrx-glass-bg-active);
+  --color-glass-edge: var(--matrx-glass-border-color);
+  --shadow-glass: var(--matrx-glass-shadow);
+  --shadow-glass-lg: var(--matrx-glass-shadow-lg);
+  --backdrop-blur-glass: var(--matrx-glass-blur);
+  --backdrop-saturate-glass: var(--matrx-glass-saturate);
+
   /* Background images
      gradient-1/2/3 aliases were removed — they had zero consumers
      (no `bg-gradient-1`/`-2`/`-3` className uses anywhere in the codebase).
@@ -192,13 +208,25 @@
   }
 
   @keyframes slide-in-from-right {
-    from { transform: translateX(60px); opacity: 0; }
-    to   { transform: translateX(0);    opacity: 1; }
+    from {
+      transform: translateX(60px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 
   @keyframes slide-in-from-left {
-    from { transform: translateX(-60px); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
+    from {
+      transform: translateX(-60px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 
   @keyframes shimmer {
@@ -497,24 +525,42 @@
   --animate-text-fade: textFade 12s infinite;
 
   @keyframes audio-shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(200%); }
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
   }
 
   /* SSR module animations — migrated from per-route CSS */
   @keyframes ssr-shimmer {
-    0% { background-position: -200px 0; }
-    100% { background-position: 200px 0; }
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: 200px 0;
+    }
   }
 
   @keyframes ssr-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
   }
 
   @keyframes ssr-shimmer-opacity {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.8; }
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
 
   --animate-ssr-shimmer: ssr-shimmer 1.5s ease-in-out infinite;
@@ -540,20 +586,38 @@
 }
 
 @keyframes mobile-card-enter-right {
-  from { transform: translateX(100%); opacity: 0.4; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes mobile-card-enter-left {
-  from { transform: translateX(-100%); opacity: 0.4; }
-  to   { transform: translateX(0);     opacity: 1; }
+  from {
+    transform: translateX(-100%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Used by MobileCardSurface — subtle slide-up + fade for window-panel
    card overlays on mobile. Driven by --window-surface-* tokens. */
 @keyframes card-enter {
-  from { transform: translateY(8px); opacity: 0; }
-  to   { transform: translateY(0);   opacity: 1; }
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @layer base {
@@ -581,36 +645,23 @@
     --window-surface-exit-duration: 180ms;
     --window-surface-easing: cubic-bezier(0.32, 0.72, 0, 1);
 
-    /* Glass Effect — iOS-inspired frosted glass
-       Philosophy: low opacity + low blur + displacement = real glass.
-       High opacity/blur alone = frosted shower door.
-       These values are calibrated to stay transparent when nested 2-3 levels deep. */
-    --glass-bg-nano:   rgba(255, 255, 255, 0.08);
-    --glass-bg-micro:  rgba(255, 255, 255, 0.14);
-    --glass-bg-subtle: rgba(255, 255, 255, 0.22);
-    --glass-bg:        rgba(255, 255, 255, 0.36);
-    --glass-bg-hover:  rgba(255, 255, 255, 0.46);
-    --glass-bg-strong: rgba(255, 255, 255, 0.56);
-    --glass-border:        rgba(255, 255, 255, 0.35);
-    --glass-border-subtle: rgba(255, 255, 255, 0.18);
-    --glass-shadow:
+    /* Matrx Glass — atomic tokens.
+       Exposed to Tailwind utilities via the @theme inline block at the top
+       of the file (bg-glass, border-glass, shadow-glass, backdrop-blur-glass,
+       backdrop-saturate-glass). Compose those directly at callsites; the
+       legacy .matrx-glass-{core,thin-border,card} classes are thin wrappers. */
+    --matrx-glass-bg: rgba(210, 225, 255, 0.14);
+    --matrx-glass-bg-hover: rgba(210, 225, 255, 0.22);
+    --matrx-glass-bg-active: rgba(210, 225, 255, 0.32);
+    --matrx-glass-border-color: rgba(180, 205, 255, 0.7);
+    --matrx-glass-border-width: 3.5px;
+    --matrx-glass-border-width-thin: 1.5px;
+    --matrx-glass-blur: 4px;
+    --matrx-glass-saturate: 1.8;
+    --matrx-glass-shadow:
       0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --glass-shadow-lg:
-      0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-
-    /* Shell Glass — iOS-style frosted glass system, single source of truth.
-       Originally lived in styles/shell.css (loaded only by (a) and (ssr) routes).
-       Hoisted to globals.css so .shell-glass* utilities work app-wide.
-       Light-mode tokens. */
-    --shell-glass-bg:           rgba(210, 225, 255, 0.14);
-    --shell-glass-bg-hover:     rgba(210, 225, 255, 0.22);
-    --shell-glass-bg-active:    rgba(210, 225, 255, 0.32);
-    --shell-glass-border:       rgba(180, 205, 255, 0.40);
-    --shell-glass-border-width: 2.5px;
-    --shell-glass-card-bg:      rgba(220, 230, 255, 0.18);
-    --shell-glass-blur:         16px;
-    --shell-glass-shadow:       0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shell-glass-shadow-lg:    0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --matrx-glass-shadow-lg:
+      0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
 
     /* Base Background - Zinc-100 with texture (rgb 244 244 245) */
     --background: 240 5% 96%;
@@ -641,7 +692,6 @@
     /* Muted - Zinc-200 for subtle backgrounds */
     --muted: 240 5% 92%;
     --muted-foreground: 240 5% 35%;
-    --glass-foreground: 240 5% 26%;
 
     /* Accent - More visible for hover states and UI elements */
     --accent: 240 5% 94%; /* zinc-150 - subtle for hover states */
@@ -761,27 +811,15 @@
   }
 
   .dark {
-    /* Glass Effect — Dark mode */
-    --glass-bg-nano:   rgba(39, 39, 42, 0.10);
-    --glass-bg-micro:  rgba(39, 39, 42, 0.18);
-    --glass-bg-subtle: rgba(39, 39, 42, 0.28);
-    --glass-bg:        rgba(39, 39, 42, 0.42);
-    --glass-bg-hover:  rgba(39, 39, 42, 0.52);
-    --glass-bg-strong: rgba(39, 39, 42, 0.62);
-    --glass-border:        rgba(255, 255, 255, 0.10);
-    --glass-border-subtle: rgba(255, 255, 255, 0.06);
-    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
-    --glass-shadow-lg:
-      0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.15);
-
-    /* Shell Glass — Dark mode tokens */
-    --shell-glass-bg:        rgba(180, 200, 255, 0.05);
-    --shell-glass-bg-hover:  rgba(180, 200, 255, 0.09);
-    --shell-glass-bg-active: rgba(180, 200, 255, 0.13);
-    --shell-glass-border:    rgba(255, 255, 255, 0.07);
-    --shell-glass-card-bg:   rgba(255, 255, 255, 0.06);
-    --shell-glass-shadow:    0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
-    --shell-glass-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
+    /* Matrx Glass — dark mode tokens */
+    --matrx-glass-bg: rgba(180, 200, 255, 0.05);
+    --matrx-glass-bg-hover: rgba(180, 200, 255, 0.09);
+    --matrx-glass-bg-active: rgba(180, 200, 255, 0.13);
+    --matrx-glass-border-color: rgba(255, 255, 255, 0.07);
+    --matrx-glass-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
+    --matrx-glass-shadow-lg:
+      0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
 
     /* Base Background - Zinc-850 with texture (rgb 39 39 42) */
     --background: 240 4% 16%;
@@ -812,7 +850,6 @@
     /* Muted - Zinc-750 for subtle backgrounds */
     --muted: 240 4% 24%;
     --muted-foreground: 240 5% 80%;
-    --glass-foreground: 240 5% 86%;
 
     /* Accent - More visible for hover states and UI elements */
     --accent: 240 4% 24%; /* zinc-775 - subtle for hover states in dark mode */
@@ -905,53 +942,10 @@
 @layer base {
   * {
     border-color: hsl(var(--border));
-
-    /* Tailwind v4 hardcodes --tw-ring-offset-color to #fff. That makes any
-       component using `ring-offset-{1,2,N}` without an explicit offset color
-       (the default ShadCN pattern: `focus-visible:ring-2 focus-visible:ring-ring
-       focus-visible:ring-offset-2`) draw a glaring WHITE halo in dark mode and
-       a near-invisible halo in light mode. Override it to transparent so the
-       offset just opens space between the element and the ring while showing
-       whatever surface (card, sheet, page bg) the element sits on. */
     --tw-ring-offset-color: transparent;
-
-    /* Pin every element's outline-color to our themed --ring BEFORE focus
-       arrives. Why: Tailwind v4 expanded `transition-colors` to include
-       `outline-color`. With the original CSS default (`outline-color:
-       currentColor`), the inherited value on most elements is the foreground
-       text color — near-white in dark mode. When focus arrived, our
-       `*:focus-visible { outline: 2px solid hsl(var(--ring)) }` rule changed
-       outline-color from currentColor (≈ white) to --ring (gray), and any
-       element carrying `transition-colors` faded between the two over 150ms.
-       That fade was the persistent "half-second white flash" on Tabbing onto
-       the resizable Separator (which uses transition-colors for its hover/
-       active background swap). By pre-setting outline-color globally, the
-       :focus-visible rule below sets the same value the element already had,
-       so the transition has nothing to animate — focus appears instantly,
-       and other color transitions (background, border, etc.) still work. */
     outline-color: hsl(var(--ring));
   }
 
-  /* Native focus outline — replace the UA default color with our themed --ring.
-     
-     Chromium's UA stylesheet applies `:focus-visible { outline:
-     -webkit-focus-ring-color auto 1px }`. The `-webkit-focus-ring-color` value
-     is a SYSTEM color: whitish in macOS dark mode, low-contrast bluish in
-     light mode. That's the "white halo in dark mode, nothing in light mode"
-     symptom we keep chasing. ARIA-interactive widgets (role="separator",
-     role="slider", div tabindex="0") trigger `:focus-visible` on plain mouse
-     click in Chromium — `:focus:not(:focus-visible)` does NOT suppress them,
-     so the only reliable global fix is to override the outline color itself.
-     
-     Setting outline to our --ring token means every focusable element across
-     the app gets a consistent, theme-aware focus indicator without per-
-     component overrides. Components using `focus-visible:ring-*` (Tailwind
-     box-shadow ring) continue to work — outline and box-shadow are independent
-     properties and both can stack if a component opts in.
-     
-     Click-focus on form elements (<button>, <input>) still doesn't trigger
-     :focus-visible, so they show no outline on click — Chromium's standard
-     behavior, preserved. */
   *:focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 1px;
@@ -971,14 +965,6 @@
     line-height: var(--typography-p-lineHeight);
     overflow-x: hidden; /* Prevent horizontal layout shift from becoming visible scroll */
   }
-  /* 
-     * Paragraph spacing: Tailwind 4 Preflight resets all margins to 0.
-     * For content areas (articles, markdown, etc.), use the `prose` class 
-     * from @tailwindcss/typography which handles proper paragraph spacing.
-     * UI components should use explicit margin utilities when needed.
-     */
-
-  /* Improved heading readability */
   h1,
   h2,
   h3,
@@ -1037,47 +1023,51 @@
     background-color: hsl(var(--card));
     background-image: var(--card-texture);
   }
+
+  /* =============================================================================
+     Matrx Glass — legacy class wrappers around the atomic Tailwind utilities.
+     New code should compose `bg-glass border border-glass-edge backdrop-blur-glass
+     backdrop-saturate-glass shadow-glass` directly. These classes exist so the
+     ~150 existing callsites keep working unchanged.
+     ============================================================================= */
+
+  .matrx-glass-core {
+    @apply bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass;
+    border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+  }
+
+  .matrx-glass-thin-border {
+    @apply bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass;
+    border: var(--matrx-glass-border-width-thin) solid var(--matrx-glass-border-color);
+  }
+  .matrx-glass-thin-border:hover  { @apply bg-glass-hover; }
+  .matrx-glass-thin-border:active { @apply bg-glass-active; }
+
+  .matrx-glass-card {
+    @apply bg-glass shadow-glass;
+    border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+  }
+
+  /* Opt-in interactive states — pair with any glass class on a clickable element. */
+  .matrx-glass-interactive:hover  { @apply bg-glass-hover; }
+  .matrx-glass-interactive:active { @apply bg-glass-active; }
+
+  /* Standalone shadow utilities (kept for low-cost reuse). */
+  .matrx-glass-shadow    { @apply shadow-glass; }
+  .matrx-glass-shadow-lg { @apply shadow-glass-lg; }
+
+  /* Tap pill — preserved unchanged. */
+  .matrx-tap-pill {
+    transition:
+      background-color 150ms ease,
+      transform 100ms ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .matrx-tap-pill:active { transform: scale(0.92); }
 }
 
 @layer utilities {
-  /* Glass utilities live in the Shell Glass and Tactile Utilities block
-     further down in this file. The four canonical variants are
-     shell-glass, shell-glass-dock, shell-glass-sheet, and shell-glass-card.
-     Their tokens are declared in the :root and .dark blocks above. The
-     four base variants live OUTSIDE @layer further down. That placement
-     is load-bearing because Tailwind background, border, and shadow
-     utilities sit inside @layer utilities and would otherwise shadow the
-     glass declarations on elements that combine glass with Tailwind
-     classes. Modal and overlay variants (shell-glass-overlay and
-     shell-glass-modal) also live OUTSIDE @layer with !important for the
-     Radix cascade.
-
-     The legacy mx-glass family was deleted in the glass-consolidation
-     Tier 3 migration — see git log for the codemod. The matching
-     --glass-bg, --glass-bg-nano, --glass-bg-micro, --glass-bg-subtle,
-     --glass-bg-hover, --glass-bg-strong, --glass-border,
-     --glass-border-subtle, --glass-shadow, and --glass-shadow-lg tokens
-     are kept because some JSX components still reference them via
-     inline style attributes (AgentsGrid, PromptsGrid, ResearchFilterBar,
-     BottomSheet). Migrate those inline-style consumers to shell-glass
-     classes to fully retire the old tokens. */
-
-  /* Textured background utilities — opt-in.
-     -----------------------------------------------------------------------
-     These utilities apply BOTH the themed background-color AND a subtle SVG
-     noise/dot texture image. Use them anywhere you want the textured look
-     (cards, popovers, muted surfaces). Plain `bg-card` / `bg-popover` /
-     `bg-muted` (auto-generated by Tailwind v4 from --color-card / --color-
-     popover / --color-muted in @theme inline above) now resolve to
-     untextured solid colors AND support opacity modifiers (`bg-card/80`,
-     `bg-muted/40`, etc.) via the modern --tw-bg-opacity plumbing.
-
-     Migration note: previously `.bg-card` / `.bg-popover` / `.bg-muted`
-     ALWAYS layered the texture, which (a) shadowed Tailwind's auto-gen and
-     (b) silently broke opacity modifiers. Existing consumers are unchanged
-     in this commit and will now render without texture; consumers that
-     specifically want the texture should migrate their className to the
-     `-textured` variants. */
   .bg-card-textured {
     background-color: hsl(var(--card));
     background-image: var(--card-texture);
@@ -1092,52 +1082,6 @@
     background-color: hsl(var(--muted));
     background-image: var(--background-texture);
   }
-
-  /* Note: .bg-card / .bg-popover / .bg-muted /
-     .bg-background / .bg-foreground / .bg-primary / .bg-secondary /
-     .bg-accent / .bg-destructive / .bg-success / .bg-warning / .bg-info
-     are auto-generated by Tailwind v4 from the matching --color-* tokens
-     declared in @theme inline above. The auto-generated versions support
-     opacity modifiers (bg-card/80, bg-primary/50, bg-accent/30, etc.) via
-     the --tw-bg-opacity plumbing, which the previous hand-rolled overrides
-     blocked. For the textured card/popover/muted surfaces, use
-     `bg-card-textured` / `bg-popover-textured` / `bg-muted-textured`.
-     Do NOT re-declare these utilities here unless you have a specific
-     reason to break opacity modifiers. */
-
-  /* Note: text-foreground, text-card-foreground, text-primary,
-     text-primary-foreground, text-muted-foreground, text-glass-foreground,
-     text-destructive, text-destructive-foreground, text-success,
-     text-success-foreground, text-warning, text-warning-foreground,
-     text-info are auto-generated by Tailwind v4 from the matching
-     --color-* tokens declared in @theme inline above. The auto-generated
-     versions support opacity modifiers (text-foreground/60, text-primary/80,
-     etc.) via --tw-text-opacity, which the previous hand-rolled overrides
-     blocked. Do NOT re-declare these here unless you have a specific reason
-     to break opacity modifiers. */
-
-  /* Border / Ring utilities — auto-generated by Tailwind v4
-     -----------------------------------------------------------------------
-     The following utilities are auto-generated by Tailwind v4 from the
-     matching --color-* tokens declared in @theme inline above and from
-     v4's built-in default-border-width scale. Hand-rolled overrides
-     previously here (`.border`, `.border-0/2/4/8`, `.border-border`,
-     `.border-input`, `.border-primary`, `.border-background`,
-     `.border-destructive`, `.border-success`, `.border-warning`,
-     `.border-info`, `.ring-ring`, `.ring-offset-background`) were removed
-     because they were redundant AND blocked opacity modifiers
-     (`border-primary/30`, `ring-ring/50`, etc.).
-
-     Historical landmine — DO NOT reintroduce: previously this block also
-     declared `.border { border-style: solid }`, which clobbered
-     `border-dotted` / `border-dashed` / `border-double` because both rules
-     had identical specificity and `.border` was later in source order.
-     Tailwind v4 Preflight already sets `border-style: solid` on
-     `*, ::before, ::after` at the base layer; do not re-declare it on
-     `.border`. (See commit 3c9d6192a for context.)
-
-     In Tailwind v4, border-color defaults to `currentColor`. Use
-     `border border-border` for the themed border color. */
 
   /* Hide scrollbar utility */
   .scrollbar-hide {
@@ -1405,66 +1349,6 @@
   }
 }
 
-/* Dialog / Modal glass — INTENTIONAL outside-@layer + `!important`.
-   -----------------------------------------------------------------------
-   `.shell-glass-overlay` and `.shell-glass-modal` are used by Radix-based
-   dialog / drawer / sheet components (components/ui/alert-dialog.tsx,
-   components/ui/drawer.tsx, components/ui/sheet.tsx, etc.). Both
-   declarations sit OUTSIDE `@layer utilities` and use `!important` on
-   every property because:
-
-     1. `@layer utilities` rules are weakened in cascade vs. unlayered
-        rules — Radix's library CSS is unlayered, so a layered glass
-        rule loses to it.
-     2. Some component libraries (Radix in particular) also emit inline
-        styles on portal/overlay roots that beat any non-`!important`
-        external rule.
-
-   Together this gives a 2-axis cascade win that the simpler @layer
-   placement could not provide. Do NOT move these inside `@layer` and
-   do NOT drop the `!important`. */
-.shell-glass-overlay {
-  background: rgba(0, 0, 0, 0.2) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.dark .shell-glass-overlay {
-  background: rgba(0, 0, 0, 0.5) !important;
-}
-
-.shell-glass-modal {
-  background: rgba(210, 225, 255, 0.14) !important;
-  backdrop-filter: blur(16px) saturate(1.8) brightness(1.1) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.8) brightness(1.1) !important;
-  border: 2.5px solid rgba(180, 205, 255, 0.40) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
-}
-
-.dark .shell-glass-modal {
-  background: rgba(180, 200, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.07) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12) !important;
-}
-
-/* Pointer-events overrides — INTENTIONAL `!important`.
-   -----------------------------------------------------------------------
-   Tailwind already generates `pointer-events-none` and `pointer-events-auto`
-   without `!important`. These overrides exist to defeat inline styles
-   injected by component libraries (Radix Dialog/Sheet/Drawer, Vaul, etc.)
-   that set `style="pointer-events: ..."` on portals, scrim layers, and
-   modal backdrops at the inline-style cascade level. Inline styles beat
-   external CSS regardless of source order, so without `!important` the
-   `pointer-events-none` className applied in JSX gets overridden.
-
-   This is a sledgehammer (every use of the class app-wide picks up the
-   `!important`), but it has been working since the original forms work
-   in 2024 and removing it without testing every Radix-based modal is
-   risky. If you need finer-grained control in a specific component,
-   prefer inline `style={{ pointerEvents: 'none' }}` over a class — it
-   bypasses this rule. */
 .pointer-events-none {
   pointer-events: none !important;
 }
@@ -1472,8 +1356,6 @@
 .pointer-events-auto {
   pointer-events: auto !important;
 }
-
-
 
 .mask-bottom {
   mask-image: linear-gradient(
@@ -1489,7 +1371,6 @@
     "Courier New", monospace;
 }
 
-
 @layer utilities {
   @media (max-width: 640px) {
     .container {
@@ -1504,7 +1385,6 @@
   transform-style: preserve-3d;
   backface-visibility: hidden;
 }
-
 
 /* ===== MOBILE OVERFLOW PREVENTION ===== */
 /* Ensure absolutely no horizontal scroll on mobile devices */
@@ -1580,87 +1460,18 @@
   }
 }
 
-/* =============================================================================
-   SSR Module CSS — now split into dedicated files loaded per-route:
-   • Scrollbar utilities  → styles/shell.css  (section 18)
-   • Notes module CSS     → app/(a)/notes/notes.css
-   ============================================================================= */
-
-/* =============================================================================
-   Shell Glass + Tactile Utilities — single source of truth.
-   Token declarations live in the .dark and :root blocks above.
-
-   These utilities are INTENTIONALLY unlayered (no @layer wrapper). In the
-   original styles/shell.css (which loaded only in (a) and (ssr) routes)
-   these rules sat at the top level of the file — and that placement was
-   load-bearing for the visual effect. Cascade Layers spec says unlayered
-   rules ALWAYS beat any @layer rule regardless of source order or selector
-   specificity. So when an element carries both a Tailwind utility and a
-   glass class, the shell-glass declarations need to win against Tailwind
-   background, border, and shadow utilities — which all sit inside @layer
-   utilities. Wrapping these rules in @layer utilities made them lose to
-   Tailwind utilities on the same element, which visibly thinned and
-   lightened the glass everywhere. Keep these unlayered.
-
-   The four glass variants are the entire public API:
-     shell-glass         — base (cards, panels, popovers, glass pills)
-     shell-glass-dock    — heavier shadow for floating chrome (dock, FAB)
-     shell-glass-sheet   — right-edge border only (slide-in side sheets)
-     shell-glass-card    — no backdrop-filter (avoids stacking-context bugs
-                              in Chromium that break shell chrome blur).
-                              For in-page content surfaces only.
-   For Radix Dialog, Drawer, and Sheet overlays, see shell-glass-overlay
-   and shell-glass-modal further up — those also live OUTSIDE @layer with
-   !important to defeat Radix's inline styles.
-   ============================================================================= */
-
-/* Core glass — backdrop-filter clipped at the element boundary */
-.shell-glass {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
-}
-.shell-glass:hover { background: var(--shell-glass-bg-hover); }
-.shell-glass:active { background: var(--shell-glass-bg-active); }
-
-/* Dock variant — heavier shadow, no border change */
-.shell-glass-dock {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow-lg);
-}
-.shell-glass-dock:hover { background: var(--shell-glass-bg-hover); }
-.shell-glass-dock:active { background: var(--shell-glass-bg-active); }
-
-/* Sheet variant — left border only (for side panels) */
-.shell-glass-sheet {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: none;
-  border-right: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
-}
-
-/* Card variant — NO backdrop-filter (avoids stacking-context issues) */
-.shell-glass-card {
-  background: var(--shell-glass-card-bg);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
-}
-
 /* Tactile — iOS-grade spring scale on hover/active */
 .shell-tactile {
   transition:
     transform var(--shell-duration-fast) var(--shell-ease-spring),
     background var(--shell-duration-fast) var(--shell-ease-smooth);
 }
-.shell-tactile:hover  { transform: scale(1.05); }
-.shell-tactile:active { transform: scale(0.95); }
+.shell-tactile:hover {
+  transform: scale(1.05);
+}
+.shell-tactile:active {
+  transform: scale(0.95);
+}
 
 /* Subtle tactile — for nav items (less dramatic) */
 .shell-tactile-subtle {
@@ -1668,8 +1479,12 @@
     transform var(--shell-duration-fast) var(--shell-ease-spring),
     background var(--shell-duration-fast) var(--shell-ease-smooth);
 }
-.shell-tactile-subtle:hover  { transform: scale(1.02); }
-.shell-tactile-subtle:active { transform: scale(0.98); }
+.shell-tactile-subtle:hover {
+  transform: scale(1.02);
+}
+.shell-tactile-subtle:active {
+  transform: scale(0.98);
+}
 
 /* Active route pill */
 .shell-active-pill {
@@ -1678,5 +1493,10 @@
   view-transition-name: shell-active-pill;
 }
 .shell-active-pill svg,
-.shell-active-pill .shell-nav-icon { color: var(--shell-pill-text); }
-.shell-active-pill .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
+.shell-active-pill .shell-nav-icon {
+  color: var(--shell-pill-text);
+}
+.shell-active-pill .shell-nav-label {
+  color: var(--shell-pill-text);
+  font-weight: 600;
+}

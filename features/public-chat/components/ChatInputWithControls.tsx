@@ -27,10 +27,8 @@ import {
 } from "lucide-react";
 
 import { VoiceMicButton } from "./VoiceMicButton";
-import {
-  usePublicFileUpload,
-  PublicUploadResult,
-} from "@/hooks/usePublicFileUpload";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import type { NormalizedFile } from "@/features/file-handler/types";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import {
   Popover,
@@ -514,39 +512,26 @@ export function ChatInputWithControls({
   const internalTextInputRef = useRef<HTMLTextAreaElement>(null);
   const textInputRef = externalTextInputRef || internalTextInputRef;
 
-  // Public file upload hook - for clipboard paste
-  const {
-    uploadFile,
-    isUploading,
-    error: uploadError,
-  } = usePublicFileUpload({
-    bucket: "public-chat-uploads",
-    path: "chat-attachments",
-    maxSizeMB: 10,
-  });
+  // Universal file handler — same path for authenticated and anonymous users
+  const { upload, uploading: isUploading, error: uploadError } = useFileUpload();
 
-  // Convert upload result to PublicResource
-  const uploadResultToResource = useCallback(
-    (result: PublicUploadResult): PublicResource => {
-      const mimeType = result.type || "";
+  const normalizedToResource = useCallback(
+    (normalized: NormalizedFile, originalName: string, originalSize: number): PublicResource => {
+      const mimeType = normalized.meta.mime ?? "";
 
-      // Determine resource type based on mime type
       let resourceType: PublicResourceType = "file";
-      if (mimeType.startsWith("image/")) {
-        resourceType = "image_link";
-      } else if (mimeType.startsWith("audio/")) {
-        resourceType = "audio";
-      } else if (mimeType.startsWith("video/")) {
-        resourceType = "file"; // Will be converted to input_file in content
-      }
+      if (mimeType.startsWith("image/")) resourceType = "image_link";
+      else if (mimeType.startsWith("audio/")) resourceType = "audio";
+      else if (mimeType.startsWith("video/")) resourceType = "file";
 
+      const url = normalized.url ?? (normalized.fileId ? `cld_files:${normalized.fileId}` : "");
       return {
         type: resourceType,
         data: {
-          url: result.url,
-          filename: result.filename,
+          url,
+          filename: normalized.meta.fileName ?? originalName,
           mime_type: mimeType,
-          size: result.size,
+          size: normalized.meta.sizeBytes ?? originalSize,
           type: mimeType,
         },
       };
@@ -554,22 +539,22 @@ export function ChatInputWithControls({
     [],
   );
 
-  // Handle pasted/uploaded files
   const handlePasteImage = useCallback(
     async (file: File) => {
       setOversizedPdf(null);
-      const result = await uploadFile(file);
-      if (result) {
-        const resource = uploadResultToResource(result);
-        setResources((prev) => [...prev, resource]);
-      } else if (
-        file.type === "application/pdf" &&
-        file.size > 10 * 1024 * 1024
-      ) {
-        setOversizedPdf(file);
+      try {
+        const normalized = await upload(
+          { kind: "file", file },
+          { folderPath: "Public Chat Uploads", visibility: "public" },
+        );
+        setResources((prev) => [...prev, normalizedToResource(normalized, file.name, file.size)]);
+      } catch {
+        if (file.type === "application/pdf" && file.size > 10 * 1024 * 1024) {
+          setOversizedPdf(file);
+        }
       }
     },
-    [uploadFile, uploadResultToResource],
+    [upload, normalizedToResource],
   );
 
   // Setup clipboard paste handler
@@ -660,7 +645,7 @@ export function ChatInputWithControls({
         {/* Upload error display */}
         {uploadError && (
           <div className="px-4 py-2 text-sm text-red-500">
-            {uploadError}
+            {uploadError.message}
             {oversizedPdf && (
               <Suspense
                 fallback={<Loader2 className="h-4 w-4 animate-spin mt-1" />}

@@ -14,7 +14,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
     <label htmlFor="shell-user-menu" className="block">
       <Link
         href="/settings"
-        className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--shell-glass-bg-hover)] transition-colors"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--matrx-glass-bg-hover)] transition-colors"
       >
         {userData.userMetadata.avatarUrl ? (
           <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full">
@@ -29,7 +29,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
             />
           </span>
         ) : (
-          <span className="w-7 h-7 rounded-full bg-[var(--shell-glass-bg-active)] flex items-center justify-center text-xs font-semibold text-[var(--shell-nav-text)] shrink-0">
+          <span className="w-7 h-7 rounded-full bg-[var(--matrx-glass-bg-active)] flex items-center justify-center text-xs font-semibold text-[var(--shell-nav-text)] shrink-0">
             {initial}
           </span>
         )}

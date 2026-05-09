@@ -1,0 +1,2076 @@
+/* =============================================================================
+   Shell CSS — Static-First SSR Layout
+
+   All CSS for the glassmorphic, zero-JS application shell.
+   Uses --shell-* prefix to avoid collisions with existing globals.css variables.
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   1. CSS Custom Properties — Geometry & Layout
+   --------------------------------------------------------------------------- */
+
+:root {
+  --shell-header-h: 2.75rem;
+  --shell-sidebar-w: 2.75rem;
+  --shell-sidebar-w-expanded: 13rem;
+  --shell-dock-h: 3.75rem;
+  --shell-dock-bottom: 0.625rem;
+  --shell-dock-mx: 0.5rem;
+  --shell-panel-w: 17.5rem;          /* 280px — secondary sidebar width */
+  --shell-safe-area-top: env(safe-area-inset-top, 0px);
+  --shell-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* Panel sidebar background — matches bg-textured (zinc-100 + subtle grid) */
+  --shell-panel-bg: rgb(244 244 245);
+  --shell-panel-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
+
+  /* Spring easing — iOS-grade overshoot */
+  --shell-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --shell-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --shell-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Transition durations */
+  --shell-duration-fast: 200ms;
+  --shell-duration-normal: 320ms;
+  --shell-duration-slow: 450ms;
+}
+
+/* ---------------------------------------------------------------------------
+   2. Glass Design Tokens — Light Mode
+   --------------------------------------------------------------------------- */
+
+:root {
+  --shell-glass-bg: rgba(210, 225, 255, 0.14);
+  --shell-glass-bg-hover: rgba(210, 225, 255, 0.22);
+  --shell-glass-bg-active: rgba(210, 225, 255, 0.32);
+  --shell-glass-border: rgba(180, 205, 255, 0.40);
+  --shell-glass-border-width: 2.5px;
+  --shell-glass-card-bg: rgba(220, 230, 255, 0.18);
+  --shell-glass-blur: 16px;
+  --shell-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shell-glass-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+
+  --shell-sidebar-bg: transparent;
+  --shell-sidebar-bg-expanded: var(--background);
+  --shell-sidebar-border: transparent;
+  --shell-sidebar-border-expanded: rgba(255, 255, 255, 0.2);
+
+  --shell-overlay-bg: rgba(0, 0, 0, 0.2);
+
+  --shell-pill-bg: rgba(59, 130, 246, 0.12);
+  --shell-pill-border: rgba(59, 130, 246, 0.2);
+  --shell-pill-text: rgb(37, 99, 235);
+
+  --shell-nav-text: rgba(0, 0, 0, 0.82);
+  --shell-nav-text-hover: rgba(0, 0, 0, 1);
+  --shell-nav-icon: rgba(0, 0, 0, 0.68);
+  --shell-nav-icon-hover: rgba(0, 0, 0, 0.9);
+
+  --shell-auth-text: rgba(0, 0, 0, 0.7);
+}
+
+/* ---------------------------------------------------------------------------
+   3. Glass Design Tokens — Dark Mode
+   --------------------------------------------------------------------------- */
+
+.dark {
+  /* Panel sidebar background — matches .dark .bg-textured (zinc-850 + subtle grid) */
+  --shell-panel-bg: rgb(39 39 42);
+  --shell-panel-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
+
+  --shell-glass-bg: rgba(180, 200, 255, 0.05);
+  --shell-glass-bg-hover: rgba(180, 200, 255, 0.09);
+  --shell-glass-bg-active: rgba(180, 200, 255, 0.13);
+  --shell-glass-border: rgba(255, 255, 255, 0.07);
+  --shell-glass-card-bg: rgba(255, 255, 255, 0.06);
+  --shell-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shell-glass-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
+
+  --shell-sidebar-bg: transparent;
+  --shell-sidebar-bg-expanded: var(--background);
+  --shell-sidebar-border: transparent;
+  --shell-sidebar-border-expanded: rgba(255, 255, 255, 0.06);
+
+  --shell-overlay-bg: rgba(0, 0, 0, 0.5);
+
+  --shell-pill-bg: rgba(59, 130, 246, 0.18);
+  --shell-pill-border: rgba(59, 130, 246, 0.3);
+  --shell-pill-text: rgb(96, 165, 250);
+
+  --shell-nav-text: rgba(255, 255, 255, 0.55);
+  --shell-nav-text-hover: rgba(255, 255, 255, 0.9);
+  --shell-nav-icon: rgba(255, 255, 255, 0.45);
+  --shell-nav-icon-hover: rgba(255, 255, 255, 0.8);
+
+  --shell-auth-text: rgba(255, 255, 255, 0.75);
+}
+
+/* ---------------------------------------------------------------------------
+   4. View Transitions — Active Route Pill Animation
+   --------------------------------------------------------------------------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(shell-active-pill) {
+  animation: shell-pill-out var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+::view-transition-new(shell-active-pill) {
+  animation: shell-pill-in var(--shell-duration-slow) var(--shell-ease-spring);
+}
+
+@keyframes shell-pill-out {
+  to {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes shell-pill-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   4b. Glass Layer — Portal container for all glass chrome
+   --------------------------------------------------------------------------- */
+
+/* Restore pointer events for all direct glass children in the portal layer */
+#glass-layer > * {
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Glass Utility Classes — Single source of truth
+   
+   ONE core backdrop-filter definition. Every glass surface uses this.
+   Variations (dock, sheet) only override what genuinely differs (shadow, border-side).
+   --------------------------------------------------------------------------- */
+
+/* ── IconButton — 3-layer reusable icon button used everywhere ──────────────
+   Outer  (.icon-btn)        44×44 transparent tap target — no bg, no border
+   Middle (.icon-btn-glass)  30×30 glass pill — backdrop-filter clipped here
+   Inner  (.icon-btn-icon)   icon — sized and colored via CSS vars
+   ----------------------------------------------------------------------- */
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;   /* 44px tap target */
+  height: 2.75rem;
+  min-width: 2.75rem;
+  flex-shrink: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-btn-glass {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;  /* 30px visible pill */
+  height: 1.875rem;
+  min-width: 1.875rem;
+  max-width: 1.875rem;
+  border-radius: 9999px;
+  overflow: hidden;    /* clips backdrop-filter to pill boundary */
+  flex-shrink: 0;
+  /* glass applied via .shell-glass in markup */
+}
+
+.icon-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;      /* 16px icon */
+  height: 1rem;
+  flex-shrink: 0;
+  pointer-events: none;
+  color: var(--shell-nav-icon-hover);
+}
+
+.icon-btn-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Active state */
+.icon-btn-glass.active,
+.icon-btn-glass[data-active="true"] {
+  background: var(--shell-glass-bg-active) !important;
+}
+
+/* ── Core glass — the single definition everything else inherits ── */
+.shell-glass,
+.shell-glass-dock,
+.shell-glass-sheet {
+  background: var(--shell-glass-bg);
+  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
+  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
+  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
+  box-shadow: var(--shell-glass-shadow);
+}
+
+/* ── Content glass — for in-page elements (cards, welcome, etc.)
+   NO backdrop-filter — avoids creating stacking contexts that break
+   shell chrome (dock, panel) backdrop-filter in Chromium. ── */
+.shell-glass-card {
+  background: var(--shell-glass-card-bg);
+  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
+  box-shadow: var(--shell-glass-shadow);
+}
+
+.shell-glass:hover,
+.shell-glass-dock:hover {
+  background: var(--shell-glass-bg-hover);
+}
+
+.shell-glass:active,
+.shell-glass-dock:active {
+  background: var(--shell-glass-bg-active);
+}
+
+/* Dock — only differs in shadow */
+.shell-glass-dock {
+  box-shadow: var(--shell-glass-shadow-lg);
+}
+
+/* Sheet — only differs in border direction (left edge only, not all sides) */
+.shell-glass-sheet {
+  border: none;
+  border-right: var(--shell-glass-border-width) solid var(--shell-glass-border);
+}
+
+/* Active route pill — visual definition (used by CSS-driven selectors below) */
+.shell-active-pill {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  view-transition-name: shell-active-pill;
+}
+
+.shell-active-pill svg,
+.shell-active-pill .shell-nav-icon {
+  color: var(--shell-pill-text);
+}
+
+.shell-active-pill .shell-nav-label {
+  color: var(--shell-pill-text);
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ACTIVE NAV STATE — Single source of truth
+   ══════════════════════════════════════════════════════════════════════════════
+   How it works:
+     1. layout.tsx stamps data-pathname on .shell-root at SSR time.
+     2. NavActiveSync patches history.pushState / popstate to keep it live.
+     3. CSS below matches the attribute and lights up every nav component
+        (sidebar, mobile sheet, dock) — no JS class toggling, no usePathname.
+
+   Route table (add new routes here — ONE place, all components update):
+     • /ssr/dashboard  exact + bare /ssr alias
+     • /ssr/chat       prefix (matches /ssr/chat/[id] etc.)
+     • /ssr/notes      prefix
+     • /tasks          prefix
+     • /projects       prefix
+     • /files          prefix
+     • /settings       prefix
+
+   Dock note: MobileDock is portaled into #glass-layer outside .shell-root.
+   Its selectors use body:has(.shell-root[data-pathname]) to cross the portal.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Sidebar nav items (.shell-nav-item) ─────────────────────────────────── */
+
+:where(
+  .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href="/agents"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/ssr/chat"],
+  .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/ssr/notes"],
+  .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
+  .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
+) {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  view-transition-name: shell-active-pill;
+}
+
+:where(
+  .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href="/agents"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/ssr/chat"],
+  .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/ssr/notes"],
+  .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
+  .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
+) svg,
+:where(
+  .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href="/agents"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/ssr/chat"],
+  .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/ssr/notes"],
+  .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
+  .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
+) .shell-nav-icon { color: var(--shell-pill-text); }
+
+:where(
+  .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/ssr/chat"],
+  .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/ssr/notes"],
+  .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
+  .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
+) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   6. Tactile Physics — iOS-grade hover/active feedback
+   --------------------------------------------------------------------------- */
+
+.shell-tactile {
+  transition:
+    transform var(--shell-duration-fast) var(--shell-ease-spring),
+    background var(--shell-duration-fast) var(--shell-ease-smooth);
+  /* will-change: transform removed — creates compositing layer that breaks backdrop-filter in Chromium */
+}
+
+.shell-tactile:hover {
+  transform: scale(1.05);
+}
+
+.shell-tactile:active {
+  transform: scale(0.95);
+}
+
+/* Subtle tactile — for nav items (less dramatic) */
+.shell-tactile-subtle {
+  transition:
+    transform var(--shell-duration-fast) var(--shell-ease-spring),
+    background var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+.shell-tactile-subtle:hover {
+  transform: scale(1.02);
+}
+
+.shell-tactile-subtle:active {
+  transform: scale(0.98);
+}
+
+/* ---------------------------------------------------------------------------
+   7. Shell Root Container
+   --------------------------------------------------------------------------- */
+
+.shell-root {
+  position: fixed;
+  inset: 0;
+  overflow: clip; /* 'clip' doesn't create a stacking context like 'hidden' does — backdrop-filter works through it in Chromium */
+  display: grid;
+  /* Default: collapsed sidebar on desktop */
+  grid-template-columns: var(--shell-sidebar-w) 1fr;
+  grid-template-rows: var(--shell-header-h) 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar main";
+}
+
+/* ---------------------------------------------------------------------------
+   8. Sidebar — CSS-Driven Toggle State
+   --------------------------------------------------------------------------- */
+
+/* Hide the checkbox visually */
+#shell-sidebar-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.shell-sidebar {
+  grid-area: sidebar;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--shell-sidebar-w);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--shell-sidebar-bg);
+  border-right: 1px solid var(--shell-sidebar-border);
+  transition:
+    width var(--shell-duration-slow) var(--shell-ease-spring),
+    background var(--shell-duration-normal) var(--shell-ease-smooth),
+    border-color var(--shell-duration-normal) var(--shell-ease-smooth);
+  overflow: hidden;
+}
+
+/* Expanded state */
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar {
+  width: var(--shell-sidebar-w-expanded);
+  background: var(--shell-sidebar-bg-expanded);
+  border-right-color: var(--shell-sidebar-border-expanded);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) {
+  grid-template-columns: var(--shell-sidebar-w-expanded) 1fr;
+}
+
+/* Sidebar brand section */
+.shell-sidebar-brand {
+  display: flex;
+  align-items: center;
+  height: var(--shell-header-h);
+  padding: 0 0.5rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Brand dual-layer: route header override (first) + default toggle (second).
+   When the route header has content, it fills the brand area and the
+   subsequent-sibling combinator hides the default toggle. */
+.shell-sidebar-brand-default {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shell-sidebar-brand-route {
+  display: contents;
+}
+
+/* Route header active → hide default toggle via ~ combinator */
+.shell-sidebar-brand-route:has(> *) ~ .shell-sidebar-brand-default {
+  display: none;
+}
+
+/* Route header active → become a flex container instead of display:contents */
+.shell-sidebar-brand-route:has(> *) {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.shell-sidebar-brand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  /* Toggle icon never moves */
+}
+
+.shell-sidebar-brand-logo {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition:
+    opacity var(--shell-duration-normal) var(--shell-ease-smooth),
+    transform var(--shell-duration-normal) var(--shell-ease-spring);
+  white-space: nowrap;
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--shell-nav-text-hover);
+  pointer-events: none;
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar-brand-logo {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Sidebar nav section — scrollable */
+.shell-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.25rem 0.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+
+  /* Hide scrollbar — always */
+  scrollbar-width: none;
+}
+
+.shell-sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sidebar footer */
+.shell-sidebar-footer {
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border-top: 1px solid transparent;
+  transition: border-color var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar-footer {
+  border-top-color: var(--shell-glass-border);
+}
+
+/* ---------------------------------------------------------------------------
+   9. Nav Items — Sidebar
+   --------------------------------------------------------------------------- */
+
+.shell-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.15rem 0.375rem;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  color: var(--shell-nav-text);
+  transition:
+    background var(--shell-duration-fast) var(--shell-ease-smooth),
+    color var(--shell-duration-fast) var(--shell-ease-smooth);
+  position: relative;
+}
+
+.shell-nav-item:hover {
+  background: var(--shell-glass-bg-hover);
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-nav-item:active {
+  background: var(--shell-glass-bg-active);
+}
+
+.shell-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--shell-nav-icon);
+  transition: color var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+.shell-nav-item:hover .shell-nav-icon {
+  color: var(--shell-nav-icon-hover);
+}
+
+.shell-nav-label {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity var(--shell-duration-normal) var(--shell-ease-smooth),
+    transform var(--shell-duration-normal) var(--shell-ease-spring);
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-nav-label {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Center icons when collapsed */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item {
+  justify-content: center;
+  padding: 0.375rem;
+  gap: 0;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-label {
+  width: 0;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-sidebar-brand {
+  gap: 0;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-sidebar-brand-logo {
+  width: 0;
+}
+
+/* Tooltip on collapsed sidebar */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--shell-glass-bg-active);
+  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
+  border: 1px solid var(--shell-glass-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--shell-nav-text-hover);
+  white-space: nowrap;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: var(--shell-glass-shadow);
+  animation: shell-tooltip-in var(--shell-duration-fast) var(--shell-ease-spring);
+}
+
+@keyframes shell-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   9b. Nav Item Groups — Medium Routes with nested children
+   --------------------------------------------------------------------------- */
+
+/* Children are hidden by default — shown only when the parent group is active */
+.shell-nav-children {
+  display: none;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* Thin separator lines above/below the children block */
+.shell-nav-children-separator {
+  height: 1px;
+  margin: 0.125rem 0.375rem;
+  background: var(--shell-glass-border);
+  opacity: 0.5;
+}
+
+/* Child nav items — slightly smaller than parent items */
+.shell-nav-child {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.1rem 0.375rem;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  color: var(--shell-nav-text);
+  transition:
+    background var(--shell-duration-fast) var(--shell-ease-smooth),
+    color var(--shell-duration-fast) var(--shell-ease-smooth);
+  position: relative;
+}
+
+.shell-nav-child:hover {
+  background: var(--shell-glass-bg-hover);
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-nav-child:active {
+  background: var(--shell-glass-bg-active);
+}
+
+.shell-nav-child .shell-nav-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.shell-nav-child .shell-nav-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* Expanded sidebar: indent children */
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-nav-children {
+  padding-left: 0.75rem;
+}
+
+/* Collapsed sidebar: center child icons, same as parent items */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-child {
+  justify-content: center;
+  padding: 0.25rem;
+  gap: 0;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-child .shell-nav-label {
+  width: 0;
+}
+
+/* Tooltip on collapsed child items */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-child[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--shell-glass-bg-active);
+  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
+  border: 1px solid var(--shell-glass-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--shell-nav-text-hover);
+  white-space: nowrap;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: var(--shell-glass-shadow);
+  animation: shell-tooltip-in var(--shell-duration-fast) var(--shell-ease-spring);
+}
+
+/* Show children when the parent group's route is active.
+   Uses the same data-pathname prefix matching as everything else. */
+:where(
+  .shell-root[data-pathname^="/agents"] .shell-nav-group[data-nav-group="/agents"]
+) .shell-nav-children {
+  display: flex;
+}
+
+/* Active state for child items — exact match vs prefix match */
+:where(
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
+  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
+) {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+}
+
+:where(
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
+  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
+) svg,
+:where(
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
+  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
+) .shell-nav-icon { color: var(--shell-pill-text); }
+
+:where(
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
+  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
+) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   9c. Sidebar View Switching — Large Routes
+   
+   Two containers inside shell-sidebar-nav:
+     .shell-sidebar-main-nav   — standard nav items (always SSR)
+     .shell-sidebar-route-nav  — route-specific menu (client island)
+   
+   The <nav> gets data-sidebar-view="main" (default) or "route".
+   CSS transitions handle the animated switch.
+   --------------------------------------------------------------------------- */
+
+.shell-sidebar-main-nav,
+.shell-sidebar-route-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Default: main nav visible, route nav hidden */
+.shell-sidebar-nav[data-sidebar-view="main"] .shell-sidebar-route-nav {
+  display: none;
+}
+
+.shell-sidebar-nav[data-sidebar-view="route"] .shell-sidebar-main-nav {
+  display: none;
+}
+
+/* Transition classes for animated switching — applied by JS */
+.shell-sidebar-main-nav.shell-nav-exit {
+  animation: shell-nav-slide-out var(--shell-duration-normal) var(--shell-ease-smooth) forwards;
+}
+
+.shell-sidebar-route-nav.shell-nav-enter {
+  animation: shell-nav-slide-in var(--shell-duration-normal) var(--shell-ease-spring) forwards;
+}
+
+.shell-sidebar-route-nav.shell-nav-exit {
+  animation: shell-nav-slide-out var(--shell-duration-normal) var(--shell-ease-smooth) forwards;
+}
+
+.shell-sidebar-main-nav.shell-nav-enter {
+  animation: shell-nav-slide-in var(--shell-duration-normal) var(--shell-ease-spring) forwards;
+}
+
+@keyframes shell-nav-slide-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes shell-nav-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Switch button — top of nav section, visible only when route menu exists */
+.shell-sidebar-switch {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.25rem;
+  margin-bottom: 0;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  color: var(--shell-nav-icon);
+  transition:
+    background var(--shell-duration-fast) var(--shell-ease-smooth),
+    color var(--shell-duration-fast) var(--shell-ease-smooth);
+  border: none;
+  background: none;
+  width: 100%;
+}
+
+.shell-sidebar-switch:hover {
+  background: var(--shell-glass-bg-hover);
+  color: var(--shell-nav-icon-hover);
+}
+
+.shell-sidebar-switch[data-visible="true"] {
+  display: flex;
+}
+
+/* Collapsed: center the switch icon */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-sidebar-switch {
+  justify-content: center;
+}
+
+.shell-sidebar-switch-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--shell-nav-text);
+  opacity: 0;
+  width: 0;
+  transition:
+    opacity var(--shell-duration-normal) var(--shell-ease-smooth),
+    width var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar-switch-label {
+  opacity: 1;
+  width: auto;
+}
+
+/* Route nav loading skeleton */
+.shell-sidebar-route-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.25rem;
+}
+
+.shell-sidebar-route-loading-item {
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  background: var(--shell-glass-bg);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ---------------------------------------------------------------------------
+   10. Header — Transparent Container
+   --------------------------------------------------------------------------- */
+
+.shell-header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--shell-header-h);
+  /* Padding is handled by the layout */
+  padding: 0 0 0 0;
+  padding-top: var(--shell-safe-area-top);
+  /* Completely transparent — no bg, no border, no blur */
+  background: transparent;
+  pointer-events: none;
+}
+
+.shell-header > * {
+  pointer-events: auto;
+}
+
+/* Header center injection zone */
+.shell-header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Injection wrapper — spans the full center zone width so variant roots
+   can use flex left/center/right layout inside it. Height matches the
+   left/right anchors (2.75rem) for consistent vertical alignment. */
+.shell-header-inject {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 2.75rem;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   11. Auth Island — Immutable Glass Container
+   --------------------------------------------------------------------------- */
+
+.shell-auth-island {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.875rem 0 0.75rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  color: var(--shell-auth-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  height: 1.875rem;
+}
+
+.shell-auth-island-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.shell-auth-island-avatar {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   12. Main Content Area
+   --------------------------------------------------------------------------- */
+
+.shell-main {
+  grid-area: main;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background: transparent;
+  /* Pull main up so it occupies the full viewport including the header row.
+     The header is transparent — content scrolls behind it.
+     Routes that need space below the header add their own top padding/offset.
+     No shell-level padding-top: routes own their own internal top spacing. */
+  margin-top: calc(-1 * var(--shell-header-h));
+}
+
+/* Ultra-thin auto-hiding scrollbar (global for shell) */
+.shell-main,
+.shell-main * {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.shell-main:hover,
+.shell-main *:hover {
+  scrollbar-color: var(--shell-glass-bg-hover) transparent;
+}
+
+.shell-main::-webkit-scrollbar,
+.shell-main *::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.shell-main::-webkit-scrollbar-track,
+.shell-main *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.shell-main::-webkit-scrollbar-thumb,
+.shell-main *::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+  transition: background 200ms ease;
+}
+
+.shell-main:hover::-webkit-scrollbar-thumb,
+.shell-main *:hover::-webkit-scrollbar-thumb {
+  background: var(--shell-glass-bg-hover);
+}
+
+.shell-main *::-webkit-scrollbar-thumb:hover {
+  background: var(--shell-glass-bg-active);
+}
+
+/* ---------------------------------------------------------------------------
+   13. Mobile — Responsive Overrides
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  /* Hide desktop sidebar on mobile */
+  .shell-sidebar {
+    display: none;
+  }
+
+  /* Reset grid to single column */
+  .shell-root {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--shell-header-h) 1fr;
+    grid-template-areas:
+      "header"
+      "main";
+  }
+
+  /* Main content needs bottom padding for dock */
+  .shell-main {
+    padding-bottom: calc(var(--shell-dock-h) + var(--shell-dock-bottom) + 1rem + var(--shell-safe-area-bottom));
+  }
+
+  /* Hide dock when a note detail is open — note editor owns the bottom chrome */
+  .shell-root:has(.note-detail-active) .shell-dock {
+    display: none;
+  }
+
+  /* Remove dock padding when note detail is open — dock is hidden */
+  .shell-root:has(.note-detail-active) .shell-main {
+    padding-bottom: 0;
+  }
+
+}
+
+@media (min-width: 1024px) {
+  /* Hide mobile elements on desktop */
+  .shell-dock {
+    display: none !important;
+  }
+
+  .shell-mobile-trigger {
+    display: none !important;
+  }
+
+  .shell-mobile-sheet-wrapper {
+    display: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   14. Mobile Dock — iOS-style Bottom Navigation
+   --------------------------------------------------------------------------- */
+
+.shell-dock {
+  position: fixed;
+  bottom: calc(var(--shell-dock-bottom) + var(--shell-safe-area-bottom));
+  left: var(--shell-dock-mx);
+  right: var(--shell-dock-mx);
+  height: var(--shell-dock-h);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-radius: 1.25rem;
+  padding: 0 0.25rem;
+}
+
+.shell-dock-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  color: var(--shell-nav-icon);
+  transition:
+    background var(--shell-duration-fast) var(--shell-ease-smooth),
+    color var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-spring);
+}
+
+.shell-dock-item:hover {
+  color: var(--shell-nav-icon-hover);
+}
+
+.shell-dock-item:active {
+  transform: scale(0.9);
+}
+
+/* ── 2. Dock items (.shell-dock-item) ────────────────────────────────────────
+   MobileDock is portaled into #glass-layer (outside .shell-root in the DOM).
+   Descendant selectors from .shell-root can't reach it — use body:has() instead.
+   --------------------------------------------------------------------------- */
+
+:where(
+  body:has(.shell-root[data-pathname="/ssr/dashboard"]) .shell-dock-item[data-nav-href="/ssr/dashboard"],
+  body:has(.shell-root[data-pathname="/ssr"])           .shell-dock-item[data-nav-href="/ssr/dashboard"],
+  body:has(.shell-root[data-pathname^="/ssr/chat"])     .shell-dock-item[data-nav-href="/ssr/chat"],
+  body:has(.shell-root[data-pathname^="/ssr/notes"])    .shell-dock-item[data-nav-href="/ssr/notes"],
+  body:has(.shell-root[data-pathname^="/tasks"])        .shell-dock-item[data-nav-href="/tasks"],
+  body:has(.shell-root[data-pathname^="/projects"])     .shell-dock-item[data-nav-href="/projects"],
+  body:has(.shell-root[data-pathname^="/files"])        .shell-dock-item[data-nav-href="/files"]
+) {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+  view-transition-name: shell-dock-pill;
+}
+
+::view-transition-old(shell-dock-pill) {
+  animation: shell-pill-out var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+::view-transition-new(shell-dock-pill) {
+  animation: shell-pill-in var(--shell-duration-slow) var(--shell-ease-spring);
+}
+
+/* ---------------------------------------------------------------------------
+   15. Mobile Side Sheet — Off-canvas Navigation
+   --------------------------------------------------------------------------- */
+
+#shell-mobile-menu {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.shell-mobile-sheet-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Backdrop overlay */
+.shell-mobile-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--shell-overlay-bg);
+  opacity: 0;
+  transition: opacity var(--shell-duration-normal) var(--shell-ease-smooth);
+  cursor: pointer;
+}
+
+/* Side sheet panel */
+.shell-mobile-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 80%;
+  max-width: 20rem;
+  transform: translateX(-100%);
+  transition: transform var(--shell-duration-slow) var(--shell-ease-spring);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1rem 0.75rem;
+  padding-top: calc(var(--shell-safe-area-top) + 1rem);
+}
+
+/* Open state */
+.shell-root:has(#shell-mobile-menu:checked) .shell-mobile-sheet-wrapper {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.shell-root:has(#shell-mobile-menu:checked) .shell-mobile-sheet-backdrop {
+  opacity: 1;
+}
+
+.shell-root:has(#shell-mobile-menu:checked) .shell-mobile-sheet {
+  transform: translateX(0);
+}
+
+/* Mobile sheet nav items */
+.shell-mobile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.625rem;
+  text-decoration: none;
+  color: var(--shell-nav-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+.shell-mobile-nav-item:hover {
+  background: var(--shell-glass-bg-hover);
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-mobile-nav-item:active {
+  background: var(--shell-glass-bg-active);
+}
+
+/* Active state in mobile sheet — visual definition */
+.shell-mobile-nav-item-active {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+}
+
+/* ── 3. Mobile sheet nav items (.shell-mobile-nav-item) ─────────────────────── */
+
+:where(
+  .shell-root[data-pathname="/ssr/dashboard"] .shell-mobile-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname="/ssr"]           .shell-mobile-nav-item[data-nav-href="/ssr/dashboard"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-mobile-nav-item[data-nav-href="/ssr/chat"],
+  .shell-root[data-pathname^="/ssr/notes"]    .shell-mobile-nav-item[data-nav-href="/ssr/notes"],
+  .shell-root[data-pathname^="/tasks"]        .shell-mobile-nav-item[data-nav-href="/tasks"],
+  .shell-root[data-pathname^="/projects"]     .shell-mobile-nav-item[data-nav-href="/projects"],
+  .shell-root[data-pathname^="/files"]        .shell-mobile-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/settings"]     .shell-mobile-nav-item[data-nav-href="/settings"]
+) {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+}
+
+/* Mobile sheet brand */
+.shell-mobile-sheet-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.shell-mobile-sheet-close {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  color: var(--shell-nav-icon);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.shell-mobile-sheet-close:hover {
+  background: var(--shell-nav-bg-hover);
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-mobile-sheet-brand-text {
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+  color: var(--shell-nav-text-hover);
+}
+
+/* Section divider in mobile sheet */
+.shell-mobile-section-divider {
+  height: 1px;
+  background: var(--shell-glass-border);
+  margin: 0.5rem 0.75rem;
+}
+
+.shell-mobile-section-label {
+  padding: 0.5rem 0.75rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--shell-nav-icon);
+}
+
+/* ---------------------------------------------------------------------------
+   15a. Mobile Side Sheet — View Switching for Large Routes
+   Same dual-container pattern as the desktop sidebar.
+   --------------------------------------------------------------------------- */
+
+.shell-mobile-main-nav,
+.shell-mobile-route-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-mobile-sheet[data-sidebar-view="main"] .shell-mobile-route-nav {
+  display: none;
+}
+
+.shell-mobile-sheet[data-sidebar-view="route"] .shell-mobile-main-nav {
+  display: none;
+}
+
+.shell-mobile-switch {
+  display: none;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.625rem;
+  cursor: pointer;
+  color: var(--shell-nav-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+.shell-mobile-switch:hover {
+  background: var(--shell-glass-bg-hover);
+}
+
+.shell-mobile-switch[data-visible="true"] {
+  display: flex;
+}
+
+.shell-mobile-switch .shell-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   15b. User Menu — Checkbox-driven dropdown (same pattern as mobile sheet)
+   --------------------------------------------------------------------------- */
+
+#shell-user-menu {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.shell-user-menu-wrapper {
+  position: relative;
+  z-index: 41;
+}
+
+.shell-user-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  cursor: default;
+}
+
+.shell-root:has(#shell-user-menu:checked) .shell-user-menu-backdrop {
+  display: block;
+}
+
+.shell-user-menu-panel {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.375rem;
+  z-index: 41;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear var(--shell-duration-fast);
+}
+
+@media (max-width: 1023px) {
+  .shell-user-menu-panel {
+    position: fixed;
+    right: 0.375rem;
+    left: 0.375rem;
+    top: auto;
+    bottom: calc(var(--shell-dock-h) + var(--shell-dock-bottom) + env(safe-area-inset-bottom, 0px) + 0.5rem);
+    margin-top: 0;
+    transform: translateY(0.5rem);
+  }
+
+  /* When the dock is hidden (e.g. chat route), drop the user menu to the
+     bottom of the visible area instead of above the (nonexistent) dock. */
+  body:has(.shell-hide-dock) .shell-user-menu-panel {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+}
+
+.shell-root:has(#shell-user-menu:checked) .shell-user-menu-panel {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear 0s;
+}
+
+/* ---------------------------------------------------------------------------
+   16. Dashboard Specific Styles
+   --------------------------------------------------------------------------- */
+
+.shell-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  padding: 0 0 0 0;
+}
+
+@media (min-width: 640px) {
+  .shell-dashboard-grid {
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shell-dashboard-grid {
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 2rem;
+  }
+
+  .shell-app-icon-square {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 1.25rem;
+  }
+
+  .shell-app-icon-label {
+    font-size: 0.8125rem;
+    max-width: 7rem;
+  }
+}
+
+.shell-app-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  padding: 0.75rem 0.5rem;
+  border-radius: 1rem;
+  transition:
+    transform var(--shell-duration-fast) var(--shell-ease-spring),
+    background var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+.shell-app-icon:hover {
+  transform: scale(1.05);
+  background: var(--shell-glass-bg);
+}
+
+.shell-app-icon:active {
+  transform: scale(0.95);
+}
+
+.shell-app-icon-square {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shell-app-icon-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--shell-nav-text);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Stats card */
+.shell-stat-card {
+  border-radius: 1rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shell-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--shell-nav-icon);
+}
+
+/* Quick action card */
+.shell-quick-card {
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  color: var(--shell-nav-text);
+}
+
+.shell-quick-card:hover {
+  background: var(--shell-glass-bg-hover);
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-quick-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--shell-glass-bg);
+  flex-shrink: 0;
+}
+
+.shell-quick-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.shell-quick-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--shell-nav-text-hover);
+}
+
+.shell-quick-card-desc {
+  font-size: 0.75rem;
+  color: var(--shell-nav-icon);
+}
+
+/* Section heading */
+.shell-section-heading {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--shell-nav-text-hover);
+  padding: 0.75rem 1.5rem 0.5rem;
+  letter-spacing: -0.005em;
+}
+
+/* ---------------------------------------------------------------------------
+   17. Route-Level Shell Controls
+   
+   Routes are dumb — they render ONE sentinel element with ONE class and the
+   shell handles every consequence automatically (visibility, spacing, grid).
+   
+   Usage (anywhere inside shell-main):
+     <span className="shell-hide-dock" aria-hidden="true" />
+     <span className="shell-hide-sidebar" aria-hidden="true" />
+   
+   The sentinel element itself is invisible — zero size, not in accessibility
+   tree. The shell-root :has() selector reacts to its presence globally.
+   --------------------------------------------------------------------------- */
+
+/* Sentinel base — invisible, zero-footprint */
+.shell-hide-dock,
+.shell-hide-sidebar {
+  display: block;
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* ── shell-hide-dock ──────────────────────────────────────────────────────
+   Hides the mobile dock and removes the bottom padding that compensates
+   for it. Only applies on mobile (dock doesn't exist on desktop).
+   
+   NOTE: Uses body:has() — not shell-root:has() — because MobileDock is
+   portaled into #glass-layer (direct child of <body>) via GlassPortal,
+   so it lives outside .shell-root in the DOM. body:has() spans both trees.
+   ----------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  body:has(.shell-hide-dock) .shell-dock {
+    display: none !important;
+  }
+
+  body:has(.shell-hide-dock) .shell-main {
+    padding-bottom: 0;
+  }
+}
+
+/* ── shell-hide-sidebar ───────────────────────────────────────────────────
+   Hides the desktop sidebar, collapses its grid column to zero, and
+   extends the header to fill the full width. Only applies on desktop
+   (sidebar doesn't exist on mobile).
+   ----------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .shell-root:has(.shell-hide-sidebar) .shell-sidebar {
+    display: none;
+  }
+
+  /* Collapse sidebar column regardless of expanded/collapsed toggle state */
+  .shell-root:has(.shell-hide-sidebar),
+  .shell-root:has(#shell-sidebar-toggle:checked):has(.shell-hide-sidebar) {
+    grid-template-columns: 0 1fr;
+  }
+
+  /* Header extends to full width — no sidebar offset */
+  .shell-root:has(.shell-hide-sidebar) .shell-header {
+    left: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   17b. Panel Sidebar — Route-Level Secondary Sidebar (CSS-Only)
+
+   A route opts in by rendering:
+     <aside class="shell-panel"> ... content ... </aside>
+   inside shell-main. The shell detects it via :has(.shell-panel) and
+   automatically splits main into a two-column grid.
+
+   Desktop:
+     #shell-panel-toggle checkbox controls open/close with a smooth
+     grid-template-columns transition. Panel starts closed (unchecked by default).
+     The toggle label can be rendered by the route's panel header.
+
+   Mobile:
+     #shell-panel-mobile checkbox drives a fixed drawer from the left.
+     Same backdrop/slide pattern as the shell-mobile-sheet.
+     Route renders a <label htmlFor="shell-panel-mobile"> for the trigger.
+   --------------------------------------------------------------------------- */
+
+/* ── Visually-hidden checkboxes ── */
+#shell-panel-toggle,
+#shell-panel-mobile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Desktop panel — inside shell-main ── */
+@media (min-width: 1024px) {
+  /* When a route has a .shell-panel, split shell-main into a grid.
+     The panel column animates between panel-w and 0. */
+  .shell-main:has(.shell-panel) {
+    display: grid;
+    grid-template-columns: 0px 1fr;
+    grid-template-rows: 1fr;
+    overflow: hidden;
+    transition: grid-template-columns var(--shell-duration-slow) var(--shell-ease-out);
+  }
+
+  /* Panel open (checkbox checked — default state) */
+  .shell-root:has(#shell-panel-toggle:checked) .shell-main:has(.shell-panel) {
+    grid-template-columns: var(--shell-panel-w) 1fr;
+  }
+
+  .shell-panel {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: var(--shell-panel-w);
+    min-width: var(--shell-panel-w);
+    border-right: 1px solid var(--shell-glass-border);
+    background-color: var(--shell-panel-bg);
+    background-image: var(--shell-panel-bg-image);
+    padding-top: var(--shell-header-h);
+    transform: translateX(calc(-1 * var(--shell-panel-w)));
+    transition: transform var(--shell-duration-slow) var(--shell-ease-out);
+  }
+
+  .shell-root:has(#shell-panel-toggle:checked) .shell-panel {
+    transform: translateX(0);
+  }
+
+  /* Main content area beside the panel */
+  .shell-panel-content {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* Panel header strip — pinned in header zone, tracks main sidebar width */
+  .shell-panel-header-strip {
+    position: fixed;
+    top: 0;
+    z-index: 41;
+    left: var(--shell-sidebar-w);
+    width: var(--shell-panel-w);
+    height: var(--shell-header-h);
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      left var(--shell-duration-slow) var(--shell-ease-spring),
+      opacity var(--shell-duration-normal) var(--shell-ease-smooth);
+  }
+
+  .shell-root:has(#shell-panel-toggle:checked) .shell-panel-header-strip {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .shell-root:has(#shell-sidebar-toggle:checked) .shell-panel-header-strip {
+    left: var(--shell-sidebar-w-expanded);
+  }
+
+  /* Panel toggle button styling — sits in the header strip */
+  .shell-panel-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: var(--shell-nav-icon);
+    transition: color var(--shell-duration-fast) var(--shell-ease-smooth);
+  }
+
+  .shell-panel-toggle-btn:hover {
+    color: var(--shell-nav-icon-hover);
+  }
+
+  /* When panel is closed, show a collapsed toggle indicator */
+  .shell-root:not(:has(#shell-panel-toggle:checked)) .shell-panel-header-strip {
+    opacity: 1;
+    pointer-events: auto;
+    width: auto;
+  }
+}
+
+/* ── Mobile panel — fixed drawer from left ── */
+@media (max-width: 1023px) {
+  /* Hide desktop panel elements on mobile */
+  .shell-panel-header-strip {
+    display: none;
+  }
+
+  .shell-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 85%;
+    max-width: 20rem;
+    z-index: 46;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--shell-panel-bg);
+    background-image: var(--shell-panel-bg-image);
+    transform: translateX(-100%);
+    transition: transform var(--shell-duration-slow) var(--shell-ease-spring);
+    padding-top: var(--shell-header-h);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .shell-root:has(#shell-panel-mobile:checked) .shell-panel {
+    transform: translateX(0);
+  }
+
+  /* Backdrop */
+  .shell-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: var(--shell-overlay-bg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--shell-duration-normal) var(--shell-ease-smooth);
+  }
+
+  .shell-root:has(#shell-panel-mobile:checked) .shell-panel-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Main content area — no grid on mobile, just flex.
+
+     Height derivation:
+       shell-root (position:fixed, inset:0) → height = layout viewport.
+       Grid rows: header-h | 1fr → main track = viewport − header-h.
+       shell-main has margin-top: -header-h.  Grid stretch (default
+       align-self) sizes the item to: track − margins = (viewport−header)
+       − (−header) = **full viewport**.  So shell-main's content box IS the
+       full viewport height.
+
+     Normal: height:100% fills the parent's full-viewport content box.
+
+     Keyboard open: VisualViewportSync writes --visual-viewport-height
+       (the visible area above the keyboard). shell-root stays fixed, so
+       100% won't shrink. We override with the visual-viewport value.
+       No header subtraction needed — content scrolls behind the glass
+       header just like it does normally. */
+  .shell-panel-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+    height: var(--visual-viewport-height, 100%);
+    /* Prevents content from jumping when keyboard opens/closes */
+    transition: height 0ms;
+  }
+
+  /* Hide shell hamburger when a panel route is active — route renders its own trigger */
+  .shell-root:has(.shell-panel) .shell-mobile-trigger {
+    display: none;
+  }
+}
+
+/* ── Panel internal layout helpers ── */
+
+/* Scrollable body inside the panel */
+.shell-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.shell-panel-body:hover {
+  scrollbar-color: hsl(var(--border) / 0.3) transparent;
+}
+
+.shell-panel-body::-webkit-scrollbar { width: 3px; }
+.shell-panel-body::-webkit-scrollbar-track { background: transparent; }
+.shell-panel-body::-webkit-scrollbar-thumb { background: transparent; border-radius: 2px; }
+.shell-panel-body:hover::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.3); }
+
+/* Footer pinned to bottom of panel */
+.shell-panel-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--shell-glass-border);
+}
+
+/* ---------------------------------------------------------------------------
+   17c. Hamburger Icon — CSS-only animated
+   --------------------------------------------------------------------------- */
+
+/* shell-mobile-menu-label / shell-hamburger replaced by IconButton + HamburgerIsland */
+
+/* ---------------------------------------------------------------------------
+   18. Scrollbar Utilities — site-wide, used across all SSR routes
+   --------------------------------------------------------------------------- */
+
+/* Ultra-thin auto-hiding scrollbar (transparent until hover) */
+.scrollbar-thin-auto {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-thin-auto:hover {
+  scrollbar-color: hsl(var(--muted-foreground) / 0.15) transparent;
+}
+.scrollbar-thin-auto::-webkit-scrollbar { width: 3px; }
+.scrollbar-thin-auto::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin-auto::-webkit-scrollbar-thumb { background: transparent; border-radius: 2px; }
+.scrollbar-thin-auto:hover::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.15); }
+.scrollbar-thin-auto::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.3); }
+
+/* Thin always-visible scrollbar (for sidebar lists) */
+.scrollbar-thin-visible {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border) / 0.3) transparent;
+}
+.scrollbar-thin-visible::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin-visible::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin-visible::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.3); border-radius: 4px; }
+.scrollbar-thin-visible::-webkit-scrollbar-thumb:hover { background: hsl(var(--border) / 0.5); }
+
+/* Thin scrollbar, hidden until container hover (for message areas) */
+.scrollbar-thin-hover {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-thin-hover:hover {
+  scrollbar-color: hsl(var(--border) / 0.3) transparent;
+}
+.scrollbar-thin-hover::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin-hover::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin-hover::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.scrollbar-thin-hover:hover::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.3); }
+.scrollbar-thin-hover::-webkit-scrollbar-thumb:hover { background: hsl(var(--border) / 0.5); }
+
+/* Hide horizontal scrollbar */
+.scrollbar-h-none::-webkit-scrollbar { height: 0; }
+
+/* =============================================================================
+   Matrx Glass — Composable Layer System
+   Fully self-contained. Zero dependency on --shell-* tokens or shell-glass classes.
+   Own tokens (--matrx-glass-*), own dark mode, own classes.
+   ============================================================================= */
+
+/* --- Matrx Glass Design Tokens — Light Mode --- */
+:root {
+  --matrx-glass-bg:          rgba(210, 225, 255, 0.14);
+  --matrx-glass-bg-hover:    rgba(210, 225, 255, 0.22);
+  --matrx-glass-bg-active:   rgba(210, 225, 255, 0.32);
+  --matrx-glass-border-color: rgba(180, 205, 255, 0.70);
+  --matrx-glass-border-width: 1.5px;
+  --matrx-glass-blur:        4px;
+  --matrx-glass-shadow:      0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --matrx-glass-shadow-lg:   0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Matrx Glass Design Tokens — Dark Mode --- */
+.dark {
+  --matrx-glass-bg:          rgba(180, 200, 255, 0.05);
+  --matrx-glass-bg-hover:    rgba(180, 200, 255, 0.09);
+  --matrx-glass-bg-active:   rgba(180, 200, 255, 0.13);
+  --matrx-glass-border-color: rgba(255, 255, 255, 0.07);
+  --matrx-glass-shadow:      0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --matrx-glass-shadow-lg:   0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Layer 1: Backdrop blur/filter — the physical glass effect --- */
+.matrx-glass-fx {
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+}
+
+/* --- Layer 2: Background fill — the tinted glass surface --- */
+.matrx-glass-bg {
+  background: var(--matrx-glass-bg);
+}
+
+/* --- Layer 3: Border --- */
+.matrx-glass-border {
+  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+}
+
+.matrx-glass-core {
+  background: var(--matrx-glass-bg);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+  border: 3.5px solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+.matrx-glass-thin-border {
+  background: var(--matrx-glass-bg);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+  border: 1.5px solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+
+/* --- Layer 4: Shadows --- */
+.matrx-glass-shadow    { box-shadow: var(--matrx-glass-shadow); }
+.matrx-glass-shadow-lg { box-shadow: var(--matrx-glass-shadow-lg); }
+
+/* --- Layer 5: Interactive states — opt-in only for clickable elements --- */
+.matrx-glass-interactive:hover  { background: var(--matrx-glass-bg-hover); }
+.matrx-glass-interactive:active { background: var(--matrx-glass-bg-active); }
+
+/* --- Composed: identical visual result to shell-glass, built from layers above --- */
+.matrx-shell-glass {
+  background: var(--matrx-glass-bg);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+.matrx-shell-glass:hover  { background: var(--matrx-glass-bg-hover); }
+.matrx-shell-glass:active { background: var(--matrx-glass-bg-active); }
+
+/* --- Layer 6: Tap-pill press feedback (CSS-only, instant) ---
+ * Single source of truth for TapTargetButton press feedback.
+ * Applied to the visible inner pill of every tap button variant
+ * (glass, transparent, solid, group). If press feedback ever feels
+ * wrong (too subtle, too aggressive, jittery on mobile) — start here.
+ *
+ * Effects:
+ *   - 8% scale-down on :active (visible pill shrinks slightly when pressed)
+ *   - smooth bg + transform transitions
+ *   - touch-action: manipulation kills the 300ms mobile tap delay
+ *   - -webkit-tap-highlight-color: transparent suppresses the iOS gray flash
+ *     that would otherwise paint OVER our custom feedback
+ *
+ * Background-color animation pairs with each variant's own :active rule
+ * (.matrx-shell-glass:active, .matrx-glass-interactive:active, or Tailwind
+ * `active:bg-*` utilities on transparent/solid). This class only owns the
+ * timing curve and the scale.
+ */
+.matrx-tap-pill {
+  transition: background-color 150ms ease, transform 100ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.matrx-tap-pill:active { transform: scale(0.92); }

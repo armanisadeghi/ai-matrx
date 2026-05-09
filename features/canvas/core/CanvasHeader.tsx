@@ -87,7 +87,7 @@ export function CanvasHeader({
       <div 
         className={cn(
           "flex-shrink-0 grid items-center",
-          "shell-glass border-b border-border/50",
+          "matrx-glass-thin-border border-b border-border/50",
           isCompact ? "px-2 py-1" : isMinimal ? "px-3 py-1.5" : "px-2 py-1 sm:px-3 sm:py-1.5",
           /* 3-column grid: left | center | right — center is truly centered */
           "grid-cols-[1fr_auto_1fr]",

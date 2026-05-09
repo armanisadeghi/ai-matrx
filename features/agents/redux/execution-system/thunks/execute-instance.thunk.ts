@@ -47,7 +47,6 @@ import {
 import { addOptimisticUserMessage } from "../messages/messages.slice";
 import { selectMessageCount } from "../messages/messages.selectors";
 import { v4 as uuidv4 } from "uuid";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { processStream } from "./process-stream";
 import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
 import {
@@ -339,19 +338,12 @@ export const executeInstance = createAsyncThunk<
         // client-generated UUID. When `record_reserved cx_message role=user`
         // lands on the stream, process-stream promotes this temp id to the
         // real server `cx_message.id` — one Redux record, no duplicates.
-        const content: CxContentBlock[] = [
-          ...(displayContent
-            ? [
-                {
-                  type: "text",
-                  text: displayContent,
-                } as unknown as CxContentBlock,
-              ]
-            : []),
-          ...((userMessageParts as unknown as CxContentBlock[] | undefined) ??
-            []),
-          ...(resourceBlocks as unknown as CxContentBlock[]),
-        ];
+        const content: MessagePart[] = [];
+        if (displayContent) {
+          content.push({ type: "text", text: displayContent });
+        }
+        if (userMessageParts) content.push(...userMessageParts);
+        content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
         const nextPosition = selectMessageCount(conversationId)(
           getState() as RootState,

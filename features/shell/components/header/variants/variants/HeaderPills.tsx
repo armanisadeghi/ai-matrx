@@ -49,7 +49,7 @@ export default function HeaderPills<T extends string = string>({
         return (
           <button
             key={option.value}
-            className={`hdr-pill ${isActive ? "hdr-pill-active shell-glass" : ""} shell-tactile-subtle`}
+            className={`hdr-pill ${isActive ? "hdr-pill-active matrx-glass-thin-border" : ""} shell-tactile-subtle`}
             onClick={() => onChange(option.value)}
             type="button"
             role="tab"

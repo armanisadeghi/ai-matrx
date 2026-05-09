@@ -557,7 +557,7 @@ function MobileCanvasShareSheet(props: CanvasShareSheetProps) {
     <Drawer open={props.open} onOpenChange={props.onOpenChange}>
       <DrawerPortal>
         <DrawerOverlay className="z-[20000]" />
-        <DrawerPrimitive.Content className="fixed inset-x-0 bottom-0 z-[20000] mt-24 flex h-auto max-h-[92dvh] flex-col rounded-t-[10px] shell-glass-sheet">
+        <DrawerPrimitive.Content className="fixed inset-x-0 bottom-0 z-[20000] mt-24 flex h-auto max-h-[92dvh] flex-col rounded-t-[10px] matrx-glass-thin-border">
           {/* Drag handle */}
           <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted shrink-0" />
 
@@ -609,7 +609,7 @@ function DesktopCanvasShareSheet(props: CanvasShareSheetProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[20000]" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[20000] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 shell-glass-modal p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[20000] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 matrx-glass-core p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
           <DialogHeader className="mb-4">
             <DialogTitle className="flex items-center gap-2">
               <Share2 className="w-5 h-5" />

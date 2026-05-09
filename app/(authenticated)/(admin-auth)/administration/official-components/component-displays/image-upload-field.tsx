@@ -31,18 +31,12 @@ export default function ImageUploadFieldDisplay({ component }: ComponentDisplayP
 function MyComponent() {
   const [imageUrl, setImageUrl] = useState<string>('');
 
-  const handleImageChange = (url: string) => {
-    console.log('Image uploaded:', url);
-    setImageUrl(url);
-  };
-
   return (
     <ImageUploadField
       value={imageUrl}                        // Current image URL (optional)
-      onChange={handleImageChange}            // Callback with uploaded image URL (required)
-      label="Upload Banner Image"            // Label for the field (required)
-      bucket="userContent"                    // Supabase storage bucket (required)
-      path="images"                           // Path within bucket (required)
+      onChange={setImageUrl}                  // Callback with uploaded image URL (required)
+      label="Upload Banner Image"             // Label for the field (required)
+      folderPath="Images/Banners"             // Logical cld_files folder (required)
     />
   );
 }
@@ -52,8 +46,8 @@ function MyComponent() {
 // - Image validation (only accepts image files)
 // - Live preview with hover effects
 // - Clear/remove image functionality
-// - Automatic Supabase storage upload
-// - Returns public URL for uploaded image
+// - Uploads to cld_files via the universal file handler
+// - Returns a permanent share URL for the uploaded image
 // - Upload progress indicator`;
 
   return (
@@ -68,8 +62,7 @@ function MyComponent() {
             value={imageUrl}
             onChange={handleImageChange}
             label="App Banner Image"
-            bucket="userContent"
-            path="demo-images"
+            folderPath="Demo/Banners"
           />
           
           {imageUrl && (
@@ -89,8 +82,7 @@ function MyComponent() {
             value={secondImageUrl}
             onChange={handleSecondImageChange}
             label="Profile Picture"
-            bucket="userContent"
-            path="demo-images/profiles"
+            folderPath="Demo/Profile Pictures"
           />
           
           {secondImageUrl && (

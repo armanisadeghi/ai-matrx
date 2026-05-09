@@ -32,7 +32,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
 
     return (
         <div className="p-3 sm:p-4 space-y-3">
-            <div className="flex items-center gap-2 rounded-full shell-glass px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
                 <Link href={`/research/topics/${topicId}/tags`} className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
                     <ChevronLeft className="h-3 w-3" />
                     Tags
@@ -47,7 +47,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                 <button
                     onClick={handleConsolidate}
                     disabled={consolidating}
-                    className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full shell-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors"
+                    className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-primary disabled:opacity-50 transition-colors"
                 >
                     {consolidating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                     <span className="hidden sm:inline">Re-consolidate</span>

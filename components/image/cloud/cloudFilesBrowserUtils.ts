@@ -59,7 +59,7 @@ export function getCloudFileKindLabel(file: CloudFileRecord): string {
   if (isVideoMime(mime)) return "Video";
   if (isAudioMime(mime)) return "Audio";
   if (isPdfMime(mime)) return "PDF";
-  return getFileTypeDetails(file.fileName).label;
+  return getFileTypeDetails(file.fileName).displayName;
 }
 
 export function toggleCloudBrowserSelection(
@@ -72,7 +72,9 @@ export function toggleCloudBrowserSelection(
 }
 
 export function allCloudBrowserRowIds(rows: CloudFilesBrowserRow[]): string[] {
-  return rows.map((row) => (row.kind === "folder" ? row.folder.id : row.file.id));
+  return rows.map((row) =>
+    row.kind === "folder" ? row.folder.id : row.file.id,
+  );
 }
 
 function imageKindLabel(fileName: string): string {

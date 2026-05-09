@@ -47,7 +47,7 @@ export default function NoteOptionsSheet({
   const [folderMode, setFolderMode] = useState(false);
 
   const itemClass =
-    "flex items-center gap-2.5 w-full px-3 py-1.5 text-[0.8125rem] text-foreground rounded-lg cursor-pointer transition-colors hover:bg-[var(--shell-glass-bg-hover)] bg-transparent border-none text-left";
+    "flex items-center gap-2.5 w-full px-3 py-1.5 text-[0.8125rem] text-foreground rounded-lg cursor-pointer transition-colors hover:bg-[var(--matrx-glass-bg-hover)] bg-transparent border-none text-left";
 
   return (
     <>
@@ -55,7 +55,7 @@ export default function NoteOptionsSheet({
         className="fixed inset-0 z-100"
         onClick={() => { onClose(); setFolderMode(false); }}
       />
-      <div className="shell-glass fixed inset-x-3 z-110 rounded-2xl p-2 bottom-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+env(safe-area-inset-bottom,0px)+0.5rem)]">
+      <div className="matrx-glass-thin-border fixed inset-x-3 z-110 rounded-2xl p-2 bottom-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+env(safe-area-inset-bottom,0px)+0.5rem)]">
         {folderMode ? (
           <>
             <div className="flex items-center gap-2.5 px-3 py-2 text-[0.8125rem] text-foreground">
@@ -67,7 +67,7 @@ export default function NoteOptionsSheet({
               </button>
               <span className="font-medium">Move to Folder</span>
             </div>
-            <div className="h-px my-1 mx-2 bg-(--shell-glass-border)" />
+            <div className="h-px my-1 mx-2 bg-(--matrx-glass-border-color)" />
             {allFolders.map((f) => {
               const isCurrent = currentFolder === f;
               return (
@@ -92,7 +92,7 @@ export default function NoteOptionsSheet({
               <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
             </button>
 
-            <div className="h-px my-1 mx-2 bg-(--shell-glass-border)" />
+            <div className="h-px my-1 mx-2 bg-(--matrx-glass-border-color)" />
 
             <button
               className={cn(itemClass, saveState === "dirty" && "text-amber-500 [&_svg]:text-amber-500")}
@@ -118,7 +118,7 @@ export default function NoteOptionsSheet({
               Export as Markdown
             </button>
 
-            <div className="h-px my-1 mx-2 bg-(--shell-glass-border)" />
+            <div className="h-px my-1 mx-2 bg-(--matrx-glass-border-color)" />
 
             <button
               className={cn(itemClass, "text-destructive [&_svg]:text-destructive")}

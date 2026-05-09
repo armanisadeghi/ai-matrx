@@ -9,11 +9,10 @@
  * Hierarchy: real folder tree via `code_file_folders.parent_folder_id`.
  * Files at the root have `folder_id = null`.
  *
- * Storage caveat: large rows historically migrated their content to S3 and
- * stored an `s3_key` + `s3_bucket` instead of inline text. The existing
- * `lib/code-files/objectStore.ts` handles that. The adapter prefers inline
- * `content` when present and falls back to the object store via the existing
- * `/api/code-files/download` endpoint when `s3_key` is set.
+ * Storage caveat: large rows store their content in cld_files. `s3_key`
+ * holds a cld_files UUID, `s3_bucket = "cloud-files"`. The adapter
+ * prefers inline `content` when present and falls back to the universal
+ * file handler when `s3_key` is set.
  */
 
 "use client";
@@ -208,16 +207,13 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     const row = data as unknown as CodeFileRow;
     let content = row.content ?? "";
     if (!content && row.s3_key) {
-      // S3-backed snippet — fetch via the existing download endpoint.
-      // This stays for now; if/when the Python backend exposes a unified
-      // download we'll route through that.
-      const res = await fetch(
-        `/api/code-files/download?key=${encodeURIComponent(row.s3_key)}` +
-          (row.s3_bucket
-            ? `&bucket=${encodeURIComponent(row.s3_bucket)}`
-            : ""),
-      );
-      if (res.ok) content = await res.text();
+      // S3-backed snippet — fetch via the universal handler. The s3_key
+      // is a cld_files UUID for new rows.
+      const { fileHandler } = await import("@/features/file-handler/handler");
+      const blob = await fileHandler
+        .use({ kind: "file_id", fileId: row.s3_key })
+        .as({ kind: "blob" });
+      content = await blob.text();
     }
     return {
       id: row.id,

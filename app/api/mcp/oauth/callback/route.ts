@@ -108,17 +108,27 @@ export async function GET(req: NextRequest) {
       grant_type: "authorization_code",
       code,
       redirect_uri: session.redirectUri,
-      client_id: session.clientId,
       code_verifier: session.codeVerifier,
     });
 
+    // Use Basic Auth when we have a client_secret (required by Canva, etc.),
+    // otherwise send client_id in the body (for public/CIMD clients).
+    const tokenHeaders: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+
     if (session.clientSecret) {
-      tokenBody.set("client_secret", session.clientSecret);
+      const credentials = Buffer.from(
+        `${session.clientId}:${session.clientSecret}`,
+      ).toString("base64");
+      tokenHeaders["Authorization"] = `Basic ${credentials}`;
+    } else {
+      tokenBody.set("client_id", session.clientId);
     }
 
     const tokenRes = await fetch(session.tokenEndpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: tokenHeaders,
       body: tokenBody.toString(),
       signal: AbortSignal.timeout(15_000),
     });

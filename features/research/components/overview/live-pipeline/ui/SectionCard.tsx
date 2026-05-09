@@ -12,7 +12,7 @@ interface Props {
 
 /**
  * Standard container for live-pipeline sections.
- * Matches the shell-glass aesthetic used throughout ResearchOverview.
+ * Matches the matrx-glass-thin-border aesthetic used throughout ResearchOverview.
  */
 export function SectionCard({
   title,

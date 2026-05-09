@@ -250,36 +250,14 @@ export async function deleteTranscript(id: string): Promise<void> {
     throw fetchError;
   }
 
-  // Delete audio file from storage if it exists
+  // Delete the audio/video files via the universal handler.
+  // `audio_file_path` / `video_file_path` now hold cld_files UUIDs.
+  const { deleteAudioFromStorage } = await import("./audioStorageService");
   if (transcript?.audio_file_path) {
-    try {
-      const { error: storageError } = await supabase.storage
-        .from("user-private-assets")
-        .remove([transcript.audio_file_path]);
-
-      if (storageError) {
-        console.warn("Error deleting audio file from storage:", storageError);
-        // Continue with transcript deletion even if storage deletion fails
-      }
-    } catch (error) {
-      console.warn("Failed to delete audio file:", error);
-      // Continue with transcript deletion
-    }
+    await deleteAudioFromStorage(transcript.audio_file_path);
   }
-
-  // Delete video file from storage if it exists
   if (transcript?.video_file_path) {
-    try {
-      const { error: storageError } = await supabase.storage
-        .from("user-private-assets")
-        .remove([transcript.video_file_path]);
-
-      if (storageError) {
-        console.warn("Error deleting video file from storage:", storageError);
-      }
-    } catch (error) {
-      console.warn("Failed to delete video file:", error);
-    }
+    await deleteAudioFromStorage(transcript.video_file_path);
   }
 
   // Soft delete the transcript record
@@ -509,21 +487,19 @@ export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
 }
 
 /**
- * Get a signed URL for an audio/video file
+ * Get a signed URL for an audio/video file. The argument is now a
+ * cld_files UUID; the universal handler mints (and auto-refreshes) the URL.
  */
 export async function getSignedUrl(
-  filePath: string,
-  bucket: string = "user-private-assets",
-  expiresIn: number = 3600,
+  fileId: string,
 ): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(filePath, expiresIn);
-
-  if (error) {
+  try {
+    const { fileHandler } = await import("@/features/file-handler/handler");
+    return await fileHandler.use({ kind: "file_id", fileId }).as({
+      kind: "html_src",
+    });
+  } catch (error) {
     console.error("Error getting signed URL:", error);
     return null;
   }
-
-  return data.signedUrl;
 }

@@ -15,12 +15,12 @@ interface IterationControlsProps {
 export function IterationControls({ onRebuild, onUpdate, onAddKeywords, isLoading }: IterationControlsProps) {
     const btnClass = cn(
         'inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium transition-all',
-        'shell-glass-card text-muted-foreground hover:text-foreground',
+        'matrx-glass-card text-muted-foreground hover:text-foreground',
         'disabled:opacity-40 disabled:pointer-events-none',
     );
 
     return (
-        <div className="flex items-center gap-1.5 p-1 rounded-full shell-glass">
+        <div className="flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border">
             <button onClick={onAddKeywords} disabled={isLoading} className={btnClass}>
                 <Plus className="h-3 w-3" />
                 <span className="hidden sm:inline">Add Keywords</span>

@@ -47,7 +47,7 @@ export default function RecentActivity() {
         >
           <div
             className={`flex items-center justify-center w-9 h-9 rounded-lg flex-shrink-0 ${item.color}`}
-            style={{ background: "var(--shell-glass-bg)" }}
+            style={{ background: "var(--matrx-glass-bg)" }}
           >
             <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
           </div>
@@ -62,7 +62,7 @@ export default function RecentActivity() {
               <span
                 className="text-[0.625rem] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full flex-shrink-0"
                 style={{
-                  background: "var(--shell-glass-bg)",
+                  background: "var(--matrx-glass-bg)",
                   color: "var(--shell-nav-icon)",
                 }}
               >

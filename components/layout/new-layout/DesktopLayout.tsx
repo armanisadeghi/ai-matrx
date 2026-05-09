@@ -134,8 +134,8 @@ export default function DesktopLayout({
 
   return (
     <div id={uniqueId} className="min-h-dvh text-gray-800 dark:text-gray-100">
-      {/* Main Header — shell-glass bar, content blurs through */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-10 overflow-visible shell-glass">
+      {/* Main Header — matrx-glass-thin-border bar, content blurs through */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-10 overflow-visible matrx-glass-thin-border">
         <div className="flex items-center justify-between h-full pl-1 pr-2 overflow-visible">
           {/* Left side - Menu toggle and page-specific content */}
           <div className="flex items-center gap-2 flex-1 min-w-0">

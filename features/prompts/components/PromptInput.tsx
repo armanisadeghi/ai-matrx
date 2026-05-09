@@ -25,7 +25,7 @@ import { ResourceChips } from "./resource-display/ResourceChips";
 import type { Resource } from "../types/resources";
 import ResourcePreviewSheet from "./resource-display/ResourcePreviewSheet";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { toast } from "sonner";
@@ -111,8 +111,7 @@ export function PromptInput({
   const pendingVoiceSubmitRef = useRef(false);
 
   // File upload hook for paste support
-  const { uploadMultipleToPrivateUserAssets, lastErrorRef: uploadErrorRef } =
-    useFileUploadWithStorage(uploadBucket, uploadPath);
+  const { upload } = useFileUpload();
 
   // Voice transcription hook
   const {
@@ -205,26 +204,42 @@ export function PromptInput({
   const handlePasteImage = useCallback(
     async (file: File) => {
       try {
-        const results = await uploadMultipleToPrivateUserAssets([file]);
-        if (!results || results.length === 0) {
-          const reason = uploadErrorRef.current ?? "Upload failed";
-          toast.error(`Couldn't upload pasted image: ${reason}`);
-          return;
-        }
+        const folderPath = uploadPath
+          ? `${uploadBucket}/${uploadPath}`
+          : uploadBucket;
+        const normalized = await upload(
+          { kind: "file", file },
+          {
+            folderPath,
+            visibility: "private",
+            createShareLink: true,
+            shareLinkPermissionLevel: "read",
+          },
+        );
         if (onResourcesChange) {
           onResourcesChange((prevResources: Resource[]) => [
             ...prevResources,
-            { type: "file", data: results[0] },
+            {
+              type: "file",
+              data: {
+                fileId: normalized.fileId,
+                url: normalized.url ?? "",
+                filename: normalized.meta.fileName ?? file.name,
+                mime_type: normalized.meta.mime ?? file.type,
+                size: normalized.meta.sizeBytes ?? file.size,
+              },
+            },
           ]);
         }
       } catch (error) {
         const reason =
           error instanceof Error ? error.message : "Upload failed";
+        // eslint-disable-next-line no-console
         console.error("Failed to upload pasted image:", error);
         toast.error(`Couldn't upload pasted image: ${reason}`);
       }
     },
-    [onResourcesChange, uploadMultipleToPrivateUserAssets, uploadErrorRef],
+    [onResourcesChange, upload, uploadBucket, uploadPath],
   );
 
   // Setup clipboard paste

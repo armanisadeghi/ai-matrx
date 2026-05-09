@@ -81,7 +81,7 @@ export default function GlassDropdown<T extends string = string>(props: GlassDro
   return (
     <div
       ref={dropdownRef}
-      className={`hdr-dropdown shell-glass ${alignClass}`}
+      className={`hdr-dropdown matrx-glass-thin-border ${alignClass}`}
       role="menu"
     >
       {props.mode === "actions" &&

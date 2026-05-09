@@ -207,7 +207,7 @@ export function useChunkedRecordAndTranscribe({
                   }],
                   source_type: 'audio',
                   folder_name: 'Recordings',
-                  audio_file_path: uploadResult.path
+                  audio_file_path: uploadResult.fileId
                 }).catch((err) => {
                   console.warn('[chunked-transcription] Failed to auto-persist transcript with audio:', err);
                 });

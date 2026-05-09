@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createFolder } from "@/features/files/redux/thunks";
 import { setFocusedId } from "@/features/files/redux/slice";
-import { useFileUpload } from "@/features/files/hooks/useFileUpload";
+import { useGuardedFileUpload } from "@/features/files/hooks/useGuardedFileUpload";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 
 export interface NewMenuProps {
@@ -41,7 +41,7 @@ export interface NewMenuProps {
 
 export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   const dispatch = useAppDispatch();
-  const { upload } = useFileUpload({ parentFolderId });
+  const { upload } = useGuardedFileUpload({ parentFolderId });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const folderNameInputRef = useRef<HTMLInputElement | null>(null);

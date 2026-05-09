@@ -103,7 +103,7 @@ export function DesktopSearchBar({
     return (
         <div className="flex items-center gap-2">
             <div className="flex-1 relative">
-                <div className="flex items-center gap-3 p-1 rounded-full shell-glass hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 p-1 rounded-full matrx-glass-thin-border hover:shadow-xl transition-shadow">
                     <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <input
                         type="text"
@@ -132,7 +132,7 @@ export function DesktopSearchBar({
             <Button
                 size="sm"
                 onClick={onNewClick}
-                className="h-8 px-3 rounded-full shell-glass hover:shadow-xl bg-primary hover:bg-primary/90"
+                className="h-8 px-3 rounded-full matrx-glass-thin-border hover:shadow-xl bg-primary hover:bg-primary/90"
             >
                 <Plus className="h-4 w-4" />
                 New

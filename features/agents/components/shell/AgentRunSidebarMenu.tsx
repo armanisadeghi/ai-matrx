@@ -209,7 +209,7 @@ function VersionGroup({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 w-full px-2 py-1 text-left transition-colors hover:bg-[var(--shell-glass-bg-hover)] rounded-sm group"
+        className="flex items-center gap-1.5 w-full px-2 py-1 text-left transition-colors hover:bg-[var(--matrx-glass-bg-hover)] rounded-sm group"
       >
         {open ? (
           <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
@@ -257,7 +257,7 @@ function ConversationRow({
         "flex items-center gap-2 w-full px-2 py-1.5 text-left transition-colors rounded-sm",
         isActive
           ? "bg-[var(--shell-pill-bg)] text-[var(--shell-pill-text)]"
-          : "hover:bg-[var(--shell-glass-bg-hover)] text-[var(--shell-nav-text)]",
+          : "hover:bg-[var(--matrx-glass-bg-hover)] text-[var(--shell-nav-text)]",
       )}
     >
       <div className="flex-1 min-w-0">

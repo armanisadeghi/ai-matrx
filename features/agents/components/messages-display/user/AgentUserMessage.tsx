@@ -524,7 +524,7 @@ export function AgentUserMessage({
   // main content line.
   const contentBlocks = extractContentBlocks(record);
   const renderBlocks = contentBlocks.filter(
-    (b) => (b as { type?: string }).type !== "text",
+    (b) => b.type !== "text",
   ) as unknown as ContentBlock[];
 
   const normalisedBlocks: NormalisedBlock[] = renderBlocks

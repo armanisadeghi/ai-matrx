@@ -29,7 +29,7 @@ const DrawerOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 shell-glass-overlay", className)}
+    className={cn("fixed inset-0 z-50 matrx-glass-core", className)}
     {...props}
   />
 ));
@@ -60,7 +60,7 @@ const DrawerContent = React.forwardRef<
       <DrawerPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] shell-glass-sheet",
+          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] matrx-glass-thin-border",
           className,
         )}
         {...(hasDescription ? {} : { "aria-describedby": undefined })}

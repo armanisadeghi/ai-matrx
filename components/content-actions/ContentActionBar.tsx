@@ -30,6 +30,7 @@ import {
   CheckTapButton,
   PencilTapButton,
   MoreHorizontalTapButton,
+  TrashTapButton,
 } from "@/components/icons/tap-buttons";
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
@@ -88,6 +89,22 @@ export interface ContentActionBarProps {
   hideSpeaker?: boolean;
   /** Hide the inline Copy button (still available in the overflow menu). */
   hideCopy?: boolean;
+  /**
+   * When provided, renders a trash icon in the bar that calls this handler.
+   * Hidden when omitted — keeps the bar non-breaking for callers that don't
+   * want a delete affordance. The caller is responsible for any confirmation
+   * UX (use `<ConfirmDialog />` or the imperative `confirm()` helper).
+   */
+  onDelete?: () => void;
+  /** Override the delete button's aria-label / tooltip. Defaults to "Delete". */
+  deleteAriaLabel?: string;
+  /**
+   * Slot for caller-provided action buttons rendered alongside the built-ins,
+   * after the pencil and before the trash / overflow menu. To keep the bar
+   * visually consistent, callers MUST pass `*TapButton` components from
+   * `@/components/icons/tap-buttons` (use `variant="group"`).
+   */
+  extras?: React.ReactNode;
 }
 
 export function ContentActionBar({
@@ -102,6 +119,9 @@ export function ContentActionBar({
   hidePencil = false,
   hideSpeaker = false,
   hideCopy = false,
+  onDelete,
+  deleteAriaLabel = "Delete",
+  extras,
 }: ContentActionBarProps) {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
@@ -252,6 +272,17 @@ export function ContentActionBar({
               onClick={handleOpenEditor}
               ariaLabel={onSave ? "Edit content" : "Open in viewer"}
               className="text-muted-foreground"
+            />
+          )}
+
+          {extras}
+
+          {onDelete && (
+            <TrashTapButton
+              variant="group"
+              onClick={onDelete}
+              ariaLabel={deleteAriaLabel}
+              className="text-muted-foreground hover:text-destructive"
             />
           )}
 

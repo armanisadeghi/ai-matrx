@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
+import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
 import {
   Dialog,
   DialogContent,
@@ -125,22 +126,13 @@ export function ShareLinkDialogBody({
   );
 
   /**
-   * Direct-file URL — when a browser hits this, our `/api/share/[token]/file`
-   * route 302-redirects to the live signed S3 URL. Plays nicely with `<img
-   * src="…">`, `<video>`, raw downloads, or being pasted into other systems
-   * that need the bytes (Notion, email, Slack unfurl, etc.). The page URL
-   * (`buildPageUrl`) is still useful when you want recipients to see the
-   * metadata + an explicit Download button first; the file URL is the
-   * embeddable / hot-linkable one most users actually want.
+   * Direct-file URL — points at Python's public `/share/{token}` resolver.
+   * The browser → Python → S3 chain has no Next.js hop; embeddable into
+   * `<img src>`, `<video>`, raw downloads, Notion, Slack, etc.
    */
   const buildFileUrl = useCallback(
-    (token: string) => {
-      const base =
-        appOrigin ??
-        (typeof window !== "undefined" ? window.location.origin : "");
-      return `${base}/api/share/${token}/file`;
-    },
-    [appOrigin],
+    (token: string) => `${pythonShareUrl(token)}`,
+    [],
   );
 
   const handleCreate = useCallback(async () => {

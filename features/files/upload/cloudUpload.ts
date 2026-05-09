@@ -7,21 +7,19 @@
  *
  * Why this exists
  * ───────────────
- * Before this file, six different code paths uploaded files (legacy
- * `useFileUploadWithStorage`, `useUploadAndGet`, `useUploadAndShare`,
- * the `uploadFiles` thunk dispatched directly, the imperative
- * `uploadAndShare`, and the server-side `Api.Server.uploadAndShare`).
- * Some of them called `ensureFolderPath` which queries
- * `supabase.from("cld_folders")` from the browser — that triggers RLS
- * policy evaluation on `cld_file_permissions` which contains a known
- * recursion bug (Postgres error 42P17).
+ * The single underlying upload primitive. Public callers go through the
+ * universal file handler (`fileHandler.upload(...)` /
+ * `useFileUpload`), which calls this. Server-side routes use
+ * `Api.Server.uploadAndShare` which wraps the same Python `/files/upload`
+ * endpoint with a server context.
  *
- * Rule from now on: **every upload in the app goes through one of these
- * functions.** Never call `supabase.from("cld_*").upsert(...)` or
- * `ensureFolderPath` from a code path whose goal is "upload a file." The
- * Python backend auto-creates any missing folders when you POST a
- * full `file_path` — the browser never needs to touch `cld_folders`
- * directly. That sidesteps the RLS recursion AND keeps logic centralized.
+ * Rule: **every upload in the app goes through `cloudUpload` (this file)
+ * via the universal handler, OR through `Api.Server.uploadAndShare`.**
+ * Never call `supabase.from("cld_*").upsert(...)` or `ensureFolderPath`
+ * from a code path whose goal is "upload a file." The Python backend
+ * auto-creates any missing folders when you POST a full `file_path` —
+ * the browser never needs to touch `cld_folders` directly. That
+ * sidesteps the known RLS recursion bug AND keeps logic centralized.
  *
  * What this module owns:
  *   • Resolving a logical `file_path` from caller-supplied options.
@@ -44,6 +42,7 @@ import {
   uploadFileWithProgress as Files_uploadFileWithProgress,
 } from "@/features/files/api/files";
 import { createFileShareLink } from "@/features/files/api/share-links";
+import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
 import {
   newRequestId,
   type ResponseMeta,
@@ -131,12 +130,10 @@ export interface CloudUploadSuccess {
    */
   shareUrl?: string;
   /**
-   * The PUBLIC DIRECT URL for the file bytes, e.g.
-   * `https://app.example.com/api/share/<token>/file`. This route 302-
-   * redirects to a freshly signed storage URL each time it's hit, so
-   * `<img src>`, `<a href download>`, and any other binary-consuming
-   * surface works correctly. **Use this** anywhere you want the file
-   * itself to be the response.
+   * The PUBLIC DIRECT URL for the file bytes — points at Python's
+   * `{BACKEND}/share/{token}` resolver, which 302-redirects to a freshly
+   * signed S3 URL each time it's hit. Embed in `<img src>`, `<a href
+   * download>`, Slack/Notion unfurls, OG images. No Next.js hop.
    *
    * Populated whenever `shareUrl` is — they always go in pairs because
    * both are derived from the same share token.
@@ -193,19 +190,12 @@ function buildShareUrl(token: string): string {
 }
 
 /**
- * Build the public DIRECT-FILE URL for a share token. This is the
- * URL that 302s to the signed S3 URL — embed in `<img src>`,
- * `<video src>`, or any binary-consuming surface. The `/share/<token>`
- * page URL renders the HTML landing page instead, which is fine for
- * "click to view metadata" but useless for hot-linking.
- *
- * Path mirrors the route at `app/api/share/[token]/file/route.ts` —
- * keep these in sync if the route ever moves.
+ * Build the public DIRECT-FILE URL for a share token — points at Python's
+ * `/share/{token}` resolver, which 302s to the signed S3 URL. No Next.js
+ * hop. Embed in `<img src>`, `<video src>`, downloads, Slack unfurls, etc.
  */
 function buildDirectShareUrl(token: string): string {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin.replace(/\/$/, "")}/api/share/${encodeURIComponent(token)}/file`;
+  return pythonShareUrl(token);
 }
 
 // ─── Upload primitive (no Redux side effects) ────────────────────────────
