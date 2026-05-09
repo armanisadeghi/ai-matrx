@@ -51,16 +51,16 @@ export function ImagesMobileCommandBar({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 pb-safe md:hidden">
+    <div className="fixed inset-x-0 bottom-2 z-40 pb-safe md:hidden">
       <div className="container mx-auto max-w-[1800px] px-2">
-        <div className="relative rounded-[1.35rem] border border-border/70 bg-card/90 px-3 py-2 pr-16 shadow-[0_-8px_24px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-          <div className="grid h-10 grid-cols-6 items-center gap-1">
+        <div className="relative rounded-full border border-border/70 bg-card/90 px-3 py-2 shadow-[0_-8px_24px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+          <div className="grid h-9 grid-cols-6 items-center gap-1">
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={onOpenSections}
-              className="h-10 w-10 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="h-9 w-9 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Open Images sections"
             >
               <MoreHorizontal className="h-5 w-5" />
@@ -88,7 +88,7 @@ export function ImagesMobileCommandBar({
               primaryAction.type === "navigate" &&
               primaryAction.path !== pathname
             }
-            className="absolute bottom-3 right-3 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95"
+            className="absolute -top-14 right-3 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95"
             aria-label={primaryAction.label}
           >
             <PrimaryIcon className="h-5 w-5" />
@@ -153,7 +153,7 @@ function QuickActionButton({
       onClick={() => onNavigate(path)}
       disabled={disabled}
       className={cn(
-        "mx-auto flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors active:scale-95 disabled:opacity-50",
+        "mx-auto flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors active:scale-95 disabled:opacity-50",
         active
           ? "bg-blue-500/20 text-blue-300 ring-1 ring-blue-400/45 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.18)]"
           : "hover:bg-accent hover:text-foreground",
@@ -173,12 +173,6 @@ const APP_QUICK_ACTIONS: Array<{
   isActive: (pathname: string) => boolean;
 }> = [
   {
-    label: "Agents",
-    path: "/agents",
-    Icon: LayoutGrid,
-    isActive: (pathname) => pathname.startsWith("/agents"),
-  },
-  {
     label: "Chat",
     path: "/chat",
     Icon: MessageCircle,
@@ -195,6 +189,12 @@ const APP_QUICK_ACTIONS: Array<{
     path: "/tasks",
     Icon: ListChecks,
     isActive: (pathname) => pathname.startsWith("/tasks"),
+  },
+  {
+    label: "Agents",
+    path: "/agents",
+    Icon: LayoutGrid,
+    isActive: (pathname) => pathname.startsWith("/agents"),
   },
   {
     label: "Images",
