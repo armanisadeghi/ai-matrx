@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   AppWindow,
   Code,
+  Eye,
   History,
   Settings as SettingsIcon,
   type LucideIcon,
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 export type AgentAppHeaderTab =
   | "overview"
+  | "preview"
   | "code"
   | "versions"
   | "settings";
@@ -29,6 +31,13 @@ const TABS: TabDef[] = [
     shortLabel: "Overview",
     icon: AppWindow,
     hrefSuffix: "",
+  },
+  {
+    key: "preview",
+    label: "Preview",
+    shortLabel: "Preview",
+    icon: Eye,
+    hrefSuffix: "/preview",
   },
   {
     key: "code",
