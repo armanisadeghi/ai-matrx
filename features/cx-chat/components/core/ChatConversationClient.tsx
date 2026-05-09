@@ -189,7 +189,7 @@ export default function ChatConversationClient({
                   type="button"
                   onClick={scrollToBottom}
                   className="pointer-events-auto flex items-center justify-center w-8 h-8 rounded-full
-                    shell-glass shadow-lg
+                    matrx-shell-glass shadow-lg
                     text-muted-foreground hover:text-foreground
                     transition-all duration-200 ease-out
                     animate-in fade-in slide-in-from-bottom-2"

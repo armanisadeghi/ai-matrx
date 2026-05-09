@@ -86,7 +86,7 @@ function TopBar({
                             "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
                             activeTab === "my"
                                 ? "bg-primary text-primary-foreground"
-                                : "text-glass-foreground hover:shell-glass"
+                                : "text-glass-foreground hover:matrx-shell-glass"
                         )}
                     >
                         Mine
@@ -103,7 +103,7 @@ function TopBar({
                             "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
                             activeTab === "public"
                                 ? "bg-primary text-primary-foreground"
-                                : "text-glass-foreground hover:shell-glass"
+                                : "text-glass-foreground hover:matrx-shell-glass"
                         )}
                     >
                         Public
@@ -116,8 +116,8 @@ function TopBar({
                     </button>
                 </div>
 
-                {/* Search — shell-glass per spec */}
-                <div className="flex-1 flex items-center gap-1.5 h-8 px-2.5 rounded-full shell-glass min-w-0">
+                {/* Search — matrx-shell-glass per spec */}
+                <div className="flex-1 flex items-center gap-1.5 h-8 px-2.5 rounded-full matrx-shell-glass min-w-0">
                     <Search className="h-3.5 w-3.5 text-glass-foreground flex-shrink-0" />
                     <input
                         type="text"
@@ -134,10 +134,10 @@ function TopBar({
                     )}
                 </div>
 
-                {/* Filter — shell-glass per spec */}
+                {/* Filter — matrx-shell-glass per spec */}
                 <button
                     onClick={onFilterClick}
-                    className="flex-shrink-0 relative h-8 w-8 flex items-center justify-center rounded-full shell-glass text-glass-foreground active:opacity-70 transition-opacity"
+                    className="flex-shrink-0 relative h-8 w-8 flex items-center justify-center rounded-full matrx-shell-glass text-glass-foreground active:opacity-70 transition-opacity"
                 >
                     <SlidersHorizontal className="h-3.5 w-3.5" />
                     {activeFilterCount > 0 && (

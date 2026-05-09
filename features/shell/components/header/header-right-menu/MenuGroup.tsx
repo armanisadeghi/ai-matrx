@@ -41,7 +41,7 @@ export function MenuGroup({
 
       <label
         htmlFor={inputId}
-        className="flex items-center gap-2 w-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground rounded-full cursor-pointer select-none transition-colors hover:bg-[var(--shell-glass-bg-hover)]"
+        className="flex items-center gap-2 w-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground rounded-full cursor-pointer select-none transition-colors hover:bg-[var(--matrx-glass-bg-hover)]"
       >
         <span className={iconClassName}>
           <Icon className="w-3.5 h-3.5 shrink-0" />

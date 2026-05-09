@@ -146,7 +146,7 @@ export default function HeaderDemoClient() {
 
       {active === "v1" && (
         <PageHeader>
-          <span className="shell-glass h-[1.875rem] px-4 rounded-full text-[0.6875rem] font-medium text-(--shell-nav-text-hover) flex items-center gap-1.5">
+          <span className="matrx-shell-glass h-[1.875rem] px-4 rounded-full text-[0.6875rem] font-medium text-(--shell-nav-text-hover) flex items-center gap-1.5">
             ✦ Your custom content here
           </span>
         </PageHeader>

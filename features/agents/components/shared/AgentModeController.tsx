@@ -137,7 +137,7 @@ export function AgentModeController({
 
   return (
     <>
-      <div className="shell-glass flex items-center gap-0 rounded-full p-0.5">
+      <div className="matrx-shell-glass flex items-center gap-0 rounded-full p-0.5">
         {MODES.map(({ id, label, icon: Icon }) => {
           const isActive = id === mode;
           return (
@@ -155,7 +155,7 @@ export function AgentModeController({
                 "px-2.5",
                 "[&_svg]:w-3.5 [&_svg]:h-3.5",
                 isActive
-                  ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                   : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
               )}
             >

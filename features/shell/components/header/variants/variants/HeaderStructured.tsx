@@ -90,7 +90,7 @@ export default function HeaderStructured<T extends string = string>({
         {dropdown ? (
           <div className="hdr-structured-dropdown-anchor">
             <button
-              className="hdr-structured-dropdown-trigger shell-glass shell-tactile-subtle"
+              className="hdr-structured-dropdown-trigger matrx-shell-glass shell-tactile-subtle"
               onClick={() => setDropdownOpen((v) => !v)}
               type="button"
               aria-haspopup="listbox"

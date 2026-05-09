@@ -136,7 +136,7 @@ export default function MediaGallery() {
 
   return (
     <div className="p-3 sm:p-4 space-y-4">
-      <div className="flex items-center gap-2 rounded-full shell-glass px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-full matrx-shell-glass px-3 py-1.5">
         <span className="text-xs font-medium text-foreground/80">Media</span>
         <span className="text-[10px] text-muted-foreground tabular-nums">
           {filtered.length}/{mediaList.length}
@@ -147,13 +147,13 @@ export default function MediaGallery() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search alt text, caption, url..."
-            className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full shell-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+            className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full matrx-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
             style={{ fontSize: "16px" }}
           />
         </div>
         <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
           <SelectTrigger
-            className="w-24 h-6 text-[11px] rounded-full shell-glass-card border-0 shrink-0"
+            className="w-24 h-6 text-[11px] rounded-full matrx-glass-card border-0 shrink-0"
             style={{ fontSize: "16px" }}
           >
             <SelectValue />
@@ -166,7 +166,7 @@ export default function MediaGallery() {
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger
-            className="w-24 h-6 text-[11px] rounded-full shell-glass-card border-0 shrink-0"
+            className="w-24 h-6 text-[11px] rounded-full matrx-glass-card border-0 shrink-0"
             style={{ fontSize: "16px" }}
           >
             <SelectValue />
@@ -313,7 +313,7 @@ function IconsSection({ items, onToggleRelevance }: SectionProps) {
         count={items.length}
         description="Tiny graphics shown at native size"
       />
-      <div className="flex flex-wrap gap-1.5 rounded-xl shell-glass-card p-2">
+      <div className="flex flex-wrap gap-1.5 rounded-xl matrx-glass-card p-2">
         {items.map((item) => (
           <IconTile
             key={item.id}

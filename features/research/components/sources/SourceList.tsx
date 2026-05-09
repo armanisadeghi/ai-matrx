@@ -698,7 +698,7 @@ export default function SourceList() {
                     )}
                     {needsScrape && (
                       <button
-                        className="inline-flex items-center gap-1 h-5 px-1.5 rounded-full shell-glass-card text-[10px] text-primary ml-auto"
+                        className="inline-flex items-center gap-1 h-5 px-1.5 rounded-full matrx-glass-card text-[10px] text-primary ml-auto"
                         disabled={scrapingIds.has(source.id) || anyNavigating}
                         onClick={(e) => handleScrapeSource(source, e)}
                       >
@@ -730,7 +730,7 @@ export default function SourceList() {
                 offset: Math.max(0, filters.offset - filters.limit),
               })
             }
-            className="h-6 px-2.5 rounded-full shell-glass-card text-[10px] font-medium text-muted-foreground disabled:opacity-30 hover:text-foreground transition-colors"
+            className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground disabled:opacity-30 hover:text-foreground transition-colors"
           >
             Prev
           </button>
@@ -741,7 +741,7 @@ export default function SourceList() {
             onClick={() =>
               setFilters({ offset: filters.offset + filters.limit })
             }
-            className="h-6 px-2.5 rounded-full shell-glass-card text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Next
           </button>

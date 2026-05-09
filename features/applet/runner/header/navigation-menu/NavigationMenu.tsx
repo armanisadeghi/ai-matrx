@@ -135,7 +135,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className={`flex items-center rounded-full pl-2 pr-1 shell-glass shadow-sm hover:shadow-md transition cursor-pointer focus:outline-none ${creatorButtonClass} ${triggerClassName}`}
+            className={`flex items-center rounded-full pl-2 pr-1 matrx-shell-glass shadow-sm hover:shadow-md transition cursor-pointer focus:outline-none ${creatorButtonClass} ${triggerClassName}`}
           >
             {userIsCreator && (
               <Crown size={16} className="mr-1 text-amber-400" />

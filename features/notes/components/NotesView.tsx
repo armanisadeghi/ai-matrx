@@ -262,7 +262,7 @@ export function NotesView({ config, className }: NotesViewProps) {
       "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
       "[&_svg]:w-3.5 [&_svg]:h-3.5",
       editorMode === mode
-        ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+        ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
         : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
     );
 
@@ -276,7 +276,7 @@ export function NotesView({ config, className }: NotesViewProps) {
           {/* ── Header center: View mode buttons (portaled into shell header) */}
           {activeTabId && (
             <PageHeader>
-              <div className="shell-glass flex items-center gap-0.5 rounded-full p-0.5">
+              <div className="matrx-shell-glass flex items-center gap-0.5 rounded-full p-0.5">
                 <button
                   className={modeBtnClass("plain")}
                   onClick={() => setMode("plain")}
@@ -315,7 +315,7 @@ export function NotesView({ config, className }: NotesViewProps) {
                   className={cn(
                     "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
                     showHistory
-                      ? "bg-[var(--shell-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                      ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
                       : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
                   )}
                   onClick={() => setShowHistory((v) => !v)}

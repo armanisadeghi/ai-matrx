@@ -133,7 +133,7 @@ export default function CostDashboard() {
 
   return (
     <div className="p-3 sm:p-4 space-y-3">
-      <div className="flex items-center gap-2 rounded-full shell-glass px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-full matrx-shell-glass px-3 py-1.5">
         <span className="text-xs font-medium text-foreground/80">Costs</span>
         <div className="flex-1" />
         <span className="text-[10px] text-muted-foreground tabular-nums">

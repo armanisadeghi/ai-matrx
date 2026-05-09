@@ -3,7 +3,7 @@
 /**
  * NoteEditorDock — fixed bottom action dock for the mobile note editor.
  *
- * Visual DNA identical to MobileDock (shell-glass-card, rounded-[22px], pb-safe,
+ * Visual DNA identical to MobileDock (matrx-glass-card, rounded-[22px], pb-safe,
  * fixed bottom-0, pointer-events-none wrapper) but uses action callbacks instead
  * of Link-based navigation, since this is a contextual toolbar, not a nav bar.
  */
@@ -147,7 +147,7 @@ export function NoteEditorDock({
       <nav className="md:hidden absolute bottom-0 left-0 right-0 z-40 pb-safe px-3 pointer-events-none">
         <div
           ref={navRef}
-          className="relative flex items-stretch shell-glass-dock rounded-[22px] mb-2 pointer-events-auto"
+          className="relative flex items-stretch matrx-glass-core rounded-[22px] mb-2 pointer-events-auto"
         >
           {/* Sliding pill indicator */}
           {pill && (

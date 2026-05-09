@@ -113,7 +113,7 @@ export default function TagManager() {
             <div className="flex justify-end gap-2">
                 <button
                     onClick={() => setCreateOpen(false)}
-                    className="inline-flex items-center h-8 px-4 rounded-full shell-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                    className="inline-flex items-center h-8 px-4 rounded-full matrx-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                 >
                     Cancel
                 </button>
@@ -135,7 +135,7 @@ export default function TagManager() {
 
     return (
         <div className="p-3 sm:p-4 space-y-3">
-            <div className="flex items-center gap-2 rounded-full shell-glass px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-full matrx-shell-glass px-3 py-1.5">
                 <span className="text-xs font-medium text-foreground/80">Tags</span>
                 <span className="text-[10px] text-muted-foreground tabular-nums">{filtered.length}/{tagList.length}</span>
                 <div className="flex-1 relative">
@@ -144,13 +144,13 @@ export default function TagManager() {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search tags..."
-                        className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full shell-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+                        className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full matrx-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
                         style={{ fontSize: '16px' }}
                     />
                 </div>
                 <button
                     onClick={openCreate}
-                    className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full shell-glass-card text-[11px] font-medium text-primary hover:text-primary/80 transition-colors min-h-[44px] sm:min-h-0"
+                    className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full matrx-glass-card text-[11px] font-medium text-primary hover:text-primary/80 transition-colors min-h-[44px] sm:min-h-0"
                 >
                     <Plus className="h-3 w-3" />
                     <span className="hidden sm:inline">Add Tag</span>

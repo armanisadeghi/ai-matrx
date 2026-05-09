@@ -403,7 +403,7 @@ export function PipelineOrchestra() {
   return (
     <div className="p-2 space-y-3 min-w-0">
       {/* ── Control strip ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 p-1.5 pl-3 rounded-full shell-glass">
+      <div className="flex items-center gap-2 p-1.5 pl-3 rounded-full matrx-shell-glass">
         {/* status dot */}
         <span
           className={cn(
@@ -437,7 +437,7 @@ export function PipelineOrchestra() {
           <TooltipTrigger asChild>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center justify-center h-7 w-7 rounded-full shell-glass-card text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full matrx-glass-card text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Topic settings"
             >
               <Settings className="h-3 w-3" />
@@ -1006,7 +1006,7 @@ function KeywordForm({
       <div className="flex justify-end gap-2">
         <button
           onClick={onCancel}
-          className="inline-flex items-center h-8 px-4 rounded-full shell-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+          className="inline-flex items-center h-8 px-4 rounded-full matrx-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
         >
           Cancel
         </button>

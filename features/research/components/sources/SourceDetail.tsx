@@ -702,7 +702,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     </button>
                     <button
                       onClick={() => setPasteOpen(true)}
-                      className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full shell-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                      className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full matrx-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                     >
                       <ClipboardPaste className="h-3 w-3" />
                       Paste
@@ -734,7 +734,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     </button>
                     <button
                       onClick={() => setPasteOpen(true)}
-                      className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full shell-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                      className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full matrx-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                     >
                       <ClipboardPaste className="h-3 w-3" />
                       Paste

@@ -17,7 +17,7 @@ export default function AuthIsland({ user }: AuthIslandProps) {
     return (
       <Link
         href="/settings"
-        className="shell-auth-island shell-glass shell-tactile"
+        className="shell-auth-island matrx-shell-glass shell-tactile"
       >
         <span className="shell-auth-island-icon relative overflow-hidden rounded-full">
           {user.avatarUrl ? (
@@ -39,7 +39,7 @@ export default function AuthIsland({ user }: AuthIslandProps) {
   }
 
   return (
-    <Link href="/login" className="shell-auth-island shell-glass shell-tactile">
+    <Link href="/login" className="shell-auth-island matrx-shell-glass shell-tactile">
       <span className="shell-auth-island-icon">
         <ShellIcon name="LogIn" size={16} strokeWidth={2} />
       </span>

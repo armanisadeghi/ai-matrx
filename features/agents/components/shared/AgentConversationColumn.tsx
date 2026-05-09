@@ -102,7 +102,7 @@ export function AgentConversationColumn({
             onClick={scrollToBottom}
             className={cn(
               "absolute bottom-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full",
-              "shell-glass shadow-lg text-muted-foreground hover:text-foreground",
+              "matrx-shell-glass shadow-lg text-muted-foreground hover:text-foreground",
               "transition-all duration-200 ease-out animate-in fade-in slide-in-from-bottom-2",
             )}
             title="Scroll to bottom"

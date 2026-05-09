@@ -108,7 +108,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  /* Glass applied via .shell-glass class on the element in the component */
+  /* Glass applied via .matrx-shell-glass class on the element in the component */
 }
 
 .hdr-structured-dropdown-icon {
@@ -175,7 +175,7 @@
 }
 
 .hdr-toggle-thumb:hover:not(.hdr-toggle-thumb-active) {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-text-hover);
 }
 
@@ -270,7 +270,7 @@
 }
 
 .hdr-pill:hover:not(.hdr-pill-active) {
-  background: var(--shell-glass-bg);
+  background: var(--matrx-glass-bg);
   color: var(--shell-nav-text-hover);
 }
 
@@ -309,7 +309,7 @@
   font-size: 0.625rem;
   font-weight: 700;
   line-height: 1;
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
   color: var(--shell-nav-text);
   flex-shrink: 0;
 }
@@ -382,7 +382,7 @@
   font-weight: 700;
   line-height: 0.875rem;
   text-align: center;
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
   color: var(--shell-nav-text);
   pointer-events: none;
 }
@@ -428,8 +428,8 @@
   display: flex;
   flex-direction: column;
   animation: hdr-dropdown-in var(--shell-duration-fast) var(--shell-ease-spring);
-  box-shadow: var(--shell-glass-shadow-lg);
-  /* Glass applied via .shell-glass class on the element in the component */
+  box-shadow: var(--matrx-glass-shadow-lg);
+  /* Glass applied via .matrx-shell-glass class on the element in the component */
 }
 
 .hdr-dropdown-center {
@@ -492,11 +492,11 @@
 }
 
 .hdr-dropdown-row:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
 }
 
 .hdr-dropdown-row:active {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 .hdr-dropdown-row-icon {
@@ -538,7 +538,7 @@
   background: var(--shell-overlay-bg);
 }
 
-/* Sheet panel — glass applied entirely via .shell-glass-sheet in shell.css */
+/* Sheet panel — glass applied entirely via .matrx-shell-glass in shell.css */
 .hdr-sheet-panel {
   position: relative;
   width: 100%;
@@ -549,7 +549,7 @@
   padding: 0.5rem 0.75rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   border: none;
-  border-top: var(--shell-glass-border-width) solid var(--shell-glass-border);
+  border-top: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
   animation: hdr-sheet-slide-up var(--shell-duration-slow) var(--shell-ease-spring);
 }
 
@@ -610,11 +610,11 @@
 }
 
 .hdr-sheet-action-row:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
 }
 
 .hdr-sheet-action-row:active {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 .hdr-sheet-action-icon {
@@ -624,7 +624,7 @@
   width: 2rem;
   height: 2rem;
   border-radius: 0.625rem;
-  background: var(--shell-glass-bg);
+  background: var(--matrx-glass-bg);
   color: var(--shell-nav-icon-hover);
   flex-shrink: 0;
 }
@@ -648,7 +648,7 @@
 .hdr-sheet-cancel-wrap {
   padding-top: 0.5rem;
   margin-top: 0.375rem;
-  border-top: 1px solid var(--shell-glass-border);
+  border-top: 1px solid var(--matrx-glass-border-color);
 }
 
 .hdr-sheet-cancel {
@@ -669,11 +669,11 @@
 }
 
 .hdr-sheet-cancel:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
 }
 
 .hdr-sheet-cancel:active {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 /* ---------------------------------------------------------------------------

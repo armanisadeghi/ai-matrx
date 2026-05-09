@@ -47,7 +47,7 @@ export default function IconButton({
   disabled,
 }: IconButtonProps) {
   const glassClass = cn(
-    "icon-btn-glass shell-glass shell-tactile",
+    "icon-btn-glass matrx-shell-glass shell-tactile",
     active && "active",
     glassClassName,
   );

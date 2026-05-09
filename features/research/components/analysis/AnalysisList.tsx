@@ -296,7 +296,7 @@ function DetailPanel({
             {source && (
               <Link
                 href={`/research/topics/${topicId}/sources/${source.id}`}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium shell-glass-card text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium matrx-glass-card text-muted-foreground hover:text-foreground transition-colors"
               >
                 Source
                 <ArrowUpRight className="h-3 w-3" />
@@ -546,7 +546,7 @@ export default function AnalysisList() {
       <button
         onClick={handleAnalyzeAll}
         disabled={stream.isStreaming}
-        className="inline-flex items-center gap-1 h-6 px-2 rounded-full shell-glass-card text-[10px] font-medium text-primary disabled:opacity-50 transition-colors"
+        className="inline-flex items-center gap-1 h-6 px-2 rounded-full matrx-glass-card text-[10px] font-medium text-primary disabled:opacity-50 transition-colors"
       >
         {stream.isStreaming ? (
           <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -559,7 +559,7 @@ export default function AnalysisList() {
         <button
           onClick={handleRetryAll}
           disabled={stream.isStreaming}
-          className="inline-flex items-center gap-1 h-6 px-2 rounded-full shell-glass-card text-[10px] font-medium text-destructive disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-full matrx-glass-card text-[10px] font-medium text-destructive disabled:opacity-50 transition-colors"
         >
           <RefreshCw className="h-2.5 w-2.5" />
           <span>{stats.failed}</span>

@@ -75,7 +75,7 @@ function BottomSheetHeader({
         <button
           onClick={onBack}
           className={cn(
-            "h-8 w-8 rounded-full shell-glass flex items-center justify-center transition-all active:scale-95",
+            "h-8 w-8 rounded-full matrx-shell-glass flex items-center justify-center transition-all active:scale-95",
             showBack ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           aria-hidden={!showBack}

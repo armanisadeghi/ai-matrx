@@ -268,9 +268,9 @@ export const TapTargetButton = forwardRef<
   const color = className ?? "text-foreground";
   // CHANGE 2026-04-27: matrx-tap-pill replaces the prior `transition-colors`
   // and provides the press-down scale + mobile tap hygiene. Background-flash
-  // on press still comes from `.shell-glass:active`.
+  // on press still comes from `.matrx-shell-glass:active`.
   const inner = (
-    <div className="matrx-tap-pill flex h-8 w-8 items-center justify-center rounded-full shell-glass-pill">
+    <div className="matrx-tap-pill flex h-8 w-8 items-center justify-center rounded-full matrx-shell-glass">
       <IconContent
         icon={icon}
         strokeWidth={strokeWidth}
@@ -469,9 +469,9 @@ export const TapTargetButtonForGroup = forwardRef<
   // CHANGE 2026-04-27: matrx-tap-pill replaces the prior inline
   // `transition-[background,transform] active:scale-95` so this variant shares
   // the same timing curve and scale as glass/transparent/solid. Background
-  // flash on press still comes from `.shell-glass:active`.
+  // flash on press still comes from `.matrx-shell-glass:active`.
   const inner = (
-    <div className="matrx-tap-pill flex h-6 w-6 items-center justify-center rounded-full shell-glass-interactive">
+    <div className="matrx-tap-pill flex h-6 w-6 items-center justify-center rounded-full matrx-glass-interactive">
       <IconContent
         icon={icon}
         strokeWidth={strokeWidth}
@@ -520,7 +520,7 @@ export function TapTargetButtonGroup({
           : "relative inline-flex h-9 items-center"
       }
     >
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 rounded-full shell-glass-pill" />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-7 rounded-full matrx-shell-glass" />
       <div className="relative flex items-center">{children}</div>
     </div>
   );

@@ -598,19 +598,17 @@
     --glass-shadow-lg:
       0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
 
-    /* Shell Glass — iOS-style frosted glass system, single source of truth.
-       Originally lived in styles/shell.css (loaded only by (a) and (ssr) routes).
-       Hoisted to globals.css so .shell-glass* utilities work app-wide.
-       Light-mode tokens. */
-    --shell-glass-bg:           rgba(210, 225, 255, 0.14);
-    --shell-glass-bg-hover:     rgba(210, 225, 255, 0.22);
-    --shell-glass-bg-active:    rgba(210, 225, 255, 0.32);
-    --shell-glass-border:       rgba(180, 205, 255, 0.40);
-    --shell-glass-border-width: 2.5px;
-    --shell-glass-card-bg:      rgba(220, 230, 255, 0.18);
-    --shell-glass-blur:         16px;
-    --shell-glass-shadow:       0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shell-glass-shadow-lg:    0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    /* Matrx Glass — Composable Layer System
+       Fully self-contained. Zero dependency on --shell-* tokens or shell-glass classes.
+       Own tokens, own dark mode, own classes. */
+    --matrx-glass-bg:           rgba(210, 225, 255, 0.14);
+    --matrx-glass-bg-hover:     rgba(210, 225, 255, 0.22);
+    --matrx-glass-bg-active:    rgba(210, 225, 255, 0.32);
+    --matrx-glass-border-color: rgba(180, 205, 255, 0.70);
+    --matrx-glass-border-width: 1.5px;
+    --matrx-glass-blur:         4px;
+    --matrx-glass-shadow:       0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --matrx-glass-shadow-lg:    0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
 
     /* Base Background - Zinc-100 with texture (rgb 244 244 245) */
     --background: 240 5% 96%;
@@ -774,14 +772,13 @@
     --glass-shadow-lg:
       0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.15);
 
-    /* Shell Glass — Dark mode tokens */
-    --shell-glass-bg:        rgba(180, 200, 255, 0.05);
-    --shell-glass-bg-hover:  rgba(180, 200, 255, 0.09);
-    --shell-glass-bg-active: rgba(180, 200, 255, 0.13);
-    --shell-glass-border:    rgba(255, 255, 255, 0.07);
-    --shell-glass-card-bg:   rgba(255, 255, 255, 0.06);
-    --shell-glass-shadow:    0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
-    --shell-glass-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
+    /* Matrx Glass — dark mode tokens */
+    --matrx-glass-bg:           rgba(180, 200, 255, 0.05);
+    --matrx-glass-bg-hover:     rgba(180, 200, 255, 0.09);
+    --matrx-glass-bg-active:    rgba(180, 200, 255, 0.13);
+    --matrx-glass-border-color: rgba(255, 255, 255, 0.07);
+    --matrx-glass-shadow:       0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
+    --matrx-glass-shadow-lg:    0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
 
     /* Base Background - Zinc-850 with texture (rgb 39 39 42) */
     --background: 240 4% 16%;
@@ -1407,7 +1404,7 @@
 
 /* Dialog / Modal glass — INTENTIONAL outside-@layer + `!important`.
    -----------------------------------------------------------------------
-   `.shell-glass-overlay` and `.shell-glass-modal` are used by Radix-based
+   `.matrx-glass-overlay` and `.matrx-glass-modal` are used by Radix-based
    dialog / drawer / sheet components (components/ui/alert-dialog.tsx,
    components/ui/drawer.tsx, components/ui/sheet.tsx, etc.). Both
    declarations sit OUTSIDE `@layer utilities` and use `!important` on
@@ -1423,7 +1420,7 @@
    Together this gives a 2-axis cascade win that the simpler @layer
    placement could not provide. Do NOT move these inside `@layer` and
    do NOT drop the `!important`. */
-.shell-glass-overlay {
+.matrx-glass-overlay {
   background: rgba(0, 0, 0, 0.2) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
@@ -1431,22 +1428,22 @@
   box-shadow: none !important;
 }
 
-.dark .shell-glass-overlay {
+.dark .matrx-glass-overlay {
   background: rgba(0, 0, 0, 0.5) !important;
 }
 
-.shell-glass-modal {
-  background: rgba(210, 225, 255, 0.14) !important;
-  backdrop-filter: blur(16px) saturate(1.8) brightness(1.1) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.8) brightness(1.1) !important;
-  border: 2.5px solid rgba(180, 205, 255, 0.40) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+.matrx-glass-modal {
+  background: var(--matrx-glass-bg) !important;
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) !important;
+  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color) !important;
+  box-shadow: var(--matrx-glass-shadow-lg) !important;
 }
 
-.dark .shell-glass-modal {
-  background: rgba(180, 200, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.07) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+.dark .matrx-glass-modal {
+  background: var(--matrx-glass-bg) !important;
+  border-color: var(--matrx-glass-border-color) !important;
+  box-shadow: var(--matrx-glass-shadow-lg) !important;
 }
 
 /* Pointer-events overrides — INTENTIONAL `!important`.
@@ -1580,101 +1577,114 @@
   }
 }
 
-/* =============================================================================
-   SSR Module CSS — now split into dedicated files loaded per-route:
-   • Scrollbar utilities  → styles/shell.css  (section 18)
-   • Notes module CSS     → app/(a)/notes/notes.css
-   ============================================================================= */
 
 /* =============================================================================
-   Shell Glass + Tactile Utilities — single source of truth.
-   Token declarations live in the .dark and :root blocks above.
-
-   These utilities are INTENTIONALLY unlayered (no @layer wrapper). In the
-   original styles/shell.css (which loaded only in (a) and (ssr) routes)
-   these rules sat at the top level of the file — and that placement was
-   load-bearing for the visual effect. Cascade Layers spec says unlayered
-   rules ALWAYS beat any @layer rule regardless of source order or selector
-   specificity. So when an element carries both a Tailwind utility and a
-   glass class, the shell-glass declarations need to win against Tailwind
-   background, border, and shadow utilities — which all sit inside @layer
-   utilities. Wrapping these rules in @layer utilities made them lose to
-   Tailwind utilities on the same element, which visibly thinned and
-   lightened the glass everywhere. Keep these unlayered.
-
-   The four glass variants are the entire public API:
-     shell-glass         — base (cards, panels, popovers, glass pills)
-     shell-glass-dock    — heavier shadow for floating chrome (dock, FAB)
-     shell-glass-sheet   — right-edge border only (slide-in side sheets)
-     shell-glass-card    — no backdrop-filter (avoids stacking-context bugs
-                              in Chromium that break shell chrome blur).
-                              For in-page content surfaces only.
-   For Radix Dialog, Drawer, and Sheet overlays, see shell-glass-overlay
-   and shell-glass-modal further up — those also live OUTSIDE @layer with
-   !important to defeat Radix's inline styles.
+   Matrx Glass — Composable Layer System
+   Fully self-contained. Zero dependency on --shell-* tokens or shell-glass classes.
+   Own tokens (--matrx-glass-*), own dark mode, own classes.
    ============================================================================= */
 
-/* Core glass — backdrop-filter clipped at the element boundary */
-.shell-glass {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
-}
-.shell-glass:hover { background: var(--shell-glass-bg-hover); }
-.shell-glass:active { background: var(--shell-glass-bg-active); }
-
-/* Dock variant — heavier shadow, no border change */
-.shell-glass-dock {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow-lg);
-}
-.shell-glass-dock:hover { background: var(--shell-glass-bg-hover); }
-.shell-glass-dock:active { background: var(--shell-glass-bg-active); }
-
-/* Sheet variant — left border only (for side panels) */
-.shell-glass-sheet {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: none;
-  border-right: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
+/* 
+   :root {
+  --matrx-glass-bg:          rgba(210, 225, 255, 0.14);
+  --matrx-glass-bg-hover:    rgba(210, 225, 255, 0.22);
+  --matrx-glass-bg-active:   rgba(210, 225, 255, 0.32);
+  --matrx-glass-border-color: rgba(180, 205, 255, 0.70);
+  --matrx-glass-border-width: 1.5px;
+  --matrx-glass-blur:        4px;
+  --matrx-glass-shadow:      0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --matrx-glass-shadow-lg:   0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* Card variant — NO backdrop-filter (avoids stacking-context issues) */
-.shell-glass-card {
-  background: var(--shell-glass-card-bg);
-  border: var(--shell-glass-border-width) solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
+.dark {
+  --matrx-glass-bg:          rgba(180, 200, 255, 0.05);
+  --matrx-glass-bg-hover:    rgba(180, 200, 255, 0.09);
+  --matrx-glass-bg-active:   rgba(180, 200, 255, 0.13);
+  --matrx-glass-border-color: rgba(255, 255, 255, 0.07);
+  --matrx-glass-shadow:      0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --matrx-glass-shadow-lg:   0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+ */
+
+
+/* --- Layer 1: Backdrop blur/filter — the physical glass effect --- */
+.matrx-glass-fx {
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
 }
 
-/* Pill variant — lightweight glass for small interactive buttons (≤40px).
-   Uses 4px blur instead of 16px so a small pill stays see-through rather than
-   looking like a solid opaque block. No brightness modifier. Matches the
-   original matrx-glass-* / matrx-shell-glass values before the migration. */
-.shell-glass-pill {
-  background: var(--shell-glass-bg);
-  backdrop-filter: blur(4px) saturate(1.8);
-  -webkit-backdrop-filter: blur(4px) saturate(1.8);
-  border: 1px solid var(--shell-glass-border);
-  box-shadow: var(--shell-glass-shadow);
+/* --- Layer 2: Background fill — the tinted glass surface --- */
+.matrx-glass-bg {
+  background: var(--matrx-glass-bg);
 }
-.shell-glass-pill:hover  { background: var(--shell-glass-bg-hover); }
-.shell-glass-pill:active { background: var(--shell-glass-bg-active); }
 
-/* Interactive-only variant — for buttons nested INSIDE a glass container (e.g.
-   TapTargetButtonGroup). The container provides the glass surface and border;
-   inner buttons only need hover/active fills. Originally matrx-glass-interactive. */
-.shell-glass-interactive {
-  background: transparent;
+/* --- Layer 3: Border --- */
+.matrx-glass-border {
+  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
 }
-.shell-glass-interactive:hover  { background: var(--shell-glass-bg-hover); }
-.shell-glass-interactive:active { background: var(--shell-glass-bg-active); }
+
+.matrx-glass-core {
+  background: var(--matrx-glass-bg);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+  border: 3.5px solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+.matrx-glass-thin-border {
+  background: var(--matrx-glass-bg);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+  border: 1.5px solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+
+/* --- Layer 4: Shadows --- */
+.matrx-glass-shadow    { box-shadow: var(--matrx-glass-shadow); }
+.matrx-glass-shadow-lg { box-shadow: var(--matrx-glass-shadow-lg); }
+
+/* --- Layer 5: Interactive states — opt-in only for clickable elements --- */
+.matrx-glass-interactive:hover  { background: var(--matrx-glass-bg-hover); }
+.matrx-glass-interactive:active { background: var(--matrx-glass-bg-active); }
+
+/* --- Composed: identical visual result to shell-glass, built from layers above --- */
+.matrx-shell-glass {
+  background: var(--matrx-glass-bg);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8);
+  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+.matrx-shell-glass:hover  { background: var(--matrx-glass-bg-hover); }
+.matrx-shell-glass:active { background: var(--matrx-glass-bg-active); }
+
+/* --- Layer 6: Tap-pill press feedback (CSS-only, instant) ---
+ * Single source of truth for TapTargetButton press feedback.
+ * Applied to the visible inner pill of every tap button variant
+ * (glass, transparent, solid, group). If press feedback ever feels
+ * wrong (too subtle, too aggressive, jittery on mobile) — start here.
+ *
+ * Effects:
+ *   - 8% scale-down on :active (visible pill shrinks slightly when pressed)
+ *   - smooth bg + transform transitions
+ *   - touch-action: manipulation kills the 300ms mobile tap delay
+ *   - -webkit-tap-highlight-color: transparent suppresses the iOS gray flash
+ *     that would otherwise paint OVER our custom feedback
+ *
+ * Background-color animation pairs with each variant's own :active rule
+ * (.matrx-shell-glass:active, .matrx-glass-interactive:active, or Tailwind
+ * `active:bg-*` utilities on transparent/solid). This class only owns the
+ * timing curve and the scale.
+ */
+.matrx-tap-pill {
+  transition: background-color 150ms ease, transform 100ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.matrx-tap-pill:active { transform: scale(0.92); }
+
+/* --- matrx-glass-card: tinted card surface, no backdrop-filter --- */
+.matrx-glass-card {
+  background: var(--matrx-glass-bg);
+  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+  box-shadow: var(--matrx-glass-shadow);
+}
+
 
 /* Tactile — iOS-grade spring scale on hover/active */
 .shell-tactile {

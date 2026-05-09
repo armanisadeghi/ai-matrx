@@ -37,7 +37,7 @@ export default function QuickActions() {
         <a
           key={action.href}
           href={action.href}
-          className="shell-quick-card shell-glass-card shell-tactile-subtle"
+          className="shell-quick-card matrx-glass-card shell-tactile-subtle"
         >
           <div className={`shell-quick-card-icon ${action.color}`}>
             <ShellIcon name={action.iconName} size={20} strokeWidth={1.75} />

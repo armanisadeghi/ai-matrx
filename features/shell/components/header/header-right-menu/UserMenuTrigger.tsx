@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { User } from "lucide-react";
 import { UserData } from "@/utils/userDataMapper";
 
 interface UserMenuTriggerProps {
@@ -12,7 +13,7 @@ export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
       aria-label="User menu"
       className="flex h-11 w-11 items-center justify-center bg-transparent transition-transform active:scale-95 cursor-pointer outline-none"
     >
-      <div className="relative flex h-8 w-8 items-center justify-center rounded-full shell-glass transition-colors overflow-hidden">
+      <div className="relative flex h-8 w-8 items-center justify-center rounded-full matrx-shell-glass transition-colors overflow-hidden">
         {userData?.userMetadata?.avatarUrl ? (
           <Image
             src={userData?.userMetadata.avatarUrl}
@@ -28,19 +29,11 @@ export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
             {userData?.userMetadata.name.charAt(0).toUpperCase()}
           </span>
         ) : (
-          <svg
-            className="w-4 h-4 text-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <User
+            className="h-4 w-4 text-muted-foreground"
             strokeWidth={1.75}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
-            />
-          </svg>
+            aria-hidden="true"
+          />
         )}
       </div>
     </label>
