@@ -18737,16 +18737,40 @@
               "type": "string",
               "title": "Share Token"
             }
+          },
+          {
+            "name": "inline",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "When True (default), image/video/audio/pdf are served as Content-Disposition: inline so they render in <img>/<video>/<audio>/preview tags. When False, force Content-Disposition: attachment to trigger a browser download. Executable types (HTML, SVG, JS) are always forced to attachment regardless.",
+              "default": true,
+              "title": "Inline"
+            },
+            "description": "When True (default), image/video/audio/pdf are served as Content-Disposition: inline so they render in <img>/<video>/<audio>/preview tags. When False, force Content-Disposition: attachment to trigger a browser download. Executable types (HTML, SVG, JS) are always forced to attachment regardless."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "File bytes streamed with the file's canonical Content-Type and a Content-Disposition matching the requested inline / attachment mode.",
             "content": {
-              "application/json": {
-                "schema": {}
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
+          },
+          "302": {
+            "description": "Redirect to the public CDN URL when the shared file is public and CDN is configured."
+          },
+          "400": {
+            "description": "Share token resolves to a non-file resource (e.g. a folder) and cannot be downloaded."
+          },
+          "404": {
+            "description": "Share token is unknown, expired, exhausted, deactivated, or points to a deleted file."
           },
           "422": {
             "description": "Validation Error",

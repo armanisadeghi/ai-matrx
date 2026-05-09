@@ -26296,7 +26296,10 @@ export interface operations {
     };
     download_shared_file_share__share_token__download_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description When True (default), image/video/audio/pdf are served as Content-Disposition: inline so they render in <img>/<video>/<audio>/preview tags. When False, force Content-Disposition: attachment to trigger a browser download. Executable types (HTML, SVG, JS) are always forced to attachment regardless. */
+                inline?: boolean;
+            };
             header?: never;
             path: {
                 share_token: string;
@@ -26305,14 +26308,35 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description File bytes streamed with the file's canonical Content-Type and a Content-Disposition matching the requested inline / attachment mode. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "*/*": string;
                 };
+            };
+            /** @description Redirect to the public CDN URL when the shared file is public and CDN is configured. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Share token resolves to a non-file resource (e.g. a folder) and cannot be downloaded. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Share token is unknown, expired, exhausted, deactivated, or points to a deleted file. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

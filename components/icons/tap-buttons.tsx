@@ -251,6 +251,17 @@ export function TrashTapButton(props: TapButtonProps) {
   );
 }
 
+// lucide: files v0.577.0
+export function FilesTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Copy all" {...props}>
+      <path d="M20 7h-3a2 2 0 0 1-2-2V2" />
+      <path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z" />
+      <path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8" />
+    </Wrap>
+  );
+}
+
 // lucide: chevron-left v0.577.0 — arms extended from 6 to 7 (45° kept) for a
 // slightly larger glyph that better fills the 32px inner pill.
 export function ChevronLeftTapButton(props: TapButtonProps) {

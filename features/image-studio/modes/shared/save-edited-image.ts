@@ -1,6 +1,7 @@
 "use client";
 
 import { fileHandler } from "@/features/file-handler/handler";
+import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
 import type { SaveResult } from "./types";
 
 /**
@@ -31,11 +32,10 @@ export async function saveEditedImage(args: {
   if (!normalized.fileId || !normalized.shareToken) {
     throw new Error("saveEditedImage: upload returned no fileId/shareToken");
   }
-  const shareUrl = normalized.url ?? `/share/${normalized.shareToken}`;
+  const shareUrl = normalized.url ?? pythonShareUrl(normalized.shareToken);
   return {
     fileId: normalized.fileId,
     shareUrl,
     filename: file.name,
   };
 }
-

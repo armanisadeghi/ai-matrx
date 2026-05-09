@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Copy, Files, Loader2, Stars, Trash2 } from "lucide-react";
+import { Loader2, Stars } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -25,8 +25,8 @@ import {
 } from "@/lib/redux/slices/voicePadSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { CustomCleanerAgent } from "@/lib/redux/slices/userPreferencesSlice";
 import { VoicePadAiContextPanel } from "./VoicePadAiContextPanel";
@@ -199,34 +199,6 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
     });
   }, [ai, selectedAgent]);
 
-  const handleCopyResponse = useCallback(async () => {
-    const text = responseRef.current.trim();
-    if (!text) {
-      toast.info("Nothing to copy yet");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(responseRef.current);
-      toast.success("Copied to clipboard");
-    } catch {
-      toast.error("Copy failed — try selecting the text and copying manually");
-    }
-  }, []);
-
-  const handleCopyTranscript = useCallback(async () => {
-    const text = transcriptDisplayRef.current.trim();
-    if (!text) {
-      toast.info("Nothing to copy yet");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(transcriptDisplayRef.current);
-      toast.success("Transcript copied");
-    } catch {
-      toast.error("Copy failed — try selecting the text and copying manually");
-    }
-  }, []);
-
   const handleCopyJoined = useCallback(async () => {
     const transcript = transcriptDisplayRef.current.trim();
     const response = responseRef.current.trim();
@@ -373,32 +345,17 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
               </span>
             </span>
             <div className="flex items-center gap-1">
-              {transcriptDisplay.trim().length > 0 && (
+              {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
                 <ContentActionBar
                   content={transcriptDisplay}
                   title="Voice Pad Transcript"
                   instanceKey={`voice-pad-ai-transcript-${instanceId}`}
                   hideSpeaker
                   hidePencil
-                  hideCopy
+                  onDelete={handleClearAll}
+                  deleteAriaLabel="Clear transcript"
                 />
               )}
-              <ActionFeedbackButton
-                icon={<Copy />}
-                tooltip="Copy transcript"
-                onClick={handleCopyTranscript}
-                disabled={!transcriptDisplay.trim()}
-                disabledTooltip="Nothing to copy yet"
-                className="text-muted-foreground border border-red-500"
-              />
-              <ActionFeedbackButton
-                icon={<Trash2 />}
-                tooltip="Clear transcript"
-                onClick={handleClearAll}
-                disabled={!transcriptDisplay.trim() && entries.length === 0}
-                disabledTooltip="Nothing to clear"
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              />
             </div>
           </div>
           <textarea
@@ -447,25 +404,16 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
                   instanceKey={`voice-pad-ai-response-${instanceId}`}
                   hideSpeaker
                   hidePencil
-                  hideCopy
+                  extras={
+                    <FilesTapButton
+                      variant="group"
+                      onClick={handleCopyJoined}
+                      ariaLabel="Copy transcript + AI response"
+                      className="text-muted-foreground"
+                    />
+                  }
                 />
               )}
-              <ActionFeedbackButton
-                icon={<Copy />}
-                tooltip="Copy AI response"
-                onClick={handleCopyResponse}
-                disabled={!responseValue.trim()}
-                disabledTooltip="No AI response yet"
-                className="text-muted-foreground"
-              />
-              <ActionFeedbackButton
-                icon={<Files />}
-                tooltip="Copy transcript + AI response"
-                onClick={handleCopyJoined}
-                disabled={!transcriptDisplay.trim() && !responseValue.trim()}
-                disabledTooltip="Nothing to copy yet"
-                className="text-muted-foreground"
-              />
             </div>
           </div>
           <textarea

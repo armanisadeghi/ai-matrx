@@ -83,7 +83,7 @@ This feature is the **single source of resistance** for file flows: direct const
 ### Flow 4 — share link viewer
 
 1. Source: `{ kind: "share_link", token }`.
-2. `normalize` sets `url = /api/share/{token}/file`, `origin = "public"`, `shareToken = token`.
+2. `normalize` sets `url = pythonShareUrl(token)` (i.e. `${BACKEND}/share/{token}/download`), `origin = "public"`, `shareToken = token`.
 3. Resolver doesn't need to hydrate — share-link lifetime is managed by the backend.
 4. Consumer fetches; on 410 the backend returns `share_link_invalid`; the resolver translates to `ShareLinkInvalidError`.
 

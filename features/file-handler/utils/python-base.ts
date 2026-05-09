@@ -23,7 +23,26 @@ export function pythonFileInlineUrl(fileId: string): string {
   return `${pythonBaseUrl()}/files/${encodeURIComponent(fileId)}/download?inline=true`;
 }
 
-/** Python's public share resolver. Returns the file (302 → S3 signed URL). */
+/**
+ * Python's public byte-streaming share endpoint.
+ *
+ * Hands back the actual file bytes (or a 302 → S3 signed URL) so the URL
+ * works as `<img src>`, `<video src>`, `<audio src>`, or a raw download
+ * link. No auth required — the token IS the auth, with token expiry /
+ * max-uses / revocation enforced server-side.
+ *
+ * This is the canonical replacement for the deleted Next.js route
+ * `/api/share/{token}/file`.
+ */
 export function pythonShareUrl(token: string): string {
+  return `${pythonBaseUrl()}/share/${encodeURIComponent(token)}/download`;
+}
+
+/**
+ * Python's JSON share-resolver endpoint. Returns metadata + a fresh
+ * signed S3 URL — used by the public `/share/[token]` landing page,
+ * never as a media src.
+ */
+export function pythonShareResolveUrl(token: string): string {
   return `${pythonBaseUrl()}/share/${encodeURIComponent(token)}`;
 }

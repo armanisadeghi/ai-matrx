@@ -28,6 +28,7 @@ import {
   preferFetchableUrl,
   preferIdentityLocator,
 } from "../utils/prefer-locator";
+import { pythonShareUrl } from "../utils/python-base";
 import type {
   FileTarget,
   MediaBlock,
@@ -73,7 +74,10 @@ export async function toTarget<T extends FileTarget>(
 
 function toMediaBlock(file: NormalizedFile): MediaBlock {
   if (file.youtubeUrl) {
-    const block: YouTubeVideoBlock = { type: "youtube_video", url: file.youtubeUrl };
+    const block: YouTubeVideoBlock = {
+      type: "youtube_video",
+      url: file.youtubeUrl,
+    };
     return block;
   }
 
@@ -177,9 +181,9 @@ function toAnchorDownload(
 function toOgImage(file: NormalizedFile): string {
   // OG previews are scraped offline by social platforms — never use a
   // signed URL (it'll expire before the scrape) and never use a same-origin
-  // proxy (auth-required). Prefer permanent CDN > share link > public URL.
+  // proxy (auth-required). Prefer permanent CDN > share-link bytes endpoint.
   if (file.url && !isSignedS3Url(file.url)) return file.url;
-  if (file.shareToken) return `/share/${file.shareToken}`;
+  if (file.shareToken) return pythonShareUrl(file.shareToken);
   throw new Error("file-handler: no permanent URL available for OG image");
 }
 

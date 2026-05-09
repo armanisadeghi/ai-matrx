@@ -109,7 +109,7 @@ app/api/images/studio/
    - Click **Download** on a tile → single file to disk.
    - Tick tiles + click **Selected** → JSZip bundle of just those.
    - Click **All** → JSZip bundle of everything.
-   - Type a folder name + click **Save all to library** → POSTs all data URLs to `/api/images/studio/save` which writes them to Supabase under `{userId}/{folder}/{sessionUuid}/`.
+   - Type a folder name + click **Save all to library** → `useImageStudio.saveAll()` ensures the destination folder via `ensureFolderPath` and uploads each variant directly through the universal file handler under `Images/Generated/{folder}/<source-name>/{filename}`. (The legacy `/api/images/studio/save` Next.js route was deleted in the 2026-05-07 file-handler refactor.)
 6. The Library page (server component) lists every saved session by reading the user's storage folder.
 
 ## Preset catalog
@@ -141,10 +141,7 @@ Every preset declares: `id`, `name`, `usage` (where it's used), `width`, `height
 - PNG: `compressionLevel: 9` (quality is not configurable — always lossless)
 - Returns base64 data URLs so the client can preview + download WITHOUT storage writes.
 
-`app/api/images/studio/save/route.ts` accepts JSON `{ folder, variants: [{ filename, dataUrl, presetId }] }`.
-- Auth-gated against `supabase.auth.getUser()`.
-- Writes each variant to `userContent/{userId}/{folder}/{sessionUuid}/{filename}`.
-- Returns public URLs.
+**Save flow (post-refactor):** `useImageStudio.saveAll(folder, opts)` (`features/image-studio/hooks/useImageStudio.ts`) drives the persistence path. It calls `ensureFolderPath` to create `Images/Generated/{folder}/<source-name>/` in cloud-files, then dispatches one upload per variant through the universal file handler. Each variant lands as a `cld_files` row with `visibility: "public"` (default — gives permanent CDN URLs); a private mode is supported by passing `{ visibility: "private" }`. The legacy `/api/images/studio/save` Next.js route is gone — there is no Next.js hop in this path anymore.
 
 ## SSR / perf
 

@@ -31,11 +31,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveFileId,
   selectActiveFolderId,
@@ -68,6 +64,7 @@ import {
   type ClipboardItem,
 } from "@/features/files/utils/clipboard";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
+import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
 
 interface PendingDelete {
   kind: "single" | "batch";
@@ -96,7 +93,9 @@ export function useFileShortcuts(): {
     selectChildrenOfFolder(state, activeFolderId ?? ""),
   );
 
-  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
+    null,
+  );
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -156,17 +155,16 @@ export function useFileShortcuts(): {
         e.preventDefault();
         void (async () => {
           try {
-            await dispatch(
-              loadShareLinks({ resourceId: target.id }),
-            )
+            await dispatch(loadShareLinks({ resourceId: target.id }))
               .unwrap()
               .catch(() => undefined);
             const links = selectActiveShareLinksForResource(
               getState(),
               target.id,
             );
-            let token = links.find((l) => l.permissionLevel === "read")
-              ?.shareToken;
+            let token = links.find(
+              (l) => l.permissionLevel === "read",
+            )?.shareToken;
             if (!token) {
               const link = await dispatch(
                 createShareLinkThunk({
@@ -179,7 +177,7 @@ export function useFileShortcuts(): {
             }
             const url =
               target.kind === "file"
-                ? `${window.location.origin}/api/share/${token}/file`
+                ? pythonShareUrl(token)
                 : `${window.location.origin}/share/${token}`;
             if (navigator.clipboard) {
               await navigator.clipboard.writeText(url);
@@ -205,9 +203,8 @@ export function useFileShortcuts(): {
             const result = await dispatch(
               getSignedUrlThunk({ fileId: activeFileId, expiresIn: 600 }),
             );
-            const url =
-              (result as { payload?: { url?: string } } | undefined)?.payload
-                ?.url;
+            const url = (result as { payload?: { url?: string } } | undefined)
+              ?.payload?.url;
             if (!url) return;
             const blob = await fetch(url).then((r) => {
               if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -343,9 +340,8 @@ export function useFileShortcuts(): {
               const result = await dispatch(
                 getSignedUrlThunk({ fileId: item.id, expiresIn: 600 }),
               );
-              const url =
-                (result as { payload?: { url?: string } } | undefined)?.payload
-                  ?.url;
+              const url = (result as { payload?: { url?: string } } | undefined)
+                ?.payload?.url;
               if (!url) continue;
               const blob = await fetch(url).then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -477,16 +473,19 @@ export function useFileShortcuts(): {
     }
     // Batch — concurrency 4
     let cursor = 0;
-    const runners = Array.from({ length: Math.min(4, ids.length) }, async () => {
-      while (cursor < ids.length) {
-        const i = cursor++;
-        try {
-          await deleteForId(ids[i]).unwrap();
-        } catch {
-          /* per-item failure tolerable */
+    const runners = Array.from(
+      { length: Math.min(4, ids.length) },
+      async () => {
+        while (cursor < ids.length) {
+          const i = cursor++;
+          try {
+            await deleteForId(ids[i]).unwrap();
+          } catch {
+            /* per-item failure tolerable */
+          }
         }
-      }
-    });
+      },
+    );
     await Promise.all(runners);
     dispatch(clearSelection());
   };
