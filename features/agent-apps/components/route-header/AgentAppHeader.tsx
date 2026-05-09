@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { AgentAppBackButton } from "./AgentAppBackButton";
 import { AgentAppHeaderTabs } from "./AgentAppHeaderTabs";
 import type { AgentAppHeaderTab } from "./AgentAppHeaderTabs";
 
@@ -33,7 +32,7 @@ export function AgentAppHeader({
   return (
     <div className="flex items-center justify-between w-full gap-2 px-0 min-w-0">
       <div className="flex items-center gap-1 min-w-0 shrink">
-        <ChevronLeftTapButton href={backHref} aria-label="Back to Apps" />
+        <AgentAppBackButton fallbackHref={backHref} label="Back to Apps" />
         <Link
           href={titleHref}
           className="text-sm font-semibold text-foreground hover:text-primary transition-colors truncate min-w-0"

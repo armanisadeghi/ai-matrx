@@ -43,6 +43,7 @@ import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AgentAppCard } from "./AgentAppCard";
 import { useAgentAppConsumer } from "@/features/agent-apps/hooks/useAgentAppConsumer";
+import { useAgentAppConsumerUrlSync } from "@/features/agent-apps/hooks/useAgentAppConsumerUrlSync";
 import {
   makeSelectFilteredApps,
   selectAllAppCategories,
@@ -140,6 +141,9 @@ export function AgentAppsGrid({
   const isLoading = sliceStatus === "idle" || sliceStatus === "loading";
 
   const consumer = useAgentAppConsumer(consumerId);
+  // Two-way sync of filter/sort/search state with the URL — survives back/
+  // forward, refresh, and shareable links.
+  useAgentAppConsumerUrlSync(consumerId, consumer);
   const {
     tab,
     sortBy,
