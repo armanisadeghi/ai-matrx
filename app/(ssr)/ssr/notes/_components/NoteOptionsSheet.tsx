@@ -55,7 +55,7 @@ export default function NoteOptionsSheet({
         className="fixed inset-0 z-100"
         onClick={() => { onClose(); setFolderMode(false); }}
       />
-      <div className="matrx-shell-glass fixed inset-x-3 z-110 rounded-2xl p-2 bottom-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+env(safe-area-inset-bottom,0px)+0.5rem)]">
+      <div className="matrx-glass-thin-border fixed inset-x-3 z-110 rounded-2xl p-2 bottom-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+env(safe-area-inset-bottom,0px)+0.5rem)]">
         {folderMode ? (
           <>
             <div className="flex items-center gap-2.5 px-3 py-2 text-[0.8125rem] text-foreground">

@@ -137,7 +137,7 @@ export function AgentModeController({
 
   return (
     <>
-      <div className="matrx-shell-glass flex items-center gap-0 rounded-full p-0.5">
+      <div className="matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5">
         {MODES.map(({ id, label, icon: Icon }) => {
           const isActive = id === mode;
           return (

@@ -271,7 +271,7 @@ export function DesktopFilterPanel({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full matrx-shell-glass hover:shadow-xl relative border border-border/50 shrink-0"
+            className="h-8 w-8 rounded-full matrx-glass-thin-border hover:shadow-xl relative border border-border/50 shrink-0"
             title="Filters"
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -285,7 +285,7 @@ export function DesktopFilterPanel({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-3 rounded-full matrx-shell-glass hover:shadow-xl relative border border-border/50"
+            className="h-8 px-3 rounded-full matrx-glass-thin-border hover:shadow-xl relative border border-border/50"
           >
             <ChevronDown
               className={cn(

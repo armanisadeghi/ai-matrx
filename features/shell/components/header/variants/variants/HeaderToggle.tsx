@@ -62,7 +62,7 @@ export default function HeaderToggle<T extends string = string>({
 
       {/* ─── Center: Toggle — flex:1, content centered within ─── */}
       <div className="hdr-structured-center">
-      <div className="hdr-toggle-track matrx-shell-glass">
+      <div className="hdr-toggle-track matrx-glass-thin-border">
         {options.map((option) => {
           const isActive = option.value === active;
           return (

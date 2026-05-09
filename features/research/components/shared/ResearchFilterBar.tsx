@@ -282,7 +282,7 @@ export function ResearchFilterBar({
     <>
       <div
         className={cn(
-          "flex items-center gap-1.5 p-1 rounded-full matrx-shell-glass",
+          "flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border",
           className,
         )}
       >
@@ -352,7 +352,7 @@ export function ResearchFilterBar({
 
       {isMobile && filters.length > 0 && (
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DrawerContent className="h-[85dvh] !bg-[var(--glass-bg)]">
+          <DrawerContent className="h-[85dvh] !bg-[var(--matrx-glass-bg)]">
             <DrawerTitle className="sr-only">Filters</DrawerTitle>
             <FilterDrawerContent
               filters={filters}

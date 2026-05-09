@@ -79,7 +79,7 @@ function SidebarSearchGroup({
 
   return (
     <div className="relative inline-flex h-9 items-center w-full">
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 rounded-full matrx-shell-glass" />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 rounded-full matrx-glass-thin-border" />
       <div className="relative flex items-center w-full">
         {leftButton}
         <div

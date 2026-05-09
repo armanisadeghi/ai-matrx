@@ -129,7 +129,7 @@ export default function DocumentViewer() {
   if (!document && stream.isStreaming) {
     return (
       <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4">
-        <div className="flex items-center gap-2 rounded-full matrx-shell-glass px-3 py-1.5 mb-4">
+        <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5 mb-4">
           <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
           <span className="text-xs font-medium text-primary">
             Generating document…
@@ -246,7 +246,7 @@ export default function DocumentViewer() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4">
-        <div className="flex items-center gap-2 rounded-full matrx-shell-glass px-3 py-1.5 mb-4">
+        <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5 mb-4">
           <span className="text-xs font-medium text-foreground/80 truncate">
             {document.title ?? "Document"}
           </span>

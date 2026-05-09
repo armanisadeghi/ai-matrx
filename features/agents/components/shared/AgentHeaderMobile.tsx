@@ -100,7 +100,7 @@ export function AgentHeaderMobile({
               className="flex h-9 w-9 shrink-0 items-center justify-center bg-transparent transition-transform active:scale-95 outline-none cursor-pointer"
               aria-label="Select agent"
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full matrx-shell-glass transition-colors">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full matrx-glass-thin-border transition-colors">
                 <Webhook className="w-3.5 h-3.5" />
               </div>
             </button>

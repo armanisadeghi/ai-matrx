@@ -144,7 +144,7 @@ export default function NotesSidebarToolbar({
           {/* Dropdown panel */}
           <div
             className={cn(
-              "notes-toolbar-overflow-panel matrx-shell-glass",
+              "notes-toolbar-overflow-panel matrx-glass-thin-border",
               overflowOpen && "notes-toolbar-overflow-panel--open",
             )}
             role="menu"

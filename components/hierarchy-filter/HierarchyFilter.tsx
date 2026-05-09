@@ -48,7 +48,7 @@ export function HierarchyFilter({
 
   if (isLoading && !filter.data) {
     return (
-      <div className={cn('flex items-center gap-1.5 p-1 rounded-full matrx-shell-glass', className)}>
+      <div className={cn('flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border', className)}>
         <Skeleton className="h-6 w-[100px] rounded-full" />
         <Skeleton className="h-6 w-[90px] rounded-full" />
         {showSearch && <Skeleton className="h-6 flex-1 min-w-[120px] rounded-full" />}
@@ -72,7 +72,7 @@ export function HierarchyFilter({
 
   return (
     <div className={cn(
-      'flex items-center gap-1.5 p-1 rounded-full matrx-shell-glass',
+      'flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border',
       className,
     )}>
       <HierarchyFilterPill

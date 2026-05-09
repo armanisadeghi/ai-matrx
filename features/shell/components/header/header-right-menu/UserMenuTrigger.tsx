@@ -13,7 +13,7 @@ export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
       aria-label="User menu"
       className="flex h-11 w-11 items-center justify-center bg-transparent transition-transform active:scale-95 cursor-pointer outline-none"
     >
-      <div className="relative flex h-8 w-8 items-center justify-center rounded-full matrx-shell-glass transition-colors overflow-hidden">
+      <div className="relative flex h-8 w-8 items-center justify-center rounded-full matrx-glass-thin-border transition-colors overflow-hidden">
         {userData?.userMetadata?.avatarUrl ? (
           <Image
             src={userData?.userMetadata.avatarUrl}

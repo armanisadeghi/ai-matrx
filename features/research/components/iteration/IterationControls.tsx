@@ -20,7 +20,7 @@ export function IterationControls({ onRebuild, onUpdate, onAddKeywords, isLoadin
     );
 
     return (
-        <div className="flex items-center gap-1.5 p-1 rounded-full matrx-shell-glass">
+        <div className="flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border">
             <button onClick={onAddKeywords} disabled={isLoading} className={btnClass}>
                 <Plus className="h-3 w-3" />
                 <span className="hidden sm:inline">Add Keywords</span>

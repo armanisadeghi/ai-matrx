@@ -77,7 +77,7 @@ export default function UserMenuIsland({ userData }: UserMenuIslandProps) {
       <div className="flex items-center justify-center w-[60px] h-11">
         <button
           className={cn(
-            "shell-auth-island matrx-shell-glass shell-tactile cursor-pointer",
+            "shell-auth-island matrx-glass-thin-border shell-tactile cursor-pointer",
             open && "!bg-[var(--matrx-glass-bg-active)]",
           )}
           onClick={() => setOpen(!open)}

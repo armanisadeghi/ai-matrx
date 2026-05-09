@@ -837,7 +837,7 @@ export function PromptsGrid() {
             <>
               <div
                 className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-white/[0.06] space-y-2"
-                style={{ background: "var(--glass-bg-subtle)", backdropFilter: "blur(20px)" }}
+                style={{ background: "var(--matrx-glass-bg)", backdropFilter: "blur(20px)" }}
               >
                 <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-white/[0.06] border border-white/[0.08]">
                   <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -912,7 +912,7 @@ export function PromptsGrid() {
             <>
               <div
                 className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-white/[0.06] space-y-2"
-                style={{ background: "var(--glass-bg-subtle)", backdropFilter: "blur(20px)" }}
+                style={{ background: "var(--matrx-glass-bg)", backdropFilter: "blur(20px)" }}
               >
                 <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-white/[0.06] border border-white/[0.08]">
                   <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

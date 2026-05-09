@@ -1389,7 +1389,7 @@ export default function NotesWorkspace({
       {/* ── Header center: View mode buttons via PageHeader ────────── */}
       {activeNoteId && activeCached && (
         <PageHeader>
-          <div className="matrx-shell-glass flex items-center gap-0.5 rounded-full p-0.5">
+          <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
             <button
               className={cn(
                 "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
@@ -1688,7 +1688,7 @@ export default function NotesWorkspace({
                   {/* Chevron back — mobile only, same tap target as sidebar icon buttons */}
                   <div className="notes-search-tap lg:hidden">
                     <button
-                      className="flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full matrx-shell-glass shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
+                      className="flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full matrx-glass-thin-border shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
                       onClick={goBack}
                       aria-label="Back to notes"
                     >
@@ -1699,7 +1699,7 @@ export default function NotesWorkspace({
                   {/* Title input — fills remaining space, same glass pill as search input */}
                   <div className="notes-search-input-wrap">
                     <input
-                      className="notes-title-input w-full h-[1.875rem] px-3 matrx-shell-glass rounded-full placeholder:text-muted-foreground/60 outline-none transition-colors min-w-0 truncate"
+                      className="notes-title-input w-full h-[1.875rem] px-3 matrx-glass-thin-border rounded-full placeholder:text-muted-foreground/60 outline-none transition-colors min-w-0 truncate"
                       style={{ fontSize: "16px" }}
                       type="text"
                       value={activeLabel}
@@ -1713,7 +1713,7 @@ export default function NotesWorkspace({
                   <div className="notes-search-tap">
                     <button
                       className={cn(
-                        "flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full matrx-shell-glass shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5",
+                        "flex items-center justify-center w-[1.875rem] h-[1.875rem] rounded-full matrx-glass-thin-border shell-tactile text-muted-foreground cursor-pointer hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5",
                         showNoteOptions &&
                           "bg-(--matrx-glass-bg-active)! text-foreground",
                       )}

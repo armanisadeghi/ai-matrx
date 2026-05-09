@@ -193,7 +193,7 @@
   overflow: hidden;
   background: var(--matrx-glass-bg);
   backdrop-filter: blur(5px) saturate(1.8) brightness(1.1);
-  border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+  border: var(--matrx-glass-border-width-thin) solid var(--matrx-glass-border-color);
   box-shadow: var(--matrx-glass-shadow);
   transition:
     width var(--shell-duration-normal) var(--shell-ease-spring),

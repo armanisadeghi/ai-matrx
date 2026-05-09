@@ -110,7 +110,7 @@ export function FloatingActionBar({
             <>
                 <div className="fixed inset-0 bg-background/60 backdrop-blur-md z-50" />
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="matrx-shell-glass rounded-3xl p-8 flex flex-col items-center gap-4">
+                    <div className="matrx-glass-thin-border rounded-3xl p-8 flex flex-col items-center gap-4">
                         <TranscriptionLoader duration={duration} size="lg" />
                         <div className="text-sm text-muted-foreground">
                             Transcribing...
@@ -121,19 +121,19 @@ export function FloatingActionBar({
         );
     }
 
-    // Default state - compact bar with matrx-shell-glass elements
+    // Default state - compact bar with matrx-glass-thin-border elements
     if (!isSearchActive) {
         return (
             <>
                 <div className="fixed bottom-0 left-0 right-0 pb-safe z-40">
                     <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] pb-4">
                         <div className="flex items-center gap-2 p-2">
-                            {/* Filter Button — matrx-shell-glass pill */}
+                            {/* Filter Button — matrx-glass-thin-border pill */}
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={onFilterClick}
-                                className="h-10 w-10 flex-shrink-0 matrx-shell-glass relative border-0"
+                                className="h-10 w-10 flex-shrink-0 matrx-glass-thin-border relative border-0"
                             >
                                 <SlidersHorizontal className="h-5 w-5" />
                                 {showFilterBadge && (
@@ -141,10 +141,10 @@ export function FloatingActionBar({
                                 )}
                             </Button>
 
-                            {/* Compact Search Bar — matrx-shell-glass */}
+                            {/* Compact Search Bar — matrx-glass-thin-border */}
                             <button
                                 onClick={handleSearchActivate}
-                                className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full matrx-shell-glass transition-colors"
+                                className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full matrx-glass-thin-border transition-colors"
                             >
                                 <Search className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground truncate">
@@ -173,7 +173,7 @@ export function FloatingActionBar({
         );
     }
 
-    // Search Active State - Full width search with matrx-shell-glass
+    // Search Active State - Full width search with matrx-glass-thin-border
     return (
         <>
             {/* Backdrop blur overlay */}
@@ -182,10 +182,10 @@ export function FloatingActionBar({
                 onClick={handleSearchCancel}
             />
 
-            {/* Active Search Bar — matrx-shell-glass container */}
+            {/* Active Search Bar — matrx-glass-thin-border container */}
             <div className="fixed bottom-0 left-0 right-0 pb-safe z-40">
                 <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] pb-4">
-                    <div className="flex items-center gap-2 p-2 rounded-full matrx-shell-glass">
+                    <div className="flex items-center gap-2 p-2 rounded-full matrx-glass-thin-border">
                         {/* Search Input Container */}
                         <div className="flex-1 flex items-center gap-2 h-10 px-3">
                             <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />

@@ -276,7 +276,7 @@ export function NotesView({ config, className }: NotesViewProps) {
           {/* ── Header center: View mode buttons (portaled into shell header) */}
           {activeTabId && (
             <PageHeader>
-              <div className="matrx-shell-glass flex items-center gap-0.5 rounded-full p-0.5">
+              <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
                 <button
                   className={modeBtnClass("plain")}
                   onClick={() => setMode("plain")}

@@ -27,7 +27,7 @@ export default function MobileSideSheet() {
 
       {/* Sheet panel */}
       <div
-        className="shell-mobile-sheet matrx-shell-glass"
+        className="shell-mobile-sheet matrx-glass-thin-border"
         data-sidebar-view="main"
       >
         {/* Close button — absolutely positioned relative to the sheet */}

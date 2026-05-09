@@ -108,7 +108,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  /* Glass applied via .matrx-shell-glass class on the element in the component */
+  /* Glass applied via .matrx-glass-thin-border class on the element in the component */
 }
 
 .hdr-structured-dropdown-icon {
@@ -429,7 +429,7 @@
   flex-direction: column;
   animation: hdr-dropdown-in var(--shell-duration-fast) var(--shell-ease-spring);
   box-shadow: var(--matrx-glass-shadow-lg);
-  /* Glass applied via .matrx-shell-glass class on the element in the component */
+  /* Glass applied via .matrx-glass-thin-border class on the element in the component */
 }
 
 .hdr-dropdown-center {
@@ -538,7 +538,7 @@
   background: var(--shell-overlay-bg);
 }
 
-/* Sheet panel — glass applied entirely via .matrx-shell-glass in shell.css */
+/* Sheet panel — glass applied entirely via .matrx-glass-thin-border in shell.css */
 .hdr-sheet-panel {
   position: relative;
   width: 100%;

@@ -32,7 +32,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
 
     return (
         <div className="p-3 sm:p-4 space-y-3">
-            <div className="flex items-center gap-2 rounded-full matrx-shell-glass px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
                 <Link href={`/research/topics/${topicId}/tags`} className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
                     <ChevronLeft className="h-3 w-3" />
                     Tags
