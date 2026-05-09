@@ -37,10 +37,13 @@ import {
   ShieldCheck,
   Sparkles,
   Tag,
+  Variable,
   Webhook,
   type LucideIcon,
 } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -48,7 +51,11 @@ import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/extras/site";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  selectAgentById,
+  selectAgentContextSlots,
+  selectAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-definition/selectors";
 
 interface AgentAppOverviewContentProps {
   appId: string;
@@ -129,9 +136,16 @@ function LabeledPill({ label, children, icon: Icon, accent }: LabeledPillProps) 
 }
 
 export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps) {
+  const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
   const agent = useAppSelector((state) =>
     app?.agent_id ? selectAgentById(state, app.agent_id) : undefined,
+  );
+  const agentVariables = useAppSelector((state) =>
+    app?.agent_id ? selectAgentVariableDefinitions(state, app.agent_id) : null,
+  );
+  const agentContextSlots = useAppSelector((state) =>
+    app?.agent_id ? selectAgentContextSlots(state, app.agent_id) : null,
   );
 
   const [copied, setCopied] = useState<string | null>(null);
@@ -145,6 +159,25 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
     } catch {
       toast.error("Copy failed");
     }
+  };
+
+  /**
+   * Open the agent in a window panel — keeps the user on the app page
+   * instead of route-navigating away to /agents/[id]. The advanced editor
+   * window is the most complete agent surface today.
+   */
+  const handleOpenAgent = () => {
+    if (!app?.agent_id) return;
+    dispatch(
+      openOverlay({
+        overlayId: "agentAdvancedEditorWindow",
+        data: {
+          initialAgentId: app.agent_id,
+          initialTab: "overview",
+          tabs: null,
+        },
+      }),
+    );
   };
 
   if (!app) {
@@ -161,9 +194,8 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
   const versionsHref = `/agent-apps/${app.id}/versions`;
   const runHref = `/agent-apps/${app.id}/run`;
 
-  const variableCount = Array.isArray(app.variable_schema)
-    ? (app.variable_schema as unknown[]).length
-    : 0;
+  const variableCount = agentVariables?.length ?? 0;
+  const contextSlotCount = agentContextSlots?.length ?? 0;
   const successPct =
     typeof app.success_rate === "number"
       ? `${Math.round(app.success_rate * 100)}%`
@@ -265,23 +297,26 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             {visibilityLabel}
           </LabeledPill>
           {agent ? (
-            <Link
-              href={`/agents/${app.agent_id}`}
-              className="inline-flex"
-              title="Open agent"
+            <button
+              type="button"
+              onClick={handleOpenAgent}
+              title="Open agent in a window panel (stay on this page)"
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-xs hover:bg-muted hover:border-primary/40 transition-colors active:scale-95"
             >
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-xs hover:bg-muted hover:border-primary/40 transition-colors">
-                <Webhook className="w-3 h-3 shrink-0 text-blue-500" />
-                <span className="text-muted-foreground">Agent:</span>
-                <span className="font-medium text-foreground">{agent.name}</span>
-                {!app.use_latest && app.agent_version_id && (
-                  <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wide">
-                    pinned
-                  </span>
-                )}
-                <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
-              </span>
-            </Link>
+              <Webhook className="w-3 h-3 shrink-0 text-blue-500" />
+              <span className="text-muted-foreground">Agent:</span>
+              <span className="font-medium text-foreground">{agent.name}</span>
+              {!app.use_latest && app.agent_version_id && (
+                <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wide">
+                  pinned
+                </span>
+              )}
+              {app.use_latest && (
+                <span className="text-amber-600 dark:text-amber-400 text-[10px] uppercase tracking-wide">
+                  latest
+                </span>
+              )}
+            </button>
           ) : (
             <LabeledPill label="Agent" icon={Webhook}>
               —
@@ -409,28 +444,188 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
         <Card>
           <CardHeader className="pb-2 flex-row items-center justify-between">
             <CardTitle className="text-sm">Agent binding</CardTitle>
-            <Link
-              href={`/agents/${app.agent_id}`}
+            <button
+              type="button"
+              onClick={handleOpenAgent}
               className="text-xs text-primary hover:underline"
             >
               Open agent
-            </Link>
+            </button>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <KV label="Agent" value={agent?.name ?? "—"} />
             <KV
-              label="Pinned version"
+              label="Mode"
               value={
                 app.use_latest
-                  ? "Always use latest"
-                  : (app.agent_version_id ?? "—")
+                  ? "Always use latest (advanced)"
+                  : "Pinned to a specific version"
               }
-              mono={!app.use_latest}
-              dim={app.use_latest}
             />
+            {!app.use_latest && (
+              <KV
+                label="Pinned version"
+                value={app.agent_version_id ?? "—"}
+                mono
+                dim
+              />
+            )}
+            {app.use_latest && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                <strong>Heads up:</strong> this app uses whatever the live
+                agent looks like. If the agent&apos;s variables change, this
+                app will break. Pinning a version is recommended.
+              </p>
+            )}
             <KV label="Agent ID" value={app.agent_id} mono dim />
           </CardContent>
         </Card>
+
+        {/* ── Variables (from the agent definition) ───────────────────── */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Variable className="w-4 h-4 text-purple-500" />
+              Variables
+              <span className="text-xs font-normal text-muted-foreground">
+                ({variableCount})
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {agentVariables == null ? (
+              <p className="text-sm text-muted-foreground">
+                Loading agent variables…
+              </p>
+            ) : variableCount === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                The bound agent declares no input variables.
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-2">
+                  {agentVariables.map((v) => {
+                    const widget = v.customComponent;
+                    const widgetLabel = widget?.type ?? null;
+                    const options = widget?.options ?? null;
+                    return (
+                      <div
+                        key={v.name}
+                        className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
+                      >
+                        <code className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                          {`{{${v.name}}}`}
+                        </code>
+                        <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                          {v.helpText && (
+                            <div className="text-foreground/90 break-words">
+                              {v.helpText}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                            {widgetLabel && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] gap-1 font-mono"
+                              >
+                                {widgetLabel}
+                              </Badge>
+                            )}
+                            {v.defaultValue !== undefined &&
+                              v.defaultValue !== null &&
+                              String(v.defaultValue) !== "" && (
+                                <span>
+                                  Default:{" "}
+                                  <span className="font-mono text-foreground/80">
+                                    {String(v.defaultValue)}
+                                  </span>
+                                </span>
+                              )}
+                            {Array.isArray(options) && options.length > 0 && (
+                              <span>
+                                {options.length} option
+                                {options.length === 1 ? "" : "s"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {v.required && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] shrink-0"
+                          >
+                            required
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {app.use_latest && (
+                  <p className="text-xs text-muted-foreground/80 pt-2 italic">
+                    Variables are read from the live agent. If you pin a
+                    version on Settings, the app will be locked to those
+                    variables instead.
+                  </p>
+                )}
+                {!app.use_latest && (
+                  <p className="text-xs text-muted-foreground/80 pt-2 italic">
+                    Variables shown here are from the live agent for now —
+                    a future revision will resolve them from the pinned
+                    version snapshot, which may differ.
+                  </p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── Context slots (from the agent definition) ───────────────── */}
+        {contextSlotCount > 0 && agentContextSlots && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-500" />
+                Context slots
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({contextSlotCount})
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {agentContextSlots.map((slot, i) => (
+                  <div
+                    key={slot.key ?? i}
+                    className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
+                  >
+                    <code className="text-xs font-semibold text-cyan-700 dark:text-cyan-400 shrink-0">
+                      {slot.key}
+                    </code>
+                    <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                      {slot.label && (
+                        <div className="text-foreground/90">{slot.label}</div>
+                      )}
+                      {slot.description && (
+                        <div className="text-muted-foreground/80 text-xs break-words">
+                          {slot.description}
+                        </div>
+                      )}
+                    </div>
+                    {slot.type && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] shrink-0"
+                      >
+                        {slot.type}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Code summary card with link to /code ────────────────────── */}
         <Card>
