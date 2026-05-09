@@ -409,6 +409,7 @@ export type Database = {
           fingerprint: string | null;
           id: string;
           ip_address: unknown;
+          kind: string;
           metadata: Json | null;
           referer: string | null;
           success: boolean | null;
@@ -429,6 +430,7 @@ export type Database = {
           fingerprint?: string | null;
           id?: string;
           ip_address?: unknown;
+          kind?: string;
           metadata?: Json | null;
           referer?: string | null;
           success?: boolean | null;
@@ -449,6 +451,7 @@ export type Database = {
           fingerprint?: string | null;
           id?: string;
           ip_address?: unknown;
+          kind?: string;
           metadata?: Json | null;
           referer?: string | null;
           success?: boolean | null;

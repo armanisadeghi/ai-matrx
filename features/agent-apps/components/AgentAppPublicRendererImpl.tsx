@@ -33,6 +33,7 @@ import {
   selectPrimaryRequest,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
+import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -118,6 +119,21 @@ export function AgentAppPublicRenderer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fingerprintId]);
 
+  // Non-blocking execution tracking — writes a row to `aga_executions` for
+  // every visit/run/complete/error. Tracker fires fetch with keepalive:true
+  // and never awaits; nothing here can delay the agent dispatch path.
+  const { trackVisit, startRun } = useAgentAppTracker(app.id);
+  const visitFiredRef = useRef(false);
+  useEffect(() => {
+    // Dedupe across React strict-mode double-mount in dev. One row per
+    // page open is the correct shape; effects that re-run after route
+    // changes mount a fresh component (different ref instance), so the
+    // ref does not bleed visits between routes.
+    if (visitFiredRef.current) return;
+    visitFiredRef.current = true;
+    trackVisit();
+  }, [trackVisit]);
+
   // No local cleanup needed: Redux owns the request lifecycle and the
   // launcher attaches its own AbortController per conversation.
 
@@ -190,6 +206,8 @@ export function AgentAppPublicRenderer({
       setIsExecuting(true);
       setLocalError(null);
 
+      let runTracker: ReturnType<typeof startRun> | null = null;
+
       try {
         const { validVariables, validationErrors } =
           validateVariables(variables);
@@ -230,6 +248,12 @@ export function AgentAppPublicRenderer({
           });
         }
 
+        // Fire run_start tracking BEFORE dispatch but on the same tick.
+        // The tracker never awaits, so this is sub-microsecond — the
+        // dispatch below kicks off in the same JS turn. The taskId we get
+        // back is what we'll send on completion/error.
+        runTracker = startRun(validVariables);
+
         await dispatch(
           launchAgentExecution({
             agentId: app.agent_id,
@@ -260,14 +284,21 @@ export function AgentAppPublicRenderer({
           }),
         ).unwrap();
 
+        runTracker.complete();
         guestLimit.refresh();
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
         if (e?.name === "AbortError") {
-          // silent
+          // User aborted: leave the run row at success=NULL on purpose.
+          // Analytics treats abandoned in-flight rows as a distinct signal
+          // from outright errors.
         } else {
           const errMsg = e?.message || "Execution failed";
           setLocalError({ type: "execution_error", message: errMsg });
+          runTracker?.error({
+            errorType: "execution_error",
+            errorMessage: errMsg,
+          });
         }
       } finally {
         setIsExecuting(false);
@@ -281,6 +312,7 @@ export function AgentAppPublicRenderer({
       guestLimit,
       validateVariables,
       dispatch,
+      startRun,
     ],
   );
 
