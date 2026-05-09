@@ -18,6 +18,7 @@ import { transform } from "@babel/standalone";
 import { AlertCircle } from "lucide-react";
 import {
   buildComponentScope,
+  getDefaultImportsForNewApps,
   getScopeFunctionParameters,
   patchScopeForMissingIdentifiers,
 } from "../utils/allowed-imports";
@@ -142,7 +143,7 @@ export function TemplatePreviewRenderer({
       let transformed = babelResult.code || "";
       transformed = transformed.replace(/export\s+default\s+/g, "return ");
 
-      const scope = buildComponentScope([]);
+      const scope = buildComponentScope(getDefaultImportsForNewApps());
       if (transformed) {
         patchScopeForMissingIdentifiers(transformed, scope);
       }
