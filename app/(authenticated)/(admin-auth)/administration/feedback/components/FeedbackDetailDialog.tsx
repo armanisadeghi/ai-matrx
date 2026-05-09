@@ -13,6 +13,7 @@ import {
   forceCloseFeedback,
 } from "@/actions/feedback.actions";
 import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { imageViewUrl } from "@/features/file-handler/utils/python-base";
 import {
   UserFeedback,
   FeedbackStatus,
@@ -1123,10 +1124,17 @@ export default function FeedbackDetailDialog({
                     {(
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {item.image_urls.map((url, index) => {
+                          // <img src> renders bytes inline regardless of
+                          // Content-Disposition; the click target swaps to
+                          // the FE landing page so admins land on a viewer
+                          // (preview + download button + Open-in-app),
+                          // not on raw bytes that some browsers/CDNs
+                          // attachment-force.
+                          const viewHref = imageViewUrl(url);
                           return (
                             <a
                               key={index}
-                              href={url}
+                              href={viewHref}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative aspect-video rounded-lg overflow-hidden border border-border hover:border-primary transition-colors group"
@@ -2438,7 +2446,7 @@ export default function FeedbackDetailDialog({
                                   {msg.image_urls.map((url, idx) => (
                                     <a
                                       key={idx}
-                                      href={url}
+                                      href={imageViewUrl(url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                     >

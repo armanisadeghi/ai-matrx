@@ -27,6 +27,7 @@ import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import { NavSidebarFlatFolders } from "./NavSidebarFlatFolders";
 import { SidebarModeToggle, useSidebarMode } from "./SidebarModeToggle";
+import { StorageQuotaChip } from "./StorageQuotaChip";
 import { PRIMARY_SECTIONS } from "./section";
 import type { CloudFilesSection } from "./section";
 
@@ -176,6 +177,13 @@ export function NavSidebar({ section }: NavSidebarProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Storage usage chip — pinned at the bottom of the sidebar like
+          Dropbox / Drive. Renders nothing when unauthenticated or before
+          first fetch, so layout is stable. */}
+      <div className="shrink-0 border-t px-2.5 py-2">
+        <StorageQuotaChip />
       </div>
     </aside>
   );

@@ -1653,6 +1653,29 @@
   box-shadow: var(--shell-glass-shadow);
 }
 
+/* Pill variant — lightweight glass for small interactive buttons (≤40px).
+   Uses 4px blur instead of 16px so a small pill stays see-through rather than
+   looking like a solid opaque block. No brightness modifier. Matches the
+   original matrx-glass-* / matrx-shell-glass values before the migration. */
+.shell-glass-pill {
+  background: var(--shell-glass-bg);
+  backdrop-filter: blur(4px) saturate(1.8);
+  -webkit-backdrop-filter: blur(4px) saturate(1.8);
+  border: 1px solid var(--shell-glass-border);
+  box-shadow: var(--shell-glass-shadow);
+}
+.shell-glass-pill:hover  { background: var(--shell-glass-bg-hover); }
+.shell-glass-pill:active { background: var(--shell-glass-bg-active); }
+
+/* Interactive-only variant — for buttons nested INSIDE a glass container (e.g.
+   TapTargetButtonGroup). The container provides the glass surface and border;
+   inner buttons only need hover/active fills. Originally matrx-glass-interactive. */
+.shell-glass-interactive {
+  background: transparent;
+}
+.shell-glass-interactive:hover  { background: var(--shell-glass-bg-hover); }
+.shell-glass-interactive:active { background: var(--shell-glass-bg-active); }
+
 /* Tactile — iOS-grade spring scale on hover/active */
 .shell-tactile {
   transition:

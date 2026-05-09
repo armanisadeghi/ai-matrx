@@ -270,7 +270,7 @@ export const TapTargetButton = forwardRef<
   // and provides the press-down scale + mobile tap hygiene. Background-flash
   // on press still comes from `.shell-glass:active`.
   const inner = (
-    <div className="matrx-tap-pill flex h-8 w-8 items-center justify-center rounded-full shell-glass">
+    <div className="matrx-tap-pill flex h-8 w-8 items-center justify-center rounded-full shell-glass-pill">
       <IconContent
         icon={icon}
         strokeWidth={strokeWidth}
@@ -471,7 +471,7 @@ export const TapTargetButtonForGroup = forwardRef<
   // the same timing curve and scale as glass/transparent/solid. Background
   // flash on press still comes from `.shell-glass:active`.
   const inner = (
-    <div className="matrx-tap-pill flex h-6 w-6 items-center justify-center rounded-full shell-glass">
+    <div className="matrx-tap-pill flex h-6 w-6 items-center justify-center rounded-full shell-glass-interactive">
       <IconContent
         icon={icon}
         strokeWidth={strokeWidth}
@@ -520,7 +520,7 @@ export function TapTargetButtonGroup({
           : "relative inline-flex h-9 items-center"
       }
     >
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 rounded-full shell-glass" />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 rounded-full shell-glass-pill" />
       <div className="relative flex items-center">{children}</div>
     </div>
   );
