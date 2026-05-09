@@ -105,10 +105,18 @@ export function SystemAgentsGrid() {
   const handleDuplicate = async (id: string) => {
     setDuplicatingIds((prev) => new Set(prev).add(id));
     try {
-      await dispatch(duplicateAgent(id)).unwrap();
+      // Every row in this grid is a builtin system agent, and every viewer is
+      // a super admin (the page is gated by the admin layout). Pass the
+      // explicit flag so the RPC inserts the copy as a builtin instead of
+      // silently downgrading it to a personal user agent.
+      await dispatch(duplicateAgent({ agentId: id, asSystem: true })).unwrap();
       toast.success("System agent duplicated.");
-    } catch {
-      toast.error("Failed to duplicate system agent.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to duplicate system agent.",
+      );
     } finally {
       setDuplicatingIds((prev) => {
         const n = new Set(prev);

@@ -20,7 +20,6 @@ import React, { useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import type { MarkdownStreamProps } from "@/components/MarkdownStream";

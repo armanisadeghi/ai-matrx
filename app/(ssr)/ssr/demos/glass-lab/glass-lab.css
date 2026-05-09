@@ -1,0 +1,650 @@
+/* =============================================================================
+ * Glass Lab — variant test bench
+ *
+ * Each .glab-v{N} class is a self-contained glass treatment. Apply ONE at a
+ * time to .glab-card. The card itself has zero glass styling — every variant
+ * paints its own background, border, blur, and (in some cases) text rules.
+ *
+ * Children carrying `.glab-text` are the surfaces where text-mode variants
+ * (vibrancy / difference / halo) actually do work. The card creates an
+ * `isolation: isolate` stacking context so mix-blend-mode children compose
+ * against the card's own (glass + blurred backdrop) pixels — not the page
+ * underneath.
+ * ============================================================================= */
+
+.glab-card {
+  position: relative;
+  border-radius: 18px;
+  padding: 14px;
+  width: 280px;
+  isolation: isolate;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.glab-card::after {
+  /* Optional inner highlight reused by some variants. Off by default. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 transparent;
+}
+
+.glab-text {
+  /* Default — variants override. */
+  color: inherit;
+}
+
+/* -----------------------------------------------------------------------------
+ * V1 — CONTROL — current matrx-glass-thin-border
+ * Reads the live --matrx-glass-* tokens. This is what's deployed today and
+ * what fails in the bug screenshots.
+ * --------------------------------------------------------------------------- */
+.glab-v1 {
+  background: var(--matrx-glass-bg);
+  border: 1.5px solid var(--matrx-glass-border-color);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  box-shadow: var(--matrx-glass-shadow-lg);
+}
+.glab-v1 .glab-text { color: hsl(var(--foreground)); }
+.glab-v1 .glab-muted { color: hsl(var(--muted-foreground)); }
+
+/* -----------------------------------------------------------------------------
+ * V2 — Polarity-flipping tint (Tier 1 from the writeup)
+ * Light mode: white-ish high-alpha tint. Dark mode: dark high-alpha tint.
+ * Idea: glass surface owns its own polarity instead of borrowing from
+ * whatever's behind it.
+ * --------------------------------------------------------------------------- */
+.glab-v2 {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(8px) saturate(1.4);
+  -webkit-backdrop-filter: blur(8px) saturate(1.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+.dark .glab-v2 {
+  background: rgba(20, 22, 30, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.glab-v2 .glab-text { color: hsl(var(--foreground)); }
+.glab-v2 .glab-muted { color: hsl(var(--muted-foreground)); }
+
+/* -----------------------------------------------------------------------------
+ * V3 — V2 with saturate cranked DOWN
+ * Tests whether dropping --matrx-glass-saturate from 1.8 → 1.0 reads better
+ * once tint alpha is high. Keeps the blur, kills the saturate halo.
+ * --------------------------------------------------------------------------- */
+.glab-v3 {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(12px) saturate(1.0);
+  -webkit-backdrop-filter: blur(12px) saturate(1.0);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+.dark .glab-v3 {
+  background: rgba(20, 22, 30, 0.65);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.glab-v3 .glab-text { color: hsl(var(--foreground)); }
+.glab-v3 .glab-muted { color: hsl(var(--muted-foreground)); }
+
+/* -----------------------------------------------------------------------------
+ * V4 — Vibrancy text on CURRENT glass (Tier 2 alone, no tint changes)
+ * Light mode: text is dark, multiply blend → text always darkens its backdrop.
+ * Dark mode:  text is light, plus-lighter blend → text always brightens its backdrop.
+ * Tests whether the *text* fix alone is enough without touching the tint.
+ * --------------------------------------------------------------------------- */
+.glab-v4 {
+  background: var(--matrx-glass-bg);
+  border: 1.5px solid var(--matrx-glass-border-color);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  box-shadow: var(--matrx-glass-shadow-lg);
+}
+.glab-v4 .glab-text {
+  color: #18181b;
+  mix-blend-mode: multiply;
+}
+.glab-v4 .glab-muted {
+  color: #52525b;
+  mix-blend-mode: multiply;
+}
+.dark .glab-v4 .glab-text {
+  color: #fafafa;
+  mix-blend-mode: plus-lighter;
+}
+.dark .glab-v4 .glab-muted {
+  color: #a1a1aa;
+  mix-blend-mode: plus-lighter;
+}
+
+/* -----------------------------------------------------------------------------
+ * V5 — V2 + V4 (recommended combo)
+ * Polarity-correct tint AND vibrancy text. The full Tier 1 + Tier 2 proposal.
+ * --------------------------------------------------------------------------- */
+.glab-v5 {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+.dark .glab-v5 {
+  background: rgba(20, 22, 30, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.glab-v5 .glab-text {
+  color: #18181b;
+  mix-blend-mode: multiply;
+}
+.glab-v5 .glab-muted {
+  color: #52525b;
+  mix-blend-mode: multiply;
+}
+.dark .glab-v5 .glab-text {
+  color: #fafafa;
+  mix-blend-mode: plus-lighter;
+}
+.dark .glab-v5 .glab-muted {
+  color: #a1a1aa;
+  mix-blend-mode: plus-lighter;
+}
+
+/* -----------------------------------------------------------------------------
+ * V6 — Difference blend (the classic CSS auto-invert trick)
+ * Pure white text + mix-blend-mode: difference → text is always the inverse
+ * of whatever is behind it. Loses brand color (everything is grayscale-inverted)
+ * but ALWAYS readable. Background is near-zero so the effect is unobstructed.
+ * --------------------------------------------------------------------------- */
+.glab-v6 {
+  background: rgba(128, 128, 128, 0.001);
+  border: 1.5px solid rgba(128, 128, 128, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+.glab-v6 .glab-text,
+.glab-v6 .glab-muted {
+  color: white;
+  mix-blend-mode: difference;
+}
+
+/* -----------------------------------------------------------------------------
+ * V7 — Contrast halo (text-shadow opposite polarity)
+ * Keeps current tint and current text color, adds a thin halo of the OPPOSITE
+ * polarity. Belt-and-suspenders fix that costs nothing and works everywhere.
+ * --------------------------------------------------------------------------- */
+.glab-v7 {
+  background: var(--matrx-glass-bg);
+  border: 1.5px solid var(--matrx-glass-border-color);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  box-shadow: var(--matrx-glass-shadow-lg);
+}
+.glab-v7 .glab-text {
+  color: hsl(var(--foreground));
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(255, 255, 255, 0.4);
+}
+.glab-v7 .glab-muted {
+  color: hsl(var(--muted-foreground));
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+}
+.dark .glab-v7 .glab-text {
+  text-shadow:
+    0 0 1px rgba(0, 0, 0, 0.75),
+    0 0 4px rgba(0, 0, 0, 0.5);
+}
+.dark .glab-v7 .glab-muted {
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+}
+
+/* -----------------------------------------------------------------------------
+ * V8 — prefers-contrast: more (auto-boost in OS high-contrast mode)
+ * Only fires when the user has macOS "Increase Contrast" or Windows high
+ * contrast on. Useful as a safety net but not a primary fix.
+ * --------------------------------------------------------------------------- */
+.glab-v8 {
+  background: var(--matrx-glass-bg);
+  border: 1.5px solid var(--matrx-glass-border-color);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--matrx-glass-blur)) saturate(var(--matrx-glass-saturate));
+  box-shadow: var(--matrx-glass-shadow-lg);
+}
+.glab-v8 .glab-text { color: hsl(var(--foreground)); }
+.glab-v8 .glab-muted { color: hsl(var(--muted-foreground)); }
+@media (prefers-contrast: more) {
+  .glab-v8 {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.25);
+  }
+  .dark .glab-v8 {
+    background: rgba(15, 17, 24, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * V9 — Per-text local backdrop invert (clever, expensive)
+ * Each text region renders a ::before with its own backdrop-filter: invert(1).
+ * Inverts the pixels under the text only — kind of like masking a region of
+ * the page through Photoshop's "invert adjustment layer" but only behind text.
+ * Cool but heavy if you have a lot of text; nested backdrop-filters are
+ * known to be expensive on lower-end GPUs.
+ * --------------------------------------------------------------------------- */
+.glab-v9 {
+  background: rgba(128, 128, 128, 0.001);
+  border: 1.5px solid rgba(128, 128, 128, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+/* V9: target inner text spans/paragraphs/headings only — NOT row containers,
+   which need to keep their flex layout. */
+.glab-v9 :where(.glab-text, .glab-muted) {
+  color: hsl(var(--foreground));
+}
+.glab-v9 :where(.glab-text, .glab-muted) > span:not([class]),
+.glab-v9 .glab-widget-section-title,
+.glab-v9 .glab-widget-input,
+.glab-v9 .glab-widget-button,
+.glab-v9 p {
+  position: relative;
+  isolation: isolate;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+.glab-v9 :where(.glab-text, .glab-muted) > span:not([class])::before,
+.glab-v9 .glab-widget-section-title::before,
+.glab-v9 p::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  backdrop-filter: invert(1) hue-rotate(180deg);
+  -webkit-backdrop-filter: invert(1) hue-rotate(180deg);
+  opacity: 0.5;
+}
+.dark .glab-v9 :where(.glab-text, .glab-muted) {
+  color: hsl(var(--foreground));
+}
+
+/* -----------------------------------------------------------------------------
+ * V10 — Layered "Apple vibrancy" (full stack, marquee surfaces)
+ * Higher tint, higher saturate, inset highlight, vibrancy text.
+ * The closest pure-CSS approximation of macOS Sonoma material glass.
+ * --------------------------------------------------------------------------- */
+.glab-v10 {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.dark .glab-v10 {
+  background: rgba(20, 22, 30, 0.50);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.glab-v10 .glab-text {
+  color: #18181b;
+  mix-blend-mode: multiply;
+}
+.glab-v10 .glab-muted {
+  color: #52525b;
+  mix-blend-mode: multiply;
+}
+.dark .glab-v10 .glab-text {
+  color: #fafafa;
+  mix-blend-mode: plus-lighter;
+}
+.dark .glab-v10 .glab-muted {
+  color: #a1a1aa;
+  mix-blend-mode: plus-lighter;
+}
+
+/* -----------------------------------------------------------------------------
+ * V11 — Adaptive via JS (hook reads CSS var, this class consumes it)
+ * The widget computes the dominant luminance behind it and writes
+ * --glab-bg-alpha and --glab-mode (light|dark) on the card. CSS reacts.
+ * --------------------------------------------------------------------------- */
+.glab-v11 {
+  background: rgba(
+    var(--glab-tint-rgb, 255, 255, 255),
+    var(--glab-bg-alpha, 0.55)
+  );
+  border: 1.5px solid var(--glab-border-color, rgba(0, 0, 0, 0.1));
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.glab-v11 .glab-text { color: var(--glab-fg, hsl(var(--foreground))); }
+.glab-v11 .glab-muted { color: var(--glab-muted, hsl(var(--muted-foreground))); }
+
+/* =============================================================================
+ * Backdrop gallery — the "tricky" content the glass slides over
+ * ============================================================================= */
+
+.glab-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(160px, auto);
+  gap: 12px;
+  padding: 16px;
+  min-height: calc(100dvh - var(--header-height, 2.5rem));
+}
+
+.glab-zone {
+  border-radius: 12px;
+  padding: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Pure white "document" — the screenshot's failure case */
+.glab-zone-document {
+  grid-column: span 5;
+  grid-row: span 2;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.glab-zone-document h3 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+.glab-zone-document p { font-size: 14px; line-height: 1.65; margin: 0 0 8px; }
+.glab-zone-document .formula { font-family: ui-serif, Georgia, serif; font-style: italic; }
+
+/* Pure black "console" — the inverse failure case */
+.glab-zone-console {
+  grid-column: span 4;
+  grid-row: span 2;
+  background: #000000;
+  color: #f5f5f5;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.glab-zone-console .tok-k { color: #c084fc; }
+.glab-zone-console .tok-s { color: #fbbf24; }
+.glab-zone-console .tok-c { color: #4b5563; }
+.glab-zone-console .tok-f { color: #60a5fa; }
+
+/* Photographic-feeling synthetic backdrop — multi-color zones */
+.glab-zone-photo {
+  grid-column: span 3;
+  grid-row: span 2;
+  background:
+    radial-gradient(ellipse at 25% 30%, #f59e0b 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 75%, #2563eb 0%, transparent 55%),
+    radial-gradient(ellipse at 55% 50%, #ec4899 0%, transparent 60%),
+    linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+}
+
+/* Vibrant solid color tiles — saturate boost stress test */
+.glab-zone-red { background: #ef4444; grid-column: span 2; }
+.glab-zone-yellow { background: #facc15; grid-column: span 2; }
+.glab-zone-green { background: #16a34a; grid-column: span 2; }
+.glab-zone-blue { background: #2563eb; grid-column: span 2; }
+.glab-zone-purple { background: #7c3aed; grid-column: span 2; }
+.glab-zone-pink { background: #ec4899; grid-column: span 2; }
+
+/* Neutral card — the "glass works fine here" baseline */
+.glab-zone-neutral {
+  grid-column: span 6;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+/* High-contrast checkerboard — the worst case for any single tint */
+.glab-zone-checker {
+  grid-column: span 3;
+  background-image:
+    linear-gradient(45deg, #000 25%, transparent 25%),
+    linear-gradient(-45deg, #000 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #000 75%),
+    linear-gradient(-45deg, transparent 75%, #000 75%);
+  background-size: 28px 28px;
+  background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+  background-color: #ffffff;
+}
+
+/* Smooth gradient — color-shift backdrop */
+.glab-zone-rainbow {
+  grid-column: span 3;
+  background: linear-gradient(
+    90deg,
+    #ef4444 0%,
+    #f59e0b 16%,
+    #facc15 33%,
+    #16a34a 50%,
+    #06b6d4 66%,
+    #2563eb 83%,
+    #7c3aed 100%
+  );
+}
+
+/* =============================================================================
+ * Floating controls (variant picker + theme toggle)
+ * ============================================================================= */
+
+.glab-controls {
+  position: fixed;
+  top: calc(var(--header-height, 2.5rem) + 12px);
+  right: 12px;
+  z-index: 50;
+  width: 280px;
+  max-height: calc(100dvh - var(--header-height, 2.5rem) - 24px);
+  overflow-y: auto;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+}
+
+.glab-controls-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(var(--muted-foreground));
+  margin: 8px 0 6px;
+}
+
+.glab-controls-title:first-child { margin-top: 0; }
+
+.glab-variant-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.glab-variant-row:hover {
+  background: hsl(var(--muted));
+}
+
+.glab-variant-row[data-active="true"] {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--primary));
+}
+
+.glab-variant-tag {
+  flex: 0 0 auto;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: hsl(var(--primary));
+  width: 28px;
+}
+
+.glab-variant-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.glab-variant-label {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.glab-variant-desc {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 2px;
+}
+
+.glab-toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.glab-toolbar button {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 120ms ease;
+}
+
+.glab-toolbar button:hover {
+  background: hsl(var(--muted));
+}
+
+.glab-toolbar button[data-active="true"] {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+}
+
+/* =============================================================================
+ * The draggable widget itself — handle + content
+ * ============================================================================= */
+
+.glab-widget {
+  position: fixed;
+  z-index: 40;
+  cursor: grab;
+  touch-action: none;
+}
+
+.glab-widget[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.glab-widget-handle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid currentColor;
+  border-color: rgba(128, 128, 128, 0.2);
+  cursor: grab;
+}
+
+.glab-widget-handle-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.glab-widget-handle-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+.glab-widget-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.glab-widget-row svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.glab-widget-divider {
+  height: 1px;
+  margin: 6px -4px;
+  background: currentColor;
+  opacity: 0.15;
+}
+
+.glab-widget-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px 2px;
+  opacity: 0.7;
+}
+
+.glab-widget-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.12);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  font: inherit;
+  color: inherit;
+  font-size: 13px;
+  margin: 4px 0 6px;
+}
+.glab-widget-input::placeholder { opacity: 0.55; }
+.glab-widget-input:focus { outline: 1.5px solid hsl(var(--primary)); outline-offset: 1px; }
+
+.glab-widget-button {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 4px;
+}

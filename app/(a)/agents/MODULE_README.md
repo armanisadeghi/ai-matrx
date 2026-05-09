@@ -12,7 +12,7 @@ are overwritten each time the generator runs. Everything else is yours to edit f
 | Field | Value |
 |-------|-------|
 | Module | `app/(a)/agents` |
-| Last generated | 2026-04-11 13:13 |
+| Last generated | 2026-05-09 11:18 |
 | Output file | `app/(a)/agents/MODULE_README.md` |
 | Signature mode | `signatures` |
 
@@ -49,15 +49,13 @@ python utils/code_context/generate_module_readme.py app/(a)/agents --mode signat
 <!-- AUTO:tree -->
 ## Directory Tree
 
-> Auto-generated. 27 files across 13 directories.
+> Auto-generated. 42 files across 24 directories.
 
 ```
 app/(a)/agents/
 ├── MODULE_README.md
 ├── [id]/
-│   ├── [version]/
-│   │   ├── loading.tsx
-│   │   ├── not-found.tsx
+│   ├── apps/
 │   │   ├── page.tsx
 │   ├── error.tsx
 │   ├── latest/
@@ -70,6 +68,23 @@ app/(a)/agents/
 │   ├── run/
 │   │   ├── loading.tsx
 │   │   ├── page.tsx
+│   ├── shortcuts/
+│   │   ├── [shortcutId]/
+│   │   │   ├── page.tsx
+│   │   ├── new/
+│   │   │   ├── page.tsx
+│   │   ├── page.tsx
+│   ├── v/
+│   │   ├── [version]/
+│   │   │   ├── loading.tsx
+│   │   │   ├── not-found.tsx
+│   │   │   ├── page.tsx
+│   ├── widgets/
+│   │   ├── layout.tsx
+│   │   ├── loading.tsx
+│   │   ├── page.tsx
+├── compare/
+│   ├── page.tsx
 ├── error.tsx
 ├── layout.tsx
 ├── loading.tsx
@@ -92,7 +107,20 @@ app/(a)/agents/
 │   │   ├── page.tsx
 │   ├── page.tsx
 ├── page.tsx
-# excluded: 5 .md
+├── shortcuts/
+│   ├── AgentShortcutsLayoutClient.tsx
+│   ├── categories/
+│   │   ├── page.tsx
+│   ├── content-blocks/
+│   │   ├── page.tsx
+│   ├── edit/
+│   │   ├── [id]/
+│   │   │   ├── page.tsx
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── shortcuts/
+│   │   ├── page.tsx
+# excluded: 1 .md
 ```
 <!-- /AUTO:tree -->
 
@@ -204,6 +232,62 @@ Filepath: app/(a)/agents/new/builder/customizer/page.tsx  [typescript/react]
 
 
 ---
+Filepath: app/(a)/agents/shortcuts/layout.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function UserAgentShortcutsLayout({ children, }: { children: React.ReactNode; })
+
+
+---
+Filepath: app/(a)/agents/shortcuts/page.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function UserAgentShortcutsDashboardPage()
+
+
+---
+Filepath: app/(a)/agents/shortcuts/AgentShortcutsLayoutClient.tsx  [typescript/react]
+
+  # Components
+    [Component] export function AgentShortcutsLayoutClient({ children, }: { children: React.ReactNode; })
+
+
+---
+Filepath: app/(a)/agents/shortcuts/content-blocks/page.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function UserContentBlocksPage()
+
+
+---
+Filepath: app/(a)/agents/shortcuts/edit/[id]/page.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function UserEditShortcutPage({ params, }: { params: Promise<{ id: string }>; })
+
+
+---
+Filepath: app/(a)/agents/shortcuts/shortcuts/page.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function UserShortcutsPage()
+
+
+---
+Filepath: app/(a)/agents/shortcuts/categories/page.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function UserCategoriesPage()
+
+
+---
+Filepath: app/(a)/agents/compare/page.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function CompareAgentsPage()
+
+
+---
 Filepath: app/(a)/agents/[id]/layout.tsx  [typescript/react]
 
   # Utilities
@@ -249,24 +333,18 @@ Filepath: app/(a)/agents/[id]/latest/page.tsx  [typescript/react]
 
 
 ---
-Filepath: app/(a)/agents/[id]/[version]/loading.tsx  [typescript/react]
+Filepath: app/(a)/agents/[id]/shortcuts/page.tsx  [typescript/react]
 
-  # Components
-    [Component] export default function AgentVersionLoading()
 
 
 ---
-Filepath: app/(a)/agents/[id]/[version]/page.tsx  [typescript/react]
+Filepath: app/(a)/agents/[id]/shortcuts/[shortcutId]/page.tsx  [typescript/react]
 
-  # Utilities
-    export async function generateMetadata({ params, }: { params: Promise<{ id: string; version: string }>; })
 
 
 ---
-Filepath: app/(a)/agents/[id]/[version]/not-found.tsx  [typescript/react]
+Filepath: app/(a)/agents/[id]/shortcuts/new/page.tsx  [typescript/react]
 
-  # Components
-    [Component] export default function VersionNotFound()
 
 
 ---
@@ -278,6 +356,51 @@ Filepath: app/(a)/agents/[id]/run/loading.tsx  [typescript/react]
 
 ---
 Filepath: app/(a)/agents/[id]/run/page.tsx  [typescript/react]
+
+
+
+---
+Filepath: app/(a)/agents/[id]/apps/page.tsx  [typescript/react]
+
+
+
+---
+Filepath: app/(a)/agents/[id]/v/[version]/loading.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function AgentVersionLoading()
+
+
+---
+Filepath: app/(a)/agents/[id]/v/[version]/page.tsx  [typescript/react]
+
+  # Utilities
+    export async function generateMetadata({ params, }: { params: Promise<{ id: string; version: string }>; })
+
+
+---
+Filepath: app/(a)/agents/[id]/v/[version]/not-found.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function VersionNotFound()
+
+
+---
+Filepath: app/(a)/agents/[id]/widgets/layout.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function WidgetsLayout({ children, }: { children: React.ReactNode; })
+
+
+---
+Filepath: app/(a)/agents/[id]/widgets/loading.tsx  [typescript/react]
+
+  # Components
+    [Component] export default function WidgetsLoading()
+
+
+---
+Filepath: app/(a)/agents/[id]/widgets/page.tsx  [typescript/react]
 ```
 <!-- /AUTO:signatures -->
 

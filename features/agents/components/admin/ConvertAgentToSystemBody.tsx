@@ -65,6 +65,13 @@ interface ConvertAgentToSystemBodyProps {
   onClose: () => void;
 }
 
+// Every system agent is administered through the system-agents admin route
+// family. Linking to `/agents/{id}` from this flow drops the user back into
+// the personal-agents shell where edits look like they're touching a
+// different object than what they just promoted — that's the bug Arman saw
+// after a successful convert.
+const SYSTEM_AGENT_ADMIN_BASE_PATH = "/administration/system-agents/agents";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimestamp(iso: string | null | undefined): string {
@@ -312,7 +319,7 @@ export function ConvertAgentToSystemBody({
                         title="Open system agent in new tab"
                       >
                         <Link
-                          href={`/agents/${row.id}`}
+                          href={`${SYSTEM_AGENT_ADMIN_BASE_PATH}/${row.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -416,7 +423,7 @@ export function ConvertAgentToSystemBody({
         {resultId && (
           <Button asChild variant="outline" size="sm" className="gap-1.5">
             <Link
-              href={`/agents/${resultId}`}
+              href={`${SYSTEM_AGENT_ADMIN_BASE_PATH}/${resultId}`}
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}

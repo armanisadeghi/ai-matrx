@@ -19,7 +19,6 @@ import {
   updateNoteContent,
   removeInstanceTab,
   markNoteSaved,
-  upsertNoteFromServer,
   markTabInteraction,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";

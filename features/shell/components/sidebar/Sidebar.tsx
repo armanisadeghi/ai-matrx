@@ -35,7 +35,7 @@ interface SidebarProps {
 
 export default function Sidebar({ pathname }: SidebarProps) {
   return (
-    <aside className="shell-sidebar" data-mischief-sidebar="">
+    <aside className="shell-sidebar">
       {/* Brand Section — Route header override + default toggle fallback */}
       <div className="shell-sidebar-brand">
         {/* Route header override — rendered by client island, empty on Small/Medium routes */}

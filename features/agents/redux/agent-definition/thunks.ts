@@ -597,21 +597,42 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
 /**
  * Duplicates an agent via the `agx_duplicate_agent` RPC and loads the copy into state.
  * Returns the new agent's id.
+ *
+ * Accepts either a bare agent id (legacy callers) or an options object so that
+ * admin surfaces can opt into preserving system status:
+ *
+ *   dispatch(duplicateAgent(agentId))                          // user copy
+ *   dispatch(duplicateAgent({ agentId, asSystem: true }))      // system copy
+ *
+ * `asSystem: true` is admin-only — the RPC verifies `is_super_admin()` and
+ * rejects otherwise. When set, the new row is inserted as a builtin system
+ * agent (`agent_type = 'builtin'`, no owner). Default is the historical
+ * "personal copy" behavior so existing callers keep working unchanged.
  */
-export const duplicateAgent = createAsyncThunk<string, string, ThunkApi>(
-  "agentDefinition/duplicate",
-  async (agentId, { dispatch }) => {
-    const { data, error } = await supabase.rpc("agx_duplicate_agent", {
-      p_agent_id: agentId,
-    });
+export interface DuplicateAgentOptions {
+  agentId: string;
+  asSystem?: boolean;
+}
 
-    if (error) throw error;
+export const duplicateAgent = createAsyncThunk<
+  string,
+  string | DuplicateAgentOptions,
+  ThunkApi
+>("agentDefinition/duplicate", async (input, { dispatch }) => {
+  const { agentId, asSystem } =
+    typeof input === "string" ? { agentId: input, asSystem: false } : input;
 
-    const newAgentId = data as string;
-    await dispatch(fetchFullAgent(newAgentId));
-    return newAgentId;
-  },
-);
+  const { data, error } = await supabase.rpc("agx_duplicate_agent", {
+    p_agent_id: agentId,
+    p_as_system: Boolean(asSystem),
+  });
+
+  if (error) throw error;
+
+  const newAgentId = data as string;
+  await dispatch(fetchFullAgent(newAgentId));
+  return newAgentId;
+});
 
 /**
  * Promotes a past version to be the live agent via `agx_promote_version`.

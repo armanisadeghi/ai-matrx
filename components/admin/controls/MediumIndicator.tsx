@@ -20,7 +20,6 @@ import { usePathname } from "next/navigation";
 import { debugModules } from "@/components/admin/debug/debugModuleRegistry";
 import DebugModulePanel from "@/components/admin/debug/DebugModulePanel";
 import DevPerfOverlayIsland from "@/features/shell/islands/DevPerfOverlayIsland";
-import { MischiefControls } from "@/features/idle-mischief/components/MischiefControls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   toggleDebugMode,
@@ -287,10 +286,6 @@ const MediumIndicator: React.FC<MediumIndicatorProps> = ({
           })}
         </div>
       )}
-
-      {/* Idle Mischief — Toy-Story-style idle animations
-          (features/idle-mischief/FEATURE.md). Collapsible by default. */}
-      <MischiefControls />
 
       {/* Main Content */}
       <div className="px-2 py-1 text-xs space-y-1">

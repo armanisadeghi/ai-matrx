@@ -5,8 +5,9 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   MoreHorizontal,
   FileText,
@@ -129,6 +130,22 @@ function comingSoon() {
   toast.info("Coming Soon");
 }
 
+/**
+ * The agent menu is mounted on both user and admin surfaces. The only signal
+ * we have for "I am the admin" is the route the surface declared via
+ * `basePath`. This must stay in lockstep with the system-agents route in
+ * `app/(authenticated)/(admin-auth)/administration/system-agents/`.
+ *
+ * Used to:
+ *  - opt the duplicate RPC into `asSystem` mode (preserves builtin lineage)
+ *  - keep navigation that bounces off this menu inside the admin shell
+ */
+const ADMIN_SYSTEM_AGENTS_BASE_PATH = "/administration/system-agents/agents";
+
+function isAdminSystemAgentsContext(basePath: string): boolean {
+  return basePath === ADMIN_SYSTEM_AGENTS_BASE_PATH;
+}
+
 function SoonBadge() {
   return (
     <span className="ml-2 text-[10px] font-medium text-muted-foreground/60 bg-muted rounded px-1 py-0.5 leading-none">
@@ -170,6 +187,8 @@ export function AgentOptionsMenu({
   const [isConverting, setIsConverting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   // Builtin/system agents need different menu options than user agents.
   // - "Convert to Template" is meaningless — builtins ARE the templates users
@@ -182,6 +201,12 @@ export function AgentOptionsMenu({
   // sprinkling conditionals through the JSX.
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
+
+  // Admin surfaces (the system-agents route family) want every action to
+  // operate on the system catalogue rather than the admin's personal one.
+  // The route declares this by passing `basePath`; we don't try to detect it
+  // any other way so the contract stays explicit.
+  const isAdminContext = isAdminSystemAgentsContext(basePath);
 
   const managementItems = isBuiltin
     ? AGENT_MANAGEMENT_ITEMS.filter(
@@ -266,24 +291,57 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Convert/Update System Agent") {
-      dispatch(openOverlay({ overlayId: "agentConvertSystemWindow", data: { agentId: agentId ?? null } }));
+      dispatch(
+        openOverlay({
+          overlayId: "agentConvertSystemWindow",
+          data: { agentId: agentId ?? null },
+        }),
+      );
       setOpen(false);
     } else if (label === "Create Shortcut") {
-      dispatch(openOverlay({ overlayId: "agentAdminShortcutWindow", data: { agentId: agentId ?? null } }));
+      dispatch(
+        openOverlay({
+          overlayId: "agentAdminShortcutWindow",
+          data: { agentId: agentId ?? null },
+        }),
+      );
       setOpen(false);
     } else if (label === "Find Usages (Admin)") {
-      dispatch(openOverlay({ overlayId: "agentAdminFindUsagesWindow", data: { agentId: agentId ?? null } }));
+      dispatch(
+        openOverlay({
+          overlayId: "agentAdminFindUsagesWindow",
+          data: { agentId: agentId ?? null },
+        }),
+      );
       setOpen(false);
     } else if (label === "Import Agent") {
       dispatch(openOverlay({ overlayId: "agentImportWindow", data: {} }));
       setOpen(false);
     } else if (label === "Duplicate") {
       setIsDuplicating(true);
+      // From the admin surface, "Duplicate" must produce another system agent
+      // — duplicating a builtin into a personal user agent silently smuggled
+      // it out of the system catalogue (the original bug). On the user
+      // surface, this is the legitimate "fork a builtin into my workspace"
+      // flow so we leave it alone.
+      const asSystem = isAdminContext && isBuiltin;
       try {
-        await dispatch(duplicateAgent(agentId)).unwrap();
-        toast.success("Agent duplicated!");
-      } catch {
-        toast.error("Failed to duplicate agent.");
+        const newId = await dispatch(
+          duplicateAgent({ agentId, asSystem }),
+        ).unwrap();
+        toast.success(
+          asSystem ? "System agent duplicated!" : "Agent duplicated!",
+        );
+        // Admin context: jump straight to the new system agent's admin view
+        // so the user lands somewhere sensible. User context: stay put — the
+        // copy shows up in the agents list.
+        if (isAdminContext) {
+          startTransition(() => router.push(`${basePath}/${newId}`));
+        }
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to duplicate agent.",
+        );
       } finally {
         setIsDuplicating(false);
         setOpen(false);
@@ -496,11 +554,14 @@ function MobileMenuContent({
   const [variationsOpen, setVariationsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   // Same builtin-aware filtering as the desktop variant — see AgentOptionsMenu
   // for the full rationale.
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
+  const isAdminContext = isAdminSystemAgentsContext(basePath);
   const managementItems = isBuiltin
     ? AGENT_MANAGEMENT_ITEMS.filter(
         (item) => item.label !== "Convert to Template",
@@ -583,24 +644,52 @@ function MobileMenuContent({
       );
       onClose();
     } else if (label === "Convert/Update System Agent") {
-      dispatch(openOverlay({ overlayId: "agentConvertSystemWindow", data: { agentId: agentId ?? null } }));
+      dispatch(
+        openOverlay({
+          overlayId: "agentConvertSystemWindow",
+          data: { agentId: agentId ?? null },
+        }),
+      );
       onClose();
     } else if (label === "Create Shortcut") {
-      dispatch(openOverlay({ overlayId: "agentAdminShortcutWindow", data: { agentId: agentId ?? null } }));
+      dispatch(
+        openOverlay({
+          overlayId: "agentAdminShortcutWindow",
+          data: { agentId: agentId ?? null },
+        }),
+      );
       onClose();
     } else if (label === "Find Usages (Admin)") {
-      dispatch(openOverlay({ overlayId: "agentAdminFindUsagesWindow", data: { agentId: agentId ?? null } }));
+      dispatch(
+        openOverlay({
+          overlayId: "agentAdminFindUsagesWindow",
+          data: { agentId: agentId ?? null },
+        }),
+      );
       onClose();
     } else if (label === "Import Agent") {
       dispatch(openOverlay({ overlayId: "agentImportWindow", data: {} }));
       onClose();
     } else if (label === "Duplicate") {
       setIsBusy(true);
+      // See the desktop variant for the rationale: admin-context duplicates
+      // of system agents must stay in the system catalogue. Anything else
+      // keeps the legacy "personal copy" behavior.
+      const asSystem = isAdminContext && isBuiltin;
       try {
-        await dispatch(duplicateAgent(agentId)).unwrap();
-        toast.success("Agent duplicated!");
-      } catch {
-        toast.error("Failed to duplicate agent.");
+        const newId = await dispatch(
+          duplicateAgent({ agentId, asSystem }),
+        ).unwrap();
+        toast.success(
+          asSystem ? "System agent duplicated!" : "Agent duplicated!",
+        );
+        if (isAdminContext) {
+          startTransition(() => router.push(`${basePath}/${newId}`));
+        }
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to duplicate agent.",
+        );
       } finally {
         setIsBusy(false);
         onClose();
