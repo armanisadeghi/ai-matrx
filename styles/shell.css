@@ -194,7 +194,7 @@
 /* Active state */
 .icon-btn-glass.active,
 .icon-btn-glass[data-active="true"] {
-  background: var(--shell-glass-bg-active) !important;
+  background: var(--matrx-glass-bg-active) !important;
 }
 
 /* NOTE: .shell-glass / .shell-glass-dock / .shell-glass-sheet / .shell-glass-card
@@ -501,7 +501,7 @@
 }
 
 .shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar-footer {
-  border-top-color: var(--shell-glass-border);
+  border-top-color: var(--matrx-glass-border-color);
 }
 
 /* ---------------------------------------------------------------------------
@@ -523,12 +523,12 @@
 }
 
 .shell-nav-item:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-text-hover);
 }
 
 .shell-nav-item:active {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 .shell-nav-icon {
@@ -591,9 +591,9 @@
   left: calc(100% + 0.5rem);
   top: 50%;
   transform: translateY(-50%);
-  background: var(--shell-glass-bg-active);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: 1px solid var(--shell-glass-border);
+  background: var(--matrx-glass-bg-active);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) brightness(1.1);
+  border: 1px solid var(--matrx-glass-border-color);
   border-radius: 0.375rem;
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
@@ -602,7 +602,7 @@
   white-space: nowrap;
   z-index: 50;
   pointer-events: none;
-  box-shadow: var(--shell-glass-shadow);
+  box-shadow: var(--matrx-glass-shadow);
   animation: shell-tooltip-in var(--shell-duration-fast) var(--shell-ease-spring);
 }
 
@@ -632,7 +632,7 @@
 .shell-nav-children-separator {
   height: 1px;
   margin: 0.125rem 0.375rem;
-  background: var(--shell-glass-border);
+  background: var(--matrx-glass-border-color);
   opacity: 0.5;
 }
 
@@ -652,12 +652,12 @@
 }
 
 .shell-nav-child:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-text-hover);
 }
 
 .shell-nav-child:active {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 .shell-nav-child .shell-nav-icon {
@@ -693,9 +693,9 @@
   left: calc(100% + 0.5rem);
   top: 50%;
   transform: translateY(-50%);
-  background: var(--shell-glass-bg-active);
-  backdrop-filter: blur(var(--shell-glass-blur)) saturate(1.8) brightness(1.1);
-  border: 1px solid var(--shell-glass-border);
+  background: var(--matrx-glass-bg-active);
+  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) brightness(1.1);
+  border: 1px solid var(--matrx-glass-border-color);
   border-radius: 0.375rem;
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
@@ -704,7 +704,7 @@
   white-space: nowrap;
   z-index: 50;
   pointer-events: none;
-  box-shadow: var(--shell-glass-shadow);
+  box-shadow: var(--matrx-glass-shadow);
   animation: shell-tooltip-in var(--shell-duration-fast) var(--shell-ease-spring);
 }
 
@@ -819,7 +819,7 @@
 }
 
 .shell-sidebar-switch:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-icon-hover);
 }
 
@@ -861,7 +861,7 @@
 .shell-sidebar-route-loading-item {
   height: 1.5rem;
   border-radius: 0.25rem;
-  background: var(--shell-glass-bg);
+  background: var(--matrx-glass-bg);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -980,7 +980,7 @@
 
 .shell-main:hover,
 .shell-main *:hover {
-  scrollbar-color: var(--shell-glass-bg-hover) transparent;
+  scrollbar-color: var(--matrx-glass-bg-hover) transparent;
 }
 
 .shell-main::-webkit-scrollbar,
@@ -1003,11 +1003,11 @@
 
 .shell-main:hover::-webkit-scrollbar-thumb,
 .shell-main *:hover::-webkit-scrollbar-thumb {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
 }
 
 .shell-main *::-webkit-scrollbar-thumb:hover {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1213,12 +1213,12 @@
 }
 
 .shell-mobile-nav-item:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-text-hover);
 }
 
 .shell-mobile-nav-item:active {
-  background: var(--shell-glass-bg-active);
+  background: var(--matrx-glass-bg-active);
 }
 
 /* Active state in mobile sheet — visual definition */
@@ -1288,7 +1288,7 @@
 /* Section divider in mobile sheet */
 .shell-mobile-section-divider {
   height: 1px;
-  background: var(--shell-glass-border);
+  background: var(--matrx-glass-border-color);
   margin: 0.5rem 0.75rem;
 }
 
@@ -1338,7 +1338,7 @@
 }
 
 .shell-mobile-switch:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
 }
 
 .shell-mobile-switch[data-visible="true"] {
@@ -1483,7 +1483,7 @@
 
 .shell-app-icon:hover {
   transform: scale(1.05);
-  background: var(--shell-glass-bg);
+  background: var(--matrx-glass-bg);
 }
 
 .shell-app-icon:active {
@@ -1547,7 +1547,7 @@
 }
 
 .shell-quick-card:hover {
-  background: var(--shell-glass-bg-hover);
+  background: var(--matrx-glass-bg-hover);
   color: var(--shell-nav-text-hover);
 }
 
@@ -1558,7 +1558,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--shell-glass-bg);
+  background: var(--matrx-glass-bg);
   flex-shrink: 0;
 }
 
@@ -1713,7 +1713,7 @@
     overflow: hidden;
     width: var(--shell-panel-w);
     min-width: var(--shell-panel-w);
-    border-right: 1px solid var(--shell-glass-border);
+    border-right: 1px solid var(--matrx-glass-border-color);
     background-color: var(--shell-panel-bg);
     background-image: var(--shell-panel-bg-image);
     padding-top: var(--shell-header-h);
@@ -1889,7 +1889,7 @@
 /* Footer pinned to bottom of panel */
 .shell-panel-footer {
   flex-shrink: 0;
-  border-top: 1px solid var(--shell-glass-border);
+  border-top: 1px solid var(--matrx-glass-border-color);
 }
 
 /* ---------------------------------------------------------------------------
