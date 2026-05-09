@@ -33,11 +33,18 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { siteConfig } from "@/config/extras/site";
 import { AgentAppCategoryPicker } from "@/features/agent-apps/components/inputs/AgentAppCategoryPicker";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
+import {
+  SearchableAgentSelect,
+  type AgentOption,
+} from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentVersionPicker } from "@/features/agent-shortcuts/components/AgentVersionPicker";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
   deleteApp,
 } from "@/features/agents/redux/agent-apps/thunks";
+import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
 import type { AppStatus } from "@/features/agent-apps/types";
 
 interface AgentAppSettingsContentProps {
@@ -65,11 +72,53 @@ export function AgentAppSettingsContent({
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Local mirrors for fields with explicit save (paths, IDs, ints).
+  const [organizationId, setOrganizationId] = useState(app?.organization_id ?? "");
+  const [projectId, setProjectId] = useState(app?.project_id ?? "");
+  const [taskId, setTaskId] = useState(app?.task_id ?? "");
+  const [faviconUrl, setFaviconUrl] = useState(app?.favicon_url ?? "");
+  const [previewImageUrl, setPreviewImageUrl] = useState(
+    app?.preview_image_url ?? "",
+  );
+  const [rateIp, setRateIp] = useState<string>(
+    String(app?.rate_limit_per_ip ?? ""),
+  );
+  const [rateWindow, setRateWindow] = useState<string>(
+    String(app?.rate_limit_window_hours ?? ""),
+  );
+  const [rateAuth, setRateAuth] = useState<string>(
+    String(app?.rate_limit_authenticated ?? ""),
+  );
+
+  // Hydrate the live agents list so the agent picker has options when the
+  // user deep-links to /settings without going through /agent-apps first.
+  useEffect(() => {
+    dispatch(fetchAgentsList());
+  }, [dispatch]);
+
+  const liveAgents = useAppSelector(selectLiveAgents);
+  const agentOptions: AgentOption[] = liveAgents
+    .filter((a) => a.agentType === "user")
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      description: a.description ?? null,
+      category: a.category ?? null,
+    }));
+
   useEffect(() => {
     if (!app) return;
     setName(app.name);
     setTagline(app.tagline ?? "");
     setDescription(app.description ?? "");
+    setOrganizationId(app.organization_id ?? "");
+    setProjectId(app.project_id ?? "");
+    setTaskId(app.task_id ?? "");
+    setFaviconUrl(app.favicon_url ?? "");
+    setPreviewImageUrl(app.preview_image_url ?? "");
+    setRateIp(String(app.rate_limit_per_ip ?? ""));
+    setRateWindow(String(app.rate_limit_window_hours ?? ""));
+    setRateAuth(String(app.rate_limit_authenticated ?? ""));
   }, [app?.id]);
 
   const saveField = useCallback(
@@ -101,6 +150,18 @@ export function AgentAppSettingsContent({
   const handleCategoryChange = (next: string | null) =>
     saveField("category", next);
   const handleTagsChange = (next: string[]) => saveField("tags", next);
+  const handleAgentChange = (nextAgentId: string) => {
+    if (nextAgentId === app?.agent_id) return;
+    saveField("agent_id", nextAgentId);
+    // When the agent changes, the previously-pinned version no longer applies.
+    // Clear the version pin and let the version picker pick the latest of the
+    // new agent next render.
+    saveField("agent_version_id", null);
+  };
+  const handleVersionChange = (next: string | null) =>
+    saveField("agent_version_id", next);
+  const handleUseLatestChange = (next: boolean) =>
+    saveField("use_latest", next);
 
   const handleCopyUrl = async () => {
     if (!app) return;
@@ -223,6 +284,228 @@ export function AgentAppSettingsContent({
                 immediately.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Agent binding */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Agent binding</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Agent</Label>
+              <SearchableAgentSelect
+                agents={agentOptions}
+                value={app.agent_id}
+                onChange={handleAgentChange}
+                placeholder="Search agents…"
+                emptyLabel="No agents found in your library."
+              />
+              <p className="text-xs text-muted-foreground">
+                Switching the agent clears the pinned version. The next save
+                will repin to the new agent&apos;s latest version unless you
+                opt into &ldquo;always use latest.&rdquo;
+              </p>
+            </div>
+            <AgentVersionPicker
+              agentId={app.agent_id}
+              agentVersionId={app.agent_version_id}
+              useLatest={app.use_latest}
+              onAgentVersionIdChange={handleVersionChange}
+              onUseLatestChange={handleUseLatestChange}
+              disabled={
+                savingField === "agent_id" ||
+                savingField === "agent_version_id" ||
+                savingField === "use_latest"
+              }
+            />
+          </CardContent>
+        </Card>
+
+        {/* Scope (org / project / task) */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Scope</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Optional. Associates this app with an organization, project,
+              and/or task. Many-to-many scope is on the roadmap; for now each
+              field accepts a single UUID.
+            </p>
+            <FieldGroup
+              label="Organization ID"
+              busy={savingField === "organization_id"}
+              dirty={(organizationId ?? "") !== (app.organization_id ?? "")}
+              onSave={() =>
+                saveField("organization_id", organizationId.trim() || null)
+              }
+            >
+              <Input
+                value={organizationId}
+                onChange={(e) => setOrganizationId(e.target.value)}
+                placeholder="UUID — leave empty for personal scope"
+                className="text-[16px] font-mono text-xs"
+              />
+            </FieldGroup>
+            <FieldGroup
+              label="Project ID"
+              busy={savingField === "project_id"}
+              dirty={(projectId ?? "") !== (app.project_id ?? "")}
+              onSave={() => saveField("project_id", projectId.trim() || null)}
+            >
+              <Input
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                placeholder="UUID — optional"
+                className="text-[16px] font-mono text-xs"
+              />
+            </FieldGroup>
+            <FieldGroup
+              label="Task ID"
+              busy={savingField === "task_id"}
+              dirty={(taskId ?? "") !== (app.task_id ?? "")}
+              onSave={() => saveField("task_id", taskId.trim() || null)}
+            >
+              <Input
+                value={taskId}
+                onChange={(e) => setTaskId(e.target.value)}
+                placeholder="UUID — optional"
+                className="text-[16px] font-mono text-xs"
+              />
+            </FieldGroup>
+          </CardContent>
+        </Card>
+
+        {/* Rate limits */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Rate limits</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Caps how often this app can run. Lowering values is always
+              safe; raising above the admin cap will be rejected server-side.
+            </p>
+            <FieldGroup
+              label="Per-IP / window"
+              hint="Max guest runs from one IP per window."
+              busy={savingField === "rate_limit_per_ip"}
+              dirty={
+                rateIp.trim() !== String(app.rate_limit_per_ip ?? "")
+              }
+              onSave={() => {
+                const n = rateIp.trim() === "" ? null : Number(rateIp);
+                if (n != null && (!Number.isFinite(n) || n < 0)) {
+                  toast.error("Per-IP must be a non-negative integer.");
+                  return;
+                }
+                saveField("rate_limit_per_ip", n);
+              }}
+            >
+              <Input
+                value={rateIp}
+                onChange={(e) => setRateIp(e.target.value)}
+                inputMode="numeric"
+                placeholder="20"
+                className="text-[16px]"
+              />
+            </FieldGroup>
+            <FieldGroup
+              label="Window (hours)"
+              hint="The rolling window for the per-IP and authenticated caps."
+              busy={savingField === "rate_limit_window_hours"}
+              dirty={
+                rateWindow.trim() !== String(app.rate_limit_window_hours ?? "")
+              }
+              onSave={() => {
+                const n = rateWindow.trim() === "" ? null : Number(rateWindow);
+                if (n != null && (!Number.isFinite(n) || n < 0)) {
+                  toast.error("Window must be a non-negative integer.");
+                  return;
+                }
+                saveField("rate_limit_window_hours", n);
+              }}
+            >
+              <Input
+                value={rateWindow}
+                onChange={(e) => setRateWindow(e.target.value)}
+                inputMode="numeric"
+                placeholder="24"
+                className="text-[16px]"
+              />
+            </FieldGroup>
+            <FieldGroup
+              label="Authenticated / window"
+              hint="Max signed-in user runs per window."
+              busy={savingField === "rate_limit_authenticated"}
+              dirty={
+                rateAuth.trim() !==
+                String(app.rate_limit_authenticated ?? "")
+              }
+              onSave={() => {
+                const n = rateAuth.trim() === "" ? null : Number(rateAuth);
+                if (n != null && (!Number.isFinite(n) || n < 0)) {
+                  toast.error("Authenticated must be a non-negative integer.");
+                  return;
+                }
+                saveField("rate_limit_authenticated", n);
+              }}
+            >
+              <Input
+                value={rateAuth}
+                onChange={(e) => setRateAuth(e.target.value)}
+                inputMode="numeric"
+                placeholder="100"
+                className="text-[16px]"
+              />
+            </FieldGroup>
+          </CardContent>
+        </Card>
+
+        {/* Icons & preview image */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Icons & preview image</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              URL fields for now — a proper upload flow with the file handler
+              lands in Phase 5.
+            </p>
+            <FieldGroup
+              label="Favicon URL"
+              hint="Square image for browser tabs and small thumbnails."
+              busy={savingField === "favicon_url"}
+              dirty={(faviconUrl ?? "") !== (app.favicon_url ?? "")}
+              onSave={() => saveField("favicon_url", faviconUrl.trim() || null)}
+            >
+              <Input
+                value={faviconUrl}
+                onChange={(e) => setFaviconUrl(e.target.value)}
+                placeholder="https://…/icon.png"
+                className="text-[16px]"
+              />
+            </FieldGroup>
+            <FieldGroup
+              label="Preview image URL"
+              hint="Used by social cards (Open Graph)."
+              busy={savingField === "preview_image_url"}
+              dirty={
+                (previewImageUrl ?? "") !== (app.preview_image_url ?? "")
+              }
+              onSave={() =>
+                saveField("preview_image_url", previewImageUrl.trim() || null)
+              }
+            >
+              <Input
+                value={previewImageUrl}
+                onChange={(e) => setPreviewImageUrl(e.target.value)}
+                placeholder="https://…/preview.png"
+                className="text-[16px]"
+              />
+            </FieldGroup>
           </CardContent>
         </Card>
 

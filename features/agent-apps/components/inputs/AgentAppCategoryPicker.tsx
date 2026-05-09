@@ -147,7 +147,7 @@ export function AgentAppCategoryPicker({
       <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
         <Command>
           <CommandInput
-            placeholder="Search categories…"
+            placeholder="Search system options or type your own…"
             value={query}
             onValueChange={setQuery}
           />
@@ -163,7 +163,9 @@ export function AgentAppCategoryPicker({
               </div>
             )}
             {!loading && filteredSystem.length === 0 && !showCreate && (
-              <CommandEmpty>No matching categories.</CommandEmpty>
+              <CommandEmpty>
+                Type a name and press Enter to create your own.
+              </CommandEmpty>
             )}
             {filteredSystem.length > 0 && (
               <CommandGroup heading="System categories">
