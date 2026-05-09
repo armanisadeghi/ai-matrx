@@ -34,6 +34,7 @@ import { FileIcon } from "../../styles/file-icon";
 import { LibraryTreeNode } from "./LibraryTreeNode";
 import { listLibrarySources } from "../../library-sources/registry";
 import { SourceFolderNode } from "./SourceFolderNode";
+import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 
 const selectRootFiles = makeSelectFilesInFolder(null);
 
@@ -52,6 +53,7 @@ export const LibraryTree: React.FC<{ refreshKey?: number }> = ({
   const rootFiles = useAppSelector(selectRootFiles);
   const activeTabId = useAppSelector(selectActiveTabId);
   const openFile = useOpenLibraryFile();
+  const { focusedLibrarySourceId } = useCodeWorkspace();
 
   // Auto-load only on the `idle` transition. We deliberately do NOT
   // auto-retry on `error` here — without that guard, the slice's
@@ -110,7 +112,9 @@ export const LibraryTree: React.FC<{ refreshKey?: number }> = ({
     >
       {/* Root: user's own saved files (code_files table). Kept as a
           collapsible root so it sits visually alongside the source
-          adapters below and can be stashed when the user isn't using it. */}
+          adapters below and can be stashed when the user isn't using it.
+          Auto-collapsed when the host has focused the tree on a specific
+          library source. */}
       <MyFilesRoot
         depth={0}
         empty={empty}
@@ -118,13 +122,20 @@ export const LibraryTree: React.FC<{ refreshKey?: number }> = ({
         rootFiles={rootFiles}
         activeTabId={activeTabId ?? null}
         openFile={openFile}
+        defaultExpanded={!focusedLibrarySourceId}
       />
 
       {/* Adapter-backed source roots. Each one is lazy — entries are
           fetched when the user expands it, so the Library panel stays
-          cheap to open. */}
+          cheap to open. The focused source (if any) auto-loads on first
+          mount; the rest stay collapsed. */}
       {sources.map((adapter) => (
-        <SourceFolderNode key={adapter.sourceId} adapter={adapter} depth={0} />
+        <SourceFolderNode
+          key={adapter.sourceId}
+          adapter={adapter}
+          depth={0}
+          autoLoad={adapter.sourceId === focusedLibrarySourceId}
+        />
       ))}
     </div>
   );
@@ -143,6 +154,7 @@ interface MyFilesRootProps {
   rootFiles: readonly CodeFileRecord[];
   activeTabId: string | null;
   openFile: (codeFileId: string) => void;
+  defaultExpanded?: boolean;
 }
 
 const MyFilesRoot: React.FC<MyFilesRootProps> = ({
@@ -152,8 +164,9 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
   rootFiles,
   activeTabId,
   openFile,
+  defaultExpanded = true,
 }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const toggle = () => setExpanded((e) => !e);
 
   return (

@@ -37,11 +37,15 @@ export interface WorkspaceLayoutProps {
   farRightSlot?: React.ReactNode;
   showStatusBar?: boolean;
   className?: string;
+  /** Override for the default side-panel width (percent of body width).
+   *  Use to de-emphasise the file tree on focused-edit surfaces (e.g. the
+   *  agent-app editor wants ~12% instead of the full /code 18%). */
+  defaultSideSize?: number;
 }
 
 /** Preferred percentages each horizontal panel snaps to whenever it
  *  re-opens after the user has not manually resized it. */
-const DESIRED_SIDE = 18;
+const DEFAULT_SIDE = 18;
 const DESIRED_RIGHT = 20;
 const DESIRED_FAR_RIGHT = 16;
 
@@ -86,6 +90,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   farRightSlot,
   showStatusBar = true,
   className,
+  defaultSideSize = DEFAULT_SIDE,
 }) => {
   const dispatch = useAppDispatch();
   const activeView = useAppSelector(selectActiveView);
@@ -104,7 +109,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   // Each panel's defaultSize is derived from Redux state so the visible
   // panels always sum to 100% on mount. This is what prevents the lib
   // from scaling defaults proportionally and producing a first-paint snap.
-  const sideDefault = sideOpen ? DESIRED_SIDE : 0;
+  const sideDefault = sideOpen ? defaultSideSize : 0;
   const rightDefault = rightAvailable && rightOpen ? DESIRED_RIGHT : 0;
   const farRightDefault =
     farRightAvailable && farRightOpen ? DESIRED_FAR_RIGHT : 0;
@@ -153,7 +158,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       typeof val === "number" && val >= target / 2 ? val : target;
 
     const sideSize = sideOpen
-      ? preserve(current[PANEL_IDS.SIDE], DESIRED_SIDE)
+      ? preserve(current[PANEL_IDS.SIDE], defaultSideSize)
       : 0;
     const rightSize =
       rightAvailable && rightOpen
@@ -183,6 +188,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     farRightOpen,
     rightAvailable,
     farRightAvailable,
+    defaultSideSize,
   ]);
 
   // ── TERMINAL TOGGLE EFFECT ───────────────────────────────────────────

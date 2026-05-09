@@ -46,5 +46,21 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
       });
   }, [app.id, openSourceEntry, openRenderPreview, store]);
 
-  return <CodeWorkspaceRoute rightSlot={<ChatPanelSlot basePath={basePath} />} />;
+  return (
+    <CodeWorkspaceRoute
+      defaultSideSize={12}
+      focusedLibrarySourceId={agaAppsAdapter.sourceId}
+      rightSlot={
+        <ChatPanelSlot
+          basePath={basePath}
+          defaultAgentId={PROMPT_APP_DEV_AGENT_ID}
+        />
+      }
+    />
+  );
 }
+
+/** Coding agent specialised for prompt-app / agent-app development. The
+ *  chat panel boots with this agent on the agent-app editor unless the
+ *  user already has `?agentId=` pinned in the URL. */
+const PROMPT_APP_DEV_AGENT_ID = "f57cc51e-ee93-48b0-bb75-b7ccb05b6e31";

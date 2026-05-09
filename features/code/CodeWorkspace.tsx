@@ -27,6 +27,15 @@ export interface CodeWorkspaceProps {
   farRightSlot?: React.ReactNode;
   /** Whether to render the bottom status bar. */
   showStatusBar?: boolean;
+  /** Override the side-panel's default width (percent). Smaller values
+   *  de-emphasise the file tree on focused-edit surfaces (the agent-app
+   *  editor uses ~12% instead of the canonical 18%). */
+  defaultSideSize?: number;
+  /** When set, the Library panel auto-expands this source-folder
+   *  (e.g. `"aga_apps"`) on first mount and keeps the others collapsed.
+   *  Use on focused-edit routes where the user is working inside one
+   *  specific source. */
+  focusedLibrarySourceId?: string;
   className?: string;
 }
 
@@ -42,6 +51,8 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   rightSlot,
   farRightSlot,
   showStatusBar = true,
+  defaultSideSize,
+  focusedLibrarySourceId,
   className,
 }) => {
   return (
@@ -49,6 +60,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       workspaceId={workspaceId}
       initialFilesystem={adapter}
       initialProcess={process}
+      focusedLibrarySourceId={focusedLibrarySourceId}
     >
       <UrlOpenFileBridge />
       <SandboxHeartbeatBridge />
@@ -58,6 +70,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           rightSlot={rightSlot}
           farRightSlot={farRightSlot}
           showStatusBar={showStatusBar}
+          defaultSideSize={defaultSideSize}
         />
       </div>
     </CodeWorkspaceProvider>

@@ -31,6 +31,13 @@ interface ChatPanelSlotProps {
   className?: string;
   /** When true, the top row reserves space for the app's floating avatar. */
   rightmost?: boolean;
+  /** If `?agentId=` isn't already in the URL when this slot first mounts,
+   *  inject this id so the chat panel boots with a sensible coding agent
+   *  instead of showing the empty-state picker. Used by focused-edit
+   *  surfaces (e.g. the agent-apps editor) to prefer a specific
+   *  prompt-app-development assistant. The user can still pick a
+   *  different agent after mount. */
+  defaultAgentId?: string;
 }
 
 const CODE_WORKSPACE_SETTINGS_TAB = "editor.codeWorkspace";
@@ -49,6 +56,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   basePath = "/code",
   className,
   rightmost = false,
+  defaultAgentId,
 }) => {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
@@ -56,6 +64,22 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   const router = useRouter();
   const agentId = searchParams.get("agentId");
   const conversationIdFromUrl = searchParams.get("conversationId");
+
+  // If the host supplied a `defaultAgentId` and the URL doesn't already
+  // pin one, write it into `?agentId=` once on mount. This is the only
+  // place we touch the chat-panel agent selection — the user can still
+  // pick a different agent at any time, and we never overwrite an
+  // existing `?agentId=`. Idempotent across re-renders.
+  useEffect(() => {
+    if (!defaultAgentId) return;
+    if (agentId) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("agentId", defaultAgentId);
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    // We deliberately depend on `defaultAgentId` only — once the URL has
+    // an agentId it stays sticky across reruns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultAgentId]);
   const { filter } = useCodeWorkspaceHistory();
   const farRightOpen = useAppSelector(selectFarRightOpen);
 

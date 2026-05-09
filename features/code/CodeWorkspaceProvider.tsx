@@ -31,6 +31,10 @@ export interface CodeWorkspaceContextValue {
   /** Swap the active adapter at runtime — used by the Sandboxes view. */
   setFilesystem: (adapter: FilesystemAdapter) => void;
   setProcess: (adapter: ProcessAdapter) => void;
+  /** Library source id (e.g. `"aga_apps"`) the host wants the Library
+   *  panel to auto-expand on first mount. `null` keeps the canonical
+   *  /code behaviour (everything collapsed lazily). */
+  focusedLibrarySourceId: string | null;
 }
 
 const CodeWorkspaceContext = createContext<CodeWorkspaceContextValue | null>(
@@ -46,6 +50,10 @@ export interface CodeWorkspaceProviderProps {
   initialFilesystem?: FilesystemAdapter;
   /** Initial process adapter. Defaults to a mock echo adapter. */
   initialProcess?: ProcessAdapter;
+  /** Library source id (e.g. `"aga_apps"`) the host wants the Library
+   *  panel to auto-expand. Read by the LibraryTree at first paint;
+   *  changing later does not force a re-collapse. */
+  focusedLibrarySourceId?: string | null;
   children: React.ReactNode;
 }
 
@@ -53,6 +61,7 @@ export const CodeWorkspaceProvider: React.FC<CodeWorkspaceProviderProps> = ({
   workspaceId = DEFAULT_WORKSPACE_ID,
   initialFilesystem,
   initialProcess,
+  focusedLibrarySourceId = null,
   children,
 }) => {
   const store = useAppStore();
@@ -94,8 +103,15 @@ export const CodeWorkspaceProvider: React.FC<CodeWorkspaceProviderProps> = ({
   useFlushAIEditHistory();
 
   const value = useMemo<CodeWorkspaceContextValue>(
-    () => ({ workspaceId, filesystem, process, setFilesystem, setProcess }),
-    [workspaceId, filesystem, process],
+    () => ({
+      workspaceId,
+      filesystem,
+      process,
+      setFilesystem,
+      setProcess,
+      focusedLibrarySourceId,
+    }),
+    [workspaceId, filesystem, process, focusedLibrarySourceId],
   );
 
   return (
