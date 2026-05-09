@@ -13,7 +13,6 @@ import {
   Sparkles,
   Stamp,
   Upload,
-  User,
   UserCircle,
   Wand,
   Wand2,
@@ -95,13 +94,6 @@ const STUDIO_TILES: Tile[] = [
     description: "Describe an image and generate it.",
     Icon: Sparkles,
     accent: "text-rose-500",
-  },
-  {
-    href: "/images/profile-photo",
-    label: "Profile Photo",
-    description: "Upload an avatar, saves to your profile.",
-    Icon: User,
-    accent: "text-cyan-500",
   },
   {
     href: "/images/generate",
