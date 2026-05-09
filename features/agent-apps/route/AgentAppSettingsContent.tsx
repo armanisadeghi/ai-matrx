@@ -3,17 +3,14 @@
 /**
  * AgentAppSettingsContent — /agent-apps/[id]/settings page body.
  *
- * Edits the configurable fields on `aga_apps`. All writes go through
- * saveAppField (per-field PATCH) or saveApp (batch). RLS handles ownership;
- * the SECURITY-related fields (is_featured, is_verified, rate_limit_*) are
- * intentionally not editable here — those live in the admin surface.
- *
- * Identity fields (name, tagline, description, category, tags) edit live
- * with debounced auto-save. Toggles (status, is_public) commit immediately.
+ * Tabbed surface. Each tab edits one coherent slice of `aga_apps`. Saves
+ * are atomic per-field; no batch save button. The user knows what each
+ * field is — there are no helper paragraphs, no warnings, no
+ * explanations of what an agent or version is.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Globe, Loader2, Lock, Save, Trash2 } from "lucide-react";
+import { Copy, Loader2, Save, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,24 +24,27 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { siteConfig } from "@/config/extras/site";
 import { AgentAppCategoryPicker } from "@/features/agent-apps/components/inputs/AgentAppCategoryPicker";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "@/features/agent-apps/components/SearchableAgentSelect";
-import { AgentVersionPicker } from "@/features/agent-shortcuts/components/AgentVersionPicker";
+import { AgentBindingCompact } from "@/features/agent-apps/components/inputs/AgentBindingCompact";
+import { AgentVersionCompact } from "@/features/agent-apps/components/inputs/AgentVersionCompact";
+import { AgentAppScopeFields } from "@/features/agent-apps/components/inputs/AgentAppScopeFields";
+import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
   deleteApp,
 } from "@/features/agents/redux/agent-apps/thunks";
-import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import type { AppStatus } from "@/features/agent-apps/types";
 
 interface AgentAppSettingsContentProps {
@@ -62,24 +62,16 @@ export function AgentAppSettingsContent({
 }: AgentAppSettingsContentProps) {
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
+  const agent = useAppSelector((state) =>
+    app?.agent_id ? selectAgentById(state, app.agent_id) : undefined,
+  );
 
-  // Local mirrors for fields that benefit from explicit save
-  // (avoid jank on every keystroke).
   const [name, setName] = useState(app?.name ?? "");
   const [tagline, setTagline] = useState(app?.tagline ?? "");
   const [description, setDescription] = useState(app?.description ?? "");
   const [savingField, setSavingField] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [copied, setCopied] = useState(false);
 
-  // Local mirrors for fields with explicit save (paths, IDs, ints).
-  const [organizationId, setOrganizationId] = useState(app?.organization_id ?? "");
-  const [projectId, setProjectId] = useState(app?.project_id ?? "");
-  const [taskId, setTaskId] = useState(app?.task_id ?? "");
-  const [faviconUrl, setFaviconUrl] = useState(app?.favicon_url ?? "");
-  const [previewImageUrl, setPreviewImageUrl] = useState(
-    app?.preview_image_url ?? "",
-  );
   const [rateIp, setRateIp] = useState<string>(
     String(app?.rate_limit_per_ip ?? ""),
   );
@@ -90,32 +82,11 @@ export function AgentAppSettingsContent({
     String(app?.rate_limit_authenticated ?? ""),
   );
 
-  // Hydrate the live agents list so the agent picker has options when the
-  // user deep-links to /settings without going through /agent-apps first.
-  useEffect(() => {
-    dispatch(fetchAgentsList());
-  }, [dispatch]);
-
-  const liveAgents = useAppSelector(selectLiveAgents);
-  const agentOptions: AgentOption[] = liveAgents
-    .filter((a) => a.agentType === "user")
-    .map((a) => ({
-      id: a.id,
-      name: a.name,
-      description: a.description ?? null,
-      category: a.category ?? null,
-    }));
-
   useEffect(() => {
     if (!app) return;
     setName(app.name);
     setTagline(app.tagline ?? "");
     setDescription(app.description ?? "");
-    setOrganizationId(app.organization_id ?? "");
-    setProjectId(app.project_id ?? "");
-    setTaskId(app.task_id ?? "");
-    setFaviconUrl(app.favicon_url ?? "");
-    setPreviewImageUrl(app.preview_image_url ?? "");
     setRateIp(String(app.rate_limit_per_ip ?? ""));
     setRateWindow(String(app.rate_limit_window_hours ?? ""));
     setRateAuth(String(app.rate_limit_authenticated ?? ""));
@@ -144,35 +115,10 @@ export function AgentAppSettingsContent({
     [appId, dispatch],
   );
 
-  const handleStatusChange = (value: AppStatus) => saveField("status", value);
-  const handlePublicChange = (checked: boolean) =>
-    saveField("is_public", checked);
-  const handleCategoryChange = (next: string | null) =>
-    saveField("category", next);
-  const handleTagsChange = (next: string[]) => saveField("tags", next);
   const handleAgentChange = (nextAgentId: string) => {
-    if (nextAgentId === app?.agent_id) return;
+    if (!app || nextAgentId === app.agent_id) return;
     saveField("agent_id", nextAgentId);
-    // When the agent changes, the previously-pinned version no longer applies.
-    // Clear the version pin and let the version picker pick the latest of the
-    // new agent next render.
     saveField("agent_version_id", null);
-  };
-  const handleVersionChange = (next: string | null) =>
-    saveField("agent_version_id", next);
-  const handleUseLatestChange = (next: boolean) =>
-    saveField("use_latest", next);
-
-  const handleCopyUrl = async () => {
-    if (!app) return;
-    try {
-      await navigator.clipboard.writeText(`${siteConfig.url}/p/${app.slug}`);
-      setCopied(true);
-      toast.success("Public URL copied");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Copy failed");
-    }
   };
 
   const handleDelete = async () => {
@@ -197,367 +143,151 @@ export function AgentAppSettingsContent({
     }
   };
 
+  const handleCopyUrl = async () => {
+    if (!app) return;
+    try {
+      await navigator.clipboard.writeText(`${siteConfig.url}/p/${app.slug}`);
+      toast.success("Public URL copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
   if (!app) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Loading settings…
+        Loading…
       </div>
     );
   }
+
+  const publicUrl = `${siteConfig.url}/p/${app.slug}`;
 
   return (
     <div
       className="h-full overflow-y-auto"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <div className="max-w-3xl mx-auto px-4 pb-6 pt-4 space-y-5">
-        {/* Identity */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Identity</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FieldGroup
+      <div className="max-w-3xl mx-auto px-4 pb-10 pt-4">
+        <Tabs defaultValue="identity" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="identity">Identity</TabsTrigger>
+            <TabsTrigger value="agent">Agent</TabsTrigger>
+            <TabsTrigger value="branding">Branding</TabsTrigger>
+            <TabsTrigger value="sharing">Sharing</TabsTrigger>
+            <TabsTrigger value="danger">Danger</TabsTrigger>
+          </TabsList>
+
+          {/* ── Identity ───────────────────────────────────────────────── */}
+          <TabsContent value="identity" className="space-y-5">
+            <FieldRow
               label="Name"
               busy={savingField === "name"}
-              onSave={() => saveField("name", name)}
               dirty={name !== app.name}
+              onSave={() => saveField("name", name)}
             >
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="App name"
                 className="text-[16px]"
               />
-            </FieldGroup>
-
-            <FieldGroup
+            </FieldRow>
+            <FieldRow
               label="Tagline"
               busy={savingField === "tagline"}
-              onSave={() => saveField("tagline", tagline.trim() || null)}
               dirty={(tagline ?? "") !== (app.tagline ?? "")}
+              onSave={() => saveField("tagline", tagline.trim() || null)}
             >
               <Input
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
-                placeholder="One-line pitch"
                 className="text-[16px]"
               />
-            </FieldGroup>
-
-            <FieldGroup
+            </FieldRow>
+            <FieldRow
               label="Description"
               busy={savingField === "description"}
-              onSave={() => saveField("description", description.trim() || null)}
               dirty={(description ?? "") !== (app.description ?? "")}
+              onSave={() =>
+                saveField("description", description.trim() || null)
+              }
             >
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="What does this app do?"
                 className="text-[16px] min-h-24"
               />
-            </FieldGroup>
-
-            <div className="space-y-1.5">
-              <Label className="text-sm">Category</Label>
+            </FieldRow>
+            <Row label="Category">
               <AgentAppCategoryPicker
                 value={app.category}
-                onChange={handleCategoryChange}
+                onChange={(next) => saveField("category", next)}
                 disabled={savingField === "category"}
               />
-              <p className="text-xs text-muted-foreground">
-                Pick a system category or type your own. Saves immediately.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-sm">Tags</Label>
+            </Row>
+            <Row label="Tags">
               <AgentAppTagsInput
                 value={Array.isArray(app.tags) ? app.tags : []}
-                onChange={handleTagsChange}
+                onChange={(next) => saveField("tags", next)}
                 disabled={savingField === "tags"}
-                placeholder="Add a tag and press Enter…"
               />
-              <p className="text-xs text-muted-foreground">
-                Press Enter or comma to add. Click X to remove. Saves
-                immediately.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </Row>
+          </TabsContent>
 
-        {/* Agent binding */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Agent binding</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm">Agent</Label>
-              <SearchableAgentSelect
-                agents={agentOptions}
-                value={app.agent_id}
-                onChange={handleAgentChange}
-                placeholder="Search agents…"
-                emptyLabel="No agents found in your library."
-              />
-              <p className="text-xs text-muted-foreground">
-                Switching the agent clears the pinned version. The next save
-                will repin to the new agent&apos;s latest version unless you
-                opt into &ldquo;always use latest.&rdquo;
-              </p>
-            </div>
-            <AgentVersionPicker
+          {/* ── Agent ──────────────────────────────────────────────────── */}
+          <TabsContent value="agent" className="space-y-3">
+            <AgentBindingCompact
+              agentId={app.agent_id}
+              agentName={agent?.name}
+              onChange={handleAgentChange}
+              disabled={savingField === "agent_id"}
+            />
+            <AgentVersionCompact
               agentId={app.agent_id}
               agentVersionId={app.agent_version_id}
               useLatest={app.use_latest}
-              onAgentVersionIdChange={handleVersionChange}
-              onUseLatestChange={handleUseLatestChange}
+              onAgentVersionIdChange={(next) =>
+                saveField("agent_version_id", next)
+              }
+              onUseLatestChange={(next) => saveField("use_latest", next)}
               disabled={
-                savingField === "agent_id" ||
                 savingField === "agent_version_id" ||
                 savingField === "use_latest"
               }
             />
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {/* Scope (org / project / task) */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Scope</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Optional. Associates this app with an organization, project,
-              and/or task. Many-to-many scope is on the roadmap; for now each
-              field accepts a single UUID.
-            </p>
-            <FieldGroup
-              label="Organization ID"
-              busy={savingField === "organization_id"}
-              dirty={(organizationId ?? "") !== (app.organization_id ?? "")}
-              onSave={() =>
-                saveField("organization_id", organizationId.trim() || null)
-              }
-            >
-              <Input
-                value={organizationId}
-                onChange={(e) => setOrganizationId(e.target.value)}
-                placeholder="UUID — leave empty for personal scope"
-                className="text-[16px] font-mono text-xs"
+          {/* ── Branding ───────────────────────────────────────────────── */}
+          <TabsContent value="branding" className="space-y-5">
+            <Row label="Icon">
+              <AgentAppImageField
+                value={app.favicon_url}
+                onChange={(next) => saveField("favicon_url", next)}
+                aspect="aspect-square"
+                ariaLabel="Upload icon"
+                disabled={savingField === "favicon_url"}
               />
-            </FieldGroup>
-            <FieldGroup
-              label="Project ID"
-              busy={savingField === "project_id"}
-              dirty={(projectId ?? "") !== (app.project_id ?? "")}
-              onSave={() => saveField("project_id", projectId.trim() || null)}
-            >
-              <Input
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                placeholder="UUID — optional"
-                className="text-[16px] font-mono text-xs"
+            </Row>
+            <Row label="Preview image">
+              <AgentAppImageField
+                value={app.preview_image_url}
+                onChange={(next) => saveField("preview_image_url", next)}
+                aspect="aspect-[1200/630]"
+                ariaLabel="Upload preview image"
+                disabled={savingField === "preview_image_url"}
               />
-            </FieldGroup>
-            <FieldGroup
-              label="Task ID"
-              busy={savingField === "task_id"}
-              dirty={(taskId ?? "") !== (app.task_id ?? "")}
-              onSave={() => saveField("task_id", taskId.trim() || null)}
-            >
-              <Input
-                value={taskId}
-                onChange={(e) => setTaskId(e.target.value)}
-                placeholder="UUID — optional"
-                className="text-[16px] font-mono text-xs"
-              />
-            </FieldGroup>
-          </CardContent>
-        </Card>
+            </Row>
+          </TabsContent>
 
-        {/* Rate limits */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Rate limits</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Caps how often this app can run. Lowering values is always
-              safe; raising above the admin cap will be rejected server-side.
-            </p>
-            <FieldGroup
-              label="Per-IP / window"
-              hint="Max guest runs from one IP per window."
-              busy={savingField === "rate_limit_per_ip"}
-              dirty={
-                rateIp.trim() !== String(app.rate_limit_per_ip ?? "")
-              }
-              onSave={() => {
-                const n = rateIp.trim() === "" ? null : Number(rateIp);
-                if (n != null && (!Number.isFinite(n) || n < 0)) {
-                  toast.error("Per-IP must be a non-negative integer.");
-                  return;
-                }
-                saveField("rate_limit_per_ip", n);
-              }}
-            >
-              <Input
-                value={rateIp}
-                onChange={(e) => setRateIp(e.target.value)}
-                inputMode="numeric"
-                placeholder="20"
-                className="text-[16px]"
-              />
-            </FieldGroup>
-            <FieldGroup
-              label="Window (hours)"
-              hint="The rolling window for the per-IP and authenticated caps."
-              busy={savingField === "rate_limit_window_hours"}
-              dirty={
-                rateWindow.trim() !== String(app.rate_limit_window_hours ?? "")
-              }
-              onSave={() => {
-                const n = rateWindow.trim() === "" ? null : Number(rateWindow);
-                if (n != null && (!Number.isFinite(n) || n < 0)) {
-                  toast.error("Window must be a non-negative integer.");
-                  return;
-                }
-                saveField("rate_limit_window_hours", n);
-              }}
-            >
-              <Input
-                value={rateWindow}
-                onChange={(e) => setRateWindow(e.target.value)}
-                inputMode="numeric"
-                placeholder="24"
-                className="text-[16px]"
-              />
-            </FieldGroup>
-            <FieldGroup
-              label="Authenticated / window"
-              hint="Max signed-in user runs per window."
-              busy={savingField === "rate_limit_authenticated"}
-              dirty={
-                rateAuth.trim() !==
-                String(app.rate_limit_authenticated ?? "")
-              }
-              onSave={() => {
-                const n = rateAuth.trim() === "" ? null : Number(rateAuth);
-                if (n != null && (!Number.isFinite(n) || n < 0)) {
-                  toast.error("Authenticated must be a non-negative integer.");
-                  return;
-                }
-                saveField("rate_limit_authenticated", n);
-              }}
-            >
-              <Input
-                value={rateAuth}
-                onChange={(e) => setRateAuth(e.target.value)}
-                inputMode="numeric"
-                placeholder="100"
-                className="text-[16px]"
-              />
-            </FieldGroup>
-          </CardContent>
-        </Card>
-
-        {/* Icons & preview image */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Icons & preview image</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              URL fields for now — a proper upload flow with the file handler
-              lands in Phase 5.
-            </p>
-            <FieldGroup
-              label="Favicon URL"
-              hint="Square image for browser tabs and small thumbnails."
-              busy={savingField === "favicon_url"}
-              dirty={(faviconUrl ?? "") !== (app.favicon_url ?? "")}
-              onSave={() => saveField("favicon_url", faviconUrl.trim() || null)}
-            >
-              <Input
-                value={faviconUrl}
-                onChange={(e) => setFaviconUrl(e.target.value)}
-                placeholder="https://…/icon.png"
-                className="text-[16px]"
-              />
-            </FieldGroup>
-            <FieldGroup
-              label="Preview image URL"
-              hint="Used by social cards (Open Graph)."
-              busy={savingField === "preview_image_url"}
-              dirty={
-                (previewImageUrl ?? "") !== (app.preview_image_url ?? "")
-              }
-              onSave={() =>
-                saveField("preview_image_url", previewImageUrl.trim() || null)
-              }
-            >
-              <Input
-                value={previewImageUrl}
-                onChange={(e) => setPreviewImageUrl(e.target.value)}
-                placeholder="https://…/preview.png"
-                className="text-[16px]"
-              />
-            </FieldGroup>
-          </CardContent>
-        </Card>
-
-        {/* Public URL display (slug editing TBD — destructive, separate flow) */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Public URL</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
-              <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm font-mono text-muted-foreground whitespace-nowrap">
-                {siteConfig.url}/p/
-              </span>
-              <span
-                className="text-sm font-mono text-foreground truncate flex-1"
-                title={app.slug}
-              >
-                {app.slug}
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyUrl}
-                className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground"
-                aria-label="Copy public URL"
-                title="Copy"
-              >
-                <Copy className={copied ? "w-3.5 h-3.5 text-emerald-500" : "w-3.5 h-3.5"} />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Changing the slug breaks every existing public link to this
-              app. The slug is read-only here for now; we&apos;ll add a
-              guarded rename flow in a follow-up.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Status & visibility */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Status & visibility</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <Label className="text-sm">Status</Label>
+          {/* ── Sharing (status + visibility + URL + scope + limits) ──── */}
+          <TabsContent value="sharing" className="space-y-5">
+            <Row label="Status">
               <Select
                 value={app.status}
-                onValueChange={(v) => handleStatusChange(v as AppStatus)}
+                onValueChange={(v) => saveField("status", v as AppStatus)}
                 disabled={savingField === "status"}
               >
-                <SelectTrigger className="w-[200px] h-9" size="sm">
+                <SelectTrigger className="h-8 w-[180px]" size="sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -568,48 +298,122 @@ export function AgentAppSettingsContent({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {app.is_public ? (
-                  <Globe className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                ) : (
-                  <Lock className="w-4 h-4 text-muted-foreground" />
-                )}
-                <div>
-                  <Label className="text-sm">Public</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {app.is_public
-                      ? "Anyone with the link can use this app."
-                      : "Only you can use this app."}
-                  </p>
-                </div>
-              </div>
+            </Row>
+            <Row label="Public">
               <Switch
                 checked={app.is_public}
-                onCheckedChange={handlePublicChange}
+                onCheckedChange={(v) => saveField("is_public", v)}
                 disabled={savingField === "is_public"}
               />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Danger zone */}
-        <Card className="border-destructive/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-destructive">
-              Danger zone
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm">
-                <p className="font-medium text-foreground">Delete this app</p>
-                <p className="text-xs text-muted-foreground">
-                  Removes the app and all of its execution records.
-                </p>
+            </Row>
+            <Row label="Public URL">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
+                <span className="text-sm font-mono text-foreground truncate flex-1">
+                  {publicUrl}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyUrl}
+                  className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                  aria-label="Copy"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
               </div>
+            </Row>
+
+            <div className="border-t border-border/60 pt-4">
+              <AgentAppScopeFields
+                organizationId={app.organization_id}
+                projectId={app.project_id}
+                taskId={app.task_id}
+                onOrganizationChange={(next) =>
+                  saveField("organization_id", next)
+                }
+                onProjectChange={(next) => saveField("project_id", next)}
+                onTaskChange={(next) => saveField("task_id", next)}
+                disabled={
+                  savingField === "organization_id" ||
+                  savingField === "project_id" ||
+                  savingField === "task_id"
+                }
+              />
+            </div>
+
+            <div className="border-t border-border/60 pt-4 space-y-3">
+              <FieldRow
+                label="Per-IP / window"
+                busy={savingField === "rate_limit_per_ip"}
+                dirty={rateIp.trim() !== String(app.rate_limit_per_ip ?? "")}
+                onSave={() => {
+                  const n = rateIp.trim() === "" ? null : Number(rateIp);
+                  if (n != null && (!Number.isFinite(n) || n < 0)) {
+                    toast.error("Must be a non-negative integer.");
+                    return;
+                  }
+                  saveField("rate_limit_per_ip", n);
+                }}
+              >
+                <Input
+                  value={rateIp}
+                  onChange={(e) => setRateIp(e.target.value)}
+                  inputMode="numeric"
+                  className="h-8 w-32 text-[16px]"
+                />
+              </FieldRow>
+              <FieldRow
+                label="Window (hrs)"
+                busy={savingField === "rate_limit_window_hours"}
+                dirty={
+                  rateWindow.trim() !== String(app.rate_limit_window_hours ?? "")
+                }
+                onSave={() => {
+                  const n =
+                    rateWindow.trim() === "" ? null : Number(rateWindow);
+                  if (n != null && (!Number.isFinite(n) || n < 0)) {
+                    toast.error("Must be a non-negative integer.");
+                    return;
+                  }
+                  saveField("rate_limit_window_hours", n);
+                }}
+              >
+                <Input
+                  value={rateWindow}
+                  onChange={(e) => setRateWindow(e.target.value)}
+                  inputMode="numeric"
+                  className="h-8 w-32 text-[16px]"
+                />
+              </FieldRow>
+              <FieldRow
+                label="Authenticated / window"
+                busy={savingField === "rate_limit_authenticated"}
+                dirty={
+                  rateAuth.trim() !==
+                  String(app.rate_limit_authenticated ?? "")
+                }
+                onSave={() => {
+                  const n = rateAuth.trim() === "" ? null : Number(rateAuth);
+                  if (n != null && (!Number.isFinite(n) || n < 0)) {
+                    toast.error("Must be a non-negative integer.");
+                    return;
+                  }
+                  saveField("rate_limit_authenticated", n);
+                }}
+              >
+                <Input
+                  value={rateAuth}
+                  onChange={(e) => setRateAuth(e.target.value)}
+                  inputMode="numeric"
+                  className="h-8 w-32 text-[16px]"
+                />
+              </FieldRow>
+            </div>
+          </TabsContent>
+
+          {/* ── Danger zone ────────────────────────────────────────────── */}
+          <TabsContent value="danger">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-destructive/30 bg-destructive/5">
+              <span className="text-sm">Delete this app</span>
               <Button
                 variant="destructive"
                 size="sm"
@@ -622,44 +426,51 @@ export function AgentAppSettingsContent({
                 ) : (
                   <Trash2 className="w-3.5 h-3.5" />
                 )}
-                Delete app
+                Delete
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
 }
 
-// ── Internal ─────────────────────────────────────────────────────────────────
+// ── Internal layout primitives ───────────────────────────────────────────────
 
-interface FieldGroupProps {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[140px_1fr] items-start gap-3">
+      <Label className="pt-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+interface FieldRowProps {
   label: string;
-  hint?: string;
   busy: boolean;
   dirty: boolean;
   onSave: () => void;
   children: React.ReactNode;
 }
 
-function FieldGroup({
-  label,
-  hint,
-  busy,
-  dirty,
-  onSave,
-  children,
-}: FieldGroupProps) {
+function FieldRow({ label, busy, dirty, onSave, children }: FieldRowProps) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm">{label}</Label>
+    <div className="grid grid-cols-[140px_1fr_auto] items-start gap-3">
+      <Label className="pt-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      <div>{children}</div>
+      <div className="pt-1">
         {dirty && (
           <Button
+            type="button"
             size="sm"
             variant="ghost"
-            className="h-6 px-2 text-xs gap-1"
+            className="h-7 px-2 text-xs gap-1"
             onClick={onSave}
             disabled={busy}
           >
@@ -672,8 +483,6 @@ function FieldGroup({
           </Button>
         )}
       </div>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

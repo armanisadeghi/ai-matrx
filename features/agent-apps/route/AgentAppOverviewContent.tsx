@@ -455,29 +455,16 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
           <CardContent className="space-y-2 text-sm">
             <KV label="Agent" value={agent?.name ?? "—"} />
             <KV
-              label="Mode"
+              label="Version"
               value={
                 app.use_latest
-                  ? "Always use latest (advanced)"
-                  : "Pinned to a specific version"
+                  ? "Latest"
+                  : app.agent_version_id
+                    ? app.agent_version_id
+                    : "—"
               }
+              mono={!app.use_latest && !!app.agent_version_id}
             />
-            {!app.use_latest && (
-              <KV
-                label="Pinned version"
-                value={app.agent_version_id ?? "—"}
-                mono
-                dim
-              />
-            )}
-            {app.use_latest && (
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                <strong>Heads up:</strong> this app uses whatever the live
-                agent looks like. If the agent&apos;s variables change, this
-                app will break. Pinning a version is recommended.
-              </p>
-            )}
-            <KV label="Agent ID" value={app.agent_id} mono dim />
           </CardContent>
         </Card>
 
@@ -493,89 +480,63 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {agentVariables == null ? (
-              <p className="text-sm text-muted-foreground">
-                Loading agent variables…
-              </p>
-            ) : variableCount === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                The bound agent declares no input variables.
-              </p>
+            {variableCount === 0 ? (
+              <div className="text-sm text-muted-foreground">—</div>
             ) : (
-              <>
-                <div className="grid gap-2">
-                  {agentVariables.map((v) => {
-                    const widget = v.customComponent;
-                    const widgetLabel = widget?.type ?? null;
-                    const options = widget?.options ?? null;
-                    return (
-                      <div
-                        key={v.name}
-                        className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
-                      >
-                        <code className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                          {`{{${v.name}}}`}
-                        </code>
-                        <div className="flex-1 min-w-0 text-sm space-y-0.5">
-                          {v.helpText && (
-                            <div className="text-foreground/90 break-words">
-                              {v.helpText}
-                            </div>
+              <div className="grid gap-2">
+                {agentVariables!.map((v) => {
+                  const widget = v.customComponent;
+                  const widgetLabel = widget?.type ?? null;
+                  const options = widget?.options ?? null;
+                  return (
+                    <div
+                      key={v.name}
+                      className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
+                    >
+                      <code className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                        {`{{${v.name}}}`}
+                      </code>
+                      <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                        {v.helpText && (
+                          <div className="text-foreground/90 break-words">
+                            {v.helpText}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                          {widgetLabel && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-mono"
+                            >
+                              {widgetLabel}
+                            </Badge>
                           )}
-                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                            {widgetLabel && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] gap-1 font-mono"
-                              >
-                                {widgetLabel}
-                              </Badge>
-                            )}
-                            {v.defaultValue !== undefined &&
-                              v.defaultValue !== null &&
-                              String(v.defaultValue) !== "" && (
-                                <span>
-                                  Default:{" "}
-                                  <span className="font-mono text-foreground/80">
-                                    {String(v.defaultValue)}
-                                  </span>
-                                </span>
-                              )}
-                            {Array.isArray(options) && options.length > 0 && (
-                              <span>
-                                {options.length} option
-                                {options.length === 1 ? "" : "s"}
+                          {Array.isArray(options) && options.length > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px]"
+                            >
+                              {options.length} options
+                            </Badge>
+                          )}
+                          {v.defaultValue !== undefined &&
+                            v.defaultValue !== null &&
+                            String(v.defaultValue) !== "" && (
+                              <span className="font-mono text-foreground/70">
+                                = {String(v.defaultValue)}
                               </span>
                             )}
-                          </div>
                         </div>
-                        {v.required && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] shrink-0"
-                          >
-                            required
-                          </Badge>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
-                {app.use_latest && (
-                  <p className="text-xs text-muted-foreground/80 pt-2 italic">
-                    Variables are read from the live agent. If you pin a
-                    version on Settings, the app will be locked to those
-                    variables instead.
-                  </p>
-                )}
-                {!app.use_latest && (
-                  <p className="text-xs text-muted-foreground/80 pt-2 italic">
-                    Variables shown here are from the live agent for now —
-                    a future revision will resolve them from the pinned
-                    version snapshot, which may differ.
-                  </p>
-                )}
-              </>
+                      {v.required && (
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          required
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </CardContent>
         </Card>
