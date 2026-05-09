@@ -197,6 +197,9 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-05-09` — Moved the mobile Images section context into the shared top header (`Images / Section`) and retuned the bottom command pill so it acts like navigation/actions instead of repeating the page title.
+- `2026-05-09` — Reworked the Images mobile bottom command bar toward the Files dock pattern: ellipsis section opener, icon-only app quick links, active Images affordance, and a separate floating primary action.
+- `2026-05-09` — Removed `Profile Photo` from the shared Images navigation registry so it no longer appears in desktop or mobile Images menus; the route remains directly accessible.
 - `2026-05-09` — Follow-up mobile shell cohesion pass: split the Images mobile command bar/navigation sheet, added route-aware bottom actions, wired Upload's command action to the native picker, and flattened All Files mobile rows toward the main Files list pattern.
 - `2026-05-09` — Corrected `/images/public-search` mobile UX after screenshot review: Images navigation now opens as an opaque full-width bottom sheet, Public Search no longer nests scroll containers, and Unsplash mobile filters use bottom-sheet option rows instead of mobile tabs/generic sheets.
 - `2026-05-08` — Tightened `/images` mobile landing chrome to match the Agents page: moved the Images title/actions into the shared shell header, removed the duplicate fixed top strip, and replaced mobile hero/card grids with compact action rows.
