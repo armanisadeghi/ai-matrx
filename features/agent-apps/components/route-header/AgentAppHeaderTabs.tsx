@@ -2,8 +2,8 @@ import Link from "next/link";
 import {
   AppWindow,
   Code,
-  Eye,
   History,
+  Play,
   Settings as SettingsIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export type AgentAppHeaderTab =
   | "overview"
-  | "preview"
+  | "run"
   | "code"
   | "versions"
   | "settings";
@@ -33,11 +33,11 @@ const TABS: TabDef[] = [
     hrefSuffix: "",
   },
   {
-    key: "preview",
-    label: "Preview",
-    shortLabel: "Preview",
-    icon: Eye,
-    hrefSuffix: "/preview",
+    key: "run",
+    label: "Run",
+    shortLabel: "Run",
+    icon: Play,
+    hrefSuffix: "/run",
   },
   {
     key: "code",

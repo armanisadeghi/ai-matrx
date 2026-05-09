@@ -159,7 +159,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
   const codeHref = `/agent-apps/${app.id}/code`;
   const settingsHref = `/agent-apps/${app.id}/settings`;
   const versionsHref = `/agent-apps/${app.id}/versions`;
-  const previewHref = `/agent-apps/${app.id}/preview`;
+  const runHref = `/agent-apps/${app.id}/run`;
 
   const variableCount = Array.isArray(app.variable_schema)
     ? (app.variable_schema as unknown[]).length
@@ -328,11 +328,13 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
           </div>
         )}
 
-        {/* ── Action row ──────────────────────────────────────────────── */}
+        {/* ── Action row — all secondary on the overview, since the user is
+              already inside this app's surface. The tab strip in the header
+              owns "selected sub-route" visual state. ─────────────────────── */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild size="sm" className="gap-1.5">
-            <Link href={previewHref}>
-              <Eye className="w-3.5 h-3.5" /> Preview
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link href={runHref}>
+              <Eye className="w-3.5 h-3.5" /> Run
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm" className="gap-1.5">
