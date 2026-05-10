@@ -9,6 +9,7 @@ import {
   Video,
   Youtube,
   FileText,
+  Type as TypeIcon,
   X,
   Check,
   Pencil,
@@ -31,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
@@ -41,6 +43,7 @@ import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/ima
 // ---------------------------------------------------------------------------
 
 export type BlockType =
+  | "text"
   | "image"
   | "audio"
   | "video"
@@ -51,6 +54,8 @@ interface FieldConfig {
   key: string;
   label: string;
   placeholder: string;
+  /** Render with a Textarea instead of an Input. Default false. */
+  multiline?: boolean;
 }
 
 interface BlockTypeConfig {
@@ -61,6 +66,20 @@ interface BlockTypeConfig {
 }
 
 const BLOCK_TYPES: BlockTypeConfig[] = [
+  {
+    type: "text",
+    label: "Text",
+    icon: <TypeIcon className="w-3.5 h-3.5" />,
+    fields: [
+      {
+        key: "text",
+        label: "Text content",
+        placeholder:
+          "Add an extra text section — e.g. a negative prompt or system note. Tag the role in Metadata below (key: role, value: negative_prompt).",
+        multiline: true,
+      },
+    ],
+  },
   {
     type: "image",
     label: "Image",
@@ -277,9 +296,15 @@ export function BlockEditor({
     const primaryValue = values[config.fields[0].key]?.trim();
     if (!primaryValue) return;
     const block: Record<string, unknown> = { type: config.type };
-    config.fields.forEach(({ key }) => {
-      const v = values[key]?.trim();
-      if (v) block[key] = v;
+    config.fields.forEach(({ key, multiline }) => {
+      const raw = values[key] ?? "";
+      // Empty check uses the trimmed value, but we store the raw value for
+      // multiline fields so prose with intentional leading/trailing
+      // whitespace or newlines isn't corrupted. Single-line fields (URLs,
+      // mime types) safely trim — those values shouldn't have surrounding
+      // whitespace.
+      if (!raw.trim()) return;
+      block[key] = multiline ? raw : raw.trim();
     });
     const meta = pairsToMetadata(metadataPairs);
     if (meta) block.metadata = meta;
@@ -335,23 +360,44 @@ export function BlockEditor({
         </button>
       </div>
 
-      {config.fields.map(({ key, label, placeholder }) => {
+      {config.fields.map(({ key, label, placeholder, multiline }) => {
         const showImageUpload = config.type === "image" && key === "url";
         return (
           <div key={key} className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">{label}</Label>
-            <div className="flex items-center gap-1">
-              <Input
-                autoFocus={key === config.fields[0].key}
-                value={values[key] ?? ""}
-                onChange={(e) => setValue(key, e.target.value)}
-                placeholder={placeholder}
-                className="h-7 text-xs font-mono flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleConfirm();
-                  if (e.key === "Escape") onCancel();
-                }}
-              />
+            <div className="flex items-start gap-1">
+              {multiline ? (
+                <Textarea
+                  autoFocus={key === config.fields[0].key}
+                  value={values[key] ?? ""}
+                  onChange={(e) => setValue(key, e.target.value)}
+                  placeholder={placeholder}
+                  className="text-xs flex-1 min-h-[60px]"
+                  autoGrow
+                  minHeight={60}
+                  maxHeight={200}
+                  onKeyDown={(e) => {
+                    // Cmd/Ctrl+Enter confirms; plain Enter inserts a newline.
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleConfirm();
+                    }
+                    if (e.key === "Escape") onCancel();
+                  }}
+                />
+              ) : (
+                <Input
+                  autoFocus={key === config.fields[0].key}
+                  value={values[key] ?? ""}
+                  onChange={(e) => setValue(key, e.target.value)}
+                  placeholder={placeholder}
+                  className="h-7 text-xs font-mono flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleConfirm();
+                    if (e.key === "Escape") onCancel();
+                  }}
+                />
+              )}
               {showImageUpload && (
                 <button
                   type="button"
@@ -495,21 +541,36 @@ export function BlockRow({
     (imgUrl.startsWith("http") || imgUrl.startsWith("data:"));
 
   const metadata = block.metadata as Record<string, unknown> | undefined;
-  const metadataCount =
-    metadata && typeof metadata === "object" ? Object.keys(metadata).length : 0;
+  const metadataKeys =
+    metadata && typeof metadata === "object" ? Object.keys(metadata) : [];
+  const metadataCount = metadataKeys.length;
+  // The `role` key is the most consequential metadata field — surface it
+  // inline so a row like "Text · negative_prompt" is scannable at a glance.
+  // Other metadata stays in the count badge.
+  const role =
+    typeof metadata?.role === "string" ? (metadata.role as string) : null;
+  const otherMetaCount = metadataCount - (role ? 1 : 0);
 
   return (
     <div className="flex flex-col gap-0.5 w-full px-2 py-1.5 rounded-md border border-border bg-card text-xs group/row">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground shrink-0">{icon}</span>
         <span className="font-medium shrink-0">{label}</span>
-        {metadataCount > 0 && (
+        {role && (
+          <span
+            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 shrink-0"
+            title="metadata.role"
+          >
+            {role}
+          </span>
+        )}
+        {otherMetaCount > 0 && (
           <span
             className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 shrink-0 inline-flex items-center gap-0.5"
-            title={`${metadataCount} metadata field${metadataCount === 1 ? "" : "s"}: ${Object.keys(metadata!).join(", ")}`}
+            title={`${otherMetaCount} other metadata field${otherMetaCount === 1 ? "" : "s"}: ${metadataKeys.filter((k) => k !== "role").join(", ")}`}
           >
             <Tag className="w-2.5 h-2.5" />
-            {metadataCount}
+            {otherMetaCount}
           </span>
         )}
         <div className="flex items-center gap-0.5 shrink-0 ml-auto opacity-0 group-hover/row:opacity-100 transition-opacity">

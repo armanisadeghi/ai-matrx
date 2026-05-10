@@ -32,10 +32,19 @@
  * Plain text.
  * This is what you get automatically when user_input is a bare string.
  * Use the explicit block form when mixing with other block types.
+ *
+ * `metadata.role` lets an agent author tag this text block as a named slot
+ * the provider translator can read out — e.g. `"negative_prompt"` for image
+ * gen, or other future named text inputs. An empty role-tagged block is
+ * dropped before the request reaches the model (per the Python
+ * `TextContent.replace_variables` contract). Untagged TextBlocks are the
+ * "main" message text and never get dropped on empty.
  */
 export interface TextBlock {
   type: "text";
   text: string;
+  /** Free-form per-block metadata (e.g. `{ role: "negative_prompt" }`). */
+  metadata?: Record<string, unknown>;
 }
 
 /**

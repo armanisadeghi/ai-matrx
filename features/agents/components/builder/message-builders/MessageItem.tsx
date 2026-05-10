@@ -52,6 +52,32 @@ function extractTextFromBlock(block: Record<string, unknown>): string {
   return (block.text as string | undefined) ?? "";
 }
 
+/**
+ * Untagged text-block check (block-local, no position info).
+ * Used by `findPrimaryIndex` below.
+ */
+function isUntaggedText(block: Record<string, unknown>): boolean {
+  if (block.type !== "text") return false;
+  const meta = block.metadata as Record<string, unknown> | undefined;
+  const role = meta && typeof meta === "object" ? meta.role : undefined;
+  return !role;
+}
+
+/**
+ * Index of the message's "primary" text block — the FIRST untagged text in
+ * `content`. Returns -1 if every text block has a role (legal but unusual).
+ *
+ * Why first-only: a user might add a second untagged text block by accident
+ * (e.g. clicked "Add Text" without setting a role). Treating ALL untagged
+ * text as primary would either drop their input on next textarea edit or
+ * silently merge it. Treating ONLY the first untagged text as primary keeps
+ * subsequent untagged blocks visible in the BlockList — the user can then
+ * either tag them with a role, edit them, or remove them.
+ */
+function findPrimaryIndex(blocks: Record<string, unknown>[]): number {
+  return blocks.findIndex(isUntaggedText);
+}
+
 /** Compute character offset of (node, offset) within `root`'s text content. */
 function getOffsetWithinRoot(root: Node, node: Node, offset: number): number {
   const range = document.createRange();
@@ -120,21 +146,44 @@ export function MessageItem({
   const rawBlocks: Record<string, unknown>[] = message
     ? (message.content as unknown as Record<string, unknown>[])
     : [];
-  const textBlockRaw = rawBlocks.find((b) => b.type === "text");
-  const currentText = textBlockRaw ? extractTextFromBlock(textBlockRaw) : "";
-  const nonTextBlocks = rawBlocks.filter((b) => b.type !== "text");
+  const primaryIndex = findPrimaryIndex(rawBlocks);
+  const primaryTextBlock =
+    primaryIndex >= 0 ? rawBlocks[primaryIndex] : undefined;
+  const currentText = primaryTextBlock
+    ? extractTextFromBlock(primaryTextBlock)
+    : "";
+  // Everything except the message's primary text — role-tagged text
+  // (negative_prompt, etc.), media blocks, AND any subsequent untagged
+  // text blocks (the user can either tag those with a role or edit them
+  // out). Listed in their `content` order so the indices passed to
+  // remove/update map back deterministically.
+  const extraBlocks = rawBlocks.filter((_, i) => i !== primaryIndex);
 
   // Redux write-backs
   const handleTextChange = useCallback(
     (value: string) => {
       if (!allMessages || !message) return;
-      const nonText = rawBlocks.filter(
-        (b) => b.type !== "text",
-      ) as unknown as AgentDefinitionMessage["content"];
-      const updatedContent: AgentDefinitionMessage["content"] = [
-        { type: "text", text: value },
-        ...nonText,
-      ];
+      // Preserve every other block in place; only the primary text is
+      // rewritten. If no primary existed (every text block was role-tagged),
+      // prepend a fresh untagged text block when the user types something.
+      const idx = findPrimaryIndex(rawBlocks);
+      let updatedContent: AgentDefinitionMessage["content"];
+      if (idx >= 0) {
+        updatedContent = rawBlocks.map((b, i) =>
+          i === idx
+            ? ({ type: "text", text: value } as Record<string, unknown>)
+            : b,
+        ) as unknown as AgentDefinitionMessage["content"];
+      } else if (value) {
+        updatedContent = [
+          { type: "text", text: value },
+          ...rawBlocks,
+        ] as unknown as AgentDefinitionMessage["content"];
+      } else {
+        // No primary, empty value — leave content untouched.
+        updatedContent =
+          rawBlocks as unknown as AgentDefinitionMessage["content"];
+      }
       const updated = allMessages.map((m, i) =>
         i === messageIndex ? { ...m, content: updatedContent } : m,
       );
@@ -155,15 +204,14 @@ export function MessageItem({
   );
 
   const handleRemoveBlock = useCallback(
-    (blockIndexInNonText: number) => {
+    (blockIndexInExtras: number) => {
       if (!allMessages || !message) return;
-      let nonTextCount = -1;
-      const newContent = rawBlocks.filter((b) => {
-        if (b.type !== "text") {
-          nonTextCount++;
-          return nonTextCount !== blockIndexInNonText;
-        }
-        return true;
+      const primary = findPrimaryIndex(rawBlocks);
+      let extraCount = -1;
+      const newContent = rawBlocks.filter((_, i) => {
+        if (i === primary) return true;
+        extraCount++;
+        return extraCount !== blockIndexInExtras;
       }) as unknown as AgentDefinitionMessage["content"];
       const updated = allMessages.map((m, i) =>
         i === messageIndex ? { ...m, content: newContent } : m,
@@ -191,13 +239,12 @@ export function MessageItem({
   const handleUpdateBlock = useCallback(
     (index: number, block: Record<string, unknown>) => {
       if (!allMessages || !message) return;
-      let nonTextCount = -1;
-      const newContent = rawBlocks.map((b) => {
-        if (b.type !== "text") {
-          nonTextCount++;
-          return nonTextCount === index ? block : b;
-        }
-        return b;
+      const primary = findPrimaryIndex(rawBlocks);
+      let extraCount = -1;
+      const newContent = rawBlocks.map((b, i) => {
+        if (i === primary) return b;
+        extraCount++;
+        return extraCount === index ? block : b;
       }) as unknown as AgentDefinitionMessage["content"];
       const updated = allMessages.map((m, i) =>
         i === messageIndex ? { ...m, content: newContent } : m,
@@ -680,11 +727,11 @@ export function MessageItem({
           </div>
         )}
 
-        {/* Content blocks */}
-        {(nonTextBlocks.length > 0 || pendingAddType != null) && (
+        {/* Content blocks (non-primary: role-tagged text + media) */}
+        {(extraBlocks.length > 0 || pendingAddType != null) && (
           <div className="pt-2">
             <BlockList
-              blocks={nonTextBlocks}
+              blocks={extraBlocks}
               onUpdateBlock={handleUpdateBlock}
               onRemoveBlock={handleRemoveBlock}
               onAddBlock={handleAddBlock}
