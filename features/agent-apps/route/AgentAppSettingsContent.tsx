@@ -39,6 +39,12 @@ import { AgentBindingCompact } from "@/features/agent-apps/components/inputs/Age
 import { AgentVersionCompact } from "@/features/agent-apps/components/inputs/AgentVersionCompact";
 import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
 import { AgentAppHierarchyCascade } from "@/features/agent-apps/components/inputs/AgentAppHierarchyCascade";
+import { ShellPicker } from "@/features/agent-apps/components/builder/ShellPicker";
+import { ShellConfigPanel } from "@/features/agent-apps/components/builder/ShellConfigPanel";
+import type {
+  AgentAppShellConfigCommon,
+  AgentAppShellKind,
+} from "@/features/agent-apps/types";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
@@ -173,6 +179,7 @@ export function AgentAppSettingsContent({
           <TabsList>
             <TabsTrigger value="identity">Identity</TabsTrigger>
             <TabsTrigger value="agent">Agent</TabsTrigger>
+            <TabsTrigger value="layout">Layout</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="sharing">Sharing</TabsTrigger>
             <TabsTrigger value="danger">Danger</TabsTrigger>
@@ -255,6 +262,27 @@ export function AgentAppSettingsContent({
                 savingField === "use_latest"
               }
             />
+          </TabsContent>
+
+          {/* ── Layout (shell + config) ────────────────────────────────── */}
+          <TabsContent value="layout" className="space-y-5">
+            <Row label="Shell">
+              <ShellPicker
+                value={app.shell_kind as AgentAppShellKind}
+                onChange={(next) => saveField("shell_kind", next)}
+                disabled={savingField === "shell_kind"}
+              />
+            </Row>
+            <div className="border-t border-border/60 pt-4">
+              <ShellConfigPanel
+                shellKind={app.shell_kind as AgentAppShellKind}
+                value={
+                  (app.shell_config ?? {}) as AgentAppShellConfigCommon
+                }
+                onChange={(next) => saveField("shell_config", next)}
+                disabled={savingField === "shell_config"}
+              />
+            </div>
           </TabsContent>
 
           {/* ── Branding ───────────────────────────────────────────────── */}
