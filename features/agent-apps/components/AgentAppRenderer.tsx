@@ -30,6 +30,10 @@ export function AgentAppRenderer({ app, slug }: AgentAppRendererProps) {
     variable_schema: app.variable_schema,
     layout_config: app.layout_config,
     styling_config: app.styling_config,
+    shell_kind: app.shell_kind,
+    shell_config: app.shell_config,
+    slot_overrides: app.slot_overrides,
+    slot_code: app.slot_code,
     total_executions: app.total_executions,
     success_rate: app.success_rate,
   };

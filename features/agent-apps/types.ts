@@ -16,6 +16,90 @@ export type AppDisplayMode =
   | "centered-input"
   | "chat-with-history";
 
+// ============================================================================
+// Shell + slots model (Phase 1a — see plan)
+// ============================================================================
+//
+// Every app has a `shell_kind` that drives which top-level layout pattern
+// renders it. 'fully_custom' = the entire UI lives in `component_code` (text)
+// and is Babel-compiled at runtime — that's the legacy/escape-hatch path.
+// All other kinds render a built-in shell that consumes the universal
+// `useAgentApp()` hook.
+//
+// `shell_config` is per-shell settings (untyped on the DB, typed in TS per
+// shell_kind). `slot_overrides` declares which slots within the chosen shell
+// have been swapped for custom code; `slot_code` holds the actual code,
+// keyed by slot name.
+
+export type AgentAppShellKind =
+  | "chat"
+  | "form_to_result"
+  | "widget"
+  | "compact_modal"
+  | "full_modal"
+  | "sidebar_overlay"
+  | "floating_bubble"
+  | "inline_overlay"
+  | "panel_overlay"
+  | "toast_overlay"
+  | "card_stack"
+  | "fully_custom";
+
+/** Slot names a shell may expose for Tier-2 customisation. Stable contract. */
+export type AgentAppSlotName =
+  | "variableInput"
+  | "resultRenderer"
+  | "messageDisplay"
+  | "preExecutionGate"
+  | "input"
+  | "header"
+  | "historySidebar"
+  | "app"; // reserved for fully_custom whole-app code
+
+export type AgentAppSlotOverride = "default" | "custom";
+
+export type AgentAppSlotOverrides = Partial<
+  Record<AgentAppSlotName, AgentAppSlotOverride>
+>;
+
+export type AgentAppSlotCode = Partial<Record<AgentAppSlotName, string>>;
+
+/**
+ * Common shell_config keys that most shells honour. Per-shell additions are
+ * tolerated — the runtime never strict-validates this object.
+ */
+export interface AgentAppShellConfigCommon {
+  /** Display name override (defaults to app.name). */
+  title?: string;
+  /** Hide the shell's own title row. */
+  hideTitle?: boolean;
+  /** Auto-fire the first execution as soon as the shell mounts. */
+  autoRun?: boolean;
+  /**
+   * Allow the user to continue a conversation with the agent (turn 2+).
+   * Set false for one-shot apps.
+   */
+  allowChat?: boolean;
+  /**
+   * Variable input style — one of SmartAgentVariables' six variants.
+   * @see features/agents/components/inputs/variable-input-variations
+   */
+  variableInputStyle?:
+    | "form"
+    | "inline"
+    | "wizard"
+    | "compact"
+    | "guided"
+    | "cards";
+  /** History view location — sidebar / drawer / hidden. */
+  historyView?: "sidebar" | "drawer" | "hidden";
+  /** Branding overrides. */
+  primaryColor?: string;
+  accentColor?: string;
+  /** Layout density / scale. */
+  compact?: boolean;
+}
+
 export type ComponentLanguage =
   | "tsx"
   | "jsx"
@@ -88,6 +172,12 @@ export interface AgentAppRecord {
   variable_schema: VariableSchemaItem[] | Json;
   layout_config: LayoutConfig | Json;
   styling_config: StylingConfig | Json;
+
+  // Shell + slots model (Phase 1a). See AgentAppShellKind etc above.
+  shell_kind: AgentAppShellKind;
+  shell_config: AgentAppShellConfigCommon | Json;
+  slot_overrides: AgentAppSlotOverrides | Json;
+  slot_code: AgentAppSlotCode | Json;
 
   preview_image_url: string | null;
   favicon_url: string | null;
