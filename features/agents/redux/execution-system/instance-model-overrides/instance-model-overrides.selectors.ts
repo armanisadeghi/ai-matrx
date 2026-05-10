@@ -133,6 +133,56 @@ export const selectSettingsForChatApi =
   };
 
 /**
+ * Attachment capabilities derived from the merged settings.
+ *
+ * `image_urls`, `file_urls`, and `youtube_videos` are UI-only capability
+ * flags — they live in the raw state (baseSettings + overrides) but are
+ * stripped from the LLMParams type because they're never sent to the API.
+ * Casting through unknown is intentional and the only way to reach them
+ * without widening the LLMParams type.
+ */
+export const selectAttachmentCapabilities =
+  (conversationId: string) =>
+  (
+    state: RootState,
+  ): {
+    supportsImageUrls: boolean;
+    supportsFileUrls: boolean;
+    supportsYoutubeVideos: boolean;
+    supportsAudio: boolean;
+  } => {
+    const overrideState =
+      state.instanceModelOverrides.byConversationId[conversationId];
+
+    if (!overrideState) {
+      return {
+        supportsImageUrls: false,
+        supportsFileUrls: false,
+        supportsYoutubeVideos: false,
+        supportsAudio: true,
+      };
+    }
+
+    // Merge base + overrides - removals, same logic as selectCurrentSettings
+    const merged: Record<string, unknown> = {
+      ...(overrideState.baseSettings as Record<string, unknown>),
+    };
+    for (const [key, value] of Object.entries(overrideState.overrides)) {
+      merged[key] = value;
+    }
+    for (const key of overrideState.removals) {
+      delete merged[key];
+    }
+
+    return {
+      supportsImageUrls: merged["image_urls"] === true,
+      supportsFileUrls: merged["file_urls"] === true,
+      supportsYoutubeVideos: merged["youtube_videos"] === true,
+      supportsAudio: true,
+    };
+  };
+
+/**
  * Check if an instance has any overrides at all.
  */
 export const selectHasOverrides =

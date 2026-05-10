@@ -19,11 +19,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useDialogContainer } from "@/components/ui/dialog";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   addResource,
   setResourcePreview,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { ResourcePickerWindow } from "@/features/window-panels/windows/ResourcePickerWindow";
 import {
@@ -96,6 +97,10 @@ export function SmartAgentResourcePickerButton({
   const dispatch = useAppDispatch();
   const dialogContainer = useDialogContainer();
 
+  const attachmentCapabilities = useAppSelector(
+    selectAttachmentCapabilities(conversationId),
+  );
+
   const handleResourceSelected = useCallback(
     (resource: Resource) => {
       // Pickers deliver `Resource.type = "file"` for any uploaded file —
@@ -152,7 +157,7 @@ export function SmartAgentResourcePickerButton({
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
           onResourceSelected={handleResourceSelected}
-          attachmentCapabilities={undefined}
+          attachmentCapabilities={attachmentCapabilities}
           position="center"
         />
       </>
@@ -172,7 +177,7 @@ export function SmartAgentResourcePickerButton({
         <ResourcePickerMenu
           onResourceSelected={handleResourceSelected}
           onClose={() => setIsOpen(false)}
-          attachmentCapabilities={undefined}
+          attachmentCapabilities={attachmentCapabilities}
         />
       </PopoverContent>
     </Popover>

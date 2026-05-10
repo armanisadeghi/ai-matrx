@@ -15,9 +15,9 @@ export default async function AgentAppCodePage({ params }: CodePageProps) {
 
   return (
     <>
-      <PageHeader>
+      {/* <PageHeader>
         <AgentAppHeader appId={app.id} appName={app.name} active="code" />
-      </PageHeader>
+      </PageHeader> */}
       <AgentAppEditPageClient app={app} />
     </>
   );

@@ -95,6 +95,64 @@ export interface NormalizedControls {
   image_loras?: ControlDefinition;
   reference_images?: ControlDefinition;
 
+  // ── Media-gen extensions ──────────────────────────────────────────────
+  // Each model declares its controls using the provider's exact field
+  // names (per the controls-JSONB-is-truth design). The Python boundary
+  // normalises provider-native names (e.g. `seconds`, `quality`,
+  // `num_outputs`) to canonical UnifiedConfig fields at request time, so
+  // the FE never has to translate. We just need the slots typed here so
+  // the parser doesn't dump them into unmappedControls.
+
+  // Dimensions (canonical + provider-native variants)
+  aspect_ratio?: ControlDefinition;
+  ratio?: ControlDefinition;             // Together video / Replicate Runway
+  resolution?: ControlDefinition;
+  image_size?: ControlDefinition;        // Google Imagen / Gemini-image
+  num_outputs?: ControlDefinition;       // Replicate alias for count
+  number_of_images?: ControlDefinition;  // Imagen direct alias for count
+
+  // Image quality / encoding
+  render_quality?: ControlDefinition;    // canonical for OpenAI gpt-image-* "quality"
+  background?: ControlDefinition;        // OpenAI gpt-image-1.5 only supports transparent
+  input_fidelity?: ControlDefinition;    // OpenAI gpt-image-1.5 only
+  output_compression?: ControlDefinition; // OpenAI gpt-image-2 jpeg/webp 0..100
+  moderation?: ControlDefinition;        // OpenAI moderation level
+  partial_images?: ControlDefinition;    // OpenAI streaming partials count
+  output_mime_type?: ControlDefinition;  // Imagen direct API
+  include_rai_reason?: ControlDefinition; // Imagen safety-reason toggle
+  person_generation?: ControlDefinition; // Imagen + Veo policy
+  image_format?: ControlDefinition;      // xAI base64/url
+  style?: ControlDefinition;             // Recraft v4 / DALL-E-style
+  reference_strength?: ControlDefinition; // i2i strength 0..1
+
+  // Video duration / audio
+  duration_seconds?: ControlDefinition;  // canonical
+  duration?: ControlDefinition;          // xAI video / Replicate native
+  generate_audio?: ControlDefinition;    // canonical for video audio toggle
+  encode_quality?: ControlDefinition;    // canonical for Together video bitrate
+  enhance_prompt?: ControlDefinition;    // Veo 3.1 + several Together models
+  video_action?: ControlDefinition;      // generate / edit / extend
+
+  // MediaRef-shaped inputs (provider-native names; render via media picker
+  // or — until that ships — as plain text inputs that accept a URL or
+  // file_id). The cld_files system is the single ingress/egress path; the
+  // value's wire shape is { file_id?, url?, mime_type?, base64_data? }.
+  image_input?: ControlDefinition;       // canonical single-image input
+  image_inputs?: ControlDefinition;      // canonical multi-image input
+  input_images?: ControlDefinition;      // Replicate gpt-image-* plural alias
+  image?: ControlDefinition;             // Replicate Seedream/Veo/Wan/Seedance
+  image_url?: ControlDefinition;         // Together image i2i (singular; differs from FE-only image_urls flag)
+  start_image?: ControlDefinition;       // Replicate Kling first-frame
+  end_image?: ControlDefinition;         // Replicate Kling last-frame
+  prompt_image?: ControlDefinition;      // Replicate Runway image-to-video
+  first_frame_image?: ControlDefinition; // Replicate Hailuo
+  start_image_url?: ControlDefinition;   // Replicate Luma Ray-3
+  last_frame?: ControlDefinition;        // Google Veo SDK native
+  last_frame_image?: ControlDefinition;  // canonical + Replicate Veo
+  mask?: ControlDefinition;              // OpenAI gpt-image-* inpaint mask
+  video_input?: ControlDefinition;       // Sora/xAI video edit/extend source
+  media?: ControlDefinition;             // Together Wan I2V {image: url}
+
   // Raw controls for debugging
   rawControls: Record<string, any>;
 
@@ -195,8 +253,9 @@ export function useModelControls(models: any[], selectedModelId: string) {
   // Frontend-only keys (not in LLMParams) are listed separately.
   const knownKeys = new Set<string>([
     ...LLM_PARAMS_KEYS,
-    // Legacy DB keys — normalizer converts these at the Redux boundary,
-    // but we still recognise them here for any un-normalised controls data.
+    // Pre-canonical-rename DB keys — Python's LLMParams._remap_aliases
+    // normalises these at the API boundary. Recognised here so the FE
+    // renders them when a model's controls JSONB declares them.
     "max_tokens",
     "output_format",
     "n",
@@ -208,6 +267,61 @@ export function useModelControls(models: any[], selectedModelId: string) {
     "image_urls",
     "youtube_videos",
     "multi_speaker",
+    // ── Media-gen provider-native names (May 2026) ────────────────────
+    // Each model's controls JSONB carries the EXACT field names the
+    // provider's API accepts. Python normalises aliases (`seconds` →
+    // `duration_seconds`, `quality` → `render_quality`, `n` /
+    // `num_outputs` / `number_of_images` → `count`, etc.). The FE just
+    // needs to recognise these as valid control keys so the parser
+    // surfaces them in NormalizedControls instead of dumping to
+    // unmappedControls.
+
+    // Dimensions
+    "aspect_ratio",
+    "ratio",            // Together video / Replicate Runway
+    "resolution",
+    "image_size",       // Imagen / Gemini-image
+    "num_outputs",      // Replicate
+    "number_of_images", // Imagen direct
+
+    // Image quality / encoding
+    "render_quality",
+    "background",
+    "input_fidelity",
+    "output_compression",
+    "moderation",
+    "partial_images",
+    "output_mime_type", // Imagen direct
+    "include_rai_reason",
+    "person_generation",
+    "image_format",     // xAI base64/url
+    "style",
+    "reference_strength",
+
+    // Video
+    "duration_seconds",
+    "duration",         // xAI / Replicate native
+    "generate_audio",
+    "encode_quality",
+    "enhance_prompt",
+    "video_action",
+
+    // MediaRef-shaped inputs
+    "image_input",
+    "image_inputs",
+    "input_images",     // Replicate gpt-image-*
+    "image",            // Replicate Seedream/Veo/Wan/Seedance
+    "image_url",        // Together image i2i singular (separate from FE flag image_urls)
+    "start_image",      // Replicate Kling
+    "end_image",        // Replicate Kling
+    "prompt_image",     // Replicate Runway
+    "first_frame_image", // Replicate Hailuo
+    "start_image_url",  // Replicate Luma Ray-3
+    "last_frame",       // Google Veo SDK
+    "last_frame_image", // canonical + Replicate Veo
+    "mask",
+    "video_input",
+    "media",            // Together Wan I2V
   ]);
 
   // Parse each control
