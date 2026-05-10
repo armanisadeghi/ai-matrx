@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,6 +54,20 @@ interface AutoCreateAgentAppFormProps {
   agents: any[];
   categories: any[];
   onSuccess?: () => void;
+  /**
+   * Start the form in a specific sub-mode (additive — defaults to today's
+   * "initial" behavior so existing callers are unaffected).
+   * "auto-fire" fires the Auto Create flow immediately on mount, skipping
+   * the internal mode-selection screen — used by the wrapper's "Let Us
+   * Handle It" card.
+   */
+  initialMode?: "initial" | "select" | "describe" | "auto-fire";
+  /**
+   * Override the back button so it returns to the wrapper's mode-selection
+   * grid rather than the form's own "initial" view (which would now be a
+   * duplicate of what the user just clicked on).
+   */
+  onBack?: () => void;
 }
 
 type CreationMode = "initial" | "select" | "describe";
@@ -63,8 +77,14 @@ export function AutoCreateAgentAppForm({
   agents,
   categories,
   onSuccess,
+  initialMode,
+  onBack,
 }: AutoCreateAgentAppFormProps) {
-  const [creationMode, setCreationMode] = useState<CreationMode>("initial");
+  const startMode: CreationMode =
+    initialMode === "select" || initialMode === "describe"
+      ? initialMode
+      : "initial";
+  const [creationMode, setCreationMode] = useState<CreationMode>(startMode);
   const [format, setFormat] = useState<FormatType | null>("form");
   const [displayMode, setDisplayMode] = useState<DisplayMode | null>(
     "matrx-format",
@@ -177,13 +197,37 @@ export function AutoCreateAgentAppForm({
     setIncludedVariables(initialState);
   }, [agent]);
 
-  // Reset to initial mode when agent changes
+  // Reset to initial mode when agent changes. When the wrapper has pinned
+  // the mode via `initialMode`, respect that pin so the wrapper's deep-link
+  // (e.g. "Customize Options" card → start in "select" mode) isn't undone.
   useEffect(() => {
-    setCreationMode("initial");
+    if (!initialMode || initialMode === "initial") {
+      setCreationMode("initial");
+    } else if (initialMode === "select" || initialMode === "describe") {
+      setCreationMode(initialMode);
+    }
     setError(null);
     setErrorModelResponse(null);
     setShowFullResponse(false);
-  }, [agent?.id]);
+  }, [agent?.id, initialMode]);
+
+  // Auto-fire: when the wrapper's "Let Us Handle It" card mounts this form
+  // with initialMode="auto-fire", trigger the AI auto-flow immediately on
+  // mount (deduped via ref so React strict-mode's double-mount doesn't
+  // submit twice).
+  const autoFireRef = React.useRef(false);
+  useEffect(() => {
+    if (initialMode !== "auto-fire") return;
+    if (autoFireRef.current) return;
+    if (!agent?.id) return;
+    autoFireRef.current = true;
+    void handleAutoCreate();
+    // handleAutoCreate is closed-over via the function declared below; it
+    // reads state via captured setters, so leaving it out of the dep array
+    // is intentional (this effect should fire once, not whenever any state
+    // changes).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMode, agent?.id]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -500,7 +544,7 @@ export function AutoCreateAgentAppForm({
         <div className="space-y-4">
           <Button
             variant="ghost"
-            onClick={() => setCreationMode("initial")}
+            onClick={() => (onBack ? onBack() : setCreationMode("initial"))}
             className="gap-2"
             disabled={isCreating}
           >
