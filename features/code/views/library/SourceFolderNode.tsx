@@ -236,3 +236,4 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
     </div>
   );
 };
+

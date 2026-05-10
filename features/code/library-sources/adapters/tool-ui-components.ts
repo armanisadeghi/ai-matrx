@@ -6,6 +6,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   LibrarySourceAdapter,
   LoadedSourceEntry,
+  RenameSourceArgs,
+  RenameSourceResult,
   SaveSourceArgs,
   SaveSourceResult,
   SourceEntry,
@@ -238,6 +240,52 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
       );
     }
     return { updatedAt: (data as { updated_at: string }).updated_at };
+  },
+
+  /**
+   * Rename a tool-ui component row. Updates `display_name` only — the
+   * per-field extensions are fixed by the adapter's FIELDS map (since
+   * each leaf maps to a specific column, not a generic file), so there
+   * is no extension to derive from the typed name.
+   *
+   * Any extension the user types (e.g. `.tsx`) is stripped from the
+   * persisted display name so the tree shows the human-readable form.
+   */
+  async rename(
+    supabase: SupabaseClient,
+    args: RenameSourceArgs,
+  ): Promise<RenameSourceResult> {
+    const trimmed = args.newName.trim();
+    if (!trimmed) throw new Error("Name cannot be empty.");
+
+    // Strip a trailing extension if present — display names for tool-ui
+    // rows are folder labels, not filenames.
+    const dot = trimmed.lastIndexOf(".");
+    const baseName =
+      dot > 0 && dot < trimmed.length - 1 ? trimmed.slice(0, dot) : trimmed;
+
+    let query = supabase
+      .from("tl_ui")
+      .update({ display_name: baseName })
+      .eq("id", args.rowId);
+    if (args.expectedUpdatedAt) {
+      query = query.eq("updated_at", args.expectedUpdatedAt);
+    }
+
+    const { data, error } = await query
+      .select("updated_at,display_name,tool_name")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new RemoteConflictError("tool_ui_components", args.rowId);
+    const row = data as {
+      updated_at: string;
+      display_name: string | null;
+      tool_name: string;
+    };
+    return {
+      updatedAt: row.updated_at,
+      appliedName: row.display_name || row.tool_name,
+    };
   },
 };
 
