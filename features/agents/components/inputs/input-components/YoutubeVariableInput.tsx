@@ -3,15 +3,15 @@
 /**
  * YoutubeVariableInput
  *
- * YouTube has no upload flow — the user pastes a URL or video ID. We
- * normalize to a full URL and validate lightly. Value shape mirrors
- * MediaRef ({ url }) for consistency with the other media inputs.
+ * YouTube has no upload flow — the user pastes a URL or video ID.
+ * Variable value is a plain string so it substitutes into a message
+ * block's `url` field exactly the same way a directly-attached
+ * youtube_video block does.
  */
 
 import { Youtube as YoutubeIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { MediaRef } from "@/features/files/types";
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 const URL_PATTERN =
@@ -28,12 +28,12 @@ export function extractYoutubeId(input: string): string | null {
 
 interface YoutubeVariableInputProps {
   value: unknown;
-  onChange: (v: MediaRef | null) => void;
+  onChange: (v: string) => void;
   variableName: string;
   compact?: boolean;
 }
 
-function readUrl(value: unknown): string {
+function readString(value: unknown): string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object") {
     const o = value as Record<string, unknown>;
@@ -48,18 +48,9 @@ export function YoutubeVariableInput({
   variableName,
   compact = false,
 }: YoutubeVariableInputProps) {
-  const current = readUrl(value);
+  const current = readString(value);
   const id = extractYoutubeId(current);
   const showWarning = current.length > 0 && !id;
-
-  const handleChange = (raw: string) => {
-    const trimmed = raw.trim();
-    if (!trimmed) {
-      onChange(null);
-      return;
-    }
-    onChange({ url: trimmed });
-  };
 
   return (
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
@@ -72,7 +63,7 @@ export function YoutubeVariableInput({
         />
         <Input
           value={current}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder="https://youtube.com/watch?v=… or 11-char video ID"
           aria-label={`YouTube URL for ${variableName}`}
           className="h-8 text-xs font-mono"

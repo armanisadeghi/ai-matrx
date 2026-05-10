@@ -641,13 +641,7 @@ export function AgentVariablesGuided({
 
   const answeredCount = variableDefaults.filter((v) => {
     const val = values[v.name] ?? v.defaultValue ?? "";
-    if (val == null) return false;
-    if (typeof val === "string") return val.trim() !== "";
-    if (typeof val === "object") {
-      const o = val as Record<string, unknown>;
-      return Boolean(o.file_id || o.url || o.file_uri);
-    }
-    return String(val).trim() !== "";
+    return String(val ?? "").trim() !== "";
   }).length;
 
   const goNext = useCallback(() => {
@@ -709,18 +703,7 @@ export function AgentVariablesGuided({
     <div className="flex items-center gap-1">
       {variableDefaults.map((v, i) => {
         const raw = values[v.name] ?? v.defaultValue ?? "";
-        const filled =
-          raw == null
-            ? false
-            : typeof raw === "string"
-              ? raw.trim() !== ""
-              : typeof raw === "object"
-                ? Boolean(
-                    (raw as Record<string, unknown>).file_id ||
-                      (raw as Record<string, unknown>).url ||
-                      (raw as Record<string, unknown>).file_uri,
-                  )
-                : String(raw).trim() !== "";
+        const filled = String(raw ?? "").trim() !== "";
         const isCurrent = i === activeIndex;
         return (
           <span

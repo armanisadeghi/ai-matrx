@@ -115,21 +115,10 @@ export function AgentVariablesInline({
       {definitions.map((variable, index) => {
         const isExpanded = expandedVariableId === variable.name;
         const rawValue = userValues[variable.name] ?? variable.defaultValue ?? "";
-        // For the compact inline strip and the popover preview row we still
-        // need a short string. Media-typed values are objects — render a
-        // brief locator instead of "[object Object]".
+        // Variable values are strings (text-style or URL for media). Coerce
+        // defensively so legacy object shapes don't render as "[object Object]".
         const displayValue: string =
-          typeof rawValue === "string"
-            ? rawValue
-            : rawValue && typeof rawValue === "object"
-              ? (() => {
-                  const o = rawValue as Record<string, unknown>;
-                  if (typeof o.file_id === "string") return `cld:${(o.file_id as string).slice(0, 8)}…`;
-                  if (typeof o.url === "string") return o.url as string;
-                  if (typeof o.file_uri === "string") return o.file_uri as string;
-                  return "";
-                })()
-              : String(rawValue ?? "");
+          typeof rawValue === "string" ? rawValue : String(rawValue ?? "");
 
         if (isExpanded) {
           return (
@@ -172,7 +161,7 @@ export function AgentVariablesInline({
                 sideOffset={0}
               >
                 <VariableInputComponent
-                  value={rawValue}
+                  value={displayValue}
                   onChange={(v) => handleValueChange(variable.name, v)}
                   variableName={variable.name}
                   customComponent={variable.customComponent}

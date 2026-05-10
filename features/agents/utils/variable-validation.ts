@@ -76,18 +76,8 @@ export function validateVariable(
 
     // ── YouTube — when a default value is set, it must look like a YT URL ──
     if (cc.type === "youtube") {
-      const def = v.defaultValue;
-      let candidate = "";
-      if (typeof def === "string") candidate = def;
-      else if (def && typeof def === "object") {
-        const o = def as Record<string, unknown>;
-        if (typeof o.url === "string") candidate = o.url;
-      }
-      if (
-        candidate.trim() &&
-        !YOUTUBE_ID.test(candidate.trim()) &&
-        !YOUTUBE_URL.test(candidate.trim())
-      ) {
+      const candidate = typeof v.defaultValue === "string" ? v.defaultValue.trim() : "";
+      if (candidate && !YOUTUBE_ID.test(candidate) && !YOUTUBE_URL.test(candidate)) {
         issues.push({ field: "youtube", code: "invalid-url" });
       }
     }
