@@ -67,7 +67,6 @@ import {
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
-import { AgentSettingMediaPicker } from "./AgentSettingMediaPicker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,33 +81,12 @@ import {
 // ── Tab type ─────────────────────────────────────────────────────────────────
 type SettingsTab = "settings" | "raw" | "raw-edit" | "model-config";
 
-// ── Media-ref-shaped settings ────────────────────────────────────────────────
-// Single-MediaRef keys: provider-native names that carry one image/video
-// reference. Renders via <AgentSettingMediaPicker multi=false>.
-const MEDIA_REF_KEYS = new Set<string>([
-  "image_input",
-  "image",
-  "image_url",
-  "start_image",
-  "end_image",
-  "prompt_image",
-  "first_frame_image",
-  "start_image_url",
-  "last_frame",
-  "last_frame_image",
-  "mask",
-  "video_input",
-  "media",
-]);
-// Multi-MediaRef keys: arrays of refs.
-// (image_loras is intentionally excluded — it's `[{path, scale}]`, not
-//  MediaRef-shaped. Falls through to the existing object_array fallback.)
-const MEDIA_REF_ARRAY_KEYS = new Set<string>([
-  "image_inputs",
-  "input_images",
-  "reference_images",
-  "frame_images",
-]);
+// NOTE: media inputs (image_input, start_image, end_image, mask, etc.) do
+// NOT belong on agent settings — they're per-run user inputs that flow
+// through user message parts. See MEDIA_GENERATION_SETTINGS.md §13 for
+// the architecture. The AgentSettingMediaPicker component is kept as a
+// building block for the user-input side (where the engineer-overridable
+// equivalents will be configured), not used here.
 
 // ── NumberInput ──────────────────────────────────────────────────────────────
 interface NumberInputProps {
@@ -1408,31 +1386,6 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     value: unknown,
     isEnabled: boolean,
   ) => {
-    // ── Media-ref-shaped controls render the resource picker ──
-    // The picker uses the existing cld_files-managed file-handler path
-    // (refineBlockType + resourceDataToSource) — no alternate ingress.
-    const keyStr = key as string;
-    if (MEDIA_REF_KEYS.has(keyStr)) {
-      return (
-        <AgentSettingMediaPicker
-          value={value}
-          multi={false}
-          isEnabled={isEnabled}
-          onChange={(v) => handleSettingChange(key, v)}
-        />
-      );
-    }
-    if (MEDIA_REF_ARRAY_KEYS.has(keyStr)) {
-      return (
-        <AgentSettingMediaPicker
-          value={value}
-          multi={true}
-          isEnabled={isEnabled}
-          onChange={(v) => handleSettingChange(key, v)}
-        />
-      );
-    }
-
     let actualValue =
       value ??
       control.default ??
@@ -1822,32 +1775,6 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     { key: "video_action" as keyof LLMParams, label: "Video Action" },
   ];
 
-  // MediaRef-shaped inputs — rendered as plain string controls until the
-  // dedicated <MediaPicker> widget ships. Per the cld_files architecture,
-  // any media routed through the platform flows through the Python-managed
-  // path and lands in Supabase metadata; the value carried here is just a
-  // reference (URL or file_id) to that record.
-  const mediaInputSettings: { key: keyof LLMParams; label: string }[] = [
-    { key: "image_input" as keyof LLMParams, label: "Input Image" },
-    { key: "image_inputs" as keyof LLMParams, label: "Input Images" },
-    { key: "input_images" as keyof LLMParams, label: "Input Images (Replicate)" },
-    { key: "image" as keyof LLMParams, label: "Image" },
-    { key: "image_url" as keyof LLMParams, label: "Image URL" },
-    { key: "start_image" as keyof LLMParams, label: "Start Image" },
-    { key: "end_image" as keyof LLMParams, label: "End Image" },
-    { key: "prompt_image" as keyof LLMParams, label: "Prompt Image" },
-    { key: "first_frame_image" as keyof LLMParams, label: "First Frame Image" },
-    { key: "start_image_url" as keyof LLMParams, label: "Start Image URL" },
-    { key: "last_frame" as keyof LLMParams, label: "Last Frame" },
-    { key: "last_frame_image" as keyof LLMParams, label: "Last Frame Image" },
-    { key: "mask" as keyof LLMParams, label: "Inpaint Mask" },
-    { key: "video_input" as keyof LLMParams, label: "Source Video" },
-    { key: "media" as keyof LLMParams, label: "Media" },
-    { key: "frame_images" as keyof LLMParams, label: "Frame Images" },
-    { key: "reference_images" as keyof LLMParams, label: "Reference Images" },
-    { key: "image_loras" as keyof LLMParams, label: "Image LoRAs" },
-  ];
-
   const audioSettings: { key: keyof LLMParams; label: string }[] = [
     { key: "audio_format", label: "Audio Format" },
   ];
@@ -2049,29 +1976,6 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
               );
             })()}
 
-            {/* Media inputs (image/video file references). Same filter
-                semantics as the other groups: shows when the model
-                declares the control OR the agent has a value already. */}
-            {(() => {
-              const rows = mediaInputSettings.filter(
-                ({ key }) =>
-                  !!getControl(key) ||
-                  (currentSettings as Record<string, unknown>)[key] !==
-                    undefined,
-              );
-              if (rows.length === 0) return null;
-              return (
-                <div className="border-t pt-2 mt-2">
-                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Media Inputs
-                  </div>
-                  {rows.map(({ key, label }) =>
-                    renderControl(key, label, getControl(key) ?? null),
-                  )}
-                </div>
-              );
-            })()}
-
             {/* Boolean / Feature flags */}
             {(() => {
               const rows = booleanSettings.filter(
@@ -2099,7 +2003,6 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
               const hardcodedKeys = new Set<string>([
                 ...textModelSettings.map((s) => s.key as string),
                 ...imageVideoSettings.map((s) => s.key as string),
-                ...mediaInputSettings.map((s) => s.key as string),
                 ...audioSettings.map((s) => s.key as string),
                 ...booleanSettings.map((s) => s.key as string),
                 "tts_voice",

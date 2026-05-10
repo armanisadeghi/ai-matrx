@@ -40,7 +40,7 @@ export function AgentVariablesStacked({
   );
 
   const handleVariableValueChange = useCallback(
-    (variableName: string, value: string) => {
+    (variableName: string, value: unknown) => {
       dispatch(
         setUserVariableValue({ conversationId, name: variableName, value }),
       );
@@ -60,11 +60,7 @@ export function AgentVariablesStacked({
     <div className="max-h-72 overflow-y-auto bg-transparent border-b border-border">
       {variableDefaults.map((variable, index) => {
         const value =
-          (variableValues[variable.name] as string | undefined) ??
-          variable.defaultValue ??
-          "";
-        const strValue =
-          typeof value === "string" ? value : String(value ?? "");
+          variableValues[variable.name] ?? variable.defaultValue ?? "";
         const isLast = index === variableDefaults.length - 1;
         const isFirst = index === 0;
 
@@ -77,7 +73,7 @@ export function AgentVariablesStacked({
               className={`px-3 bg-transparent ${isFirst ? "pt-2.5" : "pt-2"} ${!isLast ? "pb-2" : "pb-2.5"}`}
             >
               <VariableInputComponent
-                value={strValue}
+                value={value}
                 onChange={(newValue) =>
                   handleVariableValueChange(variable.name, newValue)
                 }

@@ -13,6 +13,7 @@ import {
   Check,
   Pencil,
   Eye,
+  Tag,
 } from "lucide-react";
 import {
   Dialog,
@@ -133,6 +134,106 @@ function getConfig(type: string): BlockTypeConfig | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// MetadataPair[] <-> Record<string, unknown> helpers
+// ---------------------------------------------------------------------------
+//
+// The block-shape stores metadata as Record<string, unknown>; the editor
+// works with an ordered list so users can edit pairs without keys colliding
+// while typing. Empty rows are pruned at confirm time.
+
+interface MetadataPair {
+  key: string;
+  value: string;
+}
+
+function metadataToPairs(
+  metadata: Record<string, unknown> | undefined,
+): MetadataPair[] {
+  if (!metadata) return [];
+  return Object.entries(metadata).map(([key, value]) => ({
+    key,
+    value:
+      typeof value === "string"
+        ? value
+        : value === null || value === undefined
+          ? ""
+          : JSON.stringify(value),
+  }));
+}
+
+function pairsToMetadata(
+  pairs: MetadataPair[],
+): Record<string, unknown> | undefined {
+  const out: Record<string, unknown> = {};
+  for (const { key, value } of pairs) {
+    const k = key.trim();
+    if (!k) continue;
+    out[k] = value;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+interface MetadataEditorProps {
+  pairs: MetadataPair[];
+  onChange: (next: MetadataPair[]) => void;
+}
+
+function MetadataEditor({ pairs, onChange }: MetadataEditorProps) {
+  const updatePair = (i: number, patch: Partial<MetadataPair>) => {
+    onChange(pairs.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  };
+
+  const removePair = (i: number) => {
+    onChange(pairs.filter((_, idx) => idx !== i));
+  };
+
+  const addPair = () => {
+    onChange([...pairs, { key: "", value: "" }]);
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">
+        <Tag className="w-3 h-3" />
+        <span>Metadata (optional)</span>
+      </div>
+      {pairs.map((p, i) => (
+        <div key={i} className="flex items-center gap-1">
+          <Input
+            value={p.key}
+            onChange={(e) => updatePair(i, { key: e.target.value })}
+            placeholder="key"
+            className="h-6 text-[11px] font-mono flex-1"
+          />
+          <Input
+            value={p.value}
+            onChange={(e) => updatePair(i, { value: e.target.value })}
+            placeholder="value"
+            className="h-6 text-[11px] font-mono flex-[2]"
+          />
+          <button
+            type="button"
+            onClick={() => removePair(i)}
+            className="p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors"
+            title="Remove metadata pair"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addPair}
+        className="self-start flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <Plus className="w-3 h-3" />
+        Add metadata
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // BlockEditor — shared form for add + edit
 // ---------------------------------------------------------------------------
 
@@ -140,7 +241,7 @@ interface BlockEditorProps {
   /** null = adding new; string = type of existing block being edited */
   blockType: BlockType | null;
   /** Current field values (for edit mode) */
-  initialValues?: Record<string, string>;
+  initialValues?: Record<string, unknown>;
   onConfirm: (block: Record<string, unknown>) => void;
   onCancel: () => void;
   onSelectType?: (type: BlockType) => void;
@@ -159,9 +260,15 @@ export function BlockEditor({
   const [values, setValues] = useState<Record<string, string>>(
     config
       ? Object.fromEntries(
-          config.fields.map((f) => [f.key, initialValues[f.key] ?? ""]),
+          config.fields.map((f) => {
+            const v = initialValues[f.key];
+            return [f.key, typeof v === "string" ? v : ""];
+          }),
         )
       : {},
+  );
+  const [metadataPairs, setMetadataPairs] = useState<MetadataPair[]>(
+    () => metadataToPairs(initialValues.metadata as Record<string, unknown> | undefined),
   );
   const openImageUploader = useOpenImageUploaderWindow();
 
@@ -174,6 +281,8 @@ export function BlockEditor({
       const v = values[key]?.trim();
       if (v) block[key] = v;
     });
+    const meta = pairsToMetadata(metadataPairs);
+    if (meta) block.metadata = meta;
     onConfirm(block);
   };
 
@@ -267,6 +376,8 @@ export function BlockEditor({
           </div>
         );
       })}
+
+      <MetadataEditor pairs={metadataPairs} onChange={setMetadataPairs} />
 
       <div className="flex items-center justify-end gap-1.5">
         <Button
@@ -383,11 +494,24 @@ export function BlockRow({
     imgUrl &&
     (imgUrl.startsWith("http") || imgUrl.startsWith("data:"));
 
+  const metadata = block.metadata as Record<string, unknown> | undefined;
+  const metadataCount =
+    metadata && typeof metadata === "object" ? Object.keys(metadata).length : 0;
+
   return (
     <div className="flex flex-col gap-0.5 w-full px-2 py-1.5 rounded-md border border-border bg-card text-xs group/row">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground shrink-0">{icon}</span>
         <span className="font-medium shrink-0">{label}</span>
+        {metadataCount > 0 && (
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 shrink-0 inline-flex items-center gap-0.5"
+            title={`${metadataCount} metadata field${metadataCount === 1 ? "" : "s"}: ${Object.keys(metadata!).join(", ")}`}
+          >
+            <Tag className="w-2.5 h-2.5" />
+            {metadataCount}
+          </span>
+        )}
         <div className="flex items-center gap-0.5 shrink-0 ml-auto opacity-0 group-hover/row:opacity-100 transition-opacity">
           <button
             onClick={onEdit}
@@ -527,7 +651,7 @@ export function BlockList({
           <BlockEditor
             key={i}
             blockType={block.type as BlockType}
-            initialValues={block as Record<string, string>}
+            initialValues={block}
             onConfirm={handleUpdated}
             onCancel={() => setEditingIndex(null)}
             isEdit

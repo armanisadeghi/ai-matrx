@@ -30,6 +30,12 @@ import type {
   VariableDefinition,
   VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
+import { ImageVariableInput } from "@/features/agents/components/inputs/input-components/ImageVariableInput";
+import { AudioVariableInput } from "@/features/agents/components/inputs/input-components/AudioVariableInput";
+import { VideoVariableInput } from "@/features/agents/components/inputs/input-components/VideoVariableInput";
+import { DocumentVariableInput } from "@/features/agents/components/inputs/input-components/DocumentVariableInput";
+import { YoutubeVariableInput } from "@/features/agents/components/inputs/input-components/YoutubeVariableInput";
 
 const IOS_INPUT_STYLE = { fontSize: "16px" } as const;
 
@@ -261,6 +267,25 @@ function VariableField({ def, value, onChange }: VariableFieldProps) {
             ))}
           </SelectContent>
         </Select>
+      </div>
+    );
+  }
+
+  if (cc && isMediaVariableType(cc.type)) {
+    const sharedProps = {
+      value,
+      onChange,
+      variableName: def.name,
+      compact: false,
+    };
+    return (
+      <div>
+        {fieldLabel}
+        {cc.type === "image" && <ImageVariableInput {...sharedProps} />}
+        {cc.type === "audio" && <AudioVariableInput {...sharedProps} />}
+        {cc.type === "video" && <VideoVariableInput {...sharedProps} />}
+        {cc.type === "document" && <DocumentVariableInput {...sharedProps} />}
+        {cc.type === "youtube" && <YoutubeVariableInput {...sharedProps} />}
       </div>
     );
   }

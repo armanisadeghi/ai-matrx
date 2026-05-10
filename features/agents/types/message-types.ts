@@ -72,6 +72,12 @@ export interface ImageBlock {
    * "low" | "medium" | "high". Ignored by OpenAI and Anthropic.
    */
   media_resolution?: "low" | "medium" | "high";
+  /**
+   * Free-form per-block metadata, forwarded to the model context as-is.
+   * Authors set this in the agent builder (e.g. { role: "first_frame" }).
+   * Mirrors `MediaRef.metadata`.
+   */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -107,6 +113,8 @@ export interface AudioBlock {
   transcription_model?: string;
   /** ISO-639-1 language hint e.g. "en", "es". Auto-detected if omitted. */
   transcription_language?: string;
+  /** Free-form per-block metadata. Mirrors `MediaRef.metadata`. */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -130,6 +138,8 @@ export interface VideoBlock {
   file_uri?: string;
   /** MIME type e.g. "video/mp4". Auto-detected if omitted. */
   mime_type?: string;
+  /** Free-form per-block metadata. Mirrors `MediaRef.metadata`. */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -141,6 +151,8 @@ export interface YouTubeVideoBlock {
   type: "youtube_video";
   /** Full YouTube URL: "https://youtube.com/watch?v=..." or "https://youtu.be/..." */
   url: string;
+  /** Free-form per-block metadata. */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -160,6 +172,8 @@ export interface DocumentBlock {
   base64_data?: string;
   /** MIME type e.g. "application/pdf". Auto-detected if omitted. */
   mime_type?: string;
+  /** Free-form per-block metadata. Mirrors `MediaRef.metadata`. */
+  metadata?: Record<string, unknown>;
 }
 
 // =============================================================================

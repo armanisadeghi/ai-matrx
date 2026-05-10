@@ -12,6 +12,12 @@ import { selectShowVariablePanel } from "@/features/agents/redux/execution-syste
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
+import { ImageVariableInput } from "@/features/agents/components/inputs/input-components/ImageVariableInput";
+import { AudioVariableInput } from "@/features/agents/components/inputs/input-components/AudioVariableInput";
+import { VideoVariableInput } from "@/features/agents/components/inputs/input-components/VideoVariableInput";
+import { DocumentVariableInput } from "@/features/agents/components/inputs/input-components/DocumentVariableInput";
+import { YoutubeVariableInput } from "@/features/agents/components/inputs/input-components/YoutubeVariableInput";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Minus, Plus } from "lucide-react";
 
@@ -97,6 +103,43 @@ function AgentVariableInputCard({
                 step={comp?.step ?? 1}
                 onChange={setValue}
               />
+            ) : isMediaVariableType(type) ? (
+              type === "image" ? (
+                <ImageVariableInput
+                  value={currentValue}
+                  onChange={setValue}
+                  variableName={variable.name}
+                  compact
+                />
+              ) : type === "audio" ? (
+                <AudioVariableInput
+                  value={currentValue}
+                  onChange={setValue}
+                  variableName={variable.name}
+                  compact
+                />
+              ) : type === "video" ? (
+                <VideoVariableInput
+                  value={currentValue}
+                  onChange={setValue}
+                  variableName={variable.name}
+                  compact
+                />
+              ) : type === "document" ? (
+                <DocumentVariableInput
+                  value={currentValue}
+                  onChange={setValue}
+                  variableName={variable.name}
+                  compact
+                />
+              ) : (
+                <YoutubeVariableInput
+                  value={currentValue}
+                  onChange={setValue}
+                  variableName={variable.name}
+                  compact
+                />
+              )
             ) : (
               <TextMicroInput
                 value={(currentValue as string) ?? ""}

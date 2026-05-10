@@ -9,6 +9,12 @@ import { Minus, Plus } from "lucide-react";
 import { formatText } from "@/utils/text/text-case-converter";
 import { cn } from "@/lib/utils";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
+import { ImageVariableInput } from "@/features/agents/components/inputs/input-components/ImageVariableInput";
+import { AudioVariableInput } from "@/features/agents/components/inputs/input-components/AudioVariableInput";
+import { VideoVariableInput } from "@/features/agents/components/inputs/input-components/VideoVariableInput";
+import { DocumentVariableInput } from "@/features/agents/components/inputs/input-components/DocumentVariableInput";
+import { YoutubeVariableInput } from "@/features/agents/components/inputs/input-components/YoutubeVariableInput";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
@@ -479,8 +485,8 @@ function GuidedVariableContent({
   onAutoAdvance,
 }: {
   variable: VariableDefinition;
-  value: string;
-  onChange: (v: string) => void;
+  value: unknown;
+  onChange: (v: unknown) => void;
   onAutoAdvance: () => void;
 }) {
   const cc = variable.customComponent;
@@ -488,12 +494,31 @@ function GuidedVariableContent({
   if (!cc || cc.type === "textarea") {
     return (
       <GuidedTextarea
-        value={value}
-        onChange={onChange}
+        value={typeof value === "string" ? value : String(value ?? "")}
+        onChange={(v) => onChange(v)}
         variableName={variable.name}
       />
     );
   }
+
+  // Media types — full-width input, no auto-advance (uploads take time).
+  if (isMediaVariableType(cc.type)) {
+    const sharedProps = {
+      value,
+      onChange,
+      variableName: variable.name,
+      compact: false,
+    };
+    if (cc.type === "image") return <ImageVariableInput {...sharedProps} />;
+    if (cc.type === "audio") return <AudioVariableInput {...sharedProps} />;
+    if (cc.type === "video") return <VideoVariableInput {...sharedProps} />;
+    if (cc.type === "document") return <DocumentVariableInput {...sharedProps} />;
+    if (cc.type === "youtube") return <YoutubeVariableInput {...sharedProps} />;
+  }
+
+  // Type-narrowed string for the legacy guided sub-renderers.
+  const strValue = typeof value === "string" ? value : String(value ?? "");
+  const strOnChange = (v: string) => onChange(v);
 
   switch (cc.type) {
     case "select":
@@ -504,16 +529,16 @@ function GuidedVariableContent({
       if (!cc.options?.length) {
         return (
           <GuidedTextarea
-            value={value}
-            onChange={onChange}
+            value={strValue}
+            onChange={strOnChange}
             variableName={variable.name}
           />
         );
       }
       return (
         <GuidedSelect
-          value={value}
-          onChange={onChange}
+          value={strValue}
+          onChange={strOnChange}
           options={cc.options}
           allowOther={cc.allowOther}
           onAutoAdvance={onAutoAdvance}
@@ -523,16 +548,16 @@ function GuidedVariableContent({
       if (!cc.options?.length) {
         return (
           <GuidedTextarea
-            value={value}
-            onChange={onChange}
+            value={strValue}
+            onChange={strOnChange}
             variableName={variable.name}
           />
         );
       }
       return (
         <GuidedCheckbox
-          value={value}
-          onChange={onChange}
+          value={strValue}
+          onChange={strOnChange}
           options={cc.options}
           allowOther={cc.allowOther}
         />
@@ -541,8 +566,8 @@ function GuidedVariableContent({
     case "light-switch":
       return (
         <GuidedToggle
-          value={value}
-          onChange={onChange}
+          value={strValue}
+          onChange={strOnChange}
           toggleValues={cc.toggleValues}
           onAutoAdvance={onAutoAdvance}
         />
@@ -551,8 +576,8 @@ function GuidedVariableContent({
     case "slider":
       return (
         <GuidedNumber
-          value={value}
-          onChange={onChange}
+          value={strValue}
+          onChange={strOnChange}
           min={cc.min}
           max={cc.max}
           step={cc.step}
@@ -561,8 +586,8 @@ function GuidedVariableContent({
     default:
       return (
         <GuidedTextarea
-          value={value}
-          onChange={onChange}
+          value={strValue}
+          onChange={strOnChange}
           variableName={variable.name}
         />
       );
@@ -610,13 +635,19 @@ export function AgentVariablesGuided({
   if (!shouldShowVariables || !showVariablePanel) return null;
 
   const variable = variableDefaults[activeIndex];
-  const value = String(values[variable.name] ?? variable.defaultValue ?? "");
+  const value: unknown = values[variable.name] ?? variable.defaultValue ?? "";
   const formattedName = formatText(variable.name);
   const helpText = variable.helpText;
 
   const answeredCount = variableDefaults.filter((v) => {
-    const val = String(values[v.name] ?? v.defaultValue ?? "");
-    return val.trim() !== "";
+    const val = values[v.name] ?? v.defaultValue ?? "";
+    if (val == null) return false;
+    if (typeof val === "string") return val.trim() !== "";
+    if (typeof val === "object") {
+      const o = val as Record<string, unknown>;
+      return Boolean(o.file_id || o.url || o.file_uri);
+    }
+    return String(val).trim() !== "";
   }).length;
 
   const goNext = useCallback(() => {
@@ -640,7 +671,7 @@ export function AgentVariablesGuided({
   }, []);
 
   const handleChange = useCallback(
-    (v: string) => {
+    (v: unknown) => {
       dispatch(
         setUserVariableValue({
           conversationId,
@@ -677,8 +708,19 @@ export function AgentVariablesGuided({
   const progressDots = (
     <div className="flex items-center gap-1">
       {variableDefaults.map((v, i) => {
+        const raw = values[v.name] ?? v.defaultValue ?? "";
         const filled =
-          String(values[v.name] ?? v.defaultValue ?? "").trim() !== "";
+          raw == null
+            ? false
+            : typeof raw === "string"
+              ? raw.trim() !== ""
+              : typeof raw === "object"
+                ? Boolean(
+                    (raw as Record<string, unknown>).file_id ||
+                      (raw as Record<string, unknown>).url ||
+                      (raw as Record<string, unknown>).file_uri,
+                  )
+                : String(raw).trim() !== "";
         const isCurrent = i === activeIndex;
         return (
           <span

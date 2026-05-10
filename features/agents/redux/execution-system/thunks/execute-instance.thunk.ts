@@ -31,7 +31,12 @@ import {
   selectEditorResourceXml,
   selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
-import { selectResolvedVariables } from "../instance-variable-values/instance-variable-values.selectors";
+import {
+  selectInstanceVariableDefinitions,
+  selectResolvedVariables,
+} from "../instance-variable-values/instance-variable-values.selectors";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
+import type { MediaRef } from "@/features/files/types";
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import {
@@ -116,7 +121,33 @@ export function assembleRequest(
   // Resources → ContentBlock[] (editor pills are filtered out by the selector)
   const resourcePayloads = selectResourcePayloads(conversationId)(state);
   // Variables (three-tier resolved — uses instance-owned definitions snapshot)
-  const variables = selectResolvedVariables(conversationId)(state);
+  const rawVariables = selectResolvedVariables(conversationId)(state);
+
+  // Media-typed variables hold a MediaRef object in Redux but the backend's
+  // variable-substitution layer puts the value into a single `url` field of
+  // a media message block. We project the MediaRef down to a single locator
+  // string here. Preference: url (works today, ZERO backend coordination)
+  // > file_uri (cloud-native, backend-resolvable) > file_id (requires
+  // backend-side cld_files lookup to resolve). When the backend learns to
+  // splat MediaRef fields onto a block, this projection becomes a no-op.
+  const variableDefinitions = selectInstanceVariableDefinitions(conversationId)(
+    state,
+  );
+  const mediaVariableNames = new Set(
+    variableDefinitions
+      .filter((d) => isMediaVariableType(d.customComponent?.type))
+      .map((d) => d.name),
+  );
+  const variables: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(rawVariables)) {
+    if (mediaVariableNames.has(name) && value && typeof value === "object") {
+      const ref = value as Partial<MediaRef>;
+      const projected = ref.url ?? ref.file_uri ?? ref.file_id ?? "";
+      variables[name] = projected;
+    } else {
+      variables[name] = value;
+    }
+  }
 
   // Build user_input
   let user_input: AssembledAgentStartRequest["user_input"];

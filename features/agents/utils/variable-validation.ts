@@ -11,7 +11,12 @@ import { readOptions, readMin, readMax } from "./variable-customcomponent";
 export type VariableValidationIssue =
   | { field: "name"; code: "empty" | "invalid" | "duplicate" }
   | { field: "options"; code: "empty" | "duplicate" }
-  | { field: "range"; code: "min-gte-max" };
+  | { field: "range"; code: "min-gte-max" }
+  | { field: "youtube"; code: "invalid-url" };
+
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+const YOUTUBE_URL =
+  /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
 
 /**
  * Validate a variable against invariants:
@@ -66,6 +71,24 @@ export function validateVariable(
       const max = readMax(cc);
       if (min !== undefined && max !== undefined && min >= max) {
         issues.push({ field: "range", code: "min-gte-max" });
+      }
+    }
+
+    // ── YouTube — when a default value is set, it must look like a YT URL ──
+    if (cc.type === "youtube") {
+      const def = v.defaultValue;
+      let candidate = "";
+      if (typeof def === "string") candidate = def;
+      else if (def && typeof def === "object") {
+        const o = def as Record<string, unknown>;
+        if (typeof o.url === "string") candidate = o.url;
+      }
+      if (
+        candidate.trim() &&
+        !YOUTUBE_ID.test(candidate.trim()) &&
+        !YOUTUBE_URL.test(candidate.trim())
+      ) {
+        issues.push({ field: "youtube", code: "invalid-url" });
       }
     }
   }

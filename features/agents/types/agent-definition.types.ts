@@ -30,7 +30,41 @@ export const VARIABLE_COMPONENT_TYPES = [
   "select", // Compact dropdown single-select
   "number", // Number stepper with optional min/max/step
   "slider", // Range slider with min/max/step
+  // Media types — value is a MediaRef, not a string. The runtime expands the
+  // MediaRef into the matching message block at request-assembly time.
+  "image",
+  "audio",
+  "video",
+  "youtube",
+  "document",
 ] as const;
+
+/**
+ * Media-typed variables hand back a structured MediaRef instead of a string.
+ * Use this set in places that need to discriminate text vs media variables
+ * (request assembly, value coercion, default-value handling).
+ */
+export const MEDIA_VARIABLE_TYPES = [
+  "image",
+  "audio",
+  "video",
+  "youtube",
+  "document",
+] as const satisfies readonly VariableComponentType[];
+
+export type MediaVariableType = (typeof MEDIA_VARIABLE_TYPES)[number];
+
+export function isMediaVariableType(
+  type: VariableComponentType | undefined,
+): type is MediaVariableType {
+  return (
+    type === "image" ||
+    type === "audio" ||
+    type === "video" ||
+    type === "youtube" ||
+    type === "document"
+  );
+}
 
 /** The input UI type for a variable's custom component. Derived from the const above. */
 export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];

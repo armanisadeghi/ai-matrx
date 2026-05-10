@@ -66,7 +66,7 @@ export function AgentVariablesInline({
   );
 
   const handleValueChange = useCallback(
-    (name: string, value: string) => {
+    (name: string, value: unknown) => {
       dispatch(setUserVariableValue({ conversationId, name, value }));
     },
     [conversationId, dispatch],
@@ -114,12 +114,22 @@ export function AgentVariablesInline({
     >
       {definitions.map((variable, index) => {
         const isExpanded = expandedVariableId === variable.name;
-        const rawValue =
-          (userValues[variable.name] as string | undefined) ??
-          variable.defaultValue ??
-          "";
-        const value =
-          typeof rawValue === "string" ? rawValue : String(rawValue ?? "");
+        const rawValue = userValues[variable.name] ?? variable.defaultValue ?? "";
+        // For the compact inline strip and the popover preview row we still
+        // need a short string. Media-typed values are objects — render a
+        // brief locator instead of "[object Object]".
+        const displayValue: string =
+          typeof rawValue === "string"
+            ? rawValue
+            : rawValue && typeof rawValue === "object"
+              ? (() => {
+                  const o = rawValue as Record<string, unknown>;
+                  if (typeof o.file_id === "string") return `cld:${(o.file_id as string).slice(0, 8)}…`;
+                  if (typeof o.url === "string") return o.url as string;
+                  if (typeof o.file_uri === "string") return o.file_uri as string;
+                  return "";
+                })()
+              : String(rawValue ?? "");
 
         if (isExpanded) {
           return (
@@ -141,9 +151,9 @@ export function AgentVariablesInline({
                     {formatText(variable.name)}:
                   </Label>
                   <div className="flex-1 text-xs text-foreground min-w-0">
-                    {value ? (
+                    {displayValue ? (
                       <span className="whitespace-nowrap overflow-hidden text-ellipsis block">
-                        {value.replace(/\n/g, " ↵ ")}
+                        {displayValue.replace(/\n/g, " ↵ ")}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">
@@ -162,7 +172,7 @@ export function AgentVariablesInline({
                 sideOffset={0}
               >
                 <VariableInputComponent
-                  value={value}
+                  value={rawValue}
                   onChange={(v) => handleValueChange(variable.name, v)}
                   variableName={variable.name}
                   customComponent={variable.customComponent}
@@ -188,7 +198,11 @@ export function AgentVariablesInline({
             </Label>
             <input
               type="text"
-              value={value.includes("\n") ? value.replace(/\n/g, " ↵ ") : value}
+              value={
+                displayValue.includes("\n")
+                  ? displayValue.replace(/\n/g, " ↵ ")
+                  : displayValue
+              }
               onChange={(e) => handleValueChange(variable.name, e.target.value)}
               onKeyDown={(e) => handleVariableKeyDown(e, index)}
               placeholder={variable.helpText ?? "Enter value..."}

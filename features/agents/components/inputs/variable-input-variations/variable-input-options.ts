@@ -96,6 +96,41 @@ const COMPONENT_TYPE_META: Record<
     requiresToggleValues: false,
     requiresMinMax: true,
   },
+  image: {
+    label: "Image",
+    description: "Pick or upload an image",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
+  audio: {
+    label: "Audio",
+    description: "Pick or upload an audio file",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
+  video: {
+    label: "Video",
+    description: "Pick or upload a video file",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
+  youtube: {
+    label: "YouTube",
+    description: "Paste a YouTube URL or video ID",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
+  document: {
+    label: "Document",
+    description: "Pick or upload a document (PDF, DOCX, …)",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
 };
 
 // ─── Derived options list — use this for UI selects/dropdowns ─────────────

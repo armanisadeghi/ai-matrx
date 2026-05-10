@@ -104,6 +104,36 @@ export interface SaveSourceResult {
   updatedAt: string;
 }
 
+/** Arguments passed to `adapter.rename()`. */
+export interface RenameSourceArgs {
+  rowId: string;
+  /**
+   * New filename as the user typed it — typically with an extension
+   * (e.g. `"foo.tsx"`). The adapter is responsible for splitting basename
+   * vs extension, mapping the extension back to the source's
+   * language/type column (where applicable), and writing both updates
+   * atomically.
+   *
+   * Empty extension is allowed for sources whose row name doesn't carry
+   * a file extension (e.g. prompt-app slugs).
+   */
+  newName: string;
+  /** Multi-field source field id, when renaming a single column inside a row. */
+  fieldId?: string;
+  /** Same optimistic-concurrency token used by `save()`. */
+  expectedUpdatedAt?: string;
+}
+
+/** Returned from `adapter.rename()` on success. */
+export interface RenameSourceResult {
+  updatedAt: string;
+  /**
+   * The canonical name the adapter chose to persist (after sanitisation).
+   * The tree should display this rather than echoing `newName` verbatim.
+   */
+  appliedName: string;
+}
+
 /**
  * Contract every library source implements. Adapters must be pure
  * client-side modules that talk to Supabase directly — no Redux, no
@@ -145,4 +175,17 @@ export interface LibrarySourceAdapter {
     supabase: SupabaseClient,
     args: SaveSourceArgs,
   ): Promise<SaveSourceResult>;
+
+  /**
+   * Optional — rename the row's display name (and, when relevant, the
+   * underlying language/type column derived from the file extension).
+   *
+   * Adapters that don't expose a meaningful rename (e.g. catalog rows
+   * whose names are server-managed) can omit this; the UI hides the
+   * Rename action when this is missing.
+   */
+  rename?(
+    supabase: SupabaseClient,
+    args: RenameSourceArgs,
+  ): Promise<RenameSourceResult>;
 }

@@ -200,6 +200,32 @@ const slice = createSlice({
     clearRecentTabs(state) {
       state.recentTabIds = [];
     },
+    /**
+     * Update a tab's user-visible identity (name / path / language) without
+     * touching its content. Used after a successful rename — the underlying
+     * row is the same, but the displayed filename and the Monaco virtual
+     * path need to refresh so syntax highlighting / type-checking re-derive
+     * from the new extension.
+     *
+     * The tab id stays stable (library-source tab ids are
+     * `${prefix}:${rowId}` — they don't carry the filename).
+     */
+    renameTab(
+      state,
+      action: PayloadAction<{
+        id: string;
+        name?: string;
+        path?: string;
+        language?: string;
+      }>,
+    ) {
+      const tab = state.byId[action.payload.id];
+      if (!tab) return;
+      if (action.payload.name !== undefined) tab.name = action.payload.name;
+      if (action.payload.path !== undefined) tab.path = action.payload.path;
+      if (action.payload.language !== undefined)
+        tab.language = action.payload.language;
+    },
   },
 });
 
@@ -215,6 +241,7 @@ export const {
   moveTab,
   closeAllTabs,
   clearRecentTabs,
+  renameTab,
 } = slice.actions;
 
 export default slice.reducer;

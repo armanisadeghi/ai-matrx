@@ -58,7 +58,7 @@ export function AgentVariablesWizard({
   const userValues = useAppSelector(selectUserVariableValues(conversationId));
 
   const handleValueChange = useCallback(
-    (name: string, value: string) => {
+    (name: string, value: unknown) => {
       dispatch(setUserVariableValue({ conversationId, name, value }));
     },
     [conversationId, dispatch],
@@ -94,12 +94,10 @@ export function AgentVariablesWizard({
   const variable = definitions[currentIndex];
   if (!variable) return null;
 
-  const rawValue =
-    (userValues[variable.name] as string | undefined) ??
-    variable.defaultValue ??
-    "";
-  const value =
-    typeof rawValue === "string" ? rawValue : String(rawValue ?? "");
+  const rawValue = userValues[variable.name] ?? variable.defaultValue ?? "";
+  // VariableInputComponent now accepts `unknown` so MediaRef objects flow
+  // through for media-typed variables without coercion-to-string.
+  const value: unknown = rawValue;
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === definitions.length - 1;
   const total = definitions.length;

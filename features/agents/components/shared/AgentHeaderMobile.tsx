@@ -27,6 +27,7 @@ import {
 } from "@/components/official/bottom-sheet/BottomSheet";
 import { cn } from "@/lib/utils";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";
+import { AgentSaveTapButton } from "./AgentSaveTapButton";
 import {
   MODES,
   deriveAgentMode,
@@ -137,7 +138,12 @@ export function AgentHeaderMobile({
           </TapTargetButtonGroup>
         </div>
 
-        {/* Right: Options menu */}
+        {/* Right: Save + Options menu. Save is rendered as a sibling rather
+            than inside the mode pill because saving isn't a navigation mode —
+            it stays visible alongside Build/Run/More so dirty edits never
+            require a trip into the More sheet. The component self-hides when
+            not in edit mode, so View/Run keep the original two-icon layout. */}
+        <AgentSaveTapButton agentId={agentId} />
         <AgentOptionsMenu agentId={agentId} asTapTarget basePath={basePath} />
       </div>
 

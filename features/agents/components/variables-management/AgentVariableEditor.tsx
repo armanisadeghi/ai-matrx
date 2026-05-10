@@ -32,6 +32,7 @@ import type {
   VariableComponentType,
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
 import {
   getComponentTypeOptions,
   getComponentTypeMeta,
@@ -156,7 +157,7 @@ export function AgentVariableEditor({
     onRenamed?.(sanitized);
   };
 
-  const handleDefaultValueChange = (v: string) =>
+  const handleDefaultValueChange = (v: unknown) =>
     updateVariable({ defaultValue: v });
 
   const handleRequiredChange = (v: boolean) =>
@@ -203,7 +204,12 @@ export function AgentVariableEditor({
     step: effective.step,
   });
 
+  const isMedia = isMediaVariableType(componentType);
+  // For text-style types we coerce to a string for the textarea/input. Media
+  // types receive the raw default value (typically a MediaRef object) so
+  // their pickers can read it back.
   const defaultValueStr = String(variable.defaultValue ?? "");
+  const defaultValueRaw: unknown = variable.defaultValue ?? "";
 
   return (
     <div className="space-y-3">
@@ -430,7 +436,7 @@ export function AgentVariableEditor({
           />
         ) : (
           <VariableInputComponent
-            value={defaultValueStr}
+            value={isMedia ? defaultValueRaw : defaultValueStr}
             onChange={handleDefaultValueChange}
             variableName={variableName || "variable"}
             customComponent={previewCc}

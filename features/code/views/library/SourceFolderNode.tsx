@@ -2,9 +2,16 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ChevronRight, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveTabId } from "../../redux/tabsSlice";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { createClient } from "@/utils/supabase/client";
+import { extractErrorMessage } from "@/utils/errors";
+import {
+  renameTab,
+  selectActiveTabId,
+  selectTabById,
+} from "../../redux/tabsSlice";
 import { HOVER_ROW, ROW_HEIGHT, TEXT_BODY } from "../../styles/tokens";
 import type { LibrarySourceAdapter } from "../../library-sources/types";
 import { useLibrarySource } from "../../hooks/useLibrarySource";
@@ -32,6 +39,8 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
 }) => {
   const activeTabId = useAppSelector(selectActiveTabId);
   const openEntry = useOpenSourceEntry();
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { entries, status, error, load, reload } = useLibrarySource(
     adapter.sourceId,
   );
@@ -50,6 +59,67 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
       void openEntry(args);
     },
     [openEntry],
+  );
+
+  /**
+   * Rename pipeline:
+   *   1. adapter.rename(rowId, newName) — writes to the source table.
+   *   2. reload() — refresh the parent tree so the new name shows.
+   *   3. If the row's tab is open, adapter.load(rowId) again to pull the
+   *      freshly-derived name/path/language and dispatch `renameTab` so
+   *      the tab title + Monaco virtual path update without a reload.
+   *
+   * Falls through silently when the adapter doesn't expose `rename`.
+   * Toast feedback covers both success and failure paths.
+   */
+  const handleRename = useCallback(
+    async (
+      rowId: string,
+      newName: string,
+      expectedUpdatedAt?: string,
+    ): Promise<void> => {
+      if (!adapter.rename) {
+        toast.error(`${adapter.label} doesn't support rename yet.`);
+        return;
+      }
+      const supabase = createClient();
+      try {
+        const result = await adapter.rename(supabase, {
+          rowId,
+          newName,
+          expectedUpdatedAt,
+        });
+        toast.success(`Renamed to ${result.appliedName}`);
+        // Refresh the tree so the new name + updatedAt show up.
+        await reload();
+
+        // If this row has an open editor tab, refresh its derived
+        // identity (name / path / language) so type-checking re-routes
+        // through the new extension immediately.
+        try {
+          const tabId = adapter.makeTabId(rowId);
+          if (selectTabById(tabId)(store.getState())) {
+            const fresh = await adapter.load(supabase, rowId);
+            dispatch(
+              renameTab({
+                id: tabId,
+                name: fresh.name,
+                path: fresh.path,
+                language: fresh.language,
+              }),
+            );
+          }
+        } catch {
+          // Re-deriving the open-tab identity is best-effort; the tree
+          // is already refreshed and the next manual reload of the tab
+          // will pick up the new path.
+        }
+      } catch (err) {
+        toast.error(`Rename failed: ${extractErrorMessage(err)}`);
+        throw err;
+      }
+    },
+    [adapter, dispatch, reload, store],
   );
 
   const Icon = adapter.icon;
@@ -157,6 +227,8 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
                 depth={depth + 1}
                 activeTabId={activeTabId ?? null}
                 onOpen={handleOpen}
+                onRename={adapter.rename ? handleRename : null}
+                onRefresh={reload}
               />
             ))}
         </div>
