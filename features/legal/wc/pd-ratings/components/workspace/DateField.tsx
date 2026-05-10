@@ -24,6 +24,62 @@ interface DateFieldProps {
 
 const DISPLAY_FORMAT = "MM/dd/yyyy";
 
+// Ordered list of formats to attempt when parsing user input. The user can
+// type any of these — most-specific first, then progressively looser. We also
+// accept compact digit-only forms (MMDDYY, MMDDYYYY) handled separately below.
+const PARSE_FORMATS = [
+  "MM/dd/yyyy",
+  "M/d/yyyy",
+  "MM/dd/yy",
+  "M/d/yy",
+  "MM-dd-yyyy",
+  "M-d-yyyy",
+  "MM-dd-yy",
+  "M-d-yy",
+  "MM.dd.yyyy",
+  "M.d.yyyy",
+  "MM.dd.yy",
+  "M.d.yy",
+  "MM dd yyyy",
+  "M d yyyy",
+  "MM dd yy",
+  "M d yy",
+  "yyyy-MM-dd",
+  "yyyy/MM/dd",
+];
+
+/**
+ * Accepts a wide range of US-style date inputs and returns a Date if it can
+ * confidently parse one. Examples that all parse to 2026-01-04:
+ *   01/04/2026, 1/4/2026, 1/4/26, 01-04-26, 1-4-26,
+ *   01042026, 010426, 1.4.26, 2026-01-04
+ */
+function smartParseDate(raw: string): Date | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+
+  // 1. Try the explicit format list first.
+  for (const fmt of PARSE_FORMATS) {
+    const parsed = parse(trimmed, fmt, new Date());
+    if (isValid(parsed)) return parsed;
+  }
+
+  // 2. Digit-only fallbacks. We strip any non-digit and check length.
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 8) {
+    // MMDDYYYY
+    const parsed = parse(digits, "MMddyyyy", new Date());
+    if (isValid(parsed)) return parsed;
+  }
+  if (digits.length === 6) {
+    // MMDDYY
+    const parsed = parse(digits, "MMddyy", new Date());
+    if (isValid(parsed)) return parsed;
+  }
+
+  return undefined;
+}
+
 export function DateField({
   value,
   onChange,
@@ -37,7 +93,10 @@ export function DateField({
   const today = React.useMemo(() => new Date(), []);
   const upperYear = toYear ?? today.getFullYear() + 5;
   const startMonth = React.useMemo(() => new Date(fromYear, 0, 1), [fromYear]);
-  const endMonth = React.useMemo(() => new Date(upperYear, 11, 31), [upperYear]);
+  const endMonth = React.useMemo(
+    () => new Date(upperYear, 11, 31),
+    [upperYear],
+  );
 
   const [text, setText] = React.useState<string>(() =>
     value ? format(value, DISPLAY_FORMAT) : "",
@@ -46,7 +105,6 @@ export function DateField({
   const valueRef = React.useRef(value);
   valueRef.current = value;
 
-  // Re-sync text when external value changes (e.g., calendar pick, parent reset).
   React.useEffect(() => {
     setText(value ? format(value, DISPLAY_FORMAT) : "");
   }, [value]);
@@ -58,16 +116,20 @@ export function DateField({
         if (valueRef.current !== undefined) onChange(undefined);
         return;
       }
-      const parsed = parse(trimmed, DISPLAY_FORMAT, new Date());
+      const parsed = smartParseDate(trimmed);
       if (
-        isValid(parsed) &&
+        parsed &&
         parsed.getFullYear() >= fromYear &&
         parsed.getFullYear() <= upperYear
       ) {
         onChange(parsed);
+        // Normalize the visible text to the canonical display format so the
+        // user sees the field "snap" into shape after blur.
+        setText(format(parsed, DISPLAY_FORMAT));
       } else {
-        // Revert to last committed value
-        setText(valueRef.current ? format(valueRef.current, DISPLAY_FORMAT) : "");
+        setText(
+          valueRef.current ? format(valueRef.current, DISPLAY_FORMAT) : "",
+        );
       }
     },
     [fromYear, onChange, upperYear],
@@ -99,7 +161,6 @@ export function DateField({
         className,
       )}
     >
-      <CalendarIcon className="ml-3 h-4 w-4 text-muted-foreground shrink-0 pointer-events-none" />
       <input
         id={id}
         type="text"
@@ -114,7 +175,7 @@ export function DateField({
         className={cn(
           "h-11 flex-1 min-w-0 bg-transparent text-base font-medium tabular-nums text-foreground",
           "placeholder:text-muted-foreground/60",
-          "px-2.5",
+          "pl-3 pr-2",
           "outline-none",
           "disabled:cursor-not-allowed",
         )}
@@ -125,7 +186,7 @@ export function DateField({
           onClick={clear}
           tabIndex={-1}
           aria-label="Clear date"
-          className="mr-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          className="mr-0.5 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -137,7 +198,7 @@ export function DateField({
             disabled={disabled}
             aria-label="Open calendar"
             className={cn(
-              "mr-1 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors",
+              "mr-1 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0",
               "disabled:cursor-not-allowed",
             )}
           >
@@ -155,7 +216,9 @@ export function DateField({
             captionLayout="dropdown"
             startMonth={startMonth}
             endMonth={endMonth}
-            defaultMonth={value ?? new Date(today.getFullYear(), today.getMonth(), 1)}
+            defaultMonth={
+              value ?? new Date(today.getFullYear(), today.getMonth(), 1)
+            }
             autoFocus
           />
         </PopoverContent>

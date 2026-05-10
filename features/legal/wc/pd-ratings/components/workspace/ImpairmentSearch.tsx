@@ -114,7 +114,17 @@ export function ImpairmentSearch({
             <CommandEmpty>No matches.</CommandEmpty>
             <CommandGroup>
               {items.map((item) => {
-                const searchable = `${item.impairment_number} ${item.name}`;
+                // Aliases (abbreviations like "DRE", lay terms, body-part synonyms)
+                // are concatenated into the searchable text so users can find an
+                // impairment without typing its canonical AMA name verbatim.
+                // Source: wc_impairment_definition.search_aliases (DB column,
+                // populated by scripts/generate_impairment_aliases.py).
+                const aliasesField = (item as { search_aliases?: unknown })
+                  .search_aliases;
+                const aliases = Array.isArray(aliasesField)
+                  ? (aliasesField as string[]).join(" ")
+                  : "";
+                const searchable = `${item.impairment_number} ${item.name} ${aliases}`;
                 return (
                   <CommandItem
                     key={item.id ?? item.impairment_number}

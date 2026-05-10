@@ -27,6 +27,15 @@ export function claimDraftToCreate(claim: ClaimDraft): ClaimCreate {
   if (claim.age_at_doi != null) body.age_at_doi = claim.age_at_doi;
   if (claim.date_of_birth) body.date_of_birth = claim.date_of_birth;
   if (claim.date_of_injury) body.date_of_injury = claim.date_of_injury;
+  // Optional record-keeping fields — only include when set so the backend's
+  // create-vs-patch semantics aren't muddled with explicit nulls on create.
+  // Cast through `as Record<string, unknown>` because these fields aren't in
+  // the regenerated TS schema yet (see `pnpm sync-types`).
+  const extras = body as Record<string, unknown>;
+  if (claim.gender) extras.gender = claim.gender;
+  if (claim.case_number) extras.case_number = claim.case_number;
+  if (claim.evaluator_name) extras.evaluator_name = claim.evaluator_name;
+  if (claim.comments) extras.comments = claim.comments;
   return body;
 }
 
@@ -39,6 +48,11 @@ export function claimDraftToPatch(claim: ClaimDraft): ClaimPatch {
   body.age_at_doi = claim.age_at_doi ?? null;
   body.date_of_birth = claim.date_of_birth ?? null;
   body.date_of_injury = claim.date_of_injury ?? null;
+  const extras = body as Record<string, unknown>;
+  extras.gender = claim.gender ?? null;
+  extras.case_number = claim.case_number ?? null;
+  extras.evaluator_name = claim.evaluator_name ?? null;
+  extras.comments = claim.comments ?? null;
   return body;
 }
 

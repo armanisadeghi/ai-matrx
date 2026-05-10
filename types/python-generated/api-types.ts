@@ -1877,6 +1877,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scraper/admin/sites/{site_id}/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Detail Endpoint
+         * @description Hydrated site row — homepage metadata, last-run pointer, page-state
+         *     rollups, GSC totals. The site detail page hits this on mount.
+         */
+        get: operations["get_site_detail_endpoint_scraper_admin_sites__site_id__detail_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Site Pages Endpoint
+         * @description Cross-run page registry for a site. The Pages tab on the site detail
+         *     page hits this — supports filter by state ('active'/'missing'/'broken'),
+         *     by GSC indexed flag, full-text search across URL+title, and sortable
+         *     columns (URL / last seen / clicks / impressions / status / word count).
+         */
+        get: operations["list_site_pages_endpoint_scraper_admin_sites__site_id__pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Site Runs Endpoint
+         * @description Crawl history for a site — most recent first.
+         */
+        get: operations["list_site_runs_endpoint_scraper_admin_sites__site_id__runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/diffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Site Diffs Endpoint
+         * @description Pre-computed page-set deltas between consecutive runs of this site.
+         *     Each row carries pages_added/removed/returned/changed plus status
+         *     transitions. Built by scraper.reconcile_site_after_run() so reads are O(1).
+         */
+        get: operations["list_site_diffs_endpoint_scraper_admin_sites__site_id__diffs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/diffs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Diff Endpoint
+         * @description Single site_run_diffs row — full added/removed/changed payloads.
+         */
+        get: operations["get_site_diff_endpoint_scraper_admin_sites__site_id__diffs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/refresh-screenshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Site Screenshot Endpoint
+         * @description Capture a fresh homepage screenshot for a site without running a full
+         *     crawl. Updates scraper.sites.homepage_screenshot_file_id +
+         *     homepage_audited_at, plus refreshes title/description/lang from the same
+         *     page load. Returns the signed URL so the UI can render immediately.
+         */
+        post: operations["refresh_site_screenshot_endpoint_scraper_admin_sites__site_id__refresh_screenshot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/recrawl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recrawl Site Endpoint
+         * @description One-click rescrape. Resolves config from site.default_config →
+         *     most-recent run config → minimal default. Streams the same JSONL event
+         *     shape as POST /crawl/start so the dashboard can reuse the live UI.
+         */
+        post: operations["recrawl_site_endpoint_scraper_admin_sites__site_id__recrawl_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/{site_id}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Schedule For Site
+         * @description Create a recurring schedule pinned to this site. Captures the site's
+         *     current default-or-last config as inline_config so the schedule survives
+         *     even if the site's config changes later.
+         */
+        post: operations["create_schedule_for_site_scraper_admin_sites__site_id__schedules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scraper/admin/runs/{run_id}/timeseries": {
         parameters: {
             query?: never;
@@ -1952,10 +2125,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Extractors */
+        /**
+         * List Extractors
+         * @description List extractors visible to the requester: own user-scope rows + all
+         *     system-scope rows. Other users' user-scope rows are hidden.
+         */
         get: operations["list_extractors_scraper_admin_extractors_get"];
         put?: never;
-        /** Save Extractor */
+        /**
+         * Save Extractor
+         * @description Create an extractor. scope='user' is the default and works for any
+         *     authenticated requester; scope='system' (platform-wide) is admin-only.
+         */
         post: operations["save_extractor_scraper_admin_extractors_post"];
         delete?: never;
         options?: never;
@@ -1973,7 +2154,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Extractor */
+        /**
+         * Delete Extractor
+         * @description Delete an extractor. Owner-only for scope='user' rows; admin-only for
+         *     scope='system' rows.
+         */
         delete: operations["delete_extractor_scraper_admin_extractors__extractor_id__delete"];
         options?: never;
         head?: never;
@@ -2332,7 +2517,9 @@ export interface paths {
          * Diff Runs Endpoint
          * @description Compare two runs by URL+content. Returns added/removed/changed pages.
          *
-         *     Useful for SEO regression detection — diff today's crawl against last
+         *     Caller must be able to read both runs.
+         *
+         *     Useful for SEO regression detection: diff today's crawl against last
          *     week's to see which pages dropped, gained, or had content changes.
          */
         get: operations["diff_runs_endpoint_scraper_admin_crawl__a_run_id__diff__b_run_id__get"];
@@ -3773,7 +3960,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Impairments */
+        /**
+         * List Impairments
+         * @description Full impairment catalog, keyed by UUID. Reads `wc_impairment_definition`.
+         *
+         *     Each value carries its real `id` (UUID) so the FE can pass it back as
+         *     `impairment_definition_id` when creating an injury — no second lookup
+         *     required.
+         */
         get: operations["list_impairments_legal_wc_ratings_impairments_get"];
         put?: never;
         post?: never;
@@ -6633,6 +6827,81 @@ export interface paths {
         patch: operations["tus_patch_files_upload_tus__upload_id__patch"];
         trace?: never;
     };
+    "/images/studio/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Presets
+         * @description Return the full Image Studio preset catalog.
+         *
+         *     No auth required — these are platform-wide spec metadata, identical
+         *     for every user. The FE caches the response and re-decorates with
+         *     icons / accent colours by category id.
+         */
+        get: operations["get_presets_images_studio_presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/studio/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process Image */
+        post: operations["process_image_images_studio_process_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/studio/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Commit Job */
+        post: operations["commit_job_images_studio_commit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/studio/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discard Job */
+        post: operations["discard_job_images_studio_discard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/virtual": {
         parameters: {
             query?: never;
@@ -7833,6 +8102,16 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_process_image_images_studio_process_post */
+        Body_process_image_images_studio_process_post: {
+            /**
+             * Spec
+             * @description JSON-encoded ProcessSpec
+             */
+            spec: string;
+            /** File */
+            file?: string | null;
+        };
         /** Body_put_file_cloud_files_put_put */
         Body_put_file_cloud_files_put_put: {
             /** File */
@@ -8113,14 +8392,16 @@ export interface components {
             internal_web_search?: boolean | null;
             /** Internal Url Context */
             internal_url_context?: boolean | null;
-            /** Size */
-            size?: string | null;
-            /** Quality */
-            quality?: string | null;
-            /** Count */
-            count?: number | null;
             /** Aspect Ratio */
             aspect_ratio?: string | null;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Count */
+            count?: number | null;
+            /** Render Quality */
+            render_quality?: ("low" | "medium" | "high" | "auto") | null;
             /** Background */
             background?: ("auto" | "opaque" | "transparent") | null;
             /** Output Compression */
@@ -8131,8 +8412,6 @@ export interface components {
             input_fidelity?: ("high" | "low") | null;
             /** Partial Images */
             partial_images?: number | null;
-            /** Stream Partial Images */
-            stream_partial_images?: boolean | null;
             /** Style */
             style?: string | null;
             /** Reference Strength */
@@ -8143,8 +8422,6 @@ export interface components {
             }[] | null;
             /** Audio Format */
             audio_format?: string | null;
-            /** Seconds */
-            seconds?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
@@ -8157,16 +8434,12 @@ export interface components {
             seed?: number | null;
             /** Guidance Scale */
             guidance_scale?: number | null;
-            /** Output Quality */
-            output_quality?: number | null;
+            /** Encode Quality */
+            encode_quality?: number | null;
             /** Negative Prompt */
             negative_prompt?: string | null;
             /** Output Format */
             output_format?: string | null;
-            /** Width */
-            width?: number | null;
-            /** Height */
-            height?: number | null;
             /** Frame Images */
             frame_images?: unknown[] | null;
             /** Reference Images */
@@ -8175,8 +8448,8 @@ export interface components {
             image_loras?: unknown[] | null;
             /** Disable Safety Checker */
             disable_safety_checker?: boolean | null;
-            /** Audio Enabled */
-            audio_enabled?: boolean | null;
+            /** Generate Audio */
+            generate_audio?: boolean | null;
             /** Enhance Prompt */
             enhance_prompt?: boolean | null;
             /** Image Input */
@@ -8513,6 +8786,90 @@ export interface components {
             ratings: components["schemas"]["CombinedRatingItem"][];
             /** Total */
             total: number;
+        };
+        /** CommitFailure */
+        CommitFailure: {
+            /** Preset Id */
+            preset_id: string;
+            /** Error */
+            error: string;
+        };
+        /** CommitRequest */
+        CommitRequest: {
+            /** Job Id */
+            job_id: string;
+            /** Keep */
+            keep?: string[];
+            /**
+             * Folder Path
+             * @default Images/Generated/image-studio
+             */
+            folder_path: string;
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility: "public" | "private" | "shared";
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Filename Overrides */
+            filename_overrides?: {
+                [key: string]: string;
+            } | null;
+            /**
+             * Include Source
+             * @default false
+             */
+            include_source: boolean;
+            /** Source Filename */
+            source_filename?: string | null;
+            /** Base Filename */
+            base_filename?: string | null;
+        };
+        /** CommitResponse */
+        CommitResponse: {
+            /** Folder Path */
+            folder_path: string;
+            /** Saved */
+            saved: components["schemas"]["CommittedVariant"][];
+            /** Failed */
+            failed: components["schemas"]["CommitFailure"][];
+            source?: components["schemas"]["CommittedSource"] | null;
+        };
+        /** CommittedSource */
+        CommittedSource: {
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** File Path */
+            file_path: string;
+            /** Storage Uri */
+            storage_uri: string;
+            /** Size */
+            size: number;
+            /** Public Url */
+            public_url?: string | null;
+        };
+        /** CommittedVariant */
+        CommittedVariant: {
+            /** Preset Id */
+            preset_id: string;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** File Path */
+            file_path: string;
+            /** Storage Uri */
+            storage_uri: string;
+            /** Size */
+            size: number;
+            /** Public Url */
+            public_url?: string | null;
         };
         /** CompensationOut */
         CompensationOut: {
@@ -9232,6 +9589,18 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DiscardRequest */
+        DiscardRequest: {
+            /** Job Id */
+            job_id: string;
+        };
+        /** DiscardResponse */
+        DiscardResponse: {
+            /** Job Id */
+            job_id: string;
+            /** Deleted */
+            deleted: number;
+        };
         /** DocumentDetail */
         DocumentDetail: {
             /** Id */
@@ -9613,6 +9982,11 @@ export interface components {
              * @default true
              */
             enabled: boolean;
+            /**
+             * Scope
+             * @default user
+             */
+            scope: string;
         };
         /** FieldAdd */
         FieldAdd: {
@@ -9857,6 +10231,13 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /** FocalPoint */
+        FocalPoint: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** FolderRecord */
         FolderRecord: {
@@ -10123,7 +10504,9 @@ export interface components {
          * ImpairmentsResponse
          * @description Full impairment-definitions catalog keyed by definition id (UUID).
          *
-         *     The shape of each value matches `WcImpairmentDefinitionRead`.
+         *     Sourced from the `wc_impairment_definition` table. The dict key equals
+         *     each value's `id`, so the FE can either iterate `Object.values(...)` or
+         *     look up directly by UUID.
          */
         ImpairmentsResponse: {
             /** Impairments */
@@ -10361,14 +10744,16 @@ export interface components {
             internal_web_search?: boolean | null;
             /** Internal Url Context */
             internal_url_context?: boolean | null;
-            /** Size */
-            size?: string | null;
-            /** Quality */
-            quality?: string | null;
-            /** Count */
-            count?: number | null;
             /** Aspect Ratio */
             aspect_ratio?: string | null;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Count */
+            count?: number | null;
+            /** Render Quality */
+            render_quality?: ("low" | "medium" | "high" | "auto") | null;
             /** Background */
             background?: ("auto" | "opaque" | "transparent") | null;
             /** Output Compression */
@@ -10379,8 +10764,6 @@ export interface components {
             input_fidelity?: ("high" | "low") | null;
             /** Partial Images */
             partial_images?: number | null;
-            /** Stream Partial Images */
-            stream_partial_images?: boolean | null;
             /** Style */
             style?: string | null;
             /** Reference Strength */
@@ -10391,8 +10774,6 @@ export interface components {
             }[] | null;
             /** Audio Format */
             audio_format?: string | null;
-            /** Seconds */
-            seconds?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
@@ -10405,16 +10786,12 @@ export interface components {
             seed?: number | null;
             /** Guidance Scale */
             guidance_scale?: number | null;
-            /** Output Quality */
-            output_quality?: number | null;
+            /** Encode Quality */
+            encode_quality?: number | null;
             /** Negative Prompt */
             negative_prompt?: string | null;
             /** Output Format */
             output_format?: string | null;
-            /** Width */
-            width?: number | null;
-            /** Height */
-            height?: number | null;
             /** Frame Images */
             frame_images?: unknown[] | null;
             /** Reference Images */
@@ -10423,8 +10800,8 @@ export interface components {
             image_loras?: unknown[] | null;
             /** Disable Safety Checker */
             disable_safety_checker?: boolean | null;
-            /** Audio Enabled */
-            audio_enabled?: boolean | null;
+            /** Generate Audio */
+            generate_audio?: boolean | null;
             /** Enhance Prompt */
             enhance_prompt?: boolean | null;
             /** Image Input */
@@ -11735,6 +12112,14 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** ProcessResponse */
+        ProcessResponse: {
+            /** Job Id */
+            job_id: string;
+            source: components["schemas"]["StudioSourceOut"];
+            /** Variants */
+            variants: components["schemas"]["StudioVariantOut"][];
+        };
         /** PromptStartRequest */
         PromptStartRequest: {
             /** Organization Id */
@@ -12650,6 +13035,18 @@ export interface components {
             /** Archived */
             archived?: boolean | null;
         };
+        /** SiteScheduleCreateRequest */
+        SiteScheduleCreateRequest: {
+            /** Name */
+            name: string;
+            /** Cron Expr */
+            cron_expr: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
         /** SourceBulkAction */
         SourceBulkAction: {
             /** Source Ids */
@@ -12928,6 +13325,62 @@ export interface components {
             features?: {
                 [key: string]: unknown;
             };
+        };
+        /** StudioSourceOut */
+        StudioSourceOut: {
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Size */
+            size: number;
+            /** Format */
+            format: string;
+            /** Signed Url */
+            signed_url?: string | null;
+            /** Expires In */
+            expires_in?: number | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Staged */
+            staged: boolean;
+        };
+        /** StudioVariantOut */
+        StudioVariantOut: {
+            /** Preset Id */
+            preset_id: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "jpeg" | "png" | "webp" | "avif";
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Quality */
+            quality: number | null;
+            /** Size */
+            size: number;
+            /** Signed Url */
+            signed_url: string;
+            /** Expires In */
+            expires_in: number;
+            /** Compression Ratio */
+            compression_ratio: number | null;
+            /**
+             * Fit
+             * @enum {string}
+             */
+            fit: "cover" | "contain" | "inside";
+            /** Position */
+            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"] | null;
+            /** Notes */
+            notes?: string[];
+            /** Error */
+            error?: string | null;
         };
         /**
          * SuggestRequest
@@ -13667,6 +14120,8 @@ export interface components {
             /** Finger Type */
             finger_type?: ("index" | "middle" | "ring" | "little" | "thumb") | null;
             attributes: components["schemas"]["ImpairmentAvailableAttributes"];
+            /** Search Aliases */
+            search_aliases?: string[];
         } & {
             [key: string]: unknown;
         };
@@ -16799,6 +17254,285 @@ export interface operations {
             };
         };
     };
+    get_site_detail_endpoint_scraper_admin_sites__site_id__detail_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_site_pages_endpoint_scraper_admin_sites__site_id__pages_get: {
+        parameters: {
+            query?: {
+                state?: string | null;
+                indexed?: boolean | null;
+                search?: string | null;
+                sort?: string;
+                direction?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_site_runs_endpoint_scraper_admin_sites__site_id__runs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_site_diffs_endpoint_scraper_admin_sites__site_id__diffs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_diff_endpoint_scraper_admin_sites__site_id__diffs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_site_screenshot_endpoint_scraper_admin_sites__site_id__refresh_screenshot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recrawl_site_endpoint_scraper_admin_sites__site_id__recrawl_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_schedule_for_site_scraper_admin_sites__site_id__schedules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteScheduleCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     run_timeseries_scraper_admin_runs__run_id__timeseries_get: {
         parameters: {
             query?: never;
@@ -17118,8 +17852,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filter to runs the caller triggered */
-                mine_only?: boolean;
             };
             header?: never;
             path?: never;
@@ -26482,6 +27214,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_presets_images_studio_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    process_image_images_studio_process_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_process_image_images_studio_process_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    commit_job_images_studio_commit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_job_images_studio_discard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscardResponse"];
                 };
             };
             /** @description Validation Error */

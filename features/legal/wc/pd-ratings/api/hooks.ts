@@ -20,6 +20,7 @@ import {
   type InjuryCreate,
   type InjuryPatch,
   type OccupationalCodesResponse,
+  type RatingDefaults,
   type StatelessCalculate,
   type StatelessRatingResponse,
   type WcClaimRead,
@@ -31,6 +32,7 @@ import {
 const ONE_HOUR_MS = 1000 * 60 * 60;
 
 const QK = {
+  defaults: ["wc-ratings", "defaults"] as const,
   occupationalCodes: ["wc-ratings", "occupational-codes"] as const,
   // v2: backend switched the impairment catalog from a JSON file to the
   // `wc_impairment_definition` table (2026-05-09). Old cached entries had
@@ -81,6 +83,28 @@ function unwrap<T>(result: ApiCallResult<T>): T {
     });
   }
   return result.data;
+}
+
+export function useRatingDefaults(
+  options?: Omit<UseQueryOptions<RatingDefaults>, "queryKey" | "queryFn">,
+) {
+  const dispatch = useAppDispatch();
+  return useQuery<RatingDefaults>({
+    queryKey: QK.defaults,
+    staleTime: ONE_HOUR_MS,
+    ...options,
+    queryFn: async () => {
+      const result = await dispatch(
+        callApi({
+          // Path isn't in the generated types until `pnpm sync-types` runs;
+          // cast through `never` like the other hooks in this file.
+          path: `${WC_RATINGS_BASE}/defaults` as never,
+          method: "GET",
+        }),
+      );
+      return unwrap(result as ApiCallResult<RatingDefaults>);
+    },
+  });
 }
 
 export function useOccupationalCodes(

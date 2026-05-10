@@ -17,6 +17,15 @@ export type ImpairmentSearch = components["schemas"]["ImpairmentSearch"];
 export type ImpairmentSearchResponse =
   components["schemas"]["ImpairmentSearchResponse"];
 export type StatelessCalculate = components["schemas"]["StatelessCalculate"];
+// `DefaultsResponse` is added by the new `GET /defaults` endpoint. Until the
+// FE regenerates types via `pnpm sync-types` it isn't present on `components`,
+// so we declare it inline. After regen this can be replaced with:
+//   export type RatingDefaults = components["schemas"]["DefaultsResponse"];
+export interface RatingDefaults {
+  max_weekly_earnings: number;
+  default_fec: number;
+  default_fec_valid_from: number;
+}
 export type StatelessRatingResponse =
   components["schemas"]["StatelessRatingResponse"];
 export type StatelessApplicant = components["schemas"]["StatelessApplicant"];
@@ -32,7 +41,13 @@ export type Side = "left" | "right" | "default";
 
 export const WC_RATINGS_BASE = "/legal/wc/ratings" as const;
 
-export const WEEKLY_EARNINGS_MAX = 290;
+// Fallback used only until `useRatingDefaults()` resolves on first paint.
+// Live consumers should always read `useRatingDefaults().data?.max_weekly_earnings`.
+// Source of truth is the backend's `config/ama_pd_ratings/defaults.json`.
+export const WEEKLY_EARNINGS_MAX_FALLBACK = 290;
+
+/** @deprecated Use `useRatingDefaults().data?.max_weekly_earnings` instead. */
+export const WEEKLY_EARNINGS_MAX = WEEKLY_EARNINGS_MAX_FALLBACK;
 
 export interface ApiErrorDetail {
   code?: string;

@@ -8,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function PdRatingsCalculatorPage() {
-  return (
-    <div className="h-dvh w-full overflow-y-auto">
-      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
-      <CaPdCalculatorClient />
-    </div>
-  );
+  return <CaPdCalculatorClient />;
 }

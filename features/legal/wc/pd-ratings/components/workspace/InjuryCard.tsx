@@ -68,7 +68,15 @@ export function InjuryCard({
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <Chip>{SIDE_LABELS[injury.side] ?? injury.side}</Chip>
+            {/* Show the side chip only when the impairment actually accepts a
+                side (e.g. shoulder, knee). Lumbar/Cervical DRE-style
+                impairments have no laterality; the auto-defaulted "default"
+                value would otherwise render as a misleading "Bilateral"
+                badge. While no impairment is selected yet, fall back to the
+                old behavior so the editor preview stays useful. */}
+            {(definition?.attributes?.side ?? true) && (
+              <Chip>{SIDE_LABELS[injury.side] ?? injury.side}</Chip>
+            )}
             {injury.wpi != null && injury.wpi > 0 && (
               <Chip>{injury.wpi}% WPI</Chip>
             )}

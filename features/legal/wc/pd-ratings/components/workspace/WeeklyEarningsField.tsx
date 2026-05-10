@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DollarSign, Calculator, Info } from "lucide-react";
+import { DollarSign, Calculator, Info, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -11,7 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Field, NumberField } from "../FormField";
-import { WEEKLY_EARNINGS_MAX } from "../../api/types";
+import { WEEKLY_EARNINGS_MAX_FALLBACK } from "../../api/types";
+import { useRatingDefaults } from "../../api/hooks";
 import { formatCurrency } from "../../lib/formulas";
 
 interface WeeklyEarningsFieldProps {
@@ -20,8 +21,14 @@ interface WeeklyEarningsFieldProps {
 }
 
 export function WeeklyEarningsField({ value, onChange }: WeeklyEarningsFieldProps) {
+  const { data: defaults } = useRatingDefaults();
+  // Live max with safe fallback. Once `useRatingDefaults` resolves the FE
+  // mirrors whatever `config/ama_pd_ratings/defaults.json` says, so updating
+  // the JSON propagates to the form, the clamp hint, and the Max button
+  // without any code change.
+  const maxEarnings = defaults?.max_weekly_earnings ?? WEEKLY_EARNINGS_MAX_FALLBACK;
   const stringValue = value == null ? "" : String(value);
-  const isClamped = value != null && value >= WEEKLY_EARNINGS_MAX;
+  const isAtMax = value != null && value >= maxEarnings;
 
   return (
     <Field
@@ -38,7 +45,7 @@ export function WeeklyEarningsField({ value, onChange }: WeeklyEarningsFieldProp
             <TooltipContent className="max-w-xs">
               <p className="text-xs">
                 California's PD rating engine caps weekly earnings at{" "}
-                {formatCurrency(WEEKLY_EARNINGS_MAX)} for ratings under the legacy
+                {formatCurrency(maxEarnings)} for ratings under the legacy
                 schedule. Higher values are accepted but clamped server-side.
               </p>
             </TooltipContent>
@@ -46,11 +53,33 @@ export function WeeklyEarningsField({ value, onChange }: WeeklyEarningsFieldProp
         </span>
       }
       hint={
-        isClamped
-          ? `Clamped to ${formatCurrency(WEEKLY_EARNINGS_MAX)} for the rating calculation.`
+        isAtMax
+          ? `Using the engine cap of ${formatCurrency(maxEarnings)}.`
           : "Average weekly compensation for the rating engine."
       }
-      trailing={<AwcHelper onApply={(awc) => onChange(awc)} />}
+      trailing={
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant={isAtMax ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 px-2 text-xs gap-1.5"
+                onClick={() => onChange(maxEarnings)}
+                aria-pressed={isAtMax}
+              >
+                <Zap className="h-3 w-3" />
+                Max
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Use the engine cap ({formatCurrency(maxEarnings)})
+            </TooltipContent>
+          </Tooltip>
+          <AwcHelper onApply={(awc) => onChange(awc)} />
+        </div>
+      }
     >
       <NumberField
         value={stringValue}

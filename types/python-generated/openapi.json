@@ -4256,6 +4256,499 @@
         }
       }
     },
+    "/scraper/admin/sites/{site_id}/detail": {
+      "get": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Get Site Detail Endpoint",
+        "description": "Hydrated site row — homepage metadata, last-run pointer, page-state\nrollups, GSC totals. The site detail page hits this on mount.",
+        "operationId": "get_site_detail_endpoint_scraper_admin_sites__site_id__detail_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Site Detail Endpoint Scraper Admin Sites  Site Id  Detail Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/pages": {
+      "get": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "List Site Pages Endpoint",
+        "description": "Cross-run page registry for a site. The Pages tab on the site detail\npage hits this — supports filter by state ('active'/'missing'/'broken'),\nby GSC indexed flag, full-text search across URL+title, and sortable\ncolumns (URL / last seen / clicks / impressions / status / word count).",
+        "operationId": "list_site_pages_endpoint_scraper_admin_sites__site_id__pages_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(active|missing|redirect|broken)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "indexed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Indexed"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(url|last_seen|first_seen|gsc_clicks|gsc_impressions|last_status|last_word_count)$",
+              "default": "url",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "asc",
+              "title": "Direction"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Site Pages Endpoint Scraper Admin Sites  Site Id  Pages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/runs": {
+      "get": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "List Site Runs Endpoint",
+        "description": "Crawl history for a site — most recent first.",
+        "operationId": "list_site_runs_endpoint_scraper_admin_sites__site_id__runs_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Site Runs Endpoint Scraper Admin Sites  Site Id  Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/diffs": {
+      "get": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "List Site Diffs Endpoint",
+        "description": "Pre-computed page-set deltas between consecutive runs of this site.\nEach row carries pages_added/removed/returned/changed plus status\ntransitions. Built by scraper.reconcile_site_after_run() so reads are O(1).",
+        "operationId": "list_site_diffs_endpoint_scraper_admin_sites__site_id__diffs_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Site Diffs Endpoint Scraper Admin Sites  Site Id  Diffs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/diffs/{run_id}": {
+      "get": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Get Site Diff Endpoint",
+        "description": "Single site_run_diffs row — full added/removed/changed payloads.",
+        "operationId": "get_site_diff_endpoint_scraper_admin_sites__site_id__diffs__run_id__get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Site Diff Endpoint Scraper Admin Sites  Site Id  Diffs  Run Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/refresh-screenshot": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Refresh Site Screenshot Endpoint",
+        "description": "Capture a fresh homepage screenshot for a site without running a full\ncrawl. Updates scraper.sites.homepage_screenshot_file_id +\nhomepage_audited_at, plus refreshes title/description/lang from the same\npage load. Returns the signed URL so the UI can render immediately.",
+        "operationId": "refresh_site_screenshot_endpoint_scraper_admin_sites__site_id__refresh_screenshot_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Refresh Site Screenshot Endpoint Scraper Admin Sites  Site Id  Refresh Screenshot Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/recrawl": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Recrawl Site Endpoint",
+        "description": "One-click rescrape. Resolves config from site.default_config →\nmost-recent run config → minimal default. Streams the same JSONL event\nshape as POST /crawl/start so the dashboard can reuse the live UI.",
+        "operationId": "recrawl_site_endpoint_scraper_admin_sites__site_id__recrawl_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/{site_id}/schedules": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Create Schedule For Site",
+        "description": "Create a recurring schedule pinned to this site. Captures the site's\ncurrent default-or-last config as inline_config so the schedule survives\neven if the site's config changes later.",
+        "operationId": "create_schedule_for_site_scraper_admin_sites__site_id__schedules_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteScheduleCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Schedule For Site Scraper Admin Sites  Site Id  Schedules Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scraper/admin/runs/{run_id}/timeseries": {
       "get": {
         "tags": [
@@ -4450,6 +4943,7 @@
           "Scraper Admin"
         ],
         "summary": "List Extractors",
+        "description": "List extractors visible to the requester: own user-scope rows + all\nsystem-scope rows. Other users' user-scope rows are hidden.",
         "operationId": "list_extractors_scraper_admin_extractors_get",
         "responses": {
           "200": {
@@ -4471,6 +4965,7 @@
           "Scraper Admin"
         ],
         "summary": "Save Extractor",
+        "description": "Create an extractor. scope='user' is the default and works for any\nauthenticated requester; scope='system' (platform-wide) is admin-only.",
         "operationId": "save_extractor_scraper_admin_extractors_post",
         "requestBody": {
           "content": {
@@ -4514,6 +5009,7 @@
           "Scraper Admin"
         ],
         "summary": "Delete Extractor",
+        "description": "Delete an extractor. Owner-only for scope='user' rows; admin-only for\nscope='system' rows.",
         "operationId": "delete_extractor_scraper_admin_extractors__extractor_id__delete",
         "parameters": [
           {
@@ -4690,18 +5186,6 @@
               "default": 0,
               "title": "Offset"
             }
-          },
-          {
-            "name": "mine_only",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "Filter to runs the caller triggered",
-              "default": false,
-              "title": "Mine Only"
-            },
-            "description": "Filter to runs the caller triggered"
           }
         ],
         "responses": {
@@ -5665,7 +6149,7 @@
           "Scraper Admin"
         ],
         "summary": "Diff Runs Endpoint",
-        "description": "Compare two runs by URL+content. Returns added/removed/changed pages.\n\nUseful for SEO regression detection — diff today's crawl against last\nweek's to see which pages dropped, gained, or had content changes.",
+        "description": "Compare two runs by URL+content. Returns added/removed/changed pages.\n\nCaller must be able to read both runs.\n\nUseful for SEO regression detection: diff today's crawl against last\nweek's to see which pages dropped, gained, or had content changes.",
         "operationId": "diff_runs_endpoint_scraper_admin_crawl__a_run_id__diff__b_run_id__get",
         "parameters": [
           {
@@ -9686,6 +10170,7 @@
           "WC Ratings"
         ],
         "summary": "List Impairments",
+        "description": "Full impairment catalog, keyed by UUID. Reads `wc_impairment_definition`.\n\nEach value carries its real `id` (UUID) so the FE can pass it back as\n`impairment_definition_id` when creating an injury — no second lookup\nrequired.",
         "operationId": "list_impairments_legal_wc_ratings_impairments_get",
         "responses": {
           "200": {
@@ -18986,6 +19471,189 @@
         }
       }
     },
+    "/images/studio/presets": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Get Presets",
+        "description": "Return the full Image Studio preset catalog.\n\nNo auth required — these are platform-wide spec metadata, identical\nfor every user. The FE caches the response and re-decorates with\nicons / accent colours by category id.",
+        "operationId": "get_presets_images_studio_presets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Presets Images Studio Presets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/studio/process": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Process Image",
+        "operationId": "process_image_images_studio_process_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_process_image_images_studio_process_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/studio/commit": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Commit Job",
+        "operationId": "commit_job_images_studio_commit_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommitResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/studio/discard": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Discard Job",
+        "operationId": "discard_job_images_studio_discard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscardResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/virtual": {
       "get": {
         "tags": [
@@ -22778,6 +23446,32 @@
         ],
         "title": "Body_extract_text_from_pdf_utilities_pdf_extract_text_post"
       },
+      "Body_process_image_images_studio_process_post": {
+        "properties": {
+          "spec": {
+            "type": "string",
+            "title": "Spec",
+            "description": "JSON-encoded ProcessSpec"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spec"
+        ],
+        "title": "Body_process_image_images_studio_process_post"
+      },
       "Body_put_file_cloud_files_put_put": {
         "properties": {
           "file": {
@@ -23540,7 +24234,7 @@
             ],
             "title": "Internal Url Context"
           },
-          "size": {
+          "aspect_ratio": {
             "anyOf": [
               {
                 "type": "string"
@@ -23549,18 +24243,29 @@
                 "type": "null"
               }
             ],
-            "title": "Size"
+            "title": "Aspect Ratio"
           },
-          "quality": {
+          "width": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Quality"
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
           },
           "count": {
             "anyOf": [
@@ -23573,16 +24278,22 @@
             ],
             "title": "Count"
           },
-          "aspect_ratio": {
+          "render_quality": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "auto"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Aspect Ratio"
+            "title": "Render Quality"
           },
           "background": {
             "anyOf": [
@@ -23652,17 +24363,6 @@
             ],
             "title": "Partial Images"
           },
-          "stream_partial_images": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stream Partial Images"
-          },
           "style": {
             "anyOf": [
               {
@@ -23715,17 +24415,6 @@
               }
             ],
             "title": "Audio Format"
-          },
-          "seconds": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seconds"
           },
           "duration_seconds": {
             "anyOf": [
@@ -23793,7 +24482,7 @@
             ],
             "title": "Guidance Scale"
           },
-          "output_quality": {
+          "encode_quality": {
             "anyOf": [
               {
                 "type": "integer"
@@ -23802,7 +24491,7 @@
                 "type": "null"
               }
             ],
-            "title": "Output Quality"
+            "title": "Encode Quality"
           },
           "negative_prompt": {
             "anyOf": [
@@ -23825,28 +24514,6 @@
               }
             ],
             "title": "Output Format"
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Width"
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Height"
           },
           "frame_images": {
             "anyOf": [
@@ -23895,7 +24562,7 @@
             ],
             "title": "Disable Safety Checker"
           },
-          "audio_enabled": {
+          "generate_audio": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -23904,7 +24571,7 @@
                 "type": "null"
               }
             ],
-            "title": "Audio Enabled"
+            "title": "Generate Audio"
           },
           "enhance_prompt": {
             "anyOf": [
@@ -24987,6 +25654,244 @@
           "total"
         ],
         "title": "CombinedRatingSide"
+      },
+      "CommitFailure": {
+        "properties": {
+          "preset_id": {
+            "type": "string",
+            "title": "Preset Id"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preset_id",
+          "error"
+        ],
+        "title": "CommitFailure"
+      },
+      "CommitRequest": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "keep": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keep"
+          },
+          "folder_path": {
+            "type": "string",
+            "title": "Folder Path",
+            "default": "Images/Generated/image-studio"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private",
+              "shared"
+            ],
+            "title": "Visibility",
+            "default": "private"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "filename_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename Overrides"
+          },
+          "include_source": {
+            "type": "boolean",
+            "title": "Include Source",
+            "default": false
+          },
+          "source_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Filename"
+          },
+          "base_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Filename"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id"
+        ],
+        "title": "CommitRequest"
+      },
+      "CommitResponse": {
+        "properties": {
+          "folder_path": {
+            "type": "string",
+            "title": "Folder Path"
+          },
+          "saved": {
+            "items": {
+              "$ref": "#/components/schemas/CommittedVariant"
+            },
+            "type": "array",
+            "title": "Saved"
+          },
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/CommitFailure"
+            },
+            "type": "array",
+            "title": "Failed"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommittedSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "folder_path",
+          "saved",
+          "failed"
+        ],
+        "title": "CommitResponse"
+      },
+      "CommittedSource": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "storage_uri": {
+            "type": "string",
+            "title": "Storage Uri"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "filename",
+          "file_path",
+          "storage_uri",
+          "size"
+        ],
+        "title": "CommittedSource"
+      },
+      "CommittedVariant": {
+        "properties": {
+          "preset_id": {
+            "type": "string",
+            "title": "Preset Id"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "storage_uri": {
+            "type": "string",
+            "title": "Storage Uri"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preset_id",
+          "file_id",
+          "filename",
+          "file_path",
+          "storage_uri",
+          "size"
+        ],
+        "title": "CommittedVariant"
       },
       "CompensationOut": {
         "properties": {
@@ -26816,6 +27721,37 @@
         ],
         "title": "DirectChatRequest"
       },
+      "DiscardRequest": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id"
+        ],
+        "title": "DiscardRequest"
+      },
+      "DiscardResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "deleted"
+        ],
+        "title": "DiscardResponse"
+      },
       "DocumentDetail": {
         "properties": {
           "id": {
@@ -27831,6 +28767,11 @@
             "type": "boolean",
             "title": "Enabled",
             "default": true
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": "user"
           }
         },
         "type": "object",
@@ -28464,6 +29405,28 @@
         "type": "object",
         "title": "FireTriggerRequest"
       },
+      "FocalPoint": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Y"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "FocalPoint"
+      },
       "FolderRecord": {
         "properties": {
           "id": {
@@ -29029,7 +29992,7 @@
           "impairments"
         ],
         "title": "ImpairmentsResponse",
-        "description": "Full impairment-definitions catalog keyed by definition id (UUID).\n\nThe shape of each value matches `WcImpairmentDefinitionRead`."
+        "description": "Full impairment-definitions catalog keyed by definition id (UUID).\n\nSourced from the `wc_impairment_definition` table. The dict key equals\neach value's `id`, so the FE can either iterate `Object.values(...)` or\nlook up directly by UUID."
       },
       "IndexRepositoryResponse": {
         "properties": {
@@ -29843,7 +30806,7 @@
             ],
             "title": "Internal Url Context"
           },
-          "size": {
+          "aspect_ratio": {
             "anyOf": [
               {
                 "type": "string"
@@ -29852,18 +30815,29 @@
                 "type": "null"
               }
             ],
-            "title": "Size"
+            "title": "Aspect Ratio"
           },
-          "quality": {
+          "width": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Quality"
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
           },
           "count": {
             "anyOf": [
@@ -29876,16 +30850,22 @@
             ],
             "title": "Count"
           },
-          "aspect_ratio": {
+          "render_quality": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "auto"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Aspect Ratio"
+            "title": "Render Quality"
           },
           "background": {
             "anyOf": [
@@ -29955,17 +30935,6 @@
             ],
             "title": "Partial Images"
           },
-          "stream_partial_images": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stream Partial Images"
-          },
           "style": {
             "anyOf": [
               {
@@ -30018,17 +30987,6 @@
               }
             ],
             "title": "Audio Format"
-          },
-          "seconds": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seconds"
           },
           "duration_seconds": {
             "anyOf": [
@@ -30096,7 +31054,7 @@
             ],
             "title": "Guidance Scale"
           },
-          "output_quality": {
+          "encode_quality": {
             "anyOf": [
               {
                 "type": "integer"
@@ -30105,7 +31063,7 @@
                 "type": "null"
               }
             ],
-            "title": "Output Quality"
+            "title": "Encode Quality"
           },
           "negative_prompt": {
             "anyOf": [
@@ -30128,28 +31086,6 @@
               }
             ],
             "title": "Output Format"
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Width"
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Height"
           },
           "frame_images": {
             "anyOf": [
@@ -30198,7 +31134,7 @@
             ],
             "title": "Disable Safety Checker"
           },
-          "audio_enabled": {
+          "generate_audio": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -30207,7 +31143,7 @@
                 "type": "null"
               }
             ],
-            "title": "Audio Enabled"
+            "title": "Generate Audio"
           },
           "enhance_prompt": {
             "anyOf": [
@@ -33891,6 +34827,31 @@
         ],
         "title": "ProcessBlocksResponse"
       },
+      "ProcessResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "source": {
+            "$ref": "#/components/schemas/StudioSourceOut"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/StudioVariantOut"
+            },
+            "type": "array",
+            "title": "Variants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "source",
+          "variants"
+        ],
+        "title": "ProcessResponse"
+      },
       "PromptStartRequest": {
         "properties": {
           "organization_id": {
@@ -36037,6 +36998,29 @@
         "type": "object",
         "title": "SitePatchRequest"
       },
+      "SiteScheduleCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cron_expr": {
+            "type": "string",
+            "title": "Cron Expr"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "cron_expr"
+        ],
+        "title": "SiteScheduleCreateRequest"
+      },
       "SourceBulkAction": {
         "properties": {
           "source_ids": {
@@ -36911,6 +37895,206 @@
           "tier_name"
         ],
         "title": "StorageUsageResponse"
+      },
+      "StudioSourceOut": {
+        "properties": {
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url"
+          },
+          "expires_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "staged": {
+            "type": "boolean",
+            "title": "Staged"
+          }
+        },
+        "type": "object",
+        "required": [
+          "width",
+          "height",
+          "size",
+          "format",
+          "staged"
+        ],
+        "title": "StudioSourceOut"
+      },
+      "StudioVariantOut": {
+        "properties": {
+          "preset_id": {
+            "type": "string",
+            "title": "Preset Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "jpeg",
+              "png",
+              "webp",
+              "avif"
+            ],
+            "title": "Format"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "signed_url": {
+            "type": "string",
+            "title": "Signed Url"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          },
+          "compression_ratio": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compression Ratio"
+          },
+          "fit": {
+            "type": "string",
+            "enum": [
+              "cover",
+              "contain",
+              "inside"
+            ],
+            "title": "Fit"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "center",
+                  "top",
+                  "bottom",
+                  "left",
+                  "right",
+                  "top-left",
+                  "top-right",
+                  "bottom-left",
+                  "bottom-right",
+                  "entropy",
+                  "attention"
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/FocalPoint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preset_id",
+          "filename",
+          "format",
+          "width",
+          "height",
+          "quality",
+          "size",
+          "signed_url",
+          "expires_in",
+          "compression_ratio",
+          "fit",
+          "position"
+        ],
+        "title": "StudioVariantOut"
       },
       "SuggestRequest": {
         "properties": {
@@ -38924,6 +40108,13 @@
           },
           "attributes": {
             "$ref": "#/components/schemas/ImpairmentAvailableAttributes"
+          },
+          "search_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Search Aliases"
           }
         },
         "additionalProperties": true,

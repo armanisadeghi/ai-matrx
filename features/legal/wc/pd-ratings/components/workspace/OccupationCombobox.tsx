@@ -47,10 +47,14 @@ export function OccupationCombobox({
 
   const options = React.useMemo<OccupationOption[]>(() => {
     if (!data?.codes) return [];
+    // Wire shape: Record<JobCode, Record<JobTitle, IndustryCategory>>
+    // e.g. { "230": { "Carpenter": "Construction", ... }, ... }
     const flat: OccupationOption[] = [];
-    for (const [industry, jobs] of Object.entries(data.codes)) {
-      for (const [code, label] of Object.entries(jobs)) {
-        flat.push({ code: Number(code), label, industry });
+    for (const [code, jobs] of Object.entries(data.codes)) {
+      const codeNum = Number(code);
+      if (Number.isNaN(codeNum)) continue;
+      for (const [label, industry] of Object.entries(jobs)) {
+        flat.push({ code: codeNum, label, industry });
       }
     }
     flat.sort((a, b) => a.industry.localeCompare(b.industry) || a.code - b.code);
@@ -139,7 +143,7 @@ export function OccupationCombobox({
                   const searchable = `${opt.code} ${opt.label} ${opt.industry}`;
                   return (
                     <CommandItem
-                      key={opt.code}
+                      key={`${opt.code}-${opt.label}`}
                       value={searchable}
                       onSelect={() => {
                         onChange(opt.code);

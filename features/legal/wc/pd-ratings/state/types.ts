@@ -7,6 +7,13 @@ export interface ClaimDraft {
   age_at_doi: number | null;
   date_of_birth: string | null;
   date_of_injury: string | null;
+  // Optional record-keeping fields. These don't affect the rating math;
+  // they ride along on the persisted claim so the FE can render a complete
+  // case sheet later. None of them gate `evaluateDraftReadiness`.
+  gender: string | null;
+  case_number: string | null;
+  evaluator_name: string | null;
+  comments: string | null;
 }
 
 export interface InjuryDraft {
@@ -38,6 +45,10 @@ export const EMPTY_CLAIM_DRAFT: ClaimDraft = {
   age_at_doi: null,
   date_of_birth: null,
   date_of_injury: null,
+  gender: null,
+  case_number: null,
+  evaluator_name: null,
+  comments: null,
 };
 
 export const EMPTY_DRAFT: RatingDraft = {

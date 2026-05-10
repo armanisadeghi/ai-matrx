@@ -16,17 +16,20 @@ export function hydrateRatingDraft(
   report: WcReportRead,
   injuries: WcInjuryList,
 ): RatingDraft {
+  const rawClaim = claim as unknown as Record<string, unknown>;
   const claimDraft: ClaimDraft = {
-    applicant_name: (claim as unknown as { applicant_name?: string | null }).applicant_name ?? "",
+    applicant_name: (rawClaim.applicant_name as string | null | undefined) ?? "",
     occupational_code:
-      (claim as unknown as { occupational_code?: number | null }).occupational_code ?? null,
+      (rawClaim.occupational_code as number | null | undefined) ?? null,
     weekly_earnings:
-      (claim as unknown as { weekly_earnings?: number | null }).weekly_earnings ?? null,
-    age_at_doi: (claim as unknown as { age_at_doi?: number | null }).age_at_doi ?? null,
-    date_of_birth:
-      (claim as unknown as { date_of_birth?: string | null }).date_of_birth ?? null,
-    date_of_injury:
-      (claim as unknown as { date_of_injury?: string | null }).date_of_injury ?? null,
+      (rawClaim.weekly_earnings as number | null | undefined) ?? null,
+    age_at_doi: (rawClaim.age_at_doi as number | null | undefined) ?? null,
+    date_of_birth: (rawClaim.date_of_birth as string | null | undefined) ?? null,
+    date_of_injury: (rawClaim.date_of_injury as string | null | undefined) ?? null,
+    gender: (rawClaim.gender as string | null | undefined) ?? null,
+    case_number: (rawClaim.case_number as string | null | undefined) ?? null,
+    evaluator_name: (rawClaim.evaluator_name as string | null | undefined) ?? null,
+    comments: (rawClaim.comments as string | null | undefined) ?? null,
   };
 
   const injuryDrafts: InjuryDraft[] = injuries.injuries.map((inj) => {

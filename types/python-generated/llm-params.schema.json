@@ -284,7 +284,7 @@
       "default": null,
       "title": "Internal Url Context"
     },
-    "size": {
+    "aspect_ratio": {
       "anyOf": [
         {
           "type": "string"
@@ -294,19 +294,31 @@
         }
       ],
       "default": null,
-      "title": "Size"
+      "title": "Aspect Ratio"
     },
-    "quality": {
+    "width": {
       "anyOf": [
         {
-          "type": "string"
+          "type": "integer"
         },
         {
           "type": "null"
         }
       ],
       "default": null,
-      "title": "Quality"
+      "title": "Width"
+    },
+    "height": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Height"
     },
     "count": {
       "anyOf": [
@@ -320,9 +332,15 @@
       "default": null,
       "title": "Count"
     },
-    "aspect_ratio": {
+    "render_quality": {
       "anyOf": [
         {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "auto"
+          ],
           "type": "string"
         },
         {
@@ -330,7 +348,7 @@
         }
       ],
       "default": null,
-      "title": "Aspect Ratio"
+      "title": "Render Quality"
     },
     "background": {
       "anyOf": [
@@ -405,18 +423,6 @@
       "default": null,
       "title": "Partial Images"
     },
-    "stream_partial_images": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Stream Partial Images"
-    },
     "style": {
       "anyOf": [
         {
@@ -473,18 +479,6 @@
       ],
       "default": null,
       "title": "Audio Format"
-    },
-    "seconds": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Seconds"
     },
     "duration_seconds": {
       "anyOf": [
@@ -558,7 +552,7 @@
       "default": null,
       "title": "Guidance Scale"
     },
-    "output_quality": {
+    "encode_quality": {
       "anyOf": [
         {
           "type": "integer"
@@ -568,7 +562,7 @@
         }
       ],
       "default": null,
-      "title": "Output Quality"
+      "title": "Encode Quality"
     },
     "negative_prompt": {
       "anyOf": [
@@ -593,30 +587,6 @@
       ],
       "default": null,
       "title": "Output Format"
-    },
-    "width": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Width"
-    },
-    "height": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Height"
     },
     "frame_images": {
       "anyOf": [
@@ -669,7 +639,7 @@
       "default": null,
       "title": "Disable Safety Checker"
     },
-    "audio_enabled": {
+    "generate_audio": {
       "anyOf": [
         {
           "type": "boolean"
@@ -679,7 +649,7 @@
         }
       ],
       "default": null,
-      "title": "Audio Enabled"
+      "title": "Generate Audio"
     },
     "enhance_prompt": {
       "anyOf": [

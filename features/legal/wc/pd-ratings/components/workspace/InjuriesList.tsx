@@ -1,14 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Activity } from "lucide-react";
+import { Plus, Activity, ClipboardCopy } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { InjuryCard } from "./InjuryCard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { InjuriesTable, rowsToTsv, type InjuryRowData } from "./InjuriesTable";
 import { InjuryEditor } from "./InjuryEditor";
 import { useImpairmentDefinition } from "./ImpairmentSearch";
+import { useImpairments } from "../../api/hooks";
 import type { InjuryDraft } from "../../state/types";
-import type { StatelessRatingResponse, WcImpairmentDefinitionRead } from "../../api/types";
+import type {
+  StatelessRatingResponse,
+  WcImpairmentDefinitionRead,
+} from "../../api/types";
 
 interface InjuriesListProps {
   injuries: InjuryDraft[];
@@ -29,6 +39,7 @@ export function InjuriesList({
 }: InjuriesListProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [newlyAddedId, setNewlyAddedId] = React.useState<string | null>(null);
+  const { data: catalog } = useImpairments();
 
   const editing = injuries.find((i) => i.tmpId === editingId);
 
@@ -40,6 +51,20 @@ export function InjuriesList({
     });
     return map;
   }, [liveResult]);
+
+  const rows = React.useMemo<InjuryRowData[]>(() => {
+    return injuries.map((injury, idx) => {
+      const definition =
+        injury.impairment_definition_id && catalog?.impairments
+          ? (catalog.impairments[injury.impairment_definition_id] ?? null)
+          : null;
+      return {
+        injury,
+        definition,
+        warnings: warningsByIndex.get(idx) ?? [],
+      };
+    });
+  }, [injuries, catalog, warningsByIndex]);
 
   const handleAdd = () => {
     const id = onAdd();
@@ -58,55 +83,80 @@ export function InjuriesList({
     setNewlyAddedId(null);
   };
 
+  const handleCopyAll = async () => {
+    if (rows.length === 0) return;
+    const tsv = rowsToTsv(rows);
+    try {
+      await navigator.clipboard.writeText(tsv);
+      toast.success(`Copied ${rows.length} injuries`, {
+        description: "Tab-separated — paste into Excel or Sheets.",
+      });
+    } catch {
+      toast.error("Couldn't copy to clipboard");
+    }
+  };
+
   return (
     <section
       className={cn(
-        "rounded-2xl border border-border bg-card p-6 sm:p-7 shadow-sm",
+        "rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm",
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-3 mb-5">
-        <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 ring-1 ring-primary/15">
-            <Activity className="h-5 w-5 text-primary" />
+      <header className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="rounded-md bg-primary/10 p-1.5 ring-1 ring-primary/15 shrink-0">
+            <Activity className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-foreground tracking-tight">
               Injuries
             </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {injuries.length === 0
-                ? "Add the impairments from the medical evaluation."
-                : `${injuries.length} ${injuries.length === 1 ? "injury" : "injuries"} on this report.`}
+                ? "Add impairments from the medical evaluation."
+                : `${injuries.length} ${
+                    injuries.length === 1 ? "injury" : "injuries"
+                  } · click any row to edit.`}
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={handleAdd}
-          className="gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          Add injury
-        </Button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {injuries.length > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyAll}
+                  className="gap-1.5 h-8"
+                >
+                  <ClipboardCopy className="h-3.5 w-3.5" />
+                  Copy all
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Copy all rows as TSV (paste into Excel / Sheets)
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleAdd}
+            className="gap-1.5 h-8"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add injury
+          </Button>
+        </div>
       </header>
 
       {injuries.length === 0 ? (
         <EmptyInjuries onAdd={handleAdd} />
       ) : (
-        <div className="space-y-2.5">
-          {injuries.map((injury, idx) => (
-            <InjuryCard
-              key={injury.tmpId}
-              index={idx}
-              injury={injury}
-              onEdit={() => setEditingId(injury.tmpId)}
-              onDelete={() => onRemove(injury.tmpId)}
-              warnings={warningsByIndex.get(idx) ?? []}
-            />
-          ))}
-        </div>
+        <InjuriesTable rows={rows} onEdit={setEditingId} onDelete={onRemove} />
       )}
 
       {editing && (
@@ -135,7 +185,9 @@ function InjuryEditorWrapper({
   onClose: () => void;
   onDelete?: () => void;
 }) {
-  const resolvedDefinition = useImpairmentDefinition(injury.impairment_definition_id);
+  const resolvedDefinition = useImpairmentDefinition(
+    injury.impairment_definition_id,
+  );
 
   return (
     <InjuryEditor

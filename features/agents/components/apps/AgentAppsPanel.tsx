@@ -33,7 +33,7 @@ export function AgentAppsPanel({
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 space-y-6">
-        <header className="flex items-start justify-between gap-3">
+        <header className="flex items-start justify-between gap-3 pt-10">
           <div className="space-y-1 min-w-0 flex-1">
             <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
               Apps
@@ -57,7 +57,11 @@ export function AgentAppsPanel({
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <CountCard label="Total" value={apps.length} icon={LayoutGrid} />
-          <CountCard label="Published" value={publishedCount} icon={LayoutGrid} />
+          <CountCard
+            label="Published"
+            value={publishedCount}
+            icon={LayoutGrid}
+          />
           <CountCard label="Featured" value={featuredCount} icon={LayoutGrid} />
         </section>
 

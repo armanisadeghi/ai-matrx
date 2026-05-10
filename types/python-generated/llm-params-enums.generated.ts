@@ -14,6 +14,8 @@ export type LLMParamReasoningEffort = "auto" | "none" | "minimal" | "low" | "med
 
 export type LLMParamReasoningSummary = "concise" | "detailed" | "never" | "auto" | "always";
 
+export type LLMParamRenderQuality = "low" | "medium" | "high" | "auto";
+
 export type LLMParamThinkingLevel = "minimal" | "low" | "medium" | "high";
 
 export type LLMParamToolChoice = "none" | "auto" | "required";
