@@ -34,6 +34,7 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import { SHELL_REGISTRY } from "./shells";
+import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
 
 const HtmlPreviewModal = dynamic(
@@ -66,19 +67,25 @@ export function AgentAppPublicRenderer({
   TestComponent,
 }: AgentAppPublicRendererProps) {
   // Phase 1c dispatch: if the app row declares a shell, look it up in the
-  // registry and render that — bypasses the legacy custom-component path
-  // entirely. Falls through to the original renderer for fully_custom or
-  // when TestComponent is provided (code-preview adapter).
+  // registry and render that. Phase 1f extends this to fully_custom apps,
+  // which now run on AgentAppFullyCustomShell (uses the useAgentApp hook
+  // contract, with legacy callback props preserved as compat aliases).
+  // The legacy CustomComponentRenderer remains only for the code-preview
+  // path where a TestComponent is injected directly.
   const shellKind = (app as { shell_kind?: string }).shell_kind;
-  if (
-    !TestComponent &&
-    shellKind &&
-    shellKind !== "fully_custom" &&
-    SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]
-  ) {
-    const Shell =
-      SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
-    return <Shell app={app} />;
+  if (!TestComponent) {
+    if (
+      shellKind &&
+      shellKind !== "fully_custom" &&
+      SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]
+    ) {
+      const Shell =
+        SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
+      return <Shell app={app} />;
+    }
+    if (shellKind === "fully_custom") {
+      return <AgentAppFullyCustomShell app={app} />;
+    }
   }
 
   return <CustomComponentRenderer app={app} slug={slug} TestComponent={TestComponent} />;
