@@ -29,11 +29,17 @@ import {
   X,
   Loader2,
   AlertCircle,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
 import { cn } from "@/lib/utils";
+
+// 36-char canonical UUID — what cld_files file_ids look like.
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type MediaKind = "image" | "audio" | "video" | "document";
 
@@ -86,7 +92,7 @@ const KIND_META: Record<
   },
 };
 
-function readUrl(value: unknown): string {
+function readValue(value: unknown): string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object") {
     const o = value as Record<string, unknown>;
@@ -95,13 +101,14 @@ function readUrl(value: unknown): string {
   return "";
 }
 
-function shortenUrl(url: string): string {
+function describeValue(value: string): string {
+  if (UUID_PATTERN.test(value)) return `From your library · ${value.slice(0, 8)}…`;
   try {
-    const u = new URL(url);
+    const u = new URL(value);
     const path = u.pathname.length > 30 ? `…${u.pathname.slice(-28)}` : u.pathname;
     return u.host + path;
   } catch {
-    return url;
+    return value;
   }
 }
 
@@ -122,7 +129,19 @@ export function MediaVariableInput({
 }: MediaVariableInputProps) {
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
-  const url = readUrl(value);
+  const stored = readValue(value);
+  const isFileId = !!stored && UUID_PATTERN.test(stored);
+
+  // Resolve a renderable URL when the stored value is a cld_files UUID.
+  // Returns null while loading; we hide the thumbnail in that case.
+  const resolvedSrc = useFileSrc(
+    isFileId ? { kind: "file_id", fileId: stored } : null,
+  );
+
+  // Pick what goes into <img src>. file_id values resolve via the handler;
+  // URL values render directly. Don't try to render URL paths through
+  // useFileSrc — only file_ids belong there.
+  const previewSrc = isFileId ? resolvedSrc : stored;
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -140,7 +159,13 @@ export function MediaVariableInput({
             shareLinkPermissionLevel: "read",
           },
         );
-        if (normalized.url) onChange(normalized.url);
+        // Prefer file_id over URL on the wire — it's the canonical
+        // identifier; backend's coerce_to_media_ref routes a 36-char
+        // UUID straight to MediaRef.file_id without a URL→share-link
+        // resolution hop. Falls back to URL only when fileId is absent
+        // (e.g. external-URL ingestion paths).
+        const next = normalized.fileId ?? normalized.url ?? "";
+        if (next) onChange(next);
       } catch {
         // useFileUpload exposes the error on `error`; UI shows it below.
       }
@@ -172,15 +197,22 @@ export function MediaVariableInput({
 
   const onClear = () => onChange("");
 
+  // Decide whether we render an <img> thumbnail. Images and resolved
+  // file_id thumbnails get one; URLs without an http(s) prefix don't.
+  const hasThumbnail =
+    meta.canThumbnail &&
+    !!previewSrc &&
+    /^https?:\/\//.test(previewSrc);
+
   return (
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
       {/* Filled state — preview + clear */}
-      {url && (
+      {stored && (
         <div className="flex items-stretch gap-2 px-2 py-1.5 rounded-md border border-border bg-muted/40">
-          {meta.canThumbnail && /^https?:\/\//.test(url) ? (
+          {hasThumbnail ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={url}
+              src={previewSrc!}
               alt={variableName}
               className="h-10 w-10 object-cover rounded border border-border shrink-0"
               onError={(e) => {
@@ -189,18 +221,24 @@ export function MediaVariableInput({
             />
           ) : (
             <div className="h-10 w-10 rounded bg-background flex items-center justify-center shrink-0 border border-border">
-              <Icon className="w-4 h-4 text-muted-foreground" />
+              {isFileId && !resolvedSrc ? (
+                <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+              ) : isFileId ? (
+                <Database className="w-4 h-4 text-blue-500" />
+              ) : (
+                <Icon className="w-4 h-4 text-muted-foreground" />
+              )}
             </div>
           )}
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span
               className="text-xs font-medium text-foreground truncate"
-              title={url}
+              title={stored}
             >
-              {shortenUrl(url)}
+              {describeValue(stored)}
             </span>
             <span className="text-[10px] text-muted-foreground capitalize">
-              {meta.label}
+              {isFileId ? `${meta.label} · file_id` : meta.label}
             </span>
           </div>
           <Button
@@ -216,7 +254,7 @@ export function MediaVariableInput({
       )}
 
       {/* Empty state — drop zone + paste URL */}
-      {!url && (
+      {!stored && (
         <>
           <div
             onDrop={onDrop}
@@ -267,7 +305,7 @@ export function MediaVariableInput({
           </div>
 
           <Input
-            value={url}
+            value={stored}
             onChange={(e) => onChange(e.target.value)}
             placeholder={meta.urlPlaceholder}
             className="h-8 text-xs font-mono"
