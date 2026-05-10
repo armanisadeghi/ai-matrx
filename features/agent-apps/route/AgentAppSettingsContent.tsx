@@ -41,9 +41,12 @@ import { AgentAppImageField } from "@/features/agent-apps/components/inputs/Agen
 import { AgentAppHierarchyCascade } from "@/features/agent-apps/components/inputs/AgentAppHierarchyCascade";
 import { ShellPicker } from "@/features/agent-apps/components/builder/ShellPicker";
 import { ShellConfigPanel } from "@/features/agent-apps/components/builder/ShellConfigPanel";
+import { SlotOverrideEditor } from "@/features/agent-apps/components/builder/SlotOverrideEditor";
 import type {
   AgentAppShellConfigCommon,
   AgentAppShellKind,
+  AgentAppSlotCode,
+  AgentAppSlotOverrides,
 } from "@/features/agent-apps/types";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
@@ -281,6 +284,23 @@ export function AgentAppSettingsContent({
                 }
                 onChange={(next) => saveField("shell_config", next)}
                 disabled={savingField === "shell_config"}
+              />
+            </div>
+            <div className="border-t border-border/60 pt-4">
+              <SlotOverrideEditor
+                shellKind={app.shell_kind as AgentAppShellKind}
+                overrides={
+                  (app.slot_overrides ?? {}) as AgentAppSlotOverrides
+                }
+                code={(app.slot_code ?? {}) as AgentAppSlotCode}
+                onChangeOverrides={(next) =>
+                  saveField("slot_overrides", next)
+                }
+                onChangeCode={(next) => saveField("slot_code", next)}
+                disabled={
+                  savingField === "slot_overrides" ||
+                  savingField === "slot_code"
+                }
               />
             </div>
           </TabsContent>
