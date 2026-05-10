@@ -610,7 +610,11 @@ export function BlockRow({
               key={f.key}
               className="flex gap-1.5 pl-5 font-mono text-[10px] leading-snug"
             >
-              <span className="text-muted-foreground shrink-0">{f.label}:</span>
+              {f.label && (
+                <span className="text-muted-foreground shrink-0">
+                  {f.label}:
+                </span>
+              )}
               <span className="truncate">
                 <HighlightedText text={f.val} validVariables={validVariables} />
               </span>
