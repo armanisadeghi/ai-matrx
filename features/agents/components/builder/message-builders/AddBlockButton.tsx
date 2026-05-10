@@ -73,9 +73,8 @@ const BLOCK_TYPES: BlockTypeConfig[] = [
     fields: [
       {
         key: "text",
-        label: "Text content",
-        placeholder:
-          "Add an extra text section — e.g. a negative prompt or system note. Tag the role in Metadata below (key: role, value: negative_prompt).",
+        label: "",
+        placeholder: "Negative prompt, system note, etc.",
         multiline: true,
       },
     ],
@@ -212,10 +211,6 @@ function MetadataEditor({ pairs, onChange }: MetadataEditorProps) {
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wide">
-        <Tag className="w-3 h-3" />
-        <span>Metadata (optional)</span>
-      </div>
       {pairs.map((p, i) => (
         <div key={i} className="flex items-center gap-1">
           <Input
@@ -245,7 +240,7 @@ function MetadataEditor({ pairs, onChange }: MetadataEditorProps) {
         onClick={addPair}
         className="self-start flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <Plus className="w-3 h-3" />
+        <Tag className="w-2.5 h-2.5" />
         Add metadata
       </button>
     </div>
@@ -364,15 +359,18 @@ export function BlockEditor({
         const showImageUpload = config.type === "image" && key === "url";
         return (
           <div key={key} className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">{label}</Label>
-            <div className="flex items-start gap-1">
+            {label && (
+              <Label className="text-xs text-muted-foreground">{label}</Label>
+            )}
+            <div className="flex items-start gap-1 w-full">
               {multiline ? (
                 <Textarea
                   autoFocus={key === config.fields[0].key}
                   value={values[key] ?? ""}
                   onChange={(e) => setValue(key, e.target.value)}
                   placeholder={placeholder}
-                  className="text-xs flex-1 min-h-[60px]"
+                  className="text-xs w-full min-h-[60px]"
+                  wrapperClassName="w-full flex-1"
                   autoGrow
                   minHeight={60}
                   maxHeight={200}
