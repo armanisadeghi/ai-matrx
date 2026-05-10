@@ -7,18 +7,19 @@
  * from a single sentence), and a "Manual" tab (full control). Mirrors the
  * legacy `features/prompt-apps/components/CreatePromptAppFormWrapper.tsx`.
  *
- * The picker drives both tabs: until an agent is selected, both tabs are
- * disabled and a single empty-state message points the user at the picker.
+ * When the page is entered with `?agent_id=<id>` (e.g. from
+ * `/agents/[id]/apps` → "New app"), the picker is hidden — the agent is
+ * already known and showing a 35%-tall dropdown would just push the real
+ * UI down.
  */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layers, Wrench, MousePointerClick } from "lucide-react";
+import { Wrench, MousePointerClick } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
 import { AutoCreateAgentAppForm } from "./AutoCreateAgentAppForm";
-import { ShellBasedCreateAgentAppForm } from "./ShellBasedCreateAgentAppForm";
 import {
   SearchableAgentSelect,
   type AgentOption,
@@ -46,7 +47,7 @@ export function CreateAgentAppFormWrapper({
   onSuccess,
 }: CreateAgentAppFormWrapperProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<string>("shell");
+  const [activeTab, setActiveTab] = useState<string>("auto");
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(
     preselectedAgentId ?? undefined,
   );
@@ -103,42 +104,41 @@ export function CreateAgentAppFormWrapper({
       }
       const created = (await res.json()) as { id: string };
       onSuccess?.();
-      router.push(`/agent-apps/${created.id}`);
+      router.push(`/agent-apps/${created.id}/run`);
     } finally {
       setBusy(false);
     }
   };
 
+  // When entered with a preselected agent (e.g. from /agents/[id]/apps →
+  // "New app"), skip the picker entirely — the agent is already chosen
+  // and the picker would just push the real UI below the fold.
+  const hidePicker = !!preselectedAgentId;
+
   return (
     <div className="w-full space-y-8">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">Select Your Agent</Label>
-          {selectedAgent && (
-            <span className="text-xs text-muted-foreground">
-              {agents.length} agent{agents.length !== 1 ? "s" : ""} available
-            </span>
-          )}
+      {!hidePicker && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">Select Your Agent</Label>
+            {selectedAgent && (
+              <span className="text-xs text-muted-foreground">
+                {agents.length} agent{agents.length !== 1 ? "s" : ""} available
+              </span>
+            )}
+          </div>
+          <SearchableAgentSelect
+            agents={agentOptions}
+            value={selectedAgentId ?? null}
+            onChange={handleAgentChange}
+            placeholder="Choose the agent to power your app..."
+          />
         </div>
-        <SearchableAgentSelect
-          agents={agentOptions}
-          value={selectedAgentId ?? null}
-          onChange={handleAgentChange}
-          placeholder="Choose the agent to power your app..."
-        />
-      </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex justify-center mb-8">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger
-              value="shell"
-              className="gap-2"
-              disabled={!selectedAgentId}
-            >
-              <Layers className="w-4 h-4" />
-              From Shell
-            </TabsTrigger>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger
               value="auto"
               className="gap-2"
@@ -173,17 +173,6 @@ export function CreateAgentAppFormWrapper({
 
         {selectedAgentId && (
           <>
-            <TabsContent value="shell" className="mt-0">
-              <ShellBasedCreateAgentAppForm
-                agent={{
-                  id: selectedAgentId,
-                  name: selectedAgent?.name,
-                  description: selectedAgent?.description ?? null,
-                }}
-                onSuccess={onSuccess}
-              />
-            </TabsContent>
-
             <TabsContent value="auto" className="mt-0">
               <AutoCreateAgentAppForm
                 agent={selectedAgent}

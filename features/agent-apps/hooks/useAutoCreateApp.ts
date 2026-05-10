@@ -354,9 +354,11 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
         // the success UI stays visible during the brief redirect delay
         navigatingAway = true;
 
-        // Redirect to app page
+        // Redirect to the Run page — that's the only thing the user wants
+        // to see after creating the app. They can flip back to Overview /
+        // Code / Settings from the sub-route header tabs.
         setTimeout(() => {
-          router.push(`/agent-apps/${appData.id}`);
+          router.push(`/agent-apps/${appData.id}/run`);
         }, 500);
 
         return appData;
