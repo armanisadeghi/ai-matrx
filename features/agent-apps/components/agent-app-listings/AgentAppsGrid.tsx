@@ -12,7 +12,13 @@
  * tags, agents (by id; name shown in UI), archive, visibility.
  */
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -203,17 +209,13 @@ export function AgentAppsGrid({
     [navigatingId, router],
   );
 
-  const handleViewExternal = useCallback(
-    (_app: AgentAppCardModel) => {
-      // The card already wraps the icon in a target=_blank Link; this stays
-      // as a no-op spot to record analytics later if we want.
-    },
-    [],
-  );
+  const handleViewExternal = useCallback((_app: AgentAppCardModel) => {
+    // The card already wraps the icon in a target=_blank Link; this stays
+    // as a no-op spot to record analytics later if we want.
+  }, []);
 
   const handleCopyUrl = useCallback(async (app: AgentAppCardModel) => {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/p/${app.slug}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -232,7 +234,25 @@ export function AgentAppsGrid({
         const res = await fetch(`/api/agent-apps/${app.id}/duplicate`, {
           method: "POST",
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        // Pull the server's actual error message so silent backend
+        // failures (RLS, FK violations, slug races, etc.) surface in the
+        // UI instead of a meaningless "HTTP 500".
+        if (!res.ok) {
+          let message = `HTTP ${res.status}`;
+          try {
+            const payload = (await res.json()) as {
+              error?: string;
+              details?: { message?: string };
+            };
+            const detail = payload?.details?.message;
+            message = detail
+              ? `${payload.error ?? "Failed"}: ${detail}`
+              : (payload?.error ?? message);
+          } catch {
+            // Body wasn't JSON — fall back to the status code.
+          }
+          throw new Error(message);
+        }
         toast.success("App duplicated.");
         dispatch(fetchAppsInitial());
       } catch (err) {

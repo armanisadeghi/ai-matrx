@@ -76,10 +76,16 @@ export async function POST(
       slug = `${baseSlug}-${attempt}`;
     }
 
+    // Always reset scope to the duplicating user — we never want to copy
+    // org / project / task ownership, and `aga_apps_insert` policy
+    // requires user_id = auth.uid() with the other scope keys NULL.
     const { data: newApp, error: insertError } = await supabase
       .from("aga_apps")
       .insert({
         user_id: user.id,
+        organization_id: null,
+        project_id: null,
+        task_id: null,
         agent_id: original.agent_id,
         agent_version_id: original.agent_version_id,
         use_latest: original.use_latest,
@@ -95,12 +101,23 @@ export async function POST(
         allowed_imports: original.allowed_imports,
         layout_config: original.layout_config,
         styling_config: original.styling_config,
+        // Shell / slots — added by the shell_kind migration. Without these
+        // a duplicate of a non-`chat` shell app would silently fall back
+        // to the chat shell and lose the original UI contract.
+        app_kind: original.app_kind,
+        shell_kind: original.shell_kind,
+        shell_config: original.shell_config,
+        slot_overrides: original.slot_overrides,
+        slot_code: original.slot_code,
+        shared_context_slots: original.shared_context_slots,
+        metadata: original.metadata,
+        preview_image_url: original.preview_image_url,
+        favicon_url: original.favicon_url,
         status: "draft",
         is_public: false,
         rate_limit_per_ip: original.rate_limit_per_ip,
         rate_limit_window_hours: original.rate_limit_window_hours,
         rate_limit_authenticated: original.rate_limit_authenticated,
-        favicon_url: original.favicon_url,
       })
       .select()
       .single();
@@ -131,7 +148,9 @@ export async function POST(
       {
         error: "Internal server error",
         details:
-          dev && error instanceof Error ? { message: error.message } : undefined,
+          dev && error instanceof Error
+            ? { message: error.message }
+            : undefined,
       },
       { status: 500 },
     );
