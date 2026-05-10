@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
       allowed_imports,
       layout_config,
       styling_config,
+      shell_kind,
+      shell_config,
+      slot_overrides,
+      slot_code,
       scope,
     } = body;
 
@@ -57,11 +61,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!agent_id || !slug || !name || !component_code) {
+    // `component_code` is required only for the fully_custom path. Built-in
+    // shell apps (chat / form_to_result / widget / etc) render entirely from
+    // the agent definition + shell_config and don't need any user code.
+    const isShellBased = shell_kind && shell_kind !== "fully_custom";
+    if (!agent_id || !slug || !name) {
+      return NextResponse.json(
+        { error: "Missing required fields: agent_id, slug, name" },
+        { status: 400 },
+      );
+    }
+    if (!isShellBased && !component_code) {
       return NextResponse.json(
         {
           error:
-            "Missing required fields: agent_id, slug, name, component_code",
+            "Missing required field: component_code (required when shell_kind is omitted or 'fully_custom')",
         },
         { status: 400 },
       );
@@ -109,7 +123,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const insertPayload = {
+    const insertPayload: Record<string, unknown> = {
       agent_id,
       agent_version_id: agent_version_id ?? null,
       use_latest: use_latest ?? true,
@@ -123,14 +137,30 @@ export async function POST(request: NextRequest) {
       description: description ?? null,
       category: category ?? null,
       tags: tags ?? [],
-      component_code,
+      // Shell-based apps default `component_code` to empty string — the
+      // column is NOT NULL on legacy rows. The renderer ignores it when
+      // shell_kind is set to a built-in.
+      component_code: component_code ?? "",
       component_language: component_language ?? "tsx",
       variable_schema: (variable_schema ?? []) as unknown,
       allowed_imports: (allowed_imports ?? []) as unknown,
       layout_config: (layout_config ?? {}) as unknown,
       styling_config: (styling_config ?? {}) as unknown,
+      // Shell columns are optional — when omitted the DB default applies
+      // (currently 'chat'). When `component_code` is set without a
+      // shell_kind, mark the row 'fully_custom' so the renderer dispatches
+      // to AgentAppFullyCustomShell.
+      shell_kind:
+        shell_kind ?? (component_code ? "fully_custom" : undefined),
+      ...(shell_config !== undefined ? { shell_config } : {}),
+      ...(slot_overrides !== undefined ? { slot_overrides } : {}),
+      ...(slot_code !== undefined ? { slot_code } : {}),
       status: "draft",
     };
+    // Strip undefined keys so the DB default applies.
+    Object.keys(insertPayload).forEach((k) => {
+      if (insertPayload[k] === undefined) delete insertPayload[k];
+    });
 
     // Global apps bypass RLS via the admin client because user_id = null
     // would fail a typical owner-check INSERT policy.

@@ -14,10 +14,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wrench, MousePointerClick } from "lucide-react";
+import { Layers, Wrench, MousePointerClick } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
 import { AutoCreateAgentAppForm } from "./AutoCreateAgentAppForm";
+import { ShellBasedCreateAgentAppForm } from "./ShellBasedCreateAgentAppForm";
 import {
   SearchableAgentSelect,
   type AgentOption,
@@ -45,7 +46,7 @@ export function CreateAgentAppFormWrapper({
   onSuccess,
 }: CreateAgentAppFormWrapperProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<string>("auto");
+  const [activeTab, setActiveTab] = useState<string>("shell");
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(
     preselectedAgentId ?? undefined,
   );
@@ -129,7 +130,15 @@ export function CreateAgentAppFormWrapper({
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex justify-center mb-8">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger
+              value="shell"
+              className="gap-2"
+              disabled={!selectedAgentId}
+            >
+              <Layers className="w-4 h-4" />
+              From Shell
+            </TabsTrigger>
             <TabsTrigger
               value="auto"
               className="gap-2"
@@ -164,6 +173,17 @@ export function CreateAgentAppFormWrapper({
 
         {selectedAgentId && (
           <>
+            <TabsContent value="shell" className="mt-0">
+              <ShellBasedCreateAgentAppForm
+                agent={{
+                  id: selectedAgentId,
+                  name: selectedAgent?.name,
+                  description: selectedAgent?.description ?? null,
+                }}
+                onSuccess={onSuccess}
+              />
+            </TabsContent>
+
             <TabsContent value="auto" className="mt-0">
               <AutoCreateAgentAppForm
                 agent={selectedAgent}

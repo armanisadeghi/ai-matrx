@@ -311,6 +311,10 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
             component_language: "tsx",
             variable_schema: variableSchema,
             allowed_imports: getDefaultImportsForNewApps(),
+            // The AI generator produces a full custom UI; mark the row so the
+            // public renderer dispatches to AgentAppFullyCustomShell instead
+            // of a built-in shell (which would ignore the generated code).
+            shell_kind: "fully_custom",
             rate_limit_per_ip: 10,
             rate_limit_window_hours: 24,
             status: "draft",
