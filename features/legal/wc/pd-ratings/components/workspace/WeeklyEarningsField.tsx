@@ -25,6 +25,7 @@ export function WeeklyEarningsField({ value, onChange }: WeeklyEarningsFieldProp
 
   return (
     <Field
+      required
       label={
         <span className="flex items-center gap-1.5">
           Weekly earnings

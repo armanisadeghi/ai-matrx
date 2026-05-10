@@ -58,7 +58,7 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5">
         <div className="lg:col-span-6">
-          <Field label="Applicant name">
+          <Field label="Applicant name" required>
             <Input
               type="text"
               value={claim.applicant_name}
@@ -70,7 +70,7 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
         </div>
 
         <div className="lg:col-span-6">
-          <Field label="Occupation">
+          <Field label="Occupation" required>
             <OccupationCombobox
               value={claim.occupational_code}
               onChange={(code) => onChange({ occupational_code: code })}
@@ -79,7 +79,7 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
         </div>
 
         <div className="lg:col-span-4">
-          <Field label="Date of injury">
+          <Field label="Date of injury" required>
             <DateField
               value={parseIso(claim.date_of_injury)}
               onChange={(d) => onChange({ date_of_injury: isoOrNull(d) })}
@@ -89,10 +89,7 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
         </div>
 
         <div className="lg:col-span-4">
-          <Field
-            label="Date of birth"
-            hint="Optional — derives age from DOI when present."
-          >
+          <Field label="Date of birth" required>
             <DateField
               value={parseIso(claim.date_of_birth)}
               onChange={(d) => onChange({ date_of_birth: isoOrNull(d) })}
@@ -105,7 +102,7 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
         <div className="lg:col-span-4">
           <Field
             label="Age at injury"
-            hint="Required if no date of birth provided."
+            hint="Optional — overrides the age computed from DOB and DOI."
           >
             <NumberField
               value={ageString}

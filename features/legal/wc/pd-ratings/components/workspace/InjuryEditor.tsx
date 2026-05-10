@@ -148,7 +148,7 @@ function InjuryEditorBody({
 
   return (
     <div className="space-y-5 pt-1">
-      <Field label="Impairment" hint="From the AMA Guides catalog.">
+      <Field label="Impairment" hint="From the AMA Guides catalog." required>
         <ImpairmentSearch
           value={injury.impairment_definition_id}
           onChange={(id, def) => onSelectImpairment(def)}
@@ -156,7 +156,7 @@ function InjuryEditorBody({
       </Field>
 
       {attributeAccepts(attrs, "side") && (
-        <Field label="Side">
+        <Field label="Side" required={Boolean(attrs?.side)}>
           <div className="grid grid-cols-3 gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
             {SIDES.map((opt) => (
               <button
@@ -182,6 +182,7 @@ function InjuryEditorBody({
           label="Whole-person impairment (WPI)"
           value={injury.wpi}
           onChange={(v) => onChange({ wpi: v })}
+          required={Boolean(attrs?.wpi)}
         />
       )}
 
@@ -190,6 +191,7 @@ function InjuryEditorBody({
           label="Upper extremity (UE)"
           value={injury.ue}
           onChange={(v) => onChange({ ue: v })}
+          required={Boolean(attrs?.ue)}
         />
       )}
 
@@ -198,6 +200,7 @@ function InjuryEditorBody({
           label="Lower extremity (LE)"
           value={injury.le}
           onChange={(v) => onChange({ le: v })}
+          required={Boolean(attrs?.le)}
         />
       )}
 
@@ -207,6 +210,7 @@ function InjuryEditorBody({
           value={injury.digit}
           onChange={(v) => onChange({ digit: v })}
           hint="Required for finger / thumb / toe impairments."
+          required={Boolean(attrs?.digit)}
         />
       )}
 
@@ -254,14 +258,16 @@ function PercentField({
   value,
   onChange,
   hint,
+  required,
 }: {
   label: string;
   value: number | null;
   onChange: (n: number | null) => void;
   hint?: string;
+  required?: boolean;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} required={required}>
       <NumberField
         value={value == null ? "" : String(value)}
         onChange={(raw) => {

@@ -365,8 +365,14 @@ export const ProTextarea = React.forwardRef<
       [onKeyDown, onSubmit, cmdEnterEnabled, submitOnEnter, triggerSubmit],
     );
 
+    // Icons appear ONLY on mouse hover (or when recording/transcribing, so the
+    // user can see/stop an in-flight session). Focus does NOT reveal the
+    // controls — keeping the textarea visually clean while the user is typing
+    // and preventing the layout from feeling crowded mid-thought. Wrapper has
+    // static padding (driven by `showTopRightControls`/`onSubmit` props that
+    // don't change on hover), so no layout shift can occur here.
     const showControls =
-      (isFocused || isHovered || isRecording || isTranscribing) && !disabled;
+      (isHovered || isRecording || isTranscribing) && !disabled;
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
     const showTopRightControls = isAudioAvailable || showCopyButton;

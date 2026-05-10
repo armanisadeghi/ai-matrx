@@ -8,6 +8,7 @@ interface FieldProps {
   hint?: React.ReactNode;
   htmlFor?: string;
   trailing?: React.ReactNode;
+  required?: boolean;
   children: React.ReactNode;
   className?: string;
 }
@@ -17,6 +18,7 @@ export function Field({
   hint,
   htmlFor,
   trailing,
+  required,
   children,
   className,
 }: FieldProps) {
@@ -28,6 +30,14 @@ export function Field({
           className="text-sm font-medium text-foreground"
         >
           {label}
+          {required && (
+            <span
+              aria-label="required"
+              className="ml-1 text-destructive"
+            >
+              *
+            </span>
+          )}
         </label>
         {trailing}
       </div>

@@ -32,7 +32,11 @@ const ONE_HOUR_MS = 1000 * 60 * 60;
 
 const QK = {
   occupationalCodes: ["wc-ratings", "occupational-codes"] as const,
-  impairments: ["wc-ratings", "impairments"] as const,
+  // v2: backend switched the impairment catalog from a JSON file to the
+  // `wc_impairment_definition` table (2026-05-09). Old cached entries had
+  // `id: null`, which broke injury creation — bump the key so any user
+  // with a hot cache refetches.
+  impairments: ["wc-ratings", "impairments", "v2"] as const,
   impairmentSearch: (phrase: string) =>
     ["wc-ratings", "impairment-search", phrase] as const,
   claim: (claimId: string | undefined) =>

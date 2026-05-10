@@ -646,7 +646,7 @@ export function SystemMessage({
           <Label className="text-xs text-gray-600 dark:text-gray-400">
             System
           </Label>
-          <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons
               isEditing={isEditing}
               hasVariableSupport={hasVariableSupport}

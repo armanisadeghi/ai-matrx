@@ -587,7 +587,7 @@ export function MessageItem({
             <SelectItem value="assistant">Assistant</SelectItem>
           </SelectContent>
         </Select>
-        <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+        <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <MessageItemButtons
             isEditing={isEditing}
             hasVariableSupport={hasVariableSupport}

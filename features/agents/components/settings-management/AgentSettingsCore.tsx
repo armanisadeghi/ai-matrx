@@ -1844,31 +1844,26 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
               />
             )}
 
-            {/* Text model settings — render every key that has a control OR is currently set */}
+            {/* Text model settings — render every key the active model supports.
+                Visibility is purely model-driven; whether the setting is
+                included on output is controlled by the row checkbox.
+                Mismatches (agent has a value but model doesn't support)
+                surface in the IssueTable at the top, NOT in this list. */}
             {(() => {
               const rows = textModelSettings.filter(
-                ({ key }) =>
-                  !!getControl(key) ||
-                  (currentSettings as Record<string, unknown>)[key] !==
-                    undefined,
+                ({ key }) => !!getControl(key),
               );
               return rows.map(({ key, label }) =>
                 renderControl(key, label, getControl(key) ?? null),
               );
             })()}
 
-            {/* Audio settings */}
+            {/* Audio settings — same model-driven visibility */}
             {(() => {
               const audioRows = audioSettings.filter(
-                ({ key }) =>
-                  !!getControl(key) ||
-                  (currentSettings as Record<string, unknown>)[key] !==
-                    undefined,
+                ({ key }) => !!getControl(key),
               );
-              const hasTtsVoice =
-                !!getControl("tts_voice") ||
-                (currentSettings as Record<string, unknown>).tts_voice !==
-                  undefined;
+              const hasTtsVoice = !!getControl("tts_voice");
               if (!hasTtsVoice && audioRows.length === 0) return null;
               return (
                 <div className="border-t pt-2 mt-2">
@@ -1955,13 +1950,10 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
               );
             })()}
 
-            {/* Image/Video settings */}
+            {/* Image/Video settings — model-driven visibility */}
             {(() => {
               const rows = imageVideoSettings.filter(
-                ({ key }) =>
-                  !!getControl(key) ||
-                  (currentSettings as Record<string, unknown>)[key] !==
-                    undefined,
+                ({ key }) => !!getControl(key),
               );
               if (rows.length === 0) return null;
               return (
@@ -1977,12 +1969,14 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
             })()}
 
             {/* Boolean / Feature flags */}
+            {/* Boolean / Feature flags — model-driven visibility.
+                A boolean setting whose value is `false` (or any value) is
+                visible iff the active model declares the control. The
+                checkbox state reflects whether the value is currently
+                included in the agent's settings dict. */}
             {(() => {
               const rows = booleanSettings.filter(
-                ({ key }) =>
-                  !!getControl(key) ||
-                  (currentSettings as Record<string, unknown>)[key] !==
-                    undefined,
+                ({ key }) => !!getControl(key),
               );
               if (rows.length === 0) return null;
               return (
@@ -1997,8 +1991,12 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
               );
             })()}
 
-            {/* Other settings — keys present in currentSettings that no group claims.
-                Always visible so nothing can silently hide. */}
+            {/* Other settings — keys the active model declares that no
+                hardcoded group claims (e.g. a brand new control we haven't
+                categorized yet). Model-driven visibility: only show when
+                the model actually declares the control. Mismatched keys
+                that exist on the agent but aren't supported show in the
+                IssueTable above, NOT here. */}
             {(() => {
               const hardcodedKeys = new Set<string>([
                 ...textModelSettings.map((s) => s.key as string),
@@ -2008,7 +2006,15 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
                 "tts_voice",
                 "multi_speaker",
               ]);
-              const otherKeys = Object.keys(currentSettings).filter(
+              // Iterate every control the model declares; surface anything
+              // not in a hardcoded group. This way new model controls
+              // appear automatically without an FE code change.
+              const declaredKeys = normalizedControls
+                ? Object.keys(normalizedControls).filter(
+                    (k) => k !== "rawControls" && k !== "unmappedControls",
+                  )
+                : [];
+              const otherKeys = declaredKeys.filter(
                 (k) => !hardcodedKeys.has(k),
               );
               if (otherKeys.length === 0) return null;

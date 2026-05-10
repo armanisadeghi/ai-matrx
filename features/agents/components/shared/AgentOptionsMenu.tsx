@@ -5,9 +5,9 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 
-import { useState, useTransition } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   MoreHorizontal,
   FileText,
@@ -46,6 +46,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { MenuTapButton } from "@/components/icons/tap-buttons";
+import {
+  AgentDuplicateOutcomeDialog,
+  type DuplicateOutcomeState,
+} from "./AgentDuplicateOutcomeDialog";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -185,10 +189,22 @@ export function AgentOptionsMenu({
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
   const dispatch = useAppDispatch();
-  const router = useRouter();
-  const [, startTransition] = useTransition();
+  const pathname = usePathname();
+
+  // Post-duplicate outcome dialog — the user picks whether to navigate to the
+  // copy, open it in a new tab, or stay put. State is lifted here (rather
+  // than inside the desktop/mobile branches) so the dialog survives the
+  // closing of the parent dropdown / drawer that triggered the duplicate.
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateState, setDuplicateState] =
+    useState<DuplicateOutcomeState>("loading");
+  const [duplicatedAgentId, setDuplicatedAgentId] = useState<string | null>(
+    null,
+  );
+  const [duplicatedAgentName, setDuplicatedAgentName] = useState<string>("");
+  const [duplicateError, setDuplicateError] = useState<string>("");
+  const [duplicateAsSystem, setDuplicateAsSystem] = useState(false);
 
   // Builtin/system agents need different menu options than user agents.
   // - "Convert to Template" is meaningless — builtins ARE the templates users
@@ -207,6 +223,60 @@ export function AgentOptionsMenu({
   // The route declares this by passing `basePath`; we don't try to detect it
   // any other way so the contract stays explicit.
   const isAdminContext = isAdminSystemAgentsContext(basePath);
+
+  /**
+   * Compute where "Open new agent" / "Open in new tab" should land for the
+   * duplicated copy. We mirror the user's current sub-route (e.g. `/build`,
+   * `/run`, `/widgets`) so they keep the working context they were just in.
+   * If the source-agent segment isn't found in the pathname (the menu is
+   * rendered from a list page, etc.), the destination is the bare agent
+   * overview — a sensible default.
+   */
+  const newAgentPath = duplicatedAgentId
+    ? (() => {
+        const sourceSegment = `${basePath}/${agentId}`;
+        const suffix =
+          pathname && pathname.startsWith(sourceSegment)
+            ? pathname.slice(sourceSegment.length)
+            : "";
+        return `${basePath}/${duplicatedAgentId}${suffix}`;
+      })()
+    : null;
+
+  /**
+   * Kicks off the duplicate flow and drives the outcome dialog through
+   * loading → success | error. Both the desktop dropdown row and the mobile
+   * drawer item route through this function so the dialog state lives in
+   * exactly one place. Each caller is responsible for closing its own
+   * surrounding surface (dropdown / drawer) before invoking this.
+   */
+  const runDuplicate = useCallback(async () => {
+    // From the admin surface, "Duplicate" must produce another system agent
+    // — duplicating a builtin into a personal user agent silently smuggled
+    // it out of the system catalogue (the original bug). On the user
+    // surface, this is the legitimate "fork a builtin into my workspace"
+    // flow so we leave it alone.
+    const asSystem = isAdminContext && isBuiltin;
+    setDuplicateAsSystem(asSystem);
+    setDuplicatedAgentId(null);
+    setDuplicatedAgentName(agent?.name ? `Copy of ${agent.name}` : "");
+    setDuplicateError("");
+    setDuplicateState("loading");
+    setDuplicateOpen(true);
+
+    try {
+      const newId = await dispatch(
+        duplicateAgent({ agentId, asSystem }),
+      ).unwrap();
+      setDuplicatedAgentId(newId);
+      setDuplicateState("success");
+    } catch (err) {
+      setDuplicateError(
+        err instanceof Error ? err.message : "Failed to duplicate agent.",
+      );
+      setDuplicateState("error");
+    }
+  }, [agent?.name, agentId, dispatch, isAdminContext, isBuiltin]);
 
   const managementItems = isBuiltin
     ? AGENT_MANAGEMENT_ITEMS.filter(
@@ -318,34 +388,11 @@ export function AgentOptionsMenu({
       dispatch(openOverlay({ overlayId: "agentImportWindow", data: {} }));
       setOpen(false);
     } else if (label === "Duplicate") {
-      setIsDuplicating(true);
-      // From the admin surface, "Duplicate" must produce another system agent
-      // — duplicating a builtin into a personal user agent silently smuggled
-      // it out of the system catalogue (the original bug). On the user
-      // surface, this is the legitimate "fork a builtin into my workspace"
-      // flow so we leave it alone.
-      const asSystem = isAdminContext && isBuiltin;
-      try {
-        const newId = await dispatch(
-          duplicateAgent({ agentId, asSystem }),
-        ).unwrap();
-        toast.success(
-          asSystem ? "System agent duplicated!" : "Agent duplicated!",
-        );
-        // Admin context: jump straight to the new system agent's admin view
-        // so the user lands somewhere sensible. User context: stay put — the
-        // copy shows up in the agents list.
-        if (isAdminContext) {
-          startTransition(() => router.push(`${basePath}/${newId}`));
-        }
-      } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to duplicate agent.",
-        );
-      } finally {
-        setIsDuplicating(false);
-        setOpen(false);
-      }
+      // Close the dropdown first so the outcome dialog has a clean stage.
+      // The dialog itself owns the loading / success / error UX; we just
+      // delegate to the shared `runDuplicate` orchestrator.
+      setOpen(false);
+      void runDuplicate();
     } else if (label === "Convert to Template") {
       setIsConverting(true);
       try {
@@ -375,56 +422,164 @@ export function AgentOptionsMenu({
 
   const trigger = <MenuTapButton />;
 
+  // Single dialog instance shared by both desktop and mobile flows. Lives at
+  // the parent level so the dropdown / drawer that triggered the duplicate
+  // can close cleanly without unmounting the in-flight dialog.
+  const duplicateDialog = (
+    <AgentDuplicateOutcomeDialog
+      open={duplicateOpen}
+      onOpenChange={setDuplicateOpen}
+      state={duplicateState}
+      newAgentName={duplicatedAgentName}
+      newAgentPath={newAgentPath}
+      errorMessage={duplicateError}
+      asSystem={duplicateAsSystem}
+    />
+  );
+
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        {asTapTarget ? (
-          <TapTargetButton
-            icon={<MoreHorizontal className="w-4 h-4" />}
-            ariaLabel="Agent options"
-            onClick={() => setOpen(true)}
-          />
-        ) : (
-          <button
-            onClick={() => setOpen(true)}
-            className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        )}
-        <DrawerContent className="max-h-[85dvh]">
-          <DrawerTitle className="sr-only">Agent Options</DrawerTitle>
-          <MobileMenuContent
-            onClose={() => setOpen(false)}
-            agentId={agentId}
-            basePath={basePath}
-          />
-        </DrawerContent>
-      </Drawer>
+      <>
+        <Drawer open={open} onOpenChange={setOpen}>
+          {asTapTarget ? (
+            <TapTargetButton
+              icon={<MoreHorizontal className="w-4 h-4" />}
+              ariaLabel="Agent options"
+              onClick={() => setOpen(true)}
+            />
+          ) : (
+            <button
+              onClick={() => setOpen(true)}
+              className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          )}
+          <DrawerContent className="max-h-[85dvh]">
+            <DrawerTitle className="sr-only">Agent Options</DrawerTitle>
+            <MobileMenuContent
+              onClose={() => setOpen(false)}
+              agentId={agentId}
+              basePath={basePath}
+              onTriggerDuplicate={runDuplicate}
+            />
+          </DrawerContent>
+        </Drawer>
+        {duplicateDialog}
+      </>
     );
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        {/* ── This Agent ── */}
-        {THIS_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => {
-          if (label === "View All Versions") {
+    <>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80">
+          {/* ── This Agent ── */}
+          {THIS_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => {
+            if (label === "View All Versions") {
+              return (
+                <DropdownMenuItem key={label} asChild>
+                  <Link
+                    href={`${basePath}/${agentId}/latest?tab=history`}
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => setOpen(false)}
+                  >
+                    <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <span className="flex-1">{label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              );
+            }
             return (
-              <DropdownMenuItem key={label} asChild>
-                <Link
-                  href={`${basePath}/${agentId}/latest?tab=history`}
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => setOpen(false)}
-                >
-                  <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span className="flex-1">{label}</span>
-                </Link>
+              <DropdownMenuItem
+                key={label}
+                onClick={() => handleDesktopItemClick(label)}
+                className={cn(soon && "text-muted-foreground")}
+              >
+                <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
+                <span className="flex-1">{label}</span>
+                {soon && <SoonBadge />}
               </DropdownMenuItem>
             );
-          }
-          return (
+          })}
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Layers className="w-4 h-4 mr-2 text-muted-foreground" />
+              <span className="flex-1">Try Interface Variations</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-48">
+              {INTERFACE_VARIATIONS.map((v) => (
+                <DropdownMenuItem
+                  key={v}
+                  onClick={handleInterfaceVariationClick}
+                >
+                  {v}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <ExternalLink className="w-4 h-4 mr-2 text-muted-foreground" />
+              Open in New Tab
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-44">
+              {NEW_TAB_ITEMS.map(({ label, icon: Icon, getHref }) => (
+                <DropdownMenuItem key={label} asChild>
+                  <Link
+                    href={getHref(agentId, basePath)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    {label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+
+          {/* ── Manage This Agent ── */}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+            Manage
+          </DropdownMenuLabel>
+          {managementItems.map(({ label, icon: Icon, soon }) => {
+            const duplicateInFlight =
+              duplicateOpen && duplicateState === "loading";
+            const isLoading =
+              (label === "Convert to Template" && isConverting) ||
+              (label === "Duplicate" && duplicateInFlight);
+            const displayLabel =
+              label === "Convert to Template" && isConverting
+                ? "Saving..."
+                : label === "Duplicate" && duplicateInFlight
+                  ? "Duplicating..."
+                  : label;
+            return (
+              <DropdownMenuItem
+                key={label}
+                disabled={isLoading}
+                onClick={() => handleDesktopItemClick(label)}
+                className={cn(soon && "text-muted-foreground")}
+              >
+                <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
+                <span className="flex-1">{displayLabel}</span>
+                {soon && <SoonBadge />}
+              </DropdownMenuItem>
+            );
+          })}
+
+          {/* ── Global (not agent-specific) ── */}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+            Agents
+          </DropdownMenuLabel>
+          {GLOBAL_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => (
             <DropdownMenuItem
               key={label}
               onClick={() => handleDesktopItemClick(label)}
@@ -434,111 +589,30 @@ export function AgentOptionsMenu({
               <span className="flex-1">{label}</span>
               {soon && <SoonBadge />}
             </DropdownMenuItem>
-          );
-        })}
+          ))}
 
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Layers className="w-4 h-4 mr-2 text-muted-foreground" />
-            <span className="flex-1">Try Interface Variations</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-48">
-            {INTERFACE_VARIATIONS.map((v) => (
-              <DropdownMenuItem key={v} onClick={handleInterfaceVariationClick}>
-                {v}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <ExternalLink className="w-4 h-4 mr-2 text-muted-foreground" />
-            Open in New Tab
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-44">
-            {NEW_TAB_ITEMS.map(({ label, icon: Icon, getHref }) => (
-              <DropdownMenuItem key={label} asChild>
-                <Link
-                  href={getHref(agentId, basePath)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
+          {/* ── Admin ── */}
+          {adminItems.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+                Admin
+              </DropdownMenuLabel>
+              {adminItems.map(({ label, icon: Icon }) => (
+                <DropdownMenuItem
+                  key={label}
+                  onClick={() => handleDesktopItemClick(label)}
                 >
-                  <Icon className="w-4 h-4 text-muted-foreground" />
-                  {label}
-                </Link>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-
-        {/* ── Manage This Agent ── */}
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-          Manage
-        </DropdownMenuLabel>
-        {managementItems.map(({ label, icon: Icon, soon }) => {
-          const isLoading =
-            (label === "Convert to Template" && isConverting) ||
-            (label === "Duplicate" && isDuplicating);
-          const displayLabel =
-            label === "Convert to Template" && isConverting
-              ? "Saving..."
-              : label === "Duplicate" && isDuplicating
-                ? "Duplicating..."
-                : label;
-          return (
-            <DropdownMenuItem
-              key={label}
-              disabled={isLoading}
-              onClick={() => handleDesktopItemClick(label)}
-              className={cn(soon && "text-muted-foreground")}
-            >
-              <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="flex-1">{displayLabel}</span>
-              {soon && <SoonBadge />}
-            </DropdownMenuItem>
-          );
-        })}
-
-        {/* ── Global (not agent-specific) ── */}
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-          Agents
-        </DropdownMenuLabel>
-        {GLOBAL_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => (
-          <DropdownMenuItem
-            key={label}
-            onClick={() => handleDesktopItemClick(label)}
-            className={cn(soon && "text-muted-foreground")}
-          >
-            <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
-            <span className="flex-1">{label}</span>
-            {soon && <SoonBadge />}
-          </DropdownMenuItem>
-        ))}
-
-        {/* ── Admin ── */}
-        {adminItems.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-              Admin
-            </DropdownMenuLabel>
-            {adminItems.map(({ label, icon: Icon }) => (
-              <DropdownMenuItem
-                key={label}
-                onClick={() => handleDesktopItemClick(label)}
-              >
-                <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
-                <span className="flex-1">{label}</span>
-              </DropdownMenuItem>
-            ))}
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+                  <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <span className="flex-1">{label}</span>
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {duplicateDialog}
+    </>
   );
 }
 
@@ -546,22 +620,24 @@ function MobileMenuContent({
   onClose,
   agentId,
   basePath,
+  onTriggerDuplicate,
 }: {
   onClose: () => void;
   agentId: string;
   basePath: string;
+  /** Parent-owned duplicate orchestrator. The mobile drawer closes itself
+   *  immediately after invoking this; the parent's outcome dialog takes
+   *  over from there. */
+  onTriggerDuplicate: () => Promise<void>;
 }) {
   const [variationsOpen, setVariationsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const dispatch = useAppDispatch();
-  const router = useRouter();
-  const [, startTransition] = useTransition();
 
   // Same builtin-aware filtering as the desktop variant — see AgentOptionsMenu
   // for the full rationale.
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
-  const isAdminContext = isAdminSystemAgentsContext(basePath);
   const managementItems = isBuiltin
     ? AGENT_MANAGEMENT_ITEMS.filter(
         (item) => item.label !== "Convert to Template",
@@ -671,29 +747,11 @@ function MobileMenuContent({
       dispatch(openOverlay({ overlayId: "agentImportWindow", data: {} }));
       onClose();
     } else if (label === "Duplicate") {
-      setIsBusy(true);
-      // See the desktop variant for the rationale: admin-context duplicates
-      // of system agents must stay in the system catalogue. Anything else
-      // keeps the legacy "personal copy" behavior.
-      const asSystem = isAdminContext && isBuiltin;
-      try {
-        const newId = await dispatch(
-          duplicateAgent({ agentId, asSystem }),
-        ).unwrap();
-        toast.success(
-          asSystem ? "System agent duplicated!" : "Agent duplicated!",
-        );
-        if (isAdminContext) {
-          startTransition(() => router.push(`${basePath}/${newId}`));
-        }
-      } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to duplicate agent.",
-        );
-      } finally {
-        setIsBusy(false);
-        onClose();
-      }
+      // Close the drawer first so the outcome dialog has a clean stage —
+      // mobile cannot stack a Drawer + Drawer well. The parent's
+      // `onTriggerDuplicate` owns the dispatch + dialog lifecycle.
+      onClose();
+      void onTriggerDuplicate();
     } else if (label === "Convert to Template") {
       setIsBusy(true);
       try {
@@ -819,10 +877,7 @@ function MobileMenuContent({
           <button
             key={label}
             onClick={() => handleItem(label)}
-            disabled={
-              isBusy &&
-              (label === "Duplicate" || label === "Convert to Template")
-            }
+            disabled={isBusy && label === "Convert to Template"}
             className={cn(
               "flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted/50 active:bg-muted/70 transition-colors",
               soon ? "text-muted-foreground" : "text-foreground",

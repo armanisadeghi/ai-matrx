@@ -11,23 +11,33 @@ export interface DraftReadiness {
   reason?: string;
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidIsoDate(value: string | null | undefined): value is string {
+  return !!value && ISO_DATE.test(value);
+}
+
+// Mirrors the backend `/legal/wc/ratings/calculate` contract:
+//   applicant.name        — required
+//   applicant.date_of_birth — required (YYYY-MM-DD; ApplicantInfo.is_valid)
+//   claim.occupational_code — required
+//   claim.weekly_earnings   — required (>0)
+//   claim.date_of_injury    — required (YYYY-MM-DD)
+//   claim.age_at_doi        — optional; backend computes from DOB+DOI when absent
+//   ≥1 injury, each with impairment_definition_id and at least one percentage
 export function evaluateDraftReadiness(draft: RatingDraft): DraftReadiness {
   const { claim, injuries } = draft;
 
+  if (!claim.applicant_name.trim())
+    return { ready: false, reason: "Enter the applicant name." };
   if (!claim.occupational_code)
     return { ready: false, reason: "Select an occupation." };
   if (claim.weekly_earnings == null || claim.weekly_earnings <= 0)
     return { ready: false, reason: "Enter weekly earnings." };
-  if (!claim.date_of_injury && claim.age_at_doi == null)
-    return {
-      ready: false,
-      reason: "Add a date of injury or age at injury.",
-    };
-  if (claim.date_of_injury && !claim.date_of_birth && claim.age_at_doi == null)
-    return {
-      ready: false,
-      reason: "Add a date of birth or age at injury.",
-    };
+  if (!isValidIsoDate(claim.date_of_birth))
+    return { ready: false, reason: "Add the date of birth." };
+  if (!isValidIsoDate(claim.date_of_injury))
+    return { ready: false, reason: "Add the date of injury." };
   if (injuries.length === 0)
     return { ready: false, reason: "Add at least one injury." };
 
@@ -56,11 +66,12 @@ function clampEarnings(weekly: number): number {
 }
 
 function buildClaimSection(claim: ClaimDraft): StatelessClaim {
+  // Readiness has already proven date_of_injury is a valid YYYY-MM-DD string.
   return {
     occupational_code: claim.occupational_code!,
     weekly_earnings: clampEarnings(claim.weekly_earnings!),
     age_at_doi: claim.age_at_doi ?? undefined,
-    date_of_injury: claim.date_of_injury ?? "",
+    date_of_injury: claim.date_of_injury!,
   };
 }
 
@@ -86,11 +97,12 @@ export function buildStatelessPayload(
   if (!readiness.ready) return null;
 
   const { claim, injuries } = draft;
+  // Readiness has proven both name and DOB are present and valid.
   return {
     applicant: {
-      name: claim.applicant_name || "Applicant",
+      name: claim.applicant_name.trim(),
       employee_id: "",
-      date_of_birth: claim.date_of_birth ?? "",
+      date_of_birth: claim.date_of_birth!,
     } as never,
     claim: buildClaimSection(claim),
     injuries: injuries.map(buildInjurySection),
