@@ -33,6 +33,7 @@ import {
   selectPrimaryRequest,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
+import { SHELL_REGISTRY } from "./shells";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
 
 const HtmlPreviewModal = dynamic(
@@ -60,6 +61,30 @@ interface AgentAppPublicRendererProps {
 }
 
 export function AgentAppPublicRenderer({
+  app,
+  slug,
+  TestComponent,
+}: AgentAppPublicRendererProps) {
+  // Phase 1c dispatch: if the app row declares a shell, look it up in the
+  // registry and render that — bypasses the legacy custom-component path
+  // entirely. Falls through to the original renderer for fully_custom or
+  // when TestComponent is provided (code-preview adapter).
+  const shellKind = (app as { shell_kind?: string }).shell_kind;
+  if (
+    !TestComponent &&
+    shellKind &&
+    shellKind !== "fully_custom" &&
+    SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]
+  ) {
+    const Shell =
+      SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
+    return <Shell app={app} />;
+  }
+
+  return <CustomComponentRenderer app={app} slug={slug} TestComponent={TestComponent} />;
+}
+
+function CustomComponentRenderer({
   app,
   slug,
   TestComponent,

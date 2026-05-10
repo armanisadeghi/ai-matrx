@@ -1,0 +1,449 @@
+"use client";
+
+/**
+ * useAgentApp
+ *
+ * The public hook for agent-app rendering. Every shell consumes this hook
+ * (Tier-0/1 directly; Tier-2 slot overrides receive the hook output as
+ * props; Tier-3 fully-custom apps call it themselves).
+ *
+ * It wraps the same per-instance Redux slices + thunks that power the
+ * Agent Runner at /agents/[id]/run, exposing a stable, narrow public
+ * contract:
+ *
+ *   - Identity:        appId, agentId, agentVersionId, useLatest, surfaceKey
+ *   - Conversation:    conversationId (managed)
+ *   - Agent metadata:  agent (definition), variableDefinitions, contextSlots
+ *   - Variables:       variables (resolved), setVariable(name, value), setVariables(values)
+ *   - Context:         contextEntries, setContext(entries), clearContext()
+ *   - Resources:       resources, addResource(...), removeResource(id), clearResources()
+ *   - User input:      text, setText(value)
+ *   - Submit:          submit({ text?, variables?, context? }) → fires smartExecute
+ *   - Stream state:    response, requestId, isStreaming, isExecuting,
+ *                      streamPhase, streamEvents, error
+ *   - History:         messages, loadConversation(id), resetConversation()
+ *
+ * Tier-3 apps treat this as the entire API. The hook owns the heavy
+ * lifting (Redux + thunks + execution routing); the consumer's
+ * responsibility is rendering and binding to UI.
+ */
+
+import { useCallback, useEffect, useMemo } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+
+import {
+  setUserVariableValue,
+  setUserVariableValues,
+  resetUserVariableValues,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+
+import {
+  setContextEntries,
+  type InstanceContextEntry,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+
+import {
+  addResource,
+  removeResource,
+  type ManagedResource,
+} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+
+import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+
+import {
+  selectAccumulatedText,
+  selectPrimaryRequest,
+  selectRequest,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+
+import {
+  selectStreamPhase,
+  selectIsExecuting,
+} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+
+export interface UseAgentAppArgs {
+  /** Agent the app is bound to. */
+  agentId: string;
+  /** Pinned version, when not using latest. */
+  agentVersionId?: string | null;
+  /** When true, the app follows the live agent rather than a pinned version. */
+  useLatest?: boolean;
+  /**
+   * The agent-app's id. Used to scope the runner instance + tag conversation
+   * metadata so the history sidebar can filter to this app's runs.
+   */
+  appId: string;
+  /**
+   * Surface key for focus + autoclear-split routing. Defaults to
+   * `agent-app:<appId>` so each app has its own focus channel.
+   */
+  surfaceKey?: string;
+  /**
+   * If true, the first execution fires automatically when the runner is
+   * ready. Use for one-shot apps that submit on mount.
+   */
+  autoRun?: boolean;
+  /**
+   * Whether the user can continue the conversation past turn 1. Some apps
+   * (form-to-result style) want single-shot only.
+   */
+  allowChat?: boolean;
+}
+
+export interface UseAgentAppReturn {
+  // ── Identity ───────────────────────────────────────────────────────────
+  appId: string;
+  agentId: string;
+  agentVersionId: string | null;
+  useLatest: boolean;
+  surfaceKey: string;
+  conversationId: string | null;
+
+  // ── Agent metadata (read-only, sourced from the live agent) ────────────
+  agent: AgentDefinition | undefined;
+  variableDefinitions: AgentDefinition["variableDefinitions"];
+  contextSlots: AgentDefinition["contextSlots"];
+
+  // ── Variables ─────────────────────────────────────────────────────────
+  variables: Record<string, unknown>;
+  setVariable: (name: string, value: unknown) => void;
+  setVariables: (values: Record<string, unknown>) => void;
+  resetVariables: () => void;
+
+  // ── Context ────────────────────────────────────────────────────────────
+  contextEntries: Record<string, InstanceContextEntry>;
+  setContext: (entries: Array<{ key: string; value: unknown }>) => void;
+  clearContext: () => void;
+
+  // ── Resources (multimodal) ─────────────────────────────────────────────
+  resources: Record<string, ManagedResource>;
+  addResource: (resource: ManagedResource) => void;
+  removeResource: (resourceId: string) => void;
+
+  // ── User input text ────────────────────────────────────────────────────
+  text: string;
+  setText: (value: string) => void;
+
+  // ── Submit + execution state ───────────────────────────────────────────
+  submit: (args?: SubmitArgs) => Promise<void>;
+  response: string;
+  requestId: string | null;
+  isStreaming: boolean;
+  isExecuting: boolean;
+  streamPhase: ReturnType<typeof selectStreamPhase> extends (
+    state: unknown,
+  ) => infer R
+    ? R
+    : never;
+  error: string | null;
+
+  // ── History ────────────────────────────────────────────────────────────
+  messages: ReturnType<typeof selectConversationMessages> extends (
+    state: unknown,
+  ) => infer R
+    ? R
+    : never;
+  loadConversation: (conversationId: string) => Promise<void>;
+  resetConversation: () => void;
+
+  // ── Configuration mirrors (so shells can read state-of-app) ────────────
+  allowChat: boolean;
+}
+
+export interface SubmitArgs {
+  text?: string;
+  variables?: Record<string, unknown>;
+  context?: Array<{ key: string; value: unknown }>;
+}
+
+const EMPTY_RECORD: Record<string, never> = Object.freeze({});
+
+export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
+  const {
+    agentId,
+    agentVersionId = null,
+    useLatest = false,
+    appId,
+    autoRun = false,
+    allowChat = true,
+  } = args;
+  const surfaceKey = args.surfaceKey ?? `agent-app:${appId}`;
+
+  const dispatch = useAppDispatch();
+
+  // Use the same managed launcher /agents/[id]/run uses. It owns the
+  // conversationId lifecycle, instance creation, focus tracking, etc.
+  const launcher = useAgentLauncher(agentId, {
+    surfaceKey,
+    sourceFeature: "agent-app",
+    config: {
+      autoRun,
+      allowChat,
+    },
+    runtime: undefined,
+    apiEndpointMode: "agent",
+    ready: true,
+  });
+  const conversationId = launcher.conversationId;
+
+  // ── Selectors ─────────────────────────────────────────────────────────
+
+  const agent = useAppSelector((state) =>
+    agentId ? selectAgentById(state, agentId) : undefined,
+  );
+
+  const variables = useAppSelector((state) =>
+    conversationId
+      ? selectResolvedVariables(conversationId)(state)
+      : EMPTY_RECORD,
+  );
+
+  const contextEntries = useAppSelector((state) =>
+    conversationId
+      ? selectInstanceContextEntries(conversationId)(state)
+      : EMPTY_RECORD,
+  );
+
+  const resources = useAppSelector((state) =>
+    conversationId
+      ? selectInstanceResources(conversationId)(state)
+      : EMPTY_RECORD,
+  );
+
+  const text = useAppSelector((state) =>
+    conversationId ? selectUserInputText(conversationId)(state) : "",
+  );
+
+  const primaryRequest = useAppSelector((state) =>
+    conversationId ? selectPrimaryRequest(conversationId)(state) : undefined,
+  );
+  const requestId = primaryRequest?.requestId ?? null;
+
+  const response = useAppSelector((state) =>
+    requestId ? selectAccumulatedText(requestId)(state) : "",
+  );
+  const request = useAppSelector((state) =>
+    requestId ? selectRequest(requestId)(state) : undefined,
+  );
+  const isExecuting = useAppSelector((state) =>
+    conversationId ? selectIsExecuting(conversationId)(state) : false,
+  );
+  const streamPhase = useAppSelector((state) =>
+    conversationId ? selectStreamPhase(conversationId)(state) : "idle",
+  );
+  const messages = useAppSelector((state) =>
+    conversationId ? selectConversationMessages(conversationId)(state) : [],
+  );
+
+  const isStreaming =
+    streamPhase === "text_streaming" ||
+    streamPhase === "connecting" ||
+    streamPhase === "pre_token" ||
+    streamPhase === "interstitial";
+
+  const error =
+    request && (request as unknown as { errorMessage?: string }).errorMessage
+      ? ((request as unknown as { errorMessage?: string }).errorMessage ?? null)
+      : null;
+
+  // ── Variable / context / resource writers ────────────────────────────
+
+  const setVariable = useCallback(
+    (name: string, value: unknown) => {
+      if (!conversationId) return;
+      dispatch(setUserVariableValue({ conversationId, name, value }));
+    },
+    [conversationId, dispatch],
+  );
+
+  const setVariables = useCallback(
+    (values: Record<string, unknown>) => {
+      if (!conversationId) return;
+      dispatch(setUserVariableValues({ conversationId, values }));
+    },
+    [conversationId, dispatch],
+  );
+
+  const resetVariables = useCallback(() => {
+    if (!conversationId) return;
+    dispatch(resetUserVariableValues(conversationId));
+  }, [conversationId, dispatch]);
+
+  const setContext = useCallback(
+    (entries: Array<{ key: string; value: unknown }>) => {
+      if (!conversationId) return;
+      dispatch(setContextEntries({ conversationId, entries }));
+    },
+    [conversationId, dispatch],
+  );
+
+  const clearContext = useCallback(() => {
+    if (!conversationId) return;
+    dispatch(setContextEntries({ conversationId, entries: [] }));
+  }, [conversationId, dispatch]);
+
+  const addResourceCb = useCallback(
+    (resource: ManagedResource) => {
+      if (!conversationId) return;
+      dispatch(addResource({ conversationId, resource }));
+    },
+    [conversationId, dispatch],
+  );
+
+  const removeResourceCb = useCallback(
+    (resourceId: string) => {
+      if (!conversationId) return;
+      dispatch(removeResource({ conversationId, resourceId }));
+    },
+    [conversationId, dispatch],
+  );
+
+  const setText = useCallback(
+    (value: string) => {
+      if (!conversationId) return;
+      dispatch(setUserInputText({ conversationId, text: value }));
+    },
+    [conversationId, dispatch],
+  );
+
+  // ── Submit ────────────────────────────────────────────────────────────
+
+  const submit = useCallback(
+    async (submitArgs?: SubmitArgs) => {
+      if (!conversationId) return;
+      // Pre-stage any per-call writes BEFORE dispatching execute, so the
+      // executor reads the latest state. smartExecute doesn't take an
+      // explicit payload — it composes from the per-instance slices.
+      if (submitArgs?.variables) {
+        dispatch(
+          setUserVariableValues({
+            conversationId,
+            values: submitArgs.variables,
+          }),
+        );
+      }
+      if (submitArgs?.context) {
+        dispatch(
+          setContextEntries({
+            conversationId,
+            entries: submitArgs.context,
+          }),
+        );
+      }
+      if (submitArgs?.text != null) {
+        dispatch(
+          setUserInputText({ conversationId, text: submitArgs.text }),
+        );
+      }
+      await dispatch(smartExecute({ conversationId, surfaceKey }));
+    },
+    [conversationId, dispatch, surfaceKey],
+  );
+
+  const loadConversationCb = useCallback(
+    async (id: string) => {
+      await dispatch(loadConversation({ conversationId: id, surfaceKey }));
+    },
+    [dispatch, surfaceKey],
+  );
+
+  const resetConversation = useCallback(() => {
+    if (!conversationId) return;
+    dispatch(resetUserVariableValues(conversationId));
+    dispatch(setUserInputText({ conversationId, text: "" }));
+    dispatch(setContextEntries({ conversationId, entries: [] }));
+  }, [conversationId, dispatch]);
+
+  // Tag the conversation with this app's id once the conversationId is
+  // available, so the history sidebar can filter by app.
+  // (cx_conversation.metadata.app_id) — handled server-side by the
+  // execution path; nothing for the hook to do here today. Reserved for a
+  // future enhancement if/when client-side metadata stamping is needed.
+  useEffect(() => {
+    // intentionally empty — metadata stamping handled server-side via
+    // sourceFeature="agent-app" + surfaceKey scoping.
+  }, [conversationId, appId]);
+
+  return useMemo<UseAgentAppReturn>(
+    () => ({
+      appId,
+      agentId,
+      agentVersionId,
+      useLatest,
+      surfaceKey,
+      conversationId,
+      agent,
+      variableDefinitions: agent?.variableDefinitions ?? null,
+      contextSlots: agent?.contextSlots ?? null,
+      variables: variables as Record<string, unknown>,
+      setVariable,
+      setVariables,
+      resetVariables,
+      contextEntries: contextEntries as Record<string, InstanceContextEntry>,
+      setContext,
+      clearContext,
+      resources: resources as Record<string, ManagedResource>,
+      addResource: addResourceCb,
+      removeResource: removeResourceCb,
+      text,
+      setText,
+      submit,
+      response,
+      requestId,
+      isStreaming,
+      isExecuting,
+      streamPhase: streamPhase as UseAgentAppReturn["streamPhase"],
+      error,
+      messages: messages as UseAgentAppReturn["messages"],
+      loadConversation: loadConversationCb,
+      resetConversation,
+      allowChat,
+    }),
+    [
+      appId,
+      agentId,
+      agentVersionId,
+      useLatest,
+      surfaceKey,
+      conversationId,
+      agent,
+      variables,
+      setVariable,
+      setVariables,
+      resetVariables,
+      contextEntries,
+      setContext,
+      clearContext,
+      resources,
+      addResourceCb,
+      removeResourceCb,
+      text,
+      setText,
+      submit,
+      response,
+      requestId,
+      isStreaming,
+      isExecuting,
+      streamPhase,
+      error,
+      messages,
+      loadConversationCb,
+      resetConversation,
+      allowChat,
+    ],
+  );
+}
