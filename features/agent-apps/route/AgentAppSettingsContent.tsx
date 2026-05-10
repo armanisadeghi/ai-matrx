@@ -42,6 +42,7 @@ import { AgentAppHierarchyCascade } from "@/features/agent-apps/components/input
 import { ShellPicker } from "@/features/agent-apps/components/builder/ShellPicker";
 import { ShellConfigPanel } from "@/features/agent-apps/components/builder/ShellConfigPanel";
 import { SlotOverrideEditor } from "@/features/agent-apps/components/builder/SlotOverrideEditor";
+import { EmbedSnippet } from "@/features/agent-apps/components/builder/EmbedSnippet";
 import type {
   AgentAppShellConfigCommon,
   AgentAppShellKind,
@@ -369,6 +370,10 @@ export function AgentAppSettingsContent({
                 </button>
               </div>
             </Row>
+
+            <div className="border-t border-border/60 pt-4">
+              <EmbedSnippet slug={app.slug} />
+            </div>
 
             <div className="border-t border-border/60 pt-4">
               <AgentAppHierarchyCascade

@@ -3,14 +3,24 @@
 "use client";
 
 import { AgentAppPublicRenderer } from "./AgentAppPublicRenderer";
-import type { AgentApp, PublicAgentApp } from "../types";
+import type { AgentApp, AgentAppShellKind, PublicAgentApp } from "../types";
 
 interface AgentAppRendererProps {
   app: AgentApp | PublicAgentApp;
   slug: string;
+  /**
+   * Force the rendered shell, overriding the app's own `shell_kind`.
+   * Used by the embed/widget URL switch (`?embed=widget`) on the
+   * public route.
+   */
+  shellOverride?: AgentAppShellKind;
 }
 
-export function AgentAppRenderer({ app, slug }: AgentAppRendererProps) {
+export function AgentAppRenderer({
+  app,
+  slug,
+  shellOverride,
+}: AgentAppRendererProps) {
   const publicSubset: PublicAgentApp = {
     id: app.id,
     slug: app.slug,
@@ -30,7 +40,7 @@ export function AgentAppRenderer({ app, slug }: AgentAppRendererProps) {
     variable_schema: app.variable_schema,
     layout_config: app.layout_config,
     styling_config: app.styling_config,
-    shell_kind: app.shell_kind,
+    shell_kind: shellOverride ?? app.shell_kind,
     shell_config: app.shell_config,
     slot_overrides: app.slot_overrides,
     slot_code: app.slot_code,

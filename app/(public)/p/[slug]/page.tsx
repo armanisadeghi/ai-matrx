@@ -136,10 +136,13 @@ export async function generateMetadata({
 
 export default async function PublicAppPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ embed?: string }>;
 }) {
   const { slug } = await params;
+  const { embed } = await searchParams;
   const supabase = await createClient();
   const isId = isUUID(slug);
 
@@ -164,13 +167,27 @@ export default async function PublicAppPage({
 
   if (agentAppData) {
     if (process.env.NODE_ENV !== "production") {
-      console.log(`[p/${slug}] resolved path=agent-app`);
+      console.log(`[p/${slug}] resolved path=agent-app embed=${embed ?? ""}`);
     }
     const app = agentAppData as {
       id: string;
       slug: string;
       [key: string]: unknown;
     };
+    // Embed switch: `?embed=widget` forces the widget shell regardless of
+    // the row's configured shell_kind. Lets a single app expose both a
+    // full-page deployment and a compact iframe deployment from the same
+    // record. The renderer then strips chrome via the widget shell itself.
+    const isWidgetEmbed = embed === "widget";
+    if (isWidgetEmbed) {
+      const overridden = {
+        ...(agentAppData as Record<string, unknown>),
+        shell_kind: "widget",
+      };
+      return (
+        <AgentAppPublicRenderer app={overridden as never} slug={app.slug} />
+      );
+    }
     return (
       <AgentAppPublicRenderer app={agentAppData as never} slug={app.slug} />
     );
