@@ -38,8 +38,7 @@ import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/Agent
 import { AgentBindingCompact } from "@/features/agent-apps/components/inputs/AgentBindingCompact";
 import { AgentVersionCompact } from "@/features/agent-apps/components/inputs/AgentVersionCompact";
 import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import type { HierarchySelection } from "@/features/agent-context/components/hierarchy-selection/types";
+import { AgentAppHierarchyCascade } from "@/features/agent-apps/components/inputs/AgentAppHierarchyCascade";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
@@ -324,34 +323,21 @@ export function AgentAppSettingsContent({
             </Row>
 
             <div className="border-t border-border/60 pt-4">
-              <HierarchyCascade
-                levels={["organization", "scope", "project", "task"]}
-                value={{
-                  organizationId: app.organization_id,
-                  organizationName: null,
-                  projectId: app.project_id,
-                  projectName: null,
-                  taskId: app.task_id,
-                  taskName: null,
-                  scopeSelections: {},
-                }}
-                onChange={(next: HierarchySelection) => {
-                  if (next.organizationId !== app.organization_id) {
-                    saveField("organization_id", next.organizationId);
-                  }
-                  if (next.projectId !== app.project_id) {
-                    saveField("project_id", next.projectId);
-                  }
-                  if (next.taskId !== app.task_id) {
-                    saveField("task_id", next.taskId);
-                  }
-                }}
+              <AgentAppHierarchyCascade
+                appId={app.id}
+                organizationId={app.organization_id}
+                projectId={app.project_id}
+                taskId={app.task_id}
+                onOrganizationChange={(next) =>
+                  saveField("organization_id", next)
+                }
+                onProjectChange={(next) => saveField("project_id", next)}
+                onTaskChange={(next) => saveField("task_id", next)}
                 disabled={
                   savingField === "organization_id" ||
                   savingField === "project_id" ||
                   savingField === "task_id"
                 }
-                layout="vertical"
               />
             </div>
 
