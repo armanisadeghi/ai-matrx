@@ -98,7 +98,7 @@ export function AgentAppFormToResultShell({
   if (gateOverridden && !gateDismissed) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-[800px] mx-auto px-4 py-6">
           <SlotRenderer
             slot="preExecutionGate"
             overrides={overrides}
@@ -119,7 +119,7 @@ export function AgentAppFormToResultShell({
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-[800px] mx-auto px-4 py-6 space-y-6">
         {/* Header (Tier-2 override slot) */}
         <SlotRenderer
           slot="header"
