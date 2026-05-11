@@ -11,6 +11,8 @@ import {
   selectMcpCatalogError,
   selectMcpConnectingServerId,
 } from "@/features/agents/redux/mcp/mcp.slice";
+import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
+import type { McpServerConfigEntry, McpEnvSchemaField } from "@/features/agents/types/mcp.types";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
 import {
@@ -236,6 +238,20 @@ export default function IntegrationsPage() {
     [dispatch],
   );
 
+  const handleEnvConnect = useCallback(
+    (serverId: string, configId: string, envValues: Record<string, string>) => {
+      dispatch(
+        connectServer({
+          serverId,
+          configId,
+          credentialsJson: JSON.stringify(envValues),
+          transport: "stdio",
+        }),
+      );
+    },
+    [dispatch],
+  );
+
   const handleDisconnect = useCallback(
     (serverId: string) => {
       dispatch(disconnectServer(serverId));
@@ -378,6 +394,7 @@ export default function IntegrationsPage() {
                 onBearerConnect={(token) =>
                   handleBearerConnect(entry.serverId, token)
                 }
+                onEnvConnect={handleEnvConnect}
                 onDisconnect={() => handleDisconnect(entry.serverId)}
               />
             ))}
@@ -397,6 +414,7 @@ interface ServerCardProps {
   isConnecting: boolean;
   onOAuthConnect: () => void;
   onBearerConnect: (token: string) => void;
+  onEnvConnect: (serverId: string, configId: string, envValues: Record<string, string>) => void;
   onDisconnect: () => void;
 }
 
@@ -407,20 +425,26 @@ function ServerCard({
   isConnecting,
   onOAuthConnect,
   onBearerConnect,
+  onEnvConnect,
   onDisconnect,
 }: ServerCardProps) {
   const isComingSoon = entry.serverStatus === "coming_soon";
   const isCommunity = entry.serverStatus === "community";
   const isConnected = entry.connectionStatus === "connected";
   const isActive =
-    entry.serverStatus === "active" || entry.serverStatus === "beta";
+    entry.serverStatus === "active" ||
+    entry.serverStatus === "beta" ||
+    entry.serverStatus === "community";
   const hasEndpoint = !!entry.endpointUrl;
   const isStdioOnly = entry.transport === "stdio" && !hasEndpoint;
-  const canConnect =
-    (isActive || isCommunity) && hasEndpoint && !isConnected;
+  const hasEnvAuth = entry.authStrategy === "env" && entry.hasLocal;
+  const canConnectRemote = isActive && hasEndpoint && !isConnected;
+  const canConnectLocal = isActive && hasEnvAuth && !isConnected;
+  const canConnect = canConnectRemote || canConnectLocal;
   const needsOAuth = entry.authStrategy === "oauth_discovery";
   const needsToken =
     entry.authStrategy === "bearer" || entry.authStrategy === "api_key";
+  const needsEnvVars = entry.authStrategy === "env";
   const noAuth = entry.authStrategy === "none";
 
   const transport = TRANSPORT_META[entry.transport] ?? TRANSPORT_META.http;
@@ -433,6 +457,44 @@ function ServerCard({
   const [showTokenForm, setShowTokenForm] = useState(false);
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
+
+  // Env var form state
+  const [showEnvForm, setShowEnvForm] = useState(false);
+  const [envConfig, setEnvConfig] = useState<McpServerConfigEntry | null>(null);
+  const [envValues, setEnvValues] = useState<Record<string, string>>({});
+  const [envLoading, setEnvLoading] = useState(false);
+  const [envShowSecrets, setEnvShowSecrets] = useState<Record<string, boolean>>({});
+
+  const handleOpenEnvForm = useCallback(async () => {
+    if (showEnvForm) {
+      setShowEnvForm(false);
+      return;
+    }
+    setEnvLoading(true);
+    try {
+      const configs = await fetchMcpServerConfigs(entry.serverId);
+      const defaultConfig = configs.find((c) => c.isDefault) ?? configs[0];
+      if (defaultConfig) {
+        setEnvConfig(defaultConfig);
+        setEnvValues({});
+      }
+    } catch {
+      // Ignore — form just won't load
+    } finally {
+      setEnvLoading(false);
+      setShowEnvForm(true);
+    }
+  }, [showEnvForm, entry.serverId]);
+
+  const handleEnvSubmit = useCallback(() => {
+    if (!envConfig) return;
+    const requiredFields = envConfig.envSchema.filter((f) => f.required);
+    const allFilled = requiredFields.every((f) => envValues[f.key]?.trim());
+    if (!allFilled) return;
+    onEnvConnect(entry.serverId, envConfig.id, envValues);
+    setShowEnvForm(false);
+    setEnvValues({});
+  }, [envConfig, envValues, entry.serverId, onEnvConnect]);
 
   const handleTokenSubmit = () => {
     if (!token.trim()) return;
@@ -638,6 +700,21 @@ function ServerCard({
                 agent tools panel when building an agent.
               </TooltipContent>
             </Tooltip>
+          ) : canConnectLocal && needsEnvVars ? (
+            <Button
+              size="sm"
+              variant={showEnvForm ? "outline" : "default"}
+              className="h-7 text-xs flex-1"
+              onClick={handleOpenEnvForm}
+              disabled={envLoading}
+            >
+              {envLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <Key className="h-3 w-3 mr-1" />
+              )}
+              {showEnvForm ? "Cancel" : "Configure"}
+            </Button>
           ) : null}
 
           <Button
@@ -700,6 +777,82 @@ function ServerCard({
           </div>
         )}
 
+        {/* Env var form */}
+        {showEnvForm && envConfig && !isConnected && (
+          <div className="mt-3 pt-3 border-t border-border space-y-2.5">
+            <p className="text-xs font-medium text-foreground">
+              {envConfig.label}
+            </p>
+            {envConfig.envSchema.map((field) => (
+              <div key={field.key} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] text-muted-foreground">
+                    {field.label}
+                    {field.required && (
+                      <span className="text-destructive ml-0.5">*</span>
+                    )}
+                  </label>
+                </div>
+                <div className="relative">
+                  <Input
+                    type={
+                      field.secret && !envShowSecrets[field.key]
+                        ? "password"
+                        : "text"
+                    }
+                    value={envValues[field.key] ?? ""}
+                    onChange={(e) =>
+                      setEnvValues((prev) => ({
+                        ...prev,
+                        [field.key]: e.target.value,
+                      }))
+                    }
+                    placeholder={field.helpText ?? field.placeholder ?? ""}
+                    className="h-7 text-xs pr-8"
+                  />
+                  {field.secret && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0.5 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() =>
+                        setEnvShowSecrets((prev) => ({
+                          ...prev,
+                          [field.key]: !prev[field.key],
+                        }))
+                      }
+                    >
+                      {envShowSecrets[field.key] ? (
+                        <EyeOff className="h-3 w-3" />
+                      ) : (
+                        <Eye className="h-3 w-3" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <Button
+              size="sm"
+              className="h-7 text-xs w-full"
+              onClick={handleEnvSubmit}
+              disabled={
+                isConnecting ||
+                !envConfig.envSchema
+                  .filter((f) => f.required)
+                  .every((f) => envValues[f.key]?.trim())
+              }
+            >
+              {isConnecting ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <Check className="h-3 w-3 mr-1" />
+              )}
+              Save & Connect
+            </Button>
+          </div>
+        )}
+
         {/* Expanded details */}
         {isExpanded && (
           <div className="mt-3 pt-3 border-t border-border space-y-2">
@@ -733,14 +886,14 @@ function ServerCard({
               />
             )}
 
-            {/* Info for stdio-only */}
-            {isStdioOnly && (
+            {/* Info for local servers */}
+            {entry.hasLocal && (
               <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-2 rounded-md mt-1">
                 <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>
-                  Local servers run on your machine. Add this to an agent via
-                  the agent builder&apos;s MCP Tools tab, then configure
-                  environment variables.
+                  {entry.hasRemote
+                    ? "Also available as a local server. Your credentials are stored securely and used when agents invoke this integration."
+                    : "Runs locally. Enter your credentials above — they're stored securely and used when agents invoke this integration."}
                 </span>
               </div>
             )}
