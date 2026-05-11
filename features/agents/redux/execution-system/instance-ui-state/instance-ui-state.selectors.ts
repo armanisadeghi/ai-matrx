@@ -430,6 +430,52 @@ export const selectResponseDensity =
     state.instanceUIState.byConversationId[conversationId]?.responseDensity ??
     "comfortable";
 
+// ── App-settable input / display chrome ─────────────────────────────────────
+// Returned with sensible defaults so existing surfaces that never set these
+// continue to render the full set of affordances (placeholder, mic, etc.).
+
+export const selectInputPlaceholder =
+  (conversationId: string) =>
+  (state: RootState): string | null =>
+    state.instanceUIState.byConversationId[conversationId]?.inputPlaceholder ??
+    null;
+
+export const selectShowFreeformInput =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUIState.byConversationId[conversationId]?.showFreeformInput ??
+    true;
+
+export const selectShowAttachments =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUIState.byConversationId[conversationId]?.showAttachments ??
+    true;
+
+export const selectShowMicrophone =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUIState.byConversationId[conversationId]?.showMicrophone ??
+    true;
+
+export const selectShowUserMessageOptions =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUIState.byConversationId[conversationId]
+      ?.showUserMessageOptions ?? true;
+
+export const selectShowAssistantMessageOptions =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUIState.byConversationId[conversationId]
+      ?.showAssistantMessageOptions ?? true;
+
+export const selectBufferStream =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUIState.byConversationId[conversationId]?.bufferStream ??
+    false;
+
 export const selectPreExecutionMessage =
   (conversationId: string) =>
   (state: RootState): string | null =>

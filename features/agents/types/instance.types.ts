@@ -553,6 +553,39 @@ export interface InstanceUIState {
   displayDescriptionOverride: string | null;
 
   /**
+   * Settings group: input chrome — read by SmartAgentInput / AgentTextarea
+   * and friends. Surfaces (e.g. agent-apps) tune these at instance-create
+   * time so the input renders with the right affordances WITHOUT passing
+   * props through six render levels.
+   *
+   *   - inputPlaceholder           : null → use built-in default. Any
+   *                                  string overrides the textarea
+   *                                  placeholder.
+   *   - showFreeformInput          : false → render variables panel only,
+   *                                  no free-text input. Apps with only
+   *                                  structured inputs use this.
+   *   - showAttachments            : false → hide the file/image
+   *                                  attach button + resource chips.
+   *   - showMicrophone             : false → hide the mic button in
+   *                                  the input toolbar.
+   *   - showUserMessageOptions     : false → hide the ⋯ menu on user
+   *                                  messages in the transcript.
+   *   - showAssistantMessageOptions: false → same, for assistant
+   *                                  messages.
+   *   - bufferStream               : true  → wait for the stream to
+   *                                  finish before painting, so the
+   *                                  user sees one full response
+   *                                  instead of a live-typing effect.
+   */
+  inputPlaceholder: string | null;
+  showFreeformInput: boolean;
+  showAttachments: boolean;
+  showMicrophone: boolean;
+  showUserMessageOptions: boolean;
+  showAssistantMessageOptions: boolean;
+  bufferStream: boolean;
+
+  /**
    * Optional message shown in the pre-execution input gate.
    * Used to give the user context about what the agent expects.
    */

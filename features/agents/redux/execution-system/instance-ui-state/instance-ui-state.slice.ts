@@ -164,6 +164,14 @@ export interface InitInstanceUIStatePayload {
    */
   displayNameOverride?: string | null;
   displayDescriptionOverride?: string | null;
+  /** See InstanceUIState (instance.types.ts) — input/display settings. */
+  inputPlaceholder?: string | null;
+  showFreeformInput?: boolean;
+  showAttachments?: boolean;
+  showMicrophone?: boolean;
+  showUserMessageOptions?: boolean;
+  showAssistantMessageOptions?: boolean;
+  bufferStream?: boolean;
 }
 
 // =============================================================================
@@ -205,6 +213,13 @@ const instanceUIStateSlice = createSlice({
         responseDensity = "comfortable",
         displayNameOverride = null,
         displayDescriptionOverride = null,
+        inputPlaceholder = null,
+        showFreeformInput = true,
+        showAttachments = true,
+        showMicrophone = true,
+        showUserMessageOptions = true,
+        showAssistantMessageOptions = true,
+        bufferStream = false,
       } = action.payload;
 
       state.byConversationId[conversationId] = {
@@ -242,6 +257,13 @@ const instanceUIStateSlice = createSlice({
         responseDensity,
         displayNameOverride,
         displayDescriptionOverride,
+        inputPlaceholder,
+        showFreeformInput,
+        showAttachments,
+        showMicrophone,
+        showUserMessageOptions,
+        showAssistantMessageOptions,
+        bufferStream,
       };
     },
 
@@ -282,6 +304,65 @@ const instanceUIStateSlice = createSlice({
       if (entry) {
         entry.displayDescriptionOverride = action.payload.value;
       }
+    },
+
+    setInputPlaceholder(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        value: string | null;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.inputPlaceholder = action.payload.value;
+    },
+
+    setShowFreeformInput(
+      state,
+      action: PayloadAction<{ conversationId: string; value: boolean }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.showFreeformInput = action.payload.value;
+    },
+
+    setShowAttachments(
+      state,
+      action: PayloadAction<{ conversationId: string; value: boolean }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.showAttachments = action.payload.value;
+    },
+
+    setShowMicrophone(
+      state,
+      action: PayloadAction<{ conversationId: string; value: boolean }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.showMicrophone = action.payload.value;
+    },
+
+    setShowUserMessageOptions(
+      state,
+      action: PayloadAction<{ conversationId: string; value: boolean }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.showUserMessageOptions = action.payload.value;
+    },
+
+    setShowAssistantMessageOptions(
+      state,
+      action: PayloadAction<{ conversationId: string; value: boolean }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.showAssistantMessageOptions = action.payload.value;
+    },
+
+    setBufferStream(
+      state,
+      action: PayloadAction<{ conversationId: string; value: boolean }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) entry.bufferStream = action.payload.value;
     },
 
     setDisplayMode(
@@ -782,6 +863,13 @@ export const {
   setResponseDensity,
   setDisplayNameOverride,
   setDisplayDescriptionOverride,
+  setInputPlaceholder,
+  setShowFreeformInput,
+  setShowAttachments,
+  setShowMicrophone,
+  setShowUserMessageOptions,
+  setShowAssistantMessageOptions,
+  setBufferStream,
   setPreExecutionMessage,
   setVariablesPanelStyle,
   setOriginalText,
