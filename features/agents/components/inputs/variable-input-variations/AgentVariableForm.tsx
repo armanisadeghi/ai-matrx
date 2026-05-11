@@ -52,6 +52,12 @@ export function AgentVariableForm({ conversationId }: AgentVariableFormProps) {
   const showVariables = useAppSelector(selectShowVariablePanel(conversationId));
 
   if (!definitions || definitions.length === 0) return null;
+  // Match the other variants: when the surface hides variables
+  // (e.g. an app that sets showVariablePanel=false), render nothing.
+  // Without this, the form variant uniquely shows its always-visible
+  // toggle header even when hidden, which feels like a collapse rather
+  // than a true hide.
+  if (!showVariables) return null;
 
   const filledCount = definitions.filter((def) => {
     const val = userValues[def.name];

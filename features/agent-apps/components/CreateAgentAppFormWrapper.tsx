@@ -286,7 +286,7 @@ export function CreateAgentAppFormWrapper({
       <div
         className={
           fullWidth
-            ? "w-full px-6 py-4 space-y-4 h-full flex flex-col"
+            ? "w-full px-3 py-2 space-y-2 h-full flex flex-col"
             : "max-w-7xl mx-auto px-6 py-8 w-full space-y-6"
         }
       >

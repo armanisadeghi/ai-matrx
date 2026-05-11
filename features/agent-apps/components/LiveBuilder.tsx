@@ -162,7 +162,11 @@ export function LiveBuilder({
   const [showUserMessageOptions, setShowUserMessageOptions] = useState(true); // PLACEHOLDER
   const [showAssistantMessageOptions, setShowAssistantMessageOptions] =
     useState(true); // PLACEHOLDER
-  const [inputPlaceholder, setInputPlaceholder] = useState(""); // PLACEHOLDER
+  // Pre-filled with the live runtime default so the user sees the
+  // exact value that will be saved on the app — defaults-as-values.
+  const [inputPlaceholder, setInputPlaceholder] = useState<string>(
+    "Type your message...",
+  );
 
   const [submitting, setSubmitting] = useState(false);
   const [previewSeed, setPreviewSeed] = useState(0); // bumped to force preview remount
@@ -499,9 +503,9 @@ export function LiveBuilder({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-[460px_minmax(0,1fr)] gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[440px_minmax(0,1fr)] gap-4 flex-1 min-h-0">
         {/* ── Options panel — fixed width on lg+, scrolls vertically ───── */}
-        <div className="overflow-y-auto pr-2 space-y-8">
+        <div className="overflow-y-auto pr-1 space-y-6">
           {/* App identity — name + description. Edits flow live into the
               preview's title row / form_to_result header. The saved
               shell_config still hides the title on the published run
@@ -772,8 +776,11 @@ export function LiveBuilder({
         </div>
 
         {/* ── Preview panel — owns the full right side ─────────────────── */}
+        {/* Pinned to bottom-right so it stays out of the way of the
+            chat shell's own header (back / app name / collapse / +).
+            The Reset stays accessible at the bottom corner. */}
         <div className="relative rounded-lg border border-border bg-card overflow-hidden min-h-0">
-          <div className="absolute top-2 right-3 z-10 flex items-center gap-2 bg-card/90 px-2 py-1 rounded">
+          <div className="absolute bottom-2 right-3 z-10 flex items-center gap-2 bg-card/90 px-2 py-1 rounded border border-border/60 shadow-sm">
             <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               Live preview

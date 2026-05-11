@@ -186,7 +186,7 @@ function ChatShellLayout({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 shrink-0"
           onClick={() => router.back()}
           title="Back"
           aria-label="Back"
@@ -200,7 +200,7 @@ function ChatShellLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 shrink-0"
             onClick={() => setSidebarOpen((v) => !v)}
             title={sidebarOpen ? "Collapse sidebar" : "Show sidebar"}
             aria-label={sidebarOpen ? "Collapse sidebar" : "Show sidebar"}
@@ -215,7 +215,7 @@ function ChatShellLayout({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 shrink-0"
           onClick={handleNewConversation}
           title="New conversation"
           aria-label="New conversation"
