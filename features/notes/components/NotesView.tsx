@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
@@ -110,10 +110,20 @@ export function NotesView({ config, className }: NotesViewProps) {
   );
   const urlActive = searchParams.get("active");
 
-  // Config props win over URL params
+  // ── Route param: /notes/[id] deep-link ─────────────────────────────
+  // Works from any descendant of the /notes layout — when the URL is
+  // /notes/abc (or /notes/abc/diff) this returns { id: "abc" }, otherwise {}.
+  const routeParams = useParams<{ id?: string | string[] }>();
+  const routeNoteId =
+    typeof routeParams?.id === "string" ? routeParams.id : null;
+
+  // Config props win over URL params, URL params win over route id for the
+  // _initial_ tab set. The route id is also enforced as the active tab in a
+  // dedicated effect below so client-side nav between /notes/[id] routes works.
   const initialTabs =
-    config?.initialTabs ?? (urlTabs.length > 0 ? urlTabs : undefined);
-  const initialActiveTab = config?.initialActiveTab ?? urlActive;
+    config?.initialTabs ??
+    (urlTabs.length > 0 ? urlTabs : routeNoteId ? [routeNoteId] : undefined);
+  const initialActiveTab = config?.initialActiveTab ?? urlActive ?? routeNoteId;
 
   // ── Generate or use provided instance ID ──────────────────────────
   const instanceIdRef = useRef(
@@ -177,6 +187,17 @@ export function NotesView({ config, className }: NotesViewProps) {
       dispatch(fetchNoteContent(singleNote));
     }
   }, [dispatch, instanceId, singleNote]);
+
+  // ── Route-param deep link (/notes/[id]) ────────────────────────────
+  // Ensures the route id is opened as a tab and made active on every change.
+  // Handles initial mount on /notes/abc and client-side nav /notes/abc → /notes/xyz
+  // (same layout, so NotesView stays mounted). singleNote takes precedence.
+  useEffect(() => {
+    if (singleNote || !routeNoteId) return;
+    dispatch(addInstanceTab({ instanceId, noteId: routeNoteId }));
+    dispatch(setInstanceActiveTab({ instanceId, noteId: routeNoteId }));
+    dispatch(fetchNoteContent(routeNoteId));
+  }, [dispatch, instanceId, routeNoteId, singleNote]);
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));

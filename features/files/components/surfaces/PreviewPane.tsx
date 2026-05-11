@@ -3,9 +3,10 @@
  *
  * Side-panel preview for a single file. Lives to the RIGHT of the file list
  * inside PageShell — never replaces the list, so the user always has a way
- * back. Header bar exposes copy-link, download, "Open full view" (routes to
- * `/files/f/{fileId}`), and a Close (X) action that clears the active
- * file selection so the panel collapses.
+ * back. Header bar exposes copy-link, download, a maximize / restore toggle
+ * (drives full-page width in-place, no re-mount), an "Open as page" route
+ * jump, an "Open in new tab" external link, and a Close (X) — or a Back
+ * arrow when we're already sitting on the dedicated `/files/f/{id}` route.
  *
  * Why this exists separately from FilePreview:
  *   - FilePreview only renders the file's body (image, video, PDF, etc.).
@@ -18,20 +19,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowLeft,
   Check,
   Copy,
   Download,
   Edit3,
+  Expand,
   ExternalLink,
   FileSearch,
   History,
   Info,
   Loader2,
   Gem,
+  Atom,
+  Maximize2,
+  Minimize2,
+  Share2,
   X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
@@ -45,10 +57,18 @@ import { MoreHorizontal } from "lucide-react";
 import { PreviewErrorBoundary } from "./PreviewErrorBoundary";
 import { FileInfoTab } from "./FileInfoTab";
 import { DocumentTab } from "./DocumentTab";
+import { FileShareTab } from "./FileShareTab";
 import { FileLineageChip } from "./FileLineageChip";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 
-type PreviewTab = "preview" | "edit" | "document" | "versions" | "info";
+type PreviewTab =
+  | "preview"
+  | "edit"
+  | "document"
+  | "analysis"
+  | "share"
+  | "versions"
+  | "info";
 
 export interface PreviewPaneProps {
   fileId: string;
@@ -59,17 +79,22 @@ export interface PreviewPaneProps {
    */
   onClose?: () => void;
   /**
-   * Called when the user clicks "Open full view". Defaults to routing to
-   * `/files/f/{fileId}`.
+   * When set, renders a maximize / restore toggle in the action bar. Driven
+   * by the parent (PageShell) so the parent owns the layout state and the
+   * underlying `setLayout` call against `react-resizable-panels`. Floating-
+   * window surfaces (e.g. FilePreviewWindow) leave both unset to hide the
+   * button entirely — they aren't constrained by a side-by-side layout.
    */
-  onOpen?: () => void;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
   className?: string;
 }
 
 export function PreviewPane({
   fileId,
   onClose,
-  onOpen,
+  isMaximized,
+  onToggleMaximize,
   className,
 }: PreviewPaneProps) {
   const dispatch = useAppDispatch();
@@ -89,6 +114,8 @@ export function PreviewPane({
       tabRaw === "preview" ||
       tabRaw === "edit" ||
       tabRaw === "document" ||
+      tabRaw === "analysis" ||
+      tabRaw === "share" ||
       tabRaw === "info" ||
       tabRaw === "versions"
         ? tabRaw
@@ -131,7 +158,9 @@ export function PreviewPane({
         detail.tab === "preview" ||
         detail.tab === "info" ||
         detail.tab === "edit" ||
-        detail.tab === "document"
+        detail.tab === "document" ||
+        detail.tab === "analysis" ||
+        detail.tab === "share"
       ) {
         setActiveTab(detail.tab);
       }
@@ -157,13 +186,16 @@ export function PreviewPane({
     }
   }, [dispatch, onClose, pathname, router]);
 
-  const handleOpen = useCallback(() => {
-    if (onOpen) {
-      onOpen();
-      return;
-    }
-    router.push(`/files/f/${fileId}`);
-  }, [fileId, onOpen, router]);
+  // The dedicated single-file route. Used by:
+  //   1. "Open as page" → router.push (same tab, route transition)
+  //   2. "Open in new tab" → <a target="_blank"> (real browser new tab)
+  //   3. The Close button's back-to-files branch (when we're already there)
+  const fileRouteHref = `/files/f/${fileId}`;
+  const isOnFileRoute = pathname?.startsWith("/files/f/") ?? false;
+
+  const handleOpenAsPage = useCallback(() => {
+    router.push(fileRouteHref);
+  }, [fileRouteHref, router]);
 
   // Esc closes the preview — matches Dropbox / Drive muscle memory and is the
   // last-line escape hatch if the user can't see the close button for any
@@ -209,7 +241,7 @@ export function PreviewPane({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-card",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-card",
         className,
       )}
       role="complementary"
@@ -217,17 +249,30 @@ export function PreviewPane({
     >
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-2 py-2 shrink-0">
-        {/* Close — leftmost so it's never obscured by the app's user avatar
-         * in the top-right corner. Esc keyboard shortcut also works. */}
-        <button
-          type="button"
-          onClick={handleClose}
-          title="Close preview (Esc)"
-          aria-label="Close preview"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {/* Leftmost: Close (when on /files or any list route) OR Back (when on
+         * /files/f/{id} — i.e. already on the dedicated file route). Both paths
+         * call the same `handleClose`, which already routes back to /files
+         * when it detects the dedicated route. We only swap the icon + label
+         * so the affordance is honest. */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleClose}
+              aria-label={isOnFileRoute ? "Back to files" : "Close preview"}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {isOnFileRoute ? (
+                <ArrowLeft className="h-4 w-4" />
+              ) : (
+                <X className="h-4 w-4" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6}>
+            {isOnFileRoute ? "Back to files" : "Close preview (Esc)"}
+          </TooltipContent>
+        </Tooltip>
 
         {/* Right-click anywhere on the filename / icon area opens the
          * full file context menu — same items as the 3-dot dropdown to
@@ -290,29 +335,81 @@ export function PreviewPane({
               <Download className="h-3.5 w-3.5" />
             )}
           </PreviewIconButton>
+          {/* In-place maximize / restore. Drives `setLayout` against the
+           * react-resizable-panels group in PageShell so the preview takes
+           * 100% of the page width without any z-index gymnastics and
+           * WITHOUT re-mounting — long-running work in the body (RAG
+           * classification, PDF analysis, fetched blobs) keeps going.
+           * Only rendered when the parent owns a togglable layout. */}
+          {onToggleMaximize ? (
+            <PreviewIconButton
+              onClick={onToggleMaximize}
+              disabled={!file}
+              title={isMaximized ? "Restore width" : "Expand to full width"}
+              ariaLabel={
+                isMaximized ? "Restore preview width" : "Maximize preview width"
+              }
+            >
+              {isMaximized ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </PreviewIconButton>
+          ) : null}
+          {/* Open as page — route navigation to /files/f/{id}. Hidden when
+           * we're already sitting on that route (would just churn the
+           * router and re-hydrate the same shell). */}
+          {!isOnFileRoute ? (
+            <PreviewIconButton
+              onClick={handleOpenAsPage}
+              disabled={!file}
+              title="Open as page"
+              ariaLabel="Open as a dedicated page"
+            >
+              <Expand className="h-3.5 w-3.5" />
+            </PreviewIconButton>
+          ) : null}
+          {/* Open in a real new browser tab. Renders as an anchor so
+           * cmd/ctrl-click, middle-click, "Copy link" etc. all behave
+           * naturally — wrapping a button in target="_blank" cannot do
+           * that. */}
           <PreviewIconButton
-            onClick={handleOpen}
+            href={fileRouteHref}
+            target="_blank"
+            rel="noopener noreferrer"
             disabled={!file}
-            title="Open full view"
-            ariaLabel="Open full view"
+            title="Open in new tab"
+            ariaLabel="Open in new tab"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </PreviewIconButton>
           {/* All other file actions (Rename, Visibility, Show details,
            * Show versions, Duplicate, Delete, …) live in the full menu
            * here. Same items the user gets from a right-click anywhere
-           * else in the app — single source via useFileMenuActions. */}
-          <FileContextMenu fileId={fileId}>
-            <button
-              type="button"
-              title="More actions"
-              aria-label="More actions"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!file}
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </button>
-          </FileContextMenu>
+           * else in the app — single source via useFileMenuActions.
+           *
+           * Tooltip wraps the menu so the tooltip and the dropdown share
+           * the same button trigger (Tooltip > FileContextMenu >
+           * TooltipTrigger asChild > button). Both Slot wrappers compose
+           * via cloneElement — confirmed pattern from features/notes. */}
+          <Tooltip>
+            <FileContextMenu fileId={fileId}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More actions"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!file}
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+            </FileContextMenu>
+            <TooltipContent side="bottom" sideOffset={6}>
+              More actions
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -341,6 +438,20 @@ export function PreviewPane({
           active={activeTab === "document"}
           onClick={() => setActiveTab("document")}
           title="Processed-document view (RAG: pages, cleaned text, chunks, lineage)"
+        />
+        <PreviewTabButton
+          icon={<Atom className="h-3.5 w-3.5" />}
+          label="Analysis"
+          active={activeTab === "analysis"}
+          onClick={() => setActiveTab("analysis")}
+          title="AI-powered analysis of this file"
+        />
+        <PreviewTabButton
+          icon={<Share2 className="h-3.5 w-3.5" />}
+          label="Share"
+          active={activeTab === "share"}
+          onClick={() => setActiveTab("share")}
+          title="Visibility, share links, people & groups"
         />
         <PreviewTabButton
           icon={<Info className="h-3.5 w-3.5" />}
@@ -404,6 +515,27 @@ export function PreviewPane({
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
+          hidden={activeTab !== "analysis"}
+          aria-hidden={activeTab !== "analysis"}
+        >
+          <PreviewErrorBoundary fileId={fileId}>
+            <ComingSoon
+              title="Analysis — coming soon"
+              description="AI-powered analysis of this file will live here."
+            />
+          </PreviewErrorBoundary>
+        </div>
+        <div
+          className="absolute inset-0 overflow-hidden"
+          hidden={activeTab !== "share"}
+          aria-hidden={activeTab !== "share"}
+        >
+          <PreviewErrorBoundary fileId={fileId}>
+            <FileShareTab fileId={fileId} className="h-full w-full" />
+          </PreviewErrorBoundary>
+        </div>
+        <div
+          className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "info"}
           aria-hidden={activeTab !== "info"}
         >
@@ -462,7 +594,9 @@ function EditTabContent({ fileId }: EditTabContentProps) {
       // `data` covers JSON / CSV / XLSX. JSON is editable as text; CSV/XLSX
       // would benefit from a dedicated grid editor — Monaco still works as
       // a fallback for now (raw CSV editing is fine).
-      return <CloudFileInlineEditor fileId={fileId} className="h-full w-full" />;
+      return (
+        <CloudFileInlineEditor fileId={fileId} className="h-full w-full" />
+      );
 
     case "pdf":
       return (
@@ -542,13 +676,12 @@ function PreviewTabButton({
   onClick: () => void;
   title?: string;
 }) {
-  return (
+  const button = (
     <button
       type="button"
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      title={title}
       className={cn(
         "flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-medium transition-colors",
         active
@@ -560,12 +693,20 @@ function PreviewTabButton({
       {label}
     </button>
   );
+  if (!title) return button;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {title}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 // ─── Local sub-component ─────────────────────────────────────────────────
 
-interface PreviewIconButtonProps {
-  onClick: () => void;
+interface PreviewIconButtonBaseProps {
   children: React.ReactNode;
   title: string;
   ariaLabel: string;
@@ -573,29 +714,68 @@ interface PreviewIconButtonProps {
   tone?: "default" | "muted";
 }
 
-function PreviewIconButton({
-  onClick,
-  children,
-  title,
-  ariaLabel,
-  disabled,
-  tone = "default",
-}: PreviewIconButtonProps) {
+type PreviewIconButtonProps =
+  | (PreviewIconButtonBaseProps & {
+      onClick: () => void;
+      href?: never;
+      target?: never;
+      rel?: never;
+    })
+  | (PreviewIconButtonBaseProps & {
+      href: string;
+      target?: React.HTMLAttributeAnchorTarget;
+      rel?: string;
+      onClick?: () => void;
+    });
+
+function PreviewIconButton(props: PreviewIconButtonProps) {
+  const { children, title, ariaLabel, disabled, tone = "default" } = props;
+  const className = cn(
+    "flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    tone === "muted"
+      ? "text-muted-foreground hover:bg-accent hover:text-foreground"
+      : "text-foreground hover:bg-accent",
+  );
+
+  // Render as an anchor when an href is provided so middle-click, cmd-click,
+  // and "Copy link" all work the way a real link does — wrapping a <button>
+  // in target="_blank" cannot replicate that behaviour. We mirror the
+  // disabled visual with aria-disabled + pointer-events-none on the link
+  // since <a> has no native disabled state.
+  const trigger =
+    "href" in props && props.href ? (
+      <a
+        href={disabled ? undefined : props.href}
+        target={props.target}
+        rel={
+          props.rel ??
+          (props.target === "_blank" ? "noopener noreferrer" : undefined)
+        }
+        aria-label={ariaLabel}
+        aria-disabled={disabled || undefined}
+        onClick={props.onClick}
+        className={cn(className, disabled && "pointer-events-none")}
+      >
+        {children}
+      </a>
+    ) : (
+      <button
+        type="button"
+        onClick={props.onClick}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      aria-label={ariaLabel}
-      className={cn(
-        "flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        tone === "muted"
-          ? "text-muted-foreground hover:bg-accent hover:text-foreground"
-          : "text-foreground hover:bg-accent",
-      )}
-    >
-      {children}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {title}
+      </TooltipContent>
+    </Tooltip>
   );
 }

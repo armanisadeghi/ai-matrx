@@ -27,6 +27,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useGroupRef, type Layout } from "react-resizable-panels";
 import {
   DndContext,
   DragOverlay,
@@ -509,6 +510,45 @@ function PageShellDesktop({
   const activeFile = activeFileId ? filesById[activeFileId] : null;
   const showPreviewPane = !!activeFile;
 
+  // ---- Preview maximize (full-page-width, in-place, no re-mount) -----------
+  // `setLayout` lets us drive the panel sizes imperatively without unmounting
+  // the PreviewPane — so long-running tasks inside it (e.g. RAG classification,
+  // PDF analysis) keep running across the toggle. The library still owns the
+  // sizes; we only stash the layout map before maximizing so we can restore it.
+  // See `.claude/skills/react-resizable-panels-v4` §1 "Imperative handles" and
+  // the decision-tree row for "Fullscreen one panel".
+  const groupRef = useGroupRef();
+  const savedLayoutRef = useRef<Layout | null>(null);
+  const [previewMaximized, setPreviewMaximized] = useState(false);
+
+  // If the user closes the preview while it's maximized, fall back to the
+  // normal layout so the next file opens in the regular sheet.
+  useEffect(() => {
+    if (!showPreviewPane && previewMaximized) {
+      setPreviewMaximized(false);
+      savedLayoutRef.current = null;
+    }
+  }, [showPreviewPane, previewMaximized]);
+
+  const togglePreviewMaximize = useCallback(() => {
+    const group = groupRef.current;
+    if (!group || !showPreviewPane) return;
+    if (previewMaximized) {
+      const saved = savedLayoutRef.current;
+      if (saved) group.setLayout(saved);
+      savedLayoutRef.current = null;
+      setPreviewMaximized(false);
+    } else {
+      savedLayoutRef.current = group.getLayout();
+      group.setLayout({
+        [PANEL_IDS.SIDE]: 0,
+        [PANEL_IDS.MAIN]: 0,
+        [PANEL_IDS.PREVIEW]: 100,
+      });
+      setPreviewMaximized(true);
+    }
+  }, [groupRef, previewMaximized, showPreviewPane]);
+
   return (
     <DndContext
       sensors={dndSensors}
@@ -529,24 +569,35 @@ function PageShellDesktop({
           orientation="horizontal"
           autoSave="matrx-cloud-files-dropbox-v4"
           className="h-full min-h-0 w-full"
+          groupRef={groupRef}
         >
-          {/* Nav sidebar */}
+          {/* Nav sidebar — collapsible so the imperative maximize call below
+           * can drive its size to 0 without minSize fighting it. Normal drag
+           * UX is unaffected (minSize is still respected during pointer drag,
+           * with auto-collapse only at the lower bound). */}
           <ResizablePanel
             id={PANEL_IDS.SIDE}
             defaultSize={pct(sidebarDefaultPercent)}
             minSize={pct(sidebarMinPercent)}
             maxSize={pct(40)}
+            collapsible
+            collapsedSize="0%"
             className="border-r border-border/70"
           >
             <NavSidebar section={section} />
           </ResizablePanel>
 
-          <ResizableHandle />
+          <ResizableHandle
+            disabled={previewMaximized}
+            className={cn(previewMaximized && "pointer-events-none !opacity-0")}
+          />
 
-          {/* Main */}
+          {/* Main — also collapsible for the same maximize-to-100 path. */}
           <ResizablePanel
             id={PANEL_IDS.MAIN}
             minSize={pct(showPreviewPane ? 30 : 40)}
+            collapsible
+            collapsedSize="0%"
           >
             <div className="flex h-full flex-col overflow-hidden">
               <TopBar
@@ -659,15 +710,25 @@ function PageShellDesktop({
            * preferred width across mounts. */}
           {showPreviewPane && (
             <>
-              <ResizableHandle />
+              <ResizableHandle
+                disabled={previewMaximized}
+                className={cn(
+                  previewMaximized && "pointer-events-none !opacity-0",
+                )}
+              />
               <ResizablePanel
                 id={PANEL_IDS.PREVIEW}
                 defaultSize={pct(PREVIEW_DEFAULT_PCT)}
                 minSize={pct(PREVIEW_MIN_PCT)}
-                maxSize={pct(PREVIEW_MAX_PCT)}
+                maxSize={pct(100)}
                 className="border-l border-border/70"
               >
-                <PreviewPane key={activeFile!.id} fileId={activeFile!.id} />
+                <PreviewPane
+                  key={activeFile!.id}
+                  fileId={activeFile!.id}
+                  isMaximized={previewMaximized}
+                  onToggleMaximize={togglePreviewMaximize}
+                />
               </ResizablePanel>
             </>
           )}

@@ -67,6 +67,35 @@ const CodePreview = dynamic(() => import("./previewers/CodePreview"), {
   ),
 });
 
+// ---------------------------------------------------------------------------
+// DEBUG layering visualization — paired with the corresponding rings in
+// PreviewPane.tsx, PdfPreview.tsx, and GenericPreview.tsx. Rip all of
+// this out by deleting the DEBUG_* constants and <DebugLayerLabel/>
+// usages once we're done untangling the wrappers.
+// ---------------------------------------------------------------------------
+const DEBUG_RING_FILE_PREVIEW = "ring-2 ring-inset ring-blue-500";
+const DEBUG_RING_FILE_PREVIEW_BODY = "ring-2 ring-inset ring-cyan-500";
+
+function DebugLayerLabel({
+  label,
+  color,
+}: {
+  label: string;
+  color: "blue" | "cyan";
+}) {
+  const bg = color === "blue" ? "bg-blue-500" : "bg-cyan-500";
+  return (
+    <span
+      className={cn(
+        "pointer-events-none absolute left-0 top-0 z-50 select-none rounded-br px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white shadow",
+        bg,
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 export interface FilePreviewProps {
   fileId: string;
   className?: string;
@@ -99,9 +128,7 @@ export function FilePreview({
     // bar when the adapter declares `openInRoute`. The handoff is secondary
     // — the primary experience is the inline preview the adapter mounts via
     // `inlinePreview`.
-    let openInRoute:
-      | { label: string; onClick: () => void }
-      | undefined;
+    let openInRoute: { label: string; onClick: () => void } | undefined;
     if (file.source.kind === "virtual") {
       const adapter = getVirtualSource(file.source.adapterId);
       const route = adapter?.openInRoute?.({
@@ -156,9 +183,22 @@ export function FilePreview({
     const Inline = adapter?.inlinePreview;
     if (Inline) {
       return (
-        <div className={cn("flex h-full w-full min-h-0 flex-col", className)}>
+        <div
+          className={cn(
+            "relative flex h-full w-full min-h-0 flex-col",
+            DEBUG_RING_FILE_PREVIEW,
+            className,
+          )}
+        >
+          <DebugLayerLabel label="FilePreview" color="blue" />
           {actionBar}
-          <div className="min-h-0 flex-1 overflow-hidden">
+          <div
+            className={cn(
+              "relative min-h-0 flex-1 overflow-hidden",
+              DEBUG_RING_FILE_PREVIEW_BODY,
+            )}
+          >
+            <DebugLayerLabel label="FilePreview body" color="cyan" />
             <Inline
               id={file.source.virtualId}
               fieldId={file.source.fieldId}
@@ -252,9 +292,24 @@ export function FilePreview({
   }
 
   return (
-    <div className={cn("flex h-full w-full min-h-0 flex-col", className)}>
+    <div
+      className={cn(
+        "relative flex h-full w-full min-h-0 flex-col",
+        DEBUG_RING_FILE_PREVIEW,
+        className,
+      )}
+    >
+      <DebugLayerLabel label="FilePreview" color="blue" />
       {actionBar}
-      <div className="min-h-0 flex-1 overflow-hidden">{body}</div>
+      <div
+        className={cn(
+          "relative min-h-0 flex-1 overflow-hidden",
+          DEBUG_RING_FILE_PREVIEW_BODY,
+        )}
+      >
+        <DebugLayerLabel label="FilePreview body" color="cyan" />
+        {body}
+      </div>
     </div>
   );
 }

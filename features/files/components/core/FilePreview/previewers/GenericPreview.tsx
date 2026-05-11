@@ -22,6 +22,12 @@ import { cn } from "@/lib/utils";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { formatFileSize } from "@/features/files/utils/format";
 
+// ---------------------------------------------------------------------------
+// DEBUG layering visualization — paired with the rings in PreviewPane,
+// FilePreview, and PdfPreview. Rip this out when done.
+// ---------------------------------------------------------------------------
+const DEBUG_RING_GENERIC_PREVIEW = "ring-2 ring-inset ring-fuchsia-500";
+
 export interface GenericPreviewProps {
   fileName: string;
   fileSize: number | null;
@@ -73,10 +79,14 @@ export function GenericPreview({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center",
+        "relative flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center",
+        DEBUG_RING_GENERIC_PREVIEW,
         className,
       )}
     >
+      <span className="pointer-events-none absolute left-0 top-0 z-50 select-none rounded-br bg-fuchsia-500 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white shadow">
+        GenericPreview
+      </span>
       <FileIcon fileName={fileName} size={48} />
       <div>
         <p className="text-sm font-medium truncate max-w-md">{fileName}</p>
