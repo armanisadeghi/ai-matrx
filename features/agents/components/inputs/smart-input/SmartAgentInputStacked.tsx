@@ -23,7 +23,6 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
-  placeholder?: string;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
   uploadBucket?: string;
@@ -40,7 +39,6 @@ interface SmartAgentInputStackedProps {
 
 export function SmartAgentInputStacked({
   conversationId,
-  placeholder,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
   uploadBucket = "userContent",
@@ -87,7 +85,6 @@ export function SmartAgentInputStacked({
       {/* Textarea — shrinks slightly under pressure but stays visible */}
       <AgentTextarea
         conversationId={conversationId}
-        placeholder={placeholder}
         compact={compact}
         uploadBucket={uploadBucket}
         uploadPath={uploadPath}

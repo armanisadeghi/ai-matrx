@@ -22,7 +22,6 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 
 interface SmartAgentInputProps {
   conversationId: string | null | undefined;
-  placeholder?: string;
   singleRowTextarea?: boolean;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
@@ -40,7 +39,6 @@ interface SmartAgentInputProps {
 
 export function SmartAgentInput({
   conversationId,
-  placeholder,
   singleRowTextarea = false,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
@@ -59,7 +57,6 @@ export function SmartAgentInput({
     return (
       <SmartAgentInputSingleRow
         conversationId={conversationId}
-        placeholder={placeholder}
         sendButtonVariant={sendButtonVariant}
         uploadBucket={uploadBucket}
         uploadPath={uploadPath}
@@ -77,7 +74,6 @@ export function SmartAgentInput({
   return (
     <SmartAgentInputStacked
       conversationId={conversationId}
-      placeholder={placeholder}
       sendButtonVariant={sendButtonVariant}
       showSubmitOnEnterToggle={showSubmitOnEnterToggle}
       uploadBucket={uploadBucket}

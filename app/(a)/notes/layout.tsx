@@ -5,10 +5,9 @@ import { NotesView } from "@/features/notes/components/NotesView";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/notes", {
-  titlePrefix: "v2",
   title: "Notes",
   description: "SSR test route for the 6-layer notes architecture",
-  letter: "Nv",
+  letter: "N",
 });
 
 const highlightStyles = `

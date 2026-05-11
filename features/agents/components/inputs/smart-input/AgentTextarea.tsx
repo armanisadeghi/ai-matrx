@@ -30,7 +30,10 @@ import {
   selectInputCharCount,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import {
+  selectSubmitOnEnter,
+  selectInputPlaceholder,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
@@ -50,7 +53,6 @@ import { selectUserVariableValues } from "@/features/agents/redux/execution-syst
 
 interface AgentTextareaProps {
   conversationId: string;
-  placeholder?: string;
   compact?: boolean;
   /** Render as a single-line input-like textarea (no expand toggle, minimal height) */
   singleRow?: boolean;
@@ -62,10 +64,14 @@ interface AgentTextareaProps {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
+//
+// Settings (placeholder, etc.) come from Redux — NOT props. Surfaces that want
+// to customize the textarea behaviour dispatch the appropriate setter against
+// their conversationId before rendering. This keeps the input subtree
+// self-sufficient and identical across every surface that mounts it.
 
 export function AgentTextarea({
   conversationId,
-  placeholder,
   compact = false,
   singleRow = false,
   uploadBucket = "userContent",
@@ -84,6 +90,9 @@ export function AgentTextarea({
   const charCount = useAppSelector(selectInputCharCount(conversationId));
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
+  const reduxPlaceholder = useAppSelector(
+    selectInputPlaceholder(conversationId),
+  );
 
   // Variable values for undo snapshot co-capture (stable EMPTY_RECORD when unset)
   const currentUserValues = useAppSelector(
@@ -216,7 +225,8 @@ export function AgentTextarea({
   }, [conversationId]);
 
   const placeholderText =
-    placeholder ?? (isExpanded ? "Add a message..." : "Type your message...");
+    reduxPlaceholder ??
+    (isExpanded ? "Add a message..." : "Type your message...");
 
   if (singleRow) {
     return (
