@@ -73,13 +73,20 @@ export interface AgentAppShellConfigCommon {
   title?: string;
   /** Hide the shell's own title row. */
   hideTitle?: boolean;
-  /** Auto-fire the first execution as soon as the shell mounts. */
+  /**
+   * Auto-fire the first execution on mount. RARELY useful for apps —
+   * an app has no variables filled in at mount, so auto-running just
+   * burns tokens on a default-state run. Kept for parity with the
+   * launcher's underlying option; default is `false` for apps.
+   */
   autoRun?: boolean;
   /**
    * Allow the user to continue a conversation with the agent (turn 2+).
    * Set false for one-shot apps.
    */
   allowChat?: boolean;
+  /** Show the variables panel. Default: visible when the agent has variables. */
+  showVariablePanel?: boolean;
   /**
    * Variable input style — one of SmartAgentVariables' six variants.
    * @see features/agents/components/inputs/variable-input-variations
@@ -91,6 +98,18 @@ export interface AgentAppShellConfigCommon {
     | "compact"
     | "guided"
     | "cards";
+  /** Show the pre-execution gate (welcome / consent / setup) before the first run. */
+  showPreExecutionGate?: boolean;
+  /** Custom message shown on the pre-execution gate (when enabled). */
+  preExecutionMessage?: string;
+  /** Show agent-authored definition messages (e.g. instructions, welcome text). */
+  showDefinitionMessages?: boolean;
+  /** Show the body content of definition messages (default: header-only). */
+  showDefinitionMessageContent?: boolean;
+  /** Hide reasoning blocks from the transcript. */
+  hideReasoning?: boolean;
+  /** Hide tool-result blocks from the transcript. */
+  hideToolResults?: boolean;
   /** History view location — sidebar / drawer / hidden. */
   historyView?: "sidebar" | "drawer" | "hidden";
   /** Branding overrides. */

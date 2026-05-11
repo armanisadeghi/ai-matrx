@@ -19,15 +19,9 @@
  * better than silently dropping it.
  */
 
-import { useEffect, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useState } from "react";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
-import {
-  setAutoRun,
-  setAllowChat,
-  setShowVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,
@@ -41,7 +35,6 @@ interface AgentAppChatShellProps {
 }
 
 export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
-  const dispatch = useAppDispatch();
   const config = (app.shell_config ?? {}) as AgentAppShellConfigCommon;
   const overrides = (app.slot_overrides ?? {}) as Record<
     string,
@@ -49,6 +42,9 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
   >;
   const [gateDismissed, setGateDismissed] = useState(false);
 
+  // Pass shell_config straight through to the hook. The hook forwards
+  // these into the launcher's `config` so they're set at instance
+  // creation time — no post-create dispatches needed.
   const agentAppCtx = useAgentApp({
     agentId: app.agent_id,
     agentVersionId: app.agent_version_id,
@@ -56,29 +52,15 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     appId: app.id,
     autoRun: config.autoRun ?? false,
     allowChat: config.allowChat ?? true,
+    showVariablePanel: config.showVariablePanel,
+    variablesPanelStyle: config.variableInputStyle,
+    showPreExecutionGate: config.showPreExecutionGate,
+    preExecutionMessage: config.preExecutionMessage,
+    showDefinitionMessages: config.showDefinitionMessages,
+    showDefinitionMessageContent: config.showDefinitionMessageContent,
+    hideReasoning: config.hideReasoning,
+    hideToolResults: config.hideToolResults,
   });
-
-  // Push shell_config settings into the per-instance UI state so
-  // AgentRunner's selectors see them.
-  useEffect(() => {
-    if (!agentAppCtx.conversationId) return;
-    const cid = agentAppCtx.conversationId;
-    if (config.autoRun != null) {
-      dispatch(setAutoRun({ conversationId: cid, autoRun: config.autoRun }));
-    }
-    if (config.allowChat != null) {
-      dispatch(
-        setAllowChat({ conversationId: cid, allowChat: config.allowChat }),
-      );
-    }
-    // Apps almost always want the variables panel visible up-front.
-    dispatch(setShowVariablePanel({ conversationId: cid, show: true }));
-  }, [
-    dispatch,
-    agentAppCtx.conversationId,
-    config.autoRun,
-    config.allowChat,
-  ]);
 
   if (!agentAppCtx.conversationId) {
     return (
@@ -112,23 +94,28 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     );
   }
 
-  // AgentRunner is `max-w-[800px]` but does NOT center itself. Wrap it in a
-  // centered container so the conversation sits in the middle of whatever
-  // space the parent gives us (next to the history sidebar, in an iframe, etc).
+  // Wrap AgentRunner in a block-level centered container.
   //
-  // `showTitle` defaults to FALSE here because the run-page already renders
-  // a page header with the app's name. Letting AgentRunner draw its own
-  // title would duplicate the app name on every chat. Apps that *want* an
-  // in-shell title (e.g. iframe embeds with no outer chrome) can opt in
-  // by setting `shell_config.hideTitle = false` explicitly.
+  // AgentRunner internals are `relative h-full max-w-[800px]` with
+  // children positioned absolutely — it has no intrinsic width. In a
+  // `flex justify-center` parent it collapses to 0 width (a flex item
+  // with no explicit width and absolute-only children). The fix is a
+  // plain block container with `mx-auto` — block elements claim full
+  // width up to `max-w-`, then center themselves horizontally.
+  //
+  // `showTitle` defaults to FALSE because the run-page header already
+  // shows the app name. Embeds with no outer chrome opt in via
+  // shell_config.hideTitle === false.
   return (
-    <div className="h-full w-full flex justify-center">
-      <AgentRunner
-        conversationId={agentAppCtx.conversationId}
-        surfaceKey={agentAppCtx.surfaceKey}
-        compact={config.compact}
-        showTitle={config.hideTitle === false}
-      />
+    <div className="h-full w-full overflow-hidden">
+      <div className="h-full max-w-[800px] mx-auto">
+        <AgentRunner
+          conversationId={agentAppCtx.conversationId}
+          surfaceKey={agentAppCtx.surfaceKey}
+          compact={config.compact}
+          showTitle={config.hideTitle === false}
+        />
+      </div>
     </div>
   );
 }

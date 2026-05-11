@@ -3,15 +3,19 @@
 /**
  * LiveBuilder — split-pane no-code builder for shell-based apps.
  *
- * Left: numbered-step wizard (Layout → Variable input style → Settings →
- * History). Right: live preview that mounts the real shell against the
- * user's real agent. Every left-side change re-renders the right-side
- * preview instantly — no AI generation, no Babel sandbox, no code.
+ * Left: numbered-step wizard. Right: live preview that mounts the real
+ * shell against the user's real agent. Every left-side change re-renders
+ * the right-side preview instantly — no AI generation, no Babel sandbox,
+ * no code.
  *
  * On "Create app" the user's selections are written into `shell_kind` +
- * `shell_config` on a fresh `aga_apps` row (no `component_code`). The
- * row's UUID is its initial slug to avoid collisions; the user renames
- * it in Settings before publishing.
+ * `shell_config` on a fresh `aga_apps` row (no `component_code`).
+ *
+ * Options surface mirrors `TesterSettingsController` (the same options
+ * that power /agents/[id]/widgets). `autoRun` is intentionally OMITTED
+ * for apps — an app at mount has nothing in its variables, so auto-run
+ * just burns tokens on a default-state run. autoRun is for shortcuts
+ * (which fill variables from external context).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -30,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -78,8 +83,6 @@ export function LiveBuilder({
 
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
 
-  // Seed Redux with the agent so the preview's `useAgentApp` finds it
-  // immediately. Idempotent — fetchFullAgent skips if already loaded.
   useEffect(() => {
     if (agent) return;
     void dispatch(fetchFullAgent(agentId));
@@ -87,72 +90,112 @@ export function LiveBuilder({
 
   const agentName = agent?.name ?? "App";
 
+  // ── Selections ──────────────────────────────────────────────────────────
   const [shellKind, setShellKind] = useState<ShellChoice>("chat");
+  // Variables
+  const [showVariablePanel, setShowVariablePanel] = useState(true);
   const [variableInputStyle, setVariableInputStyle] = useState<
     NonNullable<AgentAppShellConfigCommon["variableInputStyle"]>
   >("form");
+  // Conversation
+  const [allowChat, setAllowChat] = useState(true);
+  // Pre-execution gate
+  const [showPreExecutionGate, setShowPreExecutionGate] = useState(false);
+  const [preExecutionMessage, setPreExecutionMessage] = useState("");
+  // Definition messages (agent instructions)
+  const [showDefinitionMessages, setShowDefinitionMessages] = useState(true);
+  const [showDefinitionMessageContent, setShowDefinitionMessageContent] =
+    useState(false);
+  // Transcript filters
+  const [hideReasoning, setHideReasoning] = useState(false);
+  const [hideToolResults, setHideToolResults] = useState(false);
+  // Chat-specific
   const [historyView, setHistoryView] = useState<
     NonNullable<AgentAppShellConfigCommon["historyView"]>
   >("sidebar");
-  const [autoRun, setAutoRun] = useState(false);
-  const [allowChat, setAllowChat] = useState(true);
+  // Density
   const [compact, setCompact] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
 
-  // Shell-specific defaults the first time the user picks a shell.
+  // Per-shell sensible defaults on shell change.
   useEffect(() => {
-    if (shellKind === "widget") setCompact(true);
-    if (shellKind === "form_to_result") setAllowChat(false);
-    if (shellKind === "chat") setAllowChat(true);
+    if (shellKind === "widget") {
+      setCompact(true);
+      setShowVariablePanel(true);
+    } else if (shellKind === "form_to_result") {
+      setAllowChat(false);
+    } else if (shellKind === "chat") {
+      setAllowChat(true);
+    }
   }, [shellKind]);
 
   const shellConfig: AgentAppShellConfigCommon = useMemo(
     () => ({
-      autoRun,
       allowChat,
       compact,
+      showVariablePanel,
       variableInputStyle,
+      showPreExecutionGate,
+      ...(showPreExecutionGate && preExecutionMessage
+        ? { preExecutionMessage }
+        : {}),
+      showDefinitionMessages,
+      showDefinitionMessageContent,
+      hideReasoning,
+      hideToolResults,
       historyView,
-      // Always-hide the in-shell title — the run-page renders its own
-      // header. (Embed deployments later override via Settings.)
+      // Page header renders the title; in-shell title would duplicate it.
       hideTitle: true,
     }),
-    [autoRun, allowChat, compact, variableInputStyle, historyView],
+    [
+      allowChat,
+      compact,
+      showVariablePanel,
+      variableInputStyle,
+      showPreExecutionGate,
+      preExecutionMessage,
+      showDefinitionMessages,
+      showDefinitionMessageContent,
+      hideReasoning,
+      hideToolResults,
+      historyView,
+    ],
   );
 
-  // Synthetic PublicAgentApp for the preview. Stable id-per-agent so the
-  // preview's launcher reuses one Redux conversation across config changes,
-  // rather than spawning a fresh instance on every keystroke.
+  // Stable preview app id per agent so the preview's launcher reuses one
+  // Redux conversation across config tweaks.
   const previewApp: PublicAgentApp = useMemo(
-    () => ({
-      id: `live-preview-${agentId}`,
-      slug: `live-preview-${agentId}`,
-      name: `${agentName} App`,
-      agent_id: agentId,
-      agent_version_id: null,
-      use_latest: true,
-      tagline: null,
-      description: null,
-      category: null,
-      tags: [],
-      preview_image_url: null,
-      favicon_url: null,
-      component_code: "",
-      component_language: "tsx",
-      allowed_imports: [],
-      variable_schema: [],
-      layout_config: {},
-      styling_config: {},
-      shell_kind: shellKind,
-      shell_config: shellConfig,
-      slot_overrides: {},
-      slot_code: {},
-      total_executions: 0,
-      success_rate: 0,
-      app_kind: "single",
-      shared_context_slots: null,
-      search_tsv: null,
-    }) as unknown as PublicAgentApp,
+    () =>
+      ({
+        id: `live-preview-${agentId}`,
+        slug: `live-preview-${agentId}`,
+        name: `${agentName} App`,
+        agent_id: agentId,
+        agent_version_id: null,
+        use_latest: true,
+        tagline: null,
+        description: null,
+        category: null,
+        tags: [],
+        preview_image_url: null,
+        favicon_url: null,
+        component_code: "",
+        component_language: "tsx",
+        allowed_imports: [],
+        variable_schema: [],
+        layout_config: {},
+        styling_config: {},
+        shell_kind: shellKind,
+        shell_config: shellConfig,
+        slot_overrides: {},
+        slot_code: {},
+        total_executions: 0,
+        success_rate: 0,
+        app_kind: "single",
+        shared_context_slots: null,
+        search_tsv: null,
+      }) as unknown as PublicAgentApp,
     [agentId, agentName, shellKind, shellConfig],
   );
 
@@ -225,74 +268,140 @@ export function LiveBuilder({
             </div>
           </Step>
 
-          {(shellKind === "form_to_result" || shellKind === "chat") && (
-            <Step number={2} label="Variable Input Style">
-              <Select
-                value={variableInputStyle}
-                onValueChange={(v) =>
-                  setVariableInputStyle(
-                    v as NonNullable<
-                      AgentAppShellConfigCommon["variableInputStyle"]
-                    >,
-                  )
-                }
-              >
-                <SelectTrigger className="h-9 w-full max-w-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VARIABLE_STYLES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Step>
-          )}
-
-          {shellKind === "chat" && (
-            <Step number={3} label="History View">
-              <Select
-                value={historyView}
-                onValueChange={(v) =>
-                  setHistoryView(
-                    v as NonNullable<AgentAppShellConfigCommon["historyView"]>,
-                  )
-                }
-              >
-                <SelectTrigger className="h-9 w-full max-w-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {HISTORY_VIEWS.map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {v.charAt(0).toUpperCase() + v.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Step>
-          )}
-
-          <Step
-            number={
-              shellKind === "chat" ? 4 : shellKind === "form_to_result" ? 3 : 2
-            }
-            label="Behavior"
-          >
+          <Step number={2} label="Variables">
             <div className="space-y-3">
               <ToggleRow
-                label="Auto-run on open"
-                description="Fire the first execution as soon as the app mounts."
-                checked={autoRun}
-                onCheckedChange={setAutoRun}
+                label="Show variables panel"
+                description="When off, the agent runs only on user input or context."
+                checked={showVariablePanel}
+                onCheckedChange={setShowVariablePanel}
               />
+              {showVariablePanel && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Input style
+                  </Label>
+                  <Select
+                    value={variableInputStyle}
+                    onValueChange={(v) =>
+                      setVariableInputStyle(
+                        v as NonNullable<
+                          AgentAppShellConfigCommon["variableInputStyle"]
+                        >,
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-full max-w-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VARIABLE_STYLES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </Step>
+
+          <Step number={3} label="Conversation">
+            <div className="space-y-3">
               <ToggleRow
                 label="Allow follow-up chat"
-                description="Let users continue the conversation past turn 1."
+                description="Let users continue past the first response."
                 checked={allowChat}
                 onCheckedChange={setAllowChat}
+              />
+              {shellKind === "chat" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    History view
+                  </Label>
+                  <Select
+                    value={historyView}
+                    onValueChange={(v) =>
+                      setHistoryView(
+                        v as NonNullable<
+                          AgentAppShellConfigCommon["historyView"]
+                        >,
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-full max-w-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HISTORY_VIEWS.map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {v.charAt(0).toUpperCase() + v.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </Step>
+
+          <Step number={4} label="Pre-execution Gate">
+            <div className="space-y-3">
+              <ToggleRow
+                label="Show pre-execution gate"
+                description="Welcome / consent screen shown before the first run."
+                checked={showPreExecutionGate}
+                onCheckedChange={setShowPreExecutionGate}
+              />
+              {showPreExecutionGate && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Custom message
+                  </Label>
+                  <Input
+                    value={preExecutionMessage}
+                    onChange={(e) => setPreExecutionMessage(e.target.value)}
+                    placeholder="Optional custom welcome text"
+                    className="h-9 text-[16px]"
+                  />
+                </div>
+              )}
+            </div>
+          </Step>
+
+          <Step number={5} label="Definition Messages">
+            <div className="space-y-3">
+              <ToggleRow
+                label="Show definition messages"
+                description="Show agent-authored welcome / instruction messages in the transcript."
+                checked={showDefinitionMessages}
+                onCheckedChange={setShowDefinitionMessages}
+              />
+              {showDefinitionMessages && (
+                <ToggleRow
+                  label="Show message content"
+                  description="Expand the message bodies. Default is header-only."
+                  checked={showDefinitionMessageContent}
+                  onCheckedChange={setShowDefinitionMessageContent}
+                />
+              )}
+            </div>
+          </Step>
+
+          <Step number={6} label="Transcript Filters">
+            <div className="space-y-3">
+              <ToggleRow
+                label="Hide reasoning"
+                description="Strip the model's thinking blocks from the transcript."
+                checked={hideReasoning}
+                onCheckedChange={setHideReasoning}
+              />
+              <ToggleRow
+                label="Hide tool results"
+                description="Strip tool-call result blocks from the transcript."
+                checked={hideToolResults}
+                onCheckedChange={setHideToolResults}
               />
               <ToggleRow
                 label="Compact density"

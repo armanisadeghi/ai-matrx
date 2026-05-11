@@ -73,6 +73,9 @@ import {
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 
+import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
 export interface UseAgentAppArgs {
@@ -92,16 +95,32 @@ export interface UseAgentAppArgs {
    * `agent-app:<appId>` so each app has its own focus channel.
    */
   surfaceKey?: string;
-  /**
-   * If true, the first execution fires automatically when the runner is
-   * ready. Use for one-shot apps that submit on mount.
-   */
+  /** Auto-fire first execution on mount. Rarely useful for apps; default false. */
   autoRun?: boolean;
-  /**
-   * Whether the user can continue the conversation past turn 1. Some apps
-   * (form-to-result style) want single-shot only.
-   */
+  /** Allow continuation past turn 1. Default true. */
   allowChat?: boolean;
+  /** Variables panel visible at mount. Default: true when the agent has variables. */
+  showVariablePanel?: boolean;
+  /** Variables panel layout style — passes through to SmartAgentVariables. */
+  variablesPanelStyle?:
+    | "form"
+    | "inline"
+    | "wizard"
+    | "compact"
+    | "guided"
+    | "cards";
+  /** Show the pre-execution gate before the first run. */
+  showPreExecutionGate?: boolean;
+  /** Custom pre-execution message. */
+  preExecutionMessage?: string;
+  /** Show agent-authored definition messages (instructions, welcome). */
+  showDefinitionMessages?: boolean;
+  /** Show body content of definition messages (default: header-only). */
+  showDefinitionMessageContent?: boolean;
+  /** Hide reasoning blocks from the transcript. */
+  hideReasoning?: boolean;
+  /** Hide tool-result blocks from the transcript. */
+  hideToolResults?: boolean;
 }
 
 export interface UseAgentAppReturn {
@@ -180,10 +199,37 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     appId,
     autoRun = false,
     allowChat = true,
+    showVariablePanel,
+    variablesPanelStyle,
+    showPreExecutionGate,
+    preExecutionMessage,
+    showDefinitionMessages,
+    showDefinitionMessageContent,
+    hideReasoning,
+    hideToolResults,
   } = args;
   const surfaceKey = args.surfaceKey ?? `agent-app:${appId}`;
 
   const dispatch = useAppDispatch();
+
+  // ── Agent payload readiness gate ──────────────────────────────────────
+  // The launcher's createInstance reads variableDefinitions + contextSlots
+  // from Redux at instance-create time and snapshots them onto the
+  // conversation. If we let it fire before the agent has loaded, the
+  // instance is permanently seeded with empty variables and the variable
+  // panel never appears. Mirror the gate /agents/[id]/run uses:
+  // fetchAgentExecutionMinimal first, hand `ready: isReady` to the
+  // launcher, so the instance is only created once the payload is real.
+  const executionPayload = useAppSelector((state) =>
+    selectAgentExecutionPayload(state, agentId),
+  );
+  const isReady = executionPayload.isReady;
+
+  useEffect(() => {
+    if (!agentId) return;
+    if (isReady) return;
+    void dispatch(fetchAgentExecutionMinimal(agentId));
+  }, [agentId, isReady, dispatch]);
 
   // Use the same managed launcher /agents/[id]/run uses. It owns the
   // conversationId lifecycle, instance creation, focus tracking, etc.
@@ -193,10 +239,22 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     config: {
       autoRun,
       allowChat,
+      ...(showVariablePanel !== undefined ? { showVariablePanel } : {}),
+      ...(variablesPanelStyle ? { variablesPanelStyle } : {}),
+      ...(showPreExecutionGate !== undefined ? { showPreExecutionGate } : {}),
+      ...(preExecutionMessage ? { preExecutionMessage } : {}),
+      ...(showDefinitionMessages !== undefined
+        ? { showDefinitionMessages }
+        : {}),
+      ...(showDefinitionMessageContent !== undefined
+        ? { showDefinitionMessageContent }
+        : {}),
+      ...(hideReasoning !== undefined ? { hideReasoning } : {}),
+      ...(hideToolResults !== undefined ? { hideToolResults } : {}),
     },
     runtime: undefined,
     apiEndpointMode: "agent",
-    ready: true,
+    ready: isReady,
   });
   const conversationId = launcher.conversationId;
 
