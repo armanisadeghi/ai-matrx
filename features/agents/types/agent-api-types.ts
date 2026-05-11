@@ -54,6 +54,24 @@ type NonNullableFields<T> = {
  */
 export type LLMParams = NonNullableFields<components["schemas"]["LLMParams"]>;
 
+/**
+ * Wire shape for POST /ai/manual.
+ *
+ * Generated from OpenAPI `ChatRequest`. All fields are optional in the frontend
+ * type (NonNullableFields) so callers compose payloads incrementally and let
+ * JSON.stringify drop absent keys. The manual execution path (the Agent
+ * Builder's test runner) reads the live agent definition from Redux at submit
+ * time and assembles this shape — no server-side DB read of the agent, no
+ * caching, no config_overrides delta layer. LLM params are spread flat at the
+ * top level (NOT nested inside config_overrides).
+ *
+ * Run `pnpm update-api-types` after backend changes — TypeScript will flag any
+ * field drift between this type and the server's ChatRequest schema.
+ */
+export type ChatRequestPayload = NonNullableFields<
+  components["schemas"]["ChatRequest"]
+>;
+
 // =============================================================================
 // Structured System Instructions
 // =============================================================================

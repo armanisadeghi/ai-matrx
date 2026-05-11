@@ -2,6 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-state.selectors";
 import { executeInstance } from "./execute-instance.thunk";
+import { executeManualInstance } from "./execute-manual-instance.thunk";
 import { splitInputIntoNewConversation } from "./create-instance.thunk";
 import { abortConversation } from "./abort-registry";
 import { setInstanceStatus } from "../conversations/conversations.slice";
@@ -51,7 +52,20 @@ export const smartExecute = createAsyncThunk<
     // Fire the execute on the CURRENT conversation — do NOT await yet.
     // We want to split the input focus before the stream lands so the user
     // sees the fresh input view as quickly as possible.
-    const executePromise = dispatch(executeInstance({ conversationId }));
+    //
+    // Route by `apiEndpointMode`: the Agent Builder declares "manual" on
+    // every instance it creates (AgentBuilderRightPanel) and MUST hit
+    // /ai/manual — never /ai/agents/* or /ai/conversations/*. Manual mode
+    // sends the live agent definition in the request body; the server reads
+    // nothing from the agent record. Any non-manual surface keeps the
+    // existing agent-mode path.
+    const apiEndpointMode =
+      state.messages.byConversationId[conversationId]?.apiEndpointMode ??
+      "agent";
+    const executePromise =
+      apiEndpointMode === "manual"
+        ? dispatch(executeManualInstance({ conversationId }))
+        : dispatch(executeInstance({ conversationId }));
 
     if (autoClear && surfaceKey) {
       await dispatch(

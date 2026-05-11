@@ -171,12 +171,18 @@ export const createManualInstance = createAsyncThunk<
     }),
   );
 
-  dispatch(
-    initInstanceOverrides({
-      conversationId,
-      baseSettings: snapshot.baseSettings,
-    }),
-  );
+  // Manual mode (the Agent Builder) reads `agent.settings` LIVE at submit
+  // time and never touches the overrides slice — initialising it here would
+  // be dead state and risks future code accidentally reading it as the
+  // source of truth. Agent mode keeps the snapshot.
+  if (apiEndpointMode !== "manual") {
+    dispatch(
+      initInstanceOverrides({
+        conversationId,
+        baseSettings: snapshot.baseSettings,
+      }),
+    );
+  }
   dispatch(
     initInstanceVariables({
       conversationId,
