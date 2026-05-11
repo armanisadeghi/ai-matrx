@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-07`
+**Last updated:** `2026-05-08`
 
 ---
 
@@ -153,7 +153,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 ### Browse-mode click
 
 1. Tab calls `useBrowseAction()` and gets a `browse(payload)` function.
-2. On click, the tab resolves the visible images to URLs and dispatches `browse({ images, alts, initialIndex, title })`.
+2. On click, the tab resolves cloud-file references through the shared cached renderer path (`features/files/utils/resolveRenderableImageUrl.ts` via `resolveCloudFileUrl`) and dispatches `browse({ images, alts, initialIndex, title })`.
 3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `ImageViewerWindow.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
 4. `OverlayController` mounts `ImageViewerWindow` with the payload spread as props.
 
@@ -174,6 +174,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 - **`/images/upload` uses `ImageAssetUploader` in cloud mode, not `FileUploadDropzone`.** Keep `FileUploadDropzone` in `features/files` for generic files and overlay upload surfaces; Image Manager uses the official image-first uploader for visual consistency.
 - **Server-only Unsplash key.** `NEXT_PUBLIC_UNSPLASH_ACCESS_KEY` was removed. Every Unsplash call goes through `/api/unsplash` via `hooks/images/unsplashClient.ts` (or the GET form for `PublicImageSearch`). Don't reintroduce a `NEXT_PUBLIC_*` Unsplash key.
 - **`ImageManagerContent` is a deprecated alias** of `<ImageManager>` — kept for legacy callers. New code imports `ImageManager` directly.
+- **Cloud-file image URLs must resolve through the central cached resolver.** Use `resolveCloudFileUrl()` / `resolveRenderableImageUrl()` instead of calling `/files/{id}/url` directly from image-manager UI. Viewer payloads must pass plain URL strings, never resolver objects.
 
 ---
 
@@ -198,6 +199,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-05-08` — All Files Browse-mode preview now converts cloud-file resolver results to plain image URL strings before opening `ImageViewerWindow`, fixing broken previews like `<img src="[object Object]">`. Cloud-file preview resolution now shares the cache-aware `resolveRenderableImageUrl` path so signed URLs are reused while valid and refreshed when expired.
 - `2026-05-07` — `/images/upload` now renders `<ImageAssetUploader mode="cloud">` for the main image dropzone, preserving the existing Cloud Files upload pipeline, folder picker, paste support, selection integration, and base64 sub-tool while aligning the Upload and Branded Upload visual affordances.
 - `2026-05-07` — Branded Upload now opts into `ImageAssetUploader pasteCaptureMode="asset"`, so clipboard images can be pasted directly into the Sharp variant pipeline.
 - `2026-05-07` — My Cloud image bulk selection: extracted image grid/list renderers, added per-image bulk checkboxes, wired a shared floating selection toolbar for download/move/visibility/delete/cancel, and reused the official empty-state card for empty results.

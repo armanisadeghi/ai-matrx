@@ -20,6 +20,7 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import type { CloudFileRecord } from "@/features/files/types";
 import type { AppStore } from "@/lib/redux/store";
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
+import { resolveRenderableImageUrl } from "@/features/files/utils/resolveRenderableImageUrl";
 
 export interface ResolvedCloudUrl {
   url: string;
@@ -39,15 +40,15 @@ export async function resolveCloudFileUrl(
     throw new Error(`Cloud file not found in store: ${fileId}`);
   }
   if (file.publicUrl) {
-    return { url: file.publicUrl, expiresAt: null };
+    return resolveRenderableImageUrl(file);
   }
-  const { data } = await Files.getSignedUrl(fileId, {
+  return resolveRenderableImageUrl(file, {
     expiresIn: options.expiresIn ?? DEFAULT_EXPIRES_IN_SECONDS,
+    getSignedUrl: async (id, params) => {
+      const { data } = await Files.getSignedUrl(id, params);
+      return data;
+    },
   });
-  return {
-    url: data.url,
-    expiresAt: Date.now() + data.expires_in * 1000,
-  };
 }
 
 /**
