@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -98,12 +99,14 @@ export function LiveBuilder({
   }, [agent, agentId, dispatch]);
 
   // ── User selections ────────────────────────────────────────────────────
-  // Name defaults to "<Agent> App" — rendered nowhere in this builder
-  // (preview owns the right side). The user renames it later in Settings.
+  // Name + description live in the LEFT options panel as the first section
+  // so the user can edit them and watch the preview header update in real
+  // time. Name defaults to "<Agent> App" once the agent loads.
   const [name, setName] = useState<string>("");
   useEffect(() => {
     if (!name && agent?.name) setName(`${agent.name} App`);
   }, [agent?.name, name]);
+  const [description, setDescription] = useState<string>("");
 
   const [shellKind, setShellKind] = useState<ShellChoice>("chat");
   const [variableStyle, setVariableStyle] = useState<VariableStyle>("form");
@@ -113,8 +116,7 @@ export function LiveBuilder({
   const [allowChat, setAllowChat] = useState(true);
 
   // Single-select: result renderer (PLACEHOLDER — wired in Phase 2 with slot system)
-  const [resultRenderer, setResultRenderer] =
-    useState<ResultRenderer>("matrx");
+  const [resultRenderer, setResultRenderer] = useState<ResultRenderer>("matrx");
 
   // Multi-select: result filters
   const [hideReasoning, setHideReasoning] = useState(false);
@@ -224,7 +226,8 @@ export function LiveBuilder({
       () => ({
         allowChat,
         showVariablePanel: variableStyle !== "hidden",
-        variableInputStyle: variableStyle === "hidden" ? undefined : variableStyle,
+        variableInputStyle:
+          variableStyle === "hidden" ? undefined : variableStyle,
         hideReasoning,
         hideToolResults,
         compact: density === "compact",
@@ -258,6 +261,15 @@ export function LiveBuilder({
       ],
     );
 
+  // Preview overrides the saved `hideTitle: true` so the title row actually
+  // shows in the preview (the live builder has no page header above the
+  // preview to display the app name). Saved config still hides the title
+  // when the user creates the app — the run page header takes over there.
+  const previewShellConfig = useMemo(
+    () => ({ ...shellConfig, hideTitle: false }),
+    [shellConfig],
+  );
+
   const previewApp: PublicAgentApp = useMemo(
     () =>
       ({
@@ -267,8 +279,8 @@ export function LiveBuilder({
         agent_id: agentId,
         agent_version_id: null,
         use_latest: true,
-        tagline: null,
-        description: null,
+        tagline: description || null,
+        description: description || null,
         category: null,
         tags: [],
         preview_image_url: null,
@@ -280,7 +292,7 @@ export function LiveBuilder({
         layout_config: {},
         styling_config: {},
         shell_kind: shellKind,
-        shell_config: shellConfig,
+        shell_config: previewShellConfig,
         slot_overrides: {},
         slot_code: {},
         total_executions: 0,
@@ -289,7 +301,7 @@ export function LiveBuilder({
         shared_context_slots: null,
         search_tsv: null,
       }) as unknown as PublicAgentApp,
-    [agentId, agent?.name, name, shellKind, shellConfig],
+    [agentId, agent?.name, name, description, shellKind, previewShellConfig],
   );
 
   const handleResetPreview = useCallback(() => {
@@ -313,6 +325,7 @@ export function LiveBuilder({
           agent_id: agentId,
           slug,
           name: name || `${agent?.name ?? "App"} App`,
+          description: description || undefined,
           shell_kind: shellKind,
           shell_config: shellConfig,
         }),
@@ -334,6 +347,7 @@ export function LiveBuilder({
     agentId,
     agent?.name,
     name,
+    description,
     shellKind,
     shellConfig,
     onSuccess,
@@ -345,24 +359,60 @@ export function LiveBuilder({
       <div className="grid grid-cols-1 lg:grid-cols-[460px_minmax(0,1fr)] gap-6 flex-1 min-h-0">
         {/* ── Options panel — fixed width on lg+, scrolls vertically ───── */}
         <div className="overflow-y-auto pr-2 space-y-8">
+          {/* App identity — name + description. Edits flow live into the
+              preview's title row / form_to_result header. The saved
+              shell_config still hides the title on the published run
+              page (where the page header takes over). */}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                App name
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={`${agent?.name ?? "App"} App`}
+                className="text-[16px] font-medium"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Description
+              </Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="One-line tagline — shown on the public page (optional)"
+                rows={2}
+                className="text-sm resize-none"
+              />
+            </div>
+          </div>
+
           <Section number={1} label="Choose Your App Format">
             <CardGrid columns={3}>
               <ChoiceCard
-                icon={<FileText className="w-4 h-4 text-green-600 dark:text-green-400" />}
+                icon={
+                  <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                }
                 iconBg="bg-green-100 dark:bg-green-900/30"
                 title="Form → Result"
                 selected={shellKind === "form_to_result"}
                 onClick={() => setShellKind("form_to_result")}
               />
               <ChoiceCard
-                icon={<MessageCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                icon={
+                  <MessageCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                }
                 iconBg="bg-blue-100 dark:bg-blue-900/30"
                 title="Chat"
                 selected={shellKind === "chat"}
                 onClick={() => setShellKind("chat")}
               />
               <ChoiceCard
-                icon={<Box className="w-4 h-4 text-purple-600 dark:text-purple-400" />}
+                icon={
+                  <Box className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                }
                 iconBg="bg-purple-100 dark:bg-purple-900/30"
                 title="Widget"
                 selected={shellKind === "widget"}
@@ -375,14 +425,18 @@ export function LiveBuilder({
             <CardGrid columns={4}>
               {(
                 [
-                  { value: "hidden", label: "Hide Variables", icon: <EyeOff className="w-3.5 h-3.5" /> },
+                  { value: "hidden", label: "Hide" },
                   { value: "form", label: "Form" },
                   { value: "inline", label: "Inline" },
                   { value: "wizard", label: "Wizard" },
                   { value: "compact", label: "Compact" },
                   { value: "guided", label: "Guided" },
                   { value: "cards", label: "Cards" },
-                ] as Array<{ value: VariableStyle; label: string; icon?: React.ReactNode }>
+                ] as Array<{
+                  value: VariableStyle;
+                  label: string;
+                  icon?: React.ReactNode;
+                }>
               ).map((opt) => (
                 <ChoiceCard
                   key={opt.value}
@@ -463,7 +517,7 @@ export function LiveBuilder({
               />
               <ChoiceCard
                 title="Show All at Once"
-                description="Loading screen, then complete result. Feels like a traditional app, less &quot;AI-like&quot;."
+                description='Loading screen, then complete result. Feels like a traditional app, less "AI-like".'
                 selected={responseDelivery === "all-at-once"}
                 onClick={() => setResponseDelivery("all-at-once")}
                 placeholder
@@ -616,9 +670,7 @@ function Section({
           {number}
         </div>
         <Label className="text-base font-semibold">{label}</Label>
-        {hint && (
-          <span className="text-xs text-muted-foreground">{hint}</span>
-        )}
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
       <div>{children}</div>
     </div>
