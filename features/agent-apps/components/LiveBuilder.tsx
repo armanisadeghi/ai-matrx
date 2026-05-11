@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -52,6 +53,7 @@ import {
   setSubmitOnEnter as setSubmitOnEnterAction,
   setDisplayNameOverride as setDisplayNameOverrideAction,
   setDisplayDescriptionOverride as setDisplayDescriptionOverrideAction,
+  setDisplayIconNameOverride as setDisplayIconNameOverrideAction,
   setShowAttachments as setShowAttachmentsAction,
   setShowMicrophone as setShowMicrophoneAction,
   setShowUserMessageOptions as setShowUserMessageOptionsAction,
@@ -128,6 +130,12 @@ export function LiveBuilder({
     if (agent?.description == null) return;
     setDescription(agent.description ?? "");
   }, [agent?.description, descTouched]);
+
+  // Icon for the centered hero. Lucide name (e.g. "Sparkles", "Webhook")
+  // or a Matrx `svg:…` path — both work with IconResolver. Default
+  // matches the built-in "Webhook" fallback so the user sees the
+  // current value pre-filled (defaults-as-values).
+  const [iconName, setIconName] = useState<string>("Webhook");
 
   const [shellKind, setShellKind] = useState<ShellChoice>("chat");
   const [variableStyle, setVariableStyle] = useState<VariableStyle>("form");
@@ -275,6 +283,16 @@ export function LiveBuilder({
     );
   }, [description, previewConversationId, dispatch]);
 
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setDisplayIconNameOverrideAction({
+        conversationId: previewConversationId,
+        value: iconName || null,
+      }),
+    );
+  }, [iconName, previewConversationId, dispatch]);
+
   // Newly-wired input/display settings — dispatched on change so the
   // preview reflects them live.
   useEffect(() => {
@@ -355,6 +373,7 @@ export function LiveBuilder({
         inputPlaceholder: inputPlaceholder || null,
         showFreeformInput: allowCustomUserInput,
         bufferStream: responseDelivery === "all-at-once",
+        displayIconName: iconName || null,
         // Saved for completeness — drives slot_overrides / slot_code on create.
         resultRenderer,
         responseDelivery,
@@ -375,6 +394,7 @@ export function LiveBuilder({
         showUserMessageOptions,
         showAssistantMessageOptions,
         inputPlaceholder,
+        iconName,
       ],
     );
 
@@ -538,6 +558,18 @@ export function LiveBuilder({
                 placeholder="One-line tagline — shown on the public page (optional)"
                 rows={2}
                 className="text-sm resize-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Icon
+              </Label>
+              <IconInputWithValidation
+                value={iconName}
+                onChange={(next) => setIconName(next)}
+                placeholder="e.g. Webhook, Sparkles, Bot"
+                showLucideLink
+                showCuratedIconGallery
               />
             </div>
           </div>

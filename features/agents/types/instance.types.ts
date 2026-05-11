@@ -551,6 +551,11 @@ export interface InstanceUIState {
    */
   displayNameOverride: string | null;
   displayDescriptionOverride: string | null;
+  /**
+   * Lucide icon name (or Matrx svg path) for the centered hero. Falls
+   * back to a default Webhook icon when null.
+   */
+  displayIconNameOverride: string | null;
 
   /**
    * Settings group: input chrome — read by SmartAgentInput / AgentTextarea

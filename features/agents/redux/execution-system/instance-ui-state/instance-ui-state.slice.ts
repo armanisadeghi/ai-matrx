@@ -164,6 +164,7 @@ export interface InitInstanceUIStatePayload {
    */
   displayNameOverride?: string | null;
   displayDescriptionOverride?: string | null;
+  displayIconNameOverride?: string | null;
   /** See InstanceUIState (instance.types.ts) — input/display settings. */
   inputPlaceholder?: string | null;
   showFreeformInput?: boolean;
@@ -213,6 +214,7 @@ const instanceUIStateSlice = createSlice({
         responseDensity = "comfortable",
         displayNameOverride = null,
         displayDescriptionOverride = null,
+        displayIconNameOverride = null,
         inputPlaceholder = null,
         showFreeformInput = true,
         showAttachments = true,
@@ -257,6 +259,7 @@ const instanceUIStateSlice = createSlice({
         responseDensity,
         displayNameOverride,
         displayDescriptionOverride,
+        displayIconNameOverride,
         inputPlaceholder,
         showFreeformInput,
         showAttachments,
@@ -303,6 +306,19 @@ const instanceUIStateSlice = createSlice({
       const entry = state.byConversationId[action.payload.conversationId];
       if (entry) {
         entry.displayDescriptionOverride = action.payload.value;
+      }
+    },
+
+    setDisplayIconNameOverride(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        value: string | null;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) {
+        entry.displayIconNameOverride = action.payload.value;
       }
     },
 
@@ -863,6 +879,7 @@ export const {
   setResponseDensity,
   setDisplayNameOverride,
   setDisplayDescriptionOverride,
+  setDisplayIconNameOverride,
   setInputPlaceholder,
   setShowFreeformInput,
   setShowAttachments,

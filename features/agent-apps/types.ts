@@ -138,6 +138,11 @@ export interface AgentAppShellConfigCommon {
   submitOnEnter?: boolean;
   /** Buffer the stream — paint the full response on completion. */
   bufferStream?: boolean;
+  /**
+   * Lucide icon name (or Matrx svg path) for the centered hero shown
+   * before the first message. Falls back to the built-in Webhook icon.
+   */
+  displayIconName?: string | null;
   /** Branding overrides. */
   primaryColor?: string;
   accentColor?: string;

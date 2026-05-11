@@ -9,7 +9,7 @@
  * collapsed.
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -24,6 +24,11 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import {
+  setDisplayNameOverride,
+  setDisplayDescriptionOverride,
+  setDisplayIconNameOverride,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
 import type {
   AgentAppShellConfigCommon,
@@ -37,6 +42,7 @@ interface AgentAppChatShellProps {
 }
 
 export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
+  const dispatch = useAppDispatch();
   const config = (app.shell_config ?? {}) as AgentAppShellConfigCommon;
   const overrides = (app.slot_overrides ?? {}) as Record<
     string,
@@ -77,6 +83,38 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     showAssistantMessageOptions: config.showAssistantMessageOptions,
     bufferStream: config.bufferStream,
   });
+
+  // Stamp the app's identity onto the centered hero. Drives
+  // AgentEmptyMessageDisplay's name + description + icon. Without these
+  // dispatches the hero would show the underlying agent's identity.
+  useEffect(() => {
+    if (!agentAppCtx.conversationId) return;
+    const cid = agentAppCtx.conversationId;
+    dispatch(
+      setDisplayNameOverride({
+        conversationId: cid,
+        value: app.name ?? null,
+      }),
+    );
+    dispatch(
+      setDisplayDescriptionOverride({
+        conversationId: cid,
+        value: app.description ?? null,
+      }),
+    );
+    dispatch(
+      setDisplayIconNameOverride({
+        conversationId: cid,
+        value: config.displayIconName ?? null,
+      }),
+    );
+  }, [
+    agentAppCtx.conversationId,
+    app.name,
+    app.description,
+    config.displayIconName,
+    dispatch,
+  ]);
 
   if (!agentAppCtx.conversationId) {
     return (
