@@ -67,7 +67,6 @@ import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromS
 import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
 import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { KeyboardDismissButton } from "@/components/global/KeyboardDismissButton";
 
 // Side-effect import: registers every client-capability provider with the
 // tool-injection registry so `buildToolInjection` can walk them on every turn.
@@ -140,13 +139,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
                               <ConfirmDialogHost />
-                              {/* Global "close keyboard" FAB for devices
-                                  without an OS dismiss control (Tesla
-                                  in-car browser, kiosk Chromium). Hidden
-                                  by CSS unless an input is focused, so
-                                  zero cost when idle. See
-                                  components/global/KeyboardDismissButton.tsx. */}
-                              <KeyboardDismissButton />
                               {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed
