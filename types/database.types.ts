@@ -1800,6 +1800,63 @@ export type Database = {
         }
         Relationships: []
       }
+      analysis_recipes: {
+        Row: {
+          created_at: string
+          default_tiers: Json
+          description: string | null
+          detector_overrides: Json
+          id: string
+          is_active: boolean
+          match_rules: Json
+          name: string
+          owner_account_id: string | null
+          owner_team_id: string | null
+          owner_user_id: string | null
+          pattern_overrides: Json
+          priority: number
+          redaction_mode: string | null
+          substitute_formats: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_tiers?: Json
+          description?: string | null
+          detector_overrides?: Json
+          id?: string
+          is_active?: boolean
+          match_rules?: Json
+          name: string
+          owner_account_id?: string | null
+          owner_team_id?: string | null
+          owner_user_id?: string | null
+          pattern_overrides?: Json
+          priority?: number
+          redaction_mode?: string | null
+          substitute_formats?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_tiers?: Json
+          description?: string | null
+          detector_overrides?: Json
+          id?: string
+          is_active?: boolean
+          match_rules?: Json
+          name?: string
+          owner_account_id?: string | null
+          owner_team_id?: string | null
+          owner_user_id?: string | null
+          pattern_overrides?: Json
+          priority?: number
+          redaction_mode?: string | null
+          substitute_formats?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_field_warnings: {
         Row: {
           created_at: string
@@ -7665,6 +7722,432 @@ export type Database = {
         }
         Relationships: []
       }
+      file_analysis: {
+        Row: {
+          analyzer_version: string
+          classification: Json | null
+          completed_at: string | null
+          detectors_run: Json
+          file_id: string
+          metadata: Json
+          mime_type: string | null
+          owner_id: string
+          page_count: number | null
+          progress: Json
+          started_at: string
+          status: string
+          summary_counts: Json
+          text_source_map: Json | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          analyzer_version?: string
+          classification?: Json | null
+          completed_at?: string | null
+          detectors_run?: Json
+          file_id: string
+          metadata?: Json
+          mime_type?: string | null
+          owner_id: string
+          page_count?: number | null
+          progress?: Json
+          started_at?: string
+          status?: string
+          summary_counts?: Json
+          text_source_map?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analyzer_version?: string
+          classification?: Json | null
+          completed_at?: string | null
+          detectors_run?: Json
+          file_id?: string
+          metadata?: Json
+          mime_type?: string | null
+          owner_id?: string
+          page_count?: number | null
+          progress?: Json
+          started_at?: string
+          status?: string
+          summary_counts?: Json
+          text_source_map?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_analysis_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: true
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_analysis_result: {
+        Row: {
+          confidence_tier: string
+          created_at: string
+          detector_kind: string
+          detector_version: string
+          elapsed_ms: number
+          error: string | null
+          file_id: string
+          id: string
+          page_id: string | null
+          payload: Json | null
+          payload_bytes: number
+          payload_uri: string | null
+          status: string
+          summary: Json
+          text_sources: string[]
+        }
+        Insert: {
+          confidence_tier?: string
+          created_at?: string
+          detector_kind: string
+          detector_version?: string
+          elapsed_ms?: number
+          error?: string | null
+          file_id: string
+          id?: string
+          page_id?: string | null
+          payload?: Json | null
+          payload_bytes?: number
+          payload_uri?: string | null
+          status?: string
+          summary?: Json
+          text_sources?: string[]
+        }
+        Update: {
+          confidence_tier?: string
+          created_at?: string
+          detector_kind?: string
+          detector_version?: string
+          elapsed_ms?: number
+          error?: string | null
+          file_id?: string
+          id?: string
+          page_id?: string | null
+          payload?: Json | null
+          payload_bytes?: number
+          payload_uri?: string | null
+          status?: string
+          summary?: Json
+          text_sources?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_analysis_result_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "file_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_entities: {
+        Row: {
+          canonical_value: string
+          created_at: string
+          file_id: string
+          id: string
+          is_user_named: boolean
+          label: string
+          label_category: string
+          normalized_value: Json | null
+          owner_id: string
+          source_annotation_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          canonical_value: string
+          created_at?: string
+          file_id: string
+          id?: string
+          is_user_named?: boolean
+          label: string
+          label_category?: string
+          normalized_value?: Json | null
+          owner_id: string
+          source_annotation_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canonical_value?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          is_user_named?: boolean
+          label?: string
+          label_category?: string
+          normalized_value?: Json | null
+          owner_id?: string
+          source_annotation_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_entities_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_entities_source_annotation_id_fkey"
+            columns: ["source_annotation_id"]
+            isOneToOne: false
+            referencedRelation: "file_page_annotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_id: string
+          id: string
+          notes: string | null
+          override_kind: string
+          override_value: Json
+          owner_id: string
+          page_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_id: string
+          id?: string
+          notes?: string | null
+          override_kind: string
+          override_value: Json
+          owner_id: string
+          page_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_id?: string
+          id?: string
+          notes?: string | null
+          override_kind?: string
+          override_value?: Json
+          owner_id?: string
+          page_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_overrides_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_overrides_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "file_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_page_annotations: {
+        Row: {
+          bbox: Json
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          extracted_text: string | null
+          extracted_text_source: string
+          file_id: string
+          id: string
+          is_user_locked: boolean
+          label: string
+          label_category: string
+          last_edited_by: string | null
+          normalized_value: Json | null
+          notes: string | null
+          owner_id: string
+          page_id: string | null
+          page_number: number
+          parent_result_id: string | null
+          redact: boolean
+          redaction_span_id: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bbox: Json
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          extracted_text?: string | null
+          extracted_text_source?: string
+          file_id: string
+          id?: string
+          is_user_locked?: boolean
+          label: string
+          label_category?: string
+          last_edited_by?: string | null
+          normalized_value?: Json | null
+          notes?: string | null
+          owner_id: string
+          page_id?: string | null
+          page_number: number
+          parent_result_id?: string | null
+          redact?: boolean
+          redaction_span_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bbox?: Json
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          extracted_text?: string | null
+          extracted_text_source?: string
+          file_id?: string
+          id?: string
+          is_user_locked?: boolean
+          label?: string
+          label_category?: string
+          last_edited_by?: string | null
+          normalized_value?: Json | null
+          notes?: string | null
+          owner_id?: string
+          page_id?: string | null
+          page_number?: number
+          parent_result_id?: string | null
+          redact?: boolean
+          redaction_span_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_page_annotations_entity_fk"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "file_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_page_annotations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_page_annotations_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "file_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_page_annotations_parent_result_id_fkey"
+            columns: ["parent_result_id"]
+            isOneToOne: false
+            referencedRelation: "file_analysis_result"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_pages: {
+        Row: {
+          created_at: string
+          excluded_at: string | null
+          excluded_by: string | null
+          excluded_reason: string | null
+          file_id: string
+          height_pt: number | null
+          id: string
+          metadata: Json
+          ocr_confidence: number | null
+          owner_id: string
+          page_index: number
+          rotation: number
+          source_page_index: number
+          status: string
+          text_source: string
+          thumbnail_url: string | null
+          updated_at: string
+          user_modified: boolean
+          width_pt: number | null
+        }
+        Insert: {
+          created_at?: string
+          excluded_at?: string | null
+          excluded_by?: string | null
+          excluded_reason?: string | null
+          file_id: string
+          height_pt?: number | null
+          id?: string
+          metadata?: Json
+          ocr_confidence?: number | null
+          owner_id: string
+          page_index: number
+          rotation?: number
+          source_page_index: number
+          status?: string
+          text_source?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_modified?: boolean
+          width_pt?: number | null
+        }
+        Update: {
+          created_at?: string
+          excluded_at?: string | null
+          excluded_by?: string | null
+          excluded_reason?: string | null
+          file_id?: string
+          height_pt?: number | null
+          id?: string
+          metadata?: Json
+          ocr_confidence?: number | null
+          owner_id?: string
+          page_index?: number
+          rotation?: number
+          source_page_index?: number
+          status?: string
+          text_source?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_modified?: boolean
+          width_pt?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_pages_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_structure: {
         Row: {
           bucket_id: string
@@ -11273,6 +11756,87 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recipe_complete"
             referencedColumns: ["recipe_id"]
+          },
+        ]
+      }
+      redaction_mapping: {
+        Row: {
+          cipher: string
+          ciphertext: string | null
+          confidence_tier: string
+          created_at: string
+          detector_kind: string
+          detector_version: string
+          expires_at: string | null
+          file_id: string
+          id: string
+          location: Json
+          mode: string
+          nonce: string | null
+          owner_id: string
+          page_id: string | null
+          pattern_id: string
+          revoked_at: string | null
+          session_id: string
+          span_id: string
+          substitute_value: string
+        }
+        Insert: {
+          cipher?: string
+          ciphertext?: string | null
+          confidence_tier?: string
+          created_at?: string
+          detector_kind?: string
+          detector_version?: string
+          expires_at?: string | null
+          file_id: string
+          id?: string
+          location?: Json
+          mode: string
+          nonce?: string | null
+          owner_id: string
+          page_id?: string | null
+          pattern_id: string
+          revoked_at?: string | null
+          session_id: string
+          span_id: string
+          substitute_value: string
+        }
+        Update: {
+          cipher?: string
+          ciphertext?: string | null
+          confidence_tier?: string
+          created_at?: string
+          detector_kind?: string
+          detector_version?: string
+          expires_at?: string | null
+          file_id?: string
+          id?: string
+          location?: Json
+          mode?: string
+          nonce?: string | null
+          owner_id?: string
+          page_id?: string | null
+          pattern_id?: string
+          revoked_at?: string | null
+          session_id?: string
+          span_id?: string
+          substitute_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redaction_mapping_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redaction_mapping_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "file_pages"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -17205,6 +17769,39 @@ export type Database = {
           achievement_type?: string
           id?: string
           unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_analysis_preferences: {
+        Row: {
+          custom_patterns: Json
+          default_redaction_mode: string
+          default_tier_per_detector: Json
+          per_detector_enabled: Json
+          per_file_type_overrides: Json
+          substitute_formats: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          custom_patterns?: Json
+          default_redaction_mode?: string
+          default_tier_per_detector?: Json
+          per_detector_enabled?: Json
+          per_file_type_overrides?: Json
+          substitute_formats?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          custom_patterns?: Json
+          default_redaction_mode?: string
+          default_tier_per_detector?: Json
+          per_detector_enabled?: Json
+          per_file_type_overrides?: Json
+          substitute_formats?: Json
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

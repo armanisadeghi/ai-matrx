@@ -45,7 +45,11 @@ import {
 } from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfStudioToolbar } from "./PdfStudioToolbar";
-import { PdfStudioReader, type PaneKey } from "./PdfStudioReader";
+import {
+  PdfStudioReader,
+  type PaneKey,
+  type PdfPaneEditMode,
+} from "./PdfStudioReader";
 import { PdfStudioInspector } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
@@ -118,6 +122,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [pdfPaneEditMode, setPdfPaneEditMode] = useState<PdfPaneEditMode>(null);
+  const [cropPagesInput, setCropPagesInput] = useState("");
   // True while a doc fetch is in-flight. Initialized to `true` when an
   // initialDocumentId is present so the skeleton shows immediately on mount
   // instead of the upload EmptyShell (which confuses users into thinking
@@ -129,6 +135,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     pages,
     loading: pagesLoading,
     error: pagesError,
+    refresh: refreshPages,
   } = useProcessedDocumentPages({
     processedDocumentId: activeDoc?.id ?? "",
     enabled: !!activeDoc,
@@ -325,6 +332,22 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       setLiveStatus(null);
     }
   }, [activeDoc, backendUrl, getHeaders, waitForAuth, docsState, toast]);
+
+  // ── PDF pane edit modes (crop / reorder) ─────────────────────────────
+
+  const handleStartCrop = useCallback((pagesInput: string) => {
+    setCropPagesInput(pagesInput);
+    setPdfPaneEditMode("crop");
+  }, []);
+
+  const handleStartReorder = useCallback(() => {
+    setPdfPaneEditMode("reorder");
+  }, []);
+
+  const handleEditModeCancel = useCallback(() => {
+    setPdfPaneEditMode(null);
+    setCropPagesInput("");
+  }, []);
 
   // ── Upload hand-off ───────────────────────────────────────────────────
   //
@@ -548,6 +571,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             onRunPipeline={handleRunPipeline}
             pipelineRunning={pipelineRunning}
             onOpenUpload={() => setUploadOpen(true)}
+            editMode={pdfPaneEditMode}
+            cropPagesInput={cropPagesInput}
+            onEditModeCancel={handleEditModeCancel}
+            onRefreshPages={refreshPages}
           />
         ) : docLoading ? (
           <DocLoadingSkeleton />
@@ -582,9 +609,15 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             {activeDoc ? (
               <PdfStudioInspector
                 doc={activeDoc}
+                pages={pages}
+                activePage={activePage}
                 onRunShortcut={handleRunShortcut}
                 onRunPipeline={handleRunPipeline}
                 pipelineRunning={pipelineRunning}
+                pdfPaneEditMode={pdfPaneEditMode}
+                onStartCrop={handleStartCrop}
+                onStartReorder={handleStartReorder}
+                onEditModeCancel={handleEditModeCancel}
               />
             ) : (
               <div className="flex-1 bg-card/30" />

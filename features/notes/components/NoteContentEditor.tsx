@@ -57,14 +57,14 @@ import { getDiffRange, type DiffRange } from "../utils/diffRange";
 
 const NoteConflictWindow = dynamic(
   () =>
-    import("@/app/(ssr)/ssr/notes/_components/NoteConflictWindow").then(
+    import("@/features/notes/components/NoteConflictWindow").then(
       (mod) => ({ default: mod.NoteConflictWindow }),
     ),
   { ssr: false },
 );
 
 const NoteContextMenu = dynamic(
-  () => import("@/app/(ssr)/ssr/notes/_components/NoteContextMenu"),
+  () => import("@/features/notes/components/NoteContextMenu"),
   { ssr: false },
 );
 

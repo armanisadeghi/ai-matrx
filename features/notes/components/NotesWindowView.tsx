@@ -57,7 +57,7 @@ import { createFolder } from "../service/notesService";
 
 const NoteVersionHistory = dynamic(
   () =>
-    import("@/app/(ssr)/ssr/notes/_components/NoteVersionHistory").then(
+    import("@/features/notes/components/NoteVersionHistory").then(
       (mod) => ({ default: mod.NoteVersionHistory }),
     ),
   { ssr: false },

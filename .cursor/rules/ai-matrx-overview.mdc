@@ -14,7 +14,7 @@ alwaysApply: false
 
 Example: "Notes Feature"
 
-Route: app/(authenticated)/notes/page.tsx
+Route: app/(a)/notes/page.tsx
 
 /features/notes/
 ├── index.ts

@@ -1679,7 +1679,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Extract Tables */
+        /**
+         * Extract Tables
+         * @description Detect every table on every page via PyMuPDF's native
+         *     ``page.find_tables()``. No Java / tabula dependency.
+         *
+         *     Returns a structured ``PdfTablesReport`` with per-table bbox, header,
+         *     rows, and a markdown rendering so the FE can display tables inline
+         *     without re-fetching a file artifact.
+         */
         post: operations["extract_tables_utilities_pdf_extract_tables_post"];
         delete?: never;
         options?: never;
@@ -8188,10 +8196,584 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/files/{file_id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch Analysis */
+        get: operations["fetch_analysis_files__file_id__analysis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/analysis/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Analysis */
+        post: operations["refresh_analysis_files__file_id__analysis_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/redact/mask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redact Mask */
+        post: operations["redact_mask_files__file_id__redact_mask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/redact/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redact Restore */
+        post: operations["redact_restore_redact_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/redact/sessions/{session_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Session */
+        post: operations["revoke_session_redact_sessions__session_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/extracted-text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Extracted Text Endpoint
+         * @description Return active pages' text in current order. Skips excluded pages.
+         *
+         *     Applies file_overrides of kind 'page_text' over the auto-extracted text
+         *     when `include_overrides=true` (the default) — human edits win.
+         *
+         *     Page markers between pages let RAG embedders split on them.
+         */
+        get: operations["extracted_text_endpoint_files__file_id__extracted_text_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/analysis-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Preferences */
+        get: operations["get_my_preferences_me_analysis_preferences_get"];
+        /** Put My Preferences */
+        put: operations["put_my_preferences_me_analysis_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analysis-recipes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recipes */
+        get: operations["list_recipes_analysis_recipes_get"];
+        put?: never;
+        /** Create Recipe */
+        post: operations["create_recipe_analysis_recipes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analysis-recipes/{recipe_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Recipe */
+        put: operations["update_recipe_analysis_recipes__recipe_id__put"];
+        post?: never;
+        /** Delete Recipe */
+        delete: operations["delete_recipe_analysis_recipes__recipe_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/annotations/label-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch Label Catalog */
+        get: operations["fetch_label_catalog_annotations_label_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations/extract-at-bbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract At Bbox Endpoint */
+        post: operations["extract_at_bbox_endpoint_files__file_id__annotations_extract_at_bbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Annotations Endpoint */
+        get: operations["list_annotations_endpoint_files__file_id__annotations_get"];
+        put?: never;
+        /** Create Annotation Endpoint */
+        post: operations["create_annotation_endpoint_files__file_id__annotations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations/{annotation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Annotation Endpoint */
+        put: operations["update_annotation_endpoint_files__file_id__annotations__annotation_id__put"];
+        post?: never;
+        /** Delete Annotation Endpoint */
+        delete: operations["delete_annotation_endpoint_files__file_id__annotations__annotation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/key-findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Key Findings Endpoint */
+        get: operations["key_findings_endpoint_files__file_id__key_findings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Manifest Endpoint */
+        get: operations["manifest_endpoint_files__file_id__annotations_manifest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations/snap-bbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Snap Bbox Endpoint */
+        post: operations["snap_bbox_endpoint_files__file_id__annotations_snap_bbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations/bulk-from-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk From Candidates Endpoint
+         * @description Promote N pattern-candidate spans into user annotations in one shot.
+         *
+         *     Loads the named file_analysis_result rows, pulls the requested span by
+         *     index, and creates an annotation for each accept (with parent_result_id
+         *     linked back). Reject actions are recorded as `status='rejected'` rows so
+         *     the system remembers and future re-emits filter them out.
+         */
+        post: operations["bulk_from_candidates_endpoint_files__file_id__annotations_bulk_from_candidates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Pages Endpoint */
+        get: operations["list_pages_endpoint_files__file_id__pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/active-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active Pages Endpoint */
+        get: operations["active_pages_endpoint_files__file_id__active_pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pages/{page_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Page Endpoint */
+        get: operations["get_page_endpoint_files__file_id__pages__page_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pages/{page_id}/exclude": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exclude Page Endpoint */
+        post: operations["exclude_page_endpoint_files__file_id__pages__page_id__exclude_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pages/{page_id}/include": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Include Page Endpoint */
+        post: operations["include_page_endpoint_files__file_id__pages__page_id__include_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pages/{page_id}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate Page Endpoint */
+        post: operations["rotate_page_endpoint_files__file_id__pages__page_id__rotate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pages/{page_id}/override-text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Override Page Text Endpoint */
+        post: operations["override_page_text_endpoint_files__file_id__pages__page_id__override_text_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Overrides Endpoint */
+        get: operations["list_overrides_endpoint_files__file_id__overrides_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search Endpoint */
+        post: operations["search_endpoint_files__file_id__search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/regions/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract Region Endpoint */
+        post: operations["extract_region_endpoint_files__file_id__regions_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/render-page-with-overlay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render Page With Overlay Endpoint */
+        post: operations["render_page_with_overlay_endpoint_files__file_id__render_page_with_overlay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Entities Endpoint */
+        get: operations["list_entities_endpoint_files__file_id__entities_get"];
+        put?: never;
+        /** Create Entity Endpoint */
+        post: operations["create_entity_endpoint_files__file_id__entities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/entities/{entity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Entity Endpoint */
+        put: operations["update_entity_endpoint_files__file_id__entities__entity_id__put"];
+        post?: never;
+        /** Delete Entity Endpoint */
+        delete: operations["delete_entity_endpoint_files__file_id__entities__entity_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/annotations/{annotation_id}/promote-to-entity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote To Entity Endpoint */
+        post: operations["promote_to_entity_endpoint_files__file_id__annotations__annotation_id__promote_to_entity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/entities/find-similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find Similar Endpoint */
+        post: operations["find_similar_endpoint_files__file_id__entities_find_similar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActivePageIdsResponse */
+        ActivePageIdsResponse: {
+            /** File Id */
+            file_id: string;
+            /** Page Ids */
+            page_ids: string[];
+        };
         /** AddGroupMemberRequest */
         AddGroupMemberRequest: {
             /** User Id */
@@ -8563,6 +9145,60 @@ export interface components {
             /** Model Id */
             model_id?: string | null;
         };
+        /** AnalysisRecipeBody */
+        AnalysisRecipeBody: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Match Rules
+             * @default {}
+             */
+            match_rules: {
+                [key: string]: unknown;
+            };
+            /**
+             * Detector Overrides
+             * @default {}
+             */
+            detector_overrides: {
+                [key: string]: unknown;
+            };
+            /**
+             * Pattern Overrides
+             * @default {}
+             */
+            pattern_overrides: {
+                [key: string]: unknown;
+            };
+            /**
+             * Default Tiers
+             * @default {}
+             */
+            default_tiers: {
+                [key: string]: unknown;
+            };
+            /** Redaction Mode */
+            redaction_mode?: string | null;
+            /**
+             * Substitute Formats
+             * @default {}
+             */
+            substitute_formats: {
+                [key: string]: string;
+            };
+            /**
+             * Priority
+             * @default 100
+             */
+            priority: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
         /** AnalyzeBulkRequest */
         AnalyzeBulkRequest: {
             /** Source Ids */
@@ -8585,6 +9221,33 @@ export interface components {
              */
             use_user_agent_overrides: boolean;
         };
+        /** AnalyzeRefreshBody */
+        AnalyzeRefreshBody: {
+            /** Detectors */
+            detectors?: string[] | null;
+            /** Confidence Tiers */
+            confidence_tiers?: string[] | null;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+            /**
+             * Only Stale
+             * @default false
+             */
+            only_stale: boolean;
+        };
+        /** AnalyzeRefreshResponse */
+        AnalyzeRefreshResponse: {
+            /** File Id */
+            file_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "accepted";
+        };
         /** AnalyzeRequest */
         AnalyzeRequest: {
             /**
@@ -8604,6 +9267,112 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides: boolean;
+        };
+        /** AnnotationCreateBody */
+        AnnotationCreateBody: {
+            /** Page Number */
+            page_number: number;
+            bbox: components["schemas"]["BboxInput"];
+            /** Label */
+            label: string;
+            /**
+             * Label Category
+             * @default custom
+             */
+            label_category: string;
+            /** Extracted Text */
+            extracted_text?: string | null;
+            /** Normalized Value */
+            normalized_value?: {
+                [key: string]: unknown;
+            } | null;
+            /** Redact */
+            redact?: boolean | null;
+            /** Notes */
+            notes?: string | null;
+            /** Parent Result Id */
+            parent_result_id?: string | null;
+            /**
+             * Source
+             * @default user
+             */
+            source: string;
+        };
+        /** AnnotationOut */
+        AnnotationOut: {
+            /** Id */
+            id: string;
+            /** File Id */
+            file_id: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Page Number */
+            page_number: number;
+            /** Page Id */
+            page_id?: string | null;
+            /** Bbox */
+            bbox: {
+                [key: string]: number;
+            };
+            /** Label */
+            label: string;
+            /** Label Category */
+            label_category: string;
+            /** Extracted Text */
+            extracted_text?: string | null;
+            /** Extracted Text Source */
+            extracted_text_source: string;
+            /** Normalized Value */
+            normalized_value?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Redact */
+            redact: boolean;
+            /** Notes */
+            notes?: string | null;
+            /** Parent Result Id */
+            parent_result_id?: string | null;
+            /** Redaction Span Id */
+            redaction_span_id?: string | null;
+            /**
+             * Is User Locked
+             * @default true
+             */
+            is_user_locked: boolean;
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /** Last Edited By */
+            last_edited_by?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** AnnotationUpdateBody */
+        AnnotationUpdateBody: {
+            /** Label */
+            label?: string | null;
+            /** Label Category */
+            label_category?: string | null;
+            bbox?: components["schemas"]["BboxInput"] | null;
+            /** Extracted Text */
+            extracted_text?: string | null;
+            /** Normalized Value */
+            normalized_value?: {
+                [key: string]: unknown;
+            } | null;
+            /** Redact */
+            redact?: boolean | null;
+            /** Notes */
+            notes?: string | null;
+            /** Status */
+            status?: string | null;
         };
         /** AppExecuteRequest */
         AppExecuteRequest: {
@@ -8684,6 +9453,17 @@ export interface components {
             results: {
                 [key: string]: unknown;
             }[];
+        };
+        /** BboxInput */
+        BboxInput: {
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
         };
         /** Body_batch_extract_utilities_pdf_batch_extract_post */
         Body_batch_extract_utilities_pdf_batch_extract_post: {
@@ -8778,6 +9558,43 @@ export interface components {
              * @default vision-uploads
              */
             folder: string;
+        };
+        /** BulkCandidateAction */
+        BulkCandidateAction: {
+            /** Result Id */
+            result_id: string;
+            /** Span Index */
+            span_index: number;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "accept" | "reject";
+            /** Label */
+            label?: string | null;
+            /** Redact */
+            redact?: boolean | null;
+        };
+        /** BulkCandidateBody */
+        BulkCandidateBody: {
+            /** Actions */
+            actions: components["schemas"]["BulkCandidateAction"][];
+        };
+        /** BulkCandidateResponse */
+        BulkCandidateResponse: {
+            /** File Id */
+            file_id: string;
+            /** Created */
+            created: components["schemas"]["AnnotationOut"][];
+            /** Rejected */
+            rejected: string[];
+            /**
+             * Errors
+             * @default []
+             */
+            errors: {
+                [key: string]: unknown;
+            }[];
         };
         /** BulkDeleteRequest */
         BulkDeleteRequest: {
@@ -10374,6 +11191,19 @@ export interface components {
              */
             min_confidence: number;
         };
+        /** DetectorRunInfo */
+        DetectorRunInfo: {
+            /** Version */
+            version?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Error */
+            error?: string | null;
+        };
         /** DirectChatRequest */
         DirectChatRequest: {
             /**
@@ -10583,6 +11413,69 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** EntityCreateBody */
+        EntityCreateBody: {
+            /** Label */
+            label: string;
+            /**
+             * Label Category
+             * @default custom
+             */
+            label_category: string;
+            /** Canonical Value */
+            canonical_value: string;
+            /** Normalized Value */
+            normalized_value?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Annotation Id */
+            source_annotation_id?: string | null;
+        };
+        /** EntityOut */
+        EntityOut: {
+            /** Id */
+            id: string;
+            /** File Id */
+            file_id: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Label */
+            label: string;
+            /** Label Category */
+            label_category: string;
+            /** Canonical Value */
+            canonical_value: string;
+            /** Normalized Value */
+            normalized_value?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Annotation Id */
+            source_annotation_id?: string | null;
+            /** Is User Named */
+            is_user_named: boolean;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** EntityUpdateBody */
+        EntityUpdateBody: {
+            /** Label */
+            label?: string | null;
+            /** Label Category */
+            label_category?: string | null;
+            /** Canonical Value */
+            canonical_value?: string | null;
+            /** Normalized Value */
+            normalized_value?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ExcludePageBody */
+        ExcludePageBody: {
+            /** Reason */
+            reason?: string | null;
+        };
         /** ExtensionContentResponse */
         ExtensionContentResponse: {
             /**
@@ -10694,6 +11587,45 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** ExtractAtBboxBody */
+        ExtractAtBboxBody: {
+            /** Page Number */
+            page_number: number;
+            bbox: components["schemas"]["BboxInput"];
+            /**
+             * Include Preview
+             * @default true
+             */
+            include_preview: boolean;
+        };
+        /** ExtractAtBboxResponse */
+        ExtractAtBboxResponse: {
+            /** Page Number */
+            page_number: number;
+            /** Page Width */
+            page_width: number;
+            /** Page Height */
+            page_height: number;
+            requested_bbox: components["schemas"]["BboxInput"];
+            /** Extracted Text */
+            extracted_text: string;
+            /** Text Source */
+            text_source: string;
+            /** Char Count */
+            char_count: number;
+            /**
+             * Intersecting Images
+             * @default []
+             */
+            intersecting_images: components["schemas"]["IntersectingImageOut"][];
+            /** Preview Png Base64 */
+            preview_png_base64?: string | null;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+        };
         /** ExtractPagesRequest */
         ExtractPagesRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -10792,6 +11724,28 @@ export interface components {
             persist: boolean;
             /** Document Name */
             document_name?: string | null;
+        };
+        /** ExtractedTextPageOut */
+        ExtractedTextPageOut: {
+            /** Page Id */
+            page_id: string;
+            /** Page Number */
+            page_number: number;
+            /** Source */
+            source: string;
+            /** Text */
+            text: string;
+        };
+        /** ExtractedTextResponse */
+        ExtractedTextResponse: {
+            /** File Id */
+            file_id: string;
+            /** Page Count */
+            page_count: number;
+            /** Text */
+            text: string;
+            /** Pages */
+            pages: components["schemas"]["ExtractedTextPageOut"][];
         };
         /** ExtractorSaveRequest */
         ExtractorSaveRequest: {
@@ -10903,6 +11857,122 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** FileAnalysisHead */
+        FileAnalysisHead: {
+            /** File Id */
+            file_id: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "partial" | "complete" | "failed" | "not_applicable";
+            /** Analyzer Version */
+            analyzer_version: string;
+            /**
+             * Detectors Run
+             * @default {}
+             */
+            detectors_run: {
+                [key: string]: components["schemas"]["DetectorRunInfo"];
+            };
+            /**
+             * Progress
+             * @default {}
+             */
+            progress: {
+                [key: string]: unknown;
+            };
+            /** Classification */
+            classification?: {
+                [key: string]: unknown;
+            } | null;
+            /** Page Count */
+            page_count?: number | null;
+            /**
+             * Summary Counts
+             * @default {}
+             */
+            summary_counts: {
+                [key: string]: unknown;
+            };
+            /** Text Source Map */
+            text_source_map?: {
+                [key: string]: unknown;
+            } | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /**
+             * Metadata
+             * @default {}
+             */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** FileAnalysisResponse */
+        FileAnalysisResponse: {
+            head: components["schemas"]["FileAnalysisHead"];
+            /** Results */
+            results: components["schemas"]["FileAnalysisResultRow"][];
+        };
+        /** FileAnalysisResultRow */
+        FileAnalysisResultRow: {
+            /** Id */
+            id: string;
+            /** Detector Kind */
+            detector_kind: string;
+            /** Detector Version */
+            detector_version: string;
+            /** Confidence Tier */
+            confidence_tier: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "success" | "skipped" | "failed";
+            /**
+             * Text Sources
+             * @default []
+             */
+            text_sources: string[];
+            /**
+             * Elapsed Ms
+             * @default 0
+             */
+            elapsed_ms: number;
+            /**
+             * Summary
+             * @default {}
+             */
+            summary: {
+                [key: string]: unknown;
+            };
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Payload Uri */
+            payload_uri?: string | null;
+            /**
+             * Payload Bytes
+             * @default 0
+             */
+            payload_bytes: number;
+            /** Error */
+            error?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
         /** FileDocumentLookupResponse */
         FileDocumentLookupResponse: {
             /** Processed Document Id */
@@ -10954,6 +12024,83 @@ export interface components {
              * @default 0
              */
             descendant_count: number;
+        };
+        /** FilePageOut */
+        FilePageOut: {
+            /** Id */
+            id: string;
+            /** File Id */
+            file_id: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Page Index */
+            page_index: number;
+            /** Source Page Index */
+            source_page_index: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "excluded" | "deleted";
+            /** Excluded Reason */
+            excluded_reason?: string | null;
+            /** Excluded At */
+            excluded_at?: string | null;
+            /** Excluded By */
+            excluded_by?: string | null;
+            /** User Modified */
+            user_modified: boolean;
+            /** Width Pt */
+            width_pt?: number | null;
+            /** Height Pt */
+            height_pt?: number | null;
+            /** Rotation */
+            rotation: number;
+            /**
+             * Text Source
+             * @enum {string}
+             */
+            text_source: "native" | "ocr" | "mixed" | "unknown" | "none";
+            /** Ocr Confidence */
+            ocr_confidence?: number | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /**
+             * Metadata
+             * @default {}
+             */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** FilePageOverrideOut */
+        FilePageOverrideOut: {
+            /** Id */
+            id: string;
+            /** File Id */
+            file_id: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Page Id */
+            page_id?: string | null;
+            /** Override Kind */
+            override_kind: string;
+            /** Override Value */
+            override_value: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** FilePatchRequest */
         FilePatchRequest: {
@@ -11060,6 +12207,48 @@ export interface components {
             actual_size_bytes?: number | null;
             /** Checksum */
             checksum?: string | null;
+        };
+        /** FindSimilarBody */
+        FindSimilarBody: {
+            /** Annotation Id */
+            annotation_id?: string | null;
+            /** Seed Text */
+            seed_text?: string | null;
+            /** Strategies */
+            strategies?: string[];
+            /**
+             * Max Hits Per Page
+             * @default 5
+             */
+            max_hits_per_page: number;
+        };
+        /** FindSimilarCandidate */
+        FindSimilarCandidate: {
+            /** Page Id */
+            page_id: string;
+            /** Page Number */
+            page_number: number;
+            /** Matched Text */
+            matched_text: string;
+            /** Snippet */
+            snippet: string;
+            /** Confidence */
+            confidence: number;
+            /** Char Start */
+            char_start: number;
+            /** Char End */
+            char_end: number;
+            /** Suggested Label */
+            suggested_label?: string | null;
+            /** Suggested Label Category */
+            suggested_label_category?: string | null;
+        };
+        /** FindSimilarResponse */
+        FindSimilarResponse: {
+            /** File Id */
+            file_id: string;
+            /** Candidates */
+            candidates: components["schemas"]["FindSimilarCandidate"][];
         };
         /** FireResponse */
         FireResponse: {
@@ -11602,6 +12791,22 @@ export interface components {
              */
             persist_output: boolean;
         };
+        /** IntersectingImageOut */
+        IntersectingImageOut: {
+            /** Xref */
+            xref: number;
+            /**
+             * Width
+             * @default 0
+             */
+            width: number;
+            /**
+             * Height
+             * @default 0
+             */
+            height: number;
+            bbox?: components["schemas"]["BboxInput"] | null;
+        };
         /** IssueClassUpdate */
         IssueClassUpdate: {
             /** Disposition */
@@ -11702,6 +12907,32 @@ export interface components {
             current_version: number;
             /** Selected Version */
             selected_version?: number | null;
+        };
+        /** KeyFindingEntry */
+        KeyFindingEntry: {
+            /** Label Category */
+            label_category: string;
+            /** Value */
+            value?: unknown | null;
+            /** Raw Text */
+            raw_text?: string | null;
+            /** Page */
+            page: number;
+            /** Bbox */
+            bbox: {
+                [key: string]: number;
+            };
+        };
+        /** KeyFindingsResponse */
+        KeyFindingsResponse: {
+            /** File Id */
+            file_id: string;
+            /** Count */
+            count: number;
+            /** Findings */
+            findings: {
+                [key: string]: components["schemas"]["KeyFindingEntry"][];
+            };
         };
         /** KeywordCreate */
         KeywordCreate: {
@@ -11858,6 +13089,39 @@ export interface components {
             detected_contexts?: {
                 [key: string]: string;
             } | null;
+        };
+        /** LabelCatalogEntry */
+        LabelCatalogEntry: {
+            /** Id */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Category */
+            category: string;
+            /** Value Type */
+            value_type: string;
+            /** Description */
+            description?: string | null;
+            /** Value Unit */
+            value_unit?: string | null;
+            /** Enum Options */
+            enum_options?: string[] | null;
+            /** Examples */
+            examples?: string[] | null;
+            /**
+             * Default Redact
+             * @default false
+             */
+            default_redact: boolean;
+        };
+        /** LabelCatalogResponse */
+        LabelCatalogResponse: {
+            /** Categories */
+            categories: {
+                [key: string]: string;
+            };
+            /** Labels */
+            labels: components["schemas"]["LabelCatalogEntry"][];
         };
         /** LayoutClassificationReport */
         LayoutClassificationReport: {
@@ -12278,6 +13542,80 @@ export interface components {
              */
             processing_descendants: components["schemas"]["LineageNode"][];
         };
+        /** ManifestFact */
+        ManifestFact: {
+            /** Label */
+            label: string;
+            /** Category */
+            category: string;
+            /** Value */
+            value?: unknown | null;
+            /** Raw Text */
+            raw_text?: string | null;
+            /** Page */
+            page: number;
+            /** Bbox */
+            bbox: {
+                [key: string]: number;
+            };
+            /** Redact */
+            redact: boolean;
+        };
+        /** ManifestResponse */
+        ManifestResponse: {
+            /** File Id */
+            file_id: string;
+            /** Facts */
+            facts: components["schemas"]["ManifestFact"][];
+        };
+        /** MaskRequestBody */
+        MaskRequestBody: {
+            /** Spans */
+            spans: components["schemas"]["RedactionSpanInput"][];
+            /**
+             * Mode
+             * @default reversible
+             * @enum {string}
+             */
+            mode: "reversible" | "destructive" | "annotation";
+            /**
+             * Substitute Style
+             * @default bracket
+             * @enum {string}
+             */
+            substitute_style: "bracket" | "shape";
+            /** Substitute Formats */
+            substitute_formats?: {
+                [key: string]: string;
+            } | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Session Key B64 */
+            session_key_b64?: string | null;
+        };
+        /** MaskResponse */
+        MaskResponse: {
+            /** File Id */
+            file_id: string;
+            /** Session Id */
+            session_id: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "reversible" | "destructive" | "annotation";
+            /** Mapping Count */
+            mapping_count: number;
+            /** Session Key B64 */
+            session_key_b64?: string | null;
+            /** Masked Bytes Base64 */
+            masked_bytes_base64: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+        };
         /**
          * MediaRef
          * @description Canonical media reference shared across every API that takes media.
@@ -12506,6 +13844,52 @@ export interface components {
                 };
             };
         };
+        /** OverlayBboxIn */
+        OverlayBboxIn: {
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+        };
+        /** OverlaySpecIn */
+        OverlaySpecIn: {
+            bbox: components["schemas"]["OverlayBboxIn"];
+            /**
+             * Color
+             * @default #ef4444
+             */
+            color: string;
+            /** Fill */
+            fill?: string | null;
+            /**
+             * Fill Opacity
+             * @default 0.18
+             */
+            fill_opacity: number;
+            /**
+             * Stroke Width
+             * @default 2
+             */
+            stroke_width: number;
+            /** Label */
+            label?: string | null;
+            /**
+             * Font Size
+             * @default 10
+             */
+            font_size: number;
+        };
+        /** OverridePageTextBody */
+        OverridePageTextBody: {
+            /** Text */
+            text: string;
+            /** Notes */
+            notes?: string | null;
+        };
         /** PageClassification */
         PageClassification: {
             /** Page Number */
@@ -12637,6 +14021,27 @@ export interface components {
             x1: number;
             /** Y1 */
             y1: number;
+        };
+        /**
+         * PdfExtractedTable
+         * @description One table detected on one page.
+         */
+        PdfExtractedTable: {
+            /** Page Number */
+            page_number: number;
+            /** Table Index */
+            table_index: number;
+            bbox: components["schemas"]["PdfTableBbox"];
+            /** Row Count */
+            row_count: number;
+            /** Column Count */
+            column_count: number;
+            /** Header */
+            header: (string | null)[];
+            /** Rows */
+            rows: (string | null)[][];
+            /** Markdown */
+            markdown: string;
         };
         /** PdfPageRange */
         PdfPageRange: {
@@ -12902,6 +14307,40 @@ export interface components {
             spec?: string | null;
             /** Tags */
             tags?: string[];
+        };
+        /**
+         * PdfTableBbox
+         * @description Bbox of a detected table on the page (PDF coordinates).
+         */
+        PdfTableBbox: {
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+        };
+        /**
+         * PdfTablesReport
+         * @description Wire shape for ``POST /utilities/pdf/extract-tables``.
+         */
+        PdfTablesReport: {
+            /** Page Count */
+            page_count: number;
+            /** Tables */
+            tables: components["schemas"]["PdfExtractedTable"][];
+            /**
+             * Detector
+             * @default pymupdf.find_tables
+             */
+            detector: string;
+            /**
+             * Detector Version
+             * @default v1
+             */
+            detector_version: string;
         };
         /** PdfTextBlock */
         PdfTextBlock: {
@@ -13574,6 +15013,93 @@ export interface components {
              */
             preserve_text: boolean;
         };
+        /** RedactionSpanInput */
+        RedactionSpanInput: {
+            /** Pattern Id */
+            pattern_id: string;
+            /**
+             * Category
+             * @default pii
+             */
+            category: string;
+            /** Page Number */
+            page_number: number;
+            /** Bbox */
+            bbox: {
+                [key: string]: number;
+            };
+            /**
+             * Char Start
+             * @default 0
+             */
+            char_start: number;
+            /**
+             * Char End
+             * @default 0
+             */
+            char_end: number;
+            /** Original Text */
+            original_text: string;
+            /**
+             * Confidence Tier
+             * @default n/a
+             */
+            confidence_tier: string;
+        };
+        /** RegionBbox */
+        RegionBbox: {
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+        };
+        /** RegionExtractRequest */
+        RegionExtractRequest: {
+            /** Page Number */
+            page_number: number;
+            bbox: components["schemas"]["RegionBbox"];
+            /**
+             * Extraction Kind
+             * @default text
+             * @enum {string}
+             */
+            extraction_kind: "text" | "table" | "image";
+        };
+        /** RegionExtractResponse */
+        RegionExtractResponse: {
+            /** Page Number */
+            page_number: number;
+            bbox: components["schemas"]["RegionBbox"];
+            /**
+             * Extraction Kind
+             * @enum {string}
+             */
+            extraction_kind: "text" | "table" | "image";
+            /** Text */
+            text?: string | null;
+            /** Text Source */
+            text_source?: string | null;
+            /**
+             * Tables
+             * @default []
+             */
+            tables: {
+                [key: string]: unknown;
+            }[];
+            /** Image Png Base64 */
+            image_png_base64?: string | null;
+            /** Image Format */
+            image_format?: string | null;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+        };
         /** RegisteredToolSpec */
         RegisteredToolSpec: {
             /**
@@ -13690,6 +15216,48 @@ export interface components {
              * @default true
              */
             annotations: boolean;
+        };
+        /** RenderRequest */
+        RenderRequest: {
+            /** Page Id */
+            page_id?: string | null;
+            /** Page Number */
+            page_number?: number | null;
+            /**
+             * Overlays
+             * @default []
+             */
+            overlays: components["schemas"]["OverlaySpecIn"][];
+            /**
+             * Dpi
+             * @default 144
+             */
+            dpi: number;
+            /**
+             * Return Format
+             * @default png
+             * @constant
+             */
+            return_format: "png";
+        };
+        /** RenderResponse */
+        RenderResponse: {
+            /** Page Number */
+            page_number: number;
+            /** Page Width */
+            page_width: number;
+            /** Page Height */
+            page_height: number;
+            /** Dpi */
+            dpi: number;
+            /** Image Format */
+            image_format: string;
+            /** Image Base64 */
+            image_base64: string;
+            /** Width Px */
+            width_px: number;
+            /** Height Px */
+            height_px: number;
         };
         /** RenderThumbnailRequest */
         RenderThumbnailRequest: {
@@ -13859,6 +15427,22 @@ export interface components {
             /** Field Id */
             field_id?: string | null;
         };
+        /** RestoreRequestBody */
+        RestoreRequestBody: {
+            /** Session Id */
+            session_id: string;
+            /** Session Key B64 */
+            session_key_b64: string;
+            /** Text */
+            text: string;
+        };
+        /** RestoreResponse */
+        RestoreResponse: {
+            /** Session Id */
+            session_id: string;
+            /** Text */
+            text: string;
+        };
         /** ResumeRequest */
         ResumeRequest: {
             /** User Request Id */
@@ -13986,6 +15570,15 @@ export interface components {
             data_store_id: string;
             /** Members */
             members: components["schemas"]["RichDataStoreMember"][];
+        };
+        /** RotatePageBody */
+        RotatePageBody: {
+            /**
+             * Rotation
+             * @default 90
+             * @enum {integer}
+             */
+            rotation: 0 | 90 | 180 | 270;
         };
         /** RotatePagesRequest */
         RotatePagesRequest: {
@@ -14391,6 +15984,17 @@ export interface components {
              */
             search_type: string;
         };
+        /** SearchBboxOut */
+        SearchBboxOut: {
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+        };
         /** SearchFilesResponse */
         SearchFilesResponse: {
             /** Results */
@@ -14399,35 +16003,6 @@ export interface components {
             query: string;
             /** Total Returned */
             total_returned: number;
-        };
-        /** SearchHitOut */
-        SearchHitOut: {
-            /** Chunk Id */
-            chunk_id: string;
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** Field Id */
-            field_id: string | null;
-            /** Parent Chunk Id */
-            parent_chunk_id: string | null;
-            /** Chunk Kind */
-            chunk_kind: string;
-            /** Snippet */
-            snippet: string;
-            /** Score */
-            score: number;
-            /** Vector Rank */
-            vector_rank: number | null;
-            /** Lexical Rank */
-            lexical_rank: number | null;
-            /** Rerank Score */
-            rerank_score: number | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: unknown;
-            };
         };
         /** SearchKeywordsRequest */
         SearchKeywordsRequest: {
@@ -14449,60 +16024,6 @@ export interface components {
              */
             search_type: string;
         };
-        /** SearchRequest */
-        SearchRequest: {
-            /** Query */
-            query: string;
-            filters?: components["schemas"]["SearchRequestFilters"] | null;
-            /**
-             * Limit
-             * @default 20
-             */
-            limit: number;
-            /**
-             * Rerank
-             * @default true
-             */
-            rerank: boolean;
-            /**
-             * Only Children
-             * @default true
-             */
-            only_children: boolean;
-            /**
-             * Data Store Id
-             * @description Scope the search to one curated bucket (rag.data_stores.id). When set, only chunks from that store's members are returned. Combines with include_sources / source_kinds via AND.
-             */
-            data_store_id?: string | null;
-            /**
-             * Include Sources
-             * @description Hard-pin the search to a list of (source_kind, source_id) pairs.
-             */
-            include_sources?: components["schemas"]["SearchSourceRef"][] | null;
-            /**
-             * Embedding Models
-             * @description Optional override — pass multiple to fan out across embedding tables (e.g. ['openai:text-embedding-3-small', 'voyage:voyage-code-3']) and let RRF unify the rankings.
-             */
-            embedding_models?: string[] | null;
-            /**
-             * Multi Query
-             * @description If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.
-             * @default 1
-             */
-            multi_query: number;
-            /**
-             * Use Hyde
-             * @description Generate a hypothetical-answer passage and embed THAT alongside the query (HyDE). Helps when the natural query phrasing differs from the documents' phrasing.
-             * @default false
-             */
-            use_hyde: boolean;
-            /**
-             * Use Mmr
-             * @description Drop near-duplicate hits from the result set.
-             * @default true
-             */
-            use_mmr: boolean;
-        };
         /** SearchRequestFilters */
         SearchRequestFilters: {
             /** Source Kinds */
@@ -14513,12 +16034,27 @@ export interface components {
              */
             organization_id?: string | null;
         };
+        /** SearchResponse */
+        SearchResponse: {
+            /** File Id */
+            file_id: string;
+            /** Query */
+            query: string;
+            /** Regex */
+            regex: boolean;
+            /** Case Sensitive */
+            case_sensitive: boolean;
+            /** Hits */
+            hits: components["schemas"]["aidream__api__routers__file_search__SearchHitOut"][];
+            /** Truncated */
+            truncated: boolean;
+        };
         /** SearchResponseOut */
         SearchResponseOut: {
             /** Query */
             query: string;
             /** Hits */
-            hits: components["schemas"]["SearchHitOut"][];
+            hits: components["schemas"]["aidream__api__routers__rag__SearchHitOut"][];
             /** Total Candidates */
             total_candidates: number;
             /** Embedding Model */
@@ -14610,6 +16146,24 @@ export interface components {
              * @default true
              */
             enabled: boolean;
+        };
+        /** SnapBboxBody */
+        SnapBboxBody: {
+            /** Page Number */
+            page_number: number;
+            bbox: components["schemas"]["BboxInput"];
+            /**
+             * Expand Pad Pt
+             * @default 1
+             */
+            expand_pad_pt: number;
+        };
+        /** SnapBboxResponse */
+        SnapBboxResponse: {
+            /** Page Number */
+            page_number: number;
+            original_bbox: components["schemas"]["BboxInput"];
+            snapped_bbox: components["schemas"]["BboxInput"];
         };
         /** SourceBulkAction */
         SourceBulkAction: {
@@ -15341,6 +16895,33 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /** UserAnalysisPreferences */
+        UserAnalysisPreferences: {
+            /** Per Detector Enabled */
+            per_detector_enabled?: {
+                [key: string]: boolean;
+            } | null;
+            /** Default Tier Per Detector */
+            default_tier_per_detector?: {
+                [key: string]: string;
+            } | null;
+            /** Custom Patterns */
+            custom_patterns?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Default Redaction Mode */
+            default_redaction_mode?: string | null;
+            /** Per File Type Overrides */
+            per_file_type_overrides?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
+            /** Substitute Formats */
+            substitute_formats?: {
+                [key: string]: string;
+            } | null;
+        };
         /** UserDataStoreCreate */
         UserDataStoreCreate: {
             /** Name */
@@ -15957,6 +17538,130 @@ export interface components {
         aidream__api__routers__agents_blocks__WarmRequest: {
             /** Source */
             source?: string | null;
+        };
+        /** SearchHitOut */
+        aidream__api__routers__file_search__SearchHitOut: {
+            /** Page Number */
+            page_number: number;
+            /** Page Id */
+            page_id?: string | null;
+            bbox: components["schemas"]["SearchBboxOut"];
+            /** Snippet */
+            snippet: string;
+            /** Matched Text */
+            matched_text: string;
+            /** Char Start */
+            char_start?: number | null;
+            /** Char End */
+            char_end?: number | null;
+        };
+        /** SearchRequest */
+        aidream__api__routers__file_search__SearchRequest: {
+            /** Query */
+            query: string;
+            /**
+             * Regex
+             * @default false
+             */
+            regex: boolean;
+            /**
+             * Case Sensitive
+             * @default false
+             */
+            case_sensitive: boolean;
+            /**
+             * Max Hits
+             * @default 200
+             */
+            max_hits: number;
+            /**
+             * Include Excluded Pages
+             * @default false
+             */
+            include_excluded_pages: boolean;
+        };
+        /** SearchHitOut */
+        aidream__api__routers__rag__SearchHitOut: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** Field Id */
+            field_id: string | null;
+            /** Parent Chunk Id */
+            parent_chunk_id: string | null;
+            /** Chunk Kind */
+            chunk_kind: string;
+            /** Snippet */
+            snippet: string;
+            /** Score */
+            score: number;
+            /** Vector Rank */
+            vector_rank: number | null;
+            /** Lexical Rank */
+            lexical_rank: number | null;
+            /** Rerank Score */
+            rerank_score: number | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+        };
+        /** SearchRequest */
+        aidream__api__routers__rag__SearchRequest: {
+            /** Query */
+            query: string;
+            filters?: components["schemas"]["SearchRequestFilters"] | null;
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /**
+             * Rerank
+             * @default true
+             */
+            rerank: boolean;
+            /**
+             * Only Children
+             * @default true
+             */
+            only_children: boolean;
+            /**
+             * Data Store Id
+             * @description Scope the search to one curated bucket (rag.data_stores.id). When set, only chunks from that store's members are returned. Combines with include_sources / source_kinds via AND.
+             */
+            data_store_id?: string | null;
+            /**
+             * Include Sources
+             * @description Hard-pin the search to a list of (source_kind, source_id) pairs.
+             */
+            include_sources?: components["schemas"]["SearchSourceRef"][] | null;
+            /**
+             * Embedding Models
+             * @description Optional override — pass multiple to fan out across embedding tables (e.g. ['openai:text-embedding-3-small', 'voyage:voyage-code-3']) and let RRF unify the rankings.
+             */
+            embedding_models?: string[] | null;
+            /**
+             * Multi Query
+             * @description If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.
+             * @default 1
+             */
+            multi_query: number;
+            /**
+             * Use Hyde
+             * @description Generate a hypothetical-answer passage and embed THAT alongside the query (HyDE). Helps when the natural query phrasing differs from the documents' phrasing.
+             * @default false
+             */
+            use_hyde: boolean;
+            /**
+             * Use Mmr
+             * @description Drop near-duplicate hits from the result set.
+             * @default true
+             */
+            use_mmr: boolean;
         };
     };
     responses: never;
@@ -18445,7 +20150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PdfResult"];
+                    "application/json": components["schemas"]["PdfTablesReport"];
                 };
             };
             /** @description Validation Error */
@@ -24949,7 +26654,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SearchRequest"];
+                "application/json": components["schemas"]["aidream__api__routers__rag__SearchRequest"];
             };
         };
         responses: {
@@ -25015,7 +26720,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SearchRequest"];
+                "application/json": components["schemas"]["aidream__api__routers__rag__SearchRequest"];
             };
         };
         responses: {
@@ -31526,6 +33231,1277 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForceDisableResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_analysis_files__file_id__analysis_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileAnalysisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_analysis_files__file_id__analysis_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyzeRefreshBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyzeRefreshResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redact_mask_files__file_id__redact_mask_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaskRequestBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redact_restore_redact_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequestBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_session_redact_sessions__session_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extracted_text_endpoint_files__file_id__extracted_text_get: {
+        parameters: {
+            query?: {
+                include_excluded?: boolean;
+                include_overrides?: boolean;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractedTextResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_preferences_me_analysis_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    put_my_preferences_me_analysis_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserAnalysisPreferences"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recipes_analysis_recipes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    create_recipe_analysis_recipes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRecipeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_recipe_analysis_recipes__recipe_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recipe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRecipeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_recipe_analysis_recipes__recipe_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recipe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_label_catalog_annotations_label_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelCatalogResponse"];
+                };
+            };
+        };
+    };
+    extract_at_bbox_endpoint_files__file_id__annotations_extract_at_bbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtractAtBboxBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractAtBboxResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_annotations_endpoint_files__file_id__annotations_get: {
+        parameters: {
+            query?: {
+                label_category?: string | null;
+                page_number?: number | null;
+                include_rejected?: boolean;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_annotation_endpoint_files__file_id__annotations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotationCreateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_annotation_endpoint_files__file_id__annotations__annotation_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                annotation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotationUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_annotation_endpoint_files__file_id__annotations__annotation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                annotation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    key_findings_endpoint_files__file_id__key_findings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyFindingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manifest_endpoint_files__file_id__annotations_manifest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManifestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    snap_bbox_endpoint_files__file_id__annotations_snap_bbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnapBboxBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapBboxResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_from_candidates_endpoint_files__file_id__annotations_bulk_from_candidates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkCandidateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkCandidateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pages_endpoint_files__file_id__pages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePageOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    active_pages_endpoint_files__file_id__active_pages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivePageIdsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_page_endpoint_files__file_id__pages__page_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exclude_page_endpoint_files__file_id__pages__page_id__exclude_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExcludePageBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    include_page_endpoint_files__file_id__pages__page_id__include_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_page_endpoint_files__file_id__pages__page_id__rotate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RotatePageBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    override_page_text_endpoint_files__file_id__pages__page_id__override_text_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverridePageTextBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePageOverrideOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_overrides_endpoint_files__file_id__overrides_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePageOverrideOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_endpoint_files__file_id__search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__api__routers__file_search__SearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_region_endpoint_files__file_id__regions_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegionExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionExtractResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_page_with_overlay_endpoint_files__file_id__render_page_with_overlay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_entities_endpoint_files__file_id__entities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_entity_endpoint_files__file_id__entities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityCreateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_entity_endpoint_files__file_id__entities__entity_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_entity_endpoint_files__file_id__entities__entity_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_to_entity_endpoint_files__file_id__annotations__annotation_id__promote_to_entity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                annotation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_similar_endpoint_files__file_id__entities_find_similar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FindSimilarBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindSimilarResponse"];
                 };
             };
             /** @description Validation Error */

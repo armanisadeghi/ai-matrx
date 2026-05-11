@@ -3397,6 +3397,7 @@
           "Utilities"
         ],
         "summary": "Extract Tables",
+        "description": "Detect every table on every page via PyMuPDF's native\n``page.find_tables()``. No Java / tabula dependency.\n\nReturns a structured ``PdfTablesReport`` with per-table bbox, header,\nrows, and a markdown rendering so the FE can display tables inline\nwithout re-fetching a file artifact.",
         "operationId": "extract_tables_utilities_pdf_extract_tables_post",
         "requestBody": {
           "content": {
@@ -3414,7 +3415,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PdfResult"
+                  "$ref": "#/components/schemas/PdfTablesReport"
                 }
               }
             }
@@ -13127,7 +13128,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SearchRequest"
+                "$ref": "#/components/schemas/aidream__api__routers__rag__SearchRequest"
               }
             }
           },
@@ -13208,7 +13209,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SearchRequest"
+                "$ref": "#/components/schemas/aidream__api__routers__rag__SearchRequest"
               }
             }
           },
@@ -23386,10 +23387,1920 @@
           }
         }
       }
+    },
+    "/files/{file_id}/analysis": {
+      "get": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Fetch Analysis",
+        "operationId": "fetch_analysis_files__file_id__analysis_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileAnalysisResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/analysis/refresh": {
+      "post": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Refresh Analysis",
+        "operationId": "refresh_analysis_files__file_id__analysis_refresh_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRefreshBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeRefreshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/redact/mask": {
+      "post": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Redact Mask",
+        "operationId": "redact_mask_files__file_id__redact_mask_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaskRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redact/restore": {
+      "post": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Redact Restore",
+        "operationId": "redact_restore_redact_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redact/sessions/{session_id}/revoke": {
+      "post": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Revoke Session",
+        "operationId": "revoke_session_redact_sessions__session_id__revoke_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/extracted-text": {
+      "get": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Extracted Text Endpoint",
+        "description": "Return active pages' text in current order. Skips excluded pages.\n\nApplies file_overrides of kind 'page_text' over the auto-extracted text\nwhen `include_overrides=true` (the default) — human edits win.\n\nPage markers between pages let RAG embedders split on them.",
+        "operationId": "extracted_text_endpoint_files__file_id__extracted_text_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "include_excluded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Excluded"
+            }
+          },
+          {
+            "name": "include_overrides",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Include Overrides"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractedTextResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/analysis-preferences": {
+      "get": {
+        "tags": [
+          "Analysis Preferences"
+        ],
+        "summary": "Get My Preferences",
+        "operationId": "get_my_preferences_me_analysis_preferences_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get My Preferences Me Analysis Preferences Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Analysis Preferences"
+        ],
+        "summary": "Put My Preferences",
+        "operationId": "put_my_preferences_me_analysis_preferences_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAnalysisPreferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Put My Preferences Me Analysis Preferences Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analysis-recipes": {
+      "get": {
+        "tags": [
+          "Analysis Preferences"
+        ],
+        "summary": "List Recipes",
+        "operationId": "list_recipes_analysis_recipes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Recipes Analysis Recipes Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Analysis Preferences"
+        ],
+        "summary": "Create Recipe",
+        "operationId": "create_recipe_analysis_recipes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRecipeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Recipe Analysis Recipes Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analysis-recipes/{recipe_id}": {
+      "put": {
+        "tags": [
+          "Analysis Preferences"
+        ],
+        "summary": "Update Recipe",
+        "operationId": "update_recipe_analysis_recipes__recipe_id__put",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRecipeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Update Recipe Analysis Recipes  Recipe Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Analysis Preferences"
+        ],
+        "summary": "Delete Recipe",
+        "operationId": "delete_recipe_analysis_recipes__recipe_id__delete",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/annotations/label-catalog": {
+      "get": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Fetch Label Catalog",
+        "operationId": "fetch_label_catalog_annotations_label_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelCatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations/extract-at-bbox": {
+      "post": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Extract At Bbox Endpoint",
+        "operationId": "extract_at_bbox_endpoint_files__file_id__annotations_extract_at_bbox_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractAtBboxBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractAtBboxResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations": {
+      "get": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "List Annotations Endpoint",
+        "operationId": "list_annotations_endpoint_files__file_id__annotations_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "label_category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Label Category"
+            }
+          },
+          {
+            "name": "page_number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Number"
+            }
+          },
+          {
+            "name": "include_rejected",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Rejected"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnnotationOut"
+                  },
+                  "title": "Response List Annotations Endpoint Files  File Id  Annotations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Create Annotation Endpoint",
+        "operationId": "create_annotation_endpoint_files__file_id__annotations_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationCreateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnotationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations/{annotation_id}": {
+      "put": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Update Annotation Endpoint",
+        "operationId": "update_annotation_endpoint_files__file_id__annotations__annotation_id__put",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "annotation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Annotation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationUpdateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnotationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Delete Annotation Endpoint",
+        "operationId": "delete_annotation_endpoint_files__file_id__annotations__annotation_id__delete",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "annotation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Annotation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/key-findings": {
+      "get": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Key Findings Endpoint",
+        "operationId": "key_findings_endpoint_files__file_id__key_findings_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyFindingsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations/manifest": {
+      "get": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Manifest Endpoint",
+        "operationId": "manifest_endpoint_files__file_id__annotations_manifest_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations/snap-bbox": {
+      "post": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Snap Bbox Endpoint",
+        "operationId": "snap_bbox_endpoint_files__file_id__annotations_snap_bbox_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnapBboxBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapBboxResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations/bulk-from-candidates": {
+      "post": {
+        "tags": [
+          "File Annotations"
+        ],
+        "summary": "Bulk From Candidates Endpoint",
+        "description": "Promote N pattern-candidate spans into user annotations in one shot.\n\nLoads the named file_analysis_result rows, pulls the requested span by\nindex, and creates an annotation for each accept (with parent_result_id\nlinked back). Reject actions are recorded as `status='rejected'` rows so\nthe system remembers and future re-emits filter them out.",
+        "operationId": "bulk_from_candidates_endpoint_files__file_id__annotations_bulk_from_candidates_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCandidateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkCandidateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pages": {
+      "get": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "List Pages Endpoint",
+        "operationId": "list_pages_endpoint_files__file_id__pages_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FilePageOut"
+                  },
+                  "title": "Response List Pages Endpoint Files  File Id  Pages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/active-pages": {
+      "get": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "Active Pages Endpoint",
+        "operationId": "active_pages_endpoint_files__file_id__active_pages_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivePageIdsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pages/{page_id}": {
+      "get": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "Get Page Endpoint",
+        "operationId": "get_page_endpoint_files__file_id__pages__page_id__get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pages/{page_id}/exclude": {
+      "post": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "Exclude Page Endpoint",
+        "operationId": "exclude_page_endpoint_files__file_id__pages__page_id__exclude_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcludePageBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pages/{page_id}/include": {
+      "post": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "Include Page Endpoint",
+        "operationId": "include_page_endpoint_files__file_id__pages__page_id__include_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pages/{page_id}/rotate": {
+      "post": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "Rotate Page Endpoint",
+        "operationId": "rotate_page_endpoint_files__file_id__pages__page_id__rotate_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotatePageBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rotate Page Endpoint Files  File Id  Pages  Page Id  Rotate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pages/{page_id}/override-text": {
+      "post": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "Override Page Text Endpoint",
+        "operationId": "override_page_text_endpoint_files__file_id__pages__page_id__override_text_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverridePageTextBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePageOverrideOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/overrides": {
+      "get": {
+        "tags": [
+          "File Pages"
+        ],
+        "summary": "List Overrides Endpoint",
+        "operationId": "list_overrides_endpoint_files__file_id__overrides_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FilePageOverrideOut"
+                  },
+                  "title": "Response List Overrides Endpoint Files  File Id  Overrides Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/search": {
+      "post": {
+        "tags": [
+          "File Search"
+        ],
+        "summary": "Search Endpoint",
+        "operationId": "search_endpoint_files__file_id__search_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/aidream__api__routers__file_search__SearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/regions/extract": {
+      "post": {
+        "tags": [
+          "File Regions"
+        ],
+        "summary": "Extract Region Endpoint",
+        "operationId": "extract_region_endpoint_files__file_id__regions_extract_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegionExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegionExtractResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/render-page-with-overlay": {
+      "post": {
+        "tags": [
+          "File Render"
+        ],
+        "summary": "Render Page With Overlay Endpoint",
+        "operationId": "render_page_with_overlay_endpoint_files__file_id__render_page_with_overlay_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/entities": {
+      "get": {
+        "tags": [
+          "File Entities"
+        ],
+        "summary": "List Entities Endpoint",
+        "operationId": "list_entities_endpoint_files__file_id__entities_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EntityOut"
+                  },
+                  "title": "Response List Entities Endpoint Files  File Id  Entities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "File Entities"
+        ],
+        "summary": "Create Entity Endpoint",
+        "operationId": "create_entity_endpoint_files__file_id__entities_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityCreateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/entities/{entity_id}": {
+      "put": {
+        "tags": [
+          "File Entities"
+        ],
+        "summary": "Update Entity Endpoint",
+        "operationId": "update_entity_endpoint_files__file_id__entities__entity_id__put",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityUpdateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "File Entities"
+        ],
+        "summary": "Delete Entity Endpoint",
+        "operationId": "delete_entity_endpoint_files__file_id__entities__entity_id__delete",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/annotations/{annotation_id}/promote-to-entity": {
+      "post": {
+        "tags": [
+          "File Entities"
+        ],
+        "summary": "Promote To Entity Endpoint",
+        "operationId": "promote_to_entity_endpoint_files__file_id__annotations__annotation_id__promote_to_entity_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "annotation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Annotation Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/entities/find-similar": {
+      "post": {
+        "tags": [
+          "File Entities"
+        ],
+        "summary": "Find Similar Endpoint",
+        "operationId": "find_similar_endpoint_files__file_id__entities_find_similar_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindSimilarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindSimilarResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ActivePageIdsResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "page_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Page Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "page_ids"
+        ],
+        "title": "ActivePageIdsResponse"
+      },
       "AddGroupMemberRequest": {
         "properties": {
           "user_id": {
@@ -24387,6 +26298,83 @@
         "title": "AgentVersion",
         "description": "One iteration step. version=1 is the original agent's output,\nversions 2+ are produced by the Rebuild Chain."
       },
+      "AnalysisRecipeBody": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "match_rules": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Match Rules",
+            "default": {}
+          },
+          "detector_overrides": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detector Overrides",
+            "default": {}
+          },
+          "pattern_overrides": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Pattern Overrides",
+            "default": {}
+          },
+          "default_tiers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Default Tiers",
+            "default": {}
+          },
+          "redaction_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redaction Mode"
+          },
+          "substitute_formats": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Substitute Formats",
+            "default": {}
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "default": 100
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AnalysisRecipeBody"
+      },
       "AnalyzeBulkRequest": {
         "properties": {
           "source_ids": {
@@ -24447,6 +26435,69 @@
         "type": "object",
         "title": "AnalyzeBulkRequest"
       },
+      "AnalyzeRefreshBody": {
+        "properties": {
+          "detectors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detectors"
+          },
+          "confidence_tiers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Tiers"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "only_stale": {
+            "type": "boolean",
+            "title": "Only Stale",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AnalyzeRefreshBody"
+      },
+      "AnalyzeRefreshResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "status": {
+            "type": "string",
+            "const": "accepted",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "status"
+        ],
+        "title": "AnalyzeRefreshResponse"
+      },
       "AnalyzeRequest": {
         "properties": {
           "agent_type": {
@@ -24492,6 +26543,382 @@
         },
         "type": "object",
         "title": "AnalyzeRequest"
+      },
+      "AnnotationCreateBody": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/BboxInput"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "label_category": {
+            "type": "string",
+            "title": "Label Category",
+            "default": "custom"
+          },
+          "extracted_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Text"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "redact": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redact"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "parent_result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Result Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "user"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "bbox",
+          "label"
+        ],
+        "title": "AnnotationCreateBody"
+      },
+      "AnnotationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "bbox": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Bbox"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "label_category": {
+            "type": "string",
+            "title": "Label Category"
+          },
+          "extracted_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Text"
+          },
+          "extracted_text_source": {
+            "type": "string",
+            "title": "Extracted Text Source"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "redact": {
+            "type": "boolean",
+            "title": "Redact"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "parent_result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Result Id"
+          },
+          "redaction_span_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redaction Span Id"
+          },
+          "is_user_locked": {
+            "type": "boolean",
+            "title": "Is User Locked",
+            "default": true
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "last_edited_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Edited By"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "owner_id",
+          "page_number",
+          "bbox",
+          "label",
+          "label_category",
+          "extracted_text_source",
+          "source",
+          "status",
+          "redact"
+        ],
+        "title": "AnnotationOut"
+      },
+      "AnnotationUpdateBody": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "label_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Category"
+          },
+          "bbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BboxInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extracted_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Text"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "redact": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redact"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "title": "AnnotationUpdateBody"
       },
       "AppExecuteRequest": {
         "properties": {
@@ -24712,6 +27139,34 @@
           "results"
         ],
         "title": "BatchScrapeResponse"
+      },
+      "BboxInput": {
+        "properties": {
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "BboxInput"
       },
       "Body_batch_extract_utilities_pdf_batch_extract_post": {
         "properties": {
@@ -24948,6 +27403,109 @@
           "file"
         ],
         "title": "Body_upload_vision_master_media_upload_post"
+      },
+      "BulkCandidateAction": {
+        "properties": {
+          "result_id": {
+            "type": "string",
+            "title": "Result Id"
+          },
+          "span_index": {
+            "type": "integer",
+            "title": "Span Index"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "redact": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result_id",
+          "span_index",
+          "action"
+        ],
+        "title": "BulkCandidateAction"
+      },
+      "BulkCandidateBody": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/BulkCandidateAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "actions"
+        ],
+        "title": "BulkCandidateBody"
+      },
+      "BulkCandidateResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/AnnotationOut"
+            },
+            "type": "array",
+            "title": "Created"
+          },
+          "rejected": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rejected"
+          },
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "created",
+          "rejected"
+        ],
+        "title": "BulkCandidateResponse"
       },
       "BulkDeleteRequest": {
         "properties": {
@@ -29697,6 +32255,67 @@
         "type": "object",
         "title": "DetectRepeatedRegionsRequest"
       },
+      "DetectorRunInfo": {
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "title": "DetectorRunInfo"
+      },
       "DirectChatRequest": {
         "properties": {
           "chat_config": {
@@ -30252,6 +32871,208 @@
         "title": "EdgeDef",
         "description": "User-authored edge in a ReactFlow-compatible definition.\n\nThe edge's semantic `kind` (DATA / CONTROL / CONDITIONAL / ERROR / STREAM)\nlives under data.kind. `type` on ReactFlow is purely a visual style hint.\nConditional edges carry a predicate expression under data.condition that\nthe compiler validates."
       },
+      "EntityCreateBody": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "label_category": {
+            "type": "string",
+            "title": "Label Category",
+            "default": "custom"
+          },
+          "canonical_value": {
+            "type": "string",
+            "title": "Canonical Value"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "source_annotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Annotation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "canonical_value"
+        ],
+        "title": "EntityCreateBody"
+      },
+      "EntityOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "label_category": {
+            "type": "string",
+            "title": "Label Category"
+          },
+          "canonical_value": {
+            "type": "string",
+            "title": "Canonical Value"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "source_annotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Annotation Id"
+          },
+          "is_user_named": {
+            "type": "boolean",
+            "title": "Is User Named"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "owner_id",
+          "label",
+          "label_category",
+          "canonical_value",
+          "is_user_named"
+        ],
+        "title": "EntityOut"
+      },
+      "EntityUpdateBody": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "label_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Category"
+          },
+          "canonical_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Value"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          }
+        },
+        "type": "object",
+        "title": "EntityUpdateBody"
+      },
+      "ExcludePageBody": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "title": "ExcludePageBody"
+      },
       "ExtensionContentResponse": {
         "properties": {
           "status": {
@@ -30564,6 +33385,98 @@
         "type": "object",
         "title": "ExtensionScrapeQueue"
       },
+      "ExtractAtBboxBody": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/BboxInput"
+          },
+          "include_preview": {
+            "type": "boolean",
+            "title": "Include Preview",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "bbox"
+        ],
+        "title": "ExtractAtBboxBody"
+      },
+      "ExtractAtBboxResponse": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "page_width": {
+            "type": "number",
+            "title": "Page Width"
+          },
+          "page_height": {
+            "type": "number",
+            "title": "Page Height"
+          },
+          "requested_bbox": {
+            "$ref": "#/components/schemas/BboxInput"
+          },
+          "extracted_text": {
+            "type": "string",
+            "title": "Extracted Text"
+          },
+          "text_source": {
+            "type": "string",
+            "title": "Text Source"
+          },
+          "char_count": {
+            "type": "integer",
+            "title": "Char Count"
+          },
+          "intersecting_images": {
+            "items": {
+              "$ref": "#/components/schemas/IntersectingImageOut"
+            },
+            "type": "array",
+            "title": "Intersecting Images",
+            "default": []
+          },
+          "preview_png_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Png Base64"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "page_width",
+          "page_height",
+          "requested_bbox",
+          "extracted_text",
+          "text_source",
+          "char_count"
+        ],
+        "title": "ExtractAtBboxResponse"
+      },
       "ExtractPagesRequest": {
         "properties": {
           "media": {
@@ -30848,6 +33761,65 @@
         "type": "object",
         "title": "ExtractTextRequest"
       },
+      "ExtractedTextPageOut": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_id",
+          "page_number",
+          "source",
+          "text"
+        ],
+        "title": "ExtractedTextPageOut"
+      },
+      "ExtractedTextResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/ExtractedTextPageOut"
+            },
+            "type": "array",
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "page_count",
+          "text",
+          "pages"
+        ],
+        "title": "ExtractedTextResponse"
+      },
       "ExtractorSaveRequest": {
         "properties": {
           "name": {
@@ -31084,6 +34056,285 @@
         ],
         "title": "FieldDefinition"
       },
+      "FileAnalysisHead": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "partial",
+              "complete",
+              "failed",
+              "not_applicable"
+            ],
+            "title": "Status"
+          },
+          "analyzer_version": {
+            "type": "string",
+            "title": "Analyzer Version"
+          },
+          "detectors_run": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DetectorRunInfo"
+            },
+            "type": "object",
+            "title": "Detectors Run",
+            "default": {}
+          },
+          "progress": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Progress",
+            "default": {}
+          },
+          "classification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "summary_counts": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary Counts",
+            "default": {}
+          },
+          "text_source_map": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Source Map"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "default": {}
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "owner_id",
+          "status",
+          "analyzer_version"
+        ],
+        "title": "FileAnalysisHead"
+      },
+      "FileAnalysisResponse": {
+        "properties": {
+          "head": {
+            "$ref": "#/components/schemas/FileAnalysisHead"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/FileAnalysisResultRow"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "head",
+          "results"
+        ],
+        "title": "FileAnalysisResponse"
+      },
+      "FileAnalysisResultRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "detector_kind": {
+            "type": "string",
+            "title": "Detector Kind"
+          },
+          "detector_version": {
+            "type": "string",
+            "title": "Detector Version"
+          },
+          "confidence_tier": {
+            "type": "string",
+            "title": "Confidence Tier"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "skipped",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "text_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Text Sources",
+            "default": []
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "title": "Elapsed Ms",
+            "default": 0
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary",
+            "default": {}
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          },
+          "payload_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload Uri"
+          },
+          "payload_bytes": {
+            "type": "integer",
+            "title": "Payload Bytes",
+            "default": 0
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "detector_kind",
+          "detector_version",
+          "confidence_tier",
+          "status"
+        ],
+        "title": "FileAnalysisResultRow"
+      },
       "FileDocumentLookupResponse": {
         "properties": {
           "processed_document_id": {
@@ -31204,6 +34455,265 @@
         },
         "type": "object",
         "title": "FileLineageSummary"
+      },
+      "FilePageOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "page_index": {
+            "type": "integer",
+            "title": "Page Index"
+          },
+          "source_page_index": {
+            "type": "integer",
+            "title": "Source Page Index"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "excluded",
+              "deleted"
+            ],
+            "title": "Status"
+          },
+          "excluded_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded Reason"
+          },
+          "excluded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded At"
+          },
+          "excluded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded By"
+          },
+          "user_modified": {
+            "type": "boolean",
+            "title": "User Modified"
+          },
+          "width_pt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width Pt"
+          },
+          "height_pt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Pt"
+          },
+          "rotation": {
+            "type": "integer",
+            "title": "Rotation"
+          },
+          "text_source": {
+            "type": "string",
+            "enum": [
+              "native",
+              "ocr",
+              "mixed",
+              "unknown",
+              "none"
+            ],
+            "title": "Text Source"
+          },
+          "ocr_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Confidence"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "default": {}
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "owner_id",
+          "page_index",
+          "source_page_index",
+          "status",
+          "user_modified",
+          "rotation",
+          "text_source"
+        ],
+        "title": "FilePageOut"
+      },
+      "FilePageOverrideOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "override_kind": {
+            "type": "string",
+            "title": "Override Kind"
+          },
+          "override_value": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Override Value"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "owner_id",
+          "override_kind",
+          "override_value"
+        ],
+        "title": "FilePageOverrideOut"
       },
       "FilePatchRequest": {
         "properties": {
@@ -31530,6 +35040,134 @@
           "upload_id"
         ],
         "title": "FinalizeUploadRequest"
+      },
+      "FindSimilarBody": {
+        "properties": {
+          "annotation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annotation Id"
+          },
+          "seed_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed Text"
+          },
+          "strategies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Strategies"
+          },
+          "max_hits_per_page": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Max Hits Per Page",
+            "default": 5
+          }
+        },
+        "type": "object",
+        "title": "FindSimilarBody"
+      },
+      "FindSimilarCandidate": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "matched_text": {
+            "type": "string",
+            "title": "Matched Text"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "char_start": {
+            "type": "integer",
+            "title": "Char Start"
+          },
+          "char_end": {
+            "type": "integer",
+            "title": "Char End"
+          },
+          "suggested_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Label"
+          },
+          "suggested_label_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Label Category"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_id",
+          "page_number",
+          "matched_text",
+          "snippet",
+          "confidence",
+          "char_start",
+          "char_end"
+        ],
+        "title": "FindSimilarCandidate"
+      },
+      "FindSimilarResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/FindSimilarCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "candidates"
+        ],
+        "title": "FindSimilarResponse"
       },
       "FireResponse": {
         "properties": {
@@ -32818,6 +36456,39 @@
         "type": "object",
         "title": "InsertPagesRequest"
       },
+      "IntersectingImageOut": {
+        "properties": {
+          "xref": {
+            "type": "integer",
+            "title": "Xref"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width",
+            "default": 0
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height",
+            "default": 0
+          },
+          "bbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BboxInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "xref"
+        ],
+        "title": "IntersectingImageOut"
+      },
       "IssueClassUpdate": {
         "properties": {
           "disposition": {
@@ -33057,6 +36728,81 @@
         ],
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
+      },
+      "KeyFindingEntry": {
+        "properties": {
+          "label_category": {
+            "type": "string",
+            "title": "Label Category"
+          },
+          "value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "raw_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Text"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "bbox": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Bbox"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label_category",
+          "page",
+          "bbox"
+        ],
+        "title": "KeyFindingEntry"
+      },
+      "KeyFindingsResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "findings": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/KeyFindingEntry"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Findings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "count",
+          "findings"
+        ],
+        "title": "KeyFindingsResponse"
       },
       "KeywordCreate": {
         "properties": {
@@ -33840,6 +37586,113 @@
         "additionalProperties": false,
         "type": "object",
         "title": "LLMParams"
+      },
+      "LabelCatalogEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "value_type": {
+            "type": "string",
+            "title": "Value Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "value_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Unit"
+          },
+          "enum_options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enum Options"
+          },
+          "examples": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples"
+          },
+          "default_redact": {
+            "type": "boolean",
+            "title": "Default Redact",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "category",
+          "value_type"
+        ],
+        "title": "LabelCatalogEntry"
+      },
+      "LabelCatalogResponse": {
+        "properties": {
+          "categories": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Categories"
+          },
+          "labels": {
+            "items": {
+              "$ref": "#/components/schemas/LabelCatalogEntry"
+            },
+            "type": "array",
+            "title": "Labels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "categories",
+          "labels"
+        ],
+        "title": "LabelCatalogResponse"
       },
       "LayoutClassificationReport": {
         "properties": {
@@ -35201,6 +39054,211 @@
         ],
         "title": "LineageTree"
       },
+      "ManifestFact": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "raw_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Text"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "bbox": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Bbox"
+          },
+          "redact": {
+            "type": "boolean",
+            "title": "Redact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "category",
+          "page",
+          "bbox",
+          "redact"
+        ],
+        "title": "ManifestFact"
+      },
+      "ManifestResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestFact"
+            },
+            "type": "array",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "facts"
+        ],
+        "title": "ManifestResponse"
+      },
+      "MaskRequestBody": {
+        "properties": {
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/RedactionSpanInput"
+            },
+            "type": "array",
+            "title": "Spans"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "reversible",
+              "destructive",
+              "annotation"
+            ],
+            "title": "Mode",
+            "default": "reversible"
+          },
+          "substitute_style": {
+            "type": "string",
+            "enum": [
+              "bracket",
+              "shape"
+            ],
+            "title": "Substitute Style",
+            "default": "bracket"
+          },
+          "substitute_formats": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substitute Formats"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "session_key_b64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Key B64"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spans"
+        ],
+        "title": "MaskRequestBody"
+      },
+      "MaskResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "reversible",
+              "destructive",
+              "annotation"
+            ],
+            "title": "Mode"
+          },
+          "mapping_count": {
+            "type": "integer",
+            "title": "Mapping Count"
+          },
+          "session_key_b64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Key B64"
+          },
+          "masked_bytes_base64": {
+            "type": "string",
+            "title": "Masked Bytes Base64"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "session_id",
+          "mode",
+          "mapping_count",
+          "masked_bytes_base64"
+        ],
+        "title": "MaskResponse"
+      },
       "MediaRef": {
         "properties": {
           "file_id": {
@@ -35707,6 +39765,117 @@
         "title": "OccupationalCodesResponse",
         "description": "Wrapper around the bundled California job-codes config.\n\nThe shape of `codes` is:\n    Record<JobCode, Record<JobTitle, IndustryCategory>>\ne.g. `{\"230\": {\"Carpenter\": \"Construction\", ...}, ...}`"
       },
+      "OverlayBboxIn": {
+        "properties": {
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "OverlayBboxIn"
+      },
+      "OverlaySpecIn": {
+        "properties": {
+          "bbox": {
+            "$ref": "#/components/schemas/OverlayBboxIn"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": "#ef4444"
+          },
+          "fill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill"
+          },
+          "fill_opacity": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Fill Opacity",
+            "default": 0.18
+          },
+          "stroke_width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "title": "Stroke Width",
+            "default": 2
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "font_size": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "title": "Font Size",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "required": [
+          "bbox"
+        ],
+        "title": "OverlaySpecIn"
+      },
+      "OverridePageTextBody": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 0,
+            "title": "Text"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "OverridePageTextBody"
+      },
       "PageClassification": {
         "properties": {
           "page_number": {
@@ -36083,6 +40252,79 @@
           "y1"
         ],
         "title": "PdfCropBox"
+      },
+      "PdfExtractedTable": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "table_index": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Table Index"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/PdfTableBbox"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count"
+          },
+          "column_count": {
+            "type": "integer",
+            "title": "Column Count"
+          },
+          "header": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Header"
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "markdown": {
+            "type": "string",
+            "title": "Markdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "table_index",
+          "bbox",
+          "row_count",
+          "column_count",
+          "header",
+          "rows",
+          "markdown"
+        ],
+        "title": "PdfExtractedTable",
+        "description": "One table detected on one page."
       },
       "PdfPageRange": {
         "properties": {
@@ -36734,6 +40976,67 @@
           "output_kind"
         ],
         "title": "PdfStudioPresetSchema"
+      },
+      "PdfTableBbox": {
+        "properties": {
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "PdfTableBbox",
+        "description": "Bbox of a detected table on the page (PDF coordinates)."
+      },
+      "PdfTablesReport": {
+        "properties": {
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/PdfExtractedTable"
+            },
+            "type": "array",
+            "title": "Tables"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector",
+            "default": "pymupdf.find_tables"
+          },
+          "detector_version": {
+            "type": "string",
+            "title": "Detector Version",
+            "default": "v1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_count",
+          "tables"
+        ],
+        "title": "PdfTablesReport",
+        "description": "Wire shape for ``POST /utilities/pdf/extract-tables``."
       },
       "PdfTextBlock": {
         "properties": {
@@ -38467,6 +42770,202 @@
         "title": "RedactionRegion",
         "description": "One redaction target — a page-anchored rect with replacement semantic."
       },
+      "RedactionSpanInput": {
+        "properties": {
+          "pattern_id": {
+            "type": "string",
+            "title": "Pattern Id"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "pii"
+          },
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "bbox": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Bbox"
+          },
+          "char_start": {
+            "type": "integer",
+            "title": "Char Start",
+            "default": 0
+          },
+          "char_end": {
+            "type": "integer",
+            "title": "Char End",
+            "default": 0
+          },
+          "original_text": {
+            "type": "string",
+            "title": "Original Text"
+          },
+          "confidence_tier": {
+            "type": "string",
+            "title": "Confidence Tier",
+            "default": "n/a"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pattern_id",
+          "page_number",
+          "bbox",
+          "original_text"
+        ],
+        "title": "RedactionSpanInput"
+      },
+      "RegionBbox": {
+        "properties": {
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "RegionBbox"
+      },
+      "RegionExtractRequest": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/RegionBbox"
+          },
+          "extraction_kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "table",
+              "image"
+            ],
+            "title": "Extraction Kind",
+            "default": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "bbox"
+        ],
+        "title": "RegionExtractRequest"
+      },
+      "RegionExtractResponse": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/RegionBbox"
+          },
+          "extraction_kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "table",
+              "image"
+            ],
+            "title": "Extraction Kind"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "text_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Source"
+          },
+          "tables": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tables",
+            "default": []
+          },
+          "image_png_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Png Base64"
+          },
+          "image_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Format"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "bbox",
+          "extraction_kind"
+        ],
+        "title": "RegionExtractResponse"
+      },
       "RegisteredToolSpec": {
         "properties": {
           "kind": {
@@ -38720,6 +43219,103 @@
         },
         "type": "object",
         "title": "RenderPageRequest"
+      },
+      "RenderRequest": {
+        "properties": {
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Number"
+          },
+          "overlays": {
+            "items": {
+              "$ref": "#/components/schemas/OverlaySpecIn"
+            },
+            "type": "array",
+            "title": "Overlays",
+            "default": []
+          },
+          "dpi": {
+            "type": "integer",
+            "maximum": 400,
+            "minimum": 36,
+            "title": "Dpi",
+            "default": 144
+          },
+          "return_format": {
+            "type": "string",
+            "const": "png",
+            "title": "Return Format",
+            "default": "png"
+          }
+        },
+        "type": "object",
+        "title": "RenderRequest"
+      },
+      "RenderResponse": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "page_width": {
+            "type": "number",
+            "title": "Page Width"
+          },
+          "page_height": {
+            "type": "number",
+            "title": "Page Height"
+          },
+          "dpi": {
+            "type": "integer",
+            "title": "Dpi"
+          },
+          "image_format": {
+            "type": "string",
+            "title": "Image Format"
+          },
+          "image_base64": {
+            "type": "string",
+            "title": "Image Base64"
+          },
+          "width_px": {
+            "type": "integer",
+            "title": "Width Px"
+          },
+          "height_px": {
+            "type": "integer",
+            "title": "Height Px"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "page_width",
+          "page_height",
+          "dpi",
+          "image_format",
+          "image_base64",
+          "width_px",
+          "height_px"
+        ],
+        "title": "RenderResponse"
       },
       "RenderThumbnailRequest": {
         "properties": {
@@ -39166,6 +43762,47 @@
         ],
         "title": "ResolvedPath"
       },
+      "RestoreRequestBody": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "session_key_b64": {
+            "type": "string",
+            "title": "Session Key B64"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "session_key_b64",
+          "text"
+        ],
+        "title": "RestoreRequestBody"
+      },
+      "RestoreResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "text"
+        ],
+        "title": "RestoreResponse"
+      },
       "ResumeRequest": {
         "properties": {
           "user_request_id": {
@@ -39524,6 +44161,23 @@
           "members"
         ],
         "title": "RichMembersResponse"
+      },
+      "RotatePageBody": {
+        "properties": {
+          "rotation": {
+            "type": "integer",
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "title": "Rotation",
+            "default": 90
+          }
+        },
+        "type": "object",
+        "title": "RotatePageBody"
       },
       "RotatePagesRequest": {
         "properties": {
@@ -40272,6 +44926,34 @@
         ],
         "title": "SearchAndScrapeRequest"
       },
+      "SearchBboxOut": {
+        "properties": {
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "SearchBboxOut"
+      },
       "SearchFilesResponse": {
         "properties": {
           "results": {
@@ -40297,110 +44979,6 @@
           "total_returned"
         ],
         "title": "SearchFilesResponse"
-      },
-      "SearchHitOut": {
-        "properties": {
-          "chunk_id": {
-            "type": "string",
-            "title": "Chunk Id"
-          },
-          "source_kind": {
-            "type": "string",
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "field_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Id"
-          },
-          "parent_chunk_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent Chunk Id"
-          },
-          "chunk_kind": {
-            "type": "string",
-            "title": "Chunk Kind"
-          },
-          "snippet": {
-            "type": "string",
-            "title": "Snippet"
-          },
-          "score": {
-            "type": "number",
-            "title": "Score"
-          },
-          "vector_rank": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vector Rank"
-          },
-          "lexical_rank": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Lexical Rank"
-          },
-          "rerank_score": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rerank Score"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metadata"
-          }
-        },
-        "type": "object",
-        "required": [
-          "chunk_id",
-          "source_kind",
-          "source_id",
-          "field_id",
-          "parent_chunk_id",
-          "chunk_kind",
-          "snippet",
-          "score",
-          "vector_rank",
-          "lexical_rank",
-          "rerank_score",
-          "metadata"
-        ],
-        "title": "SearchHitOut"
       },
       "SearchKeywordsRequest": {
         "properties": {
@@ -40435,109 +45013,6 @@
         ],
         "title": "SearchKeywordsRequest"
       },
-      "SearchRequest": {
-        "properties": {
-          "query": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Query"
-          },
-          "filters": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SearchRequestFilters"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "limit": {
-            "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
-            "title": "Limit",
-            "default": 20
-          },
-          "rerank": {
-            "type": "boolean",
-            "title": "Rerank",
-            "default": true
-          },
-          "only_children": {
-            "type": "boolean",
-            "title": "Only Children",
-            "default": true
-          },
-          "data_store_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Data Store Id",
-            "description": "Scope the search to one curated bucket (rag.data_stores.id). When set, only chunks from that store's members are returned. Combines with include_sources / source_kinds via AND."
-          },
-          "include_sources": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/SearchSourceRef"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Include Sources",
-            "description": "Hard-pin the search to a list of (source_kind, source_id) pairs."
-          },
-          "embedding_models": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding Models",
-            "description": "Optional override — pass multiple to fan out across embedding tables (e.g. ['openai:text-embedding-3-small', 'voyage:voyage-code-3']) and let RRF unify the rankings."
-          },
-          "multi_query": {
-            "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
-            "title": "Multi Query",
-            "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
-            "default": 1
-          },
-          "use_hyde": {
-            "type": "boolean",
-            "title": "Use Hyde",
-            "description": "Generate a hypothetical-answer passage and embed THAT alongside the query (HyDE). Helps when the natural query phrasing differs from the documents' phrasing.",
-            "default": false
-          },
-          "use_mmr": {
-            "type": "boolean",
-            "title": "Use Mmr",
-            "description": "Drop near-duplicate hits from the result set.",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "query"
-        ],
-        "title": "SearchRequest"
-      },
       "SearchRequestFilters": {
         "properties": {
           "source_kinds": {
@@ -40570,6 +45045,47 @@
         "type": "object",
         "title": "SearchRequestFilters"
       },
+      "SearchResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "regex": {
+            "type": "boolean",
+            "title": "Regex"
+          },
+          "case_sensitive": {
+            "type": "boolean",
+            "title": "Case Sensitive"
+          },
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/aidream__api__routers__file_search__SearchHitOut"
+            },
+            "type": "array",
+            "title": "Hits"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "query",
+          "regex",
+          "case_sensitive",
+          "hits",
+          "truncated"
+        ],
+        "title": "SearchResponse"
+      },
       "SearchResponseOut": {
         "properties": {
           "query": {
@@ -40578,7 +45094,7 @@
           },
           "hits": {
             "items": {
-              "$ref": "#/components/schemas/SearchHitOut"
+              "$ref": "#/components/schemas/aidream__api__routers__rag__SearchHitOut"
             },
             "type": "array",
             "title": "Hits"
@@ -40883,6 +45399,52 @@
           "cron_expr"
         ],
         "title": "SiteScheduleCreateRequest"
+      },
+      "SnapBboxBody": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/BboxInput"
+          },
+          "expand_pad_pt": {
+            "type": "number",
+            "maximum": 20,
+            "minimum": 0,
+            "title": "Expand Pad Pt",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "bbox"
+        ],
+        "title": "SnapBboxBody"
+      },
+      "SnapBboxResponse": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "original_bbox": {
+            "$ref": "#/components/schemas/BboxInput"
+          },
+          "snapped_bbox": {
+            "$ref": "#/components/schemas/BboxInput"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "original_bbox",
+          "snapped_bbox"
+        ],
+        "title": "SnapBboxResponse"
       },
       "SourceBulkAction": {
         "properties": {
@@ -43042,6 +47604,95 @@
         ],
         "title": "UpdateTriggerActiveRequest"
       },
+      "UserAnalysisPreferences": {
+        "properties": {
+          "per_detector_enabled": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Detector Enabled"
+          },
+          "default_tier_per_detector": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Tier Per Detector"
+          },
+          "custom_patterns": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Patterns"
+          },
+          "default_redaction_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Redaction Mode"
+          },
+          "per_file_type_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per File Type Overrides"
+          },
+          "substitute_formats": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substitute Formats"
+          }
+        },
+        "type": "object",
+        "title": "UserAnalysisPreferences"
+      },
       "UserDataStoreCreate": {
         "properties": {
           "name": {
@@ -44986,6 +49637,309 @@
         },
         "type": "object",
         "title": "WarmRequest"
+      },
+      "aidream__api__routers__file_search__SearchHitOut": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/SearchBboxOut"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "matched_text": {
+            "type": "string",
+            "title": "Matched Text"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Char Start"
+          },
+          "char_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Char End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "bbox",
+          "snippet",
+          "matched_text"
+        ],
+        "title": "SearchHitOut"
+      },
+      "aidream__api__routers__file_search__SearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "regex": {
+            "type": "boolean",
+            "title": "Regex",
+            "default": false
+          },
+          "case_sensitive": {
+            "type": "boolean",
+            "title": "Case Sensitive",
+            "default": false
+          },
+          "max_hits": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 1,
+            "title": "Max Hits",
+            "default": 200
+          },
+          "include_excluded_pages": {
+            "type": "boolean",
+            "title": "Include Excluded Pages",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest"
+      },
+      "aidream__api__routers__rag__SearchHitOut": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Id"
+          },
+          "parent_chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Chunk Id"
+          },
+          "chunk_kind": {
+            "type": "string",
+            "title": "Chunk Kind"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank"
+          },
+          "lexical_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lexical Rank"
+          },
+          "rerank_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank Score"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "source_kind",
+          "source_id",
+          "field_id",
+          "parent_chunk_id",
+          "chunk_kind",
+          "snippet",
+          "score",
+          "vector_rank",
+          "lexical_rank",
+          "rerank_score",
+          "metadata"
+        ],
+        "title": "SearchHitOut"
+      },
+      "aidream__api__routers__rag__SearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchRequestFilters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 20
+          },
+          "rerank": {
+            "type": "boolean",
+            "title": "Rerank",
+            "default": true
+          },
+          "only_children": {
+            "type": "boolean",
+            "title": "Only Children",
+            "default": true
+          },
+          "data_store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Store Id",
+            "description": "Scope the search to one curated bucket (rag.data_stores.id). When set, only chunks from that store's members are returned. Combines with include_sources / source_kinds via AND."
+          },
+          "include_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SearchSourceRef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Sources",
+            "description": "Hard-pin the search to a list of (source_kind, source_id) pairs."
+          },
+          "embedding_models": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Models",
+            "description": "Optional override — pass multiple to fan out across embedding tables (e.g. ['openai:text-embedding-3-small', 'voyage:voyage-code-3']) and let RRF unify the rankings."
+          },
+          "multi_query": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Multi Query",
+            "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
+            "default": 1
+          },
+          "use_hyde": {
+            "type": "boolean",
+            "title": "Use Hyde",
+            "description": "Generate a hypothetical-answer passage and embed THAT alongside the query (HyDE). Helps when the natural query phrasing differs from the documents' phrasing.",
+            "default": false
+          },
+          "use_mmr": {
+            "type": "boolean",
+            "title": "Use Mmr",
+            "description": "Drop near-duplicate hits from the result set.",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest"
       }
     }
   }

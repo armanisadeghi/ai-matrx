@@ -26,7 +26,13 @@
  * collapse a pane via keyboard.
  */
 
-import React, { useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import {
   FileText,
@@ -36,10 +42,24 @@ import {
   EyeOff,
   AlertTriangle,
   Wand2,
-  ExternalLink,
   Upload,
+  Crop,
+  Download,
+  GripVertical,
+  Save,
+  Pencil,
+  X,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
+import { uploadFile } from "@/features/files/api/files";
+import { supabase } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 // react-pdf + pdfjs-dist is ~400KB; defer both viewers until they mount.
 const PdfStudioUrlViewer = dynamic(() => import("./PdfStudioUrlViewer"), {
@@ -50,9 +70,7 @@ const PdfStudioUrlViewer = dynamic(() => import("./PdfStudioUrlViewer"), {
 // Shared renderer used by PdfCldFileViewer below.
 const PdfDocumentRenderer = dynamic(
   () =>
-    import(
-      "@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"
-    ),
+    import("@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"),
   { ssr: false, loading: () => <PdfPaneLoading /> },
 );
 
@@ -105,6 +123,7 @@ import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 
 export type PaneKey = "pdf" | "raw" | "clean";
+export type PdfPaneEditMode = "crop" | "reorder" | null;
 
 export interface PdfStudioReaderProps {
   doc: PdfDocument;
@@ -124,6 +143,14 @@ export interface PdfStudioReaderProps {
   pipelineRunning: boolean;
   /** Called when the user wants to open the upload drawer (e.g. to refresh a missing source). */
   onOpenUpload: () => void;
+  /** Visual edit mode — 'crop' overlays a selection rect, 'reorder' shows a page-tile grid. */
+  editMode: PdfPaneEditMode;
+  /** Pages string passed from ManipulationPanel when starting a crop (e.g. "1,3-5"). */
+  cropPagesInput: string;
+  /** Called when the user cancels the visual edit tool. */
+  onEditModeCancel: () => void;
+  /** Refresh the per-page rows from the DB (e.g. after re-cleaning). */
+  onRefreshPages: () => void;
 }
 
 export function PdfStudioReader({
@@ -141,6 +168,10 @@ export function PdfStudioReader({
   onRunPipeline,
   pipelineRunning,
   onOpenUpload,
+  editMode,
+  cropPagesInput,
+  onEditModeCancel,
+  onRefreshPages,
 }: PdfStudioReaderProps) {
   const hasPages = pages.length > 0;
   // True when per-page rows exist but every row's text is empty — typically
@@ -188,6 +219,9 @@ export function PdfStudioReader({
           onActivePage={onActivePage}
           onTogglePane={() => onTogglePane("pdf")}
           onOpenUpload={onOpenUpload}
+          editMode={editMode}
+          cropPagesInput={cropPagesInput}
+          onEditModeCancel={onEditModeCancel}
         />
       )}
       {visiblePanes.has("raw") && (
@@ -209,6 +243,7 @@ export function PdfStudioReader({
           allPagesEmpty={allPagesEmpty}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
+          onRefreshPages={onRefreshPages}
         />
       )}
       {visiblePanes.has("clean") && (
@@ -231,6 +266,7 @@ export function PdfStudioReader({
           allPagesEmpty={allPagesEmpty}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
+          onRefreshPages={onRefreshPages}
         />
       )}
     </div>
@@ -245,53 +281,697 @@ function PdfPane({
   onActivePage,
   onTogglePane,
   onOpenUpload,
+  editMode,
+  cropPagesInput,
+  onEditModeCancel,
 }: {
   doc: PdfDocument;
   activePage: number | null;
   onActivePage: (page: number | null) => void;
   onTogglePane: () => void;
   onOpenUpload: () => void;
+  editMode: PdfPaneEditMode;
+  cropPagesInput: string;
+  onEditModeCancel: () => void;
 }) {
-  // Drive the viewer's controlled page from the studio. The viewer also
-  // emits onPageChange when the user uses its own toolbar prev/next.
   const onViewerPageChange = useCallback(
     (page: number) => onActivePage(page),
     [onActivePage],
   );
 
+  const pdfViewer =
+    doc.sourceKind === "cld_file" && doc.sourceId ? (
+      <PdfCldFileViewer
+        fileId={doc.sourceId}
+        fileName={doc.name}
+        pageNumber={activePage ?? 1}
+        onPageChange={onViewerPageChange}
+      />
+    ) : doc.source && !doc.source.startsWith("s3://") ? (
+      <PdfStudioUrlViewer
+        url={doc.source}
+        fileName={doc.name}
+        pageNumber={activePage ?? 1}
+        onPageChange={onViewerPageChange}
+        className="border-0"
+      />
+    ) : (
+      <PdfPaneEmptyState doc={doc} onOpenUpload={onOpenUpload} />
+    );
+
   return (
     <section className="flex-1 min-w-0 flex flex-col border-r border-border bg-muted/10">
       <PaneHeader
-        title="Source PDF"
-        subtitle={activePage != null ? `page ${activePage}` : ""}
-        icon={<FileText className="w-3 h-3 text-muted-foreground" />}
-        onTogglePane={onTogglePane}
+        title={
+          editMode === "crop"
+            ? "Crop — draw selection"
+            : editMode === "reorder"
+              ? "Reorder pages"
+              : "Source PDF"
+        }
+        subtitle={
+          editMode
+            ? "visual edit mode"
+            : activePage != null
+              ? `page ${activePage}`
+              : ""
+        }
+        icon={
+          editMode === "crop" ? (
+            <Crop className="w-3 h-3 text-primary" />
+          ) : editMode === "reorder" ? (
+            <GripVertical className="w-3 h-3 text-primary" />
+          ) : (
+            <FileText className="w-3 h-3 text-muted-foreground" />
+          )
+        }
+        onTogglePane={editMode ? undefined : onTogglePane}
       />
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {doc.sourceKind === "cld_file" && doc.sourceId ? (
-          // The `storage_uri` is an `s3://` URI — not a browser-fetchable
-          // URL. Route through the Python download proxy instead.
-          <PdfCldFileViewer
-            fileId={doc.sourceId}
-            fileName={doc.name}
-            pageNumber={activePage ?? 1}
-            onPageChange={onViewerPageChange}
-          />
-        ) : doc.source && !doc.source.startsWith("s3://") ? (
-          <PdfStudioUrlViewer
-            url={doc.source}
-            fileName={doc.name}
-            pageNumber={activePage ?? 1}
-            onPageChange={onViewerPageChange}
-            className="border-0"
-          />
-        ) : (
-          <PdfPaneEmptyState doc={doc} onOpenUpload={onOpenUpload} />
-        )}
-      </div>
+
+      {editMode === "reorder" ? (
+        <PageReorderView doc={doc} onCancel={onEditModeCancel} />
+      ) : (
+        <div className="flex-1 min-h-0 overflow-hidden relative">
+          {pdfViewer}
+          {editMode === "crop" && (
+            <CropOverlay
+              doc={doc}
+              pagesInput={cropPagesInput}
+              onCancel={onEditModeCancel}
+            />
+          )}
+        </div>
+      )}
     </section>
   );
 }
+
+// ── Shared save helper (mirrors ManipulationPanel's saveDerivative) ───────────
+
+async function saveAsCropDerivative(params: {
+  doc: PdfDocument;
+  userId: string;
+  result: BinaryResult;
+  cropBox: { x0: number; y0: number; x1: number; y1: number };
+  pages?: number[];
+}): Promise<{ docId: string | null; error: string | null }> {
+  const { doc, userId, result, cropBox, pages } = params;
+  const file = new File([result.blob], result.filename, {
+    type: "application/pdf",
+  });
+  let fileId: string, storageUri: string;
+  try {
+    const { data } = await uploadFile({
+      file,
+      filePath: `derivatives/${doc.id}/${result.filename}`,
+    });
+    fileId = data.file_id;
+    storageUri = data.storage_uri;
+  } catch (err) {
+    return {
+      docId: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+  const { data: newDoc, error: insertError } = await supabase
+    .from("processed_documents")
+    .insert({
+      name: result.filename.replace(/\.pdf$/i, ""),
+      storage_uri: storageUri,
+      source_kind: "cld_file",
+      source_id: fileId,
+      source_hash: "",
+      owner_id: userId,
+      parent_processed_id: doc.id,
+      derivation_kind: "crop_pages",
+      derivation_metadata: {
+        crop_box: cropBox,
+        pages_cropped: pages ?? "all",
+        original_name: doc.name,
+        original_total_pages: doc.totalPages,
+        content_note:
+          "Cropped region — re-extract content for updated text index",
+      },
+      mime_type: "application/pdf",
+    })
+    .select("id")
+    .single();
+  if (insertError) return { docId: null, error: insertError.message };
+  return { docId: (newDoc as { id: string }).id, error: null };
+}
+
+async function saveAsReorderDerivative(params: {
+  doc: PdfDocument;
+  userId: string;
+  result: BinaryResult;
+  newOrder: number[];
+}): Promise<{ docId: string | null; error: string | null }> {
+  const { doc, userId, result, newOrder } = params;
+  const file = new File([result.blob], result.filename, {
+    type: "application/pdf",
+  });
+  let fileId: string, storageUri: string;
+  try {
+    const { data } = await uploadFile({
+      file,
+      filePath: `derivatives/${doc.id}/${result.filename}`,
+    });
+    fileId = data.file_id;
+    storageUri = data.storage_uri;
+  } catch (err) {
+    return {
+      docId: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+  const { data: newDoc, error: insertError } = await supabase
+    .from("processed_documents")
+    .insert({
+      name: result.filename.replace(/\.pdf$/i, ""),
+      storage_uri: storageUri,
+      source_kind: "cld_file",
+      source_id: fileId,
+      source_hash: "",
+      owner_id: userId,
+      parent_processed_id: doc.id,
+      derivation_kind: "reorder_pages",
+      derivation_metadata: { new_order: newOrder, original_name: doc.name },
+      mime_type: "application/pdf",
+    })
+    .select("id")
+    .single();
+  if (insertError) return { docId: null, error: insertError.message };
+  return { docId: (newDoc as { id: string }).id, error: null };
+}
+
+// ── Crop overlay ──────────────────────────────────────────────────────────────
+//
+// Renders as an absolute overlay over the PDF viewer. The user drags to draw a
+// selection rectangle; clicking "Apply Crop" converts the pixel selection to PDF
+// points and runs the API. The result appears inline with Download / Save buttons.
+// NOTE: coordinate conversion assumes a standard US Letter page (612 × 792 pt).
+// Non-standard page sizes will have slightly off coordinates — acceptable for V1.
+
+function CropOverlay({
+  doc,
+  pagesInput,
+  onCancel,
+}: {
+  doc: PdfDocument;
+  pagesInput: string;
+  onCancel: () => void;
+}) {
+  const api = usePdfDemoApi();
+  const userId = useAppSelector(selectUserId) ?? "";
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [dragging, setDragging] = useState(false);
+  const [start, setStart] = useState<{ x: number; y: number } | null>(null);
+  const [end, setEnd] = useState<{ x: number; y: number } | null>(null);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<BinaryResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Last confirmed crop box (for save-as-derivative metadata)
+  const cropBoxRef = useRef<{
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  } | null>(null);
+  const pagesRef = useRef<number[] | undefined>(undefined);
+
+  function clamp(val: number, min: number, max: number) {
+    return Math.max(min, Math.min(val, max));
+  }
+
+  function getRelative(e: React.MouseEvent) {
+    const rect = containerRef.current!.getBoundingClientRect();
+    return {
+      x: clamp(e.clientX - rect.left, 0, rect.width),
+      y: clamp(e.clientY - rect.top, 0, rect.height),
+    };
+  }
+
+  function onMouseDown(e: React.MouseEvent) {
+    if (result) return;
+    e.preventDefault();
+    const pos = getRelative(e);
+    setDragging(true);
+    setStart(pos);
+    setEnd(pos);
+    setError(null);
+  }
+  function onMouseMove(e: React.MouseEvent) {
+    if (!dragging) return;
+    setEnd(getRelative(e));
+  }
+  function onMouseUp() {
+    setDragging(false);
+  }
+
+  const selRect =
+    start && end
+      ? {
+          left: Math.min(start.x, end.x),
+          top: Math.min(start.y, end.y),
+          width: Math.abs(end.x - start.x),
+          height: Math.abs(end.y - start.y),
+        }
+      : null;
+
+  const hasSelection = !!(selRect && selRect.width > 8 && selRect.height > 8);
+
+  async function applyCrop() {
+    if (!hasSelection || !selRect || !containerRef.current) return;
+    const { width: W, height: H } =
+      containerRef.current.getBoundingClientRect();
+    // US Letter PDF coordinates: origin bottom-left, 612 × 792 pts
+    const PDF_W = 612,
+      PDF_H = 792;
+    const cropBox = {
+      x0: Math.round((selRect.left / W) * PDF_W),
+      y0: Math.round((1 - (selRect.top + selRect.height) / H) * PDF_H),
+      x1: Math.round(((selRect.left + selRect.width) / W) * PDF_W),
+      y1: Math.round((1 - selRect.top / H) * PDF_H),
+    };
+    let pages: number[] | undefined;
+    if (pagesInput.trim()) {
+      try {
+        pages = parsePagesInput(pagesInput);
+      } catch {
+        /* use all */
+      }
+    }
+    cropBoxRef.current = cropBox;
+    pagesRef.current = pages;
+
+    const src: Record<string, unknown> | null =
+      doc.sourceKind === "cld_file" && doc.sourceId
+        ? { cld_id: doc.sourceId }
+        : doc.source && !doc.source.startsWith("s3://")
+          ? { url: doc.source }
+          : null;
+    if (!src) {
+      setError("No source file linked.");
+      return;
+    }
+
+    setRunning(true);
+    setError(null);
+    try {
+      const blob = await api.postPdfBlob("cropPages", {
+        ...src,
+        ...(pages ? { pages } : {}),
+        crop_box: cropBox,
+      });
+      setResult(blob);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!result || !cropBoxRef.current) return;
+    setSaving(true);
+    setSaveError(null);
+    const { docId, error } = await saveAsCropDerivative({
+      doc,
+      userId,
+      result,
+      cropBox: cropBoxRef.current,
+      pages: pagesRef.current,
+    });
+    setSaving(false);
+    if (error) {
+      setSaveError(error);
+      return;
+    }
+    setSavedId(docId);
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="absolute inset-0 z-10 select-none"
+      style={{ cursor: result ? "default" : "crosshair" }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+    >
+      {/* Dim overlay while drawing */}
+      {!result && (
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+      )}
+
+      {/* Selection rectangle */}
+      {selRect && !result && (
+        <div
+          className="absolute border-2 border-white pointer-events-none"
+          style={{
+            left: selRect.left,
+            top: selRect.top,
+            width: selRect.width,
+            height: selRect.height,
+            background: "rgba(255,255,255,0.08)",
+            boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)",
+          }}
+        />
+      )}
+
+      {/* Top instruction / action bar */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-auto bg-background/95 backdrop-blur-sm border-b border-border px-3 py-2 flex items-center gap-2">
+        <Crop className="w-3.5 h-3.5 text-primary shrink-0" />
+        <span className="text-[11px] text-muted-foreground flex-1">
+          {result
+            ? `Crop complete — ${result.filename}`
+            : hasSelection
+              ? "Drag to adjust · click Apply Crop to process"
+              : "Drag to draw the area to keep"}
+          {pagesInput && !result && (
+            <span className="ml-1 text-primary/80">· pages: {pagesInput}</span>
+          )}
+        </span>
+
+        {!result && hasSelection && (
+          <Button
+            size="sm"
+            className="h-7 text-[11px] px-2.5"
+            disabled={running}
+            onClick={() => void applyCrop()}
+          >
+            {running ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                Cropping…
+              </>
+            ) : (
+              "Apply Crop"
+            )}
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-[11px]"
+          onClick={onCancel}
+        >
+          {result ? "Done" : "Cancel"}
+        </Button>
+      </div>
+
+      {/* Bottom result bar */}
+      {result && (
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-auto bg-background/95 backdrop-blur-sm border-t border-border px-3 py-2 flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-[11px] px-2"
+            onClick={() => {
+              const url = URL.createObjectURL(result.blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = result.filename;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <Download className="w-3 h-3 mr-1" />
+            Download
+          </Button>
+          {savedId ? (
+            <span className="text-[11px] text-green-600 dark:text-green-400">
+              Saved as document ✓
+            </span>
+          ) : (
+            <Button
+              size="sm"
+              className="h-7 text-[11px] px-2"
+              disabled={saving}
+              onClick={() => void handleSave()}
+            >
+              {saving ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <Save className="w-3 h-3 mr-1" />
+              )}
+              Save as document
+            </Button>
+          )}
+          {saveError && (
+            <p className="text-[11px] text-destructive w-full">{saveError}</p>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute bottom-2 left-2 right-2 pointer-events-auto bg-destructive/10 border border-destructive/30 rounded px-2 py-1.5">
+          <p className="text-[11px] text-destructive">{error}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page reorder view ─────────────────────────────────────────────────────────
+//
+// Replaces the PDF viewer with a draggable tile grid (one numbered tile per page).
+// V1 shows page numbers only — no thumbnail rendering. This keeps the component
+// light while giving users the core drag-to-reorder affordance. Actual thumbnails
+// can be added in V2 by rendering each page via PdfDocumentRenderer at small size.
+
+function PageReorderView({
+  doc,
+  onCancel,
+}: {
+  doc: PdfDocument;
+  onCancel: () => void;
+}) {
+  const api = usePdfDemoApi();
+  const userId = useAppSelector(selectUserId) ?? "";
+  const totalPages = doc.totalPages ?? 1;
+
+  const [order, setOrder] = useState<number[]>(() =>
+    Array.from({ length: totalPages }, (_, i) => i + 1),
+  );
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<BinaryResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const src: Record<string, unknown> | null =
+    doc.sourceKind === "cld_file" && doc.sourceId
+      ? { cld_id: doc.sourceId }
+      : doc.source && !doc.source.startsWith("s3://")
+        ? { url: doc.source }
+        : null;
+
+  function onDragStart(idx: number) {
+    setDragIdx(idx);
+  }
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+  function onDrop(idx: number) {
+    if (dragIdx === null || dragIdx === idx) {
+      setDragIdx(null);
+      return;
+    }
+    const next = [...order];
+    const [moved] = next.splice(dragIdx, 1);
+    next.splice(idx, 0, moved);
+    setOrder(next);
+    setDragIdx(null);
+  }
+
+  async function applyOrder() {
+    if (!src) {
+      setError("No source file linked.");
+      return;
+    }
+    setRunning(true);
+    setError(null);
+    try {
+      const blob = await api.postPdfBlob("reorderPages", {
+        ...src,
+        new_order: order,
+      });
+      setResult(blob);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!result) return;
+    setSaving(true);
+    setSaveError(null);
+    const { docId, error } = await saveAsReorderDerivative({
+      doc,
+      userId,
+      result,
+      newOrder: order,
+    });
+    setSaving(false);
+    if (error) {
+      setSaveError(error);
+      return;
+    }
+    setSavedId(docId);
+  }
+
+  const isDefaultOrder = order.every((n, i) => n === i + 1);
+
+  return (
+    <div className="flex flex-col h-full bg-muted/10">
+      {/* Header bar */}
+      <div className="shrink-0 px-3 py-2 border-b border-border bg-card/60 flex items-center gap-2">
+        <GripVertical className="w-3.5 h-3.5 text-primary shrink-0" />
+        <span className="text-[11px] text-muted-foreground flex-1">
+          {result
+            ? `Reorder complete — ${result.filename}`
+            : isDefaultOrder
+              ? "Drag tiles to change page order"
+              : `New order: ${order.join(", ")}`}
+        </span>
+
+        {!result && (
+          <Button
+            size="sm"
+            className="h-7 text-[11px] px-2.5"
+            disabled={running || isDefaultOrder}
+            onClick={() => void applyOrder()}
+            title={isDefaultOrder ? "Rearrange pages first" : undefined}
+          >
+            {running ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                Applying…
+              </>
+            ) : (
+              "Apply Order"
+            )}
+          </Button>
+        )}
+
+        {result && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] px-2"
+              onClick={() => {
+                const url = URL.createObjectURL(result.blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = result.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Download
+            </Button>
+            {savedId ? (
+              <span className="text-[11px] text-green-600 dark:text-green-400">
+                Saved ✓
+              </span>
+            ) : (
+              <Button
+                size="sm"
+                className="h-7 text-[11px] px-2"
+                disabled={saving}
+                onClick={() => void handleSave()}
+              >
+                {saving ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : (
+                  <Save className="w-3 h-3 mr-1" />
+                )}
+                Save
+              </Button>
+            )}
+          </>
+        )}
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-[11px]"
+          onClick={onCancel}
+        >
+          {result ? "Done" : "Cancel"}
+        </Button>
+      </div>
+
+      {saveError && (
+        <p className="shrink-0 px-3 py-1 text-[11px] text-destructive bg-destructive/5 border-b border-destructive/20">
+          {saveError}
+        </p>
+      )}
+
+      {/* Tile grid */}
+      <div className="flex-1 overflow-y-auto p-3">
+        <div className="grid grid-cols-3 gap-2">
+          {order.map((pageNum, idx) => (
+            <div
+              key={pageNum}
+              draggable={!result}
+              onDragStart={() => onDragStart(idx)}
+              onDragOver={onDragOver}
+              onDrop={() => onDrop(idx)}
+              className={cn(
+                "aspect-[3/4] flex flex-col items-center justify-center gap-0.5 rounded-md border transition-all select-none",
+                result
+                  ? "border-border bg-card/60 cursor-default"
+                  : dragIdx === idx
+                    ? "opacity-40 scale-95 border-primary bg-primary/5 cursor-grabbing"
+                    : "border-border bg-card hover:border-primary/50 hover:bg-accent/30 cursor-grab",
+              )}
+            >
+              <span className="text-2xl font-mono font-bold text-muted-foreground/40 leading-none">
+                {pageNum}
+              </span>
+              <span className="text-[9px] text-muted-foreground/70 uppercase tracking-wide">
+                page
+              </span>
+              {idx !== pageNum - 1 && !result && (
+                <span className="text-[9px] text-primary/70 font-mono">
+                  pos {idx + 1}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {error && <p className="mt-2 text-[11px] text-destructive">{error}</p>}
+
+        {totalPages > 20 && !result && (
+          <p className="mt-2 text-[10px] text-muted-foreground/60 text-center">
+            {totalPages} pages — drag to rearrange
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function PdfPaneEmptyState({
   doc,
@@ -359,6 +1039,7 @@ function TextPane({
   allPagesEmpty,
   onRunPipeline,
   pipelineRunning,
+  onRefreshPages,
 }: {
   paneKey: PaneKey;
   title: string;
@@ -378,49 +1059,104 @@ function TextPane({
   allPagesEmpty: boolean;
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
+  onRefreshPages: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const anchorMap = useRef<Map<number, HTMLElement>>(new Map());
+  // True while a code-driven scroll is in flight — blocks the IntersectionObserver
+  // from feeding stale page numbers back into activePage mid-animation.
+  const isProgrammaticRef = useRef(false);
+  // The last page number emitted by THIS pane's own IntersectionObserver.
+  // Used to avoid reacting to activePage changes that we ourselves caused.
+  const selfEmittedPageRef = useRef<number | null>(null);
+
+  // Local overrides applied after the user saves an inline edit.
+  // Map<pageId, editedText> — cleared only on full page refresh or doc change.
+  const [overrides, setOverrides] = useState<Map<string, string>>(new Map());
+
+  // Clear overrides when the doc changes.
+  useEffect(() => {
+    setOverrides(new Map());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.id]);
 
   // Track when this pane is the active scroller — so the IntersectionObserver
   // only emits while the user is actually interacting with it.
   const onScrollStart = useCallback(() => {
+    if (isProgrammaticRef.current) return; // programmatic scroll — don't steal the wheel
     lastScrolledPaneRef.current = paneKey;
   }, [paneKey, lastScrolledPaneRef]);
 
-  // IntersectionObserver — emit the most-visible page only when this pane
-  // is the active scroller. The PDF + the sibling text pane will follow.
+  // IntersectionObserver — emit the most-visible page only when the user is
+  // actively scrolling this pane (not during a code-driven animation).
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
     const observer = new IntersectionObserver(
       (entries) => {
+        // Only fire when the user is scrolling THIS pane.
         if (lastScrolledPaneRef.current !== paneKey) return;
+        // Suppress during programmatic scrolls — otherwise smooth-scroll
+        // animations emit stale page numbers that cause the "off by one" drift.
+        if (isProgrammaticRef.current) return;
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (!visible) return;
         const page = Number(visible.target.getAttribute("data-page") ?? 0);
-        if (page) onActivePage(page);
+        if (page) {
+          selfEmittedPageRef.current = page;
+          onActivePage(page);
+        }
       },
-      { root, threshold: [0.25, 0.5, 0.75] },
+      { root, threshold: [0.1, 0.25, 0.5] },
     );
     anchorMap.current.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [pages.length, paneKey, lastScrolledPaneRef, onActivePage]);
 
+  // Pin the top of `pageNumber` to the top of this pane's scroll container.
+  function pinPageToTop(pageNumber: number) {
+    const container = containerRef.current;
+    const el = anchorMap.current.get(pageNumber);
+    if (!container || !el) return;
+    const target =
+      container.scrollTop +
+      (el.getBoundingClientRect().top - container.getBoundingClientRect().top);
+    container.scrollTo({ top: target, behavior: "smooth" });
+  }
+
+  // Follow an activePage change from any external source (PDF, sibling pane,
+  // sidebar nav). Only skip when WE emitted this exact page number ourselves —
+  // not whenever we were the last scrolled pane (old logic was too broad and
+  // caused this pane to stop syncing with the PDF after the user touched it).
+  useEffect(() => {
+    if (activePage == null) return;
+    if (selfEmittedPageRef.current === activePage) {
+      // We caused this — clear the flag and do nothing to avoid a loop.
+      selfEmittedPageRef.current = null;
+      return;
+    }
+    isProgrammaticRef.current = true;
+    pinPageToTop(activePage);
+    const t = setTimeout(() => {
+      isProgrammaticRef.current = false;
+    }, 700);
+    return () => clearTimeout(t);
+    // Only activePage matters — refs are stable and don't need to be deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePage]);
+
   // Programmatic scroll when an external action sets `pendingScrollPage`
   // (toolbar PageJumper, sibling pane click, sidebar nav).
   useEffect(() => {
     if (pendingScrollPage == null) return;
-    const el = anchorMap.current.get(pendingScrollPage);
-    if (el) {
-      // Don't let the resulting scroll reclassify this as the active pane.
-      const wasLast = lastScrolledPaneRef.current;
-      el.scrollIntoView({ block: "start", behavior: "smooth" });
-      lastScrolledPaneRef.current = wasLast;
-    }
-    // Clear the pending state — we let the toolbar know it can re-issue.
+    isProgrammaticRef.current = true;
+    pinPageToTop(pendingScrollPage);
+    setTimeout(() => {
+      isProgrammaticRef.current = false;
+    }, 700);
+    // Clear the pending state — toolbar can re-issue immediately.
     onScrollHandled();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingScrollPage]);
@@ -480,7 +1216,8 @@ function TextPane({
           // Skip per-page rows when the whole set is empty — they'd just
           // print "no text on this page" N times.
           if (allPagesEmpty) return null;
-          const text = field === "cleaned" ? p.cleanedText : p.rawText;
+          const baseText = field === "cleaned" ? p.cleanedText : p.rawText;
+          const text = overrides.get(p.id) ?? baseText;
           const isActive = activePage === p.pageNumber;
           return (
             <PageBlock
@@ -495,6 +1232,17 @@ function TextPane({
               registerAnchor={(el) => {
                 if (el) anchorMap.current.set(p.pageNumber, el);
                 else anchorMap.current.delete(p.pageNumber);
+              }}
+              onSaved={(pageId, savedText) => {
+                setOverrides((prev) => {
+                  const next = new Map(prev);
+                  next.set(pageId, savedText);
+                  return next;
+                });
+              }}
+              onReClean={async () => {
+                await onRunPipeline();
+                onRefreshPages();
               }}
             />
           );
@@ -565,6 +1313,8 @@ function PageBlock({
   findQuery,
   onClick,
   registerAnchor,
+  onSaved,
+  onReClean,
 }: {
   page: PdfPageRow;
   text: string;
@@ -574,23 +1324,77 @@ function PageBlock({
   findQuery: string;
   onClick: () => void;
   registerAnchor: (el: HTMLDivElement | null) => void;
+  onSaved: (pageId: string, savedText: string) => void;
+  onReClean: () => Promise<void>;
 }) {
-  const charCount =
-    field === "cleaned" ? page.cleanedCharCount : page.rawCharCount;
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(text);
+  const [saving, setSaving] = useState(false);
+  const [reCleaning, setReCleaning] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Keep edit buffer in sync when text prop changes externally (e.g. after re-clean refresh).
+  useEffect(() => {
+    if (!editing) setEditText(text);
+  }, [text, editing]);
+
+  const isDirty = editing && editText !== text;
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    const col = field === "cleaned" ? "cleaned_text" : "raw_text";
+    const charCol =
+      field === "cleaned" ? "cleaned_char_count" : "raw_char_count";
+    const { error } = await supabase
+      .from("processed_document_pages")
+      .update({ [col]: editText, [charCol]: editText.length })
+      .eq("id", page.id);
+    setSaving(false);
+    if (error) {
+      setSaveError(error.message);
+    } else {
+      setEditing(false);
+      onSaved(page.id, editText);
+    }
+  }
+
+  function handleCancel() {
+    setEditing(false);
+    setEditText(text);
+    setSaveError(null);
+  }
+
+  async function handleReClean() {
+    setReCleaning(true);
+    try {
+      await onReClean();
+    } finally {
+      setReCleaning(false);
+    }
+  }
+
+  const charCount = editing
+    ? editText.length
+    : field === "cleaned"
+      ? page.cleanedCharCount
+      : page.rawCharCount;
 
   return (
     <div
       data-page={page.pageNumber}
       ref={registerAnchor}
-      onClick={onClick}
       className={cn(
-        "border rounded-md p-2 text-[11px] leading-relaxed transition-colors cursor-pointer",
+        "group border rounded-md text-[11px] leading-relaxed transition-colors",
         isActive
           ? "border-primary/50 bg-primary/5 shadow-sm"
-          : "border-border bg-card hover:bg-accent/30",
+          : "border-border bg-card",
+        !editing && "cursor-pointer hover:bg-accent/30",
       )}
+      onClick={editing ? undefined : onClick}
     >
-      <div className="flex items-center gap-1.5 mb-1 text-[10px] text-muted-foreground">
+      {/* Header */}
+      <div className="flex items-center gap-1.5 px-2 pt-1.5 pb-1 text-[10px] text-muted-foreground">
         <span className="font-mono font-semibold text-foreground/80">
           page {page.pageNumber}
         </span>
@@ -600,16 +1404,103 @@ function PageBlock({
           </span>
         )}
         {highlightSection && page.sectionKind && (
-          <span className="px-1 py-px rounded bg-primary/10 text-primary truncate max-w-[160px]">
+          <span className="px-1 py-px rounded bg-primary/10 text-primary truncate max-w-[120px]">
             {page.sectionKind}
             {page.sectionTitle && ` · ${page.sectionTitle}`}
           </span>
         )}
-        <span className="ml-auto font-mono">{charCount.toLocaleString()}</span>
+        <span className="font-mono">{charCount.toLocaleString()}</span>
+
+        {/* Action buttons — right side */}
+        <div className="ml-auto flex items-center gap-0.5">
+          {editing ? (
+            <>
+              {field === "raw" && (
+                <button
+                  type="button"
+                  title="Re-clean this page with AI (re-runs full doc clean)"
+                  disabled={reCleaning || saving}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleReClean();
+                  }}
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+                >
+                  {reCleaning ? (
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-2.5 h-2.5" />
+                  )}
+                  Re-clean
+                </button>
+              )}
+              {isDirty && (
+                <button
+                  type="button"
+                  title="Save changes"
+                  disabled={saving}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleSave();
+                  }}
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-success/10 text-success hover:bg-success/20 disabled:opacity-50 transition-colors"
+                >
+                  {saving ? (
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  ) : (
+                    <Check className="w-2.5 h-2.5" />
+                  )}
+                  Save
+                </button>
+              )}
+              <button
+                type="button"
+                title="Cancel edit"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancel();
+                }}
+                className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              title="Edit this page's text"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing(true);
+              }}
+              className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-all"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </div>
-      <pre className="whitespace-pre-wrap font-mono text-foreground/85 leading-relaxed">
-        <Highlighted text={text} query={findQuery} />
-      </pre>
+
+      {saveError && (
+        <p className="mx-2 mb-1 text-[10px] text-destructive">{saveError}</p>
+      )}
+
+      {/* Body */}
+      {editing ? (
+        <textarea
+          autoFocus
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          spellCheck={false}
+          className="w-full px-2 pb-2 font-mono text-[11px] leading-relaxed resize-y bg-transparent text-foreground/85 outline-none border-0 min-h-[6rem]"
+          style={{ fontSize: 11 }}
+        />
+      ) : (
+        <pre className="whitespace-pre-wrap font-mono text-foreground/85 leading-relaxed px-2 pb-2">
+          <Highlighted text={text} query={findQuery} />
+        </pre>
+      )}
     </div>
   );
 }

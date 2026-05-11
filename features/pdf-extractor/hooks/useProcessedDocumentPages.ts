@@ -16,7 +16,7 @@
  * the consuming UI surfaces a "re-extract to populate" CTA in that case.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 
 export interface PdfPageRow {
@@ -64,8 +64,7 @@ function rowFromApi(row: Record<string, unknown>): PdfPageRow {
     isContinuation: (row.is_continuation as boolean) ?? false,
     usedOcr: (row.used_ocr as boolean) ?? false,
     extractionMethod: (row.extraction_method as string | null) ?? null,
-    extractionConfidence:
-      (row.extraction_confidence as number | null) ?? null,
+    extractionConfidence: (row.extraction_confidence as number | null) ?? null,
     blocks: (row.blocks as unknown[] | null) ?? null,
     words: (row.words as unknown[] | null) ?? null,
     imageCldFileId: (row.image_cld_file_id as string | null) ?? null,
@@ -80,10 +79,13 @@ export function useProcessedDocumentPages({
   pages: PdfPageRow[];
   loading: boolean;
   error: string | null;
+  refresh: () => void;
 } {
   const [pages, setPages] = useState<PdfPageRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
     if (!enabled || !processedDocumentId) return;
@@ -102,9 +104,7 @@ export function useProcessedDocumentPages({
           .order("page_index", { ascending: true });
         if (err) throw err;
         if (cancelled) return;
-        setPages(
-          ((data ?? []) as Record<string, unknown>[]).map(rowFromApi),
-        );
+        setPages(((data ?? []) as Record<string, unknown>[]).map(rowFromApi));
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Could not load pages");
@@ -116,7 +116,7 @@ export function useProcessedDocumentPages({
     return () => {
       cancelled = true;
     };
-  }, [processedDocumentId, enabled]);
+  }, [processedDocumentId, enabled, refreshKey]);
 
-  return { pages, loading, error };
+  return { pages, loading, error, refresh };
 }

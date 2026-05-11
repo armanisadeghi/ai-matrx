@@ -34,7 +34,7 @@ http://localhost:3000/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/tasks
 - README.md (CONCISE post-completion documentation only, updated after every code modification)
 - types.ts, components/, hooks/, service.ts|service/, utils.ts|utils/, constants.ts|constants/, state/
 - Use single files; create directories only when multiple files needed
-- Route example: app/(authenticated)/notes/page.tsx → Feature: features/notes/
+- Route example: app/(a)/agents/page.tsx → Feature: features/agents/
 
 **Rules:** Never save to project root. Respect existing structures.
 

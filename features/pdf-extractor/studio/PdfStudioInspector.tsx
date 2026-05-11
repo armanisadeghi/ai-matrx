@@ -18,10 +18,16 @@ import {
   Database,
   Wrench,
   SquareStack,
-  Eye,
+  FileText,
+  BookOpen,
+  Layers,
+  MousePointerClick,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
+import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
+import type { PdfPaneEditMode } from "./PdfStudioReader";
+import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
@@ -41,16 +47,28 @@ const SECTIONS: {
 
 interface PdfStudioInspectorProps {
   doc: PdfDocument;
+  pages: PdfPageRow[];
+  activePage: number | null;
   onRunShortcut: (shortcutId: string) => void | Promise<void>;
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
+  pdfPaneEditMode: PdfPaneEditMode;
+  onStartCrop: (pagesInput: string) => void;
+  onStartReorder: () => void;
+  onEditModeCancel: () => void;
 }
 
 export function PdfStudioInspector({
   doc,
+  pages,
+  activePage,
   onRunShortcut,
   onRunPipeline,
   pipelineRunning,
+  pdfPaneEditMode,
+  onStartCrop,
+  onStartReorder,
+  onEditModeCancel,
 }: PdfStudioInspectorProps) {
   const [section, setSection] = useState<SectionKey>("ai");
 
@@ -86,7 +104,12 @@ export function PdfStudioInspector({
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {section === "ai" && (
-          <AiActionsPanel doc={doc} onRunShortcut={onRunShortcut} />
+          <AiActionsPanel
+            doc={doc}
+            pages={pages}
+            activePage={activePage}
+            onRunShortcut={onRunShortcut}
+          />
         )}
         {section === "stores" && (
           <DataStoreBindPanel
@@ -99,6 +122,10 @@ export function PdfStudioInspector({
             doc={doc}
             onRunPipeline={onRunPipeline}
             running={pipelineRunning}
+            pdfPaneEditMode={pdfPaneEditMode}
+            onStartCrop={onStartCrop}
+            onStartReorder={onStartReorder}
+            onEditModeCancel={onEditModeCancel}
           />
         )}
         {section === "lineage" && <LineageTreeView doc={doc} />}
@@ -112,6 +139,9 @@ export function PdfStudioInspector({
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+type AgentScope = "full" | "current" | "range" | "selection";
 
 interface PdfShortcutEntry {
   id: string;
@@ -124,31 +154,126 @@ const PDF_SHORTCUTS: PdfShortcutEntry[] = [
     id: "dba439a3-a495-4e57-893a-2176cf14ab8d",
     label: "Analyze Document",
     description:
-      "Floating-window agent — uses cleaned content when available, otherwise raw.",
+      "Floating-window agent — reads selected scope, full doc available as context.",
+  },
+];
+
+const SCOPE_OPTIONS: {
+  key: AgentScope;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  hint: string;
+}[] = [
+  {
+    key: "full",
+    label: "Full doc",
+    icon: BookOpen,
+    hint: "Send entire document text",
+  },
+  {
+    key: "current",
+    label: "Current page",
+    icon: FileText,
+    hint: "Active page only",
+  },
+  { key: "range", label: "Page range", icon: Layers, hint: "e.g. 1, 3-5" },
+  {
+    key: "selection",
+    label: "Selected text",
+    icon: MousePointerClick,
+    hint: "Browser text selection",
   },
 ];
 
 function AiActionsPanel({
   doc,
+  pages,
+  activePage,
   onRunShortcut,
 }: {
   doc: PdfDocument;
+  pages: PdfPageRow[];
+  activePage: number | null;
   onRunShortcut: (shortcutId: string) => void | Promise<void>;
 }) {
   const trigger = useShortcutTrigger();
   const toast = useToastManager("pdf-extractor");
-  const docText = doc.cleanContent ?? doc.content ?? "";
+  const [scope, setScope] = useState<AgentScope>("full");
+  const [rangeInput, setRangeInput] = useState("");
+
+  const fullText = doc.cleanContent ?? doc.content ?? "";
   const usingClean = !!doc.cleanContent;
-  const hasContent = !!docText;
+  const hasContent = !!fullText;
+
+  function getPageText(p: PdfPageRow): string {
+    return usingClean ? p.cleanedText || p.rawText : p.rawText;
+  }
+
+  function getScopedText(): string {
+    if (scope === "full" || !pages.length) return fullText;
+
+    if (scope === "current") {
+      if (activePage == null) {
+        toast.warning("No active page — sending full document");
+        return fullText;
+      }
+      const p = pages.find((r) => r.pageNumber === activePage);
+      return p ? getPageText(p) : fullText;
+    }
+
+    if (scope === "range") {
+      if (!rangeInput.trim()) {
+        toast.warning("Enter a page range first");
+        return fullText;
+      }
+      try {
+        const nums = new Set(parsePagesInput(rangeInput));
+        const joined = pages
+          .filter((p) => nums.has(p.pageNumber))
+          .map(getPageText)
+          .filter(Boolean)
+          .join("\n\n---\n\n");
+        return joined || fullText;
+      } catch {
+        toast.warning("Invalid page range — sending full document");
+        return fullText;
+      }
+    }
+
+    if (scope === "selection") {
+      const sel = window.getSelection()?.toString().trim();
+      if (!sel) {
+        toast.warning("No text selected — sending full document");
+        return fullText;
+      }
+      return sel;
+    }
+
+    return fullText;
+  }
+
+  const scopedPreviewLen = (() => {
+    if (scope === "full") return fullText.length;
+    if (scope === "current" && activePage != null) {
+      const p = pages.find((r) => r.pageNumber === activePage);
+      return p ? getPageText(p).length : fullText.length;
+    }
+    return null;
+  })();
 
   const handleRun = async (shortcutId: string) => {
     if (!hasContent) {
       toast.error("Nothing to send to the agent yet");
       return;
     }
+    const selection = getScopedText();
+    const content = scope !== "full" ? fullText : undefined;
     try {
       await trigger(shortcutId, {
-        scope: { selection: docText },
+        scope: {
+          selection,
+          ...(content ? { content } : {}),
+        },
         sourceFeature: "programmatic",
       });
     } catch (err) {
@@ -157,24 +282,90 @@ function AiActionsPanel({
   };
 
   return (
-    <div className="p-3 space-y-2">
-      <div className="flex items-center gap-1.5 mb-1">
+    <div className="p-3 space-y-3">
+      {/* Header */}
+      <div className="flex items-center gap-1.5">
         <Rocket className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
           Run an Agent
         </span>
         <span className="ml-auto text-[10px] text-muted-foreground">
           {usingClean ? "AI-cleaned" : "Raw"} ·{" "}
-          {docText.length.toLocaleString()} chars
+          {fullText.length.toLocaleString()} chars
         </span>
+      </div>
+
+      {/* Scope picker */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Scope
+        </p>
+        <div className="grid grid-cols-2 gap-1">
+          {SCOPE_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const active = scope === opt.key;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                title={opt.hint}
+                onClick={() => setScope(opt.key)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-[10px] transition-colors",
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                <Icon className="w-3 h-3 shrink-0" />
+                <span className="truncate">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {scope === "range" && (
+          <Input
+            value={rangeInput}
+            onChange={(e) => setRangeInput(e.target.value)}
+            placeholder="e.g. 1, 3-5, 10"
+            className="h-7 text-[11px]"
+          />
+        )}
+
+        {scope === "current" && activePage != null && (
+          <p className="text-[10px] text-muted-foreground">
+            Active page:{" "}
+            <span className="font-mono font-medium text-foreground">
+              {activePage}
+            </span>
+            {scopedPreviewLen != null && (
+              <> · {scopedPreviewLen.toLocaleString()} chars</>
+            )}
+          </p>
+        )}
+
+        {scope === "selection" && (
+          <p className="text-[10px] text-muted-foreground leading-snug">
+            Highlight text in either content pane, then click Run.
+          </p>
+        )}
+
+        {scope !== "full" && (
+          <p className="text-[10px] text-muted-foreground/70 leading-snug">
+            Scoped text → <code>selection</code>. Full doc stays in{" "}
+            <code>content</code>.
+          </p>
+        )}
       </div>
 
       {!hasContent && (
         <p className="text-xs text-muted-foreground py-4 text-center">
-          No extracted content available yet — run the pipeline first.
+          No extracted content — run the pipeline first.
         </p>
       )}
 
+      {/* Agent list */}
       {hasContent && (
         <div className="space-y-1.5">
           {PDF_SHORTCUTS.map((s) => (
@@ -202,11 +393,6 @@ function AiActionsPanel({
           ))}
         </div>
       )}
-
-      <p className="text-[10px] text-muted-foreground/70 pt-1 leading-snug">
-        Each agent receives the document text as <code>selection</code>. Bind
-        the document to a Data Store in the next tab to scope retrieval.
-      </p>
     </div>
   );
 }

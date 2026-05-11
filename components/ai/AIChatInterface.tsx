@@ -1,4 +1,3 @@
-// app/(authenticated)/flash-cards/components/AIChatInterface.tsx
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";

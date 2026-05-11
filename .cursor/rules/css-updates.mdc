@@ -92,4 +92,4 @@ Start with most visible:
 Check completed examples:
 - `features/tasks/components/TaskItem.tsx`
 - `features/prompts/components/layouts/PromptCard.tsx`
-- `app/(authenticated)/ai/prompts/page.tsx`
+- `app/(a)/agents/page.tsx`
