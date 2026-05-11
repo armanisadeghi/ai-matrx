@@ -278,9 +278,19 @@ export function CreateAgentAppFormWrapper({
   const agentDisplayName = agentInRedux?.name ?? agentRow?.name ?? "";
 
   if (mode !== "grid") {
+    // Live Builder uses the full viewport width so the preview pane
+    // has room to breathe. The other modes (AutoCreate / Manual) keep
+    // a centered max-width because they're forms, not split layouts.
+    const fullWidth = mode === "live-builder";
     return (
-      <div className="w-full space-y-6">
-        <div className="flex items-center gap-2">
+      <div
+        className={
+          fullWidth
+            ? "w-full px-6 py-4 space-y-4 h-full flex flex-col"
+            : "max-w-7xl mx-auto px-6 py-8 w-full space-y-6"
+        }
+      >
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -345,7 +355,7 @@ export function CreateAgentAppFormWrapper({
   }
 
   return (
-    <div className="w-full space-y-8">
+    <div className="max-w-7xl mx-auto px-6 py-8 w-full space-y-8">
       {!hidePicker && (
         <div className="space-y-3 max-w-3xl mx-auto">
           <div className="flex items-center justify-between">

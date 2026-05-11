@@ -21,11 +21,10 @@ export default async function NewAgentAppPage({
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <CreateAgentAppFormWrapper
-            preselectedAgentId={preselectedAgentId}
-          />
-        </div>
+        {/* Width is managed inside the wrapper now — the 6-card grid
+            centers itself with `max-w-7xl`; Live Builder uses the full
+            viewport so the preview pane can breathe. */}
+        <CreateAgentAppFormWrapper preselectedAgentId={preselectedAgentId} />
       </div>
     </div>
   );

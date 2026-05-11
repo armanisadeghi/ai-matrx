@@ -343,9 +343,9 @@ export function LiveBuilder({
   ]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
-        {/* ── Options panel ─────────────────────────────────────────────── */}
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[460px_minmax(0,1fr)] gap-6 flex-1 min-h-0">
+        {/* ── Options panel — fixed width on lg+, scrolls vertically ───── */}
         <div className="overflow-y-auto pr-2 space-y-8">
           <Section number={1} label="Choose Your App Format">
             <CardGrid columns={3}>
