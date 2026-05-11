@@ -33,7 +33,7 @@ import type { Visibility } from '@/features/files/types';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
 import { selectActiveUploads } from '@/features/files/redux/selectors';
-import { useFileUpload } from '@/features/files/hooks/useFileUpload';
+import { useGuardedFileUpload } from '@/features/files/hooks/useGuardedFileUpload';
 import { UploadProgressList } from '@/features/files/components/core/FileUploadDropzone/UploadProgressList';
 import { extractErrorMessage } from '@/utils/errors';
 
@@ -252,7 +252,7 @@ export function ImageAssetUploader({
 }: ImageAssetUploaderProps) {
     const dispatch = useAppDispatch();
     const activeUploads = useAppSelector(selectActiveUploads);
-    const { upload } = useFileUpload({ parentFolderId, visibility });
+    const { upload } = useGuardedFileUpload({ parentFolderId, visibility });
     const [section, setSection] = useState<SectionState>({ state: 'idle', error: null, fileName: null });
     const [pasteHighlight, setPasteHighlight] = useState(false);
     const [variants, setVariants] = useState<ImageUploaderVariants>({

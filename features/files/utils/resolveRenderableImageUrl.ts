@@ -32,6 +32,7 @@ export type RenderableImageRef =
   | {
       id?: string;
       fileId?: string | null;
+      fileName?: string | null;
       url?: string | null;
       publicUrl?: string | null;
       metadata?: Record<string, unknown> | null;
@@ -142,26 +143,33 @@ function normalizeImageRef(ref: RenderableImageRef): {
     };
   }
 
-  const metadata = isRecord(ref.metadata) ? ref.metadata : null;
+  // After the string check above, treat ref as a duck-typed bag — the
+  // discriminated union members don't all expose the same keys, but every
+  // property access here is runtime-guarded.
+  const refRecord = ref as Record<string, unknown>;
+  const metadata = isRecord(refRecord.metadata) ? refRecord.metadata : null;
   const metadataFileId = readString(metadata, "fileId");
   const metadataExpiresAt = readNumber(metadata, "urlExpiresAt");
-  const directFileId = readString(ref, "fileId");
+  const directFileId = readString(refRecord, "fileId");
   const cloudId =
-    typeof ref.id === "string" && ref.id.startsWith("cloud:")
-      ? ref.id.slice("cloud:".length)
+    typeof refRecord.id === "string" && refRecord.id.startsWith("cloud:")
+      ? refRecord.id.slice("cloud:".length)
       : null;
-  const url = typeof ref.url === "string" && ref.url.length > 0 ? ref.url : null;
+  const url =
+    typeof refRecord.url === "string" && refRecord.url.length > 0
+      ? refRecord.url
+      : null;
   const publicUrl =
-    typeof ref.publicUrl === "string" && ref.publicUrl.length > 0
-      ? ref.publicUrl
+    typeof refRecord.publicUrl === "string" && refRecord.publicUrl.length > 0
+      ? refRecord.publicUrl
       : null;
   const idOnlyCloudFile =
     !url &&
     !publicUrl &&
-    typeof ref.id === "string" &&
-    ("publicUrl" in ref || "fileName" in ref);
+    typeof refRecord.id === "string" &&
+    ("publicUrl" in refRecord || "fileName" in refRecord);
   const fileId =
-    directFileId ?? metadataFileId ?? cloudId ?? (idOnlyCloudFile ? ref.id! : null);
+    directFileId ?? metadataFileId ?? cloudId ?? (idOnlyCloudFile ? (refRecord.id as string) : null);
 
   return {
     fileId,
