@@ -50,10 +50,6 @@ import {
   fetchFullAgent,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { supabase } from "@/utils/supabase/client";
-import {
-  generateSlugCandidates,
-  validateSlugsInBatch,
-} from "../services/slug-service";
 import type { CreateAgentAppInput } from "../types";
 
 interface CreateAgentAppFormWrapperProps {
@@ -99,6 +95,16 @@ export function CreateAgentAppFormWrapper({
     if (liveAgents.length > 0) return;
     void dispatch(fetchAgentsListFull());
   }, [preselectedAgentId, liveAgents.length, dispatch]);
+
+  // When entered with `?agent_id=<id>`, seed Redux with that one agent so
+  // the heading shows the agent's name immediately — without fetching the
+  // entire list. Idempotent: fetchFullAgent skips if the row is already
+  // resolved.
+  useEffect(() => {
+    if (!preselectedAgentId) return;
+    if (agentInRedux?.name) return;
+    void dispatch(fetchFullAgent(preselectedAgentId));
+  }, [preselectedAgentId, agentInRedux?.name, dispatch]);
 
   // Thin AgentOption[] for SearchableAgentSelect (id/name/description/category/isPublic).
   const agentOptions: AgentOption[] = useMemo(
@@ -193,24 +199,19 @@ export function CreateAgentAppFormWrapper({
     if (!selectedAgentId) return;
     setSubmitting(true);
     try {
-      // Use the agent's display name if we have it (preselected or in
-      // Redux from the thin list); fall back to a generic title so we
-      // never block on a name lookup.
       const agentName =
-        agentInRedux?.name ??
-        agentRow?.name ??
-        "App";
+        agentInRedux?.name ?? agentRow?.name ?? "App";
       const baseName = `${agentName} App`;
 
-      // Auto-slug with collision check.
-      const candidates = generateSlugCandidates(baseName);
-      let chosenSlug = candidates[0] ?? "app";
-      try {
-        const { available } = await validateSlugsInBatch(candidates.slice(0, 5));
-        chosenSlug = available[0] ?? `${candidates[0]}-${Math.floor(Math.random() * 900) + 100}`;
-      } catch {
-        chosenSlug = `${candidates[0]}-${Math.floor(Math.random() * 900) + 100}`;
-      }
+      // Use a UUID as the initial slug. Slugs are globally unique on
+      // aga_apps and an agent can power many apps, so an auto-generated
+      // pretty slug (e.g. "fact-checker-app") collides as soon as a second
+      // app is created for the same agent. The user will pick a real slug
+      // in Settings when they're ready to publish.
+      const chosenSlug =
+        (typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `app-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`);
 
       const res = await fetch("/api/agent-apps", {
         method: "POST",

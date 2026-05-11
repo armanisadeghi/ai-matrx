@@ -112,13 +112,24 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     );
   }
 
+  // AgentRunner is `max-w-[800px]` but does NOT center itself. Wrap it in a
+  // centered container so the conversation sits in the middle of whatever
+  // space the parent gives us (next to the history sidebar, in an iframe, etc).
+  //
+  // `showTitle` defaults to FALSE here because the run-page already renders
+  // a page header with the app's name. Letting AgentRunner draw its own
+  // title would duplicate the app name on every chat. Apps that *want* an
+  // in-shell title (e.g. iframe embeds with no outer chrome) can opt in
+  // by setting `shell_config.hideTitle = false` explicitly.
   return (
-    <AgentRunner
-      conversationId={agentAppCtx.conversationId}
-      surfaceKey={agentAppCtx.surfaceKey}
-      compact={config.compact}
-      showTitle={!config.hideTitle}
-    />
+    <div className="h-full w-full flex justify-center">
+      <AgentRunner
+        conversationId={agentAppCtx.conversationId}
+        surfaceKey={agentAppCtx.surfaceKey}
+        compact={config.compact}
+        showTitle={config.hideTitle === false}
+      />
+    </div>
   );
 }
 
