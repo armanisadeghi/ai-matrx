@@ -19,9 +19,12 @@
  * better than silently dropping it.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
+import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,
@@ -94,27 +97,83 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     );
   }
 
-  // Wrap AgentRunner in a block-level centered container.
+  // AgentRunner shows the app's identity in the CENTER hero
+  // (AgentEmptyMessageDisplay). We never draw an additional title bar —
+  // duplicating the app name above the centered hero is the bug the
+  // user has called out multiple times.
   //
-  // AgentRunner internals are `relative h-full max-w-[800px]` with
-  // children positioned absolutely — it has no intrinsic width. In a
-  // `flex justify-center` parent it collapses to 0 width (a flex item
-  // with no explicit width and absolute-only children). The fix is a
-  // plain block container with `mx-auto` — block elements claim full
-  // width up to `max-w-`, then center themselves horizontally.
-  //
-  // `showTitle` defaults to FALSE because the run-page header already
-  // shows the app name. Embeds with no outer chrome opt in via
-  // shell_config.hideTitle === false.
+  // History sidebar honours `historyView`:
+  //   - "hidden" → no sidebar
+  //   - "app"    → conversations powered by this app's agent
+  //   - "all"    → every conversation accessible to the user
   return (
-    <div className="h-full w-full overflow-hidden">
-      <div className="h-full max-w-[800px] mx-auto">
-        <AgentRunner
-          conversationId={agentAppCtx.conversationId}
-          surfaceKey={agentAppCtx.surfaceKey}
-          compact={config.compact}
-          showTitle={config.hideTitle === false}
+    <ChatShellLayout
+      historyView={config.historyView}
+      agentId={app.agent_id}
+      appId={app.id}
+      surfaceKey={agentAppCtx.surfaceKey}
+      activeConversationId={agentAppCtx.conversationId}
+    >
+      <AgentRunner
+        conversationId={agentAppCtx.conversationId}
+        surfaceKey={agentAppCtx.surfaceKey}
+        compact={config.compact}
+        showTitle={false}
+      />
+    </ChatShellLayout>
+  );
+}
+
+interface ChatShellLayoutProps {
+  historyView?: AgentAppShellConfigCommon["historyView"];
+  agentId: string;
+  appId: string;
+  surfaceKey: string;
+  activeConversationId: string | null;
+  children: React.ReactNode;
+}
+
+function ChatShellLayout({
+  historyView,
+  agentId,
+  appId,
+  surfaceKey,
+  activeConversationId,
+  children,
+}: ChatShellLayoutProps) {
+  const dispatch = useAppDispatch();
+  const agentIds = useMemo(
+    () => (historyView === "all" ? [] : [agentId]),
+    [historyView, agentId],
+  );
+
+  if (!historyView || historyView === "hidden") {
+    return (
+      <div className="h-full w-full overflow-hidden">
+        <div className="h-full max-w-[800px] mx-auto">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full flex overflow-hidden">
+      <aside className="hidden lg:block w-[260px] flex-shrink-0 border-r border-border bg-card overflow-y-auto">
+        <ConversationHistorySidebar
+          scopeId={`agent-app:${appId}:${historyView}`}
+          agentIds={agentIds}
+          activeConversationId={activeConversationId}
+          onOpenConversation={(conv) =>
+            void dispatch(
+              loadConversation({
+                conversationId: conv.conversationId,
+                surfaceKey,
+              }),
+            )
+          }
         />
+      </aside>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="h-full max-w-[800px] mx-auto">{children}</div>
       </div>
     </div>
   );

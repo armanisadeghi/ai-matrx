@@ -50,6 +50,8 @@ import {
   setHideToolResults as setHideToolResultsAction,
   setResponseDensity as setResponseDensityAction,
   setSubmitOnEnter as setSubmitOnEnterAction,
+  setDisplayNameOverride as setDisplayNameOverrideAction,
+  setDisplayDescriptionOverride as setDisplayDescriptionOverrideAction,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { AgentAppChatShell } from "./shells/AgentAppChatShell";
 import { AgentAppFormToResultShell } from "./shells/AgentAppFormToResultShell";
@@ -126,8 +128,16 @@ export function LiveBuilder({
   const [responseDelivery, setResponseDelivery] =
     useState<ResponseDelivery>("stream");
 
-  // Custom tweaks
-  const [density, setDensity] = useState<"default" | "compact">("default");
+  // History sidebar scope (chat shell only).
+  const [historyView, setHistoryView] = useState<
+    NonNullable<AgentAppShellConfigCommon["historyView"]>
+  >("app");
+
+  // Custom tweaks — density uses the real ResponseDensity type
+  // ("comfortable" | "compact") from instance-ui-state.slice.ts.
+  const [density, setDensity] = useState<"comfortable" | "compact">(
+    "comfortable",
+  );
   const [allowAttachments, setAllowAttachments] = useState(true); // PLACEHOLDER
   const [showMicrophone, setShowMicrophone] = useState(true); // PLACEHOLDER
   const [submitOnEnter, setSubmitOnEnterLocal] = useState(true);
@@ -220,7 +230,33 @@ export function LiveBuilder({
     );
   }, [submitOnEnter, previewConversationId, dispatch]);
 
+  // App identity → centered hero of the preview shell. Setting these
+  // makes AgentEmptyMessageDisplay show the app's name + description
+  // instead of the agent's, and updates as the user types.
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setDisplayNameOverrideAction({
+        conversationId: previewConversationId,
+        value: name || null,
+      }),
+    );
+  }, [name, previewConversationId, dispatch]);
+
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setDisplayDescriptionOverrideAction({
+        conversationId: previewConversationId,
+        value: description || null,
+      }),
+    );
+  }, [description, previewConversationId, dispatch]);
+
   // ── Shell config sent to the DB on Create ──────────────────────────────
+  // Note: NO `hideTitle` — the shells never draw their own title bar;
+  // the app's name + description show in the centered hero
+  // (AgentEmptyMessageDisplay) via the display overrides we dispatched.
   const shellConfig: AgentAppShellConfigCommon & Record<string, unknown> =
     useMemo(
       () => ({
@@ -231,7 +267,7 @@ export function LiveBuilder({
         hideReasoning,
         hideToolResults,
         compact: density === "compact",
-        hideTitle: true,
+        historyView,
         // Below: not yet wired in the runtime — saved so options aren't lost.
         allowCustomUserInput,
         resultRenderer,
@@ -249,6 +285,7 @@ export function LiveBuilder({
         hideReasoning,
         hideToolResults,
         density,
+        historyView,
         allowCustomUserInput,
         resultRenderer,
         responseDelivery,
@@ -260,15 +297,6 @@ export function LiveBuilder({
         inputPlaceholder,
       ],
     );
-
-  // Preview overrides the saved `hideTitle: true` so the title row actually
-  // shows in the preview (the live builder has no page header above the
-  // preview to display the app name). Saved config still hides the title
-  // when the user creates the app — the run page header takes over there.
-  const previewShellConfig = useMemo(
-    () => ({ ...shellConfig, hideTitle: false }),
-    [shellConfig],
-  );
 
   const previewApp: PublicAgentApp = useMemo(
     () =>
@@ -292,7 +320,7 @@ export function LiveBuilder({
         layout_config: {},
         styling_config: {},
         shell_kind: shellKind,
-        shell_config: previewShellConfig,
+        shell_config: shellConfig,
         slot_overrides: {},
         slot_code: {},
         total_executions: 0,
@@ -301,7 +329,7 @@ export function LiveBuilder({
         shared_context_slots: null,
         search_tsv: null,
       }) as unknown as PublicAgentApp,
-    [agentId, agent?.name, name, description, shellKind, previewShellConfig],
+    [agentId, agent?.name, name, description, shellKind, shellConfig],
   );
 
   const handleResetPreview = useCallback(() => {
@@ -449,7 +477,29 @@ export function LiveBuilder({
             </CardGrid>
           </Section>
 
-          <Section number={3} label="Chat Options" hint="Select all that apply">
+          {shellKind === "chat" && (
+            <Section number={3} label="History Sidebar">
+              <CardGrid columns={3}>
+                <ChoiceCard
+                  title="Hide"
+                  selected={historyView === "hidden"}
+                  onClick={() => setHistoryView("hidden")}
+                />
+                <ChoiceCard
+                  title="App Chats Only"
+                  selected={historyView === "app"}
+                  onClick={() => setHistoryView("app")}
+                />
+                <ChoiceCard
+                  title="All Chats"
+                  selected={historyView === "all"}
+                  onClick={() => setHistoryView("all")}
+                />
+              </CardGrid>
+            </Section>
+          )}
+
+          <Section number={4} label="Chat Options" hint="Select all that apply">
             <CardGrid columns={2}>
               <ChoiceCard
                 title="Allow Custom User Input"
@@ -465,7 +515,7 @@ export function LiveBuilder({
             </CardGrid>
           </Section>
 
-          <Section number={4} label="How Should Results Display?">
+          <Section number={5} label="How Should Results Display?">
             <CardGrid columns={2}>
               <ChoiceCard
                 icon={<Sparkles className="w-4 h-4 text-primary" />}
@@ -486,7 +536,7 @@ export function LiveBuilder({
           </Section>
 
           <Section
-            number={5}
+            number={6}
             label="Want to filter the results?"
             hint="Select all that apply"
           >
@@ -506,7 +556,7 @@ export function LiveBuilder({
             </CardGrid>
           </Section>
 
-          <Section number={6} label="Response Delivery Style">
+          <Section number={7} label="Response Delivery Style">
             <CardGrid columns={2}>
               <ChoiceCard
                 title="Real-time Streaming"
@@ -525,7 +575,7 @@ export function LiveBuilder({
             </CardGrid>
           </Section>
 
-          <Section number={7} label="Custom tweaks">
+          <Section number={8} label="Custom tweaks">
             <div className="space-y-3">
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -533,9 +583,9 @@ export function LiveBuilder({
                 </Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <ChoiceCard
-                    title="Default"
-                    selected={density === "default"}
-                    onClick={() => setDensity("default")}
+                    title="Comfortable"
+                    selected={density === "comfortable"}
+                    onClick={() => setDensity("comfortable")}
                   />
                   <ChoiceCard
                     title="Compact"

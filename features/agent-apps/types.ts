@@ -110,8 +110,14 @@ export interface AgentAppShellConfigCommon {
   hideReasoning?: boolean;
   /** Hide tool-result blocks from the transcript. */
   hideToolResults?: boolean;
-  /** History view location — sidebar / drawer / hidden. */
-  historyView?: "sidebar" | "drawer" | "hidden";
+  /**
+   * History sidebar scope:
+   *   - "hidden": no sidebar
+   *   - "app":   only conversations powered by this app's agent (approximates
+   *              "this app's chats" until app-id filtering lands)
+   *   - "all":   every conversation the user can access
+   */
+  historyView?: "hidden" | "app" | "all";
   /** Branding overrides. */
   primaryColor?: string;
   accentColor?: string;

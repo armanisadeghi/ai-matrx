@@ -542,6 +542,17 @@ export interface InstanceUIState {
   responseDensity: "comfortable" | "compact";
 
   /**
+   * Optional app-level identity overrides for the AgentEmptyMessageDisplay
+   * (the centered hero shown before the first message). When null, the
+   * empty display falls back to the agent's name/description. Surfaces
+   * that want their own identity (agent-apps' Live Builder, the public
+   * /p/<slug> runner, embedded iframes) set these to surface the app
+   * identity rather than the underlying agent's.
+   */
+  displayNameOverride: string | null;
+  displayDescriptionOverride: string | null;
+
+  /**
    * Optional message shown in the pre-execution input gate.
    * Used to give the user context about what the agent expects.
    */

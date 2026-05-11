@@ -155,6 +155,15 @@ export interface InitInstanceUIStatePayload {
    * agents, multi-tool research) can pass "compact" at instance creation.
    */
   responseDensity?: "comfortable" | "compact";
+  /**
+   * App-level identity overrides shown in AgentEmptyMessageDisplay (the
+   * centered hero before the first message). When null/undefined, the
+   * empty display falls back to the agent's name/description. Set by
+   * surfaces (e.g. agent-apps) that want to display their own app
+   * identity rather than the underlying agent's.
+   */
+  displayNameOverride?: string | null;
+  displayDescriptionOverride?: string | null;
 }
 
 // =============================================================================
@@ -194,6 +203,8 @@ const instanceUIStateSlice = createSlice({
         jsonExtraction = null,
         originalText = null,
         responseDensity = "comfortable",
+        displayNameOverride = null,
+        displayDescriptionOverride = null,
       } = action.payload;
 
       state.byConversationId[conversationId] = {
@@ -229,6 +240,8 @@ const instanceUIStateSlice = createSlice({
         jsonExtraction,
         originalText,
         responseDensity,
+        displayNameOverride,
+        displayDescriptionOverride,
       };
     },
 
@@ -242,6 +255,32 @@ const instanceUIStateSlice = createSlice({
       const entry = state.byConversationId[action.payload.conversationId];
       if (entry) {
         entry.responseDensity = action.payload.density;
+      }
+    },
+
+    setDisplayNameOverride(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        value: string | null;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) {
+        entry.displayNameOverride = action.payload.value;
+      }
+    },
+
+    setDisplayDescriptionOverride(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        value: string | null;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (entry) {
+        entry.displayDescriptionOverride = action.payload.value;
       }
     },
 
@@ -741,6 +780,8 @@ export const {
   setHideReasoning,
   setHideToolResults,
   setResponseDensity,
+  setDisplayNameOverride,
+  setDisplayDescriptionOverride,
   setPreExecutionMessage,
   setVariablesPanelStyle,
   setOriginalText,
