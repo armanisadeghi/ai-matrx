@@ -113,18 +113,6 @@ export interface McpEnvSchemaField {
   placeholder?: string;
 }
 
-function normalizeEnvSchema(raw: unknown): McpEnvSchemaField[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((f: Record<string, unknown>) => ({
-    key: (f.key as string) ?? "",
-    label: (f.label as string) ?? (f.key as string) ?? "",
-    required: (f.required as boolean) ?? false,
-    secret: (f.secret as boolean) ?? false,
-    helpText: (f.helpText as string) ?? (f.help as string) ?? undefined,
-    placeholder: (f.placeholder as string) ?? undefined,
-  }));
-}
-
 export function serverConfigFromRow(
   row: ServerConfigRow,
 ): McpServerConfigEntry {
@@ -136,7 +124,7 @@ export function serverConfigFromRow(
     isDefault: row.is_default,
     command: row.command,
     args: row.args,
-    envSchema: normalizeEnvSchema(row.env_schema),
+    envSchema: (row.env_schema as unknown as McpEnvSchemaField[]) ?? [],
     requiresDocker: row.requires_docker,
     npmPackage: row.npm_package,
     pipPackage: row.pip_package,
