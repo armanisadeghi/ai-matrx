@@ -207,33 +207,40 @@ describe("assembleManualRequest — live read contract", () => {
     ).toBe("new turn");
   });
 
-  test("agent.tools UUIDs map to RegisteredToolSpec wire shape", () => {
+  test("agent.tools UUIDs map to tools_replace as RegisteredToolSpec wire shape", () => {
+    // The Builder uses `tools_replace` (not `tools`) because (a) it is the
+    // semantically correct "client owns the active tool set" field and (b)
+    // the chat router's `_build_unified_config` dumps a populated `tools`
+    // field through pydantic model_dump → dict which downstream cannot
+    // canonicalize. `tools_replace` clears config.tools server-side first.
     const state = makeState({
       tools: ["tool-uuid-1", "tool-uuid-2"],
       customTools: [{ name: "ct1", input_schema: {} }],
       mcpServers: ["mcp-uuid-1"],
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID);
-    expect(payload!.tools).toEqual([
+    const payload = assembleManualRequest(state, CONVERSATION_ID)!;
+    expect(payload.tools_replace).toEqual([
       { kind: "registered", name: "tool-uuid-1", tool_id: "tool-uuid-1", delegate: false },
       { kind: "registered", name: "tool-uuid-2", tool_id: "tool-uuid-2", delegate: false },
     ]);
-    expect(payload!.custom_tools).toEqual([{ name: "ct1", input_schema: {} }]);
-    expect(payload!.mcp_servers).toEqual(["mcp-uuid-1"]);
+    // `tools` is deliberately NOT set — see assembler for the reason.
+    expect(payload.tools).toBeUndefined();
+    expect(payload.custom_tools).toEqual([{ name: "ct1", input_schema: {} }]);
+    expect(payload.mcp_servers).toEqual(["mcp-uuid-1"]);
   });
 
-  test("UI-only capability flags do NOT leak into tools wire shape", () => {
+  test("UI-only capability flags do NOT leak into tools_replace", () => {
     // The test below sets `tools: {allowed: true}` inside agent.settings.
-    // The wire payload's `tools` field must come from agent.tools (RegisteredToolSpec[]),
-    // not from the UI capability flag.
+    // The wire payload's tool list must come from agent.tools, not the UI flag.
     const state = makeState({
       tools: ["t1"],
       settings: { tools: { allowed: true } },
     });
     const payload = assembleManualRequest(state, CONVERSATION_ID)!;
-    expect(payload.tools).toEqual([
+    expect(payload.tools_replace).toEqual([
       { kind: "registered", name: "t1", tool_id: "t1", delegate: false },
     ]);
+    expect(payload.tools).toBeUndefined();
   });
 
   test("agent.settings spread FLAT at top level — no config_overrides", () => {
@@ -258,16 +265,15 @@ describe("assembleManualRequest — live read contract", () => {
         image_urls: true, // UI capability flag — must NOT be sent
         file_urls: false, // UI capability flag — must NOT be sent
       },
-      // No agent.tools, so payload.tools should be undefined entirely.
+      // No agent.tools, so payload.tools_replace should be undefined entirely.
     });
     const payload = assembleManualRequest(state, CONVERSATION_ID) as Record<
       string,
       unknown
     >;
     expect(payload.temperature).toBe(0.5);
-    // `tools` must NOT carry the UI capability object `{allowed: true}` —
-    // it should be undefined here because agent.tools is empty.
     expect(payload.tools).toBeUndefined();
+    expect(payload.tools_replace).toBeUndefined();
     expect(payload.image_urls).toBeUndefined();
     expect(payload.file_urls).toBeUndefined();
   });

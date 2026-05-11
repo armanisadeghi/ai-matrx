@@ -17,13 +17,43 @@
  *   3. Spreads LLM params FLAT at the top level of the request — never as
  *      `config_overrides`. There is no override delta layer for manual mode;
  *      the `instance-model-overrides` slice is not touched by this path.
- *   4. Mints a FRESH `conversation_id` (uuid) per call and always sends
- *      `is_new: true`. The Redux-side `conversationId` stays stable for UI
- *      continuity but never travels on the wire as the same value twice.
+ *   4. Omits `conversation_id` (server mints + echoes its own). Sends
+ *      `is_new: true` every call. The Redux conversationId stays stable for
+ *      UI continuity; stream events are remapped to it.
  *   5. Always POSTs `${baseUrl}${ENDPOINTS.ai.manual}` (`/ai/manual`). A dev
  *      guard throws if the URL ever drifts.
  *   6. Imports nothing from execute-instance.thunk.ts. Shares only transport
- *      plumbing (processStream, backend resolution, optimistic message helpers).
+ *      plumbing (processStream, backend resolution, optimistic message,
+ *      resilient-fetch, payload-recovery, net-requests, toNetError).
+ *
+ * Observability — non-negotiable for the Builder:
+ *   - resilientFetch enforces a 15s connect timeout and surfaces typed
+ *     NetErrors so the catch block emits an `error.code` ("connect-timeout",
+ *     "heartbeat-timeout", etc.) the UI's retry/health badges read.
+ *   - processStream runs with a 30s heartbeat watchdog + 10-minute lifetime
+ *     ceiling so a wedged stream aborts cleanly instead of hanging the UI.
+ *   - The global `netRequests` slice is fed start → streaming → completed /
+ *     timed-out / error so RequestRecoveryProvider and the Creator Panel
+ *     see every manual run with per-event heartbeats, phases, and codes.
+ *   - `payloadSafetyStore` persists the outbound payload to IndexedDB before
+ *     the network call so a tab-close / server-never-responds round-trip
+ *     surfaces on the next page load via the recovery UI.
+ *
+ * Tool wire shape — per matrx-ai/tools/specs.py canonical contract:
+ *   - `agent.tools` (UUID array) → `tools_replace: list[RegisteredToolSpec]`
+ *     where each entry is `{kind: "registered", name: <uuid>, tool_id: <uuid>,
+ *     delegate: false}`. We use `tools_replace` (not `tools`) because (a) it
+ *     is the explicit "the client owns the active tool set" semantic — exactly
+ *     the Builder's contract — and (b) the chat router's `_build_unified_config`
+ *     puts a populated `tools` field through pydantic model_dump → dict, which
+ *     downstream merge_request_tools cannot canonicalize. `tools_replace`
+ *     clears `config.tools` server-side before merging, avoiding that path.
+ *   - `agent.customTools` → `custom_tools: list[dict]` (legacy wire shape,
+ *     server-side `_legacy_custom_tools_to_specs` converts to InlineToolSpec).
+ *   - `agent.mcpServers` → `mcp_servers: list[str]` (UUIDs, flows through
+ *     UnifiedConfig).
+ *   - Per-instance client tool names (widget + slice) → `client_tools` (legacy
+ *     array of names; server reads ctx.client_tools).
  *
  * History: this thunk was deleted in commit 5bcb43380 (the May 2026 tool-
  * injection migration), which rerouted every caller through executeInstance.
@@ -82,13 +112,21 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { toast } from "sonner";
+import { resilientFetch } from "@/lib/net/resilient-fetch";
+import { toNetError } from "@/lib/net/errors";
+import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
+import {
+  startRequest as startNetRequest,
+  setPhase as setNetPhase,
+  beatHeartbeat as beatNetHeartbeat,
+  finishRequest as finishNetRequest,
+} from "@/lib/redux/net/netRequestsSlice";
 
 // UI-only capability flags carried inside `agent.settings` for the builder's
 // model picker (e.g. `tools: { allowed: true }`, `image_urls: true`). They
 // must not be forwarded to the model call — the actual tool list ships via
-// `request.tools` (from agent.tools). Mirrors the set used by the agent-mode
-// override selector but copied locally so this path takes zero dependency on
-// instance-model-overrides.
+// the tool fields below. Copied locally so this path takes zero dependency
+// on instance-model-overrides.
 const UI_CAPABILITY_KEYS = new Set<string>([
   "tools",
   "image_urls",
@@ -107,6 +145,12 @@ function stripUiCapabilityFlags(
   }
   return out;
 }
+
+// Stream watchdog defaults — match the historical pre-regression values so
+// Builder runs have the same connection-health guarantees as agent runs.
+const CONNECT_TIMEOUT_MS = 15_000;
+const HEARTBEAT_TIMEOUT_MS = 30_000;
+const MAX_LIFETIME_MS = 600_000;
 
 // =============================================================================
 // Turn Conversion Utilities
@@ -248,7 +292,6 @@ export function assembleManualRequest(
   }
 
   // ── LLM params: read agent.settings DIRECTLY (no override slice) ─────────
-  // Strip UI-only capability flags before spreading flat at the top level.
   const fullSettings = stripUiCapabilityFlags(
     (agent.settings ?? {}) as Record<string, unknown>,
   );
@@ -256,19 +299,21 @@ export function assembleManualRequest(
   const variables = selectResolvedVariables(conversationId)(state);
   const context = selectContextPayload(conversationId)(state);
 
-  // `agent.tools` stores tool registry UUIDs (string[]). The wire shape is
-  // a discriminated union — wrap each UUID as a `RegisteredToolSpec`. The
-  // server reads `tool_id` first (UUID lookup) and falls back to `name`,
-  // so passing the UUID in both fields is safe and unambiguous.
-  const tools =
+  // ── Tool wire shape (see file header for full rationale) ─────────────────
+  // agent.tools (UUID array) → tools_replace with RegisteredToolSpec entries.
+  // The server's resolved_tool_id() returns `tool_id` when set, so the UUID
+  // round-trips cleanly through ToolRegistryV2 lookup.
+  const tools_replace =
     agent.tools && agent.tools.length > 0
       ? (agent.tools.map((uuid) => ({
           kind: "registered" as const,
           name: uuid,
           tool_id: uuid,
           delegate: false,
-        })) as ChatRequestPayload["tools"])
+        })) as ChatRequestPayload["tools_replace"])
       : undefined;
+  // agent.customTools → legacy custom_tools field (server converts to
+  // InlineToolSpec inside apply_unified_tools).
   const custom_tools =
     agent.customTools && agent.customTools.length > 0
       ? (agent.customTools as unknown as Array<Record<string, unknown>>)
@@ -278,8 +323,9 @@ export function assembleManualRequest(
       ? agent.mcpServers
       : undefined;
 
-  // Client tools — non-widget tool names from the slice + tools the widget
-  // handle exposes. Same derivation as the agent path.
+  // Per-instance client tool NAMES (legacy field). Distinct from the tool
+  // registry uuids above — these are names of tools the browser will execute
+  // on behalf of the agent (widget actions + ad-hoc capability tools).
   const nonWidgetClientTools = (
     state.instanceClientTools.byConversationId[conversationId] ?? []
   ).filter((name) => !isWidgetActionName(name));
@@ -297,13 +343,11 @@ export function assembleManualRequest(
 
   // We do NOT send a wire `conversation_id`. The server mints a fresh one
   // and echoes it via X-Conversation-ID / typed `conversation_id` events.
-  // This matches the historical "branch" semantics (the `hasHistory &&
-  // !reuseConversationId` branch in the pre-regression thunk) and is what
-  // the backend explicitly recommends — sending a client-minted UUID with
-  // `is_new: true` collides with server-side cx_conversation rows.
-  // Multi-turn history is carried entirely client-side in messages[];
-  // stream events carry the server's id and are remapped to the local
-  // Redux conversationId via processStream's forceLocalConversationId flag.
+  // Sending a client-minted UUID with `is_new: true` collides with server-
+  // side cx_conversation rows. Multi-turn history is carried entirely
+  // client-side in messages[]; stream events carry the server's id and are
+  // remapped to the local Redux conversationId via processStream's
+  // forceLocalConversationId flag.
   const request: Partial<ChatRequestPayload> = {
     ai_model_id,
     messages: messages as ChatRequestPayload["messages"],
@@ -320,29 +364,22 @@ export function assembleManualRequest(
     request.variables = variables as Record<string, unknown>;
   }
   if (context) request.context = context;
-  if (tools) request.tools = tools as ChatRequestPayload["tools"];
+  if (tools_replace) request.tools_replace = tools_replace;
   if (custom_tools)
     request.custom_tools = custom_tools as ChatRequestPayload["custom_tools"];
   if (mcp_servers) request.mcp_servers = mcp_servers;
   if (client_tools)
     request.client_tools = client_tools as ChatRequestPayload["client_tools"];
   if (structuredSystemInstruction) {
-    // OpenAPI types system_instruction as string, but the server's
-    // SystemInstruction.from_dict accepts the structured object too.
     request.system_instruction =
       structuredSystemInstruction as unknown as string;
   }
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
 
-  // Admin-only global flags — read at execute time so the latest toggle
-  // value applies to every outbound manual call.
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
 
-  // Observational Memory — one-shot per-conversation toggle. Same semantics
-  // as the agent path: emit only when the admin explicitly requested a toggle
-  // this turn; the executing thunk clears the queued flag after assembly.
   if (selectIsMemoryToggleRequested(state)) {
     const target = selectMemoryToggleTarget(state);
     request.memory = target;
@@ -387,6 +424,7 @@ export const executeManualInstance = createAsyncThunk<
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
+    let recoveryId: string | null = null;
 
     try {
       const state = getState() as RootState;
@@ -409,8 +447,6 @@ export const executeManualInstance = createAsyncThunk<
       }
       if (debug) payload.debug = true;
 
-      // Mirror an emitted memory toggle into the slice + clear the one-shot
-      // queue so the next turn doesn't re-fire.
       if (typeof payload.memory === "boolean") {
         dispatch(
           setMemoryEnabledOptimistic({
@@ -428,10 +464,9 @@ export const executeManualInstance = createAsyncThunk<
       const baseUrl = backend.baseUrl;
       const headers = backend.headers;
 
-      // Optimistic user message — push to messages.byId before the API call
-      // so the user sees their bubble immediately. When the server reserves
-      // the cx_message row, processStream promotes this temp id to the real
-      // server message id.
+      // Optimistic user message — push BEFORE the network call so the bubble
+      // appears immediately and the response column has something to render
+      // even on slow / failing networks.
       const resourcePayloads = selectResourcePayloads(conversationId)(state);
       const resourceBlocks = resourcePayloads.filter((b) => b.type !== "text");
       let userMessageClientTempId: string | undefined;
@@ -457,6 +492,18 @@ export const executeManualInstance = createAsyncThunk<
       dispatch(createRequest({ requestId, conversationId }));
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
+
+      // Global net-requests slice. The Creator Panel and RequestRecoveryProvider
+      // read this — without it, manual runs are invisible in the connection-
+      // health UI. label/groupKey tagging matches the agent path.
+      dispatch(
+        startNetRequest({
+          id: requestId,
+          kind: "agent-run",
+          label: `Manual: ${instance.agentId}`,
+          groupKey: conversationId,
+        }),
+      );
 
       const url = `${baseUrl}${ENDPOINTS.ai.manual}`;
 
@@ -485,12 +532,44 @@ export const executeManualInstance = createAsyncThunk<
       const abortController = new AbortController();
       registerAbortController(conversationId, abortController);
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-        signal: abortController.signal,
-      });
+      // Persist outbound payload to IndexedDB BEFORE the network call so the
+      // recovery UI on next page load can surface a hung/closed/crashed run.
+      // IndexedDB unavailable is non-fatal — proceed without coverage.
+      try {
+        recoveryId = await payloadSafetyStore.savePending({
+          kind: "agent-run",
+          label:
+            typeof window !== "undefined"
+              ? `Manual run — ${document?.title ?? "matrx"}`
+              : "Manual run",
+          routeHref:
+            typeof window !== "undefined"
+              ? window.location.pathname + window.location.search
+              : "/agents",
+          payload: payload as Record<string, unknown>,
+          rawUserInput: userInputText || undefined,
+        });
+      } catch {
+        recoveryId = null;
+      }
+
+      // resilientFetch: bounded connect timeout (DNS/TLS/server-not-listening
+      // fails fast), no wall-clock ceiling on the body (the heartbeat watchdog
+      // on processStream is the streaming ceiling).
+      const { response } = await resilientFetch(
+        url,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        },
+        {
+          connectTimeoutMs: CONNECT_TIMEOUT_MS,
+          totalTimeoutMs: null,
+          signal: abortController.signal,
+          throwOnHttpError: false,
+        },
+      );
 
       if (!response.ok) {
         let serverMessage = `${response.status} ${response.statusText}`;
@@ -504,9 +583,6 @@ export const executeManualInstance = createAsyncThunk<
 
         const code = response.status;
         if (code === 422) {
-          // Tool injection failures from the backend surface as 422 with a
-          // descriptive message — bubble through as a toast so the user
-          // sees what actually broke instead of a generic error banner.
           const lower =
             typeof serverMessage === "string"
               ? serverMessage.toLowerCase()
@@ -528,16 +604,16 @@ export const executeManualInstance = createAsyncThunk<
         throw new Error(`API error: ${serverMessage}`);
       }
 
-      // The X-Conversation-ID header (if echoed by the server) carries the
-      // WIRE conversation_id we minted — which is intentionally different
-      // from the local Redux conversationId. The integrity assertion in
-      // assert-conversation-id assumes server-echoes-client-id and would
-      // throw in dev — skip it entirely for manual mode.
+      // X-Conversation-ID echo: the server mints the wire conv_id. We DO NOT
+      // assert it matches the local Redux conversationId — they're
+      // intentionally different. The header presence is just a phase marker
+      // for client-timing.
       const headerConversationId = response.headers.get("X-Conversation-ID");
       const conversationIdAt = headerConversationId ? performance.now() : null;
 
       dispatch(setInstanceStatus({ conversationId, status: "streaming" }));
       dispatch(setRequestStatus({ requestId, status: "streaming" }));
+      dispatch(setNetPhase({ id: requestId, phase: "streaming" }));
 
       const currentUiState = (getState() as RootState).instanceUIState
         ?.byConversationId[conversationId];
@@ -558,24 +634,69 @@ export const executeManualInstance = createAsyncThunk<
         // streamed messages land in the same Redux entry the optimistic
         // user message lives in (and the response column is rendering).
         forceLocalConversationId: true,
+        // Each event resets the heartbeat watchdog → no wedged stream UI.
+        onEvent: () => {
+          dispatch(beatNetHeartbeat(requestId));
+        },
+        abortController,
+        heartbeatTimeoutMs: HEARTBEAT_TIMEOUT_MS,
+        maxLifetimeMs: MAX_LIFETIME_MS,
       });
 
       unregisterAbortController(conversationId);
+      dispatch(finishNetRequest({ id: requestId, phase: "completed" }));
+      if (recoveryId) {
+        void payloadSafetyStore.markSuccess(recoveryId).catch(() => {});
+      }
       return { requestId, conversationId };
     } catch (error) {
       unregisterAbortController(conversationId);
 
       if (error instanceof Error && error.name === "AbortError") {
         dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
+        dispatch(finishNetRequest({ id: requestId, phase: "cancelled" }));
+        if (recoveryId) {
+          void payloadSafetyStore.deleteEntry(recoveryId).catch(() => {});
+        }
         return rejectWithValue("Cancelled");
       }
+
+      // Synthesise the canonical ErrorPayload shape so every consumer sees
+      // the same structure. `code` is the retry-classifier code from
+      // toNetError ("connect-timeout", "heartbeat-timeout", etc.) — drives
+      // retry-or-bail decisions and the "this is a timeout" banner copy.
+      const netErr = toNetError(error);
+      if (recoveryId) {
+        void payloadSafetyStore
+          .markFailed(recoveryId, netErr.message)
+          .catch(() => {});
+      }
+      const phase =
+        netErr.code === "connect-timeout" ||
+        netErr.code === "total-timeout" ||
+        netErr.code === "heartbeat-timeout"
+          ? "timed-out"
+          : "error";
+      dispatch(
+        finishNetRequest({
+          id: requestId,
+          phase,
+          errorCode: netErr.code,
+          errorMessage: netErr.message,
+          retryable: netErr.retryable,
+        }),
+      );
 
       const message = error instanceof Error ? error.message : "Unknown error";
       dispatch(
         setRequestStatus({
           requestId,
           status: "error",
-          error: { error_type: "client_error", message },
+          error: {
+            error_type: "client_error",
+            message,
+            code: netErr?.code ?? null,
+          },
         }),
       );
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
