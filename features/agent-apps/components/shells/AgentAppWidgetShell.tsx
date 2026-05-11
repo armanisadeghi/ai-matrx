@@ -16,7 +16,7 @@
  * the user's custom code, not AgentRunner's defaults).
  */
 
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Loader2, Play } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
@@ -115,7 +115,11 @@ export function AgentAppWidgetShell({ app }: AgentAppWidgetShellProps) {
             code={app.slot_code}
             allowedImports={app.allowed_imports}
             appName={app.name}
-            fallback={WidgetDefaultVariableInput}
+            fallback={
+              WidgetDefaultVariableInput as unknown as React.ComponentType<
+                Record<string, unknown>
+              >
+            }
             props={{
               ...ctx,
               app,
@@ -151,7 +155,11 @@ export function AgentAppWidgetShell({ app }: AgentAppWidgetShellProps) {
                 code={app.slot_code}
                 allowedImports={app.allowed_imports}
                 appName={app.name}
-                fallback={WidgetDefaultResultRenderer}
+                fallback={
+                  WidgetDefaultResultRenderer as unknown as React.ComponentType<
+                    Record<string, unknown>
+                  >
+                }
                 props={{ ...ctx, app } as unknown as Record<string, unknown>}
               />
             )}

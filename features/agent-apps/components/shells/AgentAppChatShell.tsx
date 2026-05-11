@@ -9,7 +9,7 @@
  * collapsed.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -98,7 +98,11 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
             code={app.slot_code}
             allowedImports={app.allowed_imports}
             appName={app.name}
-            fallback={ChatDefaultPreGate}
+            fallback={
+              ChatDefaultPreGate as unknown as React.ComponentType<
+                Record<string, unknown>
+              >
+            }
             props={{
               ...agentAppCtx,
               app,

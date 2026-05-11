@@ -16,7 +16,7 @@
  * the default would have received.
  */
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Loader2, Play, RotateCcw } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
@@ -110,7 +110,11 @@ export function AgentAppFormToResultShell({
             code={slotCode}
             allowedImports={allowedImports}
             appName={app.name}
-            fallback={DefaultPreGate}
+            fallback={
+              DefaultPreGate as unknown as React.ComponentType<
+                Record<string, unknown>
+              >
+            }
             props={{
               ...ctx,
               app,
@@ -132,7 +136,11 @@ export function AgentAppFormToResultShell({
           code={slotCode}
           allowedImports={allowedImports}
           appName={app.name}
-          fallback={DefaultHeader}
+          fallback={
+            DefaultHeader as unknown as React.ComponentType<
+              Record<string, unknown>
+            >
+          }
           props={{ ...ctx, app } as unknown as Record<string, unknown>}
         />
 
@@ -144,7 +152,11 @@ export function AgentAppFormToResultShell({
             code={slotCode}
             allowedImports={allowedImports}
             appName={app.name}
-            fallback={DefaultVariableInput}
+            fallback={
+              DefaultVariableInput as unknown as React.ComponentType<
+                Record<string, unknown>
+              >
+            }
             props={{
               ...ctx,
               app,
@@ -196,7 +208,11 @@ export function AgentAppFormToResultShell({
                 code={slotCode}
                 allowedImports={allowedImports}
                 appName={app.name}
-                fallback={DefaultResultRenderer}
+                fallback={
+                  DefaultResultRenderer as unknown as React.ComponentType<
+                    Record<string, unknown>
+                  >
+                }
                 props={{ ...ctx, app } as unknown as Record<string, unknown>}
               />
             )}
