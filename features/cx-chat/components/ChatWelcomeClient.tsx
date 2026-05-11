@@ -12,11 +12,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { setInputPlaceholder } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 const AgentPickerSheet = dynamic(
   () =>
@@ -44,8 +45,20 @@ export default function ChatWelcomeClient({
   conversationId,
 }: ChatWelcomeClientProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  // Welcome-screen placeholder lives in Redux now (no more prop chain).
+  useEffect(() => {
+    if (!conversationId) return;
+    dispatch(
+      setInputPlaceholder({
+        conversationId,
+        value: "What do you want to know?",
+      }),
+    );
+  }, [conversationId, dispatch]);
 
   // Prefer the live Redux record; fall back to server-resolved props.
   const liveAgent = useAppSelector((state) => selectAgentById(state, agentId));
@@ -103,7 +116,6 @@ export default function ChatWelcomeClient({
             <SmartAgentInput
               conversationId={conversationId}
               surfaceKey={`cx-chat:${agentId}`}
-              placeholder="What do you want to know?"
               sendButtonVariant="blue"
               showSubmitOnEnterToggle
               enablePasteImages={isAuthenticated}

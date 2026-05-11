@@ -28,6 +28,7 @@ import {
   setAutoRun,
   setAllowChat,
   setShowVariablePanel,
+  setInputPlaceholder,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type {
   AgentAppShellConfigCommon,
@@ -65,6 +66,10 @@ export function AgentAppFormToResultShell({
       dispatch(setAutoRun({ conversationId: cid, autoRun: config.autoRun }));
     }
     dispatch(setShowVariablePanel({ conversationId: cid, show: true }));
+    // Follow-up input placeholder lives in Redux (no more prop chain).
+    dispatch(
+      setInputPlaceholder({ conversationId: cid, value: "Ask a follow-up…" }),
+    );
   }, [dispatch, ctx.conversationId, allowChat, config.autoRun]);
 
   const handleSubmit = () => {
@@ -205,7 +210,6 @@ export function AgentAppFormToResultShell({
               conversationId={ctx.conversationId}
               compact
               singleRowTextarea
-              placeholder="Ask a follow-up…"
               surfaceKey={ctx.surfaceKey}
             />
           </div>

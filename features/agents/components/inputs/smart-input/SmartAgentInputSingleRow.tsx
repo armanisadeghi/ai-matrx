@@ -24,7 +24,6 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 
 interface SmartAgentInputSingleRowProps {
   conversationId: string | null | undefined;
-  placeholder?: string;
   sendButtonVariant?: "default" | "blue";
   uploadBucket?: string;
   uploadPath?: string;
@@ -39,7 +38,6 @@ interface SmartAgentInputSingleRowProps {
 
 export function SmartAgentInputSingleRow({
   conversationId,
-  placeholder,
   sendButtonVariant = "default",
   uploadBucket = "userContent",
   uploadPath = "agent-attachments",
@@ -85,7 +83,6 @@ export function SmartAgentInputSingleRow({
         <div className="flex-1 min-w-0">
           <AgentTextarea
             conversationId={conversationId}
-            placeholder={placeholder ?? "Type a message..."}
             compact
             uploadBucket={uploadBucket}
             uploadPath={uploadPath}
