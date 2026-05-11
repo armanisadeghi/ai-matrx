@@ -118,6 +118,25 @@ export interface AgentAppShellConfigCommon {
    *   - "all":   every conversation the user can access
    */
   historyView?: "hidden" | "app" | "all";
+  // ── Input + display chrome (Redux-backed, read by Smart input /
+  //    message option menus / etc.). Saved here so apps lock in their
+  //    desired UX; useAgentApp dispatches each onto the instance.
+  /** Override the textarea placeholder. */
+  inputPlaceholder?: string | null;
+  /** Render the freeform text input. False = variables-only mode. */
+  showFreeformInput?: boolean;
+  /** Show attachment button + resource chips. */
+  showAttachments?: boolean;
+  /** Show the mic button. */
+  showMicrophone?: boolean;
+  /** Show the ⋯ menu on user messages. */
+  showUserMessageOptions?: boolean;
+  /** Show the ⋯ menu on assistant messages. */
+  showAssistantMessageOptions?: boolean;
+  /** Enter submits / Shift+Enter newline. */
+  submitOnEnter?: boolean;
+  /** Buffer the stream — paint the full response on completion. */
+  bufferStream?: boolean;
   /** Branding overrides. */
   primaryColor?: string;
   accentColor?: string;

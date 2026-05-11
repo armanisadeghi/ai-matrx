@@ -37,7 +37,10 @@ import {
   selectIsLatestAssistantMessage,
   extractFlatText,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectResponseDensity } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import {
+  selectResponseDensity,
+  selectShowAssistantMessageOptions,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { extractErrorMessage } from "@/utils/errors";
@@ -121,6 +124,9 @@ export function AssistantActionBar({
     selectMessagePosition(conversationId, messageId),
   );
   const density = useAppSelector(selectResponseDensity(conversationId));
+  const showOptions = useAppSelector(
+    selectShowAssistantMessageOptions(conversationId),
+  );
   const isLatestAssistant = useAppSelector(
     selectIsLatestAssistantMessage(conversationId, messageId),
   );
@@ -312,18 +318,20 @@ export function AssistantActionBar({
           className="text-muted-foreground"
         />
 
-        <div ref={moreOptionsButtonRef}>
-          <MoreHorizontalTapButton
-            variant="group"
-            onClick={() => setShowOptionsMenu(true)}
-            ariaLabel="More options"
-            className="text-muted-foreground"
-          />
-        </div>
+        {showOptions && (
+          <div ref={moreOptionsButtonRef}>
+            <MoreHorizontalTapButton
+              variant="group"
+              onClick={() => setShowOptionsMenu(true)}
+              ariaLabel="More options"
+              className="text-muted-foreground"
+            />
+          </div>
+        )}
       </TapTargetButtonGroup>
       </div>
 
-      {showOptionsMenu && (
+      {showOptions && showOptionsMenu && (
         <Suspense fallback={null}>
           <MessageOptionsMenu
             role="assistant"

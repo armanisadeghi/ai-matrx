@@ -52,6 +52,11 @@ import {
   setSubmitOnEnter as setSubmitOnEnterAction,
   setDisplayNameOverride as setDisplayNameOverrideAction,
   setDisplayDescriptionOverride as setDisplayDescriptionOverrideAction,
+  setShowAttachments as setShowAttachmentsAction,
+  setShowMicrophone as setShowMicrophoneAction,
+  setShowUserMessageOptions as setShowUserMessageOptionsAction,
+  setShowAssistantMessageOptions as setShowAssistantMessageOptionsAction,
+  setInputPlaceholder as setInputPlaceholderAction,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { AgentAppChatShell } from "./shells/AgentAppChatShell";
 import { AgentAppFormToResultShell } from "./shells/AgentAppFormToResultShell";
@@ -103,12 +108,25 @@ export function LiveBuilder({
   // ── User selections ────────────────────────────────────────────────────
   // Name + description live in the LEFT options panel as the first section
   // so the user can edit them and watch the preview header update in real
-  // time. Name defaults to "<Agent> App" once the agent loads.
+  // time. Both pre-fill from the agent so the user sees and saves the
+  // resolved value — defaults aren't silent. If the agent's name or
+  // description changes upstream later, the saved app stays as the user
+  // captured it.
   const [name, setName] = useState<string>("");
+  const [nameTouched, setNameTouched] = useState(false);
   useEffect(() => {
-    if (!name && agent?.name) setName(`${agent.name} App`);
-  }, [agent?.name, name]);
+    if (nameTouched) return;
+    if (!agent?.name) return;
+    setName(`${agent.name} App`);
+  }, [agent?.name, nameTouched]);
+
   const [description, setDescription] = useState<string>("");
+  const [descTouched, setDescTouched] = useState(false);
+  useEffect(() => {
+    if (descTouched) return;
+    if (agent?.description == null) return;
+    setDescription(agent.description ?? "");
+  }, [agent?.description, descTouched]);
 
   const [shellKind, setShellKind] = useState<ShellChoice>("chat");
   const [variableStyle, setVariableStyle] = useState<VariableStyle>("form");
@@ -252,6 +270,58 @@ export function LiveBuilder({
     );
   }, [description, previewConversationId, dispatch]);
 
+  // Newly-wired input/display settings — dispatched on change so the
+  // preview reflects them live.
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setShowAttachmentsAction({
+        conversationId: previewConversationId,
+        value: allowAttachments,
+      }),
+    );
+  }, [allowAttachments, previewConversationId, dispatch]);
+
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setShowMicrophoneAction({
+        conversationId: previewConversationId,
+        value: showMicrophone,
+      }),
+    );
+  }, [showMicrophone, previewConversationId, dispatch]);
+
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setShowUserMessageOptionsAction({
+        conversationId: previewConversationId,
+        value: showUserMessageOptions,
+      }),
+    );
+  }, [showUserMessageOptions, previewConversationId, dispatch]);
+
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setShowAssistantMessageOptionsAction({
+        conversationId: previewConversationId,
+        value: showAssistantMessageOptions,
+      }),
+    );
+  }, [showAssistantMessageOptions, previewConversationId, dispatch]);
+
+  useEffect(() => {
+    if (!previewConversationId) return;
+    dispatch(
+      setInputPlaceholderAction({
+        conversationId: previewConversationId,
+        value: inputPlaceholder || null,
+      }),
+    );
+  }, [inputPlaceholder, previewConversationId, dispatch]);
+
   // ── Shell config sent to the DB on Create ──────────────────────────────
   // Note: NO `hideTitle` — the shells never draw their own title bar;
   // the app's name + description show in the centered hero
@@ -259,24 +329,29 @@ export function LiveBuilder({
   const shellConfig: AgentAppShellConfigCommon & Record<string, unknown> =
     useMemo(
       () => ({
+        // Variables + chat
         allowChat,
         showVariablePanel: variableStyle !== "hidden",
         variableInputStyle:
           variableStyle === "hidden" ? undefined : variableStyle,
+        // Transcript filters + density
         hideReasoning,
         hideToolResults,
         compact: density === "compact",
+        // Chat-specific
         historyView,
-        // Below: not yet wired in the runtime — saved so options aren't lost.
-        allowCustomUserInput,
-        resultRenderer,
-        responseDelivery,
-        allowAttachments,
+        // Wired in Redux — explicit so saved apps lock in the user's
+        // selections even if defaults change later.
+        showAttachments: allowAttachments,
         showMicrophone,
         submitOnEnter,
         showUserMessageOptions,
         showAssistantMessageOptions,
-        inputPlaceholder: inputPlaceholder || undefined,
+        inputPlaceholder: inputPlaceholder || null,
+        // Not yet wired in the runtime — saved so options aren't lost.
+        allowCustomUserInput,
+        resultRenderer,
+        responseDelivery,
       }),
       [
         allowChat,
@@ -397,7 +472,10 @@ export function LiveBuilder({
               </Label>
               <Input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setNameTouched(true);
+                  setName(e.target.value);
+                }}
                 placeholder={`${agent?.name ?? "App"} App`}
                 className="text-[16px] font-medium"
               />
@@ -408,7 +486,10 @@ export function LiveBuilder({
               </Label>
               <Textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescTouched(true);
+                  setDescription(e.target.value);
+                }}
                 placeholder="One-line tagline — shown on the public page (optional)"
                 rows={2}
                 className="text-sm resize-none"
@@ -596,13 +677,11 @@ export function LiveBuilder({
                   title="Allow Attachments"
                   selected={allowAttachments}
                   onClick={() => setAllowAttachments((v) => !v)}
-                  placeholder
                 />
                 <ChoiceCard
                   title="Show Microphone"
                   selected={showMicrophone}
                   onClick={() => setShowMicrophone((v) => !v)}
-                  placeholder
                 />
                 <ChoiceCard
                   title="Submit on Enter"
@@ -613,13 +692,11 @@ export function LiveBuilder({
                   title="User Message Options"
                   selected={showUserMessageOptions}
                   onClick={() => setShowUserMessageOptions((v) => !v)}
-                  placeholder
                 />
                 <ChoiceCard
                   title="Assistant Message Options"
                   selected={showAssistantMessageOptions}
                   onClick={() => setShowAssistantMessageOptions((v) => !v)}
-                  placeholder
                 />
               </CardGrid>
               <div>

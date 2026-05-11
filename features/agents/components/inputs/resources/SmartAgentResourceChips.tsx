@@ -30,6 +30,7 @@ import {
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { removeResource } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type {
   ManagedResource,
   ResourceBlockType,
@@ -358,6 +359,9 @@ export function SmartAgentResourceChips({
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
+  const showAttachments = useAppSelector(
+    selectShowAttachments(conversationId),
+  );
 
   const handleRemove = useCallback(
     (resourceId: string) => {
@@ -366,6 +370,7 @@ export function SmartAgentResourceChips({
     [conversationId, dispatch],
   );
 
+  if (!showAttachments) return null;
   if (resources.length === 0) return null;
 
   return (

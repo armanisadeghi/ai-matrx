@@ -30,6 +30,8 @@ import {
   selectShowVariablePanel,
   selectIsCreator,
   selectShowCreatorDebug,
+  selectShowAttachments,
+  selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   toggleCreatorDebug,
@@ -83,6 +85,12 @@ export function SingleRowActionButtons({
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
+  const showAttachments = useAppSelector(
+    selectShowAttachments(conversationId),
+  );
+  const showMicrophone = useAppSelector(
+    selectShowMicrophone(conversationId),
+  );
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const isDebugMode = useAppSelector(selectIsDebugMode);
 
@@ -102,11 +110,13 @@ export function SingleRowActionButtons({
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
-      <SmartAgentResourcePickerButton
-        conversationId={conversationId}
-        uploadBucket={uploadBucket}
-        uploadPath={uploadPath}
-      />
+      {showAttachments && (
+        <SmartAgentResourcePickerButton
+          conversationId={conversationId}
+          uploadBucket={uploadBucket}
+          uploadPath={uploadPath}
+        />
+      )}
 
       {isAdmin && isDebugMode && (
         <InputButton
@@ -145,7 +155,9 @@ export function SingleRowActionButtons({
 
       {extraRightControls}
 
-      <AgentMicrophoneButton conversationId={conversationId} size="xs" />
+      {showMicrophone && (
+        <AgentMicrophoneButton conversationId={conversationId} size="xs" />
+      )}
 
       {showSendButton && (
         <Button
