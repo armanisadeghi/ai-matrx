@@ -272,14 +272,18 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload.file_urls).toBeUndefined();
   });
 
-  test("conversation_id is fresh per call — wire-level UUID, NOT the redux key", () => {
+  test("omits conversation_id and sets is_new — server mints the id", () => {
+    // Sending a client-minted wire conversation_id with `is_new: true`
+    // collides with cx_conversation rows the server creates on its own
+    // (409 "conversation already exists"). The contract is: client sends
+    // is_new: true and OMITS the conversation_id field; server generates
+    // a fresh id and echoes it back via X-Conversation-ID. The local
+    // Redux conversationId stays stable for UI continuity (not on the wire).
     const state = makeState({});
     const a = assembleManualRequest(state, CONVERSATION_ID)!;
     const b = assembleManualRequest(state, CONVERSATION_ID)!;
-    expect(a.conversation_id).toBeDefined();
-    expect(b.conversation_id).toBeDefined();
-    expect(a.conversation_id).not.toBe(b.conversation_id);
-    expect(a.conversation_id).not.toBe(CONVERSATION_ID);
+    expect(a.conversation_id).toBeUndefined();
+    expect(b.conversation_id).toBeUndefined();
     expect(a.is_new).toBe(true);
     expect(b.is_new).toBe(true);
   });

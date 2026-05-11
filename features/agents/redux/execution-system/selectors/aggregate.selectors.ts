@@ -100,12 +100,21 @@ export const selectAutoClearWithConversationHistory =
     return selectHasMessages(conversationId)(state);
   };
 
+/**
+ * Surfaces that opt in via `showAutoClearToggle: true` want the icon
+ * visible from the first turn — including before any messages exist — so
+ * the engineer can flip the mode BEFORE submitting. The earlier
+ * `hasMessages` gate hid the icon until a response had streamed in,
+ * which made the Agent Builder's "always-on" intent unreachable.
+ *
+ * Visibility is now driven purely by the instance-level flag, which the
+ * route / surface explicitly sets at instance creation
+ * (see AgentBuilderRightPanel for the canonical Builder wiring).
+ */
 export const selectShouldShowAutoClearToggle =
   (conversationId: string) =>
-  (state: RootState): boolean => {
-    if (!selectShowAutoClearToggle(conversationId)(state)) return false;
-    return selectHasMessages(conversationId)(state);
-  };
+  (state: RootState): boolean =>
+    selectShowAutoClearToggle(conversationId)(state);
 
 // =============================================================================
 // Derived Request Selectors (conversationId → latest request data)

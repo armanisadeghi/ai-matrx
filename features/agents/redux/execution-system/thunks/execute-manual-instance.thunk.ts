@@ -64,7 +64,6 @@ import {
   registerAbortController,
   unregisterAbortController,
 } from "./abort-registry";
-import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import { callbackManager } from "@/utils/callbackManager";
 import {
   deriveClientToolsFromHandle,
@@ -296,10 +295,15 @@ export function assembleManualRequest(
   const { sourceApp, sourceFeature } = instance;
   const isEphemeral = instance.isEphemeral === true;
 
-  // Fresh wire-level conversation_id every call. Multi-turn history lives in
-  // `messages[]` (client-side). Each POST is independent on the server.
-  const wireConversationId = uuidv4();
-
+  // We do NOT send a wire `conversation_id`. The server mints a fresh one
+  // and echoes it via X-Conversation-ID / typed `conversation_id` events.
+  // This matches the historical "branch" semantics (the `hasHistory &&
+  // !reuseConversationId` branch in the pre-regression thunk) and is what
+  // the backend explicitly recommends — sending a client-minted UUID with
+  // `is_new: true` collides with server-side cx_conversation rows.
+  // Multi-turn history is carried entirely client-side in messages[];
+  // stream events carry the server's id and are remapped to the local
+  // Redux conversationId via processStream's forceLocalConversationId flag.
   const request: Partial<ChatRequestPayload> = {
     ai_model_id,
     messages: messages as ChatRequestPayload["messages"],
@@ -309,7 +313,6 @@ export function assembleManualRequest(
     max_iterations: advancedSettings?.maxIterations ?? 100,
     max_retries_per_iteration: advancedSettings?.maxRetriesPerIteration ?? 2,
     is_new: true,
-    conversation_id: wireConversationId,
     ...(fullSettings as Partial<ChatRequestPayload>),
   };
 
@@ -525,17 +528,12 @@ export const executeManualInstance = createAsyncThunk<
         throw new Error(`API error: ${serverMessage}`);
       }
 
+      // The X-Conversation-ID header (if echoed by the server) carries the
+      // WIRE conversation_id we minted — which is intentionally different
+      // from the local Redux conversationId. The integrity assertion in
+      // assert-conversation-id assumes server-echoes-client-id and would
+      // throw in dev — skip it entirely for manual mode.
       const headerConversationId = response.headers.get("X-Conversation-ID");
-      if (headerConversationId) {
-        // Server echoed the wire conversation_id — confirm it matches what
-        // we sent. If /ai/manual does not echo this header, the assertion
-        // is skipped (no header → noop).
-        assertConversationIdMatches(
-          conversationId,
-          headerConversationId,
-          "x-conversation-id-header",
-        );
-      }
       const conversationIdAt = headerConversationId ? performance.now() : null;
 
       dispatch(setInstanceStatus({ conversationId, status: "streaming" }));
@@ -554,6 +552,12 @@ export const executeManualInstance = createAsyncThunk<
         getState: getState as () => RootState,
         jsonExtraction: currentUiState?.jsonExtraction ?? undefined,
         userMessageClientTempId,
+        // Wire convId minted per call is intentionally different from the
+        // local Redux conversationId — tell processStream to ignore the
+        // wire id on every stream event and dispatch with the local id so
+        // streamed messages land in the same Redux entry the optimistic
+        // user message lives in (and the response column is rendering).
+        forceLocalConversationId: true,
       });
 
       unregisterAbortController(conversationId);

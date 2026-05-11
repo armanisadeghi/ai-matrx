@@ -178,6 +178,19 @@ interface ProcessStreamArgs {
    * Redux record carries the final server id with no duplication.
    */
   userMessageClientTempId?: string;
+  /**
+   * Set true for the Agent Builder's manual execution path
+   * (`POST /ai/manual`). The wire `conversation_id` minted per call is
+   * intentionally different from the local Redux `conversationId`, so:
+   *   1. `assertConversationIdMatches` is skipped (the IDs are *expected*
+   *      to diverge — that is not server drift).
+   *   2. Every `parents.conversation_id` read on incoming stream events is
+   *      ignored; the local `conversationId` is used for all dispatches so
+   *      streaming events land in the same Redux entry the optimistic user
+   *      message lives in (and that the response column is rendering).
+   * Agent mode leaves this false and keeps the strict integrity guard.
+   */
+  forceLocalConversationId?: boolean;
 }
 
 export interface ProcessStreamResult {
@@ -205,7 +218,13 @@ export async function processStream({
   heartbeatTimeoutMs,
   maxLifetimeMs,
   userMessageClientTempId,
+  forceLocalConversationId = false,
 }: ProcessStreamArgs): Promise<ProcessStreamResult> {
+  // Helper for the manual execution path: when forceLocalConversationId is
+  // set, stream-event parent_refs.conversation_id is ignored and the local
+  // Redux conversationId is used everywhere. See the param docstring above.
+  const owningConvId = (wireConvId: string | undefined | null): string =>
+    forceLocalConversationId ? conversationId : (wireConvId ?? conversationId);
   const { events: rawEvents } = parseNdjsonStream(response);
   // When an abortController is provided, wrap the raw NDJSON iterator with
   // the stream-monitor so a silent server (headers-only-then-nothing, dead
@@ -510,11 +529,15 @@ export async function processStream({
 
       if (d.type === "conversation_id") {
         const convData = d as ConversationIdData;
-        assertConversationIdMatches(
-          conversationId,
-          convData.conversation_id,
-          "conversation_id-data-event",
-        );
+        // Manual mode mints a fresh wire conv_id per call; the assertion
+        // does not apply (the IDs are intentionally different).
+        if (!forceLocalConversationId) {
+          assertConversationIdMatches(
+            conversationId,
+            convData.conversation_id,
+            "conversation_id-data-event",
+          );
+        }
       } else if (d.type === "conversation_labeled") {
         const labeled = d as ConversationLabeledData;
         dispatch(
@@ -810,8 +833,9 @@ export async function processStream({
         // observability.toolCalls path is the canonical home for tool data.
         if (d.metadata.role !== "tool") {
           const { position, role } = d.metadata;
-          const owningConversationId =
-            d.parent_refs.conversation_id ?? conversationId;
+          const owningConversationId = owningConvId(
+            d.parent_refs.conversation_id,
+          );
 
           if (role === "user" && userMessageClientTempId) {
             // Promote the optimistic user record to the server id. The record
@@ -855,7 +879,7 @@ export async function processStream({
         dispatch(
           upsertUserRequest({
             id: d.record_id,
-            conversationId: parents?.conversation_id ?? conversationId,
+            conversationId: owningConvId(parents?.conversation_id),
             // Fields unknown at reservation time; server fills them in on
             // record_update / completion. Sensible zeros keep selectors safe.
             userId: "",
@@ -892,7 +916,7 @@ export async function processStream({
         dispatch(
           upsertRequest({
             id: d.record_id,
-            conversationId: conversation_id ?? conversationId,
+            conversationId: owningConvId(conversation_id),
             userRequestId: user_request_id,
             aiModelId: "",
             apiClass: null,
@@ -931,7 +955,7 @@ export async function processStream({
         dispatch(
           upsertToolCall({
             id: d.record_id,
-            conversationId: conversation_id ?? conversationId,
+            conversationId: owningConvId(conversation_id),
             userRequestId: user_request_id,
             messageId: null,
             userId: "",
@@ -970,11 +994,14 @@ export async function processStream({
           }),
         );
       } else if (d.table === "cx_conversation") {
-        assertConversationIdMatches(
-          conversationId,
-          d.record_id,
-          "record_reserved-cx_conversation",
-        );
+        // Manual mode: wire convId ≠ local Redux convId by design — skip.
+        if (!forceLocalConversationId) {
+          assertConversationIdMatches(
+            conversationId,
+            d.record_id,
+            "record_reserved-cx_conversation",
+          );
+        }
         if (!cxConversationConfirmed) {
           cxConversationConfirmed = true;
           dispatch(confirmServerSync(conversationId));
