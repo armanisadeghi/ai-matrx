@@ -75,6 +75,15 @@ import { selectConversationMessages } from "@/features/agents/redux/execution-sy
 
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import {
+  setInputPlaceholder,
+  setShowFreeformInput,
+  setShowAttachments,
+  setShowMicrophone,
+  setShowUserMessageOptions,
+  setShowAssistantMessageOptions,
+  setBufferStream,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
@@ -121,6 +130,25 @@ export interface UseAgentAppArgs {
   hideReasoning?: boolean;
   /** Hide tool-result blocks from the transcript. */
   hideToolResults?: boolean;
+
+  // ── Settings → dispatched as instance-ui-state setters after the
+  //    conversation exists. These flow into Redux so the consuming
+  //    components (SmartAgentInput, MessageOptions, etc.) read them
+  //    via selectors without needing props.
+  /** Override the textarea placeholder. Null = default. */
+  inputPlaceholder?: string | null;
+  /** Render the freeform text input. False hides it (variables only). */
+  showFreeformInput?: boolean;
+  /** Show attachment button + resource chips. */
+  showAttachments?: boolean;
+  /** Show the mic button in the input toolbar. */
+  showMicrophone?: boolean;
+  /** Show the ⋯ menu on user messages. */
+  showUserMessageOptions?: boolean;
+  /** Show the ⋯ menu on assistant messages. */
+  showAssistantMessageOptions?: boolean;
+  /** Buffer the stream — paint only when complete. */
+  bufferStream?: boolean;
 }
 
 export interface UseAgentAppReturn {
@@ -207,6 +235,13 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     showDefinitionMessageContent,
     hideReasoning,
     hideToolResults,
+    inputPlaceholder,
+    showFreeformInput,
+    showAttachments,
+    showMicrophone,
+    showUserMessageOptions,
+    showAssistantMessageOptions,
+    bufferStream,
   } = args;
   const surfaceKey = args.surfaceKey ?? `agent-app:${appId}`;
 
@@ -257,6 +292,59 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     ready: isReady,
   });
   const conversationId = launcher.conversationId;
+
+  // ── Settings → Redux ─────────────────────────────────────────────────
+  // Each setting that's defined on the args dispatches a setter once the
+  // conversation exists. Per the architecture: settings live in Redux,
+  // consuming components (SmartAgentInput, message option menus, etc.)
+  // read them via selectors — no prop chains.
+  useEffect(() => {
+    if (!conversationId) return;
+    if (inputPlaceholder === undefined) return;
+    dispatch(
+      setInputPlaceholder({ conversationId, value: inputPlaceholder ?? null }),
+    );
+  }, [conversationId, inputPlaceholder, dispatch]);
+
+  useEffect(() => {
+    if (!conversationId || showFreeformInput === undefined) return;
+    dispatch(setShowFreeformInput({ conversationId, value: showFreeformInput }));
+  }, [conversationId, showFreeformInput, dispatch]);
+
+  useEffect(() => {
+    if (!conversationId || showAttachments === undefined) return;
+    dispatch(setShowAttachments({ conversationId, value: showAttachments }));
+  }, [conversationId, showAttachments, dispatch]);
+
+  useEffect(() => {
+    if (!conversationId || showMicrophone === undefined) return;
+    dispatch(setShowMicrophone({ conversationId, value: showMicrophone }));
+  }, [conversationId, showMicrophone, dispatch]);
+
+  useEffect(() => {
+    if (!conversationId || showUserMessageOptions === undefined) return;
+    dispatch(
+      setShowUserMessageOptions({
+        conversationId,
+        value: showUserMessageOptions,
+      }),
+    );
+  }, [conversationId, showUserMessageOptions, dispatch]);
+
+  useEffect(() => {
+    if (!conversationId || showAssistantMessageOptions === undefined) return;
+    dispatch(
+      setShowAssistantMessageOptions({
+        conversationId,
+        value: showAssistantMessageOptions,
+      }),
+    );
+  }, [conversationId, showAssistantMessageOptions, dispatch]);
+
+  useEffect(() => {
+    if (!conversationId || bufferStream === undefined) return;
+    dispatch(setBufferStream({ conversationId, value: bufferStream }));
+  }, [conversationId, bufferStream, dispatch]);
 
   // ── Selectors ─────────────────────────────────────────────────────────
 
