@@ -40,6 +40,7 @@ import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
 import { AutoCreateAgentAppForm } from "./AutoCreateAgentAppForm";
+import { LiveBuilder } from "./LiveBuilder";
 import {
   SearchableAgentSelect,
   type AgentOption,
@@ -322,15 +323,12 @@ export function CreateAgentAppFormWrapper({
             onSuccess={onSuccess}
           />
         )}
-        {mode === "live-builder" && (
-          <div className="max-w-2xl mx-auto text-center py-16 space-y-3">
-            <Layout className="w-12 h-12 mx-auto text-muted-foreground" />
-            <h2 className="text-2xl font-semibold">Live Builder</h2>
-            <p className="text-sm text-muted-foreground">
-              Coming next — split-pane builder with real-time preview against
-              the shell library.
-            </p>
-          </div>
+        {mode === "live-builder" && selectedAgentId && (
+          <LiveBuilder
+            agentId={selectedAgentId}
+            onCancel={backToGrid}
+            onSuccess={onSuccess}
+          />
         )}
         {mode === "manual" && (
           <CreateAgentAppForm
