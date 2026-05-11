@@ -14,6 +14,7 @@
     "test:unit": "jest --no-coverage",
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",
     "clean": "rimraf .next node_modules/.cache",
+    "clean:turbo": "rimraf .next/dev/cache/turbopack",
     "clean:deep": "rimraf .next .turbo node_modules/.cache tsconfig.tsbuildinfo",
     "clean:worktrees": "find .claude/worktrees -type d \\( -name .next -o -name .turbo -o -name node_modules \\) -prune -exec rm -rf {} + 2>/dev/null; echo 'worktree caches cleared'",
     "db-types": "npx supabase gen types typescript --project-id txzxabzwovsujtloxrus --schema public > types/database.types.ts && bash scripts/fix-encoding.sh && bash scripts/patch-db-types.sh",
