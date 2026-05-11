@@ -179,23 +179,12 @@ function ChatShellLayout({
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
-      {/* Header bar — back / app name / collapse / new conversation.
+      {/* Header bar — collapse / back / app name / new conversation.
           Sits ABOVE the sidebar so it stays visible when the sidebar
-          is collapsed. */}
+          is collapsed. Sidebar collapse stays anchored to the LEFT
+          edge near the sidebar it controls — visual association is
+          what makes the toggle discoverable. */}
       <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border px-2 bg-card/50">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
-          onClick={() => router.back()}
-          title="Back"
-          aria-label="Back"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <div className="flex-1 min-w-0 text-sm font-medium truncate px-1">
-          {appName}
-        </div>
         {sidebarEnabled && (
           <Button
             variant="ghost"
@@ -212,6 +201,19 @@ function ChatShellLayout({
             )}
           </Button>
         )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={() => router.back()}
+          title="Back"
+          aria-label="Back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <div className="flex-1 min-w-0 text-sm font-medium truncate px-1">
+          {appName}
+        </div>
         <Button
           variant="ghost"
           size="icon"
