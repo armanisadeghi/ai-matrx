@@ -36,6 +36,11 @@ const SIDE_LABELS: Record<string, string> = {
 
 const SIDE_ORDER = ["left", "right", "default"] as const;
 
+/** Per-row data for the breakdown table. The math fields (`finalWpi`, `fec`,
+ * `wpiAdj`, etc.) come from the backend's structured rating breakdown
+ * (`inj.rating.*`), threaded through after the calc has run. They're
+ * optional because they're only present when the calc succeeded.
+ */
 interface InjuryDetailRow {
   index: number;
   impairment: WcImpairmentDefinitionRead;
@@ -45,6 +50,36 @@ interface InjuryDetailRow {
   industrial: number;
   warnings: string[];
   errors: string[];
+  // Structured math from the rating pipeline — only present after calc.
+  wpi: number | null;
+  finalWpi: number | null;
+  fec: number | null;
+  fecRank: number | null;
+  wpiAdj: number | null;
+  occupationGroup: string | null;
+  occupationLetter: string | null;
+  occupAdj: number | null;
+  ageAdj: number | null;
+  finalPd: number | null;
+}
+
+// `rating` was added to StatelessInjuryOut on the backend (Phase 2); the
+// generated TS types may not have it yet until `pnpm sync-types`. Read it
+// defensively with this shape.
+interface InjuryRatingPayload {
+  rating?: number | null;
+  formula?: string | null;
+  wpi?: number | null;
+  pain?: number | null;
+  final_wpi?: number | null;
+  fec?: number | null;
+  fec_rank?: number | null;
+  wpi_adj?: number | null;
+  occupation_group?: string | null;
+  occupation_letter?: string | null;
+  occup_adj?: number | null;
+  age_adj?: number | null;
+  industrial?: number | null;
 }
 
 function buildInjuryRows(result: StatelessRatingResponse): InjuryDetailRow[] {
@@ -52,6 +87,8 @@ function buildInjuryRows(result: StatelessRatingResponse): InjuryDetailRow[] {
     const acceptsSide = inj.impairment_definition.attributes?.side ?? false;
     const side =
       (inj.injury_attributes as { side?: string } | null)?.side ?? "default";
+    const r = (inj as unknown as { rating?: InjuryRatingPayload | null })
+      .rating;
     return {
       index: idx,
       impairment: inj.impairment_definition,
@@ -61,6 +98,16 @@ function buildInjuryRows(result: StatelessRatingResponse): InjuryDetailRow[] {
       industrial: inj.industrial,
       warnings: inj.warnings,
       errors: inj.errors,
+      wpi: r?.wpi ?? null,
+      finalWpi: r?.final_wpi ?? null,
+      fec: r?.fec ?? null,
+      fecRank: r?.fec_rank ?? null,
+      wpiAdj: r?.wpi_adj ?? null,
+      occupationGroup: r?.occupation_group ?? null,
+      occupationLetter: r?.occupation_letter ?? null,
+      occupAdj: r?.occup_adj ?? null,
+      ageAdj: r?.age_adj ?? null,
+      finalPd: r?.rating ?? null,
     };
   });
 }
@@ -73,14 +120,31 @@ function sortSides(sides: string[]): string[] {
   return [...known, ...unknown];
 }
 
+// Render `null`/`undefined` as a dash, ints as ints, floats with 2 decimals
+// when not whole. Used for both display and TSV export so numbers line up.
+function num(v: number | null | undefined): string {
+  if (v == null) return "—";
+  if (Number.isInteger(v)) return String(v);
+  return v.toFixed(2);
+}
+
 function injuryRowToTsv(row: InjuryDetailRow): string {
   const cells = [
     String(row.index + 1),
     row.impairment.name,
     row.impairment.impairment_number ?? "—",
     row.acceptsSide ? (SIDE_LABELS[row.side] ?? row.side) : "—",
+    num(row.wpi),
     String(row.pain ?? 0),
+    num(row.finalWpi),
+    num(row.fec),
+    num(row.wpiAdj),
+    row.occupationGroup ?? "—",
+    row.occupationLetter ?? "—",
+    num(row.occupAdj),
+    num(row.ageAdj),
     `${row.industrial ?? 100}%`,
+    num(row.finalPd),
     row.warnings.join(" · "),
   ];
   return cells.join("\t");
@@ -125,9 +189,24 @@ function buildExportText(
 
   lines.push("Per-injury detail");
   lines.push(
-    ["#", "Impairment", "AMA Code", "Side", "Pain", "Industrial", "Notes"].join(
-      "\t",
-    ),
+    [
+      "#",
+      "Impairment",
+      "AMA Code",
+      "Side",
+      "WPI",
+      "Pain",
+      "FinalWPI",
+      "FEC",
+      "WPI Adj",
+      "Group",
+      "Letter",
+      "OccupAdj",
+      "AgeAdj",
+      "Industrial",
+      "Final PD",
+      "Notes",
+    ].join("\t"),
   );
   for (const row of rows) {
     lines.push(injuryRowToTsv(row));
@@ -223,6 +302,9 @@ export function RatingBreakdownTable({
         </div>
       )}
 
+      {/* Per-injury math grid. Mirrors the AMA Guides workflow that
+          California WC professionals expect to see end-to-end:
+          WPI → +Pain → ×FEC → ×Variant → AgeAdj → ×Industrial → Final PD */}
       <div className="w-full overflow-x-auto rounded-lg border border-border bg-background/40">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-muted/40">
@@ -231,9 +313,18 @@ export function RatingBreakdownTable({
               <Th className="text-left">Impairment</Th>
               <Th className="text-left whitespace-nowrap">AMA code</Th>
               <Th className="text-left">Side</Th>
+              <Th className="text-right">WPI</Th>
               <Th className="text-right">Pain</Th>
+              <Th className="text-right whitespace-nowrap">Final WPI</Th>
+              <Th className="text-right">FEC</Th>
+              <Th className="text-right whitespace-nowrap">WPI Adj</Th>
+              <Th className="text-right">Group</Th>
+              <Th className="text-center">Letter</Th>
+              <Th className="text-right whitespace-nowrap">Occup Adj</Th>
+              <Th className="text-right whitespace-nowrap">Age Adj</Th>
               <Th className="text-right whitespace-nowrap">Industrial</Th>
-              <Th className="text-left whitespace-nowrap">Notes</Th>
+              <Th className="text-right whitespace-nowrap">Final PD</Th>
+              <Th className="text-left whitespace-nowrap pr-2">Notes</Th>
             </tr>
           </thead>
           <tbody>
@@ -317,66 +408,113 @@ function BreakdownRow({ row }: { row: InjuryDetailRow }) {
   const hasNotes = row.warnings.length > 0 || row.errors.length > 0;
 
   return (
-    <>
-      <tr className="border-t border-border/60 hover:bg-muted/30 transition-colors">
-        <td className="px-2 py-2.5 pl-4 align-top">
-          <span className="font-mono text-xs font-medium text-muted-foreground tabular-nums">
-            {row.index + 1}
+    <tr className="border-t border-border/60 hover:bg-muted/30 transition-colors">
+      <td className="px-2 py-2.5 pl-4 align-top">
+        <span className="font-mono text-xs font-medium text-muted-foreground tabular-nums">
+          {row.index + 1}
+        </span>
+      </td>
+      <td className="px-2 py-2.5 align-top min-w-0">
+        <span className="font-medium text-foreground">
+          {row.impairment.name}
+        </span>
+      </td>
+      <td className="px-2 py-2.5 align-top font-mono text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+        {row.impairment.impairment_number ?? "—"}
+      </td>
+      <td className="px-2 py-2.5 align-top whitespace-nowrap">
+        {row.acceptsSide ? (
+          <span className="text-foreground">
+            {SIDE_LABELS[row.side] ?? row.side}
           </span>
-        </td>
-        <td className="px-2 py-2.5 align-top min-w-0">
-          <span className="font-medium text-foreground">
-            {row.impairment.name}
+        ) : (
+          <Dash />
+        )}
+      </td>
+      <NumCell value={row.wpi} suffix="%" />
+      <NumCell value={row.pain ?? 0} showZero />
+      <NumCell value={row.finalWpi} suffix="%" />
+      <NumCell value={row.fec} />
+      <NumCell value={row.wpiAdj} suffix="%" />
+      <NumCell value={row.occupationGroup ?? null} />
+      <td className="px-2 py-2.5 align-top text-center font-mono tabular-nums whitespace-nowrap">
+        {row.occupationLetter ? (
+          <span className="text-foreground">{row.occupationLetter}</span>
+        ) : (
+          <Dash />
+        )}
+      </td>
+      <NumCell value={row.occupAdj} suffix="%" />
+      <NumCell value={row.ageAdj} suffix="%" />
+      <NumCell value={row.industrial ?? 100} suffix="%" showZero />
+      <td className="px-2 py-2.5 align-top text-right font-mono tabular-nums whitespace-nowrap">
+        {row.finalPd != null ? (
+          <span className="font-semibold text-foreground">
+            {row.finalPd}%
           </span>
-        </td>
-        <td className="px-2 py-2.5 align-top font-mono text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-          {row.impairment.impairment_number ?? "—"}
-        </td>
-        <td className="px-2 py-2.5 align-top whitespace-nowrap">
-          {row.acceptsSide ? (
-            <span className="text-foreground">
-              {SIDE_LABELS[row.side] ?? row.side}
-            </span>
-          ) : (
-            <span className="text-muted-foreground/60">—</span>
-          )}
-        </td>
-        <td className="px-2 py-2.5 align-top text-right font-mono tabular-nums">
-          <span className="text-foreground">{row.pain ?? 0}</span>
-        </td>
-        <td className="px-2 py-2.5 align-top text-right font-mono tabular-nums whitespace-nowrap">
-          <span className="text-foreground">{row.industrial ?? 100}%</span>
-        </td>
-        <td className="px-2 py-2.5 align-top text-xs text-muted-foreground min-w-[140px]">
-          {hasNotes ? (
-            <ul className="space-y-0.5">
-              {row.errors.map((e, idx) => (
-                <li key={`e-${idx}`} className="flex gap-1 text-destructive">
-                  <AlertTriangle
-                    className="h-3 w-3 mt-0.5 shrink-0"
-                    aria-hidden
-                  />
-                  <span>{e}</span>
-                </li>
-              ))}
-              {row.warnings.map((w, idx) => (
-                <li
-                  key={`w-${idx}`}
-                  className="flex gap-1 text-amber-700 dark:text-amber-400"
-                >
-                  <AlertTriangle
-                    className="h-3 w-3 mt-0.5 shrink-0"
-                    aria-hidden
-                  />
-                  <span>{w}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <span className="text-muted-foreground/50">—</span>
-          )}
-        </td>
-      </tr>
-    </>
+        ) : (
+          <Dash />
+        )}
+      </td>
+      <td className="px-2 py-2.5 pr-2 align-top text-xs text-muted-foreground min-w-[140px]">
+        {hasNotes ? (
+          <ul className="space-y-0.5">
+            {row.errors.map((e, idx) => (
+              <li key={`e-${idx}`} className="flex gap-1 text-destructive">
+                <AlertTriangle
+                  className="h-3 w-3 mt-0.5 shrink-0"
+                  aria-hidden
+                />
+                <span>{e}</span>
+              </li>
+            ))}
+            {row.warnings.map((w, idx) => (
+              <li
+                key={`w-${idx}`}
+                className="flex gap-1 text-amber-700 dark:text-amber-400"
+              >
+                <AlertTriangle
+                  className="h-3 w-3 mt-0.5 shrink-0"
+                  aria-hidden
+                />
+                <span>{w}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Dash />
+        )}
+      </td>
+    </tr>
   );
+}
+
+function NumCell({
+  value,
+  suffix,
+  showZero,
+}: {
+  value: number | string | null | undefined;
+  suffix?: string;
+  showZero?: boolean;
+}) {
+  const display =
+    value == null
+      ? null
+      : typeof value === "string"
+        ? value
+        : !showZero && value === 0
+          ? null
+          : Number.isInteger(value)
+            ? `${value}${suffix ?? ""}`
+            : `${value.toFixed(2)}${suffix ?? ""}`;
+  return (
+    <td className="px-2 py-2.5 align-top text-right font-mono text-sm tabular-nums whitespace-nowrap">
+      {display == null ? <Dash /> : <span className="text-foreground">{display}</span>}
+    </td>
+  );
+}
+
+function Dash() {
+  return <span className="text-muted-foreground/60">—</span>;
 }

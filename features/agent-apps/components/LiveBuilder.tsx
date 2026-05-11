@@ -129,9 +129,8 @@ export function LiveBuilder({
     useState<ResponseDelivery>("stream");
 
   // History sidebar scope (chat shell only).
-  const [historyView, setHistoryView] = useState<
-    NonNullable<AgentAppShellConfigCommon["historyView"]>
-  >("app");
+  const [historyView, setHistoryView] =
+    useState<NonNullable<AgentAppShellConfigCommon["historyView"]>>("app");
 
   // Custom tweaks — density uses the real ResponseDensity type
   // ("comfortable" | "compact") from instance-ui-state.slice.ts.
@@ -518,9 +517,7 @@ export function LiveBuilder({
           <Section number={5} label="How Should Results Display?">
             <CardGrid columns={2}>
               <ChoiceCard
-                icon={<Sparkles className="w-4 h-4 text-primary" />}
-                iconBg="bg-primary/10"
-                title="Matrx Custom Formatted Display"
+                title="Matrx Display"
                 description="Full AI Matrx experience with rich formatting, flashcards, code blocks, and all custom UIs."
                 selected={resultRenderer === "matrx"}
                 onClick={() => setResultRenderer("matrx")}

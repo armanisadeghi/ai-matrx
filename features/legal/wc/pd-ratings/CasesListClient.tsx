@@ -21,19 +21,21 @@ import {
   selectUserId,
 } from "@/lib/redux/slices/userSlice";
 import {
-  useClaimBookmarks,
-  useDeleteBookmark,
-  type ClaimBookmark,
-} from "./api/bookmarks";
+  useMyClaims,
+  useDeleteClaim,
+  type SavedClaimRow,
+} from "./api/claims";
 
 export function CasesListClient() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const isAuthed = useAppSelector(selectIsAuthenticated);
-  const { data: bookmarks, isLoading, error } = useClaimBookmarks(userId);
-  const deleteBookmark = useDeleteBookmark();
+  // Direct Supabase query, RLS-gated to the current user. Replaces the
+  // old wc_user_claim_bookmarks join table entirely.
+  const { data: claims, isLoading, error } = useMyClaims(userId);
+  const deleteClaim = useDeleteClaim();
 
-  const [confirmTarget, setConfirmTarget] = React.useState<ClaimBookmark | null>(
+  const [confirmTarget, setConfirmTarget] = React.useState<SavedClaimRow | null>(
     null,
   );
   const [busy, setBusy] = React.useState(false);
@@ -107,15 +109,15 @@ export function CasesListClient() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {!bookmarks || bookmarks.length === 0 ? (
+        {!claims || claims.length === 0 ? (
           <EmptyCases />
         ) : (
           <ul className="space-y-2.5">
-            {bookmarks.map((b) => (
+            {claims.map((c) => (
               <CaseRow
-                key={b.claim_id}
-                bookmark={b}
-                onDelete={() => setConfirmTarget(b)}
+                key={c.id}
+                claim={c}
+                onDelete={() => setConfirmTarget(c)}
               />
             ))}
           </ul>
@@ -127,30 +129,30 @@ export function CasesListClient() {
         onOpenChange={(open) => {
           if (!open && !busy) setConfirmTarget(null);
         }}
-        title="Remove case bookmark"
+        title="Delete case"
         description={
           <>
-            Remove the bookmark for{" "}
-            <b>{confirmTarget?.label ?? "this case"}</b>? The underlying claim
-            data on the rating server is not deleted — you'll just lose the
-            shortcut to it.
+            Permanently delete{" "}
+            <b>{confirmTarget?.applicant_name ?? "this case"}</b>? This removes
+            the claim and all of its injuries from the database. This cannot be
+            undone.
           </>
         }
-        confirmLabel="Remove bookmark"
+        confirmLabel="Delete case"
         variant="destructive"
         busy={busy}
         onConfirm={async () => {
           if (!confirmTarget || !userId) return;
           setBusy(true);
           try {
-            await deleteBookmark.mutateAsync({
+            await deleteClaim.mutateAsync({
               userId,
-              claimId: confirmTarget.claim_id,
+              claimId: confirmTarget.id,
             });
-            toast.success("Bookmark removed");
+            toast.success("Case deleted");
             setConfirmTarget(null);
           } catch (err) {
-            toast.error("Couldn't remove bookmark", {
+            toast.error("Couldn't delete case", {
               description: err instanceof Error ? err.message : undefined,
             });
           } finally {
@@ -163,17 +165,24 @@ export function CasesListClient() {
 }
 
 function CaseRow({
-  bookmark,
+  claim,
   onDelete,
 }: {
-  bookmark: ClaimBookmark;
+  claim: SavedClaimRow;
   onDelete: () => void;
 }) {
+  // Surface case_number when present (the FE-collected ADJ/file number);
+  // otherwise fall back to the short UUID prefix the way the old bookmarks
+  // row did.
+  const subtitle = claim.case_number
+    ? claim.case_number
+    : `${claim.id.slice(0, 8)}…`;
+  const stamp = claim.updated_at ?? claim.created_at;
   return (
     <li className="group rounded-xl border border-border bg-card transition-colors hover:border-primary/30">
       <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
         <Link
-          href={`/legal/ca-wc/pd-ratings-calculator/${bookmark.claim_id}`}
+          href={`/legal/ca-wc/pd-ratings-calculator/${claim.id}`}
           className="flex-1 min-w-0 flex items-center gap-3"
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -181,11 +190,10 @@ function CaseRow({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground truncate">
-              {bookmark.label || "Untitled case"}
+              {claim.applicant_name || "Untitled case"}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground font-mono truncate">
-              {bookmark.claim_id.slice(0, 8)}… · saved{" "}
-              {formatDateRelative(bookmark.created_at)}
+              {subtitle} · {formatDateRelative(stamp)}
             </p>
           </div>
           <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary shrink-0" />
@@ -196,7 +204,7 @@ function CaseRow({
           variant="ghost"
           className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
           onClick={onDelete}
-          aria-label="Remove bookmark"
+          aria-label="Delete case"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -212,7 +220,7 @@ function EmptyCases() {
       <p className="mt-3 text-sm font-medium text-foreground">No saved cases yet</p>
       <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
         Open the PD Ratings Calculator, fill in a claim, and click "Save case"
-        to bookmark it here.
+        to see it here.
       </p>
       <Button asChild className="mt-4 gap-1.5">
         <Link href="/legal/ca-wc/pd-ratings-calculator">

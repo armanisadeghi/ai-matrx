@@ -18,7 +18,6 @@ import { useState } from "react";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AgentAppRenderer } from "@/features/agent-apps/components/AgentAppRenderer";
-import { HistorySidebar } from "./HistorySidebar";
 import type { AgentApp } from "@/features/agent-apps/types";
 
 interface AgentAppRunWithHistoryProps {
@@ -30,21 +29,12 @@ export function AgentAppRunWithHistory({
   app,
   slug,
 }: AgentAppRunWithHistoryProps) {
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const surfaceKey = `agent-app:${app.id}`;
 
   return (
     <div className="h-full flex flex-row">
-      <div className="hidden lg:block">
-        <HistorySidebar
-          agentId={app.agent_id}
-          versionFilter={null}
-          surfaceKey={surfaceKey}
-          hidden={!sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-      </div>
-      <div className="flex-1 min-w-0 relative">
+      <div className="flex-1 min-w-0 relative pt-10">
         {!sidebarOpen && (
           <Button
             variant="ghost"

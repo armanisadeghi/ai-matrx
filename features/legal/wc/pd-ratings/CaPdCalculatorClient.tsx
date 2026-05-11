@@ -27,7 +27,7 @@ import { ResultPanel } from "./components/workspace/ResultPanel";
 import { SaveCaseButton } from "./components/workspace/SaveCaseButton";
 import { UtilityTeasers } from "./components/workspace/UtilityTeasers";
 import { PrintCaseButton } from "./components/workspace/PrintCaseButton";
-import { useClaimBookmarks } from "./api/bookmarks";
+import { useMyClaims, type SavedClaimRow } from "./api/claims";
 import { useImpairments, useOccupationalCodes } from "./api/hooks";
 import { useRatingDraft } from "./state/useRatingDraft";
 import { useLiveRating } from "./state/useLiveRating";
@@ -52,15 +52,17 @@ export function CaPdCalculatorClient({
   const {
     draft,
     hydrated,
+    isDirty,
     updateClaim,
     addInjury,
     updateInjury,
     removeInjury,
     resetDraft,
+    markClean,
   } = useRatingDraft({ initialDraft, persist: mode === "draft" });
 
   const liveRating = useLiveRating(draft);
-  const { save, status: saveStatus } = useSaveCase();
+  const { save } = useSaveCase();
   const { data: impairmentCatalog } = useImpairments();
   const { data: occupationCatalog } = useOccupationalCodes();
 
@@ -83,11 +85,11 @@ export function CaPdCalculatorClient({
   // Only fetch saved cases when relevant — authed, draft mode, and the draft is
   // empty (otherwise the user is mid-edit and the resume panel would just be
   // noise). The hook is also gated by `enabled: !!userId` internally.
-  const shouldFetchBookmarks = mode === "draft" && isAuthed && !hasContent;
-  const bookmarksQuery = useClaimBookmarks(
-    shouldFetchBookmarks ? userId : undefined,
+  const shouldFetchSavedCases = mode === "draft" && isAuthed && !hasContent;
+  const savedCasesQuery = useMyClaims(
+    shouldFetchSavedCases ? userId : undefined,
   );
-  const bookmarks = bookmarksQuery.data ?? [];
+  const savedCases = savedCasesQuery.data ?? [];
 
   // Post-login auto-save trigger.
   // After redirect from /login?redirectTo=...?save=1, kick off the save flow
@@ -108,7 +110,7 @@ export function CaPdCalculatorClient({
       const result = await save(draft);
       if (result) {
         toast.success("Case saved", {
-          description: "Your case is bookmarked and the rating is persisted.",
+          description: "Your case has been saved and the rating is persisted.",
         });
         router.replace(`/legal/ca-wc/pd-ratings-calculator/${result.claimId}`);
       }
@@ -122,12 +124,19 @@ export function CaPdCalculatorClient({
     [router],
   );
 
+  // After an in-place update succeeds, re-baseline the draft so the
+  // Save button flips back to its "All changes saved" state. No
+  // navigation — the user stays on the same /[claimId] page.
+  const handleUpdated = React.useCallback(() => {
+    markClean();
+  }, [markClean]);
+
   if (!hydrated) {
     return <WorkspaceSkeleton />;
   }
 
   const showResumePanel =
-    mode === "draft" && isAuthed && !hasContent && bookmarks.length > 0;
+    mode === "draft" && isAuthed && !hasContent && savedCases.length > 0;
 
   return (
     <>
@@ -147,11 +156,12 @@ export function CaPdCalculatorClient({
                 impairmentCatalog={impairmentCatalog?.impairments ?? null}
                 occupationLabel={occupationLabel}
               />
-              {mode === "draft" ? (
-                <SaveCaseButton draft={draft} onSaved={handleSaved} />
-              ) : (
-                <SavedBadge status={saveStatus.kind} />
-              )}
+              <SaveCaseButton
+                draft={draft}
+                isDirty={isDirty}
+                onSaved={handleSaved}
+                onUpdated={handleUpdated}
+              />
             </>
           }
         />
@@ -160,8 +170,8 @@ export function CaPdCalculatorClient({
       <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-16 space-y-4 lg:space-y-6">
         {showResumePanel && (
           <ResumeSavedCasesPanel
-            bookmarks={bookmarks.slice(0, 5)}
-            totalCount={bookmarks.length}
+            cases={savedCases.slice(0, 5)}
+            totalCount={savedCases.length}
           />
         )}
 
@@ -272,23 +282,11 @@ function Toolbar({
   );
 }
 
-function SavedBadge({ status }: { status: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground">
-      Saved · {status === "saving" ? "syncing…" : "live"}
-    </span>
-  );
-}
-
 function ResumeSavedCasesPanel({
-  bookmarks,
+  cases,
   totalCount,
 }: {
-  bookmarks: Array<{
-    claim_id: string;
-    label: string | null;
-    created_at: string;
-  }>;
+  cases: SavedClaimRow[];
   totalCount: number;
 }) {
   return (
@@ -318,26 +316,29 @@ function ResumeSavedCasesPanel({
         </Button>
       </header>
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-        {bookmarks.map((bookmark) => (
-          <li key={bookmark.claim_id}>
-            <Link
-              href={`/legal/ca-wc/pd-ratings-calculator/${bookmark.claim_id}`}
-              className="group flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 transition-colors hover:border-primary/30 hover:bg-card/80"
-            >
-              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-foreground truncate">
-                  {bookmark.label || "Untitled case"}
-                </p>
-                <p className="text-[10px] text-muted-foreground font-mono truncate">
-                  {bookmark.claim_id.slice(0, 8)}… · saved{" "}
-                  {formatRelative(bookmark.created_at)}
-                </p>
-              </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5 shrink-0" />
-            </Link>
-          </li>
-        ))}
+        {cases.map((c) => {
+          const subtitle = c.case_number ?? `${c.id.slice(0, 8)}…`;
+          const stamp = c.updated_at ?? c.created_at;
+          return (
+            <li key={c.id}>
+              <Link
+                href={`/legal/ca-wc/pd-ratings-calculator/${c.id}`}
+                className="group flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2 transition-colors hover:border-primary/30 hover:bg-card/80"
+              >
+                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {c.applicant_name || "Untitled case"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-mono truncate">
+                    {subtitle} · {formatRelative(stamp)}
+                  </p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5 shrink-0" />
+              </Link>
+            </li>
+          );
+        })}
       </ul>
       <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
         <Plus className="h-3 w-3" />

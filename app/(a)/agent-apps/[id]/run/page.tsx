@@ -28,12 +28,7 @@ export default async function AgentAppRunPage({ params }: RunPageProps) {
       <PageHeader>
         <AgentAppHeader appId={app.id} appName={app.name} active="run" />
       </PageHeader>
-      <div
-        className="h-full overflow-hidden"
-        style={{ paddingTop: "var(--shell-header-h)" }}
-      >
-        <AgentAppRunWithHistory app={app} slug={app.slug} />
-      </div>
+      <AgentAppRunWithHistory app={app} slug={app.slug} />
     </>
   );
 }

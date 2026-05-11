@@ -30,6 +30,9 @@ export function hydrateRatingDraft(
     case_number: (rawClaim.case_number as string | null | undefined) ?? null,
     evaluator_name: (rawClaim.evaluator_name as string | null | undefined) ?? null,
     comments: (rawClaim.comments as string | null | undefined) ?? null,
+    p_s_date: (rawClaim.p_s_date as string | null | undefined) ?? null,
+    job_offer_date: (rawClaim.job_offer_date as string | null | undefined) ?? null,
+    large_employer: Boolean(rawClaim.large_employer ?? false),
   };
 
   const injuryDrafts: InjuryDraft[] = injuries.injuries.map((inj) => {
@@ -46,6 +49,7 @@ export function hydrateRatingDraft(
       digit: (raw.digit as number | null | undefined) ?? null,
       pain: (raw.pain as number | undefined) ?? 0,
       industrial: (raw.industrial as number | undefined) ?? 100,
+      ag: Boolean(raw.ag ?? false),
     };
   });
 

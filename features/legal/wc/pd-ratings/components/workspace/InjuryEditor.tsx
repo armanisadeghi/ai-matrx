@@ -5,6 +5,7 @@ import { Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
@@ -248,6 +249,25 @@ function InjuryEditorBody({
           max={100}
           step={1}
         />
+      </Field>
+
+      {/* AG (Almanac Grade) override. Stored on the injury for record-
+          keeping; the rating engine doesn't apply it today. Surfaced for
+          parity with calculators that expose it. */}
+      <Field
+        label="AG (Almanac Grade)"
+        hint="Override flag. Saved with the injury; not applied to the rating math today."
+        trailing={
+          <Switch
+            checked={injury.ag}
+            onCheckedChange={(v) => onChange({ ag: Boolean(v) })}
+            aria-label="AG override"
+          />
+        }
+      >
+        <span className="text-xs text-muted-foreground">
+          {injury.ag ? "Override on" : "Override off"}
+        </span>
       </Field>
     </div>
   );

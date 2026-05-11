@@ -154,6 +154,84 @@ function ResolvedResult({
         />
       </div>
 
+      {/* Weekly + Daily rate (Phase 3). Only render when the calc has run
+          and produced a non-null weekly_payment. Cast through `unknown`
+          because `weekly_payment` and friends aren't in the regenerated TS
+          types until `pnpm sync-types` runs again — values exist on the
+          wire today regardless. */}
+      {(() => {
+        const ext = compensation as unknown as
+          | {
+              weekly_payment?: number | null;
+              daily_rate?: number | null;
+              pd_adjustment_pct?: number | null;
+              pd_adjustment_reason?: string | null;
+              life_pension_weekly?: number | null;
+            }
+          | undefined;
+        const showRates =
+          ext?.weekly_payment != null && ext.weekly_payment > 0;
+        const adjustmentPct = ext?.pd_adjustment_pct ?? 0;
+        const adjustmentReason = ext?.pd_adjustment_reason ?? "";
+        const lp = ext?.life_pension_weekly ?? 0;
+        return (
+          <>
+            {showRates && (
+              <div className="grid grid-cols-2 gap-3 pt-3">
+                <Metric
+                  label="Weekly rate"
+                  value={formatCurrency(ext.weekly_payment ?? 0)}
+                />
+                <Metric
+                  label="Daily rate"
+                  value={formatCurrency(ext.daily_rate ?? 0)}
+                />
+              </div>
+            )}
+
+            {adjustmentPct !== 0 && (
+              <div
+                className={cn(
+                  "mt-3 rounded-lg border px-3 py-2 text-xs",
+                  adjustmentPct > 0
+                    ? "border-emerald-200/60 bg-emerald-50/40 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300"
+                    : "border-amber-200/60 bg-amber-50/40 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <span className="font-semibold">
+                    LC §4658(d) adjustment
+                  </span>
+                  <span className="font-mono tabular-nums font-semibold">
+                    {adjustmentPct > 0 ? "+" : ""}
+                    {adjustmentPct}%
+                  </span>
+                </div>
+                {adjustmentReason && (
+                  <p className="text-[11px] opacity-90">{adjustmentReason}</p>
+                )}
+              </div>
+            )}
+
+            {lp > 0 && (
+              <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Life pension (LC §4659)
+                  </span>
+                  <span className="font-mono tabular-nums text-base font-semibold text-foreground">
+                    {formatCurrency(lp)} / wk
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Paid for life after the regular PD payments end.
+                </p>
+              </div>
+            )}
+          </>
+        );
+      })()}
+
       {combined?.ratings && Object.keys(combined.ratings).length > 0 && (
         <div className="pt-4 border-t border-border/60">
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2.5">

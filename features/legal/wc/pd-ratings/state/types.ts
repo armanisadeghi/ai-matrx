@@ -14,6 +14,13 @@ export interface ClaimDraft {
   case_number: string | null;
   evaluator_name: string | null;
   comments: string | null;
+  // Compensation-driving fields (LC §4658(d) and §4659).
+  // p_s_date + job_offer_date + large_employer feed the §4658(d) bump/cut
+  // on the weekly PD rate (only triggers for DOI 2005-2012). Life Pension
+  // is computed automatically based on final_rating + DOI year, no input.
+  p_s_date: string | null;
+  job_offer_date: string | null;
+  large_employer: boolean;
 }
 
 export interface InjuryDraft {
@@ -27,6 +34,9 @@ export interface InjuryDraft {
   digit: number | null;
   pain: number;
   industrial: number;
+  // AMA Almanac Grade override flag — record-keeping for now; the rating
+  // engine doesn't honor it yet (reserved for a future rule).
+  ag: boolean;
 }
 
 export type DraftMode = "draft" | "loading" | "saved";
@@ -36,6 +46,15 @@ export interface RatingDraft {
   injuries: InjuryDraft[];
   persistedClaimId?: string;
   persistedReportId?: string;
+  /**
+   * IDs of injuries that were loaded from the server in saved-case mode
+   * and subsequently removed by the user. The update flow deletes these
+   * before patching/creating the remaining injuries.
+   *
+   * Not persisted to localStorage — only meaningful while a saved case
+   * is being edited in-memory.
+   */
+  removedPersistedInjuryIds?: string[];
 }
 
 export const EMPTY_CLAIM_DRAFT: ClaimDraft = {
@@ -49,6 +68,9 @@ export const EMPTY_CLAIM_DRAFT: ClaimDraft = {
   case_number: null,
   evaluator_name: null,
   comments: null,
+  p_s_date: null,
+  job_offer_date: null,
+  large_employer: false,
 };
 
 export const EMPTY_DRAFT: RatingDraft = {
@@ -67,5 +89,6 @@ export function makeInjuryDraft(): InjuryDraft {
     digit: null,
     pain: 0,
     industrial: 100,
+    ag: false,
   };
 }

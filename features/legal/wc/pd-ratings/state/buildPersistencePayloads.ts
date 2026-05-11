@@ -36,6 +36,10 @@ export function claimDraftToCreate(claim: ClaimDraft): ClaimCreate {
   if (claim.case_number) extras.case_number = claim.case_number;
   if (claim.evaluator_name) extras.evaluator_name = claim.evaluator_name;
   if (claim.comments) extras.comments = claim.comments;
+  // Phase 3 compensation inputs (LC §4658(d) and §4659).
+  if (claim.p_s_date) extras.p_s_date = claim.p_s_date;
+  if (claim.job_offer_date) extras.job_offer_date = claim.job_offer_date;
+  if (claim.large_employer) extras.large_employer = true;
   return body;
 }
 
@@ -53,6 +57,9 @@ export function claimDraftToPatch(claim: ClaimDraft): ClaimPatch {
   extras.case_number = claim.case_number ?? null;
   extras.evaluator_name = claim.evaluator_name ?? null;
   extras.comments = claim.comments ?? null;
+  extras.p_s_date = claim.p_s_date ?? null;
+  extras.job_offer_date = claim.job_offer_date ?? null;
+  extras.large_employer = claim.large_employer;
   return body;
 }
 
@@ -69,7 +76,9 @@ export function injuryDraftToCreate(injury: InjuryDraft): InjuryCreate {
   if (injury.ue != null) body.ue = injury.ue;
   if (injury.le != null) body.le = injury.le;
   if (injury.digit != null) body.digit = injury.digit;
-  (body as Record<string, unknown>).side = injury.side;
+  const extras = body as Record<string, unknown>;
+  extras.side = injury.side;
+  if (injury.ag) extras.ag = true;
   return body;
 }
 
@@ -82,10 +91,11 @@ export function injuryDraftToPatch(injury: InjuryDraft): InjuryPatch {
   body.ue = injury.ue;
   body.le = injury.le;
   body.digit = injury.digit;
+  const extras = body as Record<string, unknown>;
   if (injury.impairment_definition_id) {
-    (body as Record<string, unknown>).impairment_definition_id =
-      injury.impairment_definition_id;
+    extras.impairment_definition_id = injury.impairment_definition_id;
   }
-  (body as Record<string, unknown>).side = injury.side;
+  extras.side = injury.side;
+  extras.ag = injury.ag;
   return body;
 }

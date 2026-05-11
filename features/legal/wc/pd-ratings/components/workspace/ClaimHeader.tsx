@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -191,7 +192,110 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
       </div>
 
       <CaseInfoSection claim={claim} onChange={onChange} />
+      <CompensationSection claim={claim} onChange={onChange} />
     </section>
+  );
+}
+
+function CompensationSection({
+  claim,
+  onChange,
+}: {
+  claim: ClaimDraft;
+  onChange: (patch: Partial<ClaimDraft>) => void;
+}) {
+  const hasContent =
+    !!claim.p_s_date || !!claim.job_offer_date || claim.large_employer;
+  const [open, setOpen] = React.useState(hasContent);
+
+  // §4658(d) only applies for DOI 2005–2012. We surface this hint inline so
+  // users with a more recent DOI know why the bump/cut won't apply.
+  const doiYear = claim.date_of_injury
+    ? Number(claim.date_of_injury.slice(0, 4))
+    : null;
+  const inWindow = doiYear != null && doiYear >= 2005 && doiYear <= 2012;
+  const windowHint = inWindow
+    ? "DOI is in the LC §4658(d) window — the 15% bump/cut may apply."
+    : doiYear != null
+      ? `DOI ${doiYear} is outside the LC §4658(d) window (2005–2012). These fields are saved but won't affect the weekly rate.`
+      : "Pick a date of injury above to see whether LC §4658(d) applies.";
+
+  return (
+    <div className="mt-4 border-t border-border/60 pt-5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 text-left"
+      >
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        )}
+        <span className="text-sm font-semibold text-foreground">
+          Compensation details
+        </span>
+        <span className="text-xs text-muted-foreground">
+          (P&S, job offer, large employer — affects LC §4658(d))
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-4">
+          <p className="text-xs text-muted-foreground">{windowHint}</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5">
+            <div className="lg:col-span-4">
+              <Field
+                label="P&S date"
+                hint="Permanent & Stationary (when condition stabilized)."
+              >
+                <DateField
+                  value={parseIso(claim.p_s_date)}
+                  onChange={(d) => onChange({ p_s_date: isoOrNull(d) })}
+                  fromYear={1980}
+                  toYear={new Date().getFullYear() + 1}
+                />
+              </Field>
+            </div>
+
+            <div className="lg:col-span-4">
+              <Field
+                label="Job offer date"
+                hint="Date the employer offered regular / modified / alternative work, if any."
+              >
+                <DateField
+                  value={parseIso(claim.job_offer_date)}
+                  onChange={(d) => onChange({ job_offer_date: isoOrNull(d) })}
+                  fromYear={1980}
+                  toYear={new Date().getFullYear() + 1}
+                />
+              </Field>
+            </div>
+
+            <div className="lg:col-span-4">
+              <Field
+                label="Large employer"
+                hint="Employer had 50+ employees at DOI."
+              >
+                <div className="flex items-center gap-3 h-11 px-3 rounded-lg border border-border bg-background">
+                  <Switch
+                    checked={claim.large_employer}
+                    onCheckedChange={(v) =>
+                      onChange({ large_employer: Boolean(v) })
+                    }
+                    aria-label="Large employer (50 or more employees at DOI)"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {claim.large_employer ? "Yes (50+)" : "No / unknown"}
+                  </span>
+                </div>
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
