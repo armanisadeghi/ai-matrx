@@ -179,6 +179,26 @@ function CustomHeader({ app, agent }) {
 export default CustomHeader;
 `;
 
+const LOADING_COMPONENT_STUB = `// Loading component slot — renders while the agent is streaming and
+// "Buffer stream" is enabled. The agent's response paints in one
+// frame after the stream completes; this component fills the gap.
+// Props (from useAgentApp): isStreaming, isExecuting, streamPhase,
+// agent, variables.
+
+function CustomLoading({ isStreaming, streamPhase }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-12">
+      <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <p className="text-sm text-muted-foreground">
+        {streamPhase === "connecting" ? "Starting up…" : "Working on it…"}
+      </p>
+    </div>
+  );
+}
+
+export default CustomLoading;
+`;
+
 const APP_STUB = `// Fully custom app — the entire UI lives here.
 // Props (from useAgentApp): all hook fields. See useAgentApp.ts for full list.
 
@@ -222,6 +242,7 @@ export default CustomApp;
 export const SLOT_STUBS: Record<AgentAppSlotName, string> = {
   variableInput: VARIABLE_INPUT_STUB,
   resultRenderer: RESULT_RENDERER_STUB,
+  loadingComponent: LOADING_COMPONENT_STUB,
   messageDisplay: MESSAGE_DISPLAY_STUB,
   preExecutionGate: PRE_EXECUTION_GATE_STUB,
   input: VARIABLE_INPUT_STUB, // alias for shells that label this differently
@@ -254,6 +275,11 @@ export const SHELL_SLOT_CATALOG: Record<string, SlotMeta[]> = {
       description: "Custom rendering for agent output (replaces MarkdownStream).",
     },
     {
+      name: "loadingComponent",
+      label: "Loading component",
+      description: "Renders while the agent streams when Buffer Stream is on.",
+    },
+    {
       name: "messageDisplay",
       label: "Message display",
       description: "Replace the conversation transcript wholesale.",
@@ -281,6 +307,11 @@ export const SHELL_SLOT_CATALOG: Record<string, SlotMeta[]> = {
       description: "Custom rendering for the agent's response.",
     },
     {
+      name: "loadingComponent",
+      label: "Loading component",
+      description: "Renders while the agent streams when Buffer Stream is on.",
+    },
+    {
       name: "preExecutionGate",
       label: "Pre-execution gate",
       description: "Welcome / consent screen shown before the first run.",
@@ -301,6 +332,11 @@ export const SHELL_SLOT_CATALOG: Record<string, SlotMeta[]> = {
       name: "resultRenderer",
       label: "Result renderer",
       description: "Custom rendering for the agent's response.",
+    },
+    {
+      name: "loadingComponent",
+      label: "Loading component",
+      description: "Renders while the agent streams when Buffer Stream is on.",
     },
   ],
   fully_custom: [

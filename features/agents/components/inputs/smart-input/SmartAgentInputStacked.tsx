@@ -12,13 +12,20 @@
  */
 
 import React from "react";
+import { ArrowUp, CircleStop, Loader2 } from "lucide-react";
 import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
 import { UninitializedShell } from "./UninitializedShell";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  smartExecute,
+  cancelExecution,
+} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectShowFreeformInput } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { Button } from "@/components/ui/button";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 
 interface SmartAgentInputStackedProps {
@@ -53,6 +60,15 @@ export function SmartAgentInputStacked({
   extraRightControls,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
+  // Hooks must run unconditionally — `conversationId` may be null on
+  // first render, but the selectors short-circuit when it is and the
+  // early-return below renders the uninitialized shell instead.
+  const showFreeformInput = useAppSelector(
+    selectShowFreeformInput(conversationId ?? ""),
+  );
+  const isExecuting = useAppSelector(
+    selectIsExecuting(conversationId ?? ""),
+  );
 
   const sendBtnClass =
     sendButtonVariant === "blue"
@@ -66,6 +82,46 @@ export function SmartAgentInputStacked({
   const handleSubmit = () => {
     if (!disableSend) dispatch(smartExecute({ conversationId, surfaceKey }));
   };
+
+  // Variables-only mode: hide chips + textarea + full toolbar. Render the
+  // variables panel and a single Run button. Apps that want a structured
+  // form experience (no chat box) configure showFreeformInput = false.
+  if (!showFreeformInput) {
+    const handleStop = () => dispatch(cancelExecution(conversationId));
+    return (
+      <div
+        className={`flex flex-col min-h-0 bg-card rounded-lg w-full ${compact ? "max-w-[500px]" : "max-w-[800px]"} border border-border overflow-hidden`}
+      >
+        <SmartAgentVariables
+          conversationId={conversationId}
+          compact={compact}
+          onSubmit={handleSubmit}
+          styleOverride={variablesPanelStyle}
+        />
+        <div className="flex items-center justify-end gap-2 px-2 py-1.5 border-t border-border/60">
+          {extraRightControls}
+          <Button
+            size="sm"
+            onClick={isExecuting ? handleStop : handleSubmit}
+            disabled={disableSend && !isExecuting}
+            className="gap-1.5"
+          >
+            {isExecuting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Stop
+              </>
+            ) : (
+              <>
+                <ArrowUp className="w-3.5 h-3.5" />
+                Run
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -61,6 +61,7 @@ import {
 import { AgentAppChatShell } from "./shells/AgentAppChatShell";
 import { AgentAppFormToResultShell } from "./shells/AgentAppFormToResultShell";
 import { AgentAppWidgetShell } from "./shells/AgentAppWidgetShell";
+import { SLOT_STUBS } from "@/features/agent-apps/utils/slot-stubs";
 import type {
   AgentAppShellConfigCommon,
   AgentAppShellKind,
@@ -348,8 +349,9 @@ export function LiveBuilder({
         showUserMessageOptions,
         showAssistantMessageOptions,
         inputPlaceholder: inputPlaceholder || null,
-        // Not yet wired in the runtime — saved so options aren't lost.
-        allowCustomUserInput,
+        showFreeformInput: allowCustomUserInput,
+        bufferStream: responseDelivery === "all-at-once",
+        // Saved for completeness — drives slot_overrides / slot_code on create.
         resultRenderer,
         responseDelivery,
       }),
@@ -371,6 +373,32 @@ export function LiveBuilder({
         inputPlaceholder,
       ],
     );
+
+  // Slot overrides + slot code derived from the user's selections.
+  //  - Custom Display → resultRenderer slot is custom, with a starter stub
+  //    populated so the slot editor opens to working code post-create.
+  //  - Buffer Stream → loadingComponent slot stub is seeded so the user
+  //    can edit a custom loader. The default (built-in spinner) renders
+  //    until the user overrides it.
+  const slotOverrides = useMemo(() => {
+    const out: Record<string, "custom"> = {};
+    if (resultRenderer === "custom") out["resultRenderer"] = "custom";
+    return out;
+  }, [resultRenderer]);
+
+  const slotCode = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (resultRenderer === "custom") {
+      out["resultRenderer"] = SLOT_STUBS.resultRenderer;
+    }
+    if (responseDelivery === "all-at-once") {
+      // Seed the loading-component stub. The runtime renders the built-in
+      // default loader; the user replaces this code via Settings → Layout
+      // → Slot overrides when they want a custom loading look.
+      out["loadingComponent"] = SLOT_STUBS.loadingComponent;
+    }
+    return out;
+  }, [resultRenderer, responseDelivery]);
 
   const previewApp: PublicAgentApp = useMemo(
     () =>
@@ -395,15 +423,24 @@ export function LiveBuilder({
         styling_config: {},
         shell_kind: shellKind,
         shell_config: shellConfig,
-        slot_overrides: {},
-        slot_code: {},
+        slot_overrides: slotOverrides,
+        slot_code: slotCode,
         total_executions: 0,
         success_rate: 0,
         app_kind: "single",
         shared_context_slots: null,
         search_tsv: null,
       }) as unknown as PublicAgentApp,
-    [agentId, agent?.name, name, description, shellKind, shellConfig],
+    [
+      agentId,
+      agent?.name,
+      name,
+      description,
+      shellKind,
+      shellConfig,
+      slotOverrides,
+      slotCode,
+    ],
   );
 
   const handleResetPreview = useCallback(() => {
@@ -430,6 +467,8 @@ export function LiveBuilder({
           description: description || undefined,
           shell_kind: shellKind,
           shell_config: shellConfig,
+          slot_overrides: slotOverrides,
+          slot_code: slotCode,
         }),
       });
       if (!res.ok) {
@@ -452,6 +491,8 @@ export function LiveBuilder({
     description,
     shellKind,
     shellConfig,
+    slotOverrides,
+    slotCode,
     onSuccess,
     router,
   ]);
@@ -585,7 +626,6 @@ export function LiveBuilder({
                 title="Allow Custom User Input"
                 selected={allowCustomUserInput}
                 onClick={() => setAllowCustomUserInput((v) => !v)}
-                placeholder
               />
               <ChoiceCard
                 title="Allow Follow-up Chat"
@@ -608,7 +648,6 @@ export function LiveBuilder({
                 description="Fully customized UI designed specifically for your output structure. Requires a highly reliable agent output."
                 selected={resultRenderer === "custom"}
                 onClick={() => setResultRenderer("custom")}
-                placeholder
               />
             </CardGrid>
           </Section>
@@ -641,14 +680,12 @@ export function LiveBuilder({
                 description="Content appears as it's generated. Feels responsive and clearly AI-powered."
                 selected={responseDelivery === "stream"}
                 onClick={() => setResponseDelivery("stream")}
-                placeholder
               />
               <ChoiceCard
                 title="Show All at Once"
                 description='Loading screen, then complete result. Feels like a traditional app, less "AI-like".'
                 selected={responseDelivery === "all-at-once"}
                 onClick={() => setResponseDelivery("all-at-once")}
-                placeholder
               />
             </CardGrid>
           </Section>
@@ -702,9 +739,6 @@ export function LiveBuilder({
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                   Custom User Input Placeholder
-                  <span className="ml-2 inline-flex items-center text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                    Not yet wired
-                  </span>
                 </Label>
                 <Input
                   value={inputPlaceholder}

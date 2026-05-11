@@ -35,6 +35,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDebugContext } from "@/hooks/useDebugContext";
 import { selectErrorIsFatal } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectMessageById,
   extractFlatText,
@@ -46,7 +47,7 @@ import { AssistantActionBar } from "./AssistantActionBar";
 import { RetryConfirmDialog } from "@/features/agents/components/messages-display/message-options/RetryConfirmDialog";
 import { atomicRetry } from "@/features/agents/redux/execution-system/message-crud/atomic-retry.thunk";
 import { Button } from "@/components/ui/button";
-import { RotateCw } from "lucide-react";
+import { Loader2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
@@ -87,6 +88,11 @@ export function AgentAssistantMessage({
   const isFatalError = useAppSelector(
     requestId ? selectErrorIsFatal(requestId) : () => undefined,
   );
+
+  // Buffer stream — when enabled + still streaming, render a loader
+  // instead of the live token text so the response paints in one frame
+  // on completion. Default false; existing surfaces are unaffected.
+  const bufferStream = useAppSelector(selectBufferStream(conversationId));
 
   const record = useAppSelector(
     messageId ? selectMessageById(conversationId, messageId) : () => undefined,
@@ -189,17 +195,24 @@ export function AgentAssistantMessage({
       // assistant turn reveals the bar; non-compact mode keeps it visible.
       className="group/assistant-msg rounded transition-shadow"
     >
-      <MarkdownStream
-        requestId={effectiveRequestId}
-        turnId={messageId}
-        conversationId={conversationId}
-        messageId={messageId ?? undefined}
-        content={flatText}
-        isStreamActive={isStreamActive}
-        hideCopyButton={true}
-        allowFullScreenEditor={false}
-        serverProcessedBlocks={serverProcessedBlocks}
-      />
+      {bufferStream && isStreamActive ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Working on it…</p>
+        </div>
+      ) : (
+        <MarkdownStream
+          requestId={effectiveRequestId}
+          turnId={messageId}
+          conversationId={conversationId}
+          messageId={messageId ?? undefined}
+          content={flatText}
+          isStreamActive={isStreamActive}
+          hideCopyButton={true}
+          allowFullScreenEditor={false}
+          serverProcessedBlocks={serverProcessedBlocks}
+        />
+      )}
       {messageId && (
         <MessageFilesStrip
           conversationId={conversationId}

@@ -281,7 +281,20 @@ function DefaultResultRenderer({
   isStreaming,
   requestId,
   conversationId,
+  app,
 }: DefaultSlotProps) {
+  const bufferStream = !!(app?.shell_config as AgentAppShellConfigCommon | null)
+    ?.bufferStream;
+  // Buffer mode: hide the live token stream, show a loader, paint the
+  // complete response in one frame on stream completion.
+  if (bufferStream && isStreaming) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Working on it…</p>
+      </div>
+    );
+  }
   return (
     <MarkdownStream
       content={response}

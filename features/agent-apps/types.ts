@@ -49,6 +49,7 @@ export type AgentAppShellKind =
 export type AgentAppSlotName =
   | "variableInput"
   | "resultRenderer"
+  | "loadingComponent"
   | "messageDisplay"
   | "preExecutionGate"
   | "input"
