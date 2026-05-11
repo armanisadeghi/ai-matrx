@@ -57,6 +57,7 @@ import {
   buildCloudImageSource,
   resolveCloudFileUrl,
 } from "@/components/image/cloud/resolveCloudFileUrl";
+import { buildCloudFilesBrowsePayload } from "@/components/image/cloud/cloudFilesBrowsePayload";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { toast } from "sonner";
 import { CloudFilesBrowserTable } from "./CloudFilesBrowserTable";
@@ -157,26 +158,16 @@ export function CloudFilesTab({
         const imageRows = fileRows.filter((f) =>
           isImageMime(resolveMime(f.mimeType, f.fileName)),
         );
-        const resolved = await Promise.all(
-          imageRows.map((f) =>
-            resolveCloudFileUrl(store, f.id).catch(() => null),
-          ),
-        );
-        const urls: string[] = [];
-        const alts: string[] = [];
-        let initialIndex = 0;
-        for (let i = 0; i < imageRows.length; i += 1) {
-          const url = resolved[i];
-          if (!url) continue;
-          if (imageRows[i].id === file.id) initialIndex = urls.length;
-          urls.push(url);
-          alts.push(imageRows[i].fileName);
-        }
-        if (urls.length === 0) {
+        const payload = await buildCloudFilesBrowsePayload({
+          imageRows,
+          activeFileId: file.id,
+          resolveUrl: (fileId) => resolveCloudFileUrl(store, fileId),
+        });
+        if (payload.images.length === 0) {
           toast.error("Couldn't load that image");
           return;
         }
-        browse({ images: urls, alts, initialIndex, title: file.fileName });
+        browse({ ...payload, title: file.fileName });
       } finally {
         setResolvingId(null);
       }
@@ -231,7 +222,7 @@ export function CloudFilesTab({
   return (
     <div className="h-full flex flex-col">
       {/* Header — breadcrumbs + search */}
-      <div className="border-b border-border px-4 py-2 flex items-center gap-2 flex-wrap">
+      <div className="border-b border-border px-3 md:px-4 py-2 flex items-center gap-2 flex-wrap">
         <BreadcrumbsTrail
           currentFolder={currentFolder}
           foldersById={foldersById}
@@ -242,14 +233,14 @@ export function CloudFilesTab({
           href="/files/photos"
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 px-2 h-8 rounded-md text-xs font-medium text-muted-foreground border border-border hover:bg-accent hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 px-2 h-8 rounded-md text-xs font-medium text-muted-foreground border border-border hover:bg-accent hover:text-foreground transition-colors max-sm:order-3"
           title="Open the Photos-only view in a new tab"
         >
           <ImageIcon className="h-3.5 w-3.5" />
           Photos
           <ExternalLink className="h-3 w-3 opacity-60" />
         </Link>
-        <div className="relative w-48">
+        <div className="relative w-full sm:w-48 max-sm:order-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={query}
@@ -262,7 +253,7 @@ export function CloudFilesTab({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto overscroll-contain">
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -340,7 +331,7 @@ function BreadcrumbsTrail({
   }, [currentFolder, foldersById]);
 
   return (
-    <nav className="flex items-center gap-1 text-sm overflow-x-auto">
+    <nav className="flex min-w-0 items-center gap-1 overflow-x-auto text-sm">
       <button
         type="button"
         onClick={() => onNavigate(null)}

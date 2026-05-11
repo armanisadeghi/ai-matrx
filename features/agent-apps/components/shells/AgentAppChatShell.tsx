@@ -69,6 +69,13 @@ export function AgentAppChatShell({ app }: AgentAppChatShellProps) {
     showDefinitionMessageContent: config.showDefinitionMessageContent,
     hideReasoning: config.hideReasoning,
     hideToolResults: config.hideToolResults,
+    inputPlaceholder: config.inputPlaceholder,
+    showFreeformInput: config.showFreeformInput,
+    showAttachments: config.showAttachments,
+    showMicrophone: config.showMicrophone,
+    showUserMessageOptions: config.showUserMessageOptions,
+    showAssistantMessageOptions: config.showAssistantMessageOptions,
+    bufferStream: config.bufferStream,
   });
 
   if (!agentAppCtx.conversationId) {

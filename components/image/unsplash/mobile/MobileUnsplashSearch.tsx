@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { SearchBar } from '@/components/image/shared/SearchBar';
 import { SortOrder, ImageOrientation, PremiumFilter } from '@/hooks/images/useUnsplashGallery';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Sliders } from 'lucide-react';
-import { SegmentedControl } from '@/components/ui/segmented-control';
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from '@/components/official/bottom-sheet/BottomSheet';
+import { Check, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface MobileUnsplashSearchProps {
@@ -96,6 +98,15 @@ export function MobileUnsplashSearch({
     });
   };
 
+  const applyAndClose = () => {
+    onSearch(query, {
+      sortOrder,
+      orientation,
+      premiumFilter,
+    });
+    setSheetOpen(false);
+  };
+
   return (
     <div className={cn("w-full", className)}>
       <div className="flex items-center gap-2">
@@ -110,67 +121,115 @@ export function MobileUnsplashSearch({
           autoFocus={false}
           buttonClassName="min-w-[50px]"
         />
-        
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="flex-shrink-0 h-9 w-9">
-              <Sliders className="h-4 w-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="pb-0">
-            <SheetHeader className="mb-4">
-              <SheetTitle className="text-center">Filter Options</SheetTitle>
-            </SheetHeader>
-            
-            <div className="space-y-6 pb-6">
-              {/* Sort Order as Tabs */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-center mb-2">Sort By</p>
-                <Tabs value={sortOrder} onValueChange={handleSortChange} className="w-full">
-                  <TabsList className="grid grid-cols-4 w-full">
-                    {sortOrderOptions.map((option) => (
-                      <TabsTrigger key={option} value={option} className="text-xs">
-                        {option.charAt(0).toUpperCase() + option.slice(1)}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              </div>
-              
-              {/* Orientation as segmented control */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-center mb-2">Orientation</p>
-                <SegmentedControl 
-                  value={orientation || 'any'}
-                  onValueChange={handleOrientationChange}
-                  data={[
-                    { value: 'any', label: 'Any' },
-                    ...orientationOptions.filter(Boolean).map(option => ({
-                      value: option as string,
-                      label: option.charAt(0).toUpperCase() + option.slice(1)
-                    }))
-                  ]}
-                  fullWidth
-                />
-              </div>
-              
-              {/* Premium filter as segmented control */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-center mb-2">Premium Content</p>
-                <SegmentedControl 
-                  value={premiumFilter}
-                  onValueChange={handlePremiumChange}
-                  data={premiumFilterOptions.map(option => ({
-                    value: option,
-                    label: option.charAt(0).toUpperCase() + option.slice(1)
-                  }))}
-                  fullWidth
-                />
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => setSheetOpen(true)}
+          className="h-10 w-10 flex-shrink-0"
+          aria-label="Open Unsplash filters"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
       </div>
+
+      <BottomSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        title="Unsplash filters"
+      >
+        <BottomSheetHeader
+          title="Filters"
+          trailing={
+            <button
+              type="button"
+              onClick={applyAndClose}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody className="space-y-5 px-4 pb-5">
+          <OptionGroup
+            title="Sort"
+            value={sortOrder}
+            options={sortOrderOptions.map((option) => ({
+              value: option,
+              label: titleCase(option),
+            }))}
+            onChange={handleSortChange}
+          />
+          <OptionGroup
+            title="Orientation"
+            value={orientation || 'any'}
+            options={[
+              { value: 'any', label: 'Any' },
+              ...orientationOptions.filter(Boolean).map((option) => ({
+                value: option as string,
+                label: titleCase(option as string),
+              })),
+            ]}
+            onChange={handleOrientationChange}
+          />
+          <OptionGroup
+            title="Premium"
+            value={premiumFilter}
+            options={premiumFilterOptions.map((option) => ({
+              value: option,
+              label: titleCase(option),
+            }))}
+            onChange={handlePremiumChange}
+          />
+        </BottomSheetBody>
+      </BottomSheet>
     </div>
   );
-} 
+}
+
+function OptionGroup({
+  title,
+  value,
+  options,
+  onChange,
+}: {
+  title: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <section>
+      <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h3>
+      <div className="overflow-hidden rounded-xl border border-border bg-card/60">
+        {options.map((option, index) => {
+          const active = option.value === value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'flex min-h-[48px] w-full items-center gap-3 px-3 text-left',
+                index > 0 && 'border-t border-border',
+                active ? 'text-primary' : 'text-foreground',
+              )}
+            >
+              <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
+                {option.label}
+              </span>
+              {active ? <Check className="h-4 w-4 text-primary" /> : null}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function titleCase(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}

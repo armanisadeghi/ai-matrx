@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Files from "@/features/files/api/files";
+import { resolveRenderableImageUrl } from "@/features/files/utils/resolveRenderableImageUrl";
 import { extractErrorMessage } from "@/utils/errors";
 
 const SAFETY_MARGIN_MS = 30 * 1000; // refresh 30s before expiry
@@ -52,9 +53,18 @@ export function useSignedUrl(
     setLoading(true);
     setError(null);
     try {
-      const { data } = await Files.getSignedUrl(fileId, { expiresIn });
-      setUrl(data.url);
-      expiresAtRef.current = Date.now() + data.expires_in * 1000;
+      const result = await resolveRenderableImageUrl(
+        { fileId },
+        {
+          expiresIn,
+          getSignedUrl: async (id, params) => {
+            const { data } = await Files.getSignedUrl(id, params);
+            return data;
+          },
+        },
+      );
+      setUrl(result.url);
+      expiresAtRef.current = result.expiresAt ?? Number.POSITIVE_INFINITY;
     } catch (err) {
       const msg = extractErrorMessage(err);
       setError(msg);
@@ -75,6 +85,7 @@ export function useSignedUrl(
   // Auto-refresh before expiry.
   useEffect(() => {
     if (!url) return;
+    if (!Number.isFinite(expiresAtRef.current)) return;
     const msUntilExpiry = expiresAtRef.current - Date.now() - SAFETY_MARGIN_MS;
     if (msUntilExpiry <= 0) {
       void fetchUrl();

@@ -2,7 +2,7 @@
 
 **Status:** ✅ Phase 11 complete. Legacy system deleted, cloud-files is the only file system in the app.
 **Owner:** Files migration team.
-**Last updated:** 2026-05-06.
+**Last updated:** 2026-05-08.
 
 This is the live architecture doc for the new file management system under `features/files/`. It supersedes the legacy Supabase-Storage-based system progressively over 12 phases ([migration/MASTER-PLAN.md](migration/MASTER-PLAN.md)).
 
@@ -168,7 +168,7 @@ components/
 │   ├── FileIcon/         # icon + color by extension/mime
 │   ├── FileMeta/         # size, date, owner, permission chips
 │   ├── FilePreview/      # registry + type-specific previewers (Code/Image/Audio/Video/PDF/Text/Data/Generic)
-│   ├── FileUploadDropzone/
+│   ├── FileUploadDropzone/ # generic file-manager dropzone + overlay surfaces
 │   ├── FileBreadcrumbs/
 │   ├── FileActions/      # headless actions: rename, move, delete, download, share, copyLink, restoreVersion
 │   ├── FileContextMenu/
@@ -288,7 +288,8 @@ Do not violate. If you're tempted, update this doc first with the reasoning.
 7. **Realtime dedup via request ledger** — every REST write ships a `requestId`.
 8. **Dialog on desktop, Drawer on mobile** — enforced by surface branching.
 9. **`dvh` not `vh`** under `app/(a)/files/`.
-10. **Docs updated in the same change as code.**
+10. **Renderable image/file URLs are centrally cached** — use [utils/resolveRenderableImageUrl.ts](utils/resolveRenderableImageUrl.ts) or hooks/helpers that delegate to it. Do not call `/files/{id}/url` directly from image or thumbnail UI; signed URLs must be reused while valid and refreshed when expired.
+11. **Docs updated in the same change as code.**
 
 ---
 
@@ -314,6 +315,8 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-05-08** — Central renderable image URL resolver added at [utils/resolveRenderableImageUrl.ts](utils/resolveRenderableImageUrl.ts). It accepts public URLs, cloud file records, file ids, and image-source metadata; caches signed URL results by cloud file id; reuses valid signed URLs; and refreshes expired known cloud-file URLs. `useSignedUrl()` and Image Manager cloud-file resolution now delegate through this path.
+- **2026-05-07** — Image Manager upload boundary clarified. `/images/upload` now uses `components/official/ImageAssetUploader` in `mode="cloud"` for the image-first dropzone while still calling the Cloud Files `useFileUpload` pipeline. `FileUploadDropzone` remains the generic file-manager uploader for `/files`, embedded files surfaces, mobile stack, and overlay upload flows.
 - **2026-05-06** — RAG consolidation. Extracted every RAG-shaped surface from `features/files/` into the new top-level `features/rag/` feature. Moved out of this directory: `api/rag-ingest.ts` → `features/rag/api/ingest.ts`, `api/rag-search.ts` → `features/rag/api/search.ts`, `hooks/useFileIngest.ts` → `features/rag/hooks/useFileIngest.ts`, `hooks/useRagSearch.ts` → `features/rag/hooks/useRagSearch.ts`, `components/core/RagActions/ProcessForRagButton.tsx` → `features/rag/components/ProcessForRagButton.tsx`, `components/core/RagSearch/RagSearchHits.tsx` → `features/rag/components/search/RagSearchHits.tsx`. **Stayed in `features/files/`:** `redux/rag-thunks.ts`, `components/surfaces/desktop/RagStatusCell.tsx`, `components/surfaces/desktop/RagFilterPicker.tsx` — these are file-table chrome that read `cloudFiles.ragStatus` from this slice; moving them would split the slice across features. Also relocated the sister features `features/library/` → `features/rag/components/library/` (+ hooks/api/types extracted to `features/rag/{hooks,api,types}/`), `features/data-stores/` → `features/rag/components/data-stores/`, `features/documents/` → `features/rag/components/documents/`, and `features/rag-search-ui/` → `features/rag/components/search/`. All `DocumentTab.tsx` and `BulkActionsBar.tsx` imports updated; behaviour unchanged.
 - **2026-05-05** — Image Manager Hub absorbed `<ImageAssetUploader>` (Sharp variant pipeline) as a Branded Upload tab and embedded `CloudFilesTab` into a Studio Library tab. Cloud-files data is now consumed by both `<ImageManager>` (modal) and the new `/image-manager` route via `features/image-manager/registry/sections.ts`. No data-model changes — only consumers added. See [`features/image-manager/FEATURE.md`](../image-manager/FEATURE.md).
 - **2026-04-23** — Phase 0 kickoff. Created FEATURE.md, SKILL.md, PYTHON_TEAM_COMMS.md, migration/ scaffold. No runtime code yet.

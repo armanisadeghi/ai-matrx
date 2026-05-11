@@ -1,4 +1,8 @@
-import { buildImageAssetViewerPayload } from "@/components/official/ImageAssetUploader";
+import {
+  buildPastedImageFileName,
+  buildImageAssetViewerPayload,
+  formatCloudUploadFailures,
+} from "@/components/official/ImageAssetUploader";
 
 describe("ImageAssetUploader", () => {
   it("builds a viewer payload from populated variants only", () => {
@@ -26,5 +30,28 @@ describe("ImageAssetUploader", () => {
       ],
       title: "Organization logo",
     });
+  });
+
+  it("formats cloud upload failures with filename and backend reason", () => {
+    expect(
+      formatCloudUploadFailures([
+        { name: "hero.png", error: "File is too large" },
+        { name: "logo.webp", error: "Unsupported content type" },
+      ]),
+    ).toBe(
+      "hero.png: File is too large; logo.webp: Unsupported content type",
+    );
+  });
+
+  it("builds stable pasted image filenames from mime types", () => {
+    expect(buildPastedImageFileName("image/png", 1710000000000)).toBe(
+      "pasted-1710000000000.png",
+    );
+    expect(buildPastedImageFileName("image/jpeg", 1710000000000)).toBe(
+      "pasted-1710000000000.jpg",
+    );
+    expect(buildPastedImageFileName("", 1710000000000)).toBe(
+      "pasted-1710000000000.png",
+    );
   });
 });

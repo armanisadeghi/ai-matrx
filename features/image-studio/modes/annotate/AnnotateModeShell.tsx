@@ -156,7 +156,7 @@ export function AnnotateModeShell({
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      <div className="flex items-center gap-1.5 border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
         <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
           <Sparkles className="h-3 w-3" />
           AI assist
@@ -165,7 +165,7 @@ export function AnnotateModeShell({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7"
+          className="h-8 shrink-0"
           onClick={handleSuggestAnnotations}
           disabled={aiBusy !== null}
         >
@@ -176,7 +176,7 @@ export function AnnotateModeShell({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7"
+          className="h-8 shrink-0"
           onClick={handleRedact}
           disabled={aiBusy !== null}
         >
@@ -187,7 +187,7 @@ export function AnnotateModeShell({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7"
+          className="h-8 shrink-0"
           onClick={handleBlurFaces}
           disabled={aiBusy !== null}
         >
@@ -205,7 +205,7 @@ export function AnnotateModeShell({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7"
+            className="h-8 shrink-0"
             onClick={onCancel}
             disabled={saving}
           >
@@ -229,7 +229,7 @@ export function AnnotateModeShell({
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
             <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Saving annotated image…</span>
+            <span className="text-sm">Saving annotated image...</span>
             </div>
           </div>
         )}

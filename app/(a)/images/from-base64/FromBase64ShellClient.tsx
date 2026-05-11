@@ -20,7 +20,7 @@ export default function FromBase64ShellClient() {
 
 function ShellSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(360px,440px)] gap-4 p-4 md:p-5 h-full min-h-0">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(360px,440px)] gap-3 md:gap-4 p-3 md:p-5 h-full min-h-0 overflow-y-auto lg:overflow-hidden">
       <div className="flex flex-col gap-3 min-h-0">
         <div className="flex items-center justify-between gap-2">
           <Skeleton className="h-5 w-40" />

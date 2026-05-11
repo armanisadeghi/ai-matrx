@@ -31,6 +31,8 @@ import {
   selectShowVariablePanel,
   selectIsCreator,
   selectShowCreatorDebug,
+  selectShowAttachments,
+  selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setSubmitOnEnter,
@@ -132,6 +134,12 @@ export function InputActionButtons({
   const shouldShowAutoClearToggle = useAppSelector(
     selectShouldShowAutoClearToggle(conversationId),
   );
+  const showAttachments = useAppSelector(
+    selectShowAttachments(conversationId),
+  );
+  const showMicrophone = useAppSelector(
+    selectShowMicrophone(conversationId),
+  );
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const isDebugMode = useAppSelector(selectIsDebugMode);
 
@@ -155,11 +163,13 @@ export function InputActionButtons({
     <div className="flex items-center justify-between px-2 pb-1.5 mt-1 shrink-0">
       {/* Left: resource picker / debug / variable toggle */}
       <div className="flex items-center gap-0.5">
-        <SmartAgentResourcePickerButton
-          conversationId={conversationId}
-          uploadBucket={uploadBucket}
-          uploadPath={uploadPath}
-        />
+        {showAttachments && (
+          <SmartAgentResourcePickerButton
+            conversationId={conversationId}
+            uploadBucket={uploadBucket}
+            uploadPath={uploadPath}
+          />
+        )}
 
         {isAdmin && isDebugMode && (
           <InputButton
@@ -241,7 +251,9 @@ export function InputActionButtons({
           />
         )}
 
-        <AgentMicrophoneButton conversationId={conversationId} size="sm" />
+        {showMicrophone && (
+          <AgentMicrophoneButton conversationId={conversationId} size="sm" />
+        )}
 
         {showSendButton && (
           <Button

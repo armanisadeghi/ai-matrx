@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-07`
+**Last updated:** `2026-05-08`
 
 ---
 
@@ -117,8 +117,8 @@ Primary group:
 1. **Public Images** (`PublicImagesSection`) — Curated Covers chip + Unsplash search. Curated covers come from `features/canvas/social/preset-covers.ts`.
 2. **Your Cloud** (`CloudImagesTab`) — image-filtered view of `cloud_files`. Includes a per-tile `Info` button that opens the `CloudFileMetadataSheet` side drawer.
 3. **All Files** (`CloudFilesTab`) — full cloud-files browser. Includes a "Photos" link to `/files/photos` for the deeper file-management view.
-4. **Upload** (`CloudUploadTab`) — drag/drop/paste/picker. Includes a collapsible "Paste base64 instead" sub-tool (`Base64DecoderShell`).
-5. **Branded Upload** (`BrandedUploadTab`) — wraps `<ImageAssetUploader>`. Presets: `social | cover | avatar | logo | favicon | square`. Generated variants are auto-pushed to `SelectedImagesProvider`.
+4. **Upload** (`CloudUploadTab`) — image-first drag/drop/paste/picker powered by `<ImageAssetUploader mode="cloud">`, while preserving the Cloud Files upload pipeline. Includes a collapsible "Paste base64 instead" sub-tool (`Base64DecoderShell`).
+5. **Branded Upload** (`BrandedUploadTab`) — wraps `<ImageAssetUploader pasteCaptureMode="asset">`. Presets: `social | cover | avatar | logo | favicon | square`. Dragged, picked, or pasted images run through the Sharp variant pipeline and generated variants are auto-pushed to `SelectedImagesProvider`.
 6. **Image Studio** (`FullImageStudioTab`, id `studio-full`) — embeds the full three-column `<ImageStudioShell>` (the same component that powers `/image-studio/convert`). Lazy-loaded with `dynamic(... ssr: false)`. Users get the complete preset-catalog → file-card grid → export-panel pipeline without leaving the hub.
 7. **Studio Light** (`ImageStudioTab`, id `image-studio`) — embeds the picker-tuned `<EmbeddedImageStudio hideTitle>`. Returns variant URLs straight to `SelectedImagesProvider`, which the full shell does not — picker callers still want this.
 8. **Studio Library** (`StudioLibraryTab`) — read-only embed of the `Images/Generated/...` cloud folder. Resolves the folder ID via `ensureFolderPath`, then keys a `<CloudFilesTab>` to it.
@@ -145,22 +145,22 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 
 ### Cloud upload flow
 
-1. User picks/drops a file in `CloudUploadTab` (or pastes base64 into the sub-tool).
-2. `useFileUpload` writes to `cloud_files` via the upload pipeline in `features/files/`.
+1. User picks/drops a file in `CloudUploadTab` (or pastes an image into the page; base64 stays in the sub-tool).
+2. `<ImageAssetUploader mode="cloud">` renders the shared official image dropzone and calls `useFileUpload`, so bytes still write to `cloud_files` via the upload pipeline in `features/files/`.
 3. New `CloudFileRecord` is added to the cloud-files Redux slice, which ripples into Your Cloud / All Files automatically (no refetch needed).
 4. `CloudUploadTab` calls `addImage()` with the resolved URL so the upload becomes selectable in the footer preview row.
 
 ### Browse-mode click
 
 1. Tab calls `useBrowseAction()` and gets a `browse(payload)` function.
-2. On click, the tab resolves the visible images to URLs and dispatches `browse({ images, alts, initialIndex, title })`.
+2. On click, the tab resolves cloud-file references through the shared cached renderer path (`features/files/utils/resolveRenderableImageUrl.ts` via `resolveCloudFileUrl`) and dispatches `browse({ images, alts, initialIndex, title })`.
 3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `ImageViewerWindow.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
 4. `OverlayController` mounts `ImageViewerWindow` with the payload spread as props.
 
 ### Branded upload flow (Sharp variants)
 
-1. User picks a preset chip and uploads.
-2. `<ImageAssetUploader>` POSTs to `/api/images/upload` with the preset key.
+1. User picks a preset chip and uploads by drop, picker, or clipboard paste.
+2. `<ImageAssetUploader pasteCaptureMode="asset">` POSTs to `/api/images/upload` with the preset key.
 3. Server returns `{ image_url, primary_url, social_url, ... }` — every populated URL is auto-added to `SelectedImagesProvider` so the user can drag the variant into a form afterwards.
 
 ---
@@ -171,8 +171,10 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 - **`group: "tools"` is route-only.** The modal calls `buildImageManagerSections({ variant: "modal", showTools: false })`. Don't put primary functionality under `tools`.
 - **`SelectedImagesProvider.selectionMode === "none"` is "Browse".** Don't add a 4th mode — the contract is enumerated and consumed in two surfaces. Reuse `none`.
 - **`Base64DecoderShell` lives in `features/image-studio`** — Image Manager imports it. If Image Studio moves, update the import in `CloudUploadTab.tsx`.
+- **`/images/upload` uses `ImageAssetUploader` in cloud mode, not `FileUploadDropzone`.** Keep `FileUploadDropzone` in `features/files` for generic files and overlay upload surfaces; Image Manager uses the official image-first uploader for visual consistency.
 - **Server-only Unsplash key.** `NEXT_PUBLIC_UNSPLASH_ACCESS_KEY` was removed. Every Unsplash call goes through `/api/unsplash` via `hooks/images/unsplashClient.ts` (or the GET form for `PublicImageSearch`). Don't reintroduce a `NEXT_PUBLIC_*` Unsplash key.
 - **`ImageManagerContent` is a deprecated alias** of `<ImageManager>` — kept for legacy callers. New code imports `ImageManager` directly.
+- **Cloud-file image URLs must resolve through the central cached resolver.** Use `resolveCloudFileUrl()` / `resolveRenderableImageUrl()` instead of calling `/files/{id}/url` directly from image-manager UI. Viewer payloads must pass plain URL strings, never resolver objects.
 
 ---
 
@@ -197,6 +199,20 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-05-09` — Moved the mobile Images section context into the shared top header (`Images / Section`) and retuned the bottom command pill so it acts like navigation/actions instead of repeating the page title.
+- `2026-05-09` — Reworked the Images mobile bottom command bar toward the Files dock pattern: ellipsis section opener, icon-only app quick links, active Images affordance, and a separate floating primary action.
+- `2026-05-09` — Removed `Profile Photo` from the shared Images navigation registry so it no longer appears in desktop or mobile Images menus; the route remains directly accessible.
+- `2026-05-09` — Removed the `Profile Photo` tile from the `/images` landing page Studio section.
+- `2026-05-09` — `/images/edit` now uses the official `<ImageAssetUploader>` as its no-source upload surface, passing the uploaded private square variant into the editor.
+- `2026-05-09` — Fixed My Cloud mobile bulk-selection actions by making the floating selection toolbar icon-first and lifted above the Images mobile dock on small screens.
+- `2026-05-09` — Follow-up mobile shell cohesion pass: split the Images mobile command bar/navigation sheet, added route-aware bottom actions, wired Upload's command action to the native picker, and flattened All Files mobile rows toward the main Files list pattern.
+- `2026-05-09` — Corrected `/images/public-search` mobile UX after screenshot review: Images navigation now opens as an opaque full-width bottom sheet, Public Search no longer nests scroll containers, and Unsplash mobile filters use bottom-sheet option rows instead of mobile tabs/generic sheets.
+- `2026-05-08` — Tightened `/images` mobile landing chrome to match the Agents page: moved the Images title/actions into the shared shell header, removed the duplicate fixed top strip, and replaced mobile hero/card grids with compact action rows.
+- `2026-05-08` — Mobile responsiveness pass for `/images/*`: replaced the mobile sidebar affordance with an Agents-style bottom action bar and grouped navigation sheet, compacted landing pages into mobile rows, moved key Manager/Studio options into bottom sheets, added mobile file rows for All Files, and exposed Image Studio preset/export panels through mobile drawers.
+- `2026-05-08` — Added `docs/superpowers/plans/2026-05-08-images-mobile-responsive.md` to track the full `/images` mobile responsiveness pass using the Agents main page as the mobile standard.
+- `2026-05-08` — All Files Browse-mode preview now converts cloud-file resolver results to plain image URL strings before opening `ImageViewerWindow`, fixing broken previews like `<img src="[object Object]">`. Cloud-file preview resolution now shares the cache-aware `resolveRenderableImageUrl` path so signed URLs are reused while valid and refreshed when expired.
+- `2026-05-07` — `/images/upload` now renders `<ImageAssetUploader mode="cloud">` for the main image dropzone, preserving the existing Cloud Files upload pipeline, folder picker, paste support, selection integration, and base64 sub-tool while aligning the Upload and Branded Upload visual affordances.
+- `2026-05-07` — Branded Upload now opts into `ImageAssetUploader pasteCaptureMode="asset"`, so clipboard images can be pasted directly into the Sharp variant pipeline.
 - `2026-05-07` — My Cloud image bulk selection: extracted image grid/list renderers, added per-image bulk checkboxes, wired a shared floating selection toolbar for download/move/visibility/delete/cancel, and reused the official empty-state card for empty results.
 - `2026-05-07` — Browse-mode image preview gained icon-only rotate-left, rotate-right, flip-horizontal, and flip-vertical controls in the shared Image Viewer window.
 - `2026-05-07` — My Cloud search now uses the official `SearchInput`, matching Public Search while preserving the existing filename filter behavior.

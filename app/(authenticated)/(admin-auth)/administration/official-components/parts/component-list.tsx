@@ -532,7 +532,7 @@ export const componentList: ComponentEntry[] = [
     name: "Image Asset Uploader",
     path: "components/official/ImageAssetUploader.tsx",
     description:
-      "Drag-and-drop image upload with Sharp-processed variants (cover/OG/thumbnail/avatar/logo/favicon). Single pipeline for every place in the app that needs consistently-sized image URLs, with an optional preview action into the shared image WindowPanel.",
+      "Official image-first dropzone. Supports Sharp-processed asset variants (cover/OG/thumbnail/avatar/logo/favicon), Cloud Files upload mode for plain image uploads, optional clipboard paste capture, and optional preview action into the shared image WindowPanel.",
     categories: ["inputs", "media", "utilities"],
     tags: [
       "image",

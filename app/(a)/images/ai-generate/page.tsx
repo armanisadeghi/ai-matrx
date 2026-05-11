@@ -2,7 +2,7 @@ import { AIGenerateHero } from "@/features/image-manager/components/AIGenerateHe
 
 export default function AIGeneratePage() {
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto overscroll-contain">
       <AIGenerateHero />
     </div>
   );

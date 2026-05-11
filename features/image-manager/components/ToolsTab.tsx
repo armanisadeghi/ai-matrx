@@ -307,7 +307,7 @@ export function ToolsTab() {
     : null;
 
   return (
-    <div className="h-full overflow-auto p-4 space-y-5">
+    <div className="h-full overflow-auto overscroll-contain p-3 md:p-4 space-y-4 md:space-y-5">
       {expanded?.expand ? (
         <section className="rounded-lg border border-primary/30 bg-card overflow-hidden">
           <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-primary/5">
@@ -326,7 +326,7 @@ export function ToolsTab() {
               <X className="h-3.5 w-3.5" />
             </Button>
           </header>
-          <div className="p-3">{expanded.expand()}</div>
+          <div className="p-2 md:p-3">{expanded.expand()}</div>
         </section>
       ) : null}
 
@@ -407,7 +407,7 @@ function ToolGrid({
   onAction: (tool: ToolDescriptor) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
       {tools.map((tool) => (
         <ToolCard
           key={tool.id}
@@ -437,14 +437,14 @@ function ToolCard({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-3 flex flex-col gap-2",
+        "rounded-lg border bg-card p-3 flex flex-row md:flex-col items-start gap-3 md:gap-2",
         tool.beta
           ? "border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/10"
           : "border-border",
       )}
     >
       <div className="flex items-start gap-2">
-        <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+        <div className="h-9 w-9 md:h-8 md:w-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
           <Icon className={cn("h-4 w-4", tool.iconColor)} />
         </div>
         <div className="min-w-0 flex-1">
@@ -458,7 +458,7 @@ function ToolCard({
               </span>
             ) : null}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+          <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2 md:line-clamp-none">
             {tool.description}
           </p>
           {tool.warning ? (
@@ -470,13 +470,13 @@ function ToolCard({
         </div>
       </div>
 
-      <div className="mt-auto pt-1">
+      <div className="ml-auto md:ml-0 md:mt-auto md:pt-1 shrink-0">
         {tool.action.kind === "openLink" ? (
           <Link
             href={tool.action.href}
             target={tool.action.external ? "_blank" : undefined}
             rel={tool.action.external ? "noreferrer" : undefined}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            className="inline-flex min-h-[36px] items-center gap-1.5 text-xs font-medium text-primary hover:underline"
           >
             {tool.action.label}
             {tool.action.external ? (
@@ -489,6 +489,7 @@ function ToolCard({
             size="sm"
             variant={isExpanded ? "default" : "outline"}
             onClick={onAction}
+            className="h-8 px-2 md:px-3"
           >
             {isExpanded && tool.action.kind === "expand"
               ? "Close"

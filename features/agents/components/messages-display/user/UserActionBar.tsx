@@ -35,6 +35,7 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import type { Json } from "@/types/database.types";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toast } from "sonner";
 import { EditResubmitOutcomeDialog } from "../message-options/EditResubmitOutcomeDialog";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
@@ -129,6 +130,9 @@ export function UserActionBar({
 
   const messagePosition = useAppSelector(
     selectMessagePosition(conversationId, messageId),
+  );
+  const showOptions = useAppSelector(
+    selectShowUserMessageOptions(conversationId),
   );
 
   const handleCopy = async () => {
@@ -453,16 +457,18 @@ export function UserActionBar({
           icon={<Send className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />}
         />
 
-        <div ref={moreOptionsButtonRef}>
-          <TapTargetButtonForGroup
-            onClick={() => setShowOptionsMenu(true)}
-            ariaLabel="More options"
-            icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
-          />
-        </div>
+        {showOptions && (
+          <div ref={moreOptionsButtonRef}>
+            <TapTargetButtonForGroup
+              onClick={() => setShowOptionsMenu(true)}
+              ariaLabel="More options"
+              icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
+            />
+          </div>
+        )}
       </TapTargetButtonGroup>
 
-      {showOptionsMenu && (
+      {showOptions && showOptionsMenu && (
         <Suspense fallback={null}>
           <MessageOptionsMenu
             role="user"

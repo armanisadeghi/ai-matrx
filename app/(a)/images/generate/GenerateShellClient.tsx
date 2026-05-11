@@ -63,7 +63,7 @@ export default function GenerateShellClient() {
   };
 
   return (
-    <div className="h-full grid grid-cols-1 lg:grid-cols-[minmax(360px,440px)_1fr] gap-4 p-4 md:p-5 min-h-0">
+    <div className="h-full min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(360px,440px)_1fr] gap-3 md:gap-4 p-3 md:p-5">
       <aside className="flex flex-col gap-3 min-h-0">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium">Prompt</label>
@@ -71,11 +71,12 @@ export default function GenerateShellClient() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder='A cozy reading nook by a rainy window, warm lamp light, photorealistic'
-            className="min-h-[120px] resize-y rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="min-h-[140px] md:min-h-[120px] resize-y rounded-md border border-border bg-background px-3 py-2 text-sm"
+            style={{ fontSize: "16px" }}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 md:gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium">Size</label>
             <Select value={size} onValueChange={(v) => setSize(v as Size)}>
@@ -117,11 +118,16 @@ export default function GenerateShellClient() {
             value={style}
             onChange={(e) => setStyle(e.target.value)}
             placeholder='e.g. "editorial illustration", "minimalist vector"'
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-          />
+          className="h-10 md:h-9 rounded-md border border-border bg-background px-3 text-sm"
+          style={{ fontSize: "16px" }}
+        />
         </div>
 
-        <Button onClick={handleGenerate} disabled={busy || !prompt.trim()}>
+        <Button
+          onClick={handleGenerate}
+          disabled={busy || !prompt.trim()}
+          className="min-h-[44px] md:min-h-0"
+        >
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
           ) : (
@@ -130,7 +136,7 @@ export default function GenerateShellClient() {
           Generate
         </Button>
 
-        <div className="rounded-md border border-border bg-card/30 p-3 text-xs text-muted-foreground space-y-1.5">
+        <div className="hidden md:block rounded-md border border-border bg-card/30 p-3 text-xs text-muted-foreground space-y-1.5">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
             <Sparkles className="h-3 w-3" />
             About this tool
@@ -150,7 +156,7 @@ export default function GenerateShellClient() {
             ? "Results will appear here."
             : `${results.length} result${results.length === 1 ? "" : "s"}`}
         </div>
-        <div className="grid grid-cols-2 gap-3 overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:overflow-y-auto lg:pr-1">
           {results.map((r) => (
             <div
               key={r.cloud_file_id}
@@ -165,19 +171,19 @@ export default function GenerateShellClient() {
               <div className="p-2 flex flex-wrap gap-1.5 text-xs">
                 <Link
                   href={`/images/edit?cloudFileId=${encodeURIComponent(r.cloud_file_id)}`}
-                  className="px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+                  className="min-h-[32px] px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
                 >
                   Edit
                 </Link>
                 <Link
                   href={`/images/annotate?cloudFileId=${encodeURIComponent(r.cloud_file_id)}`}
-                  className="px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+                  className="min-h-[32px] px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
                 >
                   Annotate
                 </Link>
                 <Link
                   href={`/images/avatar?cloudFileId=${encodeURIComponent(r.cloud_file_id)}`}
-                  className="px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+                  className="min-h-[32px] px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
                 >
                   Use as avatar
                 </Link>

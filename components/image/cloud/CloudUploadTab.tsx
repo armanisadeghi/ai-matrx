@@ -1,11 +1,11 @@
 /**
  * components/image/cloud/CloudUploadTab.tsx
  *
- * Single consolidated upload surface that replaces the legacy "Upload",
- * "Paste", and "Quick Upload" tabs. Wraps `<FileUploadDropzone>` from
- * the cloud-files feature so paste-from-clipboard, drag-and-drop, and
- * the OS file picker all flow through the same code path with live
- * progress and the duplicate-detection guard mounted globally.
+ * Single consolidated image upload surface that replaces the legacy
+ * "Upload", "Paste", and "Quick Upload" tabs. Wraps the official
+ * `<ImageAssetUploader mode="cloud">` so the Image Manager uses one
+ * consistent image-first dropzone while still flowing through the
+ * cloud-files upload pipeline.
  *
  * Files land in `defaultUploadFolderPath` (default "Images/Uploads") —
  * resolved once via `ensureFolderPath`. Users can override the
@@ -35,11 +35,10 @@ import {
   selectFileById,
 } from "@/features/files/redux/selectors";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import {
   useSelectedImages,
-  type ImageSource,
 } from "@/components/image/context/SelectedImagesProvider";
 import {
   buildCloudImageSource,
@@ -200,19 +199,22 @@ export function CloudUploadTab({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        <FileUploadDropzone
+      <div className="flex-1 overflow-auto overscroll-contain p-3 md:p-4 space-y-4">
+        <ImageAssetUploader
+          mode="cloud"
           parentFolderId={folderId}
           visibility={visibility}
           accept={accept}
-          mode="inline"
           enablePaste
+          multiple
           onUploaded={handleUploaded}
           onError={handleError}
+          label="Upload"
+          allowUrlPaste={false}
         />
 
         {!hideFolderControls ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <FolderOpen className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="truncate" title={folderPathDisplay}>
               Saves to{" "}
@@ -224,7 +226,7 @@ export function CloudUploadTab({
               type="button"
               onClick={handleChangeFolder}
               className={cn(
-                "text-primary hover:underline transition-colors",
+                "min-h-[32px] rounded-md px-2 text-primary hover:bg-primary/10 transition-colors",
                 resolving && "opacity-50 cursor-wait",
               )}
               disabled={resolving}
@@ -250,7 +252,7 @@ export function CloudUploadTab({
           <button
             type="button"
             onClick={() => setBase64Open((v) => !v)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors"
+            className="flex min-h-[44px] w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors"
             aria-expanded={base64Open}
           >
             {base64Open ? (

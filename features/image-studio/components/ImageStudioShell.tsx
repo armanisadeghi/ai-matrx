@@ -56,7 +56,12 @@ import {
 } from "../utils/download-bundle";
 import { slugifyFilename } from "../utils/slugify-filename";
 import type { ProcessedVariant } from "../types";
-import { Zap, Wand2, Edit3, X } from "lucide-react";
+import { Edit3, Layers, SlidersHorizontal, Wand2, X, Zap } from "lucide-react";
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@/components/official/bottom-sheet/BottomSheet";
 
 interface ImageStudioShellProps {
   /** Optional default folder for Save-to-library. */
@@ -93,6 +98,9 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   // generate anyway. Acknowledgement is per-Generate-click — adding a
   // file or AI-describing one resets it.
   const [renameAcknowledged, setRenameAcknowledged] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<null | "presets" | "export">(
+    null,
+  );
   // Each file card registers a `focusRename` action here on mount; the
   // shell calls it to enter rename mode and focus the input from afar
   // (e.g. when the user clicks "Rename now" in the auto-name banner).
@@ -313,8 +321,26 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
       </div>
 
       {/* CENTER — Work area ─────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto">
-        <div className="p-4 md:p-5 space-y-4">
+      <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto overscroll-contain">
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobilePanel("presets")}
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-card text-sm font-medium"
+          >
+            <Layers className="h-4 w-4" />
+            Presets
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePanel("export")}
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-card text-sm font-medium"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Export
+          </button>
+        </div>
+        <div className="p-3 md:p-5 space-y-4">
           {studio.files.length === 0 ? (
             <StudioDropZone onFilesAdded={queueForCrop} />
           ) : (
@@ -492,6 +518,99 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
         onComplete={handleCropQueueComplete}
         onCancel={handleCropQueueCancel}
       />
+
+      <BottomSheet
+        open={mobilePanel === "presets"}
+        onOpenChange={(open) => setMobilePanel(open ? "presets" : null)}
+        title="Presets"
+      >
+        <BottomSheetHeader
+          title="Presets"
+          trailing={
+            <button
+              type="button"
+              onClick={() => setMobilePanel(null)}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody>
+          <PresetCatalog
+            selectedIds={studio.selectedPresetIds}
+            onToggle={(id) => {
+              studio.togglePreset(id);
+              if (!studio.selectedPresetIds.includes(id)) {
+                setPreviewPresetId(id);
+              }
+            }}
+            onApplyBundle={(ids) => {
+              studio.applyBundle(ids);
+              if (ids[0]) setPreviewPresetId(ids[0]);
+            }}
+            onDeselectAll={studio.deselectAllPresets}
+          />
+        </BottomSheetBody>
+      </BottomSheet>
+
+      <BottomSheet
+        open={mobilePanel === "export"}
+        onOpenChange={(open) => setMobilePanel(open ? "export" : null)}
+        title="Export"
+      >
+        <BottomSheetHeader
+          title="Export"
+          trailing={
+            <button
+              type="button"
+              onClick={() => setMobilePanel(null)}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody>
+          <ExportPanel
+            format={studio.format}
+            quality={studio.quality}
+            backgroundColor={studio.backgroundColor}
+            fit={studio.fit}
+            position={studio.position}
+            onFormatChange={studio.setFormat}
+            onQualityChange={studio.setQuality}
+            onBackgroundChange={studio.setBackgroundColor}
+            onFitChange={studio.setFit}
+            onPositionChange={studio.setPosition}
+            isProcessing={studio.isProcessing}
+            isSaving={studio.isSaving}
+            canGenerate={
+              studio.files.length > 0 && studio.selectedPresetIds.length > 0
+            }
+            canDownload={studio.generatedVariantCount > 0}
+            canSave={studio.generatedVariantCount > 0}
+            filesCount={studio.files.length}
+            selectedPresetCount={studio.selectedPresetIds.length}
+            totalVariantCount={studio.totalVariantCount}
+            generatedVariantCount={studio.generatedVariantCount}
+            totalOutputBytes={studio.totalOutputBytes}
+            selectedVariantCount={selectedFilenames.size}
+            onGenerate={handleGenerate}
+            onDownloadAll={handleDownloadAll}
+            onDownloadSelected={handleDownloadSelected}
+            onSaveAll={handleSaveAll}
+            onOpenPreview={() => openPreview()}
+            canOpenPreview={studio.files.length > 0}
+            isPreviewOpen={previewOpen}
+            onDescribeAll={handleDescribeAll}
+            isDescribing={studio.isDescribing}
+            describedFileCount={
+              studio.files.filter((f) => f.imageMetadata).length
+            }
+          />
+        </BottomSheetBody>
+      </BottomSheet>
     </div>
   );
 }
