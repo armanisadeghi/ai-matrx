@@ -266,7 +266,7 @@ function NumberInput({
 
   if (withSlider) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="grid grid-cols-[1fr_4rem] items-center gap-2">
         <Slider
           min={min}
           max={max}
@@ -277,7 +277,6 @@ function NumberInput({
             setDraft(String(val[0]));
           }}
           disabled={disabled}
-          className="flex-1"
         />
         <Input
           type="text"
@@ -290,7 +289,7 @@ function NumberInput({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           disabled={disabled}
-          className="w-20 h-7 px-2 text-xs"
+          className="h-7 px-2 text-xs"
         />
       </div>
     );
@@ -1369,9 +1368,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     for (const issue of unknownIssues) {
       delete next[issue.key];
     }
-    dispatch(
-      setAgentSettings({ id: agentId, settings: next as LLMParams }),
-    );
+    dispatch(setAgentSettings({ id: agentId, settings: next as LLMParams }));
   };
 
   const handleResetAll = () => {
@@ -1560,18 +1557,16 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     //   valid    — control exists AND no issues (or setting is not enabled)
     //   invalid  — has validation issue(s)
     //   unknown  — no control on the current model → we can't confirm
-    const state: "valid" | "invalid" | "unknown" =
-      !isEnabled
-        ? "valid"
-        : hasIssue
-          ? "invalid"
-          : !hasControl
-            ? "unknown"
-            : "valid";
+    const state: "valid" | "invalid" | "unknown" = !isEnabled
+      ? "valid"
+      : hasIssue
+        ? "invalid"
+        : !hasControl
+          ? "unknown"
+          : "valid";
 
     const firstIssue = keyIssues[0];
-    const fixable =
-      !!firstIssue && canFixIssue(firstIssue, normalizedControls);
+    const fixable = !!firstIssue && canFixIssue(firstIssue, normalizedControls);
 
     const dotClass =
       state === "invalid"
@@ -1581,7 +1576,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
           : "bg-emerald-500";
     const dotTitle =
       state === "invalid"
-        ? firstIssue?.message ?? "Issue detected"
+        ? (firstIssue?.message ?? "Issue detected")
         : state === "unknown"
           ? "Unable to confirm — this model has no schema for this setting"
           : "Valid";
@@ -1608,7 +1603,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
 
         {/* Checkbox + Label */}
         <div
-          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity pt-1"
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity pt-1 flex-shrink-0"
           onClick={() => handleToggleSetting(key, !isEnabled)}
         >
           <Checkbox
@@ -1726,7 +1721,10 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     // Media-gen booleans (canonical + provider-native)
     { key: "generate_audio" as keyof LLMParams, label: "Generate Audio" },
     { key: "enhance_prompt" as keyof LLMParams, label: "Enhance Prompt" },
-    { key: "include_rai_reason" as keyof LLMParams, label: "Include RAI Reason" },
+    {
+      key: "include_rai_reason" as keyof LLMParams,
+      label: "Include RAI Reason",
+    },
   ];
 
   const imageVideoSettings: { key: keyof LLMParams; label: string }[] = [
@@ -1749,7 +1747,10 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     // ── Media-gen extensions (May 2026) ──
     // Dimensions
     { key: "aspect_ratio" as keyof LLMParams, label: "Aspect Ratio" },
-    { key: "ratio" as keyof LLMParams, label: "Aspect Ratio (Together/Runway)" },
+    {
+      key: "ratio" as keyof LLMParams,
+      label: "Aspect Ratio (Together/Runway)",
+    },
     { key: "resolution" as keyof LLMParams, label: "Resolution" },
     { key: "image_size" as keyof LLMParams, label: "Image Size" },
     { key: "num_outputs" as keyof LLMParams, label: "Outputs" },
@@ -1759,14 +1760,20 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     { key: "render_quality" as keyof LLMParams, label: "Render Quality" },
     { key: "background" as keyof LLMParams, label: "Background" },
     { key: "input_fidelity" as keyof LLMParams, label: "Input Fidelity" },
-    { key: "output_compression" as keyof LLMParams, label: "Output Compression" },
+    {
+      key: "output_compression" as keyof LLMParams,
+      label: "Output Compression",
+    },
     { key: "moderation" as keyof LLMParams, label: "Moderation" },
     { key: "partial_images" as keyof LLMParams, label: "Partial Images" },
     { key: "output_mime_type" as keyof LLMParams, label: "Output MIME Type" },
     { key: "person_generation" as keyof LLMParams, label: "Person Generation" },
     { key: "image_format" as keyof LLMParams, label: "Image Format" },
     { key: "style" as keyof LLMParams, label: "Style" },
-    { key: "reference_strength" as keyof LLMParams, label: "Reference Strength" },
+    {
+      key: "reference_strength" as keyof LLMParams,
+      label: "Reference Strength",
+    },
 
     // Video
     { key: "duration_seconds" as keyof LLMParams, label: "Duration (s)" },
