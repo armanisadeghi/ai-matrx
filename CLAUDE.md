@@ -194,6 +194,7 @@ Every Tier 1 / Tier 2 feature has a `FEATURE.md` inside its feature directory. T
 | Settings system (preferences shell, primitives, `useSetting`) | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |
 | RAG (library, data stores, document viewer, search, repositories, ingest/search clients, hooks) | `features/rag/FEATURE.md` |
 | Universal file handler (single entry point for every file flow) | `features/file-handler/FEATURE.md` |
+| Scheduling (sch_* spine, `/schedules` user UI, `/administration/scheduling` admin, matrx-scheduler Python package on aidream) | `features/scheduling/FEATURE.md` |
 
 ### Tier 2 — secondary features
 

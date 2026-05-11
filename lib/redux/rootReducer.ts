@@ -53,6 +53,8 @@ import canvasReducer from "@/features/canvas/redux/canvasSlice";
 import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
 import notesReducer from "@/features/notes/redux/slice";
+import schedulingTasksReducer from "@/features/scheduling/redux/tasks/slice";
+import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
@@ -321,6 +323,9 @@ export const slimReducerMap = {
   agentAssistantMarkdownDraft: agentAssistantMarkdownDraftReducer,
 
   mcp: mcpReducer,
+
+  schedulingTasks: schedulingTasksReducer,
+  schedulingRuns: schedulingRunsReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);

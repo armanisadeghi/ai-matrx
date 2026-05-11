@@ -125,7 +125,7 @@ const PD_REPORT_STYLES = `
     font-size: 10.5pt;
     max-width: 8.5in;
     margin: 0 auto;
-    padding: 18px 32px;
+    padding: 14px 24px;
     background: #fff;
   }
 
@@ -334,8 +334,13 @@ const PD_REPORT_STYLES = `
     table-layout: fixed;
   }
   table.report-table col.col-num { width: 26px; }
-  table.report-table col.col-code { width: 70px; }
-  table.report-table col.col-side { width: 48px; }
+  /* AMA codes ("16.05.01.00", "15.03.02.04 [5]") run wide enough to
+   * collide with the Side column when this is too tight. The extra
+   * room comes from the @page margin reduction below — Impairment
+   * gives up only a couple of characters. */
+  table.report-table col.col-code { width: 92px; }
+  /* "Bilateral" is the longest Side label and needs room to breathe. */
+  table.report-table col.col-side { width: 58px; }
   table.report-table col.col-pct { width: 44px; }
   table.report-table thead th {
     background: #1e293b;
@@ -577,7 +582,11 @@ const PD_REPORT_STYLES = `
 
   /* ── Print rules ── */
   @media print {
-    @page { size: letter portrait; margin: 0.45in 0.55in; }
+    /* Tight @page margins (0.35in top/bottom, 0.4in left/right) buy
+     * back ~0.3in of horizontal printable width so the injuries table
+     * isn't fighting for room. All major browsers and laser printers
+     * tolerate ≥0.25in; this stays comfortably inside that envelope. */
+    @page { size: letter portrait; margin: 0.35in 0.4in; }
     body { padding: 0; max-width: 100%; }
     .report-header, .final-card, .info-grid, .side-card,
     .notes-card, .comments-body, table.report-table thead {
@@ -793,12 +802,7 @@ function renderCompensationDetail(
 
   // If none of the new fields are populated, render nothing — old saved
   // cases that pre-date Phase 3 don't get a half-empty section.
-  if (
-    !weeklyPayment &&
-    !dailyRate &&
-    adjustmentPct === 0 &&
-    !lp
-  ) {
+  if (!weeklyPayment && !dailyRate && adjustmentPct === 0 && !lp) {
     return "";
   }
 
@@ -992,9 +996,7 @@ function renderInjuriesTable(
  *  Columns mirror the on-screen table, except we drop a couple of low-
  *  signal ones (Group is implied by the claim's Occupational code in the
  *  info grid) to fit letter-portrait. */
-function renderRatingBreakdown(
-  result: StatelessRatingResponse | null,
-): string {
+function renderRatingBreakdown(result: StatelessRatingResponse | null): string {
   if (!result?.injuries || result.injuries.length === 0) return "";
 
   // Per-injury rating payload was added in Phase 2 and may not be in the
@@ -1254,7 +1256,7 @@ export const pdReportPrinter: BlockPrinter = {
   <style>${PD_REPORT_STYLES}</style>
 </head>
 <body>
-  <div class="screen-only" style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;gap:10px;align-items:center;margin:-18px -32px 14px;">
+  <div class="screen-only" style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;gap:10px;align-items:center;margin:-14px -24px 14px;">
     <button onclick="window.print()" style="padding:7px 18px;background:#0f172a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Print / Save PDF</button>
     <button onclick="window.close()" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;cursor:pointer;">Close</button>
     <span style="color:#64748b;font-size:11px;">Letter portrait · margins ~0.5in</span>
