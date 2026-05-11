@@ -16,8 +16,14 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { GalleryVertical } from "lucide-react";
+import { GalleryVertical, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@/components/official/bottom-sheet/BottomSheet";
+import { Button } from "@/components/ui/button";
 import { ResponsiveGallery } from "@/components/image/ResponsiveGallery";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 import {
@@ -25,6 +31,7 @@ import {
   type PresetCover,
 } from "@/features/canvas/social/preset-covers";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
+import { OPEN_PUBLIC_SEARCH_FILTERS_EVENT } from "@/features/image-manager/mobileEvents";
 
 type ThemeFilter = "all" | PresetCover["theme"];
 
@@ -45,6 +52,7 @@ export function PublicImagesSection({
   initialSearchTerm,
 }: PublicImagesSectionProps) {
   const [theme, setTheme] = useState<ThemeFilter>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
   const { isSelected, toggleImage, selectionMode, clearImages, addImage } =
     useSelectedImages();
   const browse = useBrowseAction();
@@ -56,6 +64,13 @@ export function PublicImagesSection({
         : PRESET_COVERS.filter((c) => c.theme === theme),
     [theme],
   );
+
+  React.useEffect(() => {
+    const handler = () => setFilterOpen(true);
+    window.addEventListener(OPEN_PUBLIC_SEARCH_FILTERS_EVENT, handler);
+    return () =>
+      window.removeEventListener(OPEN_PUBLIC_SEARCH_FILTERS_EVENT, handler);
+  }, []);
 
   const handleCoverClick = (cover: PresetCover) => {
     // Browse mode: open in floating viewer with the full filtered strip.
@@ -89,16 +104,26 @@ export function PublicImagesSection({
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <section className="px-4 pt-3">
-        <header className="mb-3 flex flex-wrap items-center gap-2 pr-8">
+    <div className="h-full overflow-auto overscroll-contain">
+      <section className="px-3 md:px-4 pt-3">
+        <header className="mb-3 flex flex-wrap items-center gap-2 md:pr-8">
           <div className="flex items-center gap-4 pr-10">
             <GalleryVertical className="h-3.5 w-3.5 text-amber-500" />
             <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
               Curated Covers
             </h3>
           </div>
-          <div className="ml-auto flex flex-wrap gap-1 rounded-md border border-border/70 bg-card/45 p-0.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterOpen(true)}
+            className="ml-auto h-8 md:hidden"
+          >
+            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+            {THEME_OPTIONS.find((opt) => opt.id === theme)?.label ?? "Theme"}
+          </Button>
+          <div className="ml-auto hidden flex-wrap gap-1 rounded-md border border-border/70 bg-card/45 p-0.5 md:flex">
             {THEME_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
@@ -151,12 +176,60 @@ export function PublicImagesSection({
         </div>
       </section>
 
-      <section className="px-4 pt-3 pb-6">
+      <section className="px-3 md:px-4 pt-3 pb-6">
         <ResponsiveGallery
           type="unsplash"
           initialSearchTerm={initialSearchTerm}
         />
       </section>
+
+      <BottomSheet
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        title="Cover themes"
+      >
+        <BottomSheetHeader
+          title="Cover themes"
+          trailing={
+            <button
+              type="button"
+              onClick={() => setFilterOpen(false)}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody className="px-4 pb-5">
+          <div className="overflow-hidden rounded-xl border border-border bg-card/60">
+            {THEME_OPTIONS.map((opt, index) => {
+              const active = theme === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setTheme(opt.id);
+                    setFilterOpen(false);
+                  }}
+                  className={cn(
+                    "flex min-h-[48px] w-full items-center px-3 text-left",
+                    index > 0 && "border-t border-border",
+                    active ? "text-primary" : "text-foreground",
+                  )}
+                >
+                  <span className="flex-1 text-[15px] font-medium">
+                    {opt.label}
+                  </span>
+                  {active ? (
+                    <span className="text-xs text-primary">Current</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheetBody>
+      </BottomSheet>
     </div>
   );
 }

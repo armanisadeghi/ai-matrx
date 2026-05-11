@@ -199,7 +199,7 @@ export function CloudUploadTab({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      <div className="flex-1 overflow-auto overscroll-contain p-3 md:p-4 space-y-4">
         <ImageAssetUploader
           mode="cloud"
           parentFolderId={folderId}
@@ -214,7 +214,7 @@ export function CloudUploadTab({
         />
 
         {!hideFolderControls ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <FolderOpen className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="truncate" title={folderPathDisplay}>
               Saves to{" "}
@@ -226,7 +226,7 @@ export function CloudUploadTab({
               type="button"
               onClick={handleChangeFolder}
               className={cn(
-                "text-primary hover:underline transition-colors",
+                "min-h-[32px] rounded-md px-2 text-primary hover:bg-primary/10 transition-colors",
                 resolving && "opacity-50 cursor-wait",
               )}
               disabled={resolving}
@@ -252,7 +252,7 @@ export function CloudUploadTab({
           <button
             type="button"
             onClick={() => setBase64Open((v) => !v)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors"
+            className="flex min-h-[44px] w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors"
             aria-expanded={base64Open}
           >
             {base64Open ? (

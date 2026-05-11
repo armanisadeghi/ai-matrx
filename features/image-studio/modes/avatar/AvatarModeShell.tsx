@@ -173,8 +173,8 @@ export function AvatarModeShell({
         )}
       </div>
 
-      <div className="flex flex-col gap-3 px-4 py-3 border-t border-border bg-card/30">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 px-3 md:px-4 py-3 border-t border-border bg-card/30">
+        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto_8rem] items-center gap-2 md:gap-3">
           <ZoomIn className="h-4 w-4 text-muted-foreground shrink-0" />
           <Slider
             value={[zoom]}
@@ -191,16 +191,17 @@ export function AvatarModeShell({
             max={180}
             step={1}
             onValueChange={(v) => setRotation(v[0] ?? 0)}
-            className="w-32"
+            className="w-full md:w-32"
           />
         </div>
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handleSmartCrop}
             disabled={smartCropping || !url}
+            className="min-h-[40px]"
           >
             {smartCropping ? (
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -221,7 +222,12 @@ export function AvatarModeShell({
                 Cancel
               </Button>
             )}
-            <Button size="sm" onClick={handleSave} disabled={saving || !pixels}>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || !pixels}
+              className="min-h-[40px]"
+            >
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
               ) : (

@@ -2,7 +2,7 @@ import { BrandedUploadTab } from "@/features/image-manager/components/BrandedUpl
 
 export default function BrandedPage() {
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto overscroll-contain">
       <BrandedUploadTab />
     </div>
   );

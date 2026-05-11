@@ -17,8 +17,18 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { Image as ImageIcon, type LucideIcon, Sparkles } from "lucide-react";
+import {
+  ChevronRight,
+  Image as ImageIcon,
+  type LucideIcon,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@/components/official/bottom-sheet/BottomSheet";
 import {
   ImageAssetUploader,
   type ImageUploaderResult,
@@ -93,12 +103,14 @@ export function BrandedUploadTab() {
   const [lastResult, setLastResult] = useState<ImageUploaderResult | null>(
     null,
   );
+  const [presetSheetOpen, setPresetSheetOpen] = useState(false);
   const { addImage, clearImages, selectionMode } = useSelectedImages();
 
   const preset = useMemo(
     () => PRESETS.find((p) => p.id === presetId) ?? PRESETS[0],
     [presetId],
   );
+  const PresetIcon = preset.icon;
 
   const handleComplete = (result: ImageUploaderResult | null) => {
     setLastResult(result);
@@ -131,9 +143,26 @@ export function BrandedUploadTab() {
   };
 
   return (
-    <div className="h-full overflow-auto p-4 space-y-4">
+    <div className="h-full overflow-auto overscroll-contain p-3 md:p-4 space-y-4">
       {/* Preset chip row */}
-      <div className="flex flex-wrap gap-1.5">
+      <button
+        type="button"
+        onClick={() => setPresetSheetOpen(true)}
+        className="flex min-h-[48px] w-full items-center gap-3 rounded-lg border border-border bg-card px-3 text-left md:hidden"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/60">
+          <PresetIcon className={cn("h-4 w-4", preset.iconColor)} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{preset.label}</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {preset.description}
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
+
+      <div className="hidden flex-wrap gap-1.5 md:flex">
         {PRESETS.map((opt) => {
           const Icon = opt.icon;
           const active = opt.id === presetId;
@@ -176,6 +205,63 @@ export function BrandedUploadTab() {
           .
         </div>
       ) : null}
+
+      <BottomSheet
+        open={presetSheetOpen}
+        onOpenChange={setPresetSheetOpen}
+        title="Branded preset"
+      >
+        <BottomSheetHeader
+          title="Branded preset"
+          trailing={
+            <button
+              type="button"
+              onClick={() => setPresetSheetOpen(false)}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody className="px-4 pb-5">
+          <div className="overflow-hidden rounded-xl border border-border bg-card/60">
+            {PRESETS.map((opt, index) => {
+              const Icon = opt.icon;
+              const active = opt.id === presetId;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setPresetId(opt.id);
+                    setPresetSheetOpen(false);
+                  }}
+                  className={cn(
+                    "flex min-h-[56px] w-full items-center gap-3 px-3 text-left",
+                    index > 0 && "border-t border-border",
+                    active ? "text-primary" : "text-foreground",
+                  )}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/60">
+                    <Icon className={cn("h-4 w-4", opt.iconColor)} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-medium">
+                      {opt.label}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {opt.description}
+                    </span>
+                  </span>
+                  {active ? (
+                    <span className="text-xs text-primary">Current</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheetBody>
+      </BottomSheet>
     </div>
   );
 }

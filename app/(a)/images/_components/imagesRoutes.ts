@@ -11,7 +11,6 @@ import {
   Sparkles,
   Stamp,
   Upload,
-  User,
   UserCircle,
   Wand2,
   Wand,
@@ -129,13 +128,6 @@ export const IMAGES_ROUTES: readonly ImagesRoute[] = [
     label: "AI Generate",
     Icon: Sparkles,
     iconColor: "text-rose-500",
-    group: "studio",
-  },
-  {
-    path: "/images/profile-photo",
-    label: "Profile Photo",
-    Icon: User,
-    iconColor: "text-cyan-500",
     group: "studio",
   },
   {

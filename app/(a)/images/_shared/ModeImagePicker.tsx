@@ -30,8 +30,8 @@ export function ModeImagePicker({ title, onPick }: Props) {
   };
 
   return (
-    <div className="h-full flex items-center justify-center p-6">
-      <div className="w-full max-w-xl flex flex-col gap-5">
+    <div className="h-full overflow-y-auto overscroll-contain flex items-start md:items-center justify-center p-3 md:p-6">
+      <div className="w-full max-w-xl flex flex-col gap-4 md:gap-5">
         <div className="text-center space-y-1">
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-xs text-muted-foreground">
@@ -40,7 +40,7 @@ export function ModeImagePicker({ title, onPick }: Props) {
         </div>
 
         <label
-          className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-card/30 hover:bg-card/60 transition-colors cursor-pointer py-10"
+          className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-lg md:rounded-xl border-2 border-dashed border-border bg-card/30 hover:bg-card/60 transition-colors cursor-pointer py-8 md:py-10"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -72,17 +72,19 @@ export function ModeImagePicker({ title, onPick }: Props) {
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <LinkIcon className="h-4 w-4 text-muted-foreground" />
           <input
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="Paste an image URL"
-            className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm"
+            className="flex-1 h-10 rounded-md border border-border bg-background px-2 text-sm"
+            style={{ fontSize: "16px" }}
           />
           <Button
             size="sm"
             disabled={!urlInput.trim()}
+            className="min-h-[40px]"
             onClick={() => {
               const u = urlInput.trim();
               if (!u) return;

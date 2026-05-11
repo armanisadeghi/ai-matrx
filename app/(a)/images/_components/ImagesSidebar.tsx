@@ -7,18 +7,18 @@
  * localStorage for "active." The only persisted bit is the collapsed flag
  * (key: `images:sidebar-collapsed`).
  *
- * Mobile (`useIsMobile()`): sidebar collapses into a Drawer-style bottom
- * sheet, opened by a Menu button rendered in the page top strip via the
- * exported <ImagesMobileNavTrigger/>.
+ * Mobile (`useIsMobile()`): sidebar becomes an Agents-style bottom action
+ * bar. Navigation lives in a bottom sheet grouped by Manager and Studio.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ImageIcon, Menu, PanelLeftClose } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  ImageIcon,
+  PanelLeftClose,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -33,6 +33,8 @@ import {
   type ImagesGroup,
   type ImagesRoute,
 } from "./imagesRoutes";
+import { ImagesMobileCommandBar } from "./ImagesMobileCommandBar";
+import { ImagesMobileNavSheet } from "./ImagesMobileNavSheet";
 
 const STORAGE_KEY_COLLAPSED = "images:sidebar-collapsed";
 
@@ -42,7 +44,6 @@ export function ImagesSidebar() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -63,49 +64,8 @@ export function ImagesSidebar() {
     }
   }, [collapsed]);
 
-  // Close drawer when navigating
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
   if (isMobile) {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open Images menu"
-          className="fixed top-12 left-2 z-30 h-8 w-8 rounded-md bg-card/90 backdrop-blur border border-border flex items-center justify-center text-foreground hover:bg-accent transition-colors"
-        >
-          <Menu className="h-4 w-4" />
-        </button>
-        <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
-          <DrawerContent className="px-2 pb-safe max-h-[80dvh]">
-            <DrawerTitle className="px-3 pt-3 pb-1 text-sm font-semibold flex items-center gap-2">
-              <ImageIcon className="h-4 w-4 text-primary" />
-              <Link href={IMAGES_ROOT_PATH} className="hover:underline">
-                Images
-              </Link>
-            </DrawerTitle>
-            <nav
-              className="overflow-y-auto py-1"
-              aria-label="Images sections"
-            >
-              {GROUP_ORDER.map((group, idx) => (
-                <GroupBlock
-                  key={group}
-                  group={group}
-                  pathname={pathname}
-                  collapsed={false}
-                  dense={false}
-                  showDivider={idx > 0}
-                />
-              ))}
-            </nav>
-          </DrawerContent>
-        </Drawer>
-      </>
-    );
+    return <ImagesMobileChrome pathname={pathname} />;
   }
 
   return (
@@ -137,6 +97,37 @@ export function ImagesSidebar() {
         </nav>
       </aside>
     </TooltipProvider>
+  );
+}
+
+function ImagesMobileChrome({ pathname }: { pathname: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const navigate = (path: string) => {
+    if (isPending || path === pathname) return;
+    startTransition(() => router.push(path));
+  };
+
+  return (
+    <>
+      <ImagesMobileCommandBar
+        pathname={pathname}
+        onOpenSections={() => setOpen(true)}
+      />
+      <ImagesMobileNavSheet
+        open={open}
+        pathname={pathname}
+        disabled={isPending}
+        onClose={() => setOpen(false)}
+        onNavigate={navigate}
+      />
+    </>
   );
 }
 

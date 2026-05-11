@@ -96,7 +96,7 @@ export function Base64DecoderShell({ defaultFolder }: Base64DecoderShellProps) {
   const showInputHint = !input;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(360px,440px)] gap-4 p-4 md:p-5 h-full min-h-0">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(360px,440px)] gap-3 md:gap-4 p-3 md:p-5 h-full min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden">
       {/* LEFT — Input column ──────────────────────────────────── */}
       <div className="flex flex-col min-h-0 gap-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -151,7 +151,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
             autoCapitalize="off"
             className="font-mono text-xs leading-relaxed resize-none h-full min-h-[280px]"
             // 16px to prevent iOS auto-zoom on focus.
-            style={{ fontSize: 12, minHeight: 280 }}
+            style={{ fontSize: 16, minHeight: 280 }}
           />
           {showInputHint && (
             <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -493,9 +493,9 @@ function SaveResultPanel({
         <input
           readOnly
           value={shareUrl}
-          className="flex-1 h-8 rounded-md border border-border bg-background px-2 text-xs font-mono"
+          className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-xs font-mono"
           onFocus={(e) => e.currentTarget.select()}
-          style={{ fontSize: 12 }}
+          style={{ fontSize: 16 }}
         />
         <Button
           type="button"

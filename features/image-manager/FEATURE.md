@@ -199,6 +199,17 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-05-09` — Moved the mobile Images section context into the shared top header (`Images / Section`) and retuned the bottom command pill so it acts like navigation/actions instead of repeating the page title.
+- `2026-05-09` — Reworked the Images mobile bottom command bar toward the Files dock pattern: ellipsis section opener, icon-only app quick links, active Images affordance, and a separate floating primary action.
+- `2026-05-09` — Removed `Profile Photo` from the shared Images navigation registry so it no longer appears in desktop or mobile Images menus; the route remains directly accessible.
+- `2026-05-09` — Removed the `Profile Photo` tile from the `/images` landing page Studio section.
+- `2026-05-09` — `/images/edit` now uses the official `<ImageAssetUploader>` as its no-source upload surface, passing the uploaded private square variant into the editor.
+- `2026-05-09` — Fixed My Cloud mobile bulk-selection actions by making the floating selection toolbar icon-first and lifted above the Images mobile dock on small screens.
+- `2026-05-09` — Follow-up mobile shell cohesion pass: split the Images mobile command bar/navigation sheet, added route-aware bottom actions, wired Upload's command action to the native picker, and flattened All Files mobile rows toward the main Files list pattern.
+- `2026-05-09` — Corrected `/images/public-search` mobile UX after screenshot review: Images navigation now opens as an opaque full-width bottom sheet, Public Search no longer nests scroll containers, and Unsplash mobile filters use bottom-sheet option rows instead of mobile tabs/generic sheets.
+- `2026-05-08` — Tightened `/images` mobile landing chrome to match the Agents page: moved the Images title/actions into the shared shell header, removed the duplicate fixed top strip, and replaced mobile hero/card grids with compact action rows.
+- `2026-05-08` — Mobile responsiveness pass for `/images/*`: replaced the mobile sidebar affordance with an Agents-style bottom action bar and grouped navigation sheet, compacted landing pages into mobile rows, moved key Manager/Studio options into bottom sheets, added mobile file rows for All Files, and exposed Image Studio preset/export panels through mobile drawers.
+- `2026-05-08` — Added `docs/superpowers/plans/2026-05-08-images-mobile-responsive.md` to track the full `/images` mobile responsiveness pass using the Agents main page as the mobile standard.
 - `2026-05-08` — All Files Browse-mode preview now converts cloud-file resolver results to plain image URL strings before opening `ImageViewerWindow`, fixing broken previews like `<img src="[object Object]">`. Cloud-file preview resolution now shares the cache-aware `resolveRenderableImageUrl` path so signed URLs are reused while valid and refreshed when expired.
 - `2026-05-07` — `/images/upload` now renders `<ImageAssetUploader mode="cloud">` for the main image dropzone, preserving the existing Cloud Files upload pipeline, folder picker, paste support, selection integration, and base64 sub-tool while aligning the Upload and Branded Upload visual affordances.
 - `2026-05-07` — Branded Upload now opts into `ImageAssetUploader pasteCaptureMode="asset"`, so clipboard images can be pasted directly into the Sharp variant pipeline.
