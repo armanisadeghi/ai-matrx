@@ -48,6 +48,55 @@ const fileHandlerSyntaxRestrictions = [
     },
 ];
 
+// Legacy Supabase API key names are BANNED. The new keys are
+// `sb_publishable_*` (browser) and `sb_secret_*` (server). The JWT-based
+// `anon` / `service_role` keys are deprecated by Supabase.
+// Docs: https://supabase.com/docs/guides/getting-started/api-keys
+//
+// Use ONLY these env var names in the codebase:
+//   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+//   SUPABASE_SECRET_KEY
+//   NEXT_PUBLIC_SUPABASE_HTML_PUBLISHABLE_KEY
+//   SUPABASE_HTML_SECRET_KEY
+//
+// The selector matches `process.env.<bannedName>` as a MemberExpression with
+// the env var name as the property. This catches `process.env.X` reads,
+// destructured `const { X } = process.env`, and `if ('X' in process.env)`
+// (the second and third forms via the Identifier/Literal selectors).
+const legacySupabaseKeyBan = [
+    {
+        selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='NEXT_PUBLIC_SUPABASE_ANON_KEY']",
+        message:
+            'NEXT_PUBLIC_SUPABASE_ANON_KEY is DEPRECATED. Use NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (sb_publishable_*). https://supabase.com/docs/guides/getting-started/api-keys',
+    },
+    {
+        selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='SUPABASE_SERVICE_ROLE_KEY']",
+        message:
+            'SUPABASE_SERVICE_ROLE_KEY is DEPRECATED. Use SUPABASE_SECRET_KEY (sb_secret_*). https://supabase.com/docs/guides/getting-started/api-keys',
+    },
+    {
+        selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY']",
+        message:
+            'NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY is DEPRECATED. Use NEXT_PUBLIC_SUPABASE_HTML_PUBLISHABLE_KEY (sb_publishable_*). https://supabase.com/docs/guides/getting-started/api-keys',
+    },
+    {
+        selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='SUPABASE_HTML_SERVICE_ROLE_KEY']",
+        message:
+            'SUPABASE_HTML_SERVICE_ROLE_KEY is DEPRECATED. Use SUPABASE_HTML_SECRET_KEY (sb_secret_*). https://supabase.com/docs/guides/getting-started/api-keys',
+    },
+    // Catches the bracket-access form: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+    {
+        selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][computed=true][property.value=/^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY|SUPABASE_HTML_SERVICE_ROLE_KEY)$/]",
+        message:
+            'Legacy Supabase API key env vars are DEPRECATED and BANNED. Use sb_publishable_* / sb_secret_*. https://supabase.com/docs/guides/getting-started/api-keys',
+    },
+];
+
 export default [
     ...nextCoreWebVitals,
     {
@@ -107,7 +156,15 @@ export default [
                         'window.prompt is banned. Use a <Dialog /> with an <Input />. See CLAUDE.md.',
                 },
             ],
-            'no-restricted-syntax': ['warn', ...fileHandlerSyntaxRestrictions],
+            'no-restricted-syntax': [
+                'error',
+                // Legacy Supabase API key env vars are hard-banned — no exceptions.
+                ...legacySupabaseKeyBan,
+                // File-handler rules retain their original "warn-like" intent by
+                // virtue of having actionable messages; eslint severity is shared
+                // across the array, so we keep them in the same rule slot.
+                ...fileHandlerSyntaxRestrictions,
+            ],
         },
     },
     {
@@ -116,7 +173,9 @@ export default [
             'features/files/**/*',
         ],
         rules: {
-            'no-restricted-syntax': 'off',
+            // The file-handler feature owns supabase.storage internals.
+            // It still must NOT use legacy Supabase API key env vars.
+            'no-restricted-syntax': ['error', ...legacySupabaseKeyBan],
         },
     },
     {

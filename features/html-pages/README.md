@@ -603,9 +603,13 @@ https://mymatrx.com/p/{page-uuid}
 Add to your `.env.local`:
 
 ```bash
-# Supabase credentials for the HTML pages database
+# Supabase credentials for the HTML pages database.
+# Use ONLY the new sb_publishable_* / sb_secret_* keys.
+# Legacy JWT keys (anon / service_role) are DEPRECATED and BANNED in this repo.
+# Docs: https://supabase.com/docs/guides/getting-started/api-keys
 NEXT_PUBLIC_SUPABASE_HTML_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SUPABASE_HTML_PUBLISHABLE_KEY=sb_publishable_...
+SUPABASE_HTML_SECRET_KEY=sb_secret_...
 
 # Public URL for published pages
 NEXT_PUBLIC_HTML_SITE_URL=https://mymatrx.com

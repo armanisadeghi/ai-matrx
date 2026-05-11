@@ -1256,6 +1256,403 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/utilities/pdf/reorder-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder Pages */
+        post: operations["reorder_pages_utilities_pdf_reorder_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/insert-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Insert Pages */
+        post: operations["insert_pages_utilities_pdf_insert_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/duplicate-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicate Pages */
+        post: operations["duplicate_pages_utilities_pdf_duplicate_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/render-page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render Page */
+        post: operations["render_page_utilities_pdf_render_page_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/render-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render All Pages */
+        post: operations["render_all_pages_utilities_pdf_render_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/render-thumbnail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render Thumbnail */
+        post: operations["render_thumbnail_utilities_pdf_render_thumbnail_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/studio/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Studio Presets
+         * @description Return the PDF Studio preset catalog.
+         *
+         *     FE keeps stable ids; this endpoint is the canonical source. Returned
+         *     shape mirrors ``/utilities/images/studio/presets``.
+         */
+        get: operations["studio_presets_utilities_pdf_studio_presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/studio/render": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Studio Render
+         * @description Apply a render-family preset to a PDF source.
+         *
+         *     Today supports ``render_page`` / ``render_all`` / ``render_thumbnail``
+         *     operations. Other preset operations route through their dedicated
+         *     endpoints (see ``operation_id`` on each preset).
+         */
+        post: operations["studio_render_utilities_pdf_studio_render_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/detect-repeated-regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Detect Repeated Regions Endpoint
+         * @description Find headers / footers / watermarks / repeated margins.
+         *
+         *     The returned report is deterministic for a given PDF + parameters. A
+         *     follow-up call to ``/pdf/strip-repeated-regions`` with a subset of the
+         *     returned ``region_id`` values removes the chosen regions from per-page
+         *     text — useful as a RAG ingestion pre-pass.
+         */
+        post: operations["detect_repeated_regions_endpoint_utilities_pdf_detect_repeated_regions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/strip-repeated-regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Strip Repeated Regions Endpoint
+         * @description Detect + strip repeated regions from per-page text in one call.
+         *
+         *     Returns the post-strip per-page text alongside the original detector
+         *     report so the caller can audit what was removed.
+         */
+        post: operations["strip_repeated_regions_endpoint_utilities_pdf_strip_repeated_regions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/classify-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Classify Pages Endpoint
+         * @description Assign a ``PageClass`` label (cover / TOC / body / exhibit / billing / ...) to every page.
+         */
+        post: operations["classify_pages_endpoint_utilities_pdf_classify_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/extract-reading-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Reading Order Endpoint
+         * @description Per-page reading-order blocks with multi-column clustering.
+         */
+        post: operations["extract_reading_order_endpoint_utilities_pdf_extract_reading_order_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/redact/patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Redact Patterns Catalog
+         * @description Return the builtin pattern catalog (SSN / email / phone / MRN / ...).
+         *
+         *     FE consumes this for the redaction-pattern dropdown — stable ids match
+         *     the ``pattern`` field of ``POST /pdf/redact-pattern``.
+         */
+        get: operations["redact_patterns_catalog_utilities_pdf_redact_patterns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/redact-regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redact Regions Endpoint
+         * @description Redact one or more page-anchored rectangles. Verification is mandatory.
+         *
+         *     Returns the post-redaction PDF when ``persist_output=false``. Otherwise
+         *     persists to cld_files and returns the ``RedactionEnvelope`` JSON.
+         */
+        post: operations["redact_regions_endpoint_utilities_pdf_redact_regions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/redact-pattern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redact Pattern Endpoint
+         * @description Redact every match of *pattern* across the PDF.
+         *
+         *     *pattern* may be a builtin id (``ssn``, ``email``, ``mrn``, ...) or any
+         *     raw regex. The verification step asserts zero surviving matches before
+         *     returning the file.
+         */
+        post: operations["redact_pattern_endpoint_utilities_pdf_redact_pattern_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/redact-repeated-regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redact Repeated Regions Endpoint
+         * @description One-shot: detect repeated regions, then redact the accepted ones.
+         *
+         *     When ``accepted_region_ids`` is ``null``, every detected region is
+         *     redacted. Pass a subset (e.g. only the header + footer) to selectively
+         *     strip noise before downstream RAG or release.
+         */
+        post: operations["redact_repeated_regions_endpoint_utilities_pdf_redact_repeated_regions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/strip-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Strip Metadata Endpoint
+         * @description Wipe /Info + XMP metadata + thumbnails.
+         */
+        post: operations["strip_metadata_endpoint_utilities_pdf_strip_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/scrub": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrub Endpoint
+         * @description Composite privacy strip — honors the granular flags exactly.
+         *
+         *     Each flag (``metadata`` / ``attachments`` / ``javascript`` /
+         *     ``flatten_annotations``) controls one PII surface independently. Use
+         *     ``/pdf/scrub`` with all flags=true for the "outbound nuke" default,
+         *     or set just one flag for a targeted strip.
+         */
+        post: operations["scrub_endpoint_utilities_pdf_scrub_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/pdf/flatten-annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flatten Annotations Endpoint
+         * @description Bake comments / highlights / sticky notes (and optionally form widgets)
+         *     into the page content so the file is share-safe.
+         */
+        post: operations["flatten_annotations_endpoint_utilities_pdf_flatten_annotations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilities/pdf/extract-text-remote": {
         parameters: {
             query?: never;
@@ -3575,6 +3972,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-iteration/run-initial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Initial */
+        post: operations["run_initial_agent_iteration_run_initial_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-iteration/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Feedback */
+        post: operations["run_feedback_agent_iteration_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-iteration/commit-choice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Commit Choice */
+        post: operations["commit_choice_agent_iteration_commit_choice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/legal/search": {
         parameters: {
             query?: never;
@@ -3945,6 +4393,30 @@ export interface paths {
         };
         /** Get Occupational Codes */
         get: operations["get_occupational_codes_legal_wc_ratings_occupational_codes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/legal/wc/ratings/defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rating Defaults
+         * @description Return the calc-relevant defaults the rating engine uses.
+         *
+         *     The FE consumes these to drive its Max-earnings button and to clamp the
+         *     payload before sending. Updating the underlying JSON propagates without
+         *     code changes on either side.
+         */
+        get: operations["get_rating_defaults_legal_wc_ratings_defaults_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7626,6 +8098,96 @@ export interface paths {
         patch: operations["update_saved_view_admin_saved_views__view_id__patch"];
         trace?: never;
     };
+    "/scheduling/validate-cron": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate Cron */
+        post: operations["validate_cron_scheduling_validate_cron_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduling/compute-next-due-at": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compute Next Due At */
+        post: operations["compute_next_due_at_scheduling_compute_next_due_at_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduling/run-now/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Now
+         * @description Enqueue a manual run via the sch_enqueue_manual_run RPC. The RPC enforces
+         *     task ownership and stamps user_id from the task row (not the caller),
+         *     so a misbehaving FE cannot spoof status/output_ref/surface.
+         */
+        post: operations["run_now_scheduling_run_now__task_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduling/scanner-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scanner Status */
+        get: operations["scanner_status_scheduling_scanner_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduling/admin/force-disable/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Force Disable */
+        post: operations["admin_force_disable_scheduling_admin_force_disable__task_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -7800,6 +8362,20 @@ export interface components {
             /** Is New */
             is_new?: boolean | null;
         };
+        /**
+         * AgentConfigSettings
+         * @description Sampling / decode settings on an agent_config.
+         */
+        AgentConfigSettings: {
+            /** Temperature */
+            temperature?: number | null;
+            /** Max Tokens */
+            max_tokens?: number | null;
+            /** Top P */
+            top_p?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** AgentStartRequest */
         AgentStartRequest: {
             /** Organization Id */
@@ -7964,6 +8540,28 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides: boolean;
+        };
+        /**
+         * AgentVersion
+         * @description One iteration step. version=1 is the original agent's output,
+         *     versions 2+ are produced by the Rebuild Chain.
+         */
+        AgentVersion: {
+            /** Version */
+            version: number;
+            agent_config: components["schemas"]["IterationAgentConfig"];
+            /** Response */
+            response: string;
+            /** Feedback Received */
+            feedback_received?: string | null;
+            /** Diagnosis */
+            diagnosis?: string | null;
+            /** Root Cause */
+            root_cause?: string | null;
+            /** Architect Validated */
+            architect_validated?: boolean | null;
+            /** Model Id */
+            model_id?: string | null;
         };
         /** AnalyzeBulkRequest */
         AnalyzeBulkRequest: {
@@ -8683,6 +9281,44 @@ export interface components {
              * @description YYYY-MM-DD
              */
             date_of_injury?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** Case Number */
+            case_number?: string | null;
+            /** Evaluator Name */
+            evaluator_name?: string | null;
+            /** Comments */
+            comments?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+            /** Tags */
+            tags?: string[] | null;
+            /**
+             * P S Date
+             * @description YYYY-MM-DD
+             */
+            p_s_date?: string | null;
+            /**
+             * Job Offer Date
+             * @description YYYY-MM-DD
+             */
+            job_offer_date?: string | null;
+            /**
+             * Large Employer
+             * @default false
+             */
+            large_employer: boolean;
         };
         /** ClaimPatch */
         ClaimPatch: {
@@ -8698,6 +9334,32 @@ export interface components {
             date_of_birth?: string | null;
             /** Date Of Injury */
             date_of_injury?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** Case Number */
+            case_number?: string | null;
+            /** Evaluator Name */
+            evaluator_name?: string | null;
+            /** Comments */
+            comments?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** P S Date */
+            p_s_date?: string | null;
+            /** Job Offer Date */
+            job_offer_date?: string | null;
+            /** Large Employer */
+            large_employer?: boolean | null;
         };
         /** ClaimVerdictOut */
         ClaimVerdictOut: {
@@ -8711,6 +9373,18 @@ export interface components {
             supporting_chunk_ids: string[];
             /** Reasoning */
             reasoning: string;
+        };
+        /** ClassifyPagesRequest */
+        ClassifyPagesRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
         };
         /**
          * ClientContext
@@ -8762,12 +9436,45 @@ export interface components {
             /** Error Message */
             error_message?: string | null;
         };
-        /** CombinedRatingItem */
+        /**
+         * CombinedRatingItem
+         * @description One injury's per-row rating breakdown — what the FE renders in the
+         *     rating-breakdown table. The `formula` string remains for backward
+         *     compatibility / human-readable rendering; the structured fields are the
+         *     canonical source for the math columns (WPI, FinalWPI, FEC, WPI Adj,
+         *     OccupAdj, AgeAdj, Final PD).
+         */
         CombinedRatingItem: {
             /** Formula */
             formula: string;
             /** Rating */
             rating: number;
+            /** Impairment Number */
+            impairment_number?: string | null;
+            /** Side */
+            side?: ("left" | "right" | "default") | null;
+            /** Wpi */
+            wpi?: number | null;
+            /** Pain */
+            pain?: number | null;
+            /** Final Wpi */
+            final_wpi?: number | null;
+            /** Fec Rank */
+            fec_rank?: number | null;
+            /** Fec */
+            fec?: number | null;
+            /** Wpi Adj */
+            wpi_adj?: number | null;
+            /** Occupation Group */
+            occupation_group?: string | null;
+            /** Occupation Letter */
+            occupation_letter?: string | null;
+            /** Occup Adj */
+            occup_adj?: number | null;
+            /** Age Adj */
+            age_adj?: number | null;
+            /** Industrial */
+            industrial?: number | null;
         };
         /** CombinedRatingOut */
         CombinedRatingOut: {
@@ -8786,6 +9493,19 @@ export interface components {
             ratings: components["schemas"]["CombinedRatingItem"][];
             /** Total */
             total: number;
+        };
+        /**
+         * CommitChoiceRequest
+         * @description Mode A — explicit (non-streaming) commit of the side-by-side
+         *     winner. Returns the updated session.
+         */
+        CommitChoiceRequest: {
+            session: components["schemas"]["IterationSession"];
+            /**
+             * Choice
+             * @enum {string}
+             */
+            choice: "A" | "B";
         };
         /** CommitFailure */
         CommitFailure: {
@@ -8871,7 +9591,16 @@ export interface components {
             /** Public Url */
             public_url?: string | null;
         };
-        /** CompensationOut */
+        /**
+         * CompensationOut
+         * @description Per-claim compensation block.
+         *
+         *     `compensation` is the total PD payout. `weekly_payment` is the actual
+         *     rate per week (= weekly_earnings × LC §4658(d) adjustment if any).
+         *     `pd_adjustment_pct` is +15 / -15 / 0 with `pd_adjustment_reason`
+         *     explaining why. `life_pension_weekly` is populated only when the
+         *     final rating is ≥ 70% (LC §4659).
+         */
         CompensationOut: {
             /** Compensation */
             compensation?: number | null;
@@ -8879,6 +9608,35 @@ export interface components {
             weeks?: number | null;
             /** Days */
             days?: number | null;
+            /** Weekly Payment */
+            weekly_payment?: number | null;
+            /** Daily Rate */
+            daily_rate?: number | null;
+            /** Pd Adjustment Pct */
+            pd_adjustment_pct?: number | null;
+            /** Pd Adjustment Reason */
+            pd_adjustment_reason?: string | null;
+            /** Life Pension Weekly */
+            life_pension_weekly?: number | null;
+        };
+        /** ComputeNextDueRequest */
+        ComputeNextDueRequest: {
+            /**
+             * Trigger Type
+             * @enum {string}
+             */
+            trigger_type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+        };
+        /** ComputeNextDueResponse */
+        ComputeNextDueResponse: {
+            /** Next Due At */
+            next_due_at?: string | null;
+            /** Event Driven */
+            event_driven: boolean;
         };
         /** ContentEditRequest */
         ContentEditRequest: {
@@ -9502,6 +10260,23 @@ export interface components {
             }[] | null;
         };
         /**
+         * DefaultsResponse
+         * @description Calc-relevant scalars from the rating engine's bundled defaults.
+         *
+         *     Sourced from `config/ama_pd_ratings/defaults.json` via `PDRatingConfig`.
+         *     The FE caches this once and uses it to drive the Max-earnings button,
+         *     payload clamping, and any "show me the FEC the engine is using" hints —
+         *     so changing the JSON propagates everywhere with no code change.
+         */
+        DefaultsResponse: {
+            /** Max Weekly Earnings */
+            max_weekly_earnings: number;
+            /** Default Fec */
+            default_fec: number;
+            /** Default Fec Valid From */
+            default_fec_valid_from: number;
+        };
+        /**
          * Definition
          * @description The canonical workflow definition — ReactFlow-compatible, user-authored.
          *
@@ -9576,6 +10351,28 @@ export interface components {
             chunks_deleted: number;
             /** Embeddings Deleted */
             embeddings_deleted: number;
+        };
+        /** DetectRepeatedRegionsRequest */
+        DetectRepeatedRegionsRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Min Pages Ratio
+             * @default 0.3333333333333333
+             */
+            min_pages_ratio: number;
+            /**
+             * Min Confidence
+             * @default 0.5
+             */
+            min_confidence: number;
         };
         /** DirectChatRequest */
         DirectChatRequest: {
@@ -9727,6 +10524,32 @@ export interface components {
              * @default datacenter
              */
             proxy_type: string;
+        };
+        /** DuplicatePagesRequest */
+        DuplicatePagesRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** Pages */
+            pages?: number[] | null;
+            /** Page Ranges */
+            page_ranges?: components["schemas"]["PdfPageRange"][] | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
         };
         /**
          * EdgeDef
@@ -9892,6 +10715,18 @@ export interface components {
              */
             persist_output: boolean;
         };
+        /** ExtractReadingOrderRequest */
+        ExtractReadingOrderRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+        };
         /** ExtractTablesRequest */
         ExtractTablesRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -9987,6 +10822,27 @@ export interface components {
              * @default user
              */
             scope: string;
+        };
+        /**
+         * FeedbackIterationRequest
+         * @description Turn N>=2 — the user's feedback message + replayed session.
+         *
+         *     Mode A: the client may also send `apply_choice` to commit the
+         *     previous turn's winner before the rebuild runs (so successive
+         *     feedback messages compose). When `apply_choice` is omitted the
+         *     server uses the most-recent version as baseline.
+         */
+        FeedbackIterationRequest: {
+            session: components["schemas"]["IterationSession"];
+            /** User Feedback */
+            user_feedback: string;
+            /**
+             * Show Thinking
+             * @default false
+             */
+            show_thinking: boolean;
+            /** Apply Choice */
+            apply_choice?: ("A" | "B") | null;
         };
         /** FieldAdd */
         FieldAdd: {
@@ -10232,6 +11088,33 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** FlattenAnnotationsRequest */
+        FlattenAnnotationsRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Reason
+             * @default flatten_annotations
+             */
+            reason: string;
+            /**
+             * Widgets
+             * @default true
+             */
+            widgets: boolean;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
         /** FocalPoint */
         FocalPoint: {
             /** X */
@@ -10266,6 +11149,11 @@ export interface components {
             updated_at?: string | null;
             /** Deleted At */
             deleted_at?: string | null;
+        };
+        /** ForceDisableResponse */
+        ForceDisableResponse: {
+            /** Disabled */
+            disabled: boolean;
         };
         /**
          * ForkRequest
@@ -10565,6 +11453,27 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * InitialIterationRequest
+         * @description Turn 1 — the user's first message in either mode.
+         */
+        InitialIterationRequest: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "side_by_side" | "invisible";
+            /** Original User Request */
+            original_user_request: string;
+            /** Initial Agent Id */
+            initial_agent_id?: string | null;
+            initial_agent_config?: components["schemas"]["IterationAgentConfig"] | null;
+            /**
+             * Show Thinking
+             * @default false
+             */
+            show_thinking: boolean;
+        };
         /** InjuryCreate */
         InjuryCreate: {
             /** Impairment Definition Id */
@@ -10589,6 +11498,11 @@ export interface components {
             industrial: number;
             /** Side */
             side?: ("left" | "right" | "default") | null;
+            /**
+             * Ag
+             * @default false
+             */
+            ag: boolean;
         };
         /** InjuryPatch */
         InjuryPatch: {
@@ -10606,6 +11520,8 @@ export interface components {
             industrial?: number | null;
             /** Side */
             side?: ("left" | "right" | "default") | null;
+            /** Ag */
+            ag?: boolean | null;
         };
         /** InlineToolSpec */
         InlineToolSpec: {
@@ -10631,6 +11547,61 @@ export interface components {
          * @enum {string}
          */
         InputDataType: "topic" | "partial_content" | "full_content" | "file_url";
+        /** InsertPagesRequest */
+        InsertPagesRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            source_media?: components["schemas"]["MediaRef"] | null;
+            /** Source File */
+            source_file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Url */
+            source_url?: string | null;
+            /** Source Local Path */
+            source_local_path?: string | null;
+            /**
+             * After Page
+             * @default 0
+             */
+            after_page: number;
+            /** Source Pages */
+            source_pages?: number[] | null;
+            /** Source Page Ranges */
+            source_page_ranges?: components["schemas"]["PdfPageRange"][] | null;
+            /**
+             * Include Links
+             * @default true
+             */
+            include_links: boolean;
+            /**
+             * Include Annotations
+             * @default true
+             */
+            include_annotations: boolean;
+            /**
+             * Include Widgets
+             * @default true
+             */
+            include_widgets: boolean;
+            /**
+             * Join Duplicates
+             * @default false
+             */
+            join_duplicates: boolean;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
         /** IssueClassUpdate */
         IssueClassUpdate: {
             /** Disposition */
@@ -10672,6 +11643,65 @@ export interface components {
              * @default true
              */
             created: boolean;
+        };
+        /**
+         * IterationAgentConfig
+         * @description The portable agent description the Architect Agent emits and that
+         *     the runner consumes on every subsequent turn.
+         *
+         *     This is intentionally a thinner shape than matrx-ai's full
+         *     UnifiedConfig — it covers exactly what the Architect Agent is
+         *     expected to produce per the spec. The runner translates this into
+         *     the dict shape `Agent.from_dict` accepts at execute-time.
+         */
+        IterationAgentConfig: {
+            /** System Prompt */
+            system_prompt: string;
+            /**
+             * Model
+             * @default claude-sonnet-4-5
+             */
+            model: string;
+            /** Tools */
+            tools?: string[];
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            };
+            /** Context */
+            context?: {
+                [key: string]: unknown;
+            };
+            settings?: components["schemas"]["AgentConfigSettings"];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * IterationSession
+         * @description The full session state. Client holds it and replays it on every
+         *     turn. The server never reads it from a DB.
+         */
+        IterationSession: {
+            /** Session Id */
+            session_id?: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "side_by_side" | "invisible";
+            /** Original User Request */
+            original_user_request: string;
+            /** Accumulated Feedback */
+            accumulated_feedback?: string[];
+            /** Versions */
+            versions?: components["schemas"]["AgentVersion"][];
+            /**
+             * Current Version
+             * @default 0
+             */
+            current_version: number;
+            /** Selected Version */
+            selected_version?: number | null;
         };
         /** KeywordCreate */
         KeywordCreate: {
@@ -10828,6 +11858,18 @@ export interface components {
             detected_contexts?: {
                 [key: string]: string;
             } | null;
+        };
+        /** LayoutClassificationReport */
+        LayoutClassificationReport: {
+            /** Page Count */
+            page_count: number;
+            /** Pages */
+            pages: components["schemas"]["PageClassification"][];
+            /**
+             * Classifier Version
+             * @default v1
+             */
+            classifier_version: string;
         };
         /** LegalSearchRequest */
         LegalSearchRequest: {
@@ -11464,6 +12506,20 @@ export interface components {
                 };
             };
         };
+        /** PageClassification */
+        PageClassification: {
+            /** Page Number */
+            page_number: number;
+            /**
+             * Page Class
+             * @enum {string}
+             */
+            page_class: "blank" | "cover" | "toc" | "body" | "exhibit" | "billing" | "signature" | "appendix" | "footer-only" | "image-only" | "unknown";
+            /** Confidence */
+            confidence: number;
+            /** Indicators */
+            indicators?: string[];
+        };
         /** PageDetail */
         PageDetail: {
             /** Page Index */
@@ -11709,6 +12765,26 @@ export interface components {
              */
             supabase_bucket: string;
         };
+        /**
+         * PdfRedactionPatternCatalog
+         * @description Wire shape for ``GET /utilities/pdf/redact/patterns``.
+         */
+        PdfRedactionPatternCatalog: {
+            /** Patterns */
+            patterns: components["schemas"]["PdfRedactionPatternEntry"][];
+        };
+        /**
+         * PdfRedactionPatternEntry
+         * @description One entry in the builtin redaction pattern catalog.
+         */
+        PdfRedactionPatternEntry: {
+            /** Id */
+            id: string;
+            /** Pattern */
+            pattern: string;
+            /** Description */
+            description: string;
+        };
         /** PdfRequest */
         PdfRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -11765,6 +12841,67 @@ export interface components {
             file_id?: string | null;
             /** Storage Uri */
             storage_uri?: string | null;
+        };
+        /** PdfStudioBundleSchema */
+        PdfStudioBundleSchema: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Preset Ids */
+            preset_ids: string[];
+        };
+        /**
+         * PdfStudioCatalog
+         * @description Wire shape for ``GET /utilities/pdf/studio/presets``.
+         */
+        PdfStudioCatalog: {
+            /** Categories */
+            categories: components["schemas"]["PdfStudioCategorySchema"][];
+            /** Bundles */
+            bundles: components["schemas"]["PdfStudioBundleSchema"][];
+        };
+        /** PdfStudioCategorySchema */
+        PdfStudioCategorySchema: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Accent */
+            accent: string;
+            /** Presets */
+            presets: components["schemas"]["PdfStudioPresetSchema"][];
+        };
+        /** PdfStudioPresetSchema */
+        PdfStudioPresetSchema: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Usage */
+            usage: string;
+            /**
+             * Operation
+             * @enum {string}
+             */
+            operation: "render_page" | "render_all" | "render_thumbnail" | "extract_pages" | "crop_pages" | "rotate_pages" | "delete_pages" | "reorder_pages" | "insert_pages" | "duplicate_pages" | "merge" | "split" | "compress" | "extract_text" | "extract_tables" | "full_pipeline";
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Output Kind
+             * @enum {string}
+             */
+            output_kind: "pdf" | "image" | "text" | "csv" | "json" | "archive";
+            /** Spec */
+            spec?: string | null;
+            /** Tags */
+            tags?: string[];
         };
         /** PdfTextBlock */
         PdfTextBlock: {
@@ -12279,6 +13416,164 @@ export interface components {
              */
             stream: boolean;
         };
+        /** ReadingOrderBlock */
+        ReadingOrderBlock: {
+            /** Block Index */
+            block_index: number;
+            /** Column Index */
+            column_index: number;
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+            /** Text */
+            text: string;
+        };
+        /** ReadingOrderPage */
+        ReadingOrderPage: {
+            /** Page Number */
+            page_number: number;
+            /** Column Count */
+            column_count: number;
+            /** Blocks In Order */
+            blocks_in_order: components["schemas"]["ReadingOrderBlock"][];
+        };
+        /** ReadingOrderReport */
+        ReadingOrderReport: {
+            /** Page Count */
+            page_count: number;
+            /** Pages */
+            pages: components["schemas"]["ReadingOrderPage"][];
+        };
+        /** RedactPatternRequest */
+        RedactPatternRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** Pattern */
+            pattern: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Flags
+             * @default 0
+             */
+            flags: number;
+            /**
+             * Scrub Metadata
+             * @default true
+             */
+            scrub_metadata: boolean;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
+        /** RedactRegionsRequest */
+        RedactRegionsRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** Regions */
+            regions: components["schemas"]["RedactionRegion"][];
+            /** Reason */
+            reason: string;
+            /**
+             * Scrub Metadata
+             * @default true
+             */
+            scrub_metadata: boolean;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
+        /** RedactRepeatedRegionsRequest */
+        RedactRepeatedRegionsRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** Accepted Region Ids */
+            accepted_region_ids?: string[] | null;
+            /** Reason */
+            reason: string;
+            /**
+             * Min Pages Ratio
+             * @default 0.3333333333333333
+             */
+            min_pages_ratio: number;
+            /**
+             * Min Confidence
+             * @default 0.5
+             */
+            min_confidence: number;
+            /**
+             * Scrub Metadata
+             * @default true
+             */
+            scrub_metadata: boolean;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
+        /**
+         * RedactionRegion
+         * @description One redaction target — a page-anchored rect with replacement semantic.
+         */
+        RedactionRegion: {
+            /** Page Number */
+            page_number: number;
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+            /**
+             * Replacement
+             * @default BLOCK
+             * @enum {string}
+             */
+            replacement: "BLOCK" | "REMOVE";
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Preserve Text
+             * @default false
+             */
+            preserve_text: boolean;
+        };
         /** RegisteredToolSpec */
         RegisteredToolSpec: {
             /**
@@ -12317,6 +13612,192 @@ export interface components {
              * @description Full new logical path (must include filename)
              */
             new_path: string;
+        };
+        /** RenderAllPagesRequest */
+        RenderAllPagesRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Dpi
+             * @default 150
+             */
+            dpi: number;
+            /**
+             * Fmt
+             * @default png
+             * @enum {string}
+             */
+            fmt: "png" | "jpg" | "jpeg" | "webp" | "tiff";
+            /**
+             * Jpeg Quality
+             * @default 85
+             */
+            jpeg_quality: number;
+            /** Pages */
+            pages?: number[] | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
+        /** RenderPageRequest */
+        RenderPageRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Dpi
+             * @default 150
+             */
+            dpi: number;
+            /**
+             * Fmt
+             * @default png
+             * @enum {string}
+             */
+            fmt: "png" | "jpg" | "jpeg" | "webp" | "tiff";
+            /**
+             * Jpeg Quality
+             * @default 85
+             */
+            jpeg_quality: number;
+            /**
+             * Alpha
+             * @default false
+             */
+            alpha: boolean;
+            /**
+             * Annotations
+             * @default true
+             */
+            annotations: boolean;
+        };
+        /** RenderThumbnailRequest */
+        RenderThumbnailRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Max Side
+             * @default 256
+             */
+            max_side: number;
+            /**
+             * Fmt
+             * @default jpeg
+             * @enum {string}
+             */
+            fmt: "png" | "jpg" | "jpeg" | "webp";
+            /**
+             * Jpeg Quality
+             * @default 80
+             */
+            jpeg_quality: number;
+        };
+        /** ReorderPagesRequest */
+        ReorderPagesRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** New Order */
+            new_order: number[];
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
+        /**
+         * RepeatedRegion
+         * @description A pattern detected across multiple pages.
+         *
+         *     Stable across detector runs given the same input — the *region_id* is
+         *     deterministic from the (kind, y_band, x_band, normalized_text_template)
+         *     quadruple so consumers can reference a region by id when applying
+         *     accept/reject decisions.
+         */
+        RepeatedRegion: {
+            /** Region Id */
+            region_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "header" | "footer" | "watermark" | "side-margin" | "logo" | "page-number" | "running-title" | "unknown";
+            /** Text Template */
+            text_template: string;
+            /** Pages */
+            pages: number[];
+            /** Bbox Per Page */
+            bbox_per_page: components["schemas"]["RepeatedRegionBbox"][];
+            /** Confidence */
+            confidence: number;
+        };
+        /**
+         * RepeatedRegionBbox
+         * @description One occurrence of a repeated region on a single page.
+         */
+        RepeatedRegionBbox: {
+            /** Page Number */
+            page_number: number;
+            /** X0 */
+            x0: number;
+            /** Y0 */
+            y0: number;
+            /** X1 */
+            x1: number;
+            /** Y1 */
+            y1: number;
+            /** Raw Text */
+            raw_text: string;
+        };
+        /** RepeatedRegionsReport */
+        RepeatedRegionsReport: {
+            /** Page Count */
+            page_count: number;
+            /** Regions */
+            regions: components["schemas"]["RepeatedRegion"][];
+            /**
+             * Detector Version
+             * @default v1
+             */
+            detector_version: string;
         };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
@@ -12536,6 +14017,11 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** RunNowResponse */
+        RunNowResponse: {
+            /** Run Id */
+            run_id: string;
+        };
         /** RunPipelineRequest */
         RunPipelineRequest: {
             /**
@@ -12639,6 +14125,39 @@ export interface components {
             /** Url Params */
             url_params?: string | null;
         };
+        /** ScannerStatusResponse */
+        ScannerStatusResponse: {
+            /** Running */
+            running: boolean;
+            /** Started At */
+            started_at?: string | null;
+            /** Last Tick At */
+            last_tick_at?: string | null;
+            /** Last Tick Duration Ms */
+            last_tick_duration_ms?: number | null;
+            /**
+             * Last Tick Claimed
+             * @default 0
+             */
+            last_tick_claimed: number;
+            /**
+             * Last Tick Expired Sweeps
+             * @default 0
+             */
+            last_tick_expired_sweeps: number;
+            /**
+             * Total Runs Dispatched
+             * @default 0
+             */
+            total_runs_dispatched: number;
+            /**
+             * Consecutive Errors
+             * @default 0
+             */
+            consecutive_errors: number;
+            /** Error Message */
+            error_message?: string | null;
+        };
         /** ScheduleSaveRequest */
         ScheduleSaveRequest: {
             /** Name */
@@ -12656,6 +14175,51 @@ export interface components {
              * @default true
              */
             enabled: boolean;
+        };
+        /**
+         * ScrubRequest
+         * @description Composite scrub call — wipes the categories opted-in via flags.
+         */
+        ScrubRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Metadata
+             * @default true
+             */
+            metadata: boolean;
+            /**
+             * Attachments
+             * @default true
+             */
+            attachments: boolean;
+            /**
+             * Javascript
+             * @default true
+             */
+            javascript: boolean;
+            /**
+             * Flatten Annotations
+             * @default false
+             */
+            flatten_annotations: boolean;
+            /**
+             * Reason
+             * @default strip_all_pii
+             */
+            reason: string;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
         };
         /** SearchAndScrapeLimitedRequest */
         SearchAndScrapeLimitedRequest: {
@@ -13203,6 +14767,21 @@ export interface components {
              * @description YYYY-MM-DD
              */
             date_of_injury: string;
+            /**
+             * P S Date
+             * @description YYYY-MM-DD
+             */
+            p_s_date?: string | null;
+            /**
+             * Job Offer Date
+             * @description YYYY-MM-DD
+             */
+            job_offer_date?: string | null;
+            /**
+             * Large Employer
+             * @default false
+             */
+            large_employer: boolean;
         };
         /** StatelessClaimOut */
         StatelessClaimOut: {
@@ -13256,6 +14835,7 @@ export interface components {
             warnings: string[];
             /** Errors */
             errors: string[];
+            rating?: components["schemas"]["CombinedRatingItem"] | null;
         };
         /** StatelessRatingResponse */
         StatelessRatingResponse: {
@@ -13325,6 +14905,87 @@ export interface components {
             features?: {
                 [key: string]: unknown;
             };
+        };
+        /** StripMetadataRequest */
+        StripMetadataRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Reason
+             * @default strip_metadata
+             */
+            reason: string;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
+        };
+        /** StripRepeatedRegionsRequest */
+        StripRepeatedRegionsRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** Accepted Region Ids */
+            accepted_region_ids?: string[] | null;
+            /**
+             * Min Pages Ratio
+             * @default 0.3333333333333333
+             */
+            min_pages_ratio: number;
+            /**
+             * Min Confidence
+             * @default 0.5
+             */
+            min_confidence: number;
+        };
+        /**
+         * StripRepeatedRegionsResultSchema
+         * @description Wire shape for ``POST /utilities/pdf/strip-repeated-regions``.
+         */
+        StripRepeatedRegionsResultSchema: {
+            /** Pages Text */
+            pages_text: string[];
+            regions: components["schemas"]["RepeatedRegionsReport"];
+            /** Stripped Region Ids */
+            stripped_region_ids: string[];
+        };
+        /** StudioRenderRequest */
+        StudioRenderRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /** Preset Id */
+            preset_id?: string | null;
+            /** Operation */
+            operation?: ("render_page" | "render_all" | "render_thumbnail") | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /** Overrides */
+            overrides?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** StudioSourceOut */
         StudioSourceOut: {
@@ -13769,6 +15430,30 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** ValidateCronRequest */
+        ValidateCronRequest: {
+            /** Expression */
+            expression: string;
+            /**
+             * Tz
+             * @default UTC
+             */
+            tz: string;
+            /**
+             * Next N
+             * @default 5
+             */
+            next_n: number;
+        };
+        /** ValidateCronResponse */
+        ValidateCronResponse: {
+            /** Valid */
+            valid: boolean;
+            /** Error */
+            error?: string | null;
+            /** Next Fires Utc */
+            next_fires_utc?: string[];
+        };
         /** ValidateRequest */
         ValidateRequest: {
             definition: components["schemas"]["Definition"];
@@ -14081,12 +15766,19 @@ export interface components {
         /**
          * WcClaimRead
          * @description One row from `wc_claim`.
+         *
+         *     Date / datetime columns accept native `date`/`datetime` from the ORM and
+         *     serialize to ISO strings on the wire (Pydantic 2 default). Same wire
+         *     shape the FE already consumes; just stops the response-validation crash
+         *     when the row comes from Postgres instead of being constructed by hand.
          */
         WcClaimRead: {
             /** Id */
             id: string;
             /** Created At */
             created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
             /** Applicant Name */
             applicant_name?: string | null;
             /** Person Id */
@@ -14101,6 +15793,34 @@ export interface components {
             occupational_code?: number | null;
             /** Weekly Earnings */
             weekly_earnings?: number | null;
+            /** Gender */
+            gender?: string | null;
+            /** Case Number */
+            case_number?: string | null;
+            /** Evaluator Name */
+            evaluator_name?: string | null;
+            /** Comments */
+            comments?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** P S Date */
+            p_s_date?: string | null;
+            /** Job Offer Date */
+            job_offer_date?: string | null;
+            /** Large Employer */
+            large_employer?: boolean | null;
         } & {
             [key: string]: unknown;
         };
@@ -14135,6 +15855,9 @@ export interface components {
         /**
          * WcInjuryRead
          * @description One row from `wc_injury`. `warnings` is appended by the create/edit handlers.
+         *
+         *     `datetime | str` accepts native datetimes from the ORM and serializes to
+         *     ISO strings on the wire — same shape the FE consumes.
          */
         WcInjuryRead: {
             /** Id */
@@ -14167,12 +15890,17 @@ export interface components {
             formula?: string | null;
             /** Warnings */
             warnings?: string[] | null;
+            /** Ag */
+            ag?: boolean | null;
         } & {
             [key: string]: unknown;
         };
         /**
          * WcReportRead
          * @description One row from `wc_report`. Totals are populated only after `/calculate`.
+         *
+         *     `datetime | str` accepts native datetimes from the ORM and serializes to
+         *     ISO strings on the wire — same shape the FE consumes.
          */
         WcReportRead: {
             /** Id */
@@ -14195,6 +15923,16 @@ export interface components {
             compensation_weeks?: number | null;
             /** Compensation Days */
             compensation_days?: number | null;
+            /** Weekly Payment */
+            weekly_payment?: number | null;
+            /** Daily Rate */
+            daily_rate?: number | null;
+            /** Pd Adjustment Pct */
+            pd_adjustment_pct?: number | null;
+            /** Pd Adjustment Reason */
+            pd_adjustment_reason?: string | null;
+            /** Life Pension Weekly */
+            life_pension_weekly?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -16018,6 +17756,630 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "application/zip": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_pages_utilities_pdf_reorder_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderPagesRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    insert_pages_utilities_pdf_insert_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsertPagesRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    duplicate_pages_utilities_pdf_duplicate_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicatePagesRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_page_utilities_pdf_render_page_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderPageRequest"];
+            };
+        };
+        responses: {
+            /** @description Rendered image (format set by request) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
+                    "image/tiff": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_all_pages_utilities_pdf_render_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderAllPagesRequest"];
+            };
+        };
+        responses: {
+            /** @description ZIP archive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/zip": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_thumbnail_utilities_pdf_render_thumbnail_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderThumbnailRequest"];
+            };
+        };
+        responses: {
+            /** @description Rendered image (format set by request) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
+                    "image/tiff": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    studio_presets_utilities_pdf_studio_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PdfStudioCatalog"];
+                };
+            };
+        };
+    };
+    studio_render_utilities_pdf_studio_render_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudioRenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Rendered image (single-page preset) or ZIP archive (render_all preset) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
+                    "image/tiff": string;
+                    "application/zip": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detect_repeated_regions_endpoint_utilities_pdf_detect_repeated_regions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetectRepeatedRegionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepeatedRegionsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    strip_repeated_regions_endpoint_utilities_pdf_strip_repeated_regions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StripRepeatedRegionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StripRepeatedRegionsResultSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    classify_pages_endpoint_utilities_pdf_classify_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassifyPagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LayoutClassificationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_reading_order_endpoint_utilities_pdf_extract_reading_order_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtractReadingOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingOrderReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redact_patterns_catalog_utilities_pdf_redact_patterns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PdfRedactionPatternCatalog"];
+                };
+            };
+        };
+    };
+    redact_regions_endpoint_utilities_pdf_redact_regions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedactRegionsRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redact_pattern_endpoint_utilities_pdf_redact_pattern_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedactPatternRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redact_repeated_regions_endpoint_utilities_pdf_redact_repeated_regions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedactRepeatedRegionsRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    strip_metadata_endpoint_utilities_pdf_strip_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StripMetadataRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scrub_endpoint_utilities_pdf_scrub_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrubRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flatten_annotations_endpoint_utilities_pdf_flatten_annotations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlattenAnnotationsRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": string;
                 };
             };
             /** @description Validation Error */
@@ -20608,6 +22970,105 @@ export interface operations {
             };
         };
     };
+    run_initial_agent_iteration_run_initial_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InitialIterationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_feedback_agent_iteration_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackIterationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    commit_choice_agent_iteration_commit_choice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitChoiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     legal_search_legal_search_post: {
         parameters: {
             query?: never;
@@ -21179,6 +23640,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OccupationalCodesResponse"];
+                };
+            };
+        };
+    };
+    get_rating_defaults_legal_wc_ratings_defaults_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultsResponse"];
                 };
             };
         };
@@ -28897,6 +31378,154 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_cron_scheduling_validate_cron_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateCronRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidateCronResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compute_next_due_at_scheduling_compute_next_due_at_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComputeNextDueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeNextDueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_now_scheduling_run_now__task_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunNowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scanner_status_scheduling_scanner_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScannerStatusResponse"];
+                };
+            };
+        };
+    };
+    admin_force_disable_scheduling_admin_force_disable__task_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForceDisableResponse"];
                 };
             };
             /** @description Validation Error */

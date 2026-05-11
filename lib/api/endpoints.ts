@@ -211,6 +211,55 @@ export const ENDPOINTS = {
     documents: "/utilities/pdf/documents" as const,
     /** @deprecated — Read `extracted_documents` directly from Supabase. */
     document: (docId: string) => `/utilities/pdf/documents/${docId}` as const,
+
+    // ── Phase 2 — render & advanced page ops ──────────────────────────────
+    /** POST — Render one page to an image blob (PNG/JPEG/WebP/TIFF). */
+    renderPage: "/utilities/pdf/render-page" as const,
+    /** POST — Render every page; returns a ZIP of per-page images. */
+    renderAll: "/utilities/pdf/render-all" as const,
+    /** POST — Cover thumbnail at `max_side` px. */
+    renderThumbnail: "/utilities/pdf/render-thumbnail" as const,
+    /** POST — Reorder pages by `new_order`. Returns PDF blob. */
+    reorderPages: "/utilities/pdf/reorder-pages" as const,
+    /** POST — Insert pages from `source_*` into target. Returns PDF blob. */
+    insertPages: "/utilities/pdf/insert-pages" as const,
+    /** POST — Duplicate pages inline (`count` copies). Returns PDF blob. */
+    duplicatePages: "/utilities/pdf/duplicate-pages" as const,
+    /** GET — Studio preset catalog. Returns `PdfStudioCatalog`. */
+    studioPresets: "/utilities/pdf/studio/presets" as const,
+    /** POST — Studio dispatcher; image blob or ZIP depending on preset. */
+    studioRender: "/utilities/pdf/studio/render" as const,
+
+    // ── Phase 3 — layout analysis ─────────────────────────────────────────
+    /** POST — Detect headers / footers / watermarks / recurring side notes. Returns `RepeatedRegionsReport`. */
+    detectRepeatedRegions:
+      "/utilities/pdf/detect-repeated-regions" as const,
+    /** POST — Detect + strip repeated regions from per-page text. Returns `StripRepeatedRegionsResultSchema`. */
+    stripRepeatedRegions:
+      "/utilities/pdf/strip-repeated-regions" as const,
+    /** POST — Classify every page (cover / TOC / body / exhibit / signature / billing / ...). Returns `LayoutClassificationReport`. */
+    classifyPages: "/utilities/pdf/classify-pages" as const,
+    /** POST — Multi-column → linear reading order. Returns `ReadingOrderReport`. */
+    extractReadingOrder:
+      "/utilities/pdf/extract-reading-order" as const,
+
+    // ── Phase 4 — redaction & privacy ─────────────────────────────────────
+    /** GET — Builtin redaction pattern catalog (SSN / email / phone / MRN / ...). */
+    redactPatterns: "/utilities/pdf/redact/patterns" as const,
+    /** POST — Redact one or more page-anchored rectangles. PDF blob or persisted JSON. */
+    redactRegions: "/utilities/pdf/redact-regions" as const,
+    /** POST — Redact every regex match (builtin id or raw pattern). PDF blob or persisted JSON. */
+    redactPattern: "/utilities/pdf/redact-pattern" as const,
+    /** POST — Detect repeated regions then redact selected/all. PDF blob or persisted JSON. */
+    redactRepeatedRegions:
+      "/utilities/pdf/redact-repeated-regions" as const,
+    /** POST — Wipe /Info + XMP metadata + thumbnails. */
+    stripMetadata: "/utilities/pdf/strip-metadata" as const,
+    /** POST — Granular composite scrub (metadata / attachments / JS / flatten). */
+    scrub: "/utilities/pdf/scrub" as const,
+    /** POST — Bake annotations + widgets into page content. */
+    flattenAnnotations:
+      "/utilities/pdf/flatten-annotations" as const,
   },
 
   /** Test/admin endpoints — Admin only */

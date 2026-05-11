@@ -94,9 +94,11 @@ Bricking guards inside the RPCs (worth knowing — they raise `42501`):
 
 When the user says "I don't want regular admins touching X", do exactly this — in order. Skipping a step breaks the model.
 
-### 1. Service-role key isolation (one-time, project-wide)
+### 1. Secret-key isolation (one-time, project-wide)
 
-If `SUPABASE_SERVICE_ROLE_KEY` is in any committed `.env*` file, that's the first thing to fix. Production env vars only. If it's already isolated, skip.
+The admin/secret key is **`SUPABASE_SECRET_KEY`** (`sb_secret_*`). The legacy JWT-based `SUPABASE_SERVICE_ROLE_KEY` is **deprecated and BANNED in this repo** — ESLint blocks reintroduction. See [Supabase API keys docs](https://supabase.com/docs/guides/getting-started/api-keys).
+
+If either key (or any `sb_secret_*` value) appears in a committed `.env*` file, that's the first thing to fix. Production env vars only. If it's already isolated, skip.
 
 ### 2. Migration: RLS + RPCs + audit
 

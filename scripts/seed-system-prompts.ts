@@ -313,8 +313,8 @@ const SYSTEM_PROMPT_SEEDS: SystemPromptSeed[] = [
 
 export async function seedSystemPrompts() {
   // Create Supabase client for script.
-  // SUPABASE_SECRET_KEY (sb_secret_*) is the current admin key.
-  // The legacy JWT-based SUPABASE_SERVICE_ROLE_KEY is deprecated — do not reintroduce it.
+  // API keys: ONLY sb_secret_*. The legacy JWT-based SUPABASE_SERVICE_ROLE_KEY
+  // is DEPRECATED and BANNED in this repo — ESLint will block it.
   // Docs: https://supabase.com/docs/guides/getting-started/api-keys
   // This script performs INSERTs, so it must use the admin/secret key.
   // The anon key would be silently rejected by RLS and produce confusing failures.

@@ -2,14 +2,22 @@
  * HTML Pages API Route
  *
  * Proxies create/update/delete operations to the HTML Supabase project
- * using the service role key to bypass RLS.
+ * using the secret key to bypass RLS.
  *
  * Auth: Verifies the caller is authenticated against the main Supabase project
- * by reading the Authorization header passed from the client.
+ * by reading the session cookie via the SSR client.
  *
- * Required env var:
- *   SUPABASE_HTML_SERVICE_ROLE_KEY — service role key for the HTML Supabase project
- *   (project: viyklljfdhtidwecakwx — find in Supabase Dashboard > Settings > API Keys)
+ * Required env vars:
+ *   NEXT_PUBLIC_SUPABASE_HTML_URL  — HTML CMS Supabase project URL
+ *   SUPABASE_HTML_SECRET_KEY       — sb_secret_* key for the HTML CMS project
+ *                                    (project: viyklljfdhtidwecakwx)
+ *   Generate at:
+ *   https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
+ *
+ * API keys: ONLY sb_publishable_* / sb_secret_*. The legacy JWT keys
+ * (NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY, SUPABASE_HTML_SERVICE_ROLE_KEY) are
+ * DEPRECATED and BANNED in this repo (ESLint enforces this).
+ * Docs: https://supabase.com/docs/guides/getting-started/api-keys
  *
  * POST body: { action, ...params }
  *   action: 'create' | 'update' | 'delete' | 'get' | 'list'
@@ -20,23 +28,20 @@ import { createClient as createMainSupabaseClient } from "@/utils/supabase/serve
 import { createClient } from "@supabase/supabase-js";
 
 const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL!;
-// Prefer service role key (bypasses RLS). Falls back to anon key during transition —
-// with anon key the HTML Supabase RLS must allow inserts by the anon role.
-// Add SUPABASE_HTML_SERVICE_ROLE_KEY to .env.local from:
-//   Supabase Dashboard > project viyklljfdhtidwecakwx > Settings > API Keys > service_role
-const HTML_SUPABASE_SERVICE_KEY =
-  process.env.SUPABASE_HTML_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY ||
-  "";
+const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
 
 const HTML_SITE_URL =
   process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://mymatrx.com";
 
 function getHtmlAdminClient() {
-  if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SERVICE_KEY) {
-    throw new Error("Missing HTML Supabase environment variables");
+  if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SECRET_KEY) {
+    throw new Error(
+      "Missing HTML Supabase env vars (NEXT_PUBLIC_SUPABASE_HTML_URL, SUPABASE_HTML_SECRET_KEY). " +
+        "Generate the secret key at " +
+        "https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys",
+    );
   }
-  return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SERVICE_KEY, {
+  return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SECRET_KEY, {
     auth: { persistSession: false },
   });
 }
@@ -56,14 +61,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { action, ...params } = body;
-
-    if (!process.env.SUPABASE_HTML_SERVICE_ROLE_KEY) {
-      console.warn(
-        "[html-pages API] SUPABASE_HTML_SERVICE_ROLE_KEY not set — using anon key fallback. " +
-          "RLS must allow anon inserts, or add the service role key to .env.local: " +
-          "Supabase Dashboard > project viyklljfdhtidwecakwx > Settings > API Keys > service_role",
-      );
-    }
 
     const htmlDb = getHtmlAdminClient();
 

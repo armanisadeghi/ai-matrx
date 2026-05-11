@@ -2486,6 +2486,870 @@
         }
       }
     },
+    "/utilities/pdf/reorder-pages": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Reorder Pages",
+        "operationId": "reorder_pages_utilities_pdf_reorder_pages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/insert-pages": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Insert Pages",
+        "operationId": "insert_pages_utilities_pdf_insert_pages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsertPagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/duplicate-pages": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Duplicate Pages",
+        "operationId": "duplicate_pages_utilities_pdf_duplicate_pages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicatePagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/render-page": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Render Page",
+        "operationId": "render_page_utilities_pdf_render_page_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderPageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered image (format set by request)",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/tiff": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/render-all": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Render All Pages",
+        "operationId": "render_all_pages_utilities_pdf_render_all_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderAllPagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "ZIP archive",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/render-thumbnail": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Render Thumbnail",
+        "operationId": "render_thumbnail_utilities_pdf_render_thumbnail_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderThumbnailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered image (format set by request)",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/tiff": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/studio/presets": {
+      "get": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Studio Presets",
+        "description": "Return the PDF Studio preset catalog.\n\nFE keeps stable ids; this endpoint is the canonical source. Returned\nshape mirrors ``/utilities/images/studio/presets``.",
+        "operationId": "studio_presets_utilities_pdf_studio_presets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfStudioCatalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/studio/render": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Studio Render",
+        "description": "Apply a render-family preset to a PDF source.\n\nToday supports ``render_page`` / ``render_all`` / ``render_thumbnail``\noperations. Other preset operations route through their dedicated\nendpoints (see ``operation_id`` on each preset).",
+        "operationId": "studio_render_utilities_pdf_studio_render_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioRenderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered image (single-page preset) or ZIP archive (render_all preset)",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/tiff": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/detect-repeated-regions": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Detect Repeated Regions Endpoint",
+        "description": "Find headers / footers / watermarks / repeated margins.\n\nThe returned report is deterministic for a given PDF + parameters. A\nfollow-up call to ``/pdf/strip-repeated-regions`` with a subset of the\nreturned ``region_id`` values removes the chosen regions from per-page\ntext — useful as a RAG ingestion pre-pass.",
+        "operationId": "detect_repeated_regions_endpoint_utilities_pdf_detect_repeated_regions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetectRepeatedRegionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepeatedRegionsReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/strip-repeated-regions": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Strip Repeated Regions Endpoint",
+        "description": "Detect + strip repeated regions from per-page text in one call.\n\nReturns the post-strip per-page text alongside the original detector\nreport so the caller can audit what was removed.",
+        "operationId": "strip_repeated_regions_endpoint_utilities_pdf_strip_repeated_regions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StripRepeatedRegionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StripRepeatedRegionsResultSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/classify-pages": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Classify Pages Endpoint",
+        "description": "Assign a ``PageClass`` label (cover / TOC / body / exhibit / billing / ...) to every page.",
+        "operationId": "classify_pages_endpoint_utilities_pdf_classify_pages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassifyPagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutClassificationReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/extract-reading-order": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Extract Reading Order Endpoint",
+        "description": "Per-page reading-order blocks with multi-column clustering.",
+        "operationId": "extract_reading_order_endpoint_utilities_pdf_extract_reading_order_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractReadingOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingOrderReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/redact/patterns": {
+      "get": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Redact Patterns Catalog",
+        "description": "Return the builtin pattern catalog (SSN / email / phone / MRN / ...).\n\nFE consumes this for the redaction-pattern dropdown — stable ids match\nthe ``pattern`` field of ``POST /pdf/redact-pattern``.",
+        "operationId": "redact_patterns_catalog_utilities_pdf_redact_patterns_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfRedactionPatternCatalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/redact-regions": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Redact Regions Endpoint",
+        "description": "Redact one or more page-anchored rectangles. Verification is mandatory.\n\nReturns the post-redaction PDF when ``persist_output=false``. Otherwise\npersists to cld_files and returns the ``RedactionEnvelope`` JSON.",
+        "operationId": "redact_regions_endpoint_utilities_pdf_redact_regions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedactRegionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/redact-pattern": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Redact Pattern Endpoint",
+        "description": "Redact every match of *pattern* across the PDF.\n\n*pattern* may be a builtin id (``ssn``, ``email``, ``mrn``, ...) or any\nraw regex. The verification step asserts zero surviving matches before\nreturning the file.",
+        "operationId": "redact_pattern_endpoint_utilities_pdf_redact_pattern_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedactPatternRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/redact-repeated-regions": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Redact Repeated Regions Endpoint",
+        "description": "One-shot: detect repeated regions, then redact the accepted ones.\n\nWhen ``accepted_region_ids`` is ``null``, every detected region is\nredacted. Pass a subset (e.g. only the header + footer) to selectively\nstrip noise before downstream RAG or release.",
+        "operationId": "redact_repeated_regions_endpoint_utilities_pdf_redact_repeated_regions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedactRepeatedRegionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/strip-metadata": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Strip Metadata Endpoint",
+        "description": "Wipe /Info + XMP metadata + thumbnails.",
+        "operationId": "strip_metadata_endpoint_utilities_pdf_strip_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StripMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/scrub": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Scrub Endpoint",
+        "description": "Composite privacy strip — honors the granular flags exactly.\n\nEach flag (``metadata`` / ``attachments`` / ``javascript`` /\n``flatten_annotations``) controls one PII surface independently. Use\n``/pdf/scrub`` with all flags=true for the \"outbound nuke\" default,\nor set just one flag for a targeted strip.",
+        "operationId": "scrub_endpoint_utilities_pdf_scrub_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScrubRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/pdf/flatten-annotations": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Flatten Annotations Endpoint",
+        "description": "Bake comments / highlights / sticky notes (and optionally form widgets)\ninto the page content so the file is share-safe.",
+        "operationId": "flatten_annotations_endpoint_utilities_pdf_flatten_annotations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlattenAnnotationsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utilities/pdf/extract-text-remote": {
       "post": {
         "tags": [
@@ -9406,6 +10270,123 @@
         }
       }
     },
+    "/agent-iteration/run-initial": {
+      "post": {
+        "tags": [
+          "Agent Iteration"
+        ],
+        "summary": "Run Initial",
+        "operationId": "run_initial_agent_iteration_run_initial_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitialIterationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-iteration/feedback": {
+      "post": {
+        "tags": [
+          "Agent Iteration"
+        ],
+        "summary": "Run Feedback",
+        "operationId": "run_feedback_agent_iteration_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackIterationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-iteration/commit-choice": {
+      "post": {
+        "tags": [
+          "Agent Iteration"
+        ],
+        "summary": "Commit Choice",
+        "operationId": "commit_choice_agent_iteration_commit_choice_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitChoiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legal/search": {
       "post": {
         "tags": [
@@ -10156,6 +11137,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OccupationalCodesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/legal/wc/ratings/defaults": {
+      "get": {
+        "tags": [
+          "Legal",
+          "WC Ratings"
+        ],
+        "summary": "Get Rating Defaults",
+        "description": "Return the calc-relevant defaults the rating engine uses.\n\nThe FE consumes these to drive its Max-earnings button and to clamp the\npayload before sending. Updating the underlying JSON propagates without\ncode changes on either side.",
+        "operationId": "get_rating_defaults_legal_wc_ratings_defaults_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultsResponse"
                 }
               }
             }
@@ -22194,6 +23198,194 @@
           }
         }
       }
+    },
+    "/scheduling/validate-cron": {
+      "post": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Validate Cron",
+        "operationId": "validate_cron_scheduling_validate_cron_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateCronRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateCronResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduling/compute-next-due-at": {
+      "post": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Compute Next Due At",
+        "operationId": "compute_next_due_at_scheduling_compute_next_due_at_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComputeNextDueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComputeNextDueResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduling/run-now/{task_id}": {
+      "post": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Run Now",
+        "description": "Enqueue a manual run via the sch_enqueue_manual_run RPC. The RPC enforces\ntask ownership and stamps user_id from the task row (not the caller),\nso a misbehaving FE cannot spoof status/output_ref/surface.",
+        "operationId": "run_now_scheduling_run_now__task_id__post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunNowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduling/scanner-status": {
+      "get": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Scanner Status",
+        "operationId": "scanner_status_scheduling_scanner_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScannerStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduling/admin/force-disable/{task_id}": {
+      "post": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Admin Force Disable",
+        "operationId": "admin_force_disable_scheduling_admin_force_disable__task_id__post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForceDisableResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -22660,6 +23852,47 @@
         "type": "object",
         "title": "AgentBlocksStartRequest"
       },
+      "AgentConfigSettings": {
+        "properties": {
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "AgentConfigSettings",
+        "description": "Sampling / decode settings on an agent_config."
+      },
       "AgentStartRequest": {
         "properties": {
           "organization_id": {
@@ -23074,6 +24307,85 @@
         "type": "object",
         "title": "AgentUserInputBody",
         "description": "Minimal request body for endpoints that previously took no body.\n\nUse as `request: AgentUserInputBody = Body(default_factory=AgentUserInputBody)`\nin routes that historically POST'd with an empty payload — old clients\nstill work (FastAPI parses an absent body as the factory default), and\nnew clients can opt into `{\"user_input\": \"...\"}` and/or\n`{\"use_user_agent_overrides\": true}`."
+      },
+      "AgentVersion": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "agent_config": {
+            "$ref": "#/components/schemas/IterationAgentConfig"
+          },
+          "response": {
+            "type": "string",
+            "title": "Response"
+          },
+          "feedback_received": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback Received"
+          },
+          "diagnosis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnosis"
+          },
+          "root_cause": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Cause"
+          },
+          "architect_validated": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Architect Validated"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "agent_config",
+          "response"
+        ],
+        "title": "AgentVersion",
+        "description": "One iteration step. version=1 is the original agent's output,\nversions 2+ are produced by the Rebuild Chain."
       },
       "AnalyzeBulkRequest": {
         "properties": {
@@ -25397,6 +26709,132 @@
             ],
             "title": "Date Of Injury",
             "description": "YYYY-MM-DD"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "case_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Number"
+          },
+          "evaluator_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluator Name"
+          },
+          "comments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comments"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "default": false
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "p_s_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P S Date",
+            "description": "YYYY-MM-DD"
+          },
+          "job_offer_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Offer Date",
+            "description": "YYYY-MM-DD"
+          },
+          "large_employer": {
+            "type": "boolean",
+            "title": "Large Employer",
+            "default": false
           }
         },
         "type": "object",
@@ -25474,6 +26912,142 @@
               }
             ],
             "title": "Date Of Injury"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "case_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Number"
+          },
+          "evaluator_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluator Name"
+          },
+          "comments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comments"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "p_s_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P S Date"
+          },
+          "job_offer_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Offer Date"
+          },
+          "large_employer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Large Employer"
           }
         },
         "type": "object",
@@ -25514,6 +27088,56 @@
           "reasoning"
         ],
         "title": "ClaimVerdictOut"
+      },
+      "ClassifyPagesRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          }
+        },
+        "type": "object",
+        "title": "ClassifyPagesRequest"
       },
       "ClientContext": {
         "properties": {
@@ -25583,6 +27207,154 @@
           "rating": {
             "type": "integer",
             "title": "Rating"
+          },
+          "impairment_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impairment Number"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right",
+                  "default"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          },
+          "wpi": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wpi"
+          },
+          "pain": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pain"
+          },
+          "final_wpi": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Wpi"
+          },
+          "fec_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fec Rank"
+          },
+          "fec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fec"
+          },
+          "wpi_adj": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wpi Adj"
+          },
+          "occupation_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occupation Group"
+          },
+          "occupation_letter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occupation Letter"
+          },
+          "occup_adj": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occup Adj"
+          },
+          "age_adj": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Adj"
+          },
+          "industrial": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industrial"
           }
         },
         "type": "object",
@@ -25590,7 +27362,8 @@
           "formula",
           "rating"
         ],
-        "title": "CombinedRatingItem"
+        "title": "CombinedRatingItem",
+        "description": "One injury's per-row rating breakdown — what the FE renders in the\nrating-breakdown table. The `formula` string remains for backward\ncompatibility / human-readable rendering; the structured fields are the\ncanonical source for the math columns (WPI, FinalWPI, FEC, WPI Adj,\nOccupAdj, AgeAdj, Final PD)."
       },
       "CombinedRatingOut": {
         "properties": {
@@ -25654,6 +27427,29 @@
           "total"
         ],
         "title": "CombinedRatingSide"
+      },
+      "CommitChoiceRequest": {
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/IterationSession"
+          },
+          "choice": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "title": "Choice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session",
+          "choice"
+        ],
+        "title": "CommitChoiceRequest",
+        "description": "Mode A — explicit (non-streaming) commit of the side-by-side\nwinner. Returns the updated session."
       },
       "CommitFailure": {
         "properties": {
@@ -25927,10 +27723,118 @@
               }
             ],
             "title": "Days"
+          },
+          "weekly_payment": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Payment"
+          },
+          "daily_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Rate"
+          },
+          "pd_adjustment_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Adjustment Pct"
+          },
+          "pd_adjustment_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Adjustment Reason"
+          },
+          "life_pension_weekly": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Life Pension Weekly"
           }
         },
         "type": "object",
-        "title": "CompensationOut"
+        "title": "CompensationOut",
+        "description": "Per-claim compensation block.\n\n`compensation` is the total PD payout. `weekly_payment` is the actual\nrate per week (= weekly_earnings × LC §4658(d) adjustment if any).\n`pd_adjustment_pct` is +15 / -15 / 0 with `pd_adjustment_reason`\nexplaining why. `life_pension_weekly` is populated only when the\nfinal rating is ≥ 70% (LC §4659)."
+      },
+      "ComputeNextDueRequest": {
+        "properties": {
+          "trigger_type": {
+            "type": "string",
+            "enum": [
+              "one-shot",
+              "interval",
+              "cron",
+              "heartbeat",
+              "context-match",
+              "event",
+              "manual",
+              "dependency"
+            ],
+            "title": "Trigger Type"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trigger_type"
+        ],
+        "title": "ComputeNextDueRequest"
+      },
+      "ComputeNextDueResponse": {
+        "properties": {
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "event_driven": {
+            "type": "boolean",
+            "title": "Event Driven"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_driven"
+        ],
+        "title": "ComputeNextDueResponse"
       },
       "ContentEditRequest": {
         "properties": {
@@ -27533,6 +29437,30 @@
         ],
         "title": "DatasetCreate"
       },
+      "DefaultsResponse": {
+        "properties": {
+          "max_weekly_earnings": {
+            "type": "number",
+            "title": "Max Weekly Earnings"
+          },
+          "default_fec": {
+            "type": "number",
+            "title": "Default Fec"
+          },
+          "default_fec_valid_from": {
+            "type": "integer",
+            "title": "Default Fec Valid From"
+          }
+        },
+        "type": "object",
+        "required": [
+          "max_weekly_earnings",
+          "default_fec",
+          "default_fec_valid_from"
+        ],
+        "title": "DefaultsResponse",
+        "description": "Calc-relevant scalars from the rating engine's bundled defaults.\n\nSourced from `config/ama_pd_ratings/defaults.json` via `PDRatingConfig`.\nThe FE caches this once and uses it to drive the Max-earnings button,\npayload clamping, and any \"show me the FEC the engine is using\" hints —\nso changing the JSON propagates everywhere with no code change."
+      },
       "Definition": {
         "properties": {
           "version": {
@@ -27704,6 +29632,70 @@
           "embeddings_deleted"
         ],
         "title": "DeleteResult"
+      },
+      "DetectRepeatedRegionsRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "min_pages_ratio": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min Pages Ratio",
+            "default": 0.3333333333333333
+          },
+          "min_confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min Confidence",
+            "default": 0.5
+          }
+        },
+        "type": "object",
+        "title": "DetectRepeatedRegionsRequest"
       },
       "DirectChatRequest": {
         "properties": {
@@ -28101,6 +30093,94 @@
           "url"
         ],
         "title": "DomainUpsertRequest"
+      },
+      "DuplicatePagesRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages"
+          },
+          "page_ranges": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PdfPageRange"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Ranges"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "title": "DuplicatePagesRequest"
       },
       "EdgeDef": {
         "properties": {
@@ -28567,6 +30647,56 @@
         "type": "object",
         "title": "ExtractPagesRequest"
       },
+      "ExtractReadingOrderRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          }
+        },
+        "type": "object",
+        "title": "ExtractReadingOrderRequest"
+      },
       "ExtractTablesRequest": {
         "properties": {
           "media": {
@@ -28782,6 +30912,45 @@
           "expression"
         ],
         "title": "ExtractorSaveRequest"
+      },
+      "FeedbackIterationRequest": {
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/IterationSession"
+          },
+          "user_feedback": {
+            "type": "string",
+            "title": "User Feedback"
+          },
+          "show_thinking": {
+            "type": "boolean",
+            "title": "Show Thinking",
+            "default": false
+          },
+          "apply_choice": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "A",
+                  "B"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apply Choice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session",
+          "user_feedback"
+        ],
+        "title": "FeedbackIterationRequest",
+        "description": "Turn N>=2 — the user's feedback message + replayed session.\n\nMode A: the client may also send `apply_choice` to commit the\nprevious turn's winner before the rebuild runs (so successive\nfeedback messages compose). When `apply_choice` is omitted the\nserver uses the most-recent version as baseline."
       },
       "FieldAdd": {
         "properties": {
@@ -29405,6 +31574,72 @@
         "type": "object",
         "title": "FireTriggerRequest"
       },
+      "FlattenAnnotationsRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason",
+            "default": "flatten_annotations"
+          },
+          "widgets": {
+            "type": "boolean",
+            "title": "Widgets",
+            "default": true
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "FlattenAnnotationsRequest"
+      },
       "FocalPoint": {
         "properties": {
           "x": {
@@ -29508,6 +31743,19 @@
           "folder_name"
         ],
         "title": "FolderRecord"
+      },
+      "ForceDisableResponse": {
+        "properties": {
+          "disabled": {
+            "type": "boolean",
+            "title": "Disabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "disabled"
+        ],
+        "title": "ForceDisableResponse"
       },
       "ForkRequest": {
         "properties": {
@@ -30143,6 +32391,56 @@
         ],
         "title": "IngestResponse"
       },
+      "InitialIterationRequest": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "side_by_side",
+              "invisible"
+            ],
+            "title": "Mode"
+          },
+          "original_user_request": {
+            "type": "string",
+            "title": "Original User Request"
+          },
+          "initial_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Agent Id"
+          },
+          "initial_agent_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IterationAgentConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_thinking": {
+            "type": "boolean",
+            "title": "Show Thinking",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "original_user_request"
+        ],
+        "title": "InitialIterationRequest",
+        "description": "Turn 1 — the user's first message in either mode."
+      },
       "InjuryCreate": {
         "properties": {
           "impairment_definition_id": {
@@ -30218,6 +32516,11 @@
               }
             ],
             "title": "Side"
+          },
+          "ag": {
+            "type": "boolean",
+            "title": "Ag",
+            "default": false
           }
         },
         "type": "object",
@@ -30309,6 +32612,17 @@
               }
             ],
             "title": "Side"
+          },
+          "ag": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ag"
           }
         },
         "type": "object",
@@ -30351,6 +32665,158 @@
           "file_url"
         ],
         "title": "InputDataType"
+      },
+      "InsertPagesRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "source_media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source_local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Local Path"
+          },
+          "after_page": {
+            "type": "integer",
+            "title": "After Page",
+            "default": 0
+          },
+          "source_pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Pages"
+          },
+          "source_page_ranges": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PdfPageRange"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Page Ranges"
+          },
+          "include_links": {
+            "type": "boolean",
+            "title": "Include Links",
+            "default": true
+          },
+          "include_annotations": {
+            "type": "boolean",
+            "title": "Include Annotations",
+            "default": true
+          },
+          "include_widgets": {
+            "type": "boolean",
+            "title": "Include Widgets",
+            "default": true
+          },
+          "join_duplicates": {
+            "type": "boolean",
+            "title": "Join Duplicates",
+            "default": false
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "InsertPagesRequest"
       },
       "IssueClassUpdate": {
         "properties": {
@@ -30493,6 +32959,104 @@
           "item"
         ],
         "title": "ItemResponse"
+      },
+      "IterationAgentConfig": {
+        "properties": {
+          "system_prompt": {
+            "type": "string",
+            "title": "System Prompt"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "claude-sonnet-4-5"
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "variables": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Variables"
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/AgentConfigSettings"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "system_prompt"
+        ],
+        "title": "IterationAgentConfig",
+        "description": "The portable agent description the Architect Agent emits and that\nthe runner consumes on every subsequent turn.\n\nThis is intentionally a thinner shape than matrx-ai's full\nUnifiedConfig — it covers exactly what the Architect Agent is\nexpected to produce per the spec. The runner translates this into\nthe dict shape `Agent.from_dict` accepts at execute-time."
+      },
+      "IterationSession": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "side_by_side",
+              "invisible"
+            ],
+            "title": "Mode"
+          },
+          "original_user_request": {
+            "type": "string",
+            "title": "Original User Request"
+          },
+          "accumulated_feedback": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Accumulated Feedback"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentVersion"
+            },
+            "type": "array",
+            "title": "Versions"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version",
+            "default": 0
+          },
+          "selected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "original_user_request"
+        ],
+        "title": "IterationSession",
+        "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
       },
       "KeywordCreate": {
         "properties": {
@@ -31276,6 +33840,32 @@
         "additionalProperties": false,
         "type": "object",
         "title": "LLMParams"
+      },
+      "LayoutClassificationReport": {
+        "properties": {
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/PageClassification"
+            },
+            "type": "array",
+            "title": "Pages"
+          },
+          "classifier_version": {
+            "type": "string",
+            "title": "Classifier Version",
+            "default": "v1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_count",
+          "pages"
+        ],
+        "title": "LayoutClassificationReport"
       },
       "LegalSearchRequest": {
         "properties": {
@@ -33117,6 +35707,52 @@
         "title": "OccupationalCodesResponse",
         "description": "Wrapper around the bundled California job-codes config.\n\nThe shape of `codes` is:\n    Record<JobCode, Record<JobTitle, IndustryCategory>>\ne.g. `{\"230\": {\"Carpenter\": \"Construction\", ...}, ...}`"
       },
+      "PageClassification": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "page_class": {
+            "type": "string",
+            "enum": [
+              "blank",
+              "cover",
+              "toc",
+              "body",
+              "exhibit",
+              "billing",
+              "signature",
+              "appendix",
+              "footer-only",
+              "image-only",
+              "unknown"
+            ],
+            "title": "Page Class"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "indicators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Indicators"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "page_class",
+          "confidence"
+        ],
+        "title": "PageClassification"
+      },
       "PageDetail": {
         "properties": {
           "page_index": {
@@ -33685,6 +36321,47 @@
         "type": "object",
         "title": "PdfPipelineOptions"
       },
+      "PdfRedactionPatternCatalog": {
+        "properties": {
+          "patterns": {
+            "items": {
+              "$ref": "#/components/schemas/PdfRedactionPatternEntry"
+            },
+            "type": "array",
+            "title": "Patterns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "patterns"
+        ],
+        "title": "PdfRedactionPatternCatalog",
+        "description": "Wire shape for ``GET /utilities/pdf/redact/patterns``."
+      },
+      "PdfRedactionPatternEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "pattern": {
+            "type": "string",
+            "title": "Pattern"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "pattern",
+          "description"
+        ],
+        "title": "PdfRedactionPatternEntry",
+        "description": "One entry in the builtin redaction pattern catalog."
+      },
       "PdfRequest": {
         "properties": {
           "media": {
@@ -33883,6 +36560,180 @@
         },
         "type": "object",
         "title": "PdfResult"
+      },
+      "PdfStudioBundleSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "preset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Preset Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "preset_ids"
+        ],
+        "title": "PdfStudioBundleSchema"
+      },
+      "PdfStudioCatalog": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/PdfStudioCategorySchema"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "bundles": {
+            "items": {
+              "$ref": "#/components/schemas/PdfStudioBundleSchema"
+            },
+            "type": "array",
+            "title": "Bundles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "categories",
+          "bundles"
+        ],
+        "title": "PdfStudioCatalog",
+        "description": "Wire shape for ``GET /utilities/pdf/studio/presets``."
+      },
+      "PdfStudioCategorySchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "accent": {
+            "type": "string",
+            "title": "Accent"
+          },
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/PdfStudioPresetSchema"
+            },
+            "type": "array",
+            "title": "Presets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "accent",
+          "presets"
+        ],
+        "title": "PdfStudioCategorySchema"
+      },
+      "PdfStudioPresetSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "usage": {
+            "type": "string",
+            "title": "Usage"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "render_page",
+              "render_all",
+              "render_thumbnail",
+              "extract_pages",
+              "crop_pages",
+              "rotate_pages",
+              "delete_pages",
+              "reorder_pages",
+              "insert_pages",
+              "duplicate_pages",
+              "merge",
+              "split",
+              "compress",
+              "extract_text",
+              "extract_tables",
+              "full_pipeline"
+            ],
+            "title": "Operation"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "output_kind": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "image",
+              "text",
+              "csv",
+              "json",
+              "archive"
+            ],
+            "title": "Output Kind"
+          },
+          "spec": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "usage",
+          "operation",
+          "output_kind"
+        ],
+        "title": "PdfStudioPresetSchema"
       },
       "PdfTextBlock": {
         "properties": {
@@ -35218,6 +38069,404 @@
         ],
         "title": "QuickScrapeRequest"
       },
+      "ReadingOrderBlock": {
+        "properties": {
+          "block_index": {
+            "type": "integer",
+            "title": "Block Index"
+          },
+          "column_index": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Column Index"
+          },
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "block_index",
+          "column_index",
+          "x0",
+          "y0",
+          "x1",
+          "y1",
+          "text"
+        ],
+        "title": "ReadingOrderBlock"
+      },
+      "ReadingOrderPage": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "column_count": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Column Count"
+          },
+          "blocks_in_order": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingOrderBlock"
+            },
+            "type": "array",
+            "title": "Blocks In Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "column_count",
+          "blocks_in_order"
+        ],
+        "title": "ReadingOrderPage"
+      },
+      "ReadingOrderReport": {
+        "properties": {
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingOrderPage"
+            },
+            "type": "array",
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_count",
+          "pages"
+        ],
+        "title": "ReadingOrderReport"
+      },
+      "RedactPatternRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "pattern": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Pattern"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "flags": {
+            "type": "integer",
+            "title": "Flags",
+            "default": 0
+          },
+          "scrub_metadata": {
+            "type": "boolean",
+            "title": "Scrub Metadata",
+            "default": true
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "pattern",
+          "reason"
+        ],
+        "title": "RedactPatternRequest"
+      },
+      "RedactRegionsRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/RedactionRegion"
+            },
+            "type": "array",
+            "title": "Regions"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "scrub_metadata": {
+            "type": "boolean",
+            "title": "Scrub Metadata",
+            "default": true
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "regions",
+          "reason"
+        ],
+        "title": "RedactRegionsRequest"
+      },
+      "RedactRepeatedRegionsRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "accepted_region_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Region Ids"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "min_pages_ratio": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min Pages Ratio",
+            "default": 0.3333333333333333
+          },
+          "min_confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min Confidence",
+            "default": 0.5
+          },
+          "scrub_metadata": {
+            "type": "boolean",
+            "title": "Scrub Metadata",
+            "default": true
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "RedactRepeatedRegionsRequest"
+      },
+      "RedactionRegion": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          },
+          "replacement": {
+            "type": "string",
+            "enum": [
+              "BLOCK",
+              "REMOVE"
+            ],
+            "title": "Replacement",
+            "default": "BLOCK"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "preserve_text": {
+            "type": "boolean",
+            "title": "Preserve Text",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "RedactionRegion",
+        "description": "One redaction target — a page-anchored rect with replacement semantic."
+      },
       "RegisteredToolSpec": {
         "properties": {
           "kind": {
@@ -35293,6 +38542,448 @@
           "new_path"
         ],
         "title": "RenameFileRequest"
+      },
+      "RenderAllPagesRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "dpi": {
+            "type": "integer",
+            "title": "Dpi",
+            "default": 150
+          },
+          "fmt": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "tiff"
+            ],
+            "title": "Fmt",
+            "default": "png"
+          },
+          "jpeg_quality": {
+            "type": "integer",
+            "title": "Jpeg Quality",
+            "default": 85
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "RenderAllPagesRequest"
+      },
+      "RenderPageRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "dpi": {
+            "type": "integer",
+            "title": "Dpi",
+            "default": 150
+          },
+          "fmt": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "tiff"
+            ],
+            "title": "Fmt",
+            "default": "png"
+          },
+          "jpeg_quality": {
+            "type": "integer",
+            "title": "Jpeg Quality",
+            "default": 85
+          },
+          "alpha": {
+            "type": "boolean",
+            "title": "Alpha",
+            "default": false
+          },
+          "annotations": {
+            "type": "boolean",
+            "title": "Annotations",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "RenderPageRequest"
+      },
+      "RenderThumbnailRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "max_side": {
+            "type": "integer",
+            "title": "Max Side",
+            "default": 256
+          },
+          "fmt": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Fmt",
+            "default": "jpeg"
+          },
+          "jpeg_quality": {
+            "type": "integer",
+            "title": "Jpeg Quality",
+            "default": 80
+          }
+        },
+        "type": "object",
+        "title": "RenderThumbnailRequest"
+      },
+      "ReorderPagesRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "new_order": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "New Order"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "new_order"
+        ],
+        "title": "ReorderPagesRequest"
+      },
+      "RepeatedRegion": {
+        "properties": {
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "header",
+              "footer",
+              "watermark",
+              "side-margin",
+              "logo",
+              "page-number",
+              "running-title",
+              "unknown"
+            ],
+            "title": "Kind"
+          },
+          "text_template": {
+            "type": "string",
+            "title": "Text Template"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Pages"
+          },
+          "bbox_per_page": {
+            "items": {
+              "$ref": "#/components/schemas/RepeatedRegionBbox"
+            },
+            "type": "array",
+            "title": "Bbox Per Page"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "region_id",
+          "kind",
+          "text_template",
+          "pages",
+          "bbox_per_page",
+          "confidence"
+        ],
+        "title": "RepeatedRegion",
+        "description": "A pattern detected across multiple pages.\n\nStable across detector runs given the same input — the *region_id* is\ndeterministic from the (kind, y_band, x_band, normalized_text_template)\nquadruple so consumers can reference a region by id when applying\naccept/reject decisions."
+      },
+      "RepeatedRegionBbox": {
+        "properties": {
+          "page_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page Number"
+          },
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "y0": {
+            "type": "number",
+            "title": "Y0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          },
+          "raw_text": {
+            "type": "string",
+            "title": "Raw Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_number",
+          "x0",
+          "y0",
+          "x1",
+          "y1",
+          "raw_text"
+        ],
+        "title": "RepeatedRegionBbox",
+        "description": "One occurrence of a repeated region on a single page."
+      },
+      "RepeatedRegionsReport": {
+        "properties": {
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/RepeatedRegion"
+            },
+            "type": "array",
+            "title": "Regions"
+          },
+          "detector_version": {
+            "type": "string",
+            "title": "Detector Version",
+            "default": "v1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_count",
+          "regions"
+        ],
+        "title": "RepeatedRegionsReport"
       },
       "RepositoriesListResponse": {
         "properties": {
@@ -35938,6 +39629,19 @@
         ],
         "title": "RowUpdate"
       },
+      "RunNowResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "RunNowResponse"
+      },
       "RunPipelineRequest": {
         "properties": {
           "use_user_agent_overrides": {
@@ -36166,6 +39870,83 @@
         "type": "object",
         "title": "SavedViewUpdate"
       },
+      "ScannerStatusResponse": {
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "title": "Running"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "last_tick_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick At"
+          },
+          "last_tick_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick Duration Ms"
+          },
+          "last_tick_claimed": {
+            "type": "integer",
+            "title": "Last Tick Claimed",
+            "default": 0
+          },
+          "last_tick_expired_sweeps": {
+            "type": "integer",
+            "title": "Last Tick Expired Sweeps",
+            "default": 0
+          },
+          "total_runs_dispatched": {
+            "type": "integer",
+            "title": "Total Runs Dispatched",
+            "default": 0
+          },
+          "consecutive_errors": {
+            "type": "integer",
+            "title": "Consecutive Errors",
+            "default": 0
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "running"
+        ],
+        "title": "ScannerStatusResponse"
+      },
       "ScheduleSaveRequest": {
         "properties": {
           "name": {
@@ -36211,6 +39992,88 @@
           "cron_expr"
         ],
         "title": "ScheduleSaveRequest"
+      },
+      "ScrubRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "metadata": {
+            "type": "boolean",
+            "title": "Metadata",
+            "default": true
+          },
+          "attachments": {
+            "type": "boolean",
+            "title": "Attachments",
+            "default": true
+          },
+          "javascript": {
+            "type": "boolean",
+            "title": "Javascript",
+            "default": true
+          },
+          "flatten_annotations": {
+            "type": "boolean",
+            "title": "Flatten Annotations",
+            "default": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason",
+            "default": "strip_all_pii"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ScrubRequest",
+        "description": "Composite scrub call — wipes the categories opted-in via flags."
       },
       "SearchAndScrapeLimitedRequest": {
         "properties": {
@@ -37516,6 +41379,35 @@
             "type": "string",
             "title": "Date Of Injury",
             "description": "YYYY-MM-DD"
+          },
+          "p_s_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P S Date",
+            "description": "YYYY-MM-DD"
+          },
+          "job_offer_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Offer Date",
+            "description": "YYYY-MM-DD"
+          },
+          "large_employer": {
+            "type": "boolean",
+            "title": "Large Employer",
+            "default": false
           }
         },
         "type": "object",
@@ -37675,6 +41567,16 @@
             },
             "type": "array",
             "title": "Errors"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CombinedRatingItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -37895,6 +41797,275 @@
           "tier_name"
         ],
         "title": "StorageUsageResponse"
+      },
+      "StripMetadataRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason",
+            "default": "strip_metadata"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "StripMetadataRequest"
+      },
+      "StripRepeatedRegionsRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "accepted_region_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Region Ids"
+          },
+          "min_pages_ratio": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min Pages Ratio",
+            "default": 0.3333333333333333
+          },
+          "min_confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min Confidence",
+            "default": 0.5
+          }
+        },
+        "type": "object",
+        "title": "StripRepeatedRegionsRequest"
+      },
+      "StripRepeatedRegionsResultSchema": {
+        "properties": {
+          "pages_text": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pages Text"
+          },
+          "regions": {
+            "$ref": "#/components/schemas/RepeatedRegionsReport"
+          },
+          "stripped_region_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stripped Region Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pages_text",
+          "regions",
+          "stripped_region_ids"
+        ],
+        "title": "StripRepeatedRegionsResultSchema",
+        "description": "Wire shape for ``POST /utilities/pdf/strip-repeated-regions``."
+      },
+      "StudioRenderRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "preset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset Id"
+          },
+          "operation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "render_page",
+                  "render_all",
+                  "render_thumbnail"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          },
+          "overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overrides"
+          }
+        },
+        "type": "object",
+        "title": "StudioRenderRequest"
       },
       "StudioSourceOut": {
         "properties": {
@@ -39190,6 +43361,66 @@
         "type": "object",
         "title": "UserDataStorePatch"
       },
+      "ValidateCronRequest": {
+        "properties": {
+          "expression": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Expression"
+          },
+          "tz": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Tz",
+            "default": "UTC"
+          },
+          "next_n": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Next N",
+            "default": 5
+          }
+        },
+        "type": "object",
+        "required": [
+          "expression"
+        ],
+        "title": "ValidateCronRequest"
+      },
+      "ValidateCronResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "next_fires_utc": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Next Fires Utc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "title": "ValidateCronResponse"
+      },
       "ValidateRequest": {
         "properties": {
           "definition": {
@@ -39962,6 +44193,10 @@
           "created_at": {
             "anyOf": [
               {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
                 "type": "string"
               },
               {
@@ -39969,6 +44204,21 @@
               }
             ],
             "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
           },
           "applicant_name": {
             "anyOf": [
@@ -39995,6 +44245,10 @@
           "date_of_birth": {
             "anyOf": [
               {
+                "type": "string",
+                "format": "date"
+              },
+              {
                 "type": "string"
               },
               {
@@ -40005,6 +44259,10 @@
           },
           "date_of_injury": {
             "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
               {
                 "type": "string"
               },
@@ -40046,6 +44304,161 @@
               }
             ],
             "title": "Weekly Earnings"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "case_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Number"
+          },
+          "evaluator_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluator Name"
+          },
+          "comments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comments"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "p_s_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P S Date"
+          },
+          "job_offer_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Offer Date"
+          },
+          "large_employer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Large Employer"
           }
         },
         "additionalProperties": true,
@@ -40054,7 +44467,7 @@
           "id"
         ],
         "title": "WcClaimRead",
-        "description": "One row from `wc_claim`."
+        "description": "One row from `wc_claim`.\n\nDate / datetime columns accept native `date`/`datetime` from the ORM and\nserialize to ISO strings on the wire (Pydantic 2 default). Same wire\nshape the FE already consumes; just stops the response-validation crash\nwhen the row comes from Postgres instead of being constructed by hand."
       },
       "WcImpairmentDefinitionRead": {
         "properties": {
@@ -40157,6 +44570,10 @@
           "created_at": {
             "anyOf": [
               {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
                 "type": "string"
               },
               {
@@ -40167,6 +44584,10 @@
           },
           "updated_at": {
             "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
               {
                 "type": "string"
               },
@@ -40315,6 +44736,17 @@
               }
             ],
             "title": "Warnings"
+          },
+          "ag": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ag"
           }
         },
         "additionalProperties": true,
@@ -40323,7 +44755,7 @@
           "id"
         ],
         "title": "WcInjuryRead",
-        "description": "One row from `wc_injury`. `warnings` is appended by the create/edit handlers."
+        "description": "One row from `wc_injury`. `warnings` is appended by the create/edit handlers.\n\n`datetime | str` accepts native datetimes from the ORM and serializes to\nISO strings on the wire — same shape the FE consumes."
       },
       "WcReportRead": {
         "properties": {
@@ -40333,6 +44765,10 @@
           },
           "created_at": {
             "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
               {
                 "type": "string"
               },
@@ -40422,6 +44858,61 @@
               }
             ],
             "title": "Compensation Days"
+          },
+          "weekly_payment": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Payment"
+          },
+          "daily_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Rate"
+          },
+          "pd_adjustment_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Adjustment Pct"
+          },
+          "pd_adjustment_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Adjustment Reason"
+          },
+          "life_pension_weekly": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Life Pension Weekly"
           }
         },
         "additionalProperties": true,
@@ -40431,7 +44922,7 @@
           "claim_id"
         ],
         "title": "WcReportRead",
-        "description": "One row from `wc_report`. Totals are populated only after `/calculate`."
+        "description": "One row from `wc_report`. Totals are populated only after `/calculate`.\n\n`datetime | str` accepts native datetimes from the ORM and serializes to\nISO strings on the wire — same shape the FE consumes."
       },
       "WriteArgs": {
         "properties": {

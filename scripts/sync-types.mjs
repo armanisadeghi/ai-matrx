@@ -1,18 +1,20 @@
 #!/usr/bin/env node
 /**
- * update-api-types — Single command to sync Python backend types + verify alignment.
+ * sync-types — Single command to keep generated types in sync.
  *
- * Usage:
- *   pnpm update-api-types               # default: live server (https://server.app.matrxserver.com)
- *   pnpm update-api-types --local       # use local backend (http://localhost:8000)
- *   pnpm update-api-types --url https://custom.server.com
+ * Modes:
+ *   pnpm sync-types          → all 3 steps against the LIVE backend
+ *   pnpm sync-types:local    → all 3 steps against the LOCAL backend (http://localhost:8000)
+ *   pnpm sync-types:fast     → ONLY step 2 against the LOCAL backend (no db-types, no typecheck)
  *
  * Steps:
- *   1. Fetch schema bundles from the Python backend via sync-types.mjs
- *   2. Run TypeScript type-check (tsc --noEmit) to surface any drift
+ *   1. Update Supabase database types          → `pnpm db-types`
+ *   2. Update Python API types (paths/schemas) → via aidream/scripts/sync-types.mjs
+ *   3. Type-check the codebase                 → `tsc --noEmit`
  *
- * If ANYTHING in the codebase references a field, enum value, or type that
- * no longer matches the backend schema, step 2 will fail loudly with type errors.
+ * Step 1 must run first so that any new database columns are available to the
+ * type-check in step 3. The fast mode is for iterating against a local backend
+ * when you only care about refreshing the Python API surface.
  */
 
 import { execSync } from 'node:child_process';
@@ -30,8 +32,9 @@ function getArg(name, fallback) {
     return fallback;
 }
 
-const skipTypeCheck = args.includes('--skip-typecheck');
-const useLocal = args.includes('--local');
+const fastMode = args.includes('--fast');
+const useLocal = fastMode || args.includes('--local');
+
 const LIVE_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
     ? `${process.env.NEXT_PUBLIC_BACKEND_URL}`
     : 'https://server.app.matrxserver.com';
@@ -41,12 +44,31 @@ const outDir = resolve(PROJECT_ROOT, 'types/python-generated');
 
 const AIDREAM_SYNC_SCRIPT = resolve(PROJECT_ROOT, '../aidream/scripts/sync-types.mjs');
 
+const modeLabel = fastMode ? 'fast (api types only)' : useLocal ? 'local (all 3 steps)' : 'live (all 3 steps)';
+
 console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('  update-api-types');
-console.log(`  Backend: ${backendUrl}${useLocal ? '  (local)' : '  (live)'}`);
+console.log('  sync-types');
+console.log(`  Backend: ${backendUrl}`);
+console.log(`  Mode:    ${modeLabel}`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-// ── Step 1: Sync types from Python backend ─────────────────────────────────
+// ── Step 1: Supabase database types ────────────────────────────────────────
+
+if (fastMode) {
+    console.log('  ⊘ Step 1: Skipping Supabase db-types (--fast)\n');
+} else {
+    console.log('  Step 1: Updating Supabase database types (pnpm db-types)...\n');
+    try {
+        execSync('pnpm db-types', { stdio: 'inherit', cwd: PROJECT_ROOT });
+        console.log('\n  ✓ Supabase types updated.\n');
+    } catch {
+        console.error('\n  ✗ Failed to update Supabase database types.');
+        console.error('    Fix the errors above, then re-run: pnpm sync-types\n');
+        process.exit(1);
+    }
+}
+
+// ── Step 2: Python API types ───────────────────────────────────────────────
 
 if (!existsSync(AIDREAM_SYNC_SCRIPT)) {
     console.error(`  ✗ sync-types.mjs not found at: ${AIDREAM_SYNC_SCRIPT}`);
@@ -54,7 +76,7 @@ if (!existsSync(AIDREAM_SYNC_SCRIPT)) {
     process.exit(1);
 }
 
-console.log('  Step 1: Fetching types from Python backend...\n');
+console.log('  Step 2: Fetching API types from Python backend...\n');
 
 try {
     execSync(
@@ -72,12 +94,12 @@ try {
     process.exit(1);
 }
 
-// ── Step 2: Type-check the codebase ────────────────────────────────────────
+// ── Step 3: Type-check the codebase ────────────────────────────────────────
 
-if (skipTypeCheck) {
-    console.log('\n  ⊘ Skipping type-check (--skip-typecheck)\n');
+if (fastMode) {
+    console.log('\n  ⊘ Step 3: Skipping type-check (--fast)\n');
 } else {
-    console.log('\n  Step 2: Running TypeScript type-check...\n');
+    console.log('\n  Step 3: Running TypeScript type-check...\n');
     try {
         execSync('node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit', {
             stdio: 'inherit',
@@ -87,11 +109,11 @@ if (skipTypeCheck) {
     } catch {
         console.error('\n  ✗ TYPE ERRORS DETECTED');
         console.error('    The codebase has types that are out of sync with the backend.');
-        console.error('    Fix the errors above, then re-run: pnpm update-api-types\n');
+        console.error('    Fix the errors above, then re-run: pnpm sync-types\n');
         process.exit(1);
     }
 }
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('  update-api-types complete');
+console.log('  sync-types complete');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');

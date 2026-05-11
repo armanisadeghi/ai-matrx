@@ -69,3 +69,57 @@ export type PdfTextChunk = Schemas["PdfTextChunk"];
 
 /** Page span attached to a chunk so the UI can resolve back to source pages. */
 export type PdfPageSpan = Schemas["PdfPageSpan"];
+
+// ── Phase 2 — render & advanced page ops ────────────────────────────────────
+
+export type RenderPageRequest = Schemas["RenderPageRequest"];
+export type RenderAllPagesRequest = Schemas["RenderAllPagesRequest"];
+export type RenderThumbnailRequest = Schemas["RenderThumbnailRequest"];
+export type ReorderPagesRequest = Schemas["ReorderPagesRequest"];
+export type InsertPagesRequest = Schemas["InsertPagesRequest"];
+export type DuplicatePagesRequest = Schemas["DuplicatePagesRequest"];
+export type StudioRenderRequest = Schemas["StudioRenderRequest"];
+
+/** Catalog returned by `GET /utilities/pdf/studio/presets`. */
+export type PdfStudioCatalog = Schemas["PdfStudioCatalog"];
+export type PdfStudioCategorySchema = Schemas["PdfStudioCategorySchema"];
+export type PdfStudioPresetSchema = Schemas["PdfStudioPresetSchema"];
+export type PdfStudioBundleSchema = Schemas["PdfStudioBundleSchema"];
+
+// ── Phase 3 — layout analysis ───────────────────────────────────────────────
+
+export type DetectRepeatedRegionsRequest = Schemas["DetectRepeatedRegionsRequest"];
+export type StripRepeatedRegionsRequest = Schemas["StripRepeatedRegionsRequest"];
+export type ClassifyPagesRequest = Schemas["ClassifyPagesRequest"];
+export type ExtractReadingOrderRequest = Schemas["ExtractReadingOrderRequest"];
+
+export type RepeatedRegion = Schemas["RepeatedRegion"];
+export type RepeatedRegionBbox = Schemas["RepeatedRegionBbox"];
+export type RepeatedRegionsReport = Schemas["RepeatedRegionsReport"];
+export type StripRepeatedRegionsResultSchema = Schemas["StripRepeatedRegionsResultSchema"];
+
+export type PageClassification = Schemas["PageClassification"];
+export type LayoutClassificationReport = Schemas["LayoutClassificationReport"];
+
+export type ReadingOrderBlock = Schemas["ReadingOrderBlock"];
+export type ReadingOrderPage = Schemas["ReadingOrderPage"];
+export type ReadingOrderReport = Schemas["ReadingOrderReport"];
+
+// ── Phase 4 — redaction & privacy ───────────────────────────────────────────
+
+export type RedactRegionsRequest = Schemas["RedactRegionsRequest"];
+export type RedactPatternRequest = Schemas["RedactPatternRequest"];
+export type RedactRepeatedRegionsRequest = Schemas["RedactRepeatedRegionsRequest"];
+export type StripMetadataRequest = Schemas["StripMetadataRequest"];
+export type ScrubRequest = Schemas["ScrubRequest"];
+export type FlattenAnnotationsRequest = Schemas["FlattenAnnotationsRequest"];
+
+export type RedactionRegion = Schemas["RedactionRegion"];
+export type RedactionAudit = Schemas["RedactionAudit"];
+export type RedactionResult = Schemas["RedactionResult"];
+export type PdfRedactionPatternCatalog = Schemas["PdfRedactionPatternCatalog"];
+export type PdfRedactionPatternEntry = Schemas["PdfRedactionPatternEntry"];
+
+/** Returned by every mutating PDF endpoint when `persist_output=true`. */
+export type PersistedPdfFile = Schemas["PersistedPdfFile"];
+export type PersistedRedactionResult = Schemas["PersistedRedactionResult"];

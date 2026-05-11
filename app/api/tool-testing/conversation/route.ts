@@ -15,12 +15,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 
+// API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
+// and BANNED — see https://supabase.com/docs/guides/getting-started/api-keys
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim();
-const supabaseAnonKey = (
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  ""
-).trim();
+const supabasePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim();
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.slice(7);
 
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+    const authClient = createClient(supabaseUrl, supabasePublishableKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });

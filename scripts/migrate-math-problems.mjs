@@ -35,8 +35,8 @@ if (!problemsDataMatch) {
 // Use dynamic evaluation (only safe because this is our own controlled data)
 const problemsData = eval(problemsDataMatch[1]);
 
-// SUPABASE_SECRET_KEY (sb_secret_*) is the current admin key.
-// The legacy JWT-based SUPABASE_SERVICE_ROLE_KEY is deprecated — do not reintroduce it.
+// API keys: ONLY sb_secret_*. The legacy JWT-based SUPABASE_SERVICE_ROLE_KEY
+// is DEPRECATED and BANNED in this repo — ESLint will block it.
 // Docs: https://supabase.com/docs/guides/getting-started/api-keys
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY;

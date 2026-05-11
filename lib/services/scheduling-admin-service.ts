@@ -164,21 +164,45 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
     failures24h,
     orphans,
   ] = await Promise.all([
-    countTable("sch_task"),
-    countTable("sch_task", (q) => q.eq("enabled", true)),
-    countTable("sch_task", (q) =>
-      q
-        .eq("enabled", true)
-        .lte("next_due_at", hourFromNowIso)
-        .gte("next_due_at", nowIso),
-    ),
-    countTable("sch_run", (q) => q.gte("created_at", dayAgoIso)),
-    countTable("sch_run", (q) =>
-      q.gte("created_at", dayAgoIso).eq("status", "failed"),
-    ),
-    countTable("sch_run", (q) =>
-      q.in("status", ["claimed", "running"]).lt("claim_expires_at", nowIso),
-    ),
+    // total tasks
+    supabase
+      .from("sch_task")
+      .select("*", { head: true, count: "exact" })
+      .then(unwrapCount),
+    // enabled tasks
+    supabase
+      .from("sch_task")
+      .select("*", { head: true, count: "exact" })
+      .eq("enabled", true)
+      .then(unwrapCount),
+    // due in next hour
+    supabase
+      .from("sch_task")
+      .select("*", { head: true, count: "exact" })
+      .eq("enabled", true)
+      .lte("next_due_at", hourFromNowIso)
+      .gte("next_due_at", nowIso)
+      .then(unwrapCount),
+    // runs last 24h
+    supabase
+      .from("sch_run")
+      .select("*", { head: true, count: "exact" })
+      .gte("created_at", dayAgoIso)
+      .then(unwrapCount),
+    // failures last 24h
+    supabase
+      .from("sch_run")
+      .select("*", { head: true, count: "exact" })
+      .gte("created_at", dayAgoIso)
+      .eq("status", "failed")
+      .then(unwrapCount),
+    // orphan leases
+    supabase
+      .from("sch_run")
+      .select("*", { head: true, count: "exact" })
+      .in("status", ["claimed", "running"])
+      .lt("claim_expires_at", nowIso)
+      .then(unwrapCount),
   ]);
 
   return {
@@ -191,16 +215,12 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
   };
 }
 
-async function countTable(
-  table: "sch_task" | "sch_run",
-  modify?: (q: ReturnType<typeof supabase.from>) => unknown,
-): Promise<number> {
-  // We use a head + count query, which Supabase counts server-side.
-  const baseQ = supabase.from(table).select("*", { head: true, count: "exact" });
-  const finalQ = (modify ? (modify(baseQ) as typeof baseQ) : baseQ) as typeof baseQ;
-  const { count, error } = await finalQ;
-  if (error) throw error;
-  return count ?? 0;
+function unwrapCount(res: {
+  count: number | null;
+  error: { message: string } | null;
+}): number {
+  if (res.error) throw new Error(res.error.message);
+  return res.count ?? 0;
 }
 
 // ── Admin mutations ────────────────────────────────────────────────────────

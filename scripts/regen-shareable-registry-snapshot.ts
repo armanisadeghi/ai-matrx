@@ -20,9 +20,11 @@
  * Required environment variables (loaded from .env.local automatically):
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SECRET_KEY (read-only access to the registry table is enough)
+ *   — or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY if the table is readable to anon.
  *
- * SUPABASE_SECRET_KEY (sb_secret_*) is the current admin key.
- * The legacy JWT-based SUPABASE_SERVICE_ROLE_KEY is deprecated — do not reintroduce it.
+ * API keys: ONLY sb_publishable_* / sb_secret_*. The legacy JWT-based
+ * SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_ANON_KEY are DEPRECATED
+ * and BANNED — do not reintroduce them (ESLint will block it).
  * Docs: https://supabase.com/docs/guides/getting-started/api-keys
  */
 
@@ -47,12 +49,12 @@ async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SECRET_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) {
     console.error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL and/or a Supabase key in .env.local",
+      "Missing NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SECRET_KEY / " +
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in .env.local",
     );
     process.exit(1);
   }
