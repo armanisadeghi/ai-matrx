@@ -11,7 +11,7 @@ export type LoadStatus = "idle" | "loading" | "success" | "not-found" | "error";
 
 export function useTaskDetail(taskId: string | null | undefined) {
   const dispatch = useAppDispatch();
-  const task = useAppSelector(selectTaskById(taskId ?? null));
+  const task = useAppSelector((s) => selectTaskById(s, taskId ?? null));
   const [status, setStatus] = useState<LoadStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 

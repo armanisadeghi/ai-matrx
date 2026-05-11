@@ -1,7 +1,11 @@
 // features/scheduling/components/form/ScheduleForm.tsx
 //
-// The full create/edit form. Six sections per docs/SCHEDULING.md §7.C.
-// Used by both /schedules/new (create) and /schedules/[id]/edit (edit).
+// Full create/edit form. Six sections per docs/SCHEDULING.md §7.C plus the
+// extras (variables, expires_at, max_concurrent, persistent_conversation_id).
+//
+// Cron triggers compute next_due_at server-side via aidream so the Python
+// parser stays authoritative. Other trigger types use the FE shim (it's
+// closed-form math). The Zod schema is the canonical validator.
 
 "use client";
 
@@ -14,13 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -32,6 +29,10 @@ import {
   createScheduledTask,
   updateScheduledTask,
 } from "../../redux/tasks/thunks";
+import {
+  createTaskFormSchema,
+  type CreateTaskFormValues,
+} from "../../utils/validation";
 import type {
   AgendaTask,
   CreateAgentTaskInput,
@@ -44,6 +45,8 @@ import { IntervalForm } from "./triggers/IntervalForm";
 import { CronForm } from "./triggers/CronForm";
 import { HeartbeatForm } from "./triggers/HeartbeatForm";
 import { ContextMatchForm } from "./triggers/ContextMatchForm";
+import { AgentPicker } from "./AgentPicker";
+import { VariablesEditor } from "./VariablesEditor";
 
 interface FormState {
   title: string;
@@ -51,9 +54,13 @@ interface FormState {
   surfaces: Surface[];
   tags: string[];
   prompt: string;
-  agentId: string;
+  agentId: string | null;
+  variables: Record<string, unknown>;
+  persistentConversationId: string;
   authMode: "ask" | "auto";
   maxRuntimeSeconds: number;
+  maxConcurrent: number;
+  expiresAt: string;
   triggerType: TriggerType;
   triggerConfig: Record<string, unknown>;
 }
@@ -67,9 +74,13 @@ function makeDefault(task?: AgendaTask): FormState {
       surfaces: task.surfaces,
       tags: task.tags,
       prompt: task.prompt,
-      agentId: task.agentId ?? "",
+      agentId: task.agentId,
+      variables: task.variables,
+      persistentConversationId: task.persistentConversationId ?? "",
       authMode: task.authMode,
       maxRuntimeSeconds: task.maxRuntimeSeconds,
+      maxConcurrent: task.maxConcurrent,
+      expiresAt: task.expiresAt ? toLocalDateTime(task.expiresAt) : "",
       triggerType: t?.type ?? "interval",
       triggerConfig: (t?.config ?? {}) as Record<string, unknown>,
     };
@@ -80,12 +91,31 @@ function makeDefault(task?: AgendaTask): FormState {
     surfaces: ["any"],
     tags: [],
     prompt: "",
-    agentId: "",
+    agentId: null,
+    variables: {},
+    persistentConversationId: "",
     authMode: "ask",
     maxRuntimeSeconds: 600,
+    maxConcurrent: 1,
+    expiresAt: "",
     triggerType: "interval",
     triggerConfig: { every_seconds: 3600 },
   };
+}
+
+function toLocalDateTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
+
+function fromLocalDateTime(value: string): string {
+  if (!value) return "";
+  return new Date(value).toISOString();
 }
 
 interface Props {
@@ -113,17 +143,39 @@ export function ScheduleForm({ task }: Props) {
   };
 
   const submit = async () => {
-    const errs: Record<string, string> = {};
-    if (!form.title.trim()) errs.title = "Title required";
-    if (form.title.length > 200) errs.title = "Too long (max 200)";
-    if (!form.prompt.trim()) errs.prompt = "Prompt required";
-    if (form.prompt.length > 10000) errs.prompt = "Too long (max 10,000)";
-    if (form.surfaces.length === 0) errs.surfaces = "Pick at least one surface";
-
     const trigger = buildTriggerConfig(form.triggerType, form.triggerConfig);
-    if (!trigger) errs.trigger = "Invalid trigger configuration";
+    if (!trigger) {
+      setErrors({ trigger: "Invalid trigger configuration" });
+      return;
+    }
 
-    if (Object.keys(errs).length > 0) {
+    // Zod validation — canonical.
+    const candidate: CreateTaskFormValues = {
+      title: form.title,
+      description: form.description || null,
+      surfaces: form.surfaces,
+      tags: form.tags,
+      queue: "default",
+      expiresAt: form.expiresAt
+        ? fromLocalDateTime(form.expiresAt)
+        : null,
+      agentId: form.agentId || null,
+      prompt: form.prompt,
+      variables: form.variables,
+      persistentConversationId: form.persistentConversationId || null,
+      authMode: form.authMode,
+      maxRuntimeSeconds: form.maxRuntimeSeconds,
+      maxConcurrent: form.maxConcurrent,
+      trigger,
+    };
+
+    const parsed = createTaskFormSchema.safeParse(candidate);
+    if (!parsed.success) {
+      const errs: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const path = issue.path.join(".") || "_form";
+        if (!errs[path]) errs[path] = issue.message;
+      }
       setErrors(errs);
       return;
     }
@@ -135,33 +187,43 @@ export function ScheduleForm({ task }: Props) {
         await dispatch(
           updateScheduledTask(task.id, {
             taskPatch: {
-              title: form.title,
-              description: form.description || null,
-              surfaces: form.surfaces,
-              tags: form.tags,
+              title: parsed.data.title,
+              description: parsed.data.description ?? null,
+              surfaces: parsed.data.surfaces as Surface[],
+              tags: parsed.data.tags,
+              expires_at: parsed.data.expiresAt ?? null,
             },
             agentPatch: {
-              agent_id: form.agentId || null,
-              prompt: form.prompt,
-              auth_mode: form.authMode,
-              max_runtime_seconds: form.maxRuntimeSeconds,
+              agent_id: parsed.data.agentId ?? null,
+              prompt: parsed.data.prompt,
+              variables: parsed.data.variables,
+              persistent_conversation_id:
+                parsed.data.persistentConversationId ?? null,
+              auth_mode: parsed.data.authMode,
+              max_runtime_seconds: parsed.data.maxRuntimeSeconds,
+              max_concurrent: parsed.data.maxConcurrent,
             },
-            trigger: trigger!,
+            trigger,
           }),
         );
         toast.success("Schedule updated");
         startTransition(() => router.push(`/schedules/${task.id}`));
       } else {
         const input: CreateAgentTaskInput = {
-          title: form.title,
-          description: form.description || null,
-          surfaces: form.surfaces,
-          tags: form.tags,
-          agentId: form.agentId || null,
-          prompt: form.prompt,
-          authMode: form.authMode,
-          maxRuntimeSeconds: form.maxRuntimeSeconds,
-          trigger: trigger!,
+          title: parsed.data.title,
+          description: parsed.data.description ?? null,
+          surfaces: parsed.data.surfaces as Surface[],
+          tags: parsed.data.tags,
+          expiresAt: parsed.data.expiresAt ?? null,
+          agentId: parsed.data.agentId ?? null,
+          prompt: parsed.data.prompt,
+          variables: parsed.data.variables,
+          persistentConversationId:
+            parsed.data.persistentConversationId ?? null,
+          authMode: parsed.data.authMode,
+          maxRuntimeSeconds: parsed.data.maxRuntimeSeconds,
+          maxConcurrent: parsed.data.maxConcurrent,
+          trigger,
         };
         const newId = await dispatch(createScheduledTask(input));
         toast.success("Schedule created");
@@ -210,16 +272,13 @@ export function ScheduleForm({ task }: Props) {
       {/* 2. What to run */}
       <Section title="What to run">
         <Field label="Agent" htmlFor="agent" optional>
-          <Input
-            id="agent"
+          <AgentPicker
             value={form.agentId}
-            onChange={(e) => patch("agentId", e.target.value)}
-            placeholder="agent UUID — leave blank for platform default"
-            className="font-mono text-xs"
+            onChange={(id) => patch("agentId", id)}
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Paste an agent id (we&apos;ll wire up a picker once the agent-list
-            chooser is shared across features).
+            Leave as default for the platform's general-purpose agent, or
+            pick a specific agent you own.
           </p>
         </Field>
         <Field label="Prompt" htmlFor="prompt" error={errors.prompt}>
@@ -235,6 +294,32 @@ export function ScheduleForm({ task }: Props) {
           <div className="text-xs text-muted-foreground mt-1">
             {form.prompt.length} / 10,000
           </div>
+        </Field>
+        <Field label="Variables" optional>
+          <VariablesEditor
+            value={form.variables}
+            onChange={(v) => patch("variables", v)}
+          />
+        </Field>
+        <Field
+          label="Persistent conversation ID"
+          htmlFor="conv-id"
+          optional
+          error={errors.persistentConversationId}
+        >
+          <Input
+            id="conv-id"
+            value={form.persistentConversationId}
+            onChange={(e) =>
+              patch("persistentConversationId", e.target.value)
+            }
+            placeholder="conversation UUID — leave blank for heartbeat to auto-bind on first run"
+            className="font-mono text-xs"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            For heartbeat triggers, all runs append to this conversation.
+            Leave blank to let the first run create one.
+          </p>
         </Field>
       </Section>
 
@@ -278,28 +363,28 @@ export function ScheduleForm({ task }: Props) {
             <OneShotForm
               value={form.triggerConfig as { at?: string }}
               onChange={(v) => setTrigger("one-shot", v)}
-              error={errors.trigger}
+              error={errors["trigger.at"] ?? errors.trigger}
             />
           )}
           {form.triggerType === "interval" && (
             <IntervalForm
               value={form.triggerConfig as { every_seconds?: number }}
               onChange={(v) => setTrigger("interval", v)}
-              error={errors.trigger}
+              error={errors["trigger.every_seconds"] ?? errors.trigger}
             />
           )}
           {form.triggerType === "cron" && (
             <CronForm
               value={form.triggerConfig as { expression?: string; tz?: string }}
               onChange={(v) => setTrigger("cron", v)}
-              error={errors.trigger}
+              error={errors["trigger.expression"] ?? errors.trigger}
             />
           )}
           {form.triggerType === "heartbeat" && (
             <HeartbeatForm
               value={form.triggerConfig as { every_seconds?: number }}
               onChange={(v) => setTrigger("heartbeat", v)}
-              error={errors.trigger}
+              error={errors["trigger.every_seconds"] ?? errors.trigger}
             />
           )}
           {form.triggerType === "context-match" && (
@@ -312,7 +397,7 @@ export function ScheduleForm({ task }: Props) {
                 }
               }
               onChange={(v) => setTrigger("context-match", v)}
-              error={errors.trigger}
+              error={errors["trigger.kind"] ?? errors.trigger}
             />
           )}
         </div>
@@ -320,7 +405,7 @@ export function ScheduleForm({ task }: Props) {
 
       {/* 4. Where to run */}
       <Section title="Where to run">
-        <Field label="Surfaces" htmlFor="surfaces" error={errors.surfaces}>
+        <Field label="Surfaces" error={errors.surfaces}>
           <div className="flex flex-wrap gap-2">
             {SURFACE_VALUES.map((s) => {
               const meta = SURFACE_META[s];
@@ -379,18 +464,53 @@ export function ScheduleForm({ task }: Props) {
             </span>
           </div>
         </Field>
-        <Field label="Max runtime (seconds)" htmlFor="runtime">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field
+            label="Max runtime (seconds)"
+            htmlFor="runtime"
+            error={errors.maxRuntimeSeconds}
+          >
+            <Input
+              id="runtime"
+              type="number"
+              min={5}
+              max={86400}
+              value={form.maxRuntimeSeconds}
+              onChange={(e) =>
+                patch("maxRuntimeSeconds", Number(e.target.value) || 600)
+              }
+            />
+            <p className="text-xs text-muted-foreground mt-1">5 – 86,400</p>
+          </Field>
+          <Field
+            label="Max concurrent runs"
+            htmlFor="concurrent"
+            error={errors.maxConcurrent}
+          >
+            <Input
+              id="concurrent"
+              type="number"
+              min={1}
+              max={10}
+              value={form.maxConcurrent}
+              onChange={(e) =>
+                patch("maxConcurrent", Number(e.target.value) || 1)
+              }
+            />
+            <p className="text-xs text-muted-foreground mt-1">1 – 10</p>
+          </Field>
+        </div>
+        <Field label="Expires at" htmlFor="expires" optional>
           <Input
-            id="runtime"
-            type="number"
-            min={10}
-            max={86400}
-            value={form.maxRuntimeSeconds}
-            onChange={(e) =>
-              patch("maxRuntimeSeconds", Number(e.target.value) || 600)
-            }
+            id="expires"
+            type="datetime-local"
+            value={form.expiresAt}
+            onChange={(e) => patch("expiresAt", e.target.value)}
             className="max-w-xs"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Task auto-disables after this time. Leave blank for no expiry.
+          </p>
         </Field>
       </Section>
 
@@ -409,6 +529,7 @@ export function ScheduleForm({ task }: Props) {
                   )
                 }
                 className="hover:text-destructive"
+                aria-label={`Remove tag ${t}`}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -421,7 +542,7 @@ export function ScheduleForm({ task }: Props) {
               if (e.key === "Enter" || e.key === ",") {
                 e.preventDefault();
                 const t = tagInput.trim();
-                if (t && !form.tags.includes(t)) {
+                if (t && !form.tags.includes(t) && form.tags.length < 50) {
                   patch("tags", [...form.tags, t]);
                 }
                 setTagInput("");
@@ -429,6 +550,7 @@ export function ScheduleForm({ task }: Props) {
             }}
             placeholder="Add tag, press Enter"
             className="w-44 h-7 text-xs"
+            maxLength={100}
           />
         </div>
       </Section>

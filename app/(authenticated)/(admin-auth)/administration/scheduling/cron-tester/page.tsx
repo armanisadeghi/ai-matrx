@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import cronstrue from "cronstrue";
 import { Wand2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -35,6 +35,22 @@ const COMMON_TZ = [
   "Australia/Sydney",
 ];
 
+function tryHumanize(expr: string): string | null {
+  try {
+    return cronstrue.toString(expr, { verbose: true });
+  } catch {
+    return null;
+  }
+}
+
+function tryNextFires(expr: string, tz: string, n: number): string[] {
+  try {
+    return nextNCronFires(expr, tz, n);
+  } catch {
+    return [];
+  }
+}
+
 export default function CronTesterPage() {
   const [expression, setExpression] = useState("0 9 * * 1-5");
   const [tz, setTz] = useState(
@@ -42,28 +58,11 @@ export default function CronTesterPage() {
   );
   const [n, setN] = useState(10);
 
-  const validationError = useMemo(
-    () => validateCron(expression, tz),
-    [expression, tz],
-  );
-
-  const human = useMemo(() => {
-    if (validationError) return null;
-    try {
-      return cronstrue.toString(expression, { verbose: true });
-    } catch {
-      return null;
-    }
-  }, [expression, validationError]);
-
-  const fires = useMemo(() => {
-    if (validationError) return [];
-    try {
-      return nextNCronFires(expression, tz, Math.max(1, Math.min(n, 50)));
-    } catch {
-      return [];
-    }
-  }, [expression, tz, n, validationError]);
+  const validationError = validateCron(expression, tz);
+  const human = validationError ? null : tryHumanize(expression);
+  const fires = validationError
+    ? []
+    : tryNextFires(expression, tz, Math.max(1, Math.min(n, 50)));
 
   return (
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-3xl">
@@ -73,8 +72,8 @@ export default function CronTesterPage() {
           <h1 className="text-lg font-semibold leading-none">Cron tester</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Validate any 5-field cron expression and preview the next N fires.
-            (FE-side. The aidream Python parser will become authoritative once
-            it lands.)
+            FE-side preview only; the aidream Python parser is authoritative
+            for actual schedule writes.
           </p>
         </div>
       </div>
@@ -89,6 +88,7 @@ export default function CronTesterPage() {
               onChange={(e) => setExpression(e.target.value)}
               className="font-mono"
               placeholder="0 9 * * 1-5"
+              maxLength={200}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">

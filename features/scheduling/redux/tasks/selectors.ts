@@ -14,10 +14,18 @@ export const selectAllTasks = createSelector(
   (byId, ids): AgendaTask[] => ids.map((id) => byId[id]).filter(Boolean),
 );
 
-export const selectTaskById = (id: string | null | undefined) =>
-  createSelector([selectTasksById], (byId) =>
-    id ? (byId[id] ?? null) : null,
-  );
+/**
+ * Read a single task by id. Returns null when not in the store.
+ * Parameterized selectors are factory-free — call from useAppSelector with
+ * the id as a closure capture: `useAppSelector(s => selectTaskById(s, id))`.
+ */
+export const selectTaskById = (
+  state: RootState,
+  id: string | null | undefined,
+): AgendaTask | null => {
+  if (!id) return null;
+  return selectSlice(state).byId[id] ?? null;
+};
 
 export const selectFetchStatus = (state: RootState) =>
   selectSlice(state).fetchStatus;
@@ -25,23 +33,17 @@ export const selectFetchStatus = (state: RootState) =>
 export const selectFetchError = (state: RootState) =>
   selectSlice(state).fetchError;
 
-export const selectTaskMutationStatus = (id: string) =>
-  createSelector(
-    [(state: RootState) => selectSlice(state).mutationStatus[id]],
-    (status) => status ?? "idle",
-  );
+export const selectTaskMutationStatus = (
+  state: RootState,
+  id: string,
+): "idle" | "saving" | "deleting" | "error" =>
+  selectSlice(state).mutationStatus[id] ?? "idle";
 
-export const selectTaskMutationError = (id: string) =>
-  createSelector(
-    [(state: RootState) => selectSlice(state).mutationError[id]],
-    (err) => err ?? null,
-  );
+export const selectTaskMutationError = (
+  state: RootState,
+  id: string,
+): string | null => selectSlice(state).mutationError[id] ?? null;
 
 export const selectEnabledTasks = createSelector([selectAllTasks], (tasks) =>
   tasks.filter((t) => t.enabled),
 );
-
-export const selectTasksByTag = (tag: string) =>
-  createSelector([selectAllTasks], (tasks) =>
-    tasks.filter((t) => t.tags.includes(tag)),
-  );

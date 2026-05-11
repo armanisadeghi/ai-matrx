@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllTasks,
@@ -10,16 +10,13 @@ import {
   selectFetchStatus,
 } from "../redux/tasks/selectors";
 import { fetchScheduledTasks } from "../redux/tasks/thunks";
+import { useTaskListStream } from "./useTaskListStream";
 
 export function useScheduledTasks() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(selectAllTasks);
   const status = useAppSelector(selectFetchStatus);
   const error = useAppSelector(selectFetchError);
-
-  const refetch = useCallback(() => {
-    return dispatch(fetchScheduledTasks());
-  }, [dispatch]);
 
   useEffect(() => {
     if (status === "idle") {
@@ -28,6 +25,10 @@ export function useScheduledTasks() {
       });
     }
   }, [dispatch, status]);
+
+  useTaskListStream();
+
+  const refetch = () => dispatch(fetchScheduledTasks());
 
   return { tasks, status, error, refetch };
 }

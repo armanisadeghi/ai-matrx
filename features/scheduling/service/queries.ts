@@ -241,26 +241,21 @@ export async function setTaskEnabled(
 // ── Manual fire ────────────────────────────────────────────────────────────
 
 /**
- * Insert a manual `sch_run` row in `queued` state. v1 web is observe-only,
- * so the actual execution will be picked up by aidream or the Chrome
- * extension. Returns the new run id.
+ * Enqueue a manual run via the sch_enqueue_manual_run RPC. The RPC:
+ *  - validates task ownership (or super_admin)
+ *  - stamps user_id from the task row (not the caller)
+ *  - sets status='queued', surface=NULL (claiming scanner stamps its own)
+ *
+ * The matrx-scheduler picks up queued runs every tick (~5s) on whichever
+ * surface the task targets ('any' / 'server' / 'chrome-extension-chat'…).
  */
 export async function runTaskNow(taskId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from("sch_run")
-    .insert({
-      task_id: taskId,
-      trigger_id: null,
-      status: "queued",
-      surface: "web",
-      queue: "default",
-      due_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
-
+  const { data, error } = await supabase.rpc("sch_enqueue_manual_run", {
+    p_task_id: taskId,
+  });
   if (error) throw error;
-  return data.id as string;
+  if (!data) throw new Error("enqueue_manual_run returned no id");
+  return String(data);
 }
 
 // ── Run history ────────────────────────────────────────────────────────────

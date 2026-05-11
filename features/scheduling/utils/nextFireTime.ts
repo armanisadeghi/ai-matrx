@@ -73,6 +73,12 @@ export function nextNCronFires(
  * error message on failure. Doesn't throw — callers render the message.
  */
 export function validateCron(expression: string, tz: string): string | null {
+  if (!expression || !expression.trim()) {
+    return "Expression is empty";
+  }
+  if (expression.length > 200) {
+    return "Expression too long (max 200 chars)";
+  }
   try {
     CronExpressionParser.parse(expression, { tz });
     return null;

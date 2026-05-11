@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMemo, useState, useEffect } from "react";
 
 interface Props {
   value: { every_seconds?: number };
@@ -25,7 +24,22 @@ const UNITS = [
   { value: "m", label: "minutes", seconds: 60 },
   { value: "h", label: "hours", seconds: 3600 },
   { value: "d", label: "days", seconds: 86400 },
-];
+] as const;
+
+function splitForDisplay(everySeconds: number | undefined): {
+  n: number;
+  unit: string;
+} {
+  if (!everySeconds || everySeconds < 60) return { n: 5, unit: "m" };
+  if (everySeconds % 86400 === 0) return { n: everySeconds / 86400, unit: "d" };
+  if (everySeconds % 3600 === 0) return { n: everySeconds / 3600, unit: "h" };
+  if (everySeconds % 60 === 0) return { n: everySeconds / 60, unit: "m" };
+  return { n: everySeconds, unit: "s" };
+}
+
+function unitSeconds(unit: string): number {
+  return UNITS.find((u) => u.value === unit)?.seconds ?? 60;
+}
 
 export function IntervalForm({
   value,
@@ -33,15 +47,12 @@ export function IntervalForm({
   error,
   heartbeat = false,
 }: Props) {
-  const initial = useMemo(() => splitForDisplay(value.every_seconds), []);
-  const [n, setN] = useState<number>(initial.n);
-  const [unit, setUnit] = useState<string>(initial.unit);
+  const display = splitForDisplay(value.every_seconds);
 
-  useEffect(() => {
-    const seconds =
-      n * (UNITS.find((u) => u.value === unit)?.seconds ?? 60);
+  const update = (n: number, unit: string) => {
+    const seconds = Math.max(0, Math.floor(n * unitSeconds(unit)));
     onChange({ every_seconds: seconds });
-  }, [n, unit, onChange]);
+  };
 
   return (
     <div className="space-y-2">
@@ -50,11 +61,14 @@ export function IntervalForm({
         <Input
           type="number"
           min={1}
-          value={n}
-          onChange={(e) => setN(Number(e.target.value) || 0)}
+          value={display.n}
+          onChange={(e) => update(Number(e.target.value) || 0, display.unit)}
           className="w-24"
         />
-        <Select value={unit} onValueChange={setUnit}>
+        <Select
+          value={display.unit}
+          onValueChange={(u) => update(display.n, u)}
+        >
           <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
@@ -75,15 +89,4 @@ export function IntervalForm({
       </p>
     </div>
   );
-}
-
-function splitForDisplay(everySeconds: number | undefined): {
-  n: number;
-  unit: string;
-} {
-  if (!everySeconds || everySeconds < 60) return { n: 5, unit: "m" };
-  if (everySeconds % 86400 === 0) return { n: everySeconds / 86400, unit: "d" };
-  if (everySeconds % 3600 === 0) return { n: everySeconds / 3600, unit: "h" };
-  if (everySeconds % 60 === 0) return { n: everySeconds / 60, unit: "m" };
-  return { n: everySeconds, unit: "s" };
 }

@@ -13,6 +13,7 @@ import {
   updateAgentTask,
 } from "../../service/queries";
 import { computeNextFireTime } from "../../utils/nextFireTime";
+import { computeNextDueAtServer } from "../../service/pythonClient";
 import type {
   CreateAgentTaskInput,
   TriggerConfig,
@@ -33,6 +34,30 @@ type AppThunk<T = void> = ThunkAction<Promise<T>, RootState, unknown, Action>;
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Compute next_due_at for a trigger, preferring the server (Python authoritative
+ * cron parser) when reachable; falling back to the local shim for offline /
+ * server-not-running situations.
+ */
+async function resolveNextDueAt(trigger: TriggerConfig): Promise<string | null> {
+  try {
+    const stripped = stripType(trigger);
+    const res = await computeNextDueAtServer(trigger.type, stripped);
+    return res.next_due_at;
+  } catch {
+    try {
+      return computeNextFireTime(trigger).nextDueAt;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function stripType(trigger: TriggerConfig): Record<string, unknown> {
+  const { type: _t, ...rest } = trigger as TriggerConfig & { type: string };
+  return rest as Record<string, unknown>;
 }
 
 export const fetchScheduledTasks = (): AppThunk => async (dispatch) => {
@@ -65,9 +90,8 @@ export const fetchScheduledTask =
 export const createScheduledTask =
   (input: CreateAgentTaskInput): AppThunk<string> =>
   async (dispatch) => {
-    const { nextDueAt } = computeNextFireTime(input.trigger);
+    const nextDueAt = await resolveNextDueAt(input.trigger);
     const id = await createAgentTask(input, nextDueAt);
-
     const task = await getAgentTask(id);
     if (task) dispatch(upsertTask(task));
     return id;
@@ -80,7 +104,7 @@ export const updateScheduledTask =
     try {
       let nextDueAt: string | null | undefined;
       if (patch.trigger) {
-        nextDueAt = computeNextFireTime(patch.trigger).nextDueAt;
+        nextDueAt = await resolveNextDueAt(patch.trigger);
       }
       await updateAgentTask(id, patch, nextDueAt);
       const task = await getAgentTask(id);
@@ -112,12 +136,10 @@ export const deleteScheduledTask =
 export const toggleTaskEnabled =
   (id: string, enabled: boolean): AppThunk =>
   async (dispatch) => {
-    // Optimistic
     dispatch(patchTask({ id, patch: { enabled } }));
     try {
       await setTaskEnabled(id, enabled);
     } catch (err) {
-      // Revert
       dispatch(patchTask({ id, patch: { enabled: !enabled } }));
       dispatch(
         setMutationStatus({ id, status: "error", error: errMessage(err) }),
@@ -131,12 +153,3 @@ export const runTaskNowThunk =
   async () => {
     return runTaskNow(id);
   };
-
-/** Local-only re-compute of next_due_at for a trigger config (used by the form preview). */
-export function localNextDueAt(trigger: TriggerConfig): string | null {
-  try {
-    return computeNextFireTime(trigger).nextDueAt;
-  } catch {
-    return null;
-  }
-}

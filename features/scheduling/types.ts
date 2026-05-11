@@ -125,11 +125,13 @@ export interface SchRunRow {
 
 // ── output_ref polymorphic pointer (spec §6) ───────────────────────────────
 
-export type OutputRef =
-  | { kind: "conversation"; id: string }
-  | { kind: "capture"; id: string }
-  | { kind: "workflow_run"; id: string }
-  | { kind: string; id: string };
+export type OutputRefKind = "conversation" | "capture" | "workflow_run";
+
+export type OutputRef = {
+  /** Known kinds switch via type narrowing; unknown kinds fall through to the default branch in renderers. */
+  kind: OutputRefKind | (string & {});
+  id: string;
+};
 
 // ── Flattened FE-friendly shape ────────────────────────────────────────────
 

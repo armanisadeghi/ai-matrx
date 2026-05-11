@@ -2,7 +2,6 @@
 
 "use client";
 
-import { useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,7 +22,6 @@ interface Props {
   error?: string;
 }
 
-// Curated short list of common timezones; users can type any IANA tz manually.
 const COMMON_TZ = [
   "America/Los_Angeles",
   "America/Denver",
@@ -42,33 +40,32 @@ const COMMON_TZ = [
   "Australia/Sydney",
 ];
 
+function tryHumanize(expr: string): string | null {
+  if (!expr) return null;
+  try {
+    return cronstrue.toString(expr, { verbose: false });
+  } catch {
+    return null;
+  }
+}
+
+function tryNextFires(expr: string, tz: string, n: number): string[] {
+  if (!expr) return [];
+  try {
+    return nextNCronFires(expr, tz, n);
+  } catch {
+    return [];
+  }
+}
+
 export function CronForm({ value, onChange, error }: Props) {
   const expression = value.expression ?? "";
   const tz =
     value.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
 
-  const validationError = useMemo(
-    () => (expression ? validateCron(expression, tz) : null),
-    [expression, tz],
-  );
-
-  const humanReadable = useMemo(() => {
-    if (!expression || validationError) return null;
-    try {
-      return cronstrue.toString(expression, { verbose: false });
-    } catch {
-      return null;
-    }
-  }, [expression, validationError]);
-
-  const nextFires = useMemo(() => {
-    if (!expression || validationError) return [];
-    try {
-      return nextNCronFires(expression, tz, 4);
-    } catch {
-      return [];
-    }
-  }, [expression, tz, validationError]);
+  const validationError = expression ? validateCron(expression, tz) : null;
+  const humanReadable = validationError ? null : tryHumanize(expression);
+  const nextFires = validationError ? [] : tryNextFires(expression, tz, 4);
 
   return (
     <div className="space-y-3">
@@ -79,6 +76,7 @@ export function CronForm({ value, onChange, error }: Props) {
           value={expression}
           onChange={(e) => onChange({ expression: e.target.value, tz })}
           placeholder="0 9 * * 1-5"
+          maxLength={200}
           className="font-mono max-w-md"
         />
         <p className="text-xs text-muted-foreground">
@@ -103,9 +101,7 @@ export function CronForm({ value, onChange, error }: Props) {
       </div>
 
       {(error || validationError) && (
-        <p className="text-xs text-destructive">
-          {error || validationError}
-        </p>
+        <p className="text-xs text-destructive">{error || validationError}</p>
       )}
 
       {humanReadable && (

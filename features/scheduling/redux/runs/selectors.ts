@@ -1,31 +1,41 @@
 // features/scheduling/redux/runs/selectors.ts
 
-import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import type { SchRunRow } from "../../types";
 
 const selectSlice = (state: RootState) => state.schedulingRuns;
 
 export const selectRunsById = (state: RootState) => selectSlice(state).byId;
-const selectByTask = (state: RootState) => selectSlice(state).byTaskId;
 
-export const selectRunsForTask = (taskId: string) =>
-  createSelector([selectRunsById, selectByTask], (byId, byTask) => {
-    const slot = byTask[taskId];
-    if (!slot) return [];
-    return slot.ids.map((id) => byId[id]).filter(Boolean);
-  });
+const EMPTY_ARRAY: SchRunRow[] = [];
 
-export const selectRunsFetchStatus = (taskId: string) =>
-  createSelector(
-    [selectByTask],
-    (byTask) => byTask[taskId]?.status ?? "idle",
-  );
+export const selectRunsForTask = (state: RootState, taskId: string): SchRunRow[] => {
+  const slot = selectSlice(state).byTaskId[taskId];
+  if (!slot) return EMPTY_ARRAY;
+  const byId = selectSlice(state).byId;
+  const out: SchRunRow[] = [];
+  for (const id of slot.ids) {
+    const r = byId[id];
+    if (r) out.push(r);
+  }
+  return out;
+};
 
-export const selectRunsFetchError = (taskId: string) =>
-  createSelector(
-    [selectByTask],
-    (byTask) => byTask[taskId]?.error ?? null,
-  );
+export const selectRunsFetchStatus = (
+  state: RootState,
+  taskId: string,
+): "idle" | "loading" | "success" | "error" =>
+  selectSlice(state).byTaskId[taskId]?.status ?? "idle";
 
-export const selectLatestRunForTask = (taskId: string) =>
-  createSelector([selectRunsForTask(taskId)], (runs) => runs[0] ?? null);
+export const selectRunsFetchError = (
+  state: RootState,
+  taskId: string,
+): string | null => selectSlice(state).byTaskId[taskId]?.error ?? null;
+
+export const selectLatestRunForTask = (
+  state: RootState,
+  taskId: string,
+): SchRunRow | null => {
+  const runs = selectRunsForTask(state, taskId);
+  return runs[0] ?? null;
+};
