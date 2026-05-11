@@ -33,7 +33,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -99,11 +98,12 @@ export function LiveBuilder({
   }, [agent, agentId, dispatch]);
 
   // ── User selections ────────────────────────────────────────────────────
+  // Name defaults to "<Agent> App" — rendered nowhere in this builder
+  // (preview owns the right side). The user renames it later in Settings.
   const [name, setName] = useState<string>("");
   useEffect(() => {
     if (!name && agent?.name) setName(`${agent.name} App`);
   }, [agent?.name, name]);
-  const [description, setDescription] = useState<string>("");
 
   const [shellKind, setShellKind] = useState<ShellChoice>("chat");
   const [variableStyle, setVariableStyle] = useState<VariableStyle>("form");
@@ -268,7 +268,7 @@ export function LiveBuilder({
         agent_version_id: null,
         use_latest: true,
         tagline: null,
-        description: description || null,
+        description: null,
         category: null,
         tags: [],
         preview_image_url: null,
@@ -289,7 +289,7 @@ export function LiveBuilder({
         shared_context_slots: null,
         search_tsv: null,
       }) as unknown as PublicAgentApp,
-    [agentId, agent?.name, name, description, shellKind, shellConfig],
+    [agentId, agent?.name, name, shellKind, shellConfig],
   );
 
   const handleResetPreview = useCallback(() => {
@@ -313,7 +313,6 @@ export function LiveBuilder({
           agent_id: agentId,
           slug,
           name: name || `${agent?.name ?? "App"} App`,
-          description: description || undefined,
           shell_kind: shellKind,
           shell_config: shellConfig,
         }),
@@ -335,7 +334,6 @@ export function LiveBuilder({
     agentId,
     agent?.name,
     name,
-    description,
     shellKind,
     shellConfig,
     onSuccess,
@@ -539,93 +537,59 @@ export function LiveBuilder({
               </div>
             </div>
           </Section>
-        </div>
 
-        {/* ── Preview panel ─────────────────────────────────────────────── */}
-        <div className="flex flex-col min-h-0 gap-3">
-          <div className="space-y-2">
-            <div className="grid grid-cols-1 gap-2">
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="App name"
-                className="text-[16px] font-semibold"
-              />
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description (optional)"
-                rows={2}
-                className="text-sm resize-none"
-              />
-            </div>
-          </div>
-
-          <div className="relative rounded-lg border border-border bg-card overflow-hidden flex-1 min-h-0">
-            <div className="absolute top-2 right-3 z-10 flex items-center gap-2 bg-card/90 px-2 py-1 rounded">
-              <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                Live preview
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={handleResetPreview}
-                title="Reset preview conversation"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-            <div className="h-full" key={`${shellKind}-${previewSeed}`}>
-              {!agent ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading agent…
-                </div>
-              ) : shellKind === "chat" ? (
-                <AgentAppChatShell app={previewApp} />
-              ) : shellKind === "form_to_result" ? (
-                <AgentAppFormToResultShell app={previewApp} />
+          {/* Create — lives at the bottom of the options list so the preview
+              owns the entire right side. App name defaults to "<Agent> App"
+              and can be renamed later in Settings. */}
+          <div className="pt-3 border-t border-border">
+            <Button
+              onClick={handleCreate}
+              disabled={submitting || !agent}
+              size="lg"
+              className="w-full gap-2"
+            >
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <AgentAppWidgetShell app={previewApp} />
+                <Rocket className="w-4 h-4" />
               )}
-            </div>
+              {submitting ? "Creating…" : "Create app"}
+              {!submitting && <ChevronRight className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
-        <div className="text-xs text-muted-foreground">
-          {agent ? (
-            <>
-              Building an app for{" "}
-              <span className="font-medium text-foreground">
-                {agent.name}
-              </span>
-            </>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          {onCancel && (
-            <Button variant="ghost" onClick={onCancel} disabled={submitting}>
-              Cancel
+        {/* ── Preview panel — owns the full right side ─────────────────── */}
+        <div className="relative rounded-lg border border-border bg-card overflow-hidden min-h-0">
+          <div className="absolute top-2 right-3 z-10 flex items-center gap-2 bg-card/90 px-2 py-1 rounded">
+            <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              Live preview
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={handleResetPreview}
+              title="Reset preview conversation"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
             </Button>
-          )}
-          <Button
-            onClick={handleCreate}
-            disabled={submitting || !agent}
-            size="lg"
-            className="gap-2"
-          >
-            {submitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+          </div>
+          <div className="h-full" key={`${shellKind}-${previewSeed}`}>
+            {!agent ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading agent…
+              </div>
+            ) : shellKind === "chat" ? (
+              <AgentAppChatShell app={previewApp} />
+            ) : shellKind === "form_to_result" ? (
+              <AgentAppFormToResultShell app={previewApp} />
             ) : (
-              <Rocket className="w-4 h-4" />
+              <AgentAppWidgetShell app={previewApp} />
             )}
-            {submitting ? "Creating…" : "Create app"}
-            {!submitting && <ChevronRight className="w-4 h-4" />}
-          </Button>
+          </div>
         </div>
       </div>
     </div>
