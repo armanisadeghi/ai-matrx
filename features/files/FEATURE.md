@@ -168,7 +168,7 @@ components/
 │   ├── FileIcon/         # icon + color by extension/mime
 │   ├── FileMeta/         # size, date, owner, permission chips
 │   ├── FilePreview/      # registry + type-specific previewers (Code/Image/Audio/Video/PDF/Text/Data/Generic)
-│   ├── FileUploadDropzone/
+│   ├── FileUploadDropzone/ # generic file-manager dropzone + overlay surfaces
 │   ├── FileBreadcrumbs/
 │   ├── FileActions/      # headless actions: rename, move, delete, download, share, copyLink, restoreVersion
 │   ├── FileContextMenu/
@@ -314,6 +314,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-05-07** — Image Manager upload boundary clarified. `/images/upload` now uses `components/official/ImageAssetUploader` in `mode="cloud"` for the image-first dropzone while still calling the Cloud Files `useFileUpload` pipeline. `FileUploadDropzone` remains the generic file-manager uploader for `/files`, embedded files surfaces, mobile stack, and overlay upload flows.
 - **2026-05-06** — RAG consolidation. Extracted every RAG-shaped surface from `features/files/` into the new top-level `features/rag/` feature. Moved out of this directory: `api/rag-ingest.ts` → `features/rag/api/ingest.ts`, `api/rag-search.ts` → `features/rag/api/search.ts`, `hooks/useFileIngest.ts` → `features/rag/hooks/useFileIngest.ts`, `hooks/useRagSearch.ts` → `features/rag/hooks/useRagSearch.ts`, `components/core/RagActions/ProcessForRagButton.tsx` → `features/rag/components/ProcessForRagButton.tsx`, `components/core/RagSearch/RagSearchHits.tsx` → `features/rag/components/search/RagSearchHits.tsx`. **Stayed in `features/files/`:** `redux/rag-thunks.ts`, `components/surfaces/desktop/RagStatusCell.tsx`, `components/surfaces/desktop/RagFilterPicker.tsx` — these are file-table chrome that read `cloudFiles.ragStatus` from this slice; moving them would split the slice across features. Also relocated the sister features `features/library/` → `features/rag/components/library/` (+ hooks/api/types extracted to `features/rag/{hooks,api,types}/`), `features/data-stores/` → `features/rag/components/data-stores/`, `features/documents/` → `features/rag/components/documents/`, and `features/rag-search-ui/` → `features/rag/components/search/`. All `DocumentTab.tsx` and `BulkActionsBar.tsx` imports updated; behaviour unchanged.
 - **2026-05-05** — Image Manager Hub absorbed `<ImageAssetUploader>` (Sharp variant pipeline) as a Branded Upload tab and embedded `CloudFilesTab` into a Studio Library tab. Cloud-files data is now consumed by both `<ImageManager>` (modal) and the new `/image-manager` route via `features/image-manager/registry/sections.ts`. No data-model changes — only consumers added. See [`features/image-manager/FEATURE.md`](../image-manager/FEATURE.md).
 - **2026-04-23** — Phase 0 kickoff. Created FEATURE.md, SKILL.md, PYTHON_TEAM_COMMS.md, migration/ scaffold. No runtime code yet.
