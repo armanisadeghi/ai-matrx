@@ -68,6 +68,10 @@ const LANGUAGE_BY_EXT: Record<string, string> = {
   scss: "scss",
   sql: "sql",
   txt: "plaintext",
+  xml: "xml",
+  // SVG is XML markup — Monaco's xml mode gives proper tag/attribute
+  // highlighting and brace matching for direct vector edits.
+  svg: "xml",
 };
 
 function languageFor(fileName: string): string {

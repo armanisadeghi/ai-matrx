@@ -2,8 +2,19 @@
  * features/files/components/core/FilePreview/FilePreview.tsx
  *
  * Preview registry — picks the right previewer for a file based on
- * mime-type + category, and lazy-loads heavy ones (PDF) via next/dynamic
- * so they don't bloat the base bundle.
+ * mime-type + category. **Every previewer is code-split** via `next/dynamic`
+ * so this shell ships nothing but the dispatch logic + the action bar. The
+ * heavy previewers (PDF, Markdown, Data/Spreadsheet, Code) carry hundreds of
+ * KBs of deps; the "light" ones (Image, SVG, Video, Audio, Text, Generic)
+ * are tiny on their own, but splitting them too keeps the principle
+ * uniform — a Page that only ever shows images never pays for the
+ * audio/video/text/generic chunks, and a Page that only shows PDFs never
+ * pays for image renderers. The fall-out is small (one Suspense flash on
+ * first open of a given kind) vs the gain of a near-empty base chunk.
+ *
+ * Cache behavior: Next.js's `dynamic()` keeps the module-level reference
+ * after the first load, so re-opening the same kind is instant — no
+ * re-fetch, no second skeleton flash.
  */
 
 "use client";
@@ -12,7 +23,8 @@ import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useSignedUrl } from "@/features/files/hooks/useSignedUrl";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
@@ -20,51 +32,73 @@ import { getPreviewCapability } from "@/features/files/utils/preview-capabilitie
 import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
 import { requestEdit } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
 import { getVirtualSource } from "@/features/files/virtual-sources/registry";
-import { ImagePreview } from "./previewers/ImagePreview";
-import { VideoPreview } from "./previewers/VideoPreview";
-import { AudioPreview } from "./previewers/AudioPreview";
-import { TextPreview } from "./previewers/TextPreview";
-import { GenericPreview } from "./previewers/GenericPreview";
 import { PreviewerActionBar } from "./PreviewerActionBar/PreviewerActionBar";
 import { buildPreviewActions } from "./preview-actions";
 
-// Heavy / lazy-loaded previewers. Each is its own chunk so non-matching
-// callers never pay the bundle cost. (See bundle-dynamic-imports rule.)
+// Shared loading state for every code-split previewer. A single centered
+// pulsing bar — deliberately content-agnostic so all kinds feel uniform
+// while their chunks finish loading. Lives at module scope to avoid
+// creating a new component identity on each render of FilePreview.
+function PreviewerSkeleton() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-muted/20">
+      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+    </div>
+  );
+}
+
+// All previewers are code-split. `ssr: false` because the consuming
+// FilePreview is itself a Client Component (signed URLs, blob caches,
+// browser-only APIs) — there's nothing useful to render on the server.
+//
+// Bundle weight notes (approximate, gzipped):
+//   - PdfPreview        : react-pdf + pdf.js worker — ~1 MB
+//   - MarkdownPreview   : react-markdown + remark/rehype + KaTeX — ~250 KB
+//   - DataPreview       : SheetJS (XLSX) + PapaParse — ~600 KB
+//   - CodePreview       : react-syntax-highlighter (Prism) — ~150 KB
+//   - SvgPreview        : tiny, but lazy-fetches blob bytes for source view
+//   - ImagePreview / VideoPreview / AudioPreview / TextPreview / GenericPreview
+//                       : trivial on their own, split for uniformity so the
+//                         base chunk never imports any preview body.
+const ImagePreview = dynamic(() => import("./previewers/ImagePreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
+const SvgPreview = dynamic(() => import("./previewers/SvgPreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
+const VideoPreview = dynamic(() => import("./previewers/VideoPreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
+const AudioPreview = dynamic(() => import("./previewers/AudioPreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
+const TextPreview = dynamic(() => import("./previewers/TextPreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
+const GenericPreview = dynamic(() => import("./previewers/GenericPreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
 const PdfPreview = dynamic(() => import("./previewers/PdfPreview"), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
-    </div>
-  ),
+  loading: PreviewerSkeleton,
 });
-// react-markdown + remark + rehype-prism + KaTeX is ~250KB combined.
 const MarkdownPreview = dynamic(() => import("./previewers/MarkdownPreview"), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
-    </div>
-  ),
+  loading: PreviewerSkeleton,
 });
-// SheetJS (XLSX parser) is ~600KB; PapaParse alone is small but lives in
-// the same chunk so the import path is uniform.
 const DataPreview = dynamic(() => import("./previewers/DataPreview"), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
-    </div>
-  ),
+  loading: PreviewerSkeleton,
 });
-// react-syntax-highlighter (Prism build) is ~150KB plus per-language defs.
 const CodePreview = dynamic(() => import("./previewers/CodePreview"), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
-    </div>
-  ),
+  loading: PreviewerSkeleton,
 });
 
 // ---------------------------------------------------------------------------
@@ -109,6 +143,7 @@ export function FilePreview({
   urlExpiresIn = 3600,
 }: FilePreviewProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const { url, loading } = useSignedUrl(fileId, { expiresIn: urlExpiresIn });
   const actions = useFileActions(fileId);
@@ -145,6 +180,18 @@ export function FilePreview({
         };
       }
     }
+    // PDF files get a shortcut to the PDF Extractor tool.
+    if (
+      !openInRoute &&
+      capability.previewKind === "pdf" &&
+      file.source.kind !== "virtual"
+    ) {
+      openInRoute = {
+        label: "Open in PDF Extractor",
+        onClick: () =>
+          dispatch(openOverlay({ overlayId: "pdfExtractorWindow" })),
+      };
+    }
     const previewActions = buildPreviewActions({
       file,
       previewKind: capability.previewKind,
@@ -159,7 +206,7 @@ export function FilePreview({
       openInRoute,
     });
     return <PreviewerActionBar actions={previewActions} />;
-  }, [file, capability, actions, router, fileId]);
+  }, [file, capability, actions, router, fileId, dispatch]);
 
   if (!file) {
     return (
@@ -246,6 +293,13 @@ export function FilePreview({
   switch (capability.previewKind) {
     case "image":
       body = <ImagePreview url={url} fileName={file.fileName} />;
+      break;
+    // SVG is split out from the generic image path so the user gets the
+    // transparency grid and the Rendered/Source toggle. Falling through to
+    // ImagePreview would hide both and is the wrong default for vector
+    // markup.
+    case "svg":
+      body = <SvgPreview url={url} fileName={file.fileName} fileId={fileId} />;
       break;
     case "video":
       body = <VideoPreview url={url} mimeType={file.mimeType} />;

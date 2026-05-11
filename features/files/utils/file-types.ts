@@ -60,6 +60,7 @@ import {
   Image as ImageIcon,
   Music,
   Package,
+  PenTool,
   Subtitles,
   Video,
   type LucideIcon,
@@ -86,10 +87,18 @@ export type FileCategory =
   | "UNKNOWN"
   | "FOLDER";
 
-/** Which previewer should render this kind. `generic` means "no preview". */
+/** Which previewer should render this kind. `generic` means "no preview".
+ *
+ * `svg` is split out from `image` on purpose: SVG is text-shaped (XML), so
+ * it has a dedicated previewer (`SvgPreview` — renders with a transparency
+ * grid and lets the user toggle to the raw markup) AND is editable in the
+ * standard Monaco inline editor with XML syntax highlighting. Routing it
+ * through `image` would hide the editor handoff and the source-view toggle.
+ */
 export type PreviewKind =
   | "code"
   | "image"
+  | "svg"
   | "audio"
   | "video"
   | "pdf"
@@ -251,16 +260,21 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     color: "text-emerald-500",
     icon: ImageIcon,
   },
+  // SVG is text-under-the-hood (XML) so it gets its own previewKind. The
+  // SvgPreview renderer shows the rasterized vector on a transparency grid
+  // and exposes a "Source" toggle for the raw markup; the inline Monaco
+  // editor opens it as XML for direct edits. A distinct PenTool icon flags
+  // it as vector rather than the generic raster ImageIcon used by PNG/JPG.
   {
     extensions: ["svg"],
     mime: "image/svg+xml",
     category: "IMAGE",
     subCategory: "SVG",
     displayName: "SVG image",
-    previewKind: "image",
+    previewKind: "svg",
     thumbnailStrategy: "image",
-    color: "text-emerald-500",
-    icon: ImageIcon,
+    color: "text-amber-500",
+    icon: PenTool,
   },
   // HEIC / HEIF — Apple still uses these heavily. Browsers can render only on
   // Safari natively; on Chrome/Firefox the `<img>` falls back to the icon
@@ -1855,9 +1869,17 @@ export function getFilePreviewProfile(
 
   // MIME-prefix override — handles "we got `image/avif` but the extension
   // table doesn't have .avif yet" and similar future-proofing.
+  //
+  // SVG is intentionally NOT promoted to the generic "image" kind here:
+  // its previewKind is already "svg" from the extension lookup and the
+  // override would clobber that, hiding the dedicated SvgPreview + Edit
+  // routing. Same idea would apply to any future text-shaped image MIME.
   let kind: PreviewKind = fromExt.previewKind;
   let thumb: ThumbnailStrategy = fromExt.thumbnailStrategy;
-  if (mime.startsWith("image/")) {
+  if (mime === "image/svg+xml") {
+    kind = "svg";
+    thumb = "image";
+  } else if (mime.startsWith("image/")) {
     kind = "image";
     thumb = "image";
   } else if (mime.startsWith("video/")) {
@@ -1875,8 +1897,11 @@ export function getFilePreviewProfile(
 
   const cap =
     fromExt.previewSizeCapOverride ??
-    // Streamable kinds are always allowed regardless of size.
+    // Streamable kinds are always allowed regardless of size. SVG joins the
+    // group: even though it's text underneath, it streams as an image via
+    // a signed URL — never read into memory by the renderer.
     (kind === "image" ||
+    kind === "svg" ||
     kind === "video" ||
     kind === "audio" ||
     kind === "pdf" ||

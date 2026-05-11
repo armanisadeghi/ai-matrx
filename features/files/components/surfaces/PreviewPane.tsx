@@ -591,6 +591,11 @@ function EditTabContent({ fileId }: EditTabContentProps) {
     case "code":
     case "markdown":
     case "data":
+    // SVG is just XML under the hood — Monaco edits it directly with the
+    // XML language (wired in CloudFileInlineEditor's LANGUAGE_BY_EXT). The
+    // Preview tab's SvgPreview offers a read-only Source view; this is
+    // where the user actually mutates the markup and re-uploads.
+    case "svg":
       // `data` covers JSON / CSV / XLSX. JSON is editable as text; CSV/XLSX
       // would benefit from a dedicated grid editor — Monaco still works as
       // a fallback for now (raw CSV editing is fine).

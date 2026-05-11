@@ -110,6 +110,10 @@ const EXT_TO_LANGUAGE: Record<string, string> = {
   properties: "properties",
   prefs: "ini",
   xml: "xml",
+  // SVG is XML markup. Treat it as `xml` so Monaco highlights tags and
+  // attributes properly when an SVG is opened in the code workspace
+  // (sandbox / git filesystems).
+  svg: "xml",
   csv: "plaintext",
   tsv: "plaintext",
   // Docs

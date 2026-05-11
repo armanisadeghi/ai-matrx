@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -18,6 +18,9 @@ interface ChatCollapsibleProps {
   onClose?: () => void;
 }
 
+const VIEWPORT_MARGIN = 8;
+const BASE_INSET = 16;
+
 export function ChatCollapsible({
   conversationId,
   onClose,
@@ -28,12 +31,62 @@ export function ChatCollapsible({
 
   // ── Drag state ───────────────────────────────────────────────────────────
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     startX: number;
     startY: number;
     origX: number;
     origY: number;
   } | null>(null);
+
+  // Clamp a desired translate offset so the widget stays inside the viewport.
+  // The header sits at the top of the element, so when the widget is taller
+  // than the viewport we prioritize keeping the TOP visible (so the drag
+  // handle / collapse trigger is always reachable).
+  const clampToBounds = useCallback((desired: { x: number; y: number }) => {
+    const el = containerRef.current;
+    if (!el || typeof window === "undefined") return desired;
+
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const xMax = BASE_INSET - VIEWPORT_MARGIN;
+    const xMin = BASE_INSET + width + VIEWPORT_MARGIN - vw;
+    const yMax = BASE_INSET - VIEWPORT_MARGIN;
+    const yMin = BASE_INSET + height + VIEWPORT_MARGIN - vh;
+
+    const x = xMin > xMax ? xMax : Math.min(xMax, Math.max(xMin, desired.x));
+    const y = yMin > yMax ? yMin : Math.min(yMax, Math.max(yMin, desired.y));
+
+    return { x, y };
+  }, []);
+
+  const clampCurrentPosition = useCallback(() => {
+    setPosition((prev) => {
+      const clamped = clampToBounds(prev);
+      if (clamped.x === prev.x && clamped.y === prev.y) return prev;
+      return clamped;
+    });
+  }, [clampToBounds]);
+
+  // Re-clamp whenever the widget's size changes (expand/collapse animation,
+  // content reflow, etc.) so the handle never animates off-screen.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => clampCurrentPosition());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [clampCurrentPosition]);
+
+  // Re-clamp on window resize.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.addEventListener("resize", clampCurrentPosition);
+    return () => window.removeEventListener("resize", clampCurrentPosition);
+  }, [clampCurrentPosition]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -50,13 +103,18 @@ export function ChatCollapsible({
     [position],
   );
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    setPosition({
-      x: dragRef.current.origX + (e.clientX - dragRef.current.startX),
-      y: dragRef.current.origY + (e.clientY - dragRef.current.startY),
-    });
-  }, []);
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragRef.current) return;
+      setPosition(
+        clampToBounds({
+          x: dragRef.current.origX + (e.clientX - dragRef.current.startX),
+          y: dragRef.current.origY + (e.clientY - dragRef.current.startY),
+        }),
+      );
+    },
+    [clampToBounds],
+  );
 
   const handlePointerUp = useCallback(() => {
     dragRef.current = null;
@@ -64,6 +122,7 @@ export function ChatCollapsible({
 
   return (
     <div
+      ref={containerRef}
       className="fixed z-50 bottom-4 right-4"
       style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
     >

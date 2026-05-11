@@ -41,6 +41,10 @@ export function useOpenFile() {
       const profile = getFilePreviewProfile(name, null, null);
       const kind = profile.previewKind;
 
+      // SVG is intentionally NOT in this list even though its category is
+      // IMAGE: it's text-shaped XML, so we open it directly in Monaco with
+      // the `xml` language for live editing rather than as a static
+      // `<img>` preview.
       const isBinary =
         kind === "image" ||
         kind === "video" ||

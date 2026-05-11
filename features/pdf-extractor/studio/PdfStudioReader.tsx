@@ -41,14 +41,18 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// react-pdf + pdfjs-dist is ~400KB; only pulled in when the PDF pane
-// actually mounts. We use a URL-based viewer (fetch → blob → react-pdf)
-// because `processed_documents` rows aren't always linked through
-// `cld_files` — the only thing we can rely on is `storage_uri`. The
-// dedicated viewer here strips the cld_files dependency and works for
-// every doc with a downloadable URL.
-const PdfStudioUrlViewer = dynamic(
-  () => import("./PdfStudioUrlViewer"),
+// react-pdf + pdfjs-dist is ~400KB; defer both viewers until they mount.
+const PdfStudioUrlViewer = dynamic(() => import("./PdfStudioUrlViewer"), {
+  ssr: false,
+  loading: () => <PdfPaneLoading />,
+});
+
+// Shared renderer used by PdfCldFileViewer below.
+const PdfDocumentRenderer = dynamic(
+  () =>
+    import(
+      "@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"
+    ),
   { ssr: false, loading: () => <PdfPaneLoading /> },
 );
 
@@ -59,7 +63,44 @@ function PdfPaneLoading() {
     </div>
   );
 }
+
+/**
+ * Viewer for docs whose source is a `cld_files` row.
+ *
+ * `processed_documents.storage_uri` is stored as an `s3://` protocol URI
+ * that the Python backend uses internally — it can't be fetched from a
+ * browser directly. When `source_kind = 'cld_file'` the correct path is
+ * to proxy through the Python `/files/{id}/download` endpoint, which is
+ * exactly what `useFileBlob` does.
+ */
+function PdfCldFileViewer({
+  fileId,
+  fileName,
+  pageNumber,
+  onPageChange,
+}: {
+  fileId: string;
+  fileName?: string | null;
+  pageNumber?: number;
+  onPageChange?: (page: number) => void;
+}) {
+  const { url, loading, error, bytesLoaded, bytesTotal } = useFileBlob(fileId);
+  return (
+    <PdfDocumentRenderer
+      blobUrl={url}
+      fileName={fileName ?? null}
+      loading={loading}
+      bytesLoaded={bytesLoaded}
+      bytesTotal={bytesTotal}
+      error={error}
+      pageNumber={pageNumber}
+      onPageChange={onPageChange}
+      className="border-0"
+    />
+  );
+}
 import { cn } from "@/lib/utils";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 
@@ -109,9 +150,7 @@ export function PdfStudioReader({
   const allPagesEmpty = useMemo(
     () =>
       pages.length > 0 &&
-      pages.every(
-        (p) => !p.rawText.trim() && !p.cleanedText.trim(),
-      ),
+      pages.every((p) => !p.rawText.trim() && !p.cleanedText.trim()),
     [pages],
   );
 
@@ -229,7 +268,16 @@ function PdfPane({
         onTogglePane={onTogglePane}
       />
       <div className="flex-1 min-h-0 overflow-hidden">
-        {doc.source ? (
+        {doc.sourceKind === "cld_file" && doc.sourceId ? (
+          // The `storage_uri` is an `s3://` URI — not a browser-fetchable
+          // URL. Route through the Python download proxy instead.
+          <PdfCldFileViewer
+            fileId={doc.sourceId}
+            fileName={doc.name}
+            pageNumber={activePage ?? 1}
+            onPageChange={onViewerPageChange}
+          />
+        ) : doc.source && !doc.source.startsWith("s3://") ? (
           <PdfStudioUrlViewer
             url={doc.source}
             fileName={doc.name}
@@ -382,7 +430,7 @@ function TextPane({
   // into `content` / `clean_content`. This is the path that makes the
   // "blank page 1, page 2 …" state actionable instead of frustrating.
   const aggregateText =
-    field === "cleaned" ? doc.cleanContent ?? "" : doc.content ?? "";
+    field === "cleaned" ? (doc.cleanContent ?? "") : (doc.content ?? "");
 
   return (
     <section className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border">
@@ -557,9 +605,7 @@ function PageBlock({
             {page.sectionTitle && ` · ${page.sectionTitle}`}
           </span>
         )}
-        <span className="ml-auto font-mono">
-          {charCount.toLocaleString()}
-        </span>
+        <span className="ml-auto font-mono">{charCount.toLocaleString()}</span>
       </div>
       <pre className="whitespace-pre-wrap font-mono text-foreground/85 leading-relaxed">
         <Highlighted text={text} query={findQuery} />
@@ -592,9 +638,15 @@ function Highlighted({ text, query }: { text: string; query: string }) {
   }, [text, query]);
 
   if (segments.length === 1 && !segments[0].match) {
-    return <>{segments[0].text || (
-      <span className="italic text-muted-foreground">(no text on this page)</span>
-    )}</>;
+    return (
+      <>
+        {segments[0].text || (
+          <span className="italic text-muted-foreground">
+            (no text on this page)
+          </span>
+        )}
+      </>
+    );
   }
 
   return (
@@ -673,30 +725,37 @@ function ReaderSkeleton({ visiblePanes }: { visiblePanes: Set<PaneKey> }) {
 function LegacyReaderFallback({ doc }: { doc: PdfDocument }) {
   return (
     <div className="flex flex-1 min-h-0">
-      <div className="flex-1 min-w-0 flex flex-col border-r border-border bg-muted/10 p-3">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+      {/* PDF pane — use the proper renderer, not an iframe */}
+      <div className="flex-1 min-w-0 flex flex-col border-r border-border bg-muted/10">
+        <div className="shrink-0 px-2.5 py-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
           Source PDF
         </div>
-        {doc.source ? (
-          <iframe
-            src={doc.source}
-            title={doc.name}
-            className="flex-1 min-h-0 border border-border rounded bg-background"
-          />
-        ) : (
-          <p className="text-[11px] text-muted-foreground">No source URL.</p>
-        )}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {doc.sourceKind === "cld_file" && doc.sourceId ? (
+            <PdfCldFileViewer fileId={doc.sourceId} fileName={doc.name} />
+          ) : doc.source && !doc.source.startsWith("s3://") ? (
+            <PdfStudioUrlViewer url={doc.source} fileName={doc.name} />
+          ) : (
+            <div className="flex h-full items-center justify-center p-6 text-center">
+              <p className="text-[11px] text-muted-foreground">
+                No source PDF linked to this record.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Text pane */}
       <div className="flex-1 min-w-0 flex flex-col p-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
-          Document content (legacy · no per-page rows)
+          Document content (no per-page rows yet)
         </div>
         <div className="border border-amber-500/30 bg-amber-500/5 rounded-md p-3 mb-3 text-[11px] text-amber-700 dark:text-amber-400">
           Run the pipeline from the toolbar above to populate
           <code className="mx-1 px-1 bg-card border border-border rounded text-[10px]">
             processed_document_pages
           </code>
-          and unlock joined scrolling, find-in-doc, and bbox overlays.
+          and unlock synced scrolling, find-in-doc, and bbox overlays.
         </div>
         <pre className="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
           {doc.cleanContent ?? doc.content ?? "(no extracted text)"}

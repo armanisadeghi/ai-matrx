@@ -40,10 +40,6 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { AlertCircle, Download as DownloadIcon, Loader2 } from "lucide-react";
-import { ImagePreview } from "@/features/files/components/core/FilePreview/previewers/ImagePreview";
-import { VideoPreview } from "@/features/files/components/core/FilePreview/previewers/VideoPreview";
-import { AudioPreview } from "@/features/files/components/core/FilePreview/previewers/AudioPreview";
-import { GenericPreview } from "@/features/files/components/core/FilePreview/previewers/GenericPreview";
 import {
   getFilePreviewProfile,
   sniffTextBytes,
@@ -58,6 +54,17 @@ import type { EditorFile } from "../types";
 import type { FilesystemAdapter } from "../adapters/FilesystemAdapter";
 import type { BinaryFilePdfPreviewProps } from "./BinaryFilePdfPreview";
 
+// Shared loading state for every code-split previewer in this viewer. Keeps
+// the file under 1 KB of preview-related JSX so that opening a sandbox tab
+// for a *non-binary* file never pulls in any preview chunks at all.
+function PreviewerSkeleton() {
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
 /**
  * The cloud-files PDF previewer is fileId-coupled (`useFileBlob(fileId)`),
  * so we can't reuse it here. We ship our own thin react-pdf wrapper that
@@ -68,13 +75,35 @@ const SandboxPdfPreview = dynamic(
   () => import("./BinaryFilePdfPreview").then((m) => m.BinaryFilePdfPreview),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-      </div>
-    ),
+    loading: PreviewerSkeleton,
   },
 ) as ComponentType<BinaryFilePdfPreviewProps>;
+
+// All preview primitives are code-split so this viewer's base chunk
+// stays empty until a tab actually needs a specific renderer. Each
+// chunk is shared with the cloud-files FilePreview, so once one
+// surface has loaded e.g. ImagePreview, every other surface in the
+// app uses the cached module instantly.
+const ImagePreview = dynamic(
+  () =>
+    import("@/features/files/components/core/FilePreview/previewers/ImagePreview"),
+  { ssr: false, loading: PreviewerSkeleton },
+);
+const VideoPreview = dynamic(
+  () =>
+    import("@/features/files/components/core/FilePreview/previewers/VideoPreview"),
+  { ssr: false, loading: PreviewerSkeleton },
+);
+const AudioPreview = dynamic(
+  () =>
+    import("@/features/files/components/core/FilePreview/previewers/AudioPreview"),
+  { ssr: false, loading: PreviewerSkeleton },
+);
+const GenericPreview = dynamic(
+  () =>
+    import("@/features/files/components/core/FilePreview/previewers/GenericPreview"),
+  { ssr: false, loading: PreviewerSkeleton },
+);
 
 interface BinaryFileViewerProps {
   tab: EditorFile;
@@ -304,6 +333,10 @@ function BinaryPreviewer({
 }: PreviewerProps) {
   switch (kind) {
     case "image":
+    // SVG normally flows through `useOpenFile`'s text path and never reaches
+    // this viewer. If something does route an SVG here, the signed-URL
+    // `<img>` rendering still works fine — fall through to ImagePreview.
+    case "svg":
       return (
         <ImagePreview url={url} fileName={fileName} className="h-full w-full" />
       );

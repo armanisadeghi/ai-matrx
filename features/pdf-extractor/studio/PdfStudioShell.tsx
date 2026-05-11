@@ -27,12 +27,22 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Search,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
-import { usePdfStudioDocs } from "./hooks/usePdfStudioDocs";
+import {
+  usePdfStudioDocs,
+  type StudioDocSummary,
+} from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfStudioToolbar } from "./PdfStudioToolbar";
 import { PdfStudioReader, type PaneKey } from "./PdfStudioReader";
@@ -52,6 +62,36 @@ interface PdfStudioShellProps {
 }
 
 const PANE_ORDER: PaneKey[] = ["pdf", "raw", "clean"];
+
+/**
+ * Convert a metadata-only sidebar summary into a provisional PdfDocument so
+ * the reader can mount immediately (with the PDF viewer already working)
+ * while the full content fetch runs in the background.
+ */
+function summaryToProvisionalDoc(s: StudioDocSummary): PdfDocument {
+  return {
+    id: s.id,
+    name: s.name,
+    content: null,
+    cleanContent: null,
+    source: s.source,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    charCount: 0,
+    wordCount: 0,
+    ownerId: null,
+    organizationId: null,
+    totalPages: s.totalPages,
+    mimeType: s.mimeType,
+    sourceKind: s.sourceKind,
+    sourceId: s.sourceId,
+    parentProcessedId: s.parentProcessedId,
+    derivationKind: s.derivationKind,
+    derivationMetadata: null,
+    structuredJson: null,
+    isHydrated: false,
+  };
+}
 
 export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const router = useRouter();
@@ -76,6 +116,13 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [aiCleanRunning, setAiCleanRunning] = useState(false);
   const [liveStatus, setLiveStatus] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  // True while a doc fetch is in-flight. Initialized to `true` when an
+  // initialDocumentId is present so the skeleton shows immediately on mount
+  // instead of the upload EmptyShell (which confuses users into thinking
+  // they should re-upload during every doc switch).
+  const [docLoading, setDocLoading] = useState(!!initialDocumentId);
 
   // Per-page rows for the active doc.
   const {
@@ -102,6 +149,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   const selectDocById = useCallback(
     async (id: string) => {
+      setDocLoading(true);
       const full = await extractor.fetchDocument(id);
       if (full) {
         setActiveDoc(full);
@@ -109,6 +157,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       } else {
         toast.error("Could not load that document");
       }
+      setDocLoading(false);
     },
     [extractor, toast],
   );
@@ -122,7 +171,12 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   }, [initialDocumentId, selectDocById]);
 
   const handleSelectDoc = useCallback(
-    (summary: { id: string }) => {
+    (summary: StudioDocSummary) => {
+      // Set a provisional doc immediately from the sidebar metadata so the
+      // PDF viewer and inspector appear without waiting for the full fetch.
+      // The full content (text, structured_json, etc.) arrives moments later.
+      setActiveDoc(summaryToProvisionalDoc(summary));
+      setActivePage(null);
       router.push(`/tools/pdf-extractor/${summary.id}`);
       void selectDocById(summary.id);
     },
@@ -244,9 +298,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
                 (event.data?.message as string | undefined);
               if (msg) setLiveStatus(msg);
             } else if (event.event === "data") {
-              const candidate = event.data?.clean_content as
-                | string
-                | undefined;
+              const candidate = event.data?.clean_content as string | undefined;
               if (candidate) cleanedText = candidate;
             }
           } catch {
@@ -263,9 +315,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
       // Patch the active doc in place so the AI-cleaned pane re-renders
       // immediately. Refresh the sidebar so the "cleaned" chip shows up.
-      setActiveDoc((d) =>
-        d ? { ...d, cleanContent: cleanedText } : d,
-      );
+      setActiveDoc((d) => (d ? { ...d, cleanContent: cleanedText } : d));
       docsState.refresh();
       toast.success("AI cleanup complete");
     } catch (err) {
@@ -370,14 +420,42 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   return (
     <div className="flex h-full min-h-0 bg-background">
-      {/* LEFT — sidebar */}
-      <div className="w-72 lg:w-80 xl:w-96 shrink-0 hidden md:flex">
-        <PdfStudioSidebar
-          docsState={docsState}
-          activeDocId={activeDoc?.id ?? null}
-          onSelectDoc={handleSelectDoc}
-          onAddDocs={() => setUploadOpen(true)}
-        />
+      {/* LEFT — sidebar (collapsible) */}
+      <div
+        className={cn(
+          "shrink-0 hidden md:flex flex-col border-r border-border transition-all duration-200",
+          sidebarOpen ? "w-64" : "w-8",
+        )}
+      >
+        {sidebarOpen ? (
+          <>
+            <div className="flex items-center justify-end px-2 py-1 border-b border-border shrink-0">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title="Collapse sidebar"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
+            <PdfStudioSidebar
+              docsState={docsState}
+              activeDocId={activeDoc?.id ?? null}
+              onSelectDoc={handleSelectDoc}
+              onAddDocs={() => setUploadOpen(true)}
+            />
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="flex-1 flex items-start justify-center pt-3 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Upload drawer — opened from sidebar `+ Add` */}
@@ -471,6 +549,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             pipelineRunning={pipelineRunning}
             onOpenUpload={() => setUploadOpen(true)}
           />
+        ) : docLoading ? (
+          <DocLoadingSkeleton />
         ) : (
           <EmptyShell
             extractor={extractor}
@@ -480,19 +560,68 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         )}
       </div>
 
-      {/* RIGHT — inspector (when a doc is open) */}
-      <div className="w-80 xl:w-96 shrink-0 hidden lg:flex">
-        {activeDoc ? (
-          <PdfStudioInspector
-            doc={activeDoc}
-            onRunShortcut={handleRunShortcut}
-            onRunPipeline={handleRunPipeline}
-            pipelineRunning={pipelineRunning}
-          />
+      {/* RIGHT — inspector (collapsible) */}
+      <div
+        className={cn(
+          "shrink-0 hidden lg:flex flex-col border-l border-border transition-all duration-200",
+          inspectorOpen ? "w-80 xl:w-96" : "w-8",
+        )}
+      >
+        {inspectorOpen ? (
+          <>
+            <div className="flex items-center justify-start px-2 py-1 border-b border-border shrink-0">
+              <button
+                type="button"
+                onClick={() => setInspectorOpen(false)}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title="Collapse inspector"
+              >
+                <PanelRightClose className="w-4 h-4" />
+              </button>
+            </div>
+            {activeDoc ? (
+              <PdfStudioInspector
+                doc={activeDoc}
+                onRunShortcut={handleRunShortcut}
+                onRunPipeline={handleRunPipeline}
+                pipelineRunning={pipelineRunning}
+              />
+            ) : (
+              <div className="flex-1 bg-card/30" />
+            )}
+          </>
         ) : (
-          <div className="h-full w-full border-l border-border bg-card/30" />
+          <button
+            type="button"
+            onClick={() => setInspectorOpen(true)}
+            className="flex-1 flex items-start justify-center pt-3 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            title="Expand inspector"
+          >
+            <PanelRightOpen className="w-4 h-4" />
+          </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Shown while a document is being fetched — prevents the upload EmptyShell
+ *  from briefly appearing during doc switches or initial URL load. */
+function DocLoadingSkeleton() {
+  return (
+    <div className="flex-1 flex min-h-0">
+      {/* Mimics three reader panes with pulse animation */}
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border p-3 gap-3"
+        >
+          <div className="h-4 w-28 rounded bg-muted/50 animate-pulse" />
+          <div className="h-40 w-full rounded bg-muted/40 animate-pulse" />
+          <div className="h-24 w-full rounded bg-muted/30 animate-pulse" />
+          <div className="h-24 w-full rounded bg-muted/20 animate-pulse" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -519,13 +648,21 @@ function EmptyShell({
         />
         <div className="text-center">
           <p className="text-[10px] text-muted-foreground/70">
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">/</kbd>{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">
+              /
+            </kbd>{" "}
             search ·{" "}
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">j / k</kbd>{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">
+              j / k
+            </kbd>{" "}
             pages ·{" "}
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">[ ] \\</kbd>{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">
+              [ ] \\
+            </kbd>{" "}
             toggle panes ·{" "}
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">⌘ F</kbd>{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">
+              ⌘ F
+            </kbd>{" "}
             find
           </p>
         </div>
