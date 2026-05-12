@@ -114,13 +114,20 @@ export function AgentConversationDisplay({
       // bubble (in which case the requestId-driven MarkdownStream path
       // renders the in-flight chunks even though byId.content is still empty).
       if (isEmptyReservedAssistant(rec) && !isStreamingMessage) continue;
+      // Every assistant turn that was streamed in this session carries
+      // `_streamRequestId` (set by reserveMessage in process-stream). Use
+      // that as the anchor so the renderer stays on the streaming source
+      // for the entire conversation lifetime — never swapping to the
+      // DB-content path mid-session. Falls through to null for DB-hydrated
+      // history, which renders from byId.content via messageId.
+      const streamedReqId = isStreamingMessage
+        ? (latestRequestId ?? rec._streamRequestId ?? null)
+        : (rec._streamRequestId ?? null);
       entries.push({
         key: rec.id,
         role: rec.role,
         messageId: rec.id,
-        requestId: isStreamingMessage
-          ? (latestRequestId ?? null)
-          : (rec._streamRequestId ?? null),
+        requestId: streamedReqId,
         isStreamActive: isStreamingMessage,
       });
     }

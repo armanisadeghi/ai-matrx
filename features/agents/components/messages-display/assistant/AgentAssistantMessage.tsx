@@ -179,12 +179,25 @@ export function AgentAssistantMessage({
   }
 
   // ONE render path. EnhancedChatMarkdown picks the streaming or persisted
-  // sub-path based on whether `requestId` is provided. We deliberately drop
-  // `requestId` for committed turns so the persisted (DbToolCard) branch
-  // renders — passing both `requestId` AND `messageId` would let the live
-  // unifiedSlots branch fire, which is what produced the historical
-  // duplication.
-  const effectiveRequestId = isStreamActive ? requestId : undefined;
+  // sub-path based on whether `requestId` is provided.
+  //
+  // Lifetime rule: once an assistant turn was streamed in this session, we
+  // KEEP rendering it from the streaming source (`activeRequests.byRequestId
+  // [reqId]`) for as long as the conversation instance is mounted — even
+  // after the stream completes. The end-of-stream commit on
+  // `messages.byId.content` is for hydration on the NEXT page load and for
+  // edit/fork/retry/copy/share/print to consume; it is intentionally NOT
+  // used by the renderer mid-session, because swapping data sources causes
+  // a visible re-render flash across the whole response column.
+  //
+  // For DB-hydrated history (no `_streamRequestId` on the record),
+  // `requestId` arrives undefined → EnhancedChatMarkdown falls through to
+  // the persisted (DbToolCard) branch as before.
+  //
+  // The historical duplication concern (both branches firing) is moot at
+  // EnhancedChatMarkdown.tsx:504, where the branching is mutually exclusive
+  // — `requestId` wins over `messageInterleavedContent`.
+  const effectiveRequestId = requestId;
 
   return (
     <div

@@ -850,12 +850,19 @@ export async function processStream({
               }),
             );
           } else {
+            // Stash the live requestId on the reserved record so the
+            // renderer keeps reading from `activeRequests.byRequestId[reqId]`
+            // for the entire conversation lifetime — even AFTER this stream
+            // completes. Without this anchor, AgentAssistantMessage would
+            // flip to the DB-content path the moment the stream ended,
+            // causing a full re-render of the response column.
             dispatch(
               reserveMessage({
                 conversationId: owningConversationId,
                 messageId: d.record_id,
                 role,
                 position,
+                requestId,
               }),
             );
           }

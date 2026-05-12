@@ -230,6 +230,17 @@ const messagesSlice = createSlice({
         role?: MessageRecord["role"];
         agentId?: string | null;
         position?: number;
+        /**
+         * The in-flight request that produced this message. When set, the
+         * renderer (AgentAssistantMessage → MarkdownStream) keeps reading
+         * from `activeRequests.byRequestId[requestId]` for the lifetime of
+         * the conversation instance — including AFTER the stream completes —
+         * so the end-of-stream content commit on `messages.byId.content`
+         * never triggers a render-source swap. Set this whenever the
+         * reservation comes from a live stream; leave it undefined for
+         * DB-hydrated history (which renders from byId.content).
+         */
+        requestId?: string;
       }>,
     ) {
       const {
@@ -238,6 +249,7 @@ const messagesSlice = createSlice({
         role = "assistant",
         agentId = null,
         position = 0,
+        requestId,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
       if (entry.byId[messageId]) return;
@@ -259,6 +271,7 @@ const messagesSlice = createSlice({
         createdAt: now,
         deletedAt: null,
         _clientStatus: "pending",
+        ...(requestId ? { _streamRequestId: requestId } : {}),
       };
       entry.orderedIds.push(messageId);
     },
