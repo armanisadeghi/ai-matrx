@@ -25,6 +25,7 @@ import {
   Search,
   RefreshCw,
   PartyPopper,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ export interface PdfStudioToolbarProps {
    *  user always knows what's happening. Cleared when idle. */
   liveStatus?: string | null;
   onOpenSource: () => void;
+  onOpenCopyPages: () => void;
 }
 
 export function PdfStudioToolbar({
@@ -63,6 +65,7 @@ export function PdfStudioToolbar({
   aiCleanRunning,
   liveStatus,
   onOpenSource,
+  onOpenCopyPages,
 }: PdfStudioToolbarProps) {
   if (!doc) {
     return (
@@ -127,15 +130,9 @@ export function PdfStudioToolbar({
 
         {/* Chips */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <Chip>
-            {(doc.totalPages ?? pageRowCount).toLocaleString()} pages
-          </Chip>
-          <Chip muted>
-            {doc.charCount.toLocaleString()} chars
-          </Chip>
-          {!hasPageRows && (
-            <Chip tone="amber">no per-page</Chip>
-          )}
+          <Chip>{(doc.totalPages ?? pageRowCount).toLocaleString()} pages</Chip>
+          <Chip muted>{doc.charCount.toLocaleString()} chars</Chip>
+          {!hasPageRows && <Chip tone="amber">no per-page</Chip>}
           {doc.cleanContent && <Chip tone="emerald">cleaned</Chip>}
         </div>
 
@@ -189,6 +186,16 @@ export function PdfStudioToolbar({
                 Pipeline
               </>
             )}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-[11px] gap-1"
+            onClick={onOpenCopyPages}
+            title="Copy page range to clipboard with structured tags"
+          >
+            <ClipboardList className="w-3 h-3" />
+            Copy Pages
           </Button>
           {doc.source && (
             <Button
@@ -296,7 +303,9 @@ function PageJumper({
       <button
         type="button"
         className="h-6 px-2 rounded border border-border bg-background hover:bg-accent disabled:opacity-50"
-        onClick={() => activePage && activePage > 1 && onJumpToPage(activePage - 1)}
+        onClick={() =>
+          activePage && activePage > 1 && onJumpToPage(activePage - 1)
+        }
         disabled={!activePage || activePage <= 1}
         title="Previous page (k)"
       >
@@ -318,13 +327,18 @@ function PageJumper({
           inputMode="numeric"
           style={{ fontSize: "16px" }}
         />
-        <span className="text-muted-foreground">/ {total.toLocaleString()}</span>
+        <span className="text-muted-foreground">
+          / {total.toLocaleString()}
+        </span>
       </span>
       <button
         type="button"
         className="h-6 px-2 rounded border border-border bg-background hover:bg-accent disabled:opacity-50"
         onClick={() =>
-          activePage && total && activePage < total && onJumpToPage(activePage + 1)
+          activePage &&
+          total &&
+          activePage < total &&
+          onJumpToPage(activePage + 1)
         }
         disabled={!activePage || !total || activePage >= total}
         title="Next page (j)"

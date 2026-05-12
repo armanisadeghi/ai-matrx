@@ -35,11 +35,6 @@ const JsonTreeViewer = dynamic(
   { ssr: false, loading: () => <PaneFallback /> },
 );
 
-const JsonTree = dynamic(
-  () => import("@/components/admin/state-analyzer/components/JsonTree"),
-  { ssr: false, loading: () => <PaneFallback /> },
-);
-
 const JsonTruncator = dynamic(
   () =>
     import("@/components/official-candidate/json-truncator/JsonTruncator").then(
@@ -49,8 +44,7 @@ const JsonTruncator = dynamic(
 );
 
 const JsonEditorPane = dynamic(
-  () =>
-    import("./JsonEditorPane").then((m) => ({ default: m.JsonEditorPane })),
+  () => import("./JsonEditorPane").then((m) => ({ default: m.JsonEditorPane })),
   { ssr: false, loading: () => <PaneFallback /> },
 );
 
@@ -58,7 +52,6 @@ export type JsonInspectorView =
   | "json"
   | "explorer"
   | "tree"
-  | "json-tree"
   | "truncator"
   | "edit";
 
@@ -219,14 +212,6 @@ export function JsonInspector({
             </TabsTrigger>
             <TabsTrigger
               className={TRIGGER_CLS}
-              value="json-tree"
-              title="JSON Tree"
-              aria-label="JSON Tree"
-            >
-              <Network className={ICON_CLS} />
-            </TabsTrigger>
-            <TabsTrigger
-              className={TRIGGER_CLS}
               value="truncator"
               title="Truncator"
               aria-label="Truncator"
@@ -275,10 +260,6 @@ export function JsonInspector({
 
         <TabsContent value="tree" className={PANE_CLS}>
           {seen.has("tree") ? <JsonTreeViewer data={data} /> : <PaneFallback />}
-        </TabsContent>
-
-        <TabsContent value="json-tree" className={PANE_CLS}>
-          {seen.has("json-tree") ? <JsonTree data={data} /> : <PaneFallback />}
         </TabsContent>
 
         <TabsContent value="truncator" className={TRUNCATOR_PANE_CLS}>

@@ -3,7 +3,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/styles/themes/utils";
 import SmallCodeEditor from "./SmallCodeEditor";
-import CodeBlockHeader from "@/features/code-editor/components/code-block/CodeBlockHeader";
+import CodeBlockHeader, {
+  type CodeBlockDownloadOption,
+} from "@/features/code-editor/components/code-block/CodeBlockHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import StickyButtons from "./StickyButtons";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -47,6 +49,21 @@ interface CodeBlockProps {
   isStreamActive?: boolean;
   allowEdit?: boolean;
   customBuiltinKeys?: string[];
+  /**
+   * Optional node rendered between the language display and the right-side
+   * action row. Used by language-specialized wrappers (e.g. `JsonBlock`) to
+   * add view-mode toggles without forking this component.
+   */
+  headerLeftSlot?: React.ReactNode;
+  /**
+   * Optional node rendered immediately before the Download button.
+   */
+  headerActionsSlot?: React.ReactNode;
+  /**
+   * When provided, the Download button becomes a dropdown whose first entry
+   * is the default download and subsequent entries come from this array.
+   */
+  downloadOptions?: CodeBlockDownloadOption[];
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
@@ -61,6 +78,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   isStreamActive = false,
   allowEdit = true,
   customBuiltinKeys = [],
+  headerLeftSlot,
+  headerActionsSlot,
+  downloadOptions,
 }) => {
   // Map language for respective editors (with additional safety checks)
   const prismLanguage = mapLanguageForPrism(rawLanguage);
@@ -392,6 +412,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           onAIEdit={handleOpenAIModal}
           allowEdit={allowEdit}
           customBuiltinKeys={customBuiltinKeys}
+          headerLeftSlot={headerLeftSlot}
+          headerActionsSlot={headerActionsSlot}
+          downloadOptions={downloadOptions}
         />
         {showStickyButtons && (
           <StickyButtons

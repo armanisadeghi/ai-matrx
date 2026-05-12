@@ -36,7 +36,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
   const searchParams = useSearchParams();
 
   const file = useAppSelector((s) => selectFileById(s, fileId));
-  const { annotations } = useAnnotations(fileId);
+  const { annotations, create: createAnnotation } = useAnnotations(fileId);
   const { pages } = usePages(fileId);
   useFileAnalysis(fileId); // warm the cache for the inspector panels
 
@@ -125,6 +125,22 @@ export function StudioShell({ fileId }: StudioShellProps) {
     [annotations],
   );
 
+  // Pages-with-annotations summary. The user might be on page 1 while
+  // their pinned work lives on page 2 — surface a count + jump-to action
+  // so it's never "where did my annotations go?" again.
+  const annotationsByPage = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const a of annotations) {
+      if (a.status !== "active") continue;
+      m.set(a.page_number, (m.get(a.page_number) ?? 0) + 1);
+    }
+    return m;
+  }, [annotations]);
+  const annotationPages = useMemo(
+    () => Array.from(annotationsByPage.keys()).sort((a, b) => a - b),
+    [annotationsByPage],
+  );
+
   return (
     <div className="flex h-[100dvh] w-full flex-col bg-background">
       {/* Top bar */}
@@ -141,6 +157,26 @@ export function StudioShell({ fileId }: StudioShellProps) {
           {file?.fileName ?? "Document"}{" "}
           <span className="text-muted-foreground">— Analysis Studio</span>
         </h1>
+        {annotationPages.length ? (
+          <button
+            type="button"
+            onClick={() => {
+              const firstNotCurrent =
+                annotationPages.find((p) => p !== pageNumber) ??
+                annotationPages[0];
+              if (firstNotCurrent) handlePageChange(firstNotCurrent);
+              setActiveTab("annotations");
+            }}
+            title={`Your annotations live on pages: ${annotationPages.join(", ")}`}
+            className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+          >
+            <span className="tabular-nums">{annotations.length}</span>
+            <span className="uppercase tracking-wider">annotation{annotations.length === 1 ? "" : "s"}</span>
+            <span className="text-emerald-600/70 dark:text-emerald-300/70">
+              · pages {annotationPages.join(", ")}
+            </span>
+          </button>
+        ) : null}
         <div className="ml-auto flex items-center gap-1">
           <ModeButton
             active={mode === "view"}
@@ -178,12 +214,15 @@ export function StudioShell({ fileId }: StudioShellProps) {
        * minimum so the fr-ratio is actually respected.
        */}
       <div className="grid min-h-0 flex-1 grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.4fr)] lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1.4fr)] xl:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.5fr)]">
-        {/* Left rail — thumbnails. */}
+        {/* Left rail — thumbnails. Annotation counts surface as green
+          * badges on each thumbnail so the user can scan + jump to pages
+          * with pinned data. */}
         <aside className="min-w-0 overflow-hidden border-r border-border bg-card/40">
           <ThumbnailStrip
             fileId={fileId}
             activePageNumber={pageNumber}
             onSelectPage={handleSelectPage}
+            annotationCounts={annotationsByPage}
           />
         </aside>
 
@@ -197,7 +236,15 @@ export function StudioShell({ fileId }: StudioShellProps) {
             selectedId={selectedAnnotationId}
             categoryOf={categoryOf}
             mode={mode}
-            onAnnotationCreated={(a) => handleSelectAnnotation(a.id)}
+            createAnnotation={createAnnotation}
+            onAnnotationCreated={(a) => {
+              handleSelectAnnotation(a.id);
+              // Jump to the annotation's page so the user always sees
+              // their just-created rectangle on screen.
+              if (a.page_number !== pageNumber) {
+                handlePageChange(a.page_number);
+              }
+            }}
             onRegionClick={(id) => handleSelectAnnotation(id)}
             onBackgroundClick={() => handleSelectAnnotation(null)}
           />

@@ -6,7 +6,6 @@ import type { RootState } from "@/lib/redux/store";
 import GenericSliceViewer from "./sliceViewers/GenericSliceViewer";
 import { featureSchemas } from "@/lib/redux/dynamic/featureSchema";
 import { moduleSchemas } from "@/lib/redux/dynamic/moduleSchema";
-import AppletRuntimeViewer from "./sliceViewers/AppletRuntimeViewer";
 import AgentDefinitionSliceViewer from "./sliceViewers/agent-definitions/AgentDefinitionSliceViewer";
 import AgentDefinitionSliceViewerShadcn from "./sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn";
 import ExecutionInstanceInspector from "./execution-inspector/ExecutionInstanceInspector";
@@ -727,16 +726,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="customAppRuntime"
           state={completeState.customAppRuntime}
-        />
-      ),
-    },
-    {
-      id: "customAppletRuntime",
-      label: "Custom Applet Runtime",
-      content: (
-        <AppletRuntimeViewer
-          sliceKey="customAppletRuntime"
-          state={completeState.customAppletRuntime}
         />
       ),
     },

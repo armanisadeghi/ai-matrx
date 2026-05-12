@@ -73,7 +73,18 @@ export interface AnnotatablePdfCanvasProps {
   /** Layer mode — drives cursor + drag-to-select behavior. */
   mode?: AnnotationLayerMode;
 
-  /** Called when the user creates a new annotation through the label picker. */
+  /**
+   * REQUIRED — async create function that BOTH persists the annotation AND
+   * updates the shared cache. The canvas calls this instead of the raw API
+   * so the new annotation appears on the page instantly (cache mutate) and
+   * in every panel that reads useAnnotations (annotations panel, redact
+   * panel, findings, etc.) without waiting for Realtime to round-trip.
+   *
+   * Pass `useAnnotations(fileId).create` from the parent.
+   */
+  createAnnotation: (body: AnnotationCreateBody) => Promise<AnnotationOut>;
+
+  /** Called AFTER the create succeeds (e.g. to select the new annotation). */
   onAnnotationCreated?: (annotation: AnnotationOut) => void;
 
   /** Click handlers forwarded to the layer. */
@@ -96,6 +107,7 @@ export function AnnotatablePdfCanvas({
   selectedId,
   categoryOf,
   mode = "view",
+  createAnnotation,
   onAnnotationCreated,
   onRegionClick,
   onRegionContextMenu,
@@ -181,17 +193,26 @@ export function AnnotatablePdfCanvas({
       if (!draft) return;
       const bbox = draft.snappedBbox ?? draft.bbox;
       try {
-        const { data } = await Api.createAnnotation(fileId, {
+        // Routes through useAnnotations.create → updates shared cache via
+        // mutate() the moment the server returns. Every consumer (canvas
+        // regions, annotations panel, redact panel, findings) sees the new
+        // row instantly. No more "blink and it's gone" wait for Realtime.
+        const data = await createAnnotation({
           ...body,
           page_number: draft.page_number,
           bbox,
         });
         onAnnotationCreated?.(data);
+      } catch (err) {
+        // Keep the picker open so the user can retry. Log so we can see
+        // server-side validation failures in the console.
+        console.error("[annotation.create] failed", err);
+        return;
       } finally {
         setDraft(null);
       }
     },
-    [draft, fileId, onAnnotationCreated],
+    [draft, createAnnotation, onAnnotationCreated],
   );
 
   const handleCancel = useCallback(() => setDraft(null), []);

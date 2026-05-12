@@ -18,6 +18,8 @@ import type {
   EndPayload,
   BrokerPayload,
   RenderBlockEvent,
+  ContextAnalysisPayload,
+  StructuredOutputPayload,
 } from "@/types/python-generated/stream-events";
 import {
   isChunkEvent,
@@ -37,6 +39,8 @@ import {
   isHeartbeatEvent,
   isEndEvent,
   isBrokerEvent,
+  isContextAnalysisEvent,
+  isStructuredOutputEvent,
 } from "@/types/python-generated/stream-events";
 import type { FinalPayload, ToolStreamEvent } from "../types";
 import { toolEventPayloadToToolStreamEvent } from "./normalize-tool-event";
@@ -106,6 +110,8 @@ export interface BackendStreamFoldState {
   heartbeats: HeartbeatPayload[];
   ends: EndPayload[];
   brokers: BrokerPayload[];
+  contextAnalyses: ContextAnalysisPayload[];
+  structuredOutputs: StructuredOutputPayload[];
   unknownWireEvents: UnknownWireEvent[];
   /** Counts per category (debug / parity with `process-stream` metrics). */
   counts: {
@@ -127,6 +133,8 @@ export interface BackendStreamFoldState {
     heartbeat: number;
     end: number;
     broker: number;
+    contextAnalysis: number;
+    structuredOutput: number;
     unknown: number;
   };
   // ─── Tool-testing demo slice (order-sensitive; same rules as prior `foldStreamEventsToToolTestState`) ───
@@ -156,6 +164,8 @@ function emptyCounts(): BackendStreamFoldState["counts"] {
     heartbeat: 0,
     end: 0,
     broker: 0,
+    contextAnalysis: 0,
+    structuredOutput: 0,
     unknown: 0,
   };
 }
@@ -182,6 +192,8 @@ function emptyFoldState(): BackendStreamFoldState {
     heartbeats: [],
     ends: [],
     brokers: [],
+    contextAnalyses: [],
+    structuredOutputs: [],
     unknownWireEvents: [],
     counts: emptyCounts(),
     toolStreamEvents: [],
@@ -314,6 +326,14 @@ export function foldBackendStreamEvents(
       state.counts.broker++;
       state.brokers.push(event.data);
       pushArrival(state, wire, "broker", event.data, tt);
+    } else if (isContextAnalysisEvent(event)) {
+      state.counts.contextAnalysis++;
+      state.contextAnalyses.push(event.data);
+      pushArrival(state, wire, "unknown", event.data, tt);
+    } else if (isStructuredOutputEvent(event)) {
+      state.counts.structuredOutput++;
+      state.structuredOutputs.push(event.data);
+      pushArrival(state, wire, "unknown", event.data, tt);
     } else {
       state.counts.unknown++;
       const ev = event as { event?: string; data?: unknown };

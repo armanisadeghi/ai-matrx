@@ -53,6 +53,7 @@ import {
 import { PdfStudioInspector } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
+import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useRouter } from "next/navigation";
@@ -124,6 +125,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [pdfPaneEditMode, setPdfPaneEditMode] = useState<PdfPaneEditMode>(null);
   const [cropPagesInput, setCropPagesInput] = useState("");
+  const [copyPagesOpen, setCopyPagesOpen] = useState(false);
   // True while a doc fetch is in-flight. Initialized to `true` when an
   // initialDocumentId is present so the skeleton shows immediately on mount
   // instead of the upload EmptyShell (which confuses users into thinking
@@ -490,6 +492,17 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         onUploadComplete={handleUploadComplete}
       />
 
+      {/* Copy Pages overlay — pages already loaded by the shell */}
+      {activeDoc && (
+        <CopyPagesOverlay
+          open={copyPagesOpen}
+          onClose={() => setCopyPagesOpen(false)}
+          doc={activeDoc}
+          pages={pages}
+          pagesLoading={pagesLoading}
+        />
+      )}
+
       {/* CENTER */}
       <div className="flex-1 min-w-0 flex flex-col min-h-0">
         <PdfStudioToolbar
@@ -509,6 +522,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               window.open(activeDoc.source, "_blank", "noopener,noreferrer");
             }
           }}
+          onOpenCopyPages={() => setCopyPagesOpen(true)}
         />
 
         {/* Hidden-panes restore strip */}

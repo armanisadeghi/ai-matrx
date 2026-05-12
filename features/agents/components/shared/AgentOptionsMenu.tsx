@@ -289,7 +289,12 @@ export function AgentOptionsMenu({
     : ADMIN_ITEMS;
 
   const handleDesktopItemClick = async (label: string) => {
+    console.log("[AGENT OPTIONS MENU] Clicked item:", label);
     if (label === "Edit Agent Info") {
+      console.log(
+        "[AGENT OPTIONS MENU] Editing agent info, Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentSettingsWindow",
@@ -298,6 +303,10 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "View Run History") {
+      console.log(
+        "[AGENT OPTIONS MENU] Viewing run history, Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentRunHistoryWindow",
@@ -306,6 +315,10 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Advanced Settings View") {
+      console.log(
+        "[AGENT OPTIONS MENU] Viewing advanced settings, Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentAdvancedEditorWindow",
@@ -318,6 +331,7 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Open Run Modal") {
+      console.log("[AGENT OPTIONS MENU] Opening run modal, Agent ID:", agentId);
       dispatch(
         openOverlay({
           overlayId: "agentRunWindow",
@@ -329,6 +343,10 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Matrx Agent Optimizer") {
+      console.log(
+        "[AGENT OPTIONS MENU] Opening matrx agent optimizer, Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentOptimizerWindow",
@@ -337,6 +355,7 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Find Usages") {
+      console.log("[AGENT OPTIONS MENU] Finding usages, Agent ID:", agentId);
       dispatch(
         openOverlay({
           overlayId: "agentFindUsagesWindow",
@@ -345,6 +364,7 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Create App") {
+      console.log("[AGENT OPTIONS MENU] Creating app, Agent ID:", agentId);
       dispatch(
         openOverlay({
           overlayId: "agentCreateAppWindow",
@@ -353,6 +373,10 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Add Data Storage Support") {
+      console.log(
+        "[AGENT OPTIONS MENU] Adding data storage support, Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentDataStorageWindow",
@@ -361,6 +385,10 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Convert/Update System Agent") {
+      console.log(
+        "[AGENT OPTIONS MENU] Converting/updating system agent, Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentConvertSystemWindow",
@@ -369,6 +397,7 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Create Shortcut") {
+      console.log("[AGENT OPTIONS MENU] Creating shortcut, Agent ID:", agentId);
       dispatch(
         openOverlay({
           overlayId: "agentAdminShortcutWindow",
@@ -377,6 +406,10 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Find Usages (Admin)") {
+      console.log(
+        "[AGENT OPTIONS MENU] Finding usages (admin), Agent ID:",
+        agentId,
+      );
       dispatch(
         openOverlay({
           overlayId: "agentAdminFindUsagesWindow",
@@ -385,15 +418,21 @@ export function AgentOptionsMenu({
       );
       setOpen(false);
     } else if (label === "Import Agent") {
+      console.log("[AGENT OPTIONS MENU] Importing agent, Agent ID:", agentId);
       dispatch(openOverlay({ overlayId: "agentImportWindow", data: {} }));
       setOpen(false);
     } else if (label === "Duplicate") {
+      console.log("[AGENT OPTIONS MENU] Duplicating agent, Agent ID:", agentId);
       // Close the dropdown first so the outcome dialog has a clean stage.
       // The dialog itself owns the loading / success / error UX; we just
       // delegate to the shared `runDuplicate` orchestrator.
       setOpen(false);
       void runDuplicate();
     } else if (label === "Convert to Template") {
+      console.log(
+        "[AGENT OPTIONS MENU] Converting to template, Agent ID:",
+        agentId,
+      );
       setIsConverting(true);
       try {
         await convertToTemplate(agentId);
@@ -406,11 +445,21 @@ export function AgentOptionsMenu({
         setOpen(false);
       }
     } else {
+      console.log(
+        "[AGENT OPTIONS MENU] Unknow Clicked Item: ",
+        label,
+        "Coming soon, Agent ID:",
+        agentId,
+      );
       comingSoon();
     }
   };
 
   const handleInterfaceVariationClick = () => {
+    console.log(
+      "[AGENT OPTIONS MENU] Handling interface variation click, Agent ID:",
+      agentId,
+    );
     dispatch(
       openOverlay({
         overlayId: "agentInterfaceVariationsWindow",

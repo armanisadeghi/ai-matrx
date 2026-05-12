@@ -101,6 +101,11 @@ const EditorCodeSnippetBlock = lazy(
 const YamlBlock = lazy(() => import("../../blocks/yaml/YamlBlock"));
 const XmlBlock = lazy(() => import("../../blocks/xml/XmlBlock"));
 const CsvBlock = lazy(() => import("../../blocks/csv/CsvBlock"));
+const JsonBlock = lazy(() =>
+  import("../../blocks/json/JsonBlock").then((m) => ({
+    default: m.JsonBlock,
+  })),
+);
 const TomlBlock = lazy(() => import("../../blocks/toml/TomlBlock"));
 const TreeBlock = lazy(() => import("../../blocks/tree/TreeBlock"));
 const MarkdownPreviewBlock = lazy(
@@ -400,6 +405,11 @@ export const BlockComponents = {
   CsvBlock: (props: any) => (
     <LazyBlockWrapper>
       <CsvBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  JsonBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <JsonBlock {...props} />
     </LazyBlockWrapper>
   ),
   TomlBlock: (props: any) => (

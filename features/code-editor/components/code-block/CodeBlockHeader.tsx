@@ -54,6 +54,15 @@ type AIModalConfig = {
   title: string;
 };
 
+// Additive header slots. Used by language-specialized wrappers (e.g.
+// `JsonBlock`) to inject extra controls without forking CodeBlock itself.
+export type CodeBlockDownloadOption = {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  description?: string;
+};
+
 interface CodeBlockHeaderProps {
   language: string;
   linesCount: number;
@@ -83,6 +92,15 @@ interface CodeBlockHeaderProps {
   hideLanguageDisplay?: boolean;
   allowEdit?: boolean;
   customBuiltinKeys?: string[];
+  /** Rendered after the language display, before the optional "View HTML" pill. */
+  headerLeftSlot?: React.ReactNode;
+  /** Rendered immediately before the Download button in the action row. */
+  headerActionsSlot?: React.ReactNode;
+  /**
+   * When provided, replaces the single Download button with a dropdown
+   * whose first item is the default download and additional items follow.
+   */
+  downloadOptions?: CodeBlockDownloadOption[];
 }
 
 export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
@@ -114,6 +132,9 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
   hideLanguageDisplay = false,
   allowEdit = true,
   customBuiltinKeys = [],
+  headerLeftSlot,
+  headerActionsSlot,
+  downloadOptions,
 }) => {
   // Determine if collapse functionality should be available
   const canCollapse = linesCount > 5;
@@ -148,6 +169,15 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
                 {linesCount} {linesCount === 1 ? "line" : "lines"}
               </span>
             )}
+          </div>
+        )}
+        {/* Optional left slot for language-specialized wrappers */}
+        {headerLeftSlot && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center"
+          >
+            {headerLeftSlot}
           </div>
         )}
         {/* View HTML Button */}
@@ -200,6 +230,8 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
         onAIEdit={onAIEdit}
         allowEdit={allowEdit}
         customBuiltinKeys={customBuiltinKeys}
+        headerActionsSlot={headerActionsSlot}
+        downloadOptions={downloadOptions}
       />
     </div>
   );
@@ -230,6 +262,8 @@ interface CodeBlockButtonsProps {
   onAIEdit?: (config: AIModalConfig) => void;
   allowEdit?: boolean;
   customBuiltinKeys?: string[];
+  headerActionsSlot?: React.ReactNode;
+  downloadOptions?: CodeBlockDownloadOption[];
 }
 
 // Icon mapping for dynamic icon rendering
@@ -272,8 +306,11 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   onAIEdit,
   allowEdit = true,
   customBuiltinKeys = [],
+  headerActionsSlot,
+  downloadOptions,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
   const [isOpeningInEditor, setIsOpeningInEditor] = useState(false);
   const dispatch = useAppDispatch();
   const saveAndOpenInCodeEditor = useSaveAndOpenInCodeEditor();
@@ -467,17 +504,80 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
         />
       )}
 
-      {/* Download - Always visible on desktop */}
-      {!isMobile && (
-        <IconButton
-          icon={Download}
-          tooltip="Download code"
-          size="sm"
-          variant="ghost"
-          onClick={handleDownload}
-          tooltipSide="bottom"
-        />
+      {/* Optional action slot for language-specialized wrappers */}
+      {headerActionsSlot && !isMobile && (
+        <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+          {headerActionsSlot}
+        </div>
       )}
+
+      {/* Download — single button by default, dropdown when extra options provided */}
+      {!isMobile &&
+        (downloadOptions && downloadOptions.length > 0 ? (
+          <DropdownMenu
+            open={isDownloadMenuOpen}
+            onOpenChange={setIsDownloadMenuOpen}
+          >
+            <DropdownMenuTrigger asChild>
+              <div>
+                <IconButton
+                  icon={Download}
+                  tooltip="Download (more formats)"
+                  size="sm"
+                  variant="ghost"
+                  tooltipSide="bottom"
+                />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[9999] w-56">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(e as unknown as React.MouseEvent);
+                  setIsDownloadMenuOpen(false);
+                }}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download as code</span>
+              </DropdownMenuItem>
+              {downloadOptions.length > 0 && <DropdownMenuSeparator />}
+              {downloadOptions.map((opt, idx) => {
+                const Icon = opt.icon;
+                return (
+                  <DropdownMenuItem
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      opt.onClick();
+                      setIsDownloadMenuOpen(false);
+                    }}
+                    className="flex items-start gap-2 cursor-pointer"
+                  >
+                    <Icon className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div className="flex flex-col">
+                      <span>{opt.label}</span>
+                      {opt.description && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {opt.description}
+                        </span>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <IconButton
+            icon={Download}
+            tooltip="Download code"
+            size="sm"
+            variant="ghost"
+            onClick={handleDownload}
+            tooltipSide="bottom"
+          />
+        ))}
 
       {/* Copy - Always visible with dropdown for line numbers option */}
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>

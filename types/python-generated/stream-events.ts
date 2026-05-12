@@ -23,6 +23,7 @@ export const EventType = {
   RECORD_UPDATE: "record_update",
   RESOURCE_CHANGED: "resource_changed",
   CONTEXT_ANALYSIS: "context_analysis",
+  STRUCTURED_OUTPUT: "structured_output",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -193,6 +194,17 @@ export interface ContextAnalysisPayload {
   body_raw?: string | null;
   body_size_bytes?: number;
   timestamp?: number;
+}
+
+export interface StructuredOutputPayload {
+  schema_name?: string | null;
+  json_schema: Record<string, unknown>;
+  data?: Record<string, unknown> | unknown[] | null;
+  success: boolean;
+  reason?: string;
+  match_count?: number;
+  agent_name?: string | null;
+  operation_id?: string | null;
 }
 
 // --- Typed Record Reservation Variants (discriminated on `table`) ---
@@ -2235,6 +2247,11 @@ export interface ContextAnalysisEvent {
   data: ContextAnalysisPayload;
 }
 
+export interface StructuredOutputEvent {
+  event: "structured_output";
+  data: StructuredOutputPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -2254,7 +2271,8 @@ export type TypedStreamEvent =
   | RecordReservedEvent
   | RecordUpdateEvent
   | ResourceChangedEvent
-  | ContextAnalysisEvent;
+  | ContextAnalysisEvent
+  | StructuredOutputEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -2360,6 +2378,10 @@ export function isResourceChangedEvent(e: TypedStreamEvent): e is { event: "reso
 
 export function isContextAnalysisEvent(e: TypedStreamEvent): e is { event: "context_analysis"; data: ContextAnalysisPayload } {
   return e.event === "context_analysis";
+}
+
+export function isStructuredOutputEvent(e: TypedStreamEvent): e is { event: "structured_output"; data: StructuredOutputPayload } {
+  return e.event === "structured_output";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

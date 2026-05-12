@@ -20,13 +20,21 @@
  * instead of leaving the panes empty.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   FileText,
   Flame,
   Loader2,
   AlertCircle,
   Layers,
+  Copy,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -111,9 +119,7 @@ export function SyncedPdfTextView({
         </div>
       )}
 
-      {!hasPages && !loading && !error && (
-        <LegacyEmptyState doc={doc} />
-      )}
+      {!hasPages && !loading && !error && <LegacyEmptyState doc={doc} />}
 
       {hasPages && (
         <div className="flex flex-1 min-h-0">
@@ -243,7 +249,7 @@ function PaneList({
                 else sentinelRefs.current.delete(p.pageNumber);
               }}
               className={cn(
-                "border rounded-md p-2 text-[10px] leading-relaxed transition-colors cursor-pointer",
+                "group border rounded-md p-2 text-[10px] leading-relaxed transition-colors cursor-pointer",
                 isActive
                   ? "border-primary/40 bg-primary/5"
                   : "border-border bg-card hover:bg-accent/30",
@@ -270,6 +276,11 @@ function PaneList({
                   ).toLocaleString()}{" "}
                   chars
                 </span>
+                <CopyIconButton
+                  getText={() => text}
+                  label={`Copy page ${p.pageNumber}`}
+                  hoverReveal
+                />
               </div>
               <pre className="whitespace-pre-wrap font-mono text-foreground/80 leading-relaxed">
                 {text || (
@@ -283,6 +294,57 @@ function PaneList({
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * Small copy-to-clipboard icon button used inside the per-page card header.
+ * `getText` is invoked at click time so it always copies the latest text.
+ * `hoverReveal` keeps the button hidden until the closest `.group` ancestor
+ * is hovered — used to avoid visual clutter on dense per-page rows.
+ */
+function CopyIconButton({
+  getText,
+  label,
+  hoverReveal,
+}: {
+  getText: () => string;
+  label: string;
+  hoverReveal?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const handleClick = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(getText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch {
+        // ignore — clipboard permission denials are silent by design
+      }
+    },
+    [getText],
+  );
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      title={label}
+      aria-label={label}
+      className={cn(
+        "p-0.5 rounded transition-colors",
+        copied
+          ? "text-emerald-500"
+          : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
+        hoverReveal &&
+          !copied &&
+          "opacity-0 group-hover:opacity-100 transition-all",
+        hoverReveal && copied && "opacity-100",
+      )}
+    >
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+    </button>
   );
 }
 

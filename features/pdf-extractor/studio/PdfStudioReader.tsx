@@ -52,6 +52,7 @@ import {
   Check,
   RefreshCw,
   SquareStack,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
@@ -1206,6 +1207,20 @@ function TextPane({
   const aggregateText =
     field === "cleaned" ? (doc.cleanContent ?? "") : (doc.content ?? "");
 
+  // Build the text for the pane-level copy button. Honors live per-page edits
+  // (`overrides`) and falls back to the aggregate doc text when every page row
+  // is empty — same fallback the rendered pane uses.
+  const buildPaneText = useCallback(() => {
+    if (allPagesEmpty) return aggregateText;
+    return pages
+      .map((p) => {
+        const base = field === "cleaned" ? p.cleanedText : p.rawText;
+        const text = overrides.get(p.id) ?? base;
+        return `--- Page ${p.pageNumber} ---\n${text}`;
+      })
+      .join("\n\n");
+  }, [pages, field, overrides, allPagesEmpty, aggregateText]);
+
   return (
     <section className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border">
       <PaneHeader
@@ -1213,6 +1228,8 @@ function TextPane({
         subtitle={subtitle}
         icon={icon}
         onTogglePane={onTogglePane}
+        onCopyAll={buildPaneText}
+        copyAllLabel={`Copy all ${field === "cleaned" ? "cleaned" : "raw"} pages`}
       />
 
       {allPagesEmpty && (
@@ -1504,17 +1521,24 @@ function PageBlock({
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              title="Edit this page's text"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditing(true);
-              }}
-              className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-all"
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
+            <>
+              <CopyIconButton
+                getText={() => text}
+                label={`Copy page ${page.pageNumber}`}
+                hoverReveal
+              />
+              <button
+                type="button"
+                title="Edit this page's text"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditing(true);
+                }}
+                className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1603,12 +1627,19 @@ function PaneHeader({
   subtitle,
   icon,
   onTogglePane,
+  onCopyAll,
+  copyAllLabel,
 }: {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
   onTogglePane?: () => void;
+  /** Returns the text to copy for the entire pane. When provided, renders a
+   *  copy-to-clipboard button next to the EyeOff visibility toggle. */
+  onCopyAll?: () => string;
+  copyAllLabel?: string;
 }) {
+  const hasActions = !!(onCopyAll || onTogglePane);
   return (
     <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
       {icon}
@@ -1618,17 +1649,80 @@ function PaneHeader({
       {subtitle && (
         <span className="text-[10px] text-muted-foreground">· {subtitle}</span>
       )}
-      {onTogglePane && (
-        <button
-          type="button"
-          onClick={onTogglePane}
-          className="ml-auto p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
-          title="Hide pane"
-        >
-          <EyeOff className="w-3 h-3" />
-        </button>
+      {hasActions && (
+        <div className="ml-auto flex items-center gap-0.5">
+          {onCopyAll && (
+            <CopyIconButton
+              getText={onCopyAll}
+              label={copyAllLabel ?? "Copy all pages"}
+            />
+          )}
+          {onTogglePane && (
+            <button
+              type="button"
+              onClick={onTogglePane}
+              className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+              title="Hide pane"
+            >
+              <EyeOff className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Small copy-to-clipboard icon button. Shows a green check on success.
+ * `getText` is invoked at click time so the caller can build the latest
+ * snapshot of the text rather than memoizing it eagerly.
+ *
+ * `hoverReveal` makes the button hidden until the closest `.group` ancestor
+ * is hovered — used for per-row copy buttons inside `PageBlock`.
+ */
+function CopyIconButton({
+  getText,
+  label,
+  hoverReveal,
+}: {
+  getText: () => string;
+  label: string;
+  hoverReveal?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const handleClick = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(getText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch {
+        // ignore — most clipboard failures are silent permission denials
+      }
+    },
+    [getText],
+  );
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      title={label}
+      aria-label={label}
+      className={cn(
+        "p-0.5 rounded transition-colors",
+        copied
+          ? "text-emerald-500"
+          : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
+        hoverReveal &&
+          !copied &&
+          "opacity-0 group-hover:opacity-100 transition-all",
+        hoverReveal && copied && "opacity-100",
+      )}
+    >
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+    </button>
   );
 }
 

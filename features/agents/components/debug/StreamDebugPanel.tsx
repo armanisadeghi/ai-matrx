@@ -32,6 +32,8 @@ import {
   BookmarkPlus,
   RefreshCw,
   FilePlus2,
+  ListChecks,
+  ScanSearch,
   type LucideIcon,
 } from "lucide-react";
 import type {
@@ -223,6 +225,8 @@ const EVENT_COLORS: Record<string, string> = {
   record_reserved: "bg-teal-500/20 text-teal-400 border-teal-500/30",
   record_update: "bg-teal-500/20 text-teal-400 border-teal-500/30",
   resource_changed: "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
+  structured_output: "bg-lime-500/20 text-lime-400 border-lime-500/30",
+  context_analysis: "bg-slate-500/20 text-slate-400 border-slate-500/30",
 };
 
 const EVENT_ICONS: Record<string, React.ReactNode> = {
@@ -243,6 +247,8 @@ const EVENT_ICONS: Record<string, React.ReactNode> = {
   record_reserved: <BookmarkPlus className="h-2.5 w-2.5" />,
   record_update: <RefreshCw className="h-2.5 w-2.5" />,
   resource_changed: <FilePlus2 className="h-2.5 w-2.5" />,
+  structured_output: <ListChecks className="h-2.5 w-2.5" />,
+  context_analysis: <ScanSearch className="h-2.5 w-2.5" />,
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -420,6 +426,7 @@ function getTimelineColor(kind: TimelineEntry["kind"]): string {
     record_reserved: EVENT_COLORS.record_reserved,
     record_update: EVENT_COLORS.record_update,
     resource_changed: EVENT_COLORS.resource_changed,
+    structured_output: EVENT_COLORS.structured_output,
     unknown: "bg-red-600/30 text-red-300 border-red-500/50 font-semibold",
   };
   return map[kind] ?? "bg-gray-500/20 text-gray-400 border-gray-500/30";
@@ -446,6 +453,7 @@ function getTimelineIcon(kind: TimelineEntry["kind"]): React.ReactNode {
     record_reserved: EVENT_ICONS.record_reserved,
     record_update: EVENT_ICONS.record_update,
     resource_changed: EVENT_ICONS.resource_changed,
+    structured_output: EVENT_ICONS.structured_output,
     unknown: <AlertTriangle className="h-2.5 w-2.5" />,
   };
   return map[kind] ?? <CircleDot className="h-2.5 w-2.5" />;
@@ -569,6 +577,14 @@ function timelineSummary(
         ? `sandbox ${r.sandbox_id.slice(0, 6)}…`
         : "global";
       return `${r.kind} ${r.action} [${tag}]: ${short}`;
+    }
+    case "structured_output": {
+      const so = entry.data;
+      const status = so.success ? "✓" : `✗ ${so.reason ?? "failed"}`;
+      const schema = so.schema_name ? ` [${so.schema_name}]` : "";
+      const count =
+        so.match_count != null ? ` · ${so.match_count} match(es)` : "";
+      return `${status}${schema}${count}`;
     }
     case "unknown":
       return `UNRECOGNIZED (${entry.originalEvent}): ${JSON.stringify(entry.rawData).slice(0, 100)}`;
@@ -1594,6 +1610,18 @@ function RawEventsTab({ request }: { request: ActiveRequest }) {
               if (evt.data === null || evt.data === undefined) return "null";
               if (typeof evt.data === "object") {
                 const d = evt.data as Record<string, unknown>;
+                if (evt.eventType === "structured_output") {
+                  const schema = d.schema_name
+                    ? `schema: ${d.schema_name}`
+                    : "";
+                  const items = Array.isArray(
+                    (d.data as Record<string, unknown>)?.items,
+                  )
+                    ? `${((d.data as Record<string, unknown>).items as unknown[]).length} item(s)`
+                    : "";
+                  const ok = d.success ? "✓" : "✗";
+                  return [ok, schema, items].filter(Boolean).join(" · ");
+                }
                 if (d.event) return `event: ${d.event}`;
                 if (d.text !== undefined)
                   return `text: "${String(d.text).slice(0, 40)}..."`;

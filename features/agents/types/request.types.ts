@@ -35,6 +35,7 @@ import type {
   RecordReservedPayload,
   RecordUpdatePayload,
   ResourceChangedPayload,
+  StructuredOutputPayload,
 } from "@/types/python-generated/stream-events";
 
 // =============================================================================
@@ -399,6 +400,7 @@ export type TimelineEntry =
   | TimelineRecordReserved
   | TimelineRecordUpdate
   | TimelineResourceChanged
+  | TimelineStructuredOutput
   | TimelineUnknown;
 
 interface TimelineBase {
@@ -537,6 +539,11 @@ export interface TimelineResourceChanged extends TimelineBase {
   data: ResourceChangedPayload;
 }
 
+export interface TimelineStructuredOutput extends TimelineBase {
+  kind: "structured_output";
+  data: StructuredOutputPayload;
+}
+
 // =============================================================================
 // Compile-time drift guards
 //
@@ -584,6 +591,10 @@ type _TimelinePayloadGuards = {
     TimelineResourceChanged["data"],
     ResourceChangedPayload
   >;
+  structured_output: _AssertEqual<
+    TimelineStructuredOutput["data"],
+    StructuredOutputPayload
+  >;
 };
 
 // Reference the guards so the compiler actually checks them. If any
@@ -611,6 +622,7 @@ const _ENFORCE_TIMELINE_PAYLOAD_GUARDS: _TimelinePayloadDriftGuard = {
   record_reserved: true,
   record_update: true,
   resource_changed: true,
+  structured_output: true,
 };
 
 // =============================================================================

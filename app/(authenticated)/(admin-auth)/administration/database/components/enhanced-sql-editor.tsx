@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
-import JsonTree from "@/components/admin/state-analyzer/components/JsonTree";
 import { JsonTruncator } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import AccordionWrapper from "@/components/matrx/matrx-collapsible/AccordionWrapper";
 import { Badge } from "@/components/ui/badge";
@@ -281,7 +280,7 @@ export const EnhancedSQLEditor = ({
           <textarea
             value={sqlQuery}
             onChange={(e) => setSqlQuery(e.target.value)}
-            className="min-h-[120px] h-[140px] w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500 disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
+            className="min-h-[120px] h-[400px] w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500 disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
             placeholder="Enter your SQL query here..."
           />
           <div className="absolute bottom-4 right-4 flex space-x-2">
@@ -613,12 +612,6 @@ export const EnhancedSQLEditor = ({
                     Tree
                   </TabsTrigger>
                   <TabsTrigger
-                    value="json-tree"
-                    className="text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-800 dark:data-[state=active]:text-slate-200 data-[state=active]:shadow-none data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-700 data-[state=active]:border-b-0 rounded-b-none"
-                  >
-                    JSON Tree
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="truncator"
                     className="text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-800 dark:data-[state=active]:text-slate-200 data-[state=active]:shadow-none data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-700 data-[state=active]:border-b-0 rounded-b-none"
                   >
@@ -649,14 +642,6 @@ export const EnhancedSQLEditor = ({
               >
                 <JsonTreeViewer data={queryResult} />
               </TabsContent>
-
-              <TabsContent
-                value="json-tree"
-                className="m-0 flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-zinc-900"
-              >
-                <JsonTree data={queryResult} />
-              </TabsContent>
-
               <TabsContent
                 value="truncator"
                 className="m-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"

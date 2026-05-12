@@ -5,6 +5,7 @@ import {
   getPermissions,
   executeSqlQuery,
 } from "@/actions/admin/database";
+import type { ActionResult } from "@/actions/admin/database";
 
 // Type definitions
 interface QueryHistoryItem {
@@ -39,8 +40,12 @@ export const useDatabaseAdmin = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getFunctions();
-      return data;
+      const result = await getFunctions();
+      if (result.error) {
+        setError(result.error);
+        return [];
+      }
+      return result.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       return [];
@@ -53,8 +58,12 @@ export const useDatabaseAdmin = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getPermissions();
-      return data;
+      const result = await getPermissions();
+      if (result.error) {
+        setError(result.error);
+        return [];
+      }
+      return result.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       return [];
@@ -81,31 +90,37 @@ export const useDatabaseAdmin = () => {
       setError(null);
 
       // Set up timeout for long-running queries
-      const timeoutPromise = new Promise((_, reject) => {
+      const timeoutPromise = new Promise<ActionResult>((resolve) => {
         timeoutRef.current = setTimeout(() => {
           setIsTimeout(true);
-          reject(
-            new Error(
-              `Query execution timed out after ${timeoutMs / 1000} seconds`,
-            ),
-          );
+          resolve({
+            data: null,
+            error: `Query execution timed out after ${timeoutMs / 1000} seconds`,
+          });
         }, timeoutMs);
       });
 
       const startTime = performance.now();
 
       // Race between query execution and timeout
-      const data = (await Promise.race([
+      const result = await Promise.race([
         executeSqlQuery(query),
         timeoutPromise,
-      ])) as any;
+      ]);
+
+      clearQueryTimeout();
+
+      if (result.error) {
+        setError(result.error);
+        return null;
+      }
 
       const executionTime = performance.now() - startTime;
 
       // Cache the result
       const historyItem: QueryHistoryItem = {
         query,
-        result: data,
+        result: result.data,
         timestamp: new Date(),
         executionTime,
       };
@@ -115,13 +130,12 @@ export const useDatabaseAdmin = () => {
         [query]: historyItem,
       }));
 
-      clearQueryTimeout();
-      return data;
+      return result.data;
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
-      throw err;
+      return null;
     } finally {
       setLoading(false);
     }

@@ -24,9 +24,18 @@ interface Props {
   fileId: string;
   activePageNumber: number;
   onSelectPage: (pageNumber: number, pageId: string | null) => void;
+  /** Optional 1-based page-number → annotation count. Pages with any
+   *  annotations get a green badge so the user always sees where their
+   *  pinned data lives — never another "did my work get saved?" moment. */
+  annotationCounts?: Map<number, number>;
 }
 
-export function ThumbnailStrip({ fileId, activePageNumber, onSelectPage }: Props) {
+export function ThumbnailStrip({
+  fileId,
+  activePageNumber,
+  onSelectPage,
+  annotationCounts,
+}: Props) {
   const { pages, loading } = usePages(fileId);
 
   if (loading && !pages.length) {
@@ -53,6 +62,7 @@ export function ThumbnailStrip({ fileId, activePageNumber, onSelectPage }: Props
             fileId={fileId}
             page={p}
             active={activePageNumber === p.page_index + 1}
+            annotationCount={annotationCounts?.get(p.page_index + 1) ?? 0}
             onSelect={() => onSelectPage(p.page_index + 1, p.id)}
           />
         ))}
@@ -65,11 +75,13 @@ function ThumbnailItem({
   fileId,
   page,
   active,
+  annotationCount = 0,
   onSelect,
 }: {
   fileId: string;
   page: FilePageOut;
   active: boolean;
+  annotationCount?: number;
   onSelect: () => void;
 }) {
   const ref = useRef<HTMLLIElement | null>(null);
@@ -118,7 +130,7 @@ function ThumbnailItem({
       )}
       onClick={onSelect}
     >
-      <div className="aspect-[8.5/11] w-full overflow-hidden rounded">
+      <div className="relative aspect-[8.5/11] w-full overflow-hidden rounded">
         {thumbnail ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
@@ -131,6 +143,16 @@ function ThumbnailItem({
             p{page.page_index + 1}
           </div>
         )}
+        {/* Annotation count — green badge top-right so the user can see
+          * at a glance which pages have user-pinned data. */}
+        {annotationCount > 0 ? (
+          <span
+            className="absolute right-0.5 top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white shadow"
+            title={`${annotationCount} annotation${annotationCount === 1 ? "" : "s"} on this page`}
+          >
+            {annotationCount}
+          </span>
+        ) : null}
       </div>
       <div className="flex items-center justify-between gap-1 px-1 py-0.5 text-[10px]">
         <span className="tabular-nums text-muted-foreground">

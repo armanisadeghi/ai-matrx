@@ -9860,6 +9860,359 @@ export type Database = {
         }
         Relationships: []
       }
+      page_extraction_jobs: {
+        Row: {
+          agent_id: string | null
+          archived_at: string | null
+          chunk_overlap: number
+          chunk_size: number
+          chunking_strategy: string
+          created_at: string
+          description: string | null
+          file_id: string
+          id: string
+          is_saved: boolean
+          latest_run_id: string | null
+          max_concurrent: number
+          model_overrides: Json | null
+          name: string
+          organization_id: string | null
+          output_schema: Json
+          owner_id: string
+          processed_document_id: string | null
+          project_id: string | null
+          scope_pages: number[] | null
+          shortcut_id: string | null
+          source_variations: Json
+          updated_at: string
+          variable_mapping: Json
+        }
+        Insert: {
+          agent_id?: string | null
+          archived_at?: string | null
+          chunk_overlap?: number
+          chunk_size?: number
+          chunking_strategy?: string
+          created_at?: string
+          description?: string | null
+          file_id: string
+          id?: string
+          is_saved?: boolean
+          latest_run_id?: string | null
+          max_concurrent?: number
+          model_overrides?: Json | null
+          name: string
+          organization_id?: string | null
+          output_schema: Json
+          owner_id: string
+          processed_document_id?: string | null
+          project_id?: string | null
+          scope_pages?: number[] | null
+          shortcut_id?: string | null
+          source_variations?: Json
+          updated_at?: string
+          variable_mapping?: Json
+        }
+        Update: {
+          agent_id?: string | null
+          archived_at?: string | null
+          chunk_overlap?: number
+          chunk_size?: number
+          chunking_strategy?: string
+          created_at?: string
+          description?: string | null
+          file_id?: string
+          id?: string
+          is_saved?: boolean
+          latest_run_id?: string | null
+          max_concurrent?: number
+          model_overrides?: Json | null
+          name?: string
+          organization_id?: string | null
+          output_schema?: Json
+          owner_id?: string
+          processed_document_id?: string | null
+          project_id?: string | null
+          scope_pages?: number[] | null
+          shortcut_id?: string | null
+          source_variations?: Json
+          updated_at?: string
+          variable_mapping?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_extraction_jobs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_latest_run_fk"
+            columns: ["latest_run_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_processed_document_id_fkey"
+            columns: ["processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "extracted_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_processed_document_id_fkey"
+            columns: ["processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_shortcut_id_fkey"
+            columns: ["shortcut_id"]
+            isOneToOne: false
+            referencedRelation: "agx_shortcut"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_extraction_page_runs: {
+        Row: {
+          chunk_index: number
+          cost: number | null
+          duration_ms: number | null
+          error: string | null
+          file_id: string
+          finished_at: string | null
+          id: string
+          job_id: string
+          page_ids: string[] | null
+          page_numbers: number[]
+          parse_error: string | null
+          parsed_payload: Json | null
+          raw_response: string | null
+          request_id: string | null
+          run_id: string
+          started_at: string | null
+          status: string
+          tokens: number | null
+        }
+        Insert: {
+          chunk_index: number
+          cost?: number | null
+          duration_ms?: number | null
+          error?: string | null
+          file_id: string
+          finished_at?: string | null
+          id?: string
+          job_id: string
+          page_ids?: string[] | null
+          page_numbers: number[]
+          parse_error?: string | null
+          parsed_payload?: Json | null
+          raw_response?: string | null
+          request_id?: string | null
+          run_id: string
+          started_at?: string | null
+          status?: string
+          tokens?: number | null
+        }
+        Update: {
+          chunk_index?: number
+          cost?: number | null
+          duration_ms?: number | null
+          error?: string | null
+          file_id?: string
+          finished_at?: string | null
+          id?: string
+          job_id?: string
+          page_ids?: string[] | null
+          page_numbers?: number[]
+          parse_error?: string | null
+          parsed_payload?: Json | null
+          raw_response?: string | null
+          request_id?: string | null
+          run_id?: string
+          started_at?: string | null
+          status?: string
+          tokens?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_extraction_page_runs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_page_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_page_runs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_extraction_results: {
+        Row: {
+          canonical_page: number | null
+          created_at: string
+          file_id: string
+          id: string
+          job_id: string
+          page_run_id: string
+          payload: Json
+          run_id: string
+          source_pages: number[]
+        }
+        Insert: {
+          canonical_page?: number | null
+          created_at?: string
+          file_id: string
+          id?: string
+          job_id: string
+          page_run_id: string
+          payload: Json
+          run_id: string
+          source_pages: number[]
+        }
+        Update: {
+          canonical_page?: number | null
+          created_at?: string
+          file_id?: string
+          id?: string
+          job_id?: string
+          page_run_id?: string
+          payload?: Json
+          run_id?: string
+          source_pages?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_extraction_results_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_results_page_run_id_fkey"
+            columns: ["page_run_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_page_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_extraction_runs: {
+        Row: {
+          chunk_count: number
+          completed_chunks: number
+          created_at: string
+          error: string | null
+          failed_chunks: number
+          finished_at: string | null
+          id: string
+          job_id: string
+          metadata: Json
+          result_count: number
+          started_at: string | null
+          status: string
+          total_cost: number
+          total_tokens: number
+          trigger_source: string
+          triggered_by: string | null
+        }
+        Insert: {
+          chunk_count?: number
+          completed_chunks?: number
+          created_at?: string
+          error?: string | null
+          failed_chunks?: number
+          finished_at?: string | null
+          id?: string
+          job_id: string
+          metadata?: Json
+          result_count?: number
+          started_at?: string | null
+          status?: string
+          total_cost?: number
+          total_tokens?: number
+          trigger_source?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          chunk_count?: number
+          completed_chunks?: number
+          created_at?: string
+          error?: string | null
+          failed_chunks?: number
+          finished_at?: string | null
+          id?: string
+          job_id?: string
+          metadata?: Json
+          result_count?: number
+          started_at?: string | null
+          status?: string
+          total_cost?: number
+          total_tokens?: number
+          trigger_source?: string
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_extraction_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pc_episodes: {
         Row: {
           audio_url: string

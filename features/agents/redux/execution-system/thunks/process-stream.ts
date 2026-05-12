@@ -41,6 +41,7 @@ import {
   isCxRequestReservation,
   isCxToolCallReservation,
   isContextAnalysisEvent,
+  isStructuredOutputEvent,
   type ConversationIdData,
   type ConversationLabeledData,
   type MemoryBufferSpawnedData,
@@ -1272,6 +1273,19 @@ export async function processStream({
             timestamp: now,
             originalEvent: "context_analysis",
             rawData: event.data,
+          },
+        }),
+      );
+    } else if (isStructuredOutputEvent(event)) {
+      otherEvents++;
+      dispatch(
+        appendTimeline({
+          requestId,
+          entry: {
+            kind: "structured_output",
+            seq: 0,
+            timestamp: now,
+            data: event.data,
           },
         }),
       );

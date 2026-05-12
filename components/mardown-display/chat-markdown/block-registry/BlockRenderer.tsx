@@ -150,14 +150,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // scattered conditional-render sites, no missed branches, no need for
   // parents to remember to filter.
   const hideReasoning = useAppSelector(
-    conversationId
-      ? selectHideReasoning(conversationId)
-      : () => false,
+    conversationId ? selectHideReasoning(conversationId) : () => false,
   );
   const hideToolResults = useAppSelector(
-    conversationId
-      ? selectHideToolResults(conversationId)
-      : () => false,
+    conversationId ? selectHideToolResults(conversationId) : () => false,
   );
 
   const renderFallbackContent = useCallback(
@@ -510,6 +506,22 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             key={index}
             content={block.content}
             className="my-3"
+          />
+        );
+      }
+      if (lang === "json" || lang === "jsonc" || lang === "json5") {
+        return (
+          <BlockComponents.JsonBlock
+            key={index}
+            content={block.content}
+            className="my-3"
+            isStreamActive={isStreamActive}
+            onCodeChange={
+              isStreamActive
+                ? undefined
+                : (newCode: string) =>
+                    replaceBlockContent(block.content, newCode)
+            }
           />
         );
       }

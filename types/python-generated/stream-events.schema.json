@@ -565,6 +565,98 @@
     "title": "RecordUpdatePayload",
     "type": "object"
   },
+  "StructuredOutputPayload": {
+    "additionalProperties": false,
+    "description": "Final structured payload extracted from an agent's text output.\n\nThe schema is included verbatim so the FE can drive generic renderers\n(tables, forms, type-checked accessors) without an extra round-trip to\nfetch the agent record.",
+    "properties": {
+      "schema_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Optional name from the agent's ``output_schema.name`` field. Used for human-readable identification in UIs and logs.",
+        "title": "Schema Name"
+      },
+      "json_schema": {
+        "additionalProperties": true,
+        "description": "The JSON Schema the agent declared (typically ``agent.output_schema['schema']``). Full schema, not a hint — FE can use it for typed rendering and runtime validation.",
+        "title": "Json Schema",
+        "type": "object"
+      },
+      "data": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Parsed payload after schema-aware normalization. ``None`` when extraction failed — check ``success`` and ``reason``.",
+        "title": "Data"
+      },
+      "success": {
+        "description": "True when the parser produced a value matching the schema. False means the agent declared a schema but the response could not be parsed against it; ``data`` will be None.",
+        "title": "Success",
+        "type": "boolean"
+      },
+      "reason": {
+        "default": "",
+        "description": "Human-readable failure reason; empty string on success.",
+        "title": "Reason",
+        "type": "string"
+      },
+      "match_count": {
+        "default": 0,
+        "description": "Number of schema-matching JSON candidates found in the response.",
+        "title": "Match Count",
+        "type": "integer"
+      },
+      "agent_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The agent's display name, when available — provenance.",
+        "title": "Agent Name"
+      },
+      "operation_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "When emitted from a sub-agent, the ``operation_id`` of the init/completion pair so the FE can attribute the event.",
+        "title": "Operation Id"
+      }
+    },
+    "required": [
+      "json_schema",
+      "success"
+    ],
+    "title": "StructuredOutputPayload",
+    "type": "object"
+  },
   "LlmRequestResult": {
     "additionalProperties": false,
     "properties": {
@@ -2504,7 +2596,8 @@
           "record_reserved",
           "record_update",
           "resource_changed",
-          "context_analysis"
+          "context_analysis",
+          "structured_output"
         ],
         "title": "EventType",
         "type": "string"
@@ -2547,7 +2640,8 @@
       "record_reserved",
       "record_update",
       "resource_changed",
-      "context_analysis"
+      "context_analysis",
+      "structured_output"
     ]
   }
 }

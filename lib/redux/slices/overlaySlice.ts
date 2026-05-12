@@ -14,7 +14,6 @@
 // All existing callers that omit instanceId continue to work with zero changes.
 
 import { createSlice, createSelector } from "@reduxjs/toolkit";
-import type { AgentContentTab } from "@/features/window-panels/windows/agents/agent-content.types";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 
 export const DEFAULT_INSTANCE_ID = "default";

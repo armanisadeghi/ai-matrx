@@ -29,6 +29,7 @@ import {
   ExternalLink,
   Wand2,
   RefreshCw,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,8 @@ import { SyncedPdfTextView } from "./SyncedPdfTextView";
 import { LineageTreeView } from "./LineageTreeView";
 import { ManipulationPanel } from "./ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
+import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
+import { CopyPagesOverlay } from "./CopyPagesOverlay";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 
@@ -566,6 +569,32 @@ function NewExtractionContent({
   );
 }
 
+// ─── Workspace Copy Pages wrapper (lazy page fetch) ──────────────────────────
+
+function WorkspaceCopyPages({
+  open,
+  onClose,
+  doc,
+}: {
+  open: boolean;
+  onClose: () => void;
+  doc: PdfDocument;
+}) {
+  const { pages, loading } = useProcessedDocumentPages({
+    processedDocumentId: doc.id,
+    enabled: open,
+  });
+  return (
+    <CopyPagesOverlay
+      open={open}
+      onClose={onClose}
+      doc={doc}
+      pages={pages}
+      pagesLoading={loading}
+    />
+  );
+}
+
 // ─── Per-Extraction Tab Content ──────────────────────────────────────────────
 
 function ExtractionTabContent({
@@ -585,6 +614,7 @@ function ExtractionTabContent({
   onRunShortcut: (shortcutId: string) => void | Promise<void>;
 }) {
   const [subTab, setSubTab] = useState<ContentSubTab>("text");
+  const [copyPagesOpen, setCopyPagesOpen] = useState(false);
   const reprocessing = tab.status === "cleaning";
 
   if (tab.status === "extracting") {
@@ -721,6 +751,18 @@ function ExtractionTabContent({
           icon={<GitBranch className="w-3 h-3" />}
           label="Lineage"
         />
+        {/* Copy Pages button — always visible when content exists */}
+        {doc.content && (
+          <button
+            type="button"
+            onClick={() => setCopyPagesOpen(true)}
+            title="Copy page range to clipboard with structured tags"
+            className="ml-auto shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <ClipboardList className="w-3 h-3" />
+            Copy Pages
+          </button>
+        )}
       </div>
 
       {/* ── Sub-tab content ─────────────────────────────────────── */}
@@ -756,6 +798,13 @@ function ExtractionTabContent({
         )}
         {subTab === "lineage" && <LineageTreeView doc={doc} />}
       </div>
+
+      {/* Copy Pages overlay — lazy, only fetches page data when open */}
+      <WorkspaceCopyPages
+        open={copyPagesOpen}
+        onClose={() => setCopyPagesOpen(false)}
+        doc={doc}
+      />
     </div>
   );
 }
