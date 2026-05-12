@@ -94,16 +94,32 @@ export function AgentConversationDisplay({
     phase === "error";
 
   const displayEntries = useMemo((): DisplayEntry[] => {
-    // The streaming bubble is the latest assistant cx_message in orderedIds
-    // while the stream is active — no virtual entry. Find it once so we can
-    // tag it with isStreamActive + the live requestId.
+    // The streaming bubble is the assistant cx_message anchored to the
+    // CURRENT live request (its `_streamRequestId` matches `latestRequestId`)
+    // — NOT just "the most recent assistant." The distinction matters during
+    // the window after a NEW submit creates a fresh active request but
+    // BEFORE the server has reserved its assistant cx_message: in that gap,
+    // the most-recent assistant in `orderedIds` is the PRIOR turn's, which
+    // is fully committed against its own (stable) `_streamRequestId`. If we
+    // mislabel it as the streaming bubble, we'd override its requestId with
+    // the new latestRequestId and the renderer would read from an empty
+    // stream — the prior message blanks out until the new reservation lands.
+    //
+    // Strict match keeps every committed message anchored to its own
+    // streaming source forever; the streaming bubble naturally appears
+    // once the server actually reserves the new assistant record (which
+    // gets `_streamRequestId === latestRequestId` from process-stream).
     let streamingAssistantId: string | null = null;
-    if (isActive) {
+    if (isActive && latestRequestId) {
       for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === "assistant") {
-          streamingAssistantId = messages[i].id;
-          break;
+        const rec = messages[i];
+        if (rec.role !== "assistant") continue;
+        if (rec._streamRequestId === latestRequestId) {
+          streamingAssistantId = rec.id;
         }
+        // Stop at the most recent assistant either way — we only ever care
+        // about whether the NEWEST assistant is the active stream's record.
+        break;
       }
     }
 
@@ -114,20 +130,15 @@ export function AgentConversationDisplay({
       // bubble (in which case the requestId-driven MarkdownStream path
       // renders the in-flight chunks even though byId.content is still empty).
       if (isEmptyReservedAssistant(rec) && !isStreamingMessage) continue;
-      // Every assistant turn that was streamed in this session carries
-      // `_streamRequestId` (set by reserveMessage in process-stream). Use
-      // that as the anchor so the renderer stays on the streaming source
-      // for the entire conversation lifetime — never swapping to the
-      // DB-content path mid-session. Falls through to null for DB-hydrated
-      // history, which renders from byId.content via messageId.
-      const streamedReqId = isStreamingMessage
-        ? (latestRequestId ?? rec._streamRequestId ?? null)
-        : (rec._streamRequestId ?? null);
+      // Always use the record's own `_streamRequestId` — never override
+      // with `latestRequestId`. This is what guarantees prior turns stay
+      // pinned to their own (already-completed) streaming source, even
+      // while a NEW request is in flight on the same conversation.
       entries.push({
         key: rec.id,
         role: rec.role,
         messageId: rec.id,
-        requestId: streamedReqId,
+        requestId: rec._streamRequestId ?? null,
         isStreamActive: isStreamingMessage,
       });
     }
