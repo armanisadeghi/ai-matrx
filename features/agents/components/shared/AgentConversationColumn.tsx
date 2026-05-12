@@ -114,6 +114,7 @@ export function AgentConversationColumn({
 
       <CreatorRunPanel
         conversationId={conversationId}
+        displayConversationId={displayId}
         surfaceKey={surfaceKey}
       />
 

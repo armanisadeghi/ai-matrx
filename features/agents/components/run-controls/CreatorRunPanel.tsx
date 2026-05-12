@@ -296,7 +296,27 @@ const ALL_TABS: TabId[] = [
 ];
 
 interface CreatorRunPanelProps {
+  /**
+   * The INPUT conversation — where the user is typing and which settings
+   * adjustments target (Run Settings, System Prompt, Payload, Context,
+   * Widget Invoker). Equals the display conversation in normal mode; under
+   * autoClear=true after a split, this is the freshly-prepped instance the
+   * input area was just moved to.
+   */
   conversationId: string;
+  /**
+   * The DISPLAY conversation — where the streaming response lives and
+   * where telemetry/recovery data is keyed (Last Request, Session, Client,
+   * Backend, Reset). Falls back to `conversationId` when not provided.
+   *
+   * Why both: under autoClear=true, smart-execute fires the request on the
+   * current conversation, then splits — input focus moves to a new instance
+   * while display focus stays put. The just-completed request's stats live
+   * on the DISPLAY id; settings the engineer is configuring for the NEXT
+   * call live on the INPUT id. Threading both is the only way both
+   * surfaces stay coherent.
+   */
+  displayConversationId?: string;
   /** Focus surface for startNewConversation (reset conversation). */
   surfaceKey: string;
   /** Restrict which tabs are visible. Defaults to all tabs when omitted. */
@@ -305,9 +325,14 @@ interface CreatorRunPanelProps {
 
 export function CreatorRunPanel({
   conversationId,
+  displayConversationId,
   surfaceKey,
   tabs: allowedTabs,
 }: CreatorRunPanelProps) {
+  // Telemetry / response-context tabs read from the DISPLAY id (where the
+  // just-completed request actually landed). Settings tabs that configure
+  // the next submit stay on the INPUT id (`conversationId`).
+  const displayId = displayConversationId ?? conversationId;
   const dispatch = useAppDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>(() =>
@@ -321,7 +346,9 @@ export function CreatorRunPanel({
   // Freeze window ids at first render — they must never change even if
   // conversationId changes (e.g. after reset), otherwise the hook cleanup
   // fires, unregisters the window from Redux, and the tray chip disappears.
-  const streamDebugIdRef = useRef(`stream-debug-${conversationId}`);
+  // Stream Debug is keyed to displayId (where the response lives); Run
+  // Settings is keyed to the input id (where the next call fires).
+  const streamDebugIdRef = useRef(`stream-debug-${displayId}`);
   const runSettingsIdRef = useRef(`run-settings-${conversationId}`);
   const streamDebugId = streamDebugIdRef.current;
   const runSettingsId = runSettingsIdRef.current;
@@ -348,17 +375,20 @@ export function CreatorRunPanel({
     }
   }, [dispatch, runSettingsEntry, runSettingsId]);
 
+  // Title belongs to the conversation that was just labeled by the server —
+  // that's the display id (where the response carrying the title landed).
   const conversationTitle = useAppSelector(
-    selectConversationTitle(conversationId),
+    selectConversationTitle(displayId),
   );
 
   // At-a-glance API target indicator — appears on the collapsed creator bar
   // so an admin can see whether THIS conversation is talking to the cloud
   // server or to a sandbox proxy without expanding the panel. Source of
-  // truth lives in `instanceUIState[conversationId].serverOverrideUrl`;
-  // see BackendTargetPanel for the full breakdown.
+  // truth lives in `instanceUIState[displayId].serverOverrideUrl`; see
+  // BackendTargetPanel for the full breakdown. Tied to displayId so the
+  // badge describes the run the user is currently looking at.
   const instanceUIForBadge = useAppSelector(
-    selectInstanceUIState(conversationId),
+    selectInstanceUIState(displayId),
   );
   const isOverridden = Boolean(instanceUIForBadge?.serverOverrideUrl);
   // Session count across ALL instances for the tab label
@@ -386,9 +416,9 @@ export function CreatorRunPanel({
           height={720}
           onClose={() => setStreamDebugWindowOpen(false)}
           urlSyncKey="debug"
-          urlSyncId={conversationId}
+          urlSyncId={displayId}
         >
-          <StreamDebugPanel conversationId={conversationId} />
+          <StreamDebugPanel conversationId={displayId} />
         </WindowPanel>
       )}
       {runSettingsWindowOpen && (
@@ -501,14 +531,18 @@ export function CreatorRunPanel({
 
         {/* Tab content — fixed height (shorter on mobile so it doesn't dominate the viewport) */}
         <div className="h-[50dvh] sm:h-72 overflow-y-auto">
+          {/* Actions: reset clears the displayed conversation; memory + */}
+          {/* debug windows describe the displayed run. */}
           {activeTab === "actions" && (
             <ActionsTab
-              conversationId={conversationId}
+              conversationId={displayId}
               surfaceKey={surfaceKey}
               onOpenStreamDebugWindow={openStreamDebugWindow}
               onOpenRunSettingsWindow={openRunSettingsWindow}
             />
           )}
+          {/* Context / payload / run settings / system prompt / widgets */}
+          {/* configure the NEXT submit — keep them on the input id. */}
           {activeTab === "context" && (
             <ContextSlotsTab conversationId={conversationId} />
           )}
@@ -521,14 +555,16 @@ export function CreatorRunPanel({
           {activeTab === "sysprompt" && (
             <SystemPromptTab conversationId={conversationId} />
           )}
+          {/* Telemetry — every panel keyed to the request that just ran, */}
+          {/* which lives on the display id (not the input one). */}
           {activeTab === "last" && (
-            <RequestStatsPanel conversationId={conversationId} />
+            <RequestStatsPanel conversationId={displayId} />
           )}
           {activeTab === "session" && (
-            <SessionStatsPanel conversationId={conversationId} />
+            <SessionStatsPanel conversationId={displayId} />
           )}
           {activeTab === "client" && (
-            <ClientMetricsPanel conversationId={conversationId} />
+            <ClientMetricsPanel conversationId={displayId} />
           )}
           {activeTab === "widget_invoker" && (
             <AgentWidgetInvokerTester
@@ -538,7 +574,7 @@ export function CreatorRunPanel({
             />
           )}
           {activeTab === "backend" && (
-            <BackendTargetPanel conversationId={conversationId} />
+            <BackendTargetPanel conversationId={displayId} />
           )}
         </div>
       </div>
