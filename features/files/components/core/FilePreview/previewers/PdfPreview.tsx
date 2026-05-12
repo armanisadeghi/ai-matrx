@@ -24,14 +24,6 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import PdfDocumentRenderer from "./PdfDocumentRenderer";
 
-// ---------------------------------------------------------------------------
-// DEBUG layering visualization — paired with the rings in PreviewPane
-// and FilePreview. The PdfPreview component normally has no DOM of its
-// own (just delegates to PdfDocumentRenderer), so we add a wrapper div
-// here purely to make this layer visible. Rip it out when done.
-// ---------------------------------------------------------------------------
-const DEBUG_RING_PDF_PREVIEW = "ring-2 ring-inset ring-emerald-500";
-
 export interface PdfPreviewProps {
   fileId: string;
   className?: string;
@@ -77,16 +69,7 @@ export default function PdfPreview({
   );
 
   return (
-    <div
-      className={cn(
-        "relative h-full w-full",
-        DEBUG_RING_PDF_PREVIEW,
-        className,
-      )}
-    >
-      <span className="pointer-events-none absolute left-0 top-0 z-50 select-none rounded-br bg-emerald-500 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white shadow">
-        PdfPreview
-      </span>
+    <div className={cn("relative h-full w-full", className)}>
       <PdfDocumentRenderer
         blobUrl={url}
         fileName={file?.fileName ?? null}

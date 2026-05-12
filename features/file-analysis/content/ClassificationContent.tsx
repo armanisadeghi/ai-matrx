@@ -45,33 +45,36 @@ export function ClassificationContent({ results, onJumpToPage }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
       {pages.map((p) => (
         <button
           key={p.page_number}
           type="button"
           onClick={() => onJumpToPage?.(p.page_number)}
           className={cn(
-            "rounded border border-border bg-card px-2 py-1.5 text-left transition-colors hover:bg-accent/40",
+            "flex min-w-0 flex-col gap-1.5 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-accent/40",
           )}
           title={p.indicators?.join(", ")}
         >
-          <div className="flex items-center justify-between text-[10px]">
-            <span className="tabular-nums text-muted-foreground">
-              p{p.page_number}
-            </span>
-            <span className="text-[9px] tabular-nums text-muted-foreground">
+          <div className="flex min-w-0 items-center justify-between gap-1.5 text-[11px]">
+            <span className="font-medium tabular-nums">Page {p.page_number}</span>
+            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
               {Math.round(p.confidence * 100)}%
             </span>
           </div>
-          <div
+          <span
             className={cn(
-              "mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] uppercase tracking-wider",
+              "inline-block max-w-full self-start truncate rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider",
               COLORS[p.page_class] ?? COLORS.unknown,
             )}
           >
             {p.page_class}
-          </div>
+          </span>
+          {p.indicators?.length ? (
+            <div className="line-clamp-2 text-[10px] leading-snug text-muted-foreground">
+              {p.indicators.join(" · ")}
+            </div>
+          ) : null}
         </button>
       ))}
     </div>

@@ -14,8 +14,8 @@ export default function SchedulesPage() {
   return (
     <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <header className="shrink-0 border-b border-border bg-card/40">
-        <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-3  ">
+          <div className="flex items-center gap-2 min-w-0 ">
             <div className="rounded-md p-1.5 bg-blue-50 dark:bg-blue-950/40">
               <CalendarClock className="h-4 w-4 text-blue-500 dark:text-blue-400" />
             </div>
@@ -23,13 +23,9 @@ export default function SchedulesPage() {
               <h1 className="font-semibold text-base sm:text-lg leading-none truncate">
                 Schedules
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Run agents on a schedule, when a page matches, or as a
-                heartbeat.
-              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pr-12">
             <Button
               variant="outline"
               size="icon"

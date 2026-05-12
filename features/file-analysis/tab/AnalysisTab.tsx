@@ -247,29 +247,30 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
             counts={counts}
             pageCount={head?.page_count ?? null}
             summaryCounts={summaryCounts}
+            onJumpToPage={(p) => jumpToPage(fileId, p)}
           />
         ) : section === "outline" ? (
           <ScrollSection>
             <OutlineContent
               results={results}
-              onJumpToPage={(p) => goToStudio(fileId, p)}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
             />
           </ScrollSection>
         ) : section === "text" ? (
           <TextContent
             results={results}
-            onJumpToPage={(p) => goToStudio(fileId, p)}
+            onJumpToPage={(p) => jumpToPage(fileId, p)}
           />
         ) : section === "pii" ? (
           <PiiCandidatesContent
             results={results}
-            onJumpToPage={(p) => goToStudio(fileId, p)}
+            onJumpToPage={(p) => jumpToPage(fileId, p)}
           />
         ) : section === "tables" ? (
           <ScrollSection>
             <TablesContent
               results={results}
-              onJumpToPage={(p) => goToStudio(fileId, p)}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
             />
           </ScrollSection>
         ) : section === "images" ? (
@@ -277,7 +278,7 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
             <ImagesContent
               fileId={fileId}
               results={results}
-              onJumpToPage={(p) => goToStudio(fileId, p)}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
             />
           </ScrollSection>
         ) : section === "regions" ? (
@@ -285,21 +286,21 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
             <RepeatedRegionsContent
               fileId={fileId}
               results={results}
-              onJumpToPage={(p) => goToStudio(fileId, p)}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
             />
           </ScrollSection>
         ) : section === "duplicates" ? (
           <ScrollSection>
             <DuplicatesContent
               results={results}
-              onJumpToPage={(p) => goToStudio(fileId, p)}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
             />
           </ScrollSection>
         ) : section === "classification" ? (
           <ScrollSection>
             <ClassificationContent
               results={results}
-              onJumpToPage={(p) => goToStudio(fileId, p)}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
             />
           </ScrollSection>
         ) : null}
@@ -308,12 +309,19 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
   );
 }
 
-function goToStudio(fileId: string, page: number) {
-  // Use a regular link nav so the studio gets a fresh mount with the
-  // deep-linked page parameter.
-  if (typeof window !== "undefined") {
-    window.location.href = `/files/f/${fileId}/studio?page=${page}`;
-  }
+function jumpToPage(fileId: string, page: number) {
+  // Stay inside the PreviewPane. Dispatch the same event the FileContextMenu
+  // uses to switch tabs — no navigation, no PDF refetch. PreviewPane swaps
+  // to the Preview tab with the blob already warm in useFileBlob's cache.
+  //
+  // The `page` field rides along for any future PreviewPane upgrade that
+  // wants to forward it into PdfPreview's controlled pageNumber.
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("cloud-files:open-preview-tab", {
+      detail: { fileId, tab: "preview", page },
+    }),
+  );
 }
 
 function ScrollSection({ children }: { children: React.ReactNode }) {
@@ -325,6 +333,7 @@ function OverviewSection({
   counts,
   pageCount,
   summaryCounts,
+  onJumpToPage,
 }: {
   results: ReturnType<typeof useFileAnalysis>["data"] extends infer T
     ? T extends { results: infer R }
@@ -344,6 +353,7 @@ function OverviewSection({
   };
   pageCount: number | null;
   summaryCounts: Record<string, unknown>;
+  onJumpToPage: (page: number) => void;
 }) {
   return (
     <div className="h-full overflow-y-auto p-4">
@@ -366,13 +376,11 @@ function OverviewSection({
         <Card title="Page classification">
           <ClassificationContent
             results={results as never}
-            onJumpToPage={(p) =>
-              typeof window !== "undefined" &&
-              (window.location.href = window.location.pathname.replace(
-                /\/?$/,
-                "/studio?page=" + p,
-              ))
-            }
+            // OverviewSection sits inside the AnalysisTab; pass the same
+            // jump-to-page handler the parent uses elsewhere so clicks
+            // switch back to the Preview tab instead of triggering a
+            // hard navigation.
+            onJumpToPage={onJumpToPage}
           />
         </Card>
       </div>

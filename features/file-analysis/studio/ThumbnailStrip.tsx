@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { EyeOff, Eye, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
+import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
 
@@ -72,7 +73,6 @@ function ThumbnailItem({
   onSelect: () => void;
 }) {
   const ref = useRef<HTMLLIElement | null>(null);
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -88,26 +88,12 @@ function ThumbnailItem({
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (!visible || thumbnail) return;
-    let cancelled = false;
-    Api.renderPageWithOverlay(fileId, {
-      page_id: page.id,
-      overlays: [],
-      dpi: 50,
-      return_format: "png",
-    })
-      .then(({ data }) => {
-        if (cancelled) return;
-        setThumbnail(`data:image/png;base64,${data.image_base64}`);
-      })
-      .catch(() => {
-        // ignore — render lazily next time the strip scrolls.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [visible, thumbnail, fileId, page.id]);
+  // Module-cached thumbnail. Survives remounts + cross-route navigation —
+  // re-entering the studio gives instant thumbnails.
+  const { png: thumbnail } = usePageThumbnail(fileId, page.id, {
+    dpi: 50,
+    enabled: visible,
+  });
 
   const excluded = page.status === "excluded";
 

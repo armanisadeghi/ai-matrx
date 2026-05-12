@@ -1,17 +1,68 @@
 /**
  * features/file-analysis/hooks/usePages.ts
  *
- * Load + subscribe to file_pages for a file. Exposes the page-anchored
- * "what's in this doc right now" feed plus the active-pages-only filter.
+ * Shared-cache hook for `GET /files/{id}/pages`. Every consumer (the
+ * studio's thumbnail strip, the analysis tab's overview, the studio
+ * shell's page-id resolution) reads from one cache + subscribes to a
+ * single Realtime channel for file_pages changes.
  */
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { extractErrorMessage } from "@/utils/errors";
+import { useEffect, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
+import {
+  createSharedStore,
+  invalidateKey,
+  useSharedStore,
+} from "./shared-cache";
+
+const store = createSharedStore<FilePageOut[]>(async (fileId) => {
+  const { data } = await Api.listPages(fileId);
+  return data ?? [];
+});
+
+const realtimeRefcount = new Map<string, { count: number; cleanup: () => void }>();
+
+function attachRealtime(fileId: string): void {
+  const existing = realtimeRefcount.get(fileId);
+  if (existing) {
+    existing.count += 1;
+    return;
+  }
+  const supabase = createClient();
+  const channel = supabase
+    .channel(`file-pages:${fileId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "file_pages",
+        filter: `file_id=eq.${fileId}`,
+      },
+      () => invalidateKey(store, fileId),
+    )
+    .subscribe();
+  realtimeRefcount.set(fileId, {
+    count: 1,
+    cleanup: () => {
+      void supabase.removeChannel(channel);
+    },
+  });
+}
+
+function detachRealtime(fileId: string): void {
+  const existing = realtimeRefcount.get(fileId);
+  if (!existing) return;
+  existing.count -= 1;
+  if (existing.count <= 0) {
+    existing.cleanup();
+    realtimeRefcount.delete(fileId);
+  }
+}
 
 export interface UsePagesResult {
   pages: FilePageOut[];
@@ -23,63 +74,27 @@ export interface UsePagesResult {
 }
 
 export function usePages(fileId: string | null): UsePagesResult {
-  const [pages, setPages] = useState<FilePageOut[]>([]);
-  const [loading, setLoading] = useState<boolean>(!!fileId);
-  const [error, setError] = useState<string | null>(null);
-  const [retry, setRetry] = useState(0);
+  const { data, loading, error, refetch } = useSharedStore(store, fileId);
 
-  const refetch = useCallback(() => setRetry((n) => n + 1), []);
-
-  useEffect(() => {
-    if (!fileId) {
-      setPages([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Api.listPages(fileId)
-      .then(({ data }) => {
-        if (cancelled) return;
-        setPages(data ?? []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(extractErrorMessage(err));
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [fileId, retry]);
-
-  // Realtime — file_pages UPDATE / INSERT.
   useEffect(() => {
     if (!fileId) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`file-pages:${fileId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "file_pages",
-          filter: `file_id=eq.${fileId}`,
-        },
-        () => setRetry((n) => n + 1),
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    attachRealtime(fileId);
+    return () => detachRealtime(fileId);
   }, [fileId]);
 
-  const active = pages.filter((p) => p.status === "active");
-  const byPageId = new Map(pages.map((p) => [p.id, p]));
+  const pages = data ?? [];
+  const active = useMemo(
+    () => pages.filter((p) => p.status === "active"),
+    [pages],
+  );
+  const byPageId = useMemo(
+    () => new Map(pages.map((p) => [p.id, p])),
+    [pages],
+  );
 
   return { pages, active, byPageId, loading, error, refetch };
+}
+
+export function invalidatePages(fileId: string): void {
+  invalidateKey(store, fileId);
 }

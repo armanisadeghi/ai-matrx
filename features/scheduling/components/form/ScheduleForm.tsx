@@ -45,8 +45,8 @@ import { IntervalForm } from "./triggers/IntervalForm";
 import { CronForm } from "./triggers/CronForm";
 import { HeartbeatForm } from "./triggers/HeartbeatForm";
 import { ContextMatchForm } from "./triggers/ContextMatchForm";
-import { AgentPicker } from "./AgentPicker";
 import { VariablesEditor } from "./VariablesEditor";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 
 interface FormState {
   title: string;
@@ -135,10 +135,7 @@ export function ScheduleForm({ task }: Props) {
   const patch = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
 
-  const setTrigger = (
-    type: TriggerType,
-    config: Record<string, unknown>,
-  ) => {
+  const setTrigger = (type: TriggerType, config: Record<string, unknown>) => {
     setForm((s) => ({ ...s, triggerType: type, triggerConfig: config }));
   };
 
@@ -156,9 +153,7 @@ export function ScheduleForm({ task }: Props) {
       surfaces: form.surfaces,
       tags: form.tags,
       queue: "default",
-      expiresAt: form.expiresAt
-        ? fromLocalDateTime(form.expiresAt)
-        : null,
+      expiresAt: form.expiresAt ? fromLocalDateTime(form.expiresAt) : null,
       agentId: form.agentId || null,
       prompt: form.prompt,
       variables: form.variables,
@@ -271,16 +266,10 @@ export function ScheduleForm({ task }: Props) {
 
       {/* 2. What to run */}
       <Section title="What to run">
-        <Field label="Agent" htmlFor="agent" optional>
-          <AgentPicker
-            value={form.agentId}
-            onChange={(id) => patch("agentId", id)}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Leave as default for the platform's general-purpose agent, or
-            pick a specific agent you own.
-          </p>
-        </Field>
+        <AgentListDropdown
+          onSelect={(id) => patch("agentId", id)}
+          label="Select the agent"
+        />
         <Field label="Prompt" htmlFor="prompt" error={errors.prompt}>
           <Textarea
             id="prompt"
@@ -310,15 +299,13 @@ export function ScheduleForm({ task }: Props) {
           <Input
             id="conv-id"
             value={form.persistentConversationId}
-            onChange={(e) =>
-              patch("persistentConversationId", e.target.value)
-            }
+            onChange={(e) => patch("persistentConversationId", e.target.value)}
             placeholder="conversation UUID — leave blank for heartbeat to auto-bind on first run"
             className="font-mono text-xs"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            For heartbeat triggers, all runs append to this conversation.
-            Leave blank to let the first run create one.
+            For heartbeat triggers, all runs append to this conversation. Leave
+            blank to let the first run create one.
           </p>
         </Field>
       </Section>
