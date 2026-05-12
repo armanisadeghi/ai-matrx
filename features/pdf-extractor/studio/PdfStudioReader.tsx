@@ -51,6 +51,7 @@ import {
   X,
   Check,
   RefreshCw,
+  SquareStack,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
@@ -121,8 +122,9 @@ import { cn } from "@/lib/utils";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
+import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 
-export type PaneKey = "pdf" | "raw" | "clean";
+export type PaneKey = "pdf" | "raw" | "clean" | "extractions";
 export type PdfPaneEditMode = "crop" | "reorder" | null;
 
 export interface PdfStudioReaderProps {
@@ -151,6 +153,8 @@ export interface PdfStudioReaderProps {
   onEditModeCancel: () => void;
   /** Refresh the per-page rows from the DB (e.g. after re-cleaning). */
   onRefreshPages: () => void;
+  /** Jump all synced panes to this page (used by the extractions pane). */
+  onJumpToPage?: (page: number) => void;
 }
 
 export function PdfStudioReader({
@@ -172,6 +176,7 @@ export function PdfStudioReader({
   cropPagesInput,
   onEditModeCancel,
   onRefreshPages,
+  onJumpToPage,
 }: PdfStudioReaderProps) {
   const hasPages = pages.length > 0;
   // True when per-page rows exist but every row's text is empty — typically
@@ -268,6 +273,38 @@ export function PdfStudioReader({
           pipelineRunning={pipelineRunning}
           onRefreshPages={onRefreshPages}
         />
+      )}
+      {visiblePanes.has("extractions") && (
+        <section className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border">
+          <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
+            <SquareStack className="w-3 h-3 text-primary" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
+              Extractions
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              · per-page results
+            </span>
+            <button
+              type="button"
+              onClick={() => onTogglePane("extractions")}
+              className="ml-auto p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+              title="Hide pane"
+            >
+              <EyeOff className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <ExtractionsPane
+              fileId={
+                doc.sourceKind === "cld_file" && doc.sourceId
+                  ? doc.sourceId
+                  : null
+              }
+              activePage={activePage}
+              onJumpToPage={onJumpToPage}
+            />
+          </div>
+        </section>
       )}
     </div>
   );

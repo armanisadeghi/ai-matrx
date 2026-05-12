@@ -10,7 +10,7 @@
  * a doc", inspector handles "do something with a doc".
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Rocket,
   GitBranch,
@@ -22,7 +22,21 @@ import {
   BookOpen,
   Layers,
   MousePointerClick,
+  Repeat,
+  Loader2,
 } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
+import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
+import { selectJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
@@ -141,7 +155,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type AgentScope = "full" | "current" | "range" | "selection";
+type AgentScope = "full" | "current" | "range" | "selection" | "chunked";
 
 interface PdfShortcutEntry {
   id: string;
@@ -155,6 +169,11 @@ const PDF_SHORTCUTS: PdfShortcutEntry[] = [
     label: "Analyze Document",
     description:
       "Floating-window agent — reads selected scope, full doc available as context.",
+  },
+  {
+    id: "b967ddc1-7c00-4ccd-af89-26b5c0c7968d",
+    label: "WC Extractor",
+    description: "Extract Workers Compensation data from the document",
   },
 ];
 
@@ -182,6 +201,12 @@ const SCOPE_OPTIONS: {
     label: "Selected text",
     icon: MousePointerClick,
     hint: "Browser text selection",
+  },
+  {
+    key: "chunked",
+    label: "Chunked run",
+    icon: Repeat,
+    hint: "Fan out across pages, persist per-page results",
   },
 ];
 
@@ -351,7 +376,16 @@ function AiActionsPanel({
           </p>
         )}
 
-        {scope !== "full" && (
+        {scope === "chunked" && (
+          <ChunkedScopeControls
+            doc={doc}
+            pages={pages}
+            rangeInput={rangeInput}
+            setRangeInput={setRangeInput}
+          />
+        )}
+
+        {scope !== "full" && scope !== "chunked" && (
           <p className="text-[10px] text-muted-foreground/70 leading-snug">
             Scoped text → <code>selection</code>. Full doc stays in{" "}
             <code>content</code>.
@@ -365,8 +399,8 @@ function AiActionsPanel({
         </p>
       )}
 
-      {/* Agent list */}
-      {hasContent && (
+      {/* Agent list — single-shot scopes use the shortcut registry */}
+      {hasContent && scope !== "chunked" && (
         <div className="space-y-1.5">
           {PDF_SHORTCUTS.map((s) => (
             <div
@@ -393,6 +427,178 @@ function AiActionsPanel({
           ))}
         </div>
       )}
+
+      {/* Chunked-run launcher — fans out across pages, persists per-page results */}
+      {hasContent && scope === "chunked" && (
+        <ChunkedRunLauncher doc={doc} pages={pages} rangeInput={rangeInput} />
+      )}
+    </div>
+  );
+}
+
+// ── Chunked-mode helpers ──────────────────────────────────────────────────
+
+function resolveScopePages(
+  pages: PdfPageRow[],
+  rangeInput: string,
+): number[] {
+  const all = pages.map((p) => p.pageNumber).sort((a, b) => a - b);
+  if (!rangeInput.trim()) return all;
+  try {
+    const parsed = parsePagesInput(rangeInput);
+    const valid = new Set(all);
+    return parsed.filter((n) => valid.has(n));
+  } catch {
+    return all;
+  }
+}
+
+function ChunkedScopeControls({
+  doc,
+  pages,
+  rangeInput,
+  setRangeInput,
+}: {
+  doc: PdfDocument;
+  pages: PdfPageRow[];
+  rangeInput: string;
+  setRangeInput: (v: string) => void;
+}) {
+  const scopePages = resolveScopePages(pages, rangeInput);
+  const fileId =
+    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
+  return (
+    <div className="space-y-1.5">
+      <Input
+        value={rangeInput}
+        onChange={(e) => setRangeInput(e.target.value)}
+        placeholder="Pages (e.g. 1-50). Empty = all."
+        className="h-7 text-[11px]"
+      />
+      <p className="text-[10px] text-muted-foreground leading-snug">
+        Will process <span className="font-mono">{scopePages.length}</span> page
+        {scopePages.length === 1 ? "" : "s"} in chunks defined by the selected
+        Job. Pick a Job below to start.
+      </p>
+      {!fileId && (
+        <p className="text-[10px] text-amber-600 dark:text-amber-400">
+          Chunked extractions require a `cld_file` source. This document
+          doesn't have one linked.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ChunkedRunLauncher({
+  doc,
+  pages,
+  rangeInput,
+}: {
+  doc: PdfDocument;
+  pages: PdfPageRow[];
+  rangeInput: string;
+}) {
+  const fileId =
+    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
+  const dispatch = useAppDispatch();
+  const { jobs, loading } = useExtractionJobs(fileId);
+  const selectedJobId = useAppSelector((s) =>
+    selectSelectedJobForFile(s, fileId),
+  );
+  const { running, error, start } = useExtractionStream();
+  const toast = useToastManager("pdf-extractor");
+
+  // Auto-pick first job once jobs land.
+  useEffect(() => {
+    if (!fileId || selectedJobId || jobs.length === 0) return;
+    dispatch(selectJobForFile({ fileId, jobId: jobs[0].id }));
+  }, [fileId, selectedJobId, jobs, dispatch]);
+
+  const handleRun = async () => {
+    if (!fileId) {
+      toast.error("This doc has no cld_file source.");
+      return;
+    }
+    if (!selectedJobId) {
+      toast.error("Pick a Job first.");
+      return;
+    }
+    const scopePages = resolveScopePages(pages, rangeInput);
+    if (scopePages.length === 0) {
+      toast.error("No pages in scope.");
+      return;
+    }
+    try {
+      await start(fileId, {
+        job_id: selectedJobId,
+        scope_pages: scopePages,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Run failed");
+    }
+  };
+
+  if (!fileId) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] text-muted-foreground shrink-0">Job</span>
+        <Select
+          value={selectedJobId ?? undefined}
+          onValueChange={(jobId) =>
+            dispatch(selectJobForFile({ fileId, jobId }))
+          }
+          disabled={loading || jobs.length === 0}
+        >
+          <SelectTrigger className="h-7 text-[11px]">
+            <SelectValue
+              placeholder={
+                loading
+                  ? "Loading jobs…"
+                  : jobs.length === 0
+                    ? "No jobs yet"
+                    : "Pick a job…"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {jobs.map((j) => (
+              <SelectItem key={j.id} value={j.id}>
+                {j.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Button
+        size="sm"
+        className="w-full h-8 text-[11px]"
+        disabled={!selectedJobId || running}
+        onClick={() => void handleRun()}
+      >
+        {running ? (
+          <>
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            Running…
+          </>
+        ) : (
+          <>
+            <Repeat className="w-3 h-3 mr-1" />
+            Run across pages
+          </>
+        )}
+      </Button>
+
+      {error && (
+        <p className="text-[10px] text-destructive leading-snug">{error}</p>
+      )}
+      <p className="text-[10px] text-muted-foreground/70 leading-snug">
+        Results land in the <span className="font-medium">Extractions</span>{" "}
+        pane (toggle it on from the toolbar).
+      </p>
     </div>
   );
 }

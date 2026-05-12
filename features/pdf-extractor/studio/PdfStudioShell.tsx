@@ -65,7 +65,7 @@ interface PdfStudioShellProps {
   initialDocumentId?: string;
 }
 
-const PANE_ORDER: PaneKey[] = ["pdf", "raw", "clean"];
+const PANE_ORDER: PaneKey[] = ["pdf", "raw", "clean", "extractions"];
 
 /**
  * Convert a metadata-only sidebar summary into a provisional PdfDocument so
@@ -575,6 +575,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             cropPagesInput={cropPagesInput}
             onEditModeCancel={handleEditModeCancel}
             onRefreshPages={refreshPages}
+            onJumpToPage={jumpToPage}
           />
         ) : docLoading ? (
           <DocLoadingSkeleton />
@@ -720,6 +721,7 @@ function PaneVisibilityStrip({
     pdf: "Source PDF",
     raw: "Raw text",
     clean: "AI-cleaned",
+    extractions: "Extractions",
   };
   return (
     <div className="shrink-0 px-4 py-1 border-b border-border bg-amber-500/5 flex items-center gap-2 text-[10px]">

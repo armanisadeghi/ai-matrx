@@ -262,6 +262,22 @@ export const ENDPOINTS = {
       "/utilities/pdf/flatten-annotations" as const,
   },
 
+  /**
+   * Per-page AI extraction — fan out an agent across pages of a document and
+   * persist structured results anchored to source page numbers. See
+   * `features/page-extraction/FEATURE.md` for the data model.
+   */
+  pageExtraction: {
+    /** POST — Run extraction across pages (NDJSON streaming, per-page events). */
+    runStream: "/page-extraction/runs/stream" as const,
+    /** POST — Retry one failed page-run (replaces its results). */
+    retryPageRun: (pageRunId: string) =>
+      `/page-extraction/page-runs/${pageRunId}/retry` as const,
+    /** POST — Cancel an in-flight run. */
+    cancelRun: (runId: string) =>
+      `/page-extraction/runs/${runId}/cancel` as const,
+  },
+
   /** Test/admin endpoints — Admin only */
   tests: {
     /** GET/POST — Example endpoints */

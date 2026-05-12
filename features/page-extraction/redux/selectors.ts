@@ -1,0 +1,88 @@
+/**
+ * features/page-extraction/redux/selectors.ts
+ *
+ * Memoized selectors over the pageExtraction slice.
+ */
+
+import { createSelector } from "@reduxjs/toolkit";
+import type { RootState } from "@/lib/redux/rootReducer";
+import type {
+  ActiveJobRun,
+  ActivePageRun,
+} from "@/features/page-extraction/redux/pageExtractionSlice";
+
+// Slice key is hardcoded to match the rootReducer mount point.
+const root = (s: RootState) =>
+  (s as RootState & { pageExtraction?: import("./pageExtractionSlice").PageExtractionState })
+    .pageExtraction;
+
+export const selectActiveRunByJob = (
+  state: RootState,
+  jobId: string | null | undefined,
+): ActiveJobRun | null => {
+  if (!jobId) return null;
+  return root(state)?.activeRuns[jobId] ?? null;
+};
+
+export const selectSelectedJobForFile = (
+  state: RootState,
+  fileId: string | null | undefined,
+): string | null => {
+  if (!fileId) return null;
+  return root(state)?.selectedJobByFile[fileId] ?? null;
+};
+
+const selectPageRunsRecord = (
+  state: RootState,
+  jobId: string | null | undefined,
+): Record<string, ActivePageRun> | null => {
+  const run = selectActiveRunByJob(state, jobId);
+  return run?.pageRuns ?? null;
+};
+
+export const makeSelectOrderedPageRuns = () =>
+  createSelector(
+    [selectPageRunsRecord],
+    (recordOrNull) => {
+      if (!recordOrNull) return [] as ActivePageRun[];
+      return Object.values(recordOrNull).sort(
+        (a, b) => a.chunkIndex - b.chunkIndex,
+      );
+    },
+  );
+
+export interface RunProgressView {
+  status: ActiveJobRun["status"] | "idle";
+  chunkCount: number;
+  completedChunks: number;
+  failedChunks: number;
+  resultCount: number;
+  totalCost: number;
+  totalTokens: number;
+}
+
+const IDLE_PROGRESS: RunProgressView = {
+  status: "idle",
+  chunkCount: 0,
+  completedChunks: 0,
+  failedChunks: 0,
+  resultCount: 0,
+  totalCost: 0,
+  totalTokens: 0,
+};
+
+export const selectRunProgress = createSelector(
+  [selectActiveRunByJob],
+  (run): RunProgressView => {
+    if (!run) return IDLE_PROGRESS;
+    return {
+      status: run.status,
+      chunkCount: run.chunkCount,
+      completedChunks: run.completedChunks,
+      failedChunks: run.failedChunks,
+      resultCount: run.resultCount,
+      totalCost: run.totalCost,
+      totalTokens: run.totalTokens,
+    };
+  },
+);
