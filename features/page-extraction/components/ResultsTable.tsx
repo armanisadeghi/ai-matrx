@@ -4,13 +4,16 @@
  * Dynamic table for extraction results. Columns are derived from the
  * Job's `output_schema`. Rows are `page_extraction_results.payload`.
  *
- * Clicking a row jumps the parent surface to the result's canonical_page
- * (the PDF Extractor wires this to `setActivePage`).
+ * Header bar carries a "Clear data" affordance that wipes the template's
+ * results without touching the template itself. Clicking a result row
+ * jumps the parent surface to the result's canonical_page.
  */
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
+import { Loader2, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -19,7 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getJob } from "@/features/page-extraction/api/jobs";
+import { useToastManager } from "@/hooks/useToastManager";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { clearJobResults, getJob } from "@/features/page-extraction/api/jobs";
 import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
 import {
   columnLabel,
@@ -31,13 +36,10 @@ import type {
   FlatObjectSchema,
   PageExtractionJob,
 } from "@/features/page-extraction/types";
-import { useEffect, useState } from "react";
 
 export interface ResultsTableProps {
   jobId: string | null;
-  /** Optional page filter — when set, shows only results referencing this page. */
   pageNumber?: number | null;
-  /** Click a row → jump to the canonical_page. */
   onJumpToPage?: (page: number) => void;
 }
 
@@ -47,9 +49,41 @@ export function ResultsTable({
   onJumpToPage,
 }: ResultsTableProps) {
   const [job, setJob] = useState<PageExtractionJob | null>(null);
-  const { results, loading, error } = useExtractionResults(jobId, {
+  const [clearing, setClearing] = useState(false);
+  const toast = useToastManager("page-extraction");
+  const { results, loading, error, refetch } = useExtractionResults(jobId, {
     pageNumber,
   });
+
+  const handleClearData = async () => {
+    if (!jobId) return;
+    const rowWord = results.length === 1 ? "row" : "rows";
+    const templateName = job?.name ?? "this template";
+    const ok = await confirm({
+      title: "Clear extraction data",
+      description:
+        "Delete " +
+        results.length +
+        " result " +
+        rowWord +
+        " for \"" +
+        templateName +
+        "\"? The template itself stays - only the extracted data is removed.",
+      confirmLabel: "Clear data",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setClearing(true);
+    try {
+      await clearJobResults(jobId);
+      refetch();
+      toast.success("Cleared extraction data");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Clear failed");
+    } finally {
+      setClearing(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -81,9 +115,7 @@ export function ResultsTable({
 
   if (loading && results.length === 0) {
     return (
-      <div className="p-4 text-sm text-muted-foreground">
-        Loading results…
-      </div>
+      <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
     );
   }
 
@@ -103,49 +135,74 @@ export function ResultsTable({
     );
   }
 
+  const rowCountLabel = results.length + " row" + (results.length === 1 ? "" : "s");
+
   return (
-    <div className="overflow-auto h-full">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-16 text-xs">Page</TableHead>
-            {cols.map((key) => (
-              <TableHead key={key} className="text-xs">
-                {columnLabel(key, schema)}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {results.map((r) => {
-            const payload = (r.payload ?? {}) as Record<string, unknown>;
-            const canJump =
-              typeof r.canonical_page === "number" && r.canonical_page > 0;
-            return (
-              <TableRow
-                key={r.id}
-                className={canJump ? "cursor-pointer hover:bg-muted/50" : ""}
-                onClick={() => {
-                  if (canJump && onJumpToPage)
-                    onJumpToPage(r.canonical_page as number);
-                }}
-              >
-                <TableCell className="text-xs tabular-nums">
-                  {r.canonical_page ??
-                    formatPageRange(
-                      Array.isArray(r.source_pages) ? r.source_pages : [],
-                    )}
-                </TableCell>
-                {cols.map((key) => (
-                  <TableCell key={key} className="text-xs align-top">
-                    {renderCell(payload[key])}
+    <div className="flex flex-col h-full">
+      <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/40">
+        <span className="text-[10px] text-muted-foreground">
+          {rowCountLabel}
+          {pageNumber != null ? " (filtered to page " + pageNumber + ")" : ""}
+        </span>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+          disabled={clearing}
+          onClick={() => void handleClearData()}
+          title="Delete every result row for this template (template stays)"
+        >
+          {clearing ? (
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+          ) : (
+            <Trash2 className="w-3 h-3 mr-1" />
+          )}
+          Clear data
+        </Button>
+      </div>
+      <div className="flex-1 min-h-0 overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16 text-xs">Page</TableHead>
+              {cols.map((key) => (
+                <TableHead key={key} className="text-xs">
+                  {columnLabel(key, schema)}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {results.map((r) => {
+              const payload = (r.payload ?? {}) as Record<string, unknown>;
+              const canJump =
+                typeof r.canonical_page === "number" && r.canonical_page > 0;
+              return (
+                <TableRow
+                  key={r.id}
+                  className={canJump ? "cursor-pointer hover:bg-muted/50" : ""}
+                  onClick={() => {
+                    if (canJump && onJumpToPage)
+                      onJumpToPage(r.canonical_page as number);
+                  }}
+                >
+                  <TableCell className="text-xs tabular-nums">
+                    {r.canonical_page ??
+                      formatPageRange(
+                        Array.isArray(r.source_pages) ? r.source_pages : [],
+                      )}
                   </TableCell>
-                ))}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  {cols.map((key) => (
+                    <TableCell key={key} className="text-xs align-top">
+                      {renderCell(payload[key])}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

@@ -34,14 +34,20 @@ import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 
-type SectionKey = "ai" | "stores" | "manipulate" | "lineage";
+type SectionKey =
+  | "widgets"
+  | "chunked"
+  | "stores"
+  | "manipulate"
+  | "lineage";
 
 const SECTIONS: {
   key: SectionKey;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { key: "ai", label: "AI Actions", icon: Wand2 },
+  { key: "widgets", label: "Widgets", icon: Wand2 },
+  { key: "chunked", label: "Chunked Runs", icon: Repeat },
   { key: "stores", label: "Data Stores", icon: Database },
   { key: "manipulate", label: "Manipulate", icon: Wrench },
   { key: "lineage", label: "Lineage", icon: GitBranch },
@@ -72,7 +78,12 @@ export function PdfStudioInspector({
   onStartReorder,
   onEditModeCancel,
 }: PdfStudioInspectorProps) {
-  const [section, setSection] = useState<SectionKey>("ai");
+  const [section, setSection] = useState<SectionKey>("widgets");
+
+  // Chunked Runs needs a cld_file source. If the doc doesn't have one,
+  // the section is still mounted but renders a guidance message.
+  const chunkedFileId =
+    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
 
   return (
     <aside className="flex flex-col h-full min-h-0 border-l border-border bg-card/30">
@@ -105,13 +116,29 @@ export function PdfStudioInspector({
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {section === "ai" && (
+        {section === "widgets" && (
           <AiActionsPanel
             doc={doc}
             pages={pages}
             activePage={activePage}
             onRunShortcut={onRunShortcut}
           />
+        )}
+        {section === "chunked" && (
+          <div className="p-3">
+            {chunkedFileId ? (
+              <ChunkingConfigForm
+                fileId={chunkedFileId}
+                processedDocumentId={doc.id}
+                documentName={doc.name}
+              />
+            ) : (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-snug">
+                Chunked extractions need a <code>cld_file</code> source.
+                This document doesn&apos;t have one linked.
+              </p>
+            )}
+          </div>
         )}
         {section === "stores" && (
           <DataStoreBindPanel
@@ -143,7 +170,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type AgentScope = "full" | "current" | "range" | "selection" | "chunked";
+type AgentScope = "full" | "current" | "range" | "selection";
 
 interface PdfShortcutEntry {
   id: string;
@@ -189,12 +216,6 @@ const SCOPE_OPTIONS: {
     label: "Selected text",
     icon: MousePointerClick,
     hint: "Browser text selection",
-  },
-  {
-    key: "chunked",
-    label: "Chunked run",
-    icon: Repeat,
-    hint: "Fan out across pages, persist per-page results",
   },
 ];
 
@@ -364,7 +385,7 @@ function AiActionsPanel({
           </p>
         )}
 
-        {scope !== "full" && scope !== "chunked" && (
+        {scope !== "full" && (
           <p className="text-[10px] text-muted-foreground/70 leading-snug">
             Scoped text → <code>selection</code>. Full doc stays in{" "}
             <code>content</code>.
@@ -378,8 +399,9 @@ function AiActionsPanel({
         </p>
       )}
 
-      {/* Agent list — single-shot scopes use the shortcut registry */}
-      {hasContent && scope !== "chunked" && (
+      {/* Widget list — single-shot scopes use the shortcut registry.
+          Chunked runs now live in their own inspector tab. */}
+      {hasContent && (
         <div className="space-y-1.5">
           {PDF_SHORTCUTS.map((s) => (
             <div
@@ -407,30 +429,10 @@ function AiActionsPanel({
         </div>
       )}
 
-      {/* Chunked-run launcher — user-driven config, no silent defaults. */}
-      {scope === "chunked" && (() => {
-        const fileId =
-          doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
-        if (!fileId) {
-          return (
-            <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug">
-              Chunked extractions require a `cld_file` source. This document
-              doesn't have one linked.
-            </p>
-          );
-        }
-        return (
-          <ChunkingConfigForm
-            fileId={fileId}
-            processedDocumentId={doc.id}
-            documentName={doc.name}
-          />
-        );
-      })()}
     </div>
   );
 }
 
 // Chunked-mode UI now lives in
 // features/page-extraction/components/ChunkingConfigForm.tsx —
-// the inspector embeds it directly when scope === "chunked".
+// mounted by the inspector under the dedicated "Chunked Runs" tab.

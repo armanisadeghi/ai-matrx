@@ -26,7 +26,7 @@ const TABLE = "page_extraction_jobs";
 
 export async function listJobsForFile(
   fileId: string,
-  opts: { savedOnly?: boolean } = {},
+  opts: { savedOnly?: boolean; includeArchived?: boolean } = {},
 ): Promise<PageExtractionJob[]> {
   let query = db
     .from(TABLE)
@@ -37,6 +37,11 @@ export async function listJobsForFile(
     // cluttering the picker. Callers that need everything pass
     // { savedOnly: false }.
     query = query.eq("is_saved", true);
+  }
+  if (!opts.includeArchived) {
+    // Archived (soft-deleted) templates are hidden from the picker but
+    // the results they produced remain queryable via job_id.
+    query = query.is("archived_at", null);
   }
   query = query.order("created_at", { ascending: false });
   const { data, error } = await query;
@@ -80,7 +85,52 @@ export async function updateJob(
   return data as PageExtractionJob;
 }
 
+/**
+ * Soft-delete (archive) a template. Sets `archived_at` so the row is
+ * hidden from listings but the results it produced stay queryable.
+ *
+ * Use `hardDeleteJob` for a permanent purge (cascades to runs + results
+ * via the FK chain).
+ */
 export async function deleteJob(jobId: string): Promise<void> {
+  const { error } = await db
+    .from(TABLE)
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", jobId);
+  if (error) throw error;
+}
+
+export async function hardDeleteJob(jobId: string): Promise<void> {
   const { error } = await db.from(TABLE).delete().eq("id", jobId);
   if (error) throw error;
+}
+
+/**
+ * Delete all extraction results for a template without touching the
+ * template itself. Used by the "Clear data" affordance on the Results tab.
+ */
+export async function clearJobResults(jobId: string): Promise<void> {
+  const { error: resultsErr } = await db
+    .from("page_extraction_results")
+    .delete()
+    .eq("job_id", jobId);
+  if (resultsErr) throw resultsErr;
+  // Page-runs + runs are deletable too — they only carry execution
+  // metadata + parsed_payload. Without them, the chunks tab shows the
+  // user's draft fresh again.
+  const { error: pageRunsErr } = await db
+    .from("page_extraction_page_runs")
+    .delete()
+    .eq("job_id", jobId);
+  if (pageRunsErr) throw pageRunsErr;
+  const { error: runsErr } = await db
+    .from("page_extraction_runs")
+    .delete()
+    .eq("job_id", jobId);
+  if (runsErr) throw runsErr;
+  // Clear latest_run_id since the run it pointed at no longer exists.
+  await db
+    .from(TABLE)
+    .update({ latest_run_id: null })
+    .eq("id", jobId);
 }
