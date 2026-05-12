@@ -145,6 +145,14 @@ function parseLine(line: string): ExtractionStreamEvent | null {
             : [],
         },
       };
+    case "page_extraction.page_run_delta":
+      return {
+        event: "page_run.delta",
+        data: {
+          page_run_id: String(data.page_run_id ?? ""),
+          text: String(data.text ?? ""),
+        },
+      };
     case "page_extraction.page_run_completed":
       return {
         event: "page_run.completed",
@@ -158,6 +166,10 @@ function parseLine(line: string): ExtractionStreamEvent | null {
           cost: Number(data.cost ?? 0),
           tokens: Number(data.tokens ?? 0),
           duration_ms: Number(data.duration_ms ?? 0),
+          raw_response: typeof data.raw_response === "string" ? data.raw_response : "",
+          parsed_payload: Array.isArray(data.parsed_payload)
+            ? (data.parsed_payload as Record<string, unknown>[] as never)
+            : null,
         },
       };
     case "page_extraction.page_run_failed":
@@ -170,6 +182,9 @@ function parseLine(line: string): ExtractionStreamEvent | null {
             ? (data.page_numbers as number[])
             : [],
           error: String(data.error ?? "Unknown error"),
+          ...(typeof data.raw_response === "string"
+            ? { raw_response: data.raw_response }
+            : {}),
         },
       };
     case "page_extraction.run_completed":

@@ -35,7 +35,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { selectAgentById } from "@/lib/redux/slices/agentCacheSlice";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import {
   SOURCE_VARIATIONS,
 } from "@/features/page-extraction/constants";
@@ -48,6 +48,7 @@ import { selectDraftForFile } from "@/features/page-extraction/redux/selectors";
 import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
 import { parsePageRangeInput } from "@/features/page-extraction/utils/chunk-preview";
+import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
 import {
   createJobFromDraft,
   DraftValidationError,
@@ -83,6 +84,24 @@ export function ChunkingConfigForm({
   useEffect(() => {
     dispatch(ensureDraft({ fileId }));
   }, [dispatch, fileId]);
+
+  // Auto-derive variable_mapping when the agent or selected variations
+  // change. We DON'T overwrite a mapping the user has explicitly edited
+  // (tracked via `_mappingUserEdited` on the draft, set when they manually
+  // patch the mapping). The agent record's `variableDefinitions` drives
+  // the heuristic — see derive-variable-mapping.ts.
+  useEffect(() => {
+    if (!agent) return;
+    const derived = deriveVariableMapping(
+      agent.variableDefinitions,
+      draft.sourceVariations,
+    );
+    // Always recompute when the agent/variations change. If the user wants
+    // to lock in a custom mapping, save the Job and re-use it (saved Jobs
+    // keep their mapping verbatim on the server).
+    dispatch(patchDraft({ fileId, patch: { variableMapping: derived } }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent?.id, draft.sourceVariations.join("|"), fileId]);
 
   // Local error for the page-range input only.
   const [rangeError, setRangeError] = useState<string | null>(null);
@@ -159,6 +178,13 @@ export function ChunkingConfigForm({
           label={agent?.name ?? "Pick agent…"}
           noBorder={false}
         />
+        {agent && (
+          <VariableMappingPreview
+            agentName={agent.name}
+            agentVariables={agent.variableDefinitions}
+            mapping={draft.variableMapping}
+          />
+        )}
       </Field>
 
       {/* Page range — REQUIRED, no default */}
@@ -352,6 +378,75 @@ export function ChunkingConfigForm({
         pane (Chunks tab). Results appear there as soon as each chunk
         completes.
       </p>
+    </div>
+  );
+}
+
+// ─── Internal: variable-mapping preview ───────────────────────────────────
+
+function VariableMappingPreview({
+  agentName,
+  agentVariables,
+  mapping,
+}: {
+  agentName: string;
+  agentVariables: { name: string; helpText?: string | null }[] | null | undefined;
+  mapping: Record<string, string>;
+}) {
+  if (!agentVariables || agentVariables.length === 0) {
+    return (
+      <p className="mt-1 text-[10px] text-muted-foreground/70 leading-snug">
+        {agentName} declares no variables — the agent's prompt runs as-is.
+      </p>
+    );
+  }
+  // Build the inverse view: each agent var → which surface key fills it.
+  const inverse = new Map<string, string>();
+  for (const [surfaceKey, agentVar] of Object.entries(mapping)) {
+    // Multiple surface keys can map to the same agent var (selection +
+    // content + clean_text all route to page_content). Show the most
+    // informative one — prefer the named source variation over the
+    // back-compat aliases.
+    const isAlias = surfaceKey === "selection" || surfaceKey === "content";
+    if (!inverse.has(agentVar) || !isAlias) {
+      inverse.set(agentVar, surfaceKey);
+    }
+  }
+
+  const allMapped = agentVariables.every((v) => inverse.has(v.name));
+
+  return (
+    <div className="mt-1 space-y-0.5">
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        Variable wiring
+      </p>
+      <ul className="space-y-0.5 text-[10px]">
+        {agentVariables.map((v) => {
+          const sourceKey = inverse.get(v.name);
+          return (
+            <li
+              key={v.name}
+              className="flex items-baseline gap-1.5 leading-snug"
+            >
+              <code className="font-mono text-foreground/80">{v.name}</code>
+              <span className="text-muted-foreground">←</span>
+              {sourceKey ? (
+                <code className="font-mono text-primary">{sourceKey}</code>
+              ) : (
+                <span className="text-amber-700 dark:text-amber-400 italic">
+                  unmapped
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {!allMapped && (
+        <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-snug">
+          Some agent variables aren't wired up. The run may still work if
+          the agent treats them as optional.
+        </p>
+      )}
     </div>
   );
 }

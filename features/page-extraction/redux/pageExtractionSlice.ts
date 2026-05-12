@@ -31,6 +31,15 @@ export interface ActivePageRun {
   tokens?: number;
   durationMs?: number;
   error?: string;
+  /** Live token buffer accumulated from `page_run.delta` events while the
+   *  chunk is running. Replaced with `rawResponse` once the completed
+   *  event arrives. Empty string by default. */
+  streamingText: string;
+  /** Final raw text the agent emitted, set on `page_run.completed`. */
+  rawResponse?: string;
+  /** Successfully-parsed JSON rows, set on `page_run.completed`. Null if
+   *  parsing failed. */
+  parsedPayload?: Record<string, unknown>[] | null;
 }
 
 export interface ActiveJobRun {
@@ -177,7 +186,24 @@ const slice = createSlice({
         chunkIndex,
         pageNumbers,
         status: "running",
+        streamingText: "",
       };
+    },
+
+    pageRunDelta(
+      state,
+      action: PayloadAction<{
+        jobId: string;
+        pageRunId: string;
+        text: string;
+      }>,
+    ) {
+      const { jobId, pageRunId, text } = action.payload;
+      const run = state.activeRuns[jobId];
+      if (!run) return;
+      const pr = run.pageRuns[pageRunId];
+      if (!pr) return;
+      pr.streamingText = (pr.streamingText ?? "") + text;
     },
 
     pageRunCompleted(
@@ -191,6 +217,8 @@ const slice = createSlice({
         cost: number;
         tokens: number;
         durationMs: number;
+        rawResponse: string;
+        parsedPayload: Record<string, unknown>[] | null;
       }>,
     ) {
       const {
@@ -202,9 +230,12 @@ const slice = createSlice({
         cost,
         tokens,
         durationMs,
+        rawResponse,
+        parsedPayload,
       } = action.payload;
       const run = state.activeRuns[jobId];
       if (!run) return;
+      const prior = run.pageRuns[pageRunId];
       run.pageRuns[pageRunId] = {
         pageRunId,
         chunkIndex,
@@ -214,6 +245,11 @@ const slice = createSlice({
         cost,
         tokens,
         durationMs,
+        rawResponse,
+        parsedPayload,
+        // Preserve the streaming buffer so the UI can still see deltas in
+        // the visible log; final state is signaled by status === "completed".
+        streamingText: prior?.streamingText ?? rawResponse,
       };
       run.completedChunks += 1;
       run.resultCount += resultCount;
@@ -229,18 +265,22 @@ const slice = createSlice({
         chunkIndex: number;
         pageNumbers: number[];
         error: string;
+        rawResponse?: string;
       }>,
     ) {
-      const { jobId, pageRunId, chunkIndex, pageNumbers, error } =
+      const { jobId, pageRunId, chunkIndex, pageNumbers, error, rawResponse } =
         action.payload;
       const run = state.activeRuns[jobId];
       if (!run) return;
+      const prior = run.pageRuns[pageRunId];
       run.pageRuns[pageRunId] = {
         pageRunId,
         chunkIndex,
         pageNumbers,
         status: "failed",
         error,
+        rawResponse,
+        streamingText: prior?.streamingText ?? rawResponse ?? "",
       };
       run.failedChunks += 1;
     },
@@ -342,6 +382,7 @@ export const {
   selectJobForFile,
   runStarted,
   pageRunStarted,
+  pageRunDelta,
   pageRunCompleted,
   pageRunFailed,
   runCompleted,

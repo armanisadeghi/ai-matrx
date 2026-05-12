@@ -18,6 +18,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { runExtractionStream } from "@/features/page-extraction/api/stream";
 import {
   pageRunCompleted,
+  pageRunDelta,
   pageRunFailed,
   pageRunStarted,
   runCompleted,
@@ -81,6 +82,15 @@ export function useExtractionStream(): UseExtractionStreamResult {
                 }),
               );
               break;
+            case "page_run.delta":
+              dispatch(
+                pageRunDelta({
+                  jobId: body.job_id,
+                  pageRunId: evt.data.page_run_id,
+                  text: evt.data.text,
+                }),
+              );
+              break;
             case "page_run.completed":
               dispatch(
                 pageRunCompleted({
@@ -92,6 +102,10 @@ export function useExtractionStream(): UseExtractionStreamResult {
                   cost: evt.data.cost,
                   tokens: evt.data.tokens,
                   durationMs: evt.data.duration_ms,
+                  rawResponse: evt.data.raw_response,
+                  parsedPayload: evt.data.parsed_payload as
+                    | Record<string, unknown>[]
+                    | null,
                 }),
               );
               break;
@@ -103,6 +117,7 @@ export function useExtractionStream(): UseExtractionStreamResult {
                   chunkIndex: evt.data.chunk_index,
                   pageNumbers: evt.data.page_numbers,
                   error: evt.data.error,
+                  rawResponse: evt.data.raw_response,
                 }),
               );
               break;

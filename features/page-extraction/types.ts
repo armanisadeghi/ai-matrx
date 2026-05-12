@@ -214,6 +214,16 @@ export type ExtractionStreamEvent =
       };
     }
   | {
+      event: "page_run.delta";
+      data: {
+        page_run_id: string;
+        /** Token fragment from the agent's streaming output. The frontend
+         *  appends to a per-page-run buffer; the buffer renders live in
+         *  the ChunkCard's expanded pane. */
+        text: string;
+      };
+    }
+  | {
       event: "page_run.completed";
       data: {
         page_run_id: string;
@@ -223,6 +233,11 @@ export type ExtractionStreamEvent =
         cost: number;
         tokens: number;
         duration_ms: number;
+        /** Full text the agent emitted (post-stream). Embedded so the UI
+         *  has it immediately without a separate Realtime hop. */
+        raw_response: string;
+        /** Parsed JSON array (or null on parse failure). */
+        parsed_payload: Record<string, Json>[] | null;
       };
     }
   | {
@@ -232,6 +247,9 @@ export type ExtractionStreamEvent =
         chunk_index: number;
         page_numbers: number[];
         error: string;
+        /** Raw text the agent emitted. Helps the user diagnose parse
+         *  failures (the agent often wrote commentary instead of JSON). */
+        raw_response?: string;
       };
     }
   | {
