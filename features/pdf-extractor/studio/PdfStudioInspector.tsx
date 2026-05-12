@@ -10,7 +10,7 @@
  * a doc", inspector handles "do something with a doc".
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Rocket,
   GitBranch,
@@ -23,20 +23,8 @@ import {
   Layers,
   MousePointerClick,
   Repeat,
-  Loader2,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
-import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
-import { selectJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
-import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
 import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
@@ -376,15 +364,6 @@ function AiActionsPanel({
           </p>
         )}
 
-        {scope === "chunked" && (
-          <ChunkedScopeControls
-            doc={doc}
-            pages={pages}
-            rangeInput={rangeInput}
-            setRangeInput={setRangeInput}
-          />
-        )}
-
         {scope !== "full" && scope !== "chunked" && (
           <p className="text-[10px] text-muted-foreground/70 leading-snug">
             Scoped text → <code>selection</code>. Full doc stays in{" "}
@@ -428,177 +407,30 @@ function AiActionsPanel({
         </div>
       )}
 
-      {/* Chunked-run launcher — fans out across pages, persists per-page results */}
-      {hasContent && scope === "chunked" && (
-        <ChunkedRunLauncher doc={doc} pages={pages} rangeInput={rangeInput} />
-      )}
+      {/* Chunked-run launcher — user-driven config, no silent defaults. */}
+      {scope === "chunked" && (() => {
+        const fileId =
+          doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
+        if (!fileId) {
+          return (
+            <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug">
+              Chunked extractions require a `cld_file` source. This document
+              doesn't have one linked.
+            </p>
+          );
+        }
+        return (
+          <ChunkingConfigForm
+            fileId={fileId}
+            processedDocumentId={doc.id}
+            documentName={doc.name}
+          />
+        );
+      })()}
     </div>
   );
 }
 
-// ── Chunked-mode helpers ──────────────────────────────────────────────────
-
-function resolveScopePages(
-  pages: PdfPageRow[],
-  rangeInput: string,
-): number[] {
-  const all = pages.map((p) => p.pageNumber).sort((a, b) => a - b);
-  if (!rangeInput.trim()) return all;
-  try {
-    const parsed = parsePagesInput(rangeInput);
-    const valid = new Set(all);
-    return parsed.filter((n) => valid.has(n));
-  } catch {
-    return all;
-  }
-}
-
-function ChunkedScopeControls({
-  doc,
-  pages,
-  rangeInput,
-  setRangeInput,
-}: {
-  doc: PdfDocument;
-  pages: PdfPageRow[];
-  rangeInput: string;
-  setRangeInput: (v: string) => void;
-}) {
-  const scopePages = resolveScopePages(pages, rangeInput);
-  const fileId =
-    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
-  return (
-    <div className="space-y-1.5">
-      <Input
-        value={rangeInput}
-        onChange={(e) => setRangeInput(e.target.value)}
-        placeholder="Pages (e.g. 1-50). Empty = all."
-        className="h-7 text-[11px]"
-      />
-      <p className="text-[10px] text-muted-foreground leading-snug">
-        Will process <span className="font-mono">{scopePages.length}</span> page
-        {scopePages.length === 1 ? "" : "s"} in chunks defined by the selected
-        Job. Pick a Job below to start.
-      </p>
-      {!fileId && (
-        <p className="text-[10px] text-amber-600 dark:text-amber-400">
-          Chunked extractions require a `cld_file` source. This document
-          doesn't have one linked.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ChunkedRunLauncher({
-  doc,
-  pages,
-  rangeInput,
-}: {
-  doc: PdfDocument;
-  pages: PdfPageRow[];
-  rangeInput: string;
-}) {
-  const fileId =
-    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
-  const dispatch = useAppDispatch();
-  const { jobs, loading } = useExtractionJobs(fileId);
-  const selectedJobId = useAppSelector((s) =>
-    selectSelectedJobForFile(s, fileId),
-  );
-  const { running, error, start } = useExtractionStream();
-  const toast = useToastManager("pdf-extractor");
-
-  // Auto-pick first job once jobs land.
-  useEffect(() => {
-    if (!fileId || selectedJobId || jobs.length === 0) return;
-    dispatch(selectJobForFile({ fileId, jobId: jobs[0].id }));
-  }, [fileId, selectedJobId, jobs, dispatch]);
-
-  const handleRun = async () => {
-    if (!fileId) {
-      toast.error("This doc has no cld_file source.");
-      return;
-    }
-    if (!selectedJobId) {
-      toast.error("Pick a Job first.");
-      return;
-    }
-    const scopePages = resolveScopePages(pages, rangeInput);
-    if (scopePages.length === 0) {
-      toast.error("No pages in scope.");
-      return;
-    }
-    try {
-      await start(fileId, {
-        job_id: selectedJobId,
-        scope_pages: scopePages,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Run failed");
-    }
-  };
-
-  if (!fileId) return null;
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-muted-foreground shrink-0">Job</span>
-        <Select
-          value={selectedJobId ?? undefined}
-          onValueChange={(jobId) =>
-            dispatch(selectJobForFile({ fileId, jobId }))
-          }
-          disabled={loading || jobs.length === 0}
-        >
-          <SelectTrigger className="h-7 text-[11px]">
-            <SelectValue
-              placeholder={
-                loading
-                  ? "Loading jobs…"
-                  : jobs.length === 0
-                    ? "No jobs yet"
-                    : "Pick a job…"
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {jobs.map((j) => (
-              <SelectItem key={j.id} value={j.id}>
-                {j.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button
-        size="sm"
-        className="w-full h-8 text-[11px]"
-        disabled={!selectedJobId || running}
-        onClick={() => void handleRun()}
-      >
-        {running ? (
-          <>
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-            Running…
-          </>
-        ) : (
-          <>
-            <Repeat className="w-3 h-3 mr-1" />
-            Run across pages
-          </>
-        )}
-      </Button>
-
-      {error && (
-        <p className="text-[10px] text-destructive leading-snug">{error}</p>
-      )}
-      <p className="text-[10px] text-muted-foreground/70 leading-snug">
-        Results land in the <span className="font-medium">Extractions</span>{" "}
-        pane (toggle it on from the toolbar).
-      </p>
-    </div>
-  );
-}
+// Chunked-mode UI now lives in
+// features/page-extraction/components/ChunkingConfigForm.tsx —
+// the inspector embeds it directly when scope === "chunked".

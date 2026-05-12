@@ -32,6 +32,9 @@ export interface PageExtractionJob {
   chunk_size: number;
   chunk_overlap: number;
   scope_pages: number[] | null;
+  source_variations: SourceVariationKind[];
+  chunking_strategy: ChunkingStrategy;
+  is_saved: boolean;
   model_overrides: Record<string, Json> | null;
   max_concurrent: number;
   owner_id: string;
@@ -41,6 +44,27 @@ export interface PageExtractionJob {
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * What we send to the agent for each chunk. A Job can request multiple
+ * variations simultaneously — e.g. `clean_text` + `pdf_page` to give the
+ * agent both a textual summary and the actual page as an attachment.
+ *
+ * The Job's `variable_mapping` controls how each variation key is routed
+ * to a specific agent variable. A `clean_text` variation might map to
+ * `page_content`, while `raw_text` could map to `raw_page_content`.
+ */
+export type SourceVariationKind =
+  | "clean_text" // per-page AI-cleaned text
+  | "raw_text" // per-page raw OCR text
+  | "pdf_page"; // each page rendered as a PDF attachment (Phase 2)
+
+/**
+ * Extension point for future chunking algorithms. Only `pages` is supported
+ * today (size-based by page count). The placeholders are reserved so the
+ * UI / Job form can grow without another migration.
+ */
+export type ChunkingStrategy = "pages" | "keyword" | "manual" | "section";
 
 export interface PageExtractionRun {
   id: string;
@@ -132,6 +156,10 @@ export type TriggerSource = "manual_ui" | "scheduled" | "api" | "tool_call";
  * expects (e.g. `{ selection: "page_content", filename: "document_name" }`).
  *
  * Surfaces declare the contract; jobs do the mapping.
+ *
+ * The map is open: every entry in `source_variations` adds its own key too
+ * (e.g. `clean_text`, `raw_text`), so a Job that wants multiple variations
+ * can route each one to its own agent variable.
  */
 export interface SurfaceChunkVariables {
   selection: string;
@@ -140,6 +168,37 @@ export interface SurfaceChunkVariables {
   page_numbers: string;
   text_before?: string;
   text_after?: string;
+  /** Per-variation keys (e.g. clean_text, raw_text). Populated by the surface
+   *  based on the Job's `source_variations`. */
+  [variationKey: string]: string | undefined;
+}
+
+// ─── Chunk preview (in-memory, computed before run) ──────────────────────
+
+/**
+ * What the chunk preview renders for each chunk. Lives entirely in the
+ * client until the user clicks Run — at which point the same shape is
+ * recomputed on the backend from the persisted Job + scope.
+ */
+export interface ChunkPreviewItem {
+  chunkIndex: number;
+  pageNumbers: number[];
+  /** Concatenated text of all selected source variations, with page
+   *  markers — what would be sent to the agent. */
+  preview: string;
+  /** Char counts keyed by source variation (e.g. clean_text → 4231). */
+  charsByVariation: Record<SourceVariationKind, number>;
+  /** Total char count across all variations for the chunk. */
+  totalChars: number;
+}
+
+export interface ChunkStats {
+  chunkCount: number;
+  totalChars: number;
+  avgChars: number;
+  longestChars: number;
+  shortestChars: number;
+  emptyChunks: number;
 }
 
 // ─── Stream wire format ───────────────────────────────────────────────────

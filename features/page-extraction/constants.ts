@@ -1,22 +1,21 @@
 /**
  * features/page-extraction/constants.ts
  *
- * Pure constants. No side effects, no imports beyond types.
+ * Pure constants. No side effects.
  */
 
-/** Max pages we'll send in a single agent call. Above this the LLM context
- *  budget starts to dominate cost and the quality drop documented for full-
- *  document runs sets in. Tune later if needed. */
+import type {
+  ChunkingStrategy,
+  SourceVariationKind,
+} from "@/features/page-extraction/types";
+
+/** Hard cap — above this we won't even let the user try.
+ *  Above ~50 pages per call the medical/legal use case shows quality drops
+ *  and per-page provenance starts dissolving. */
 export const MAX_CHUNK_SIZE = 50;
 
 /** Minimum non-zero chunk size. */
 export const MIN_CHUNK_SIZE = 1;
-
-/** Default chunk size if neither job nor request specifies one. */
-export const DEFAULT_CHUNK_SIZE = 1;
-
-/** Default concurrency cap. The aidream side also enforces an upper bound. */
-export const DEFAULT_MAX_CONCURRENT = 3;
 
 /** Hard upper bound on concurrency from the UI (matches DB CHECK). */
 export const MAX_CONCURRENT_CAP = 20;
@@ -28,3 +27,82 @@ export const PAGE_MARKER = (pageNumber: number) =>
 /** Realtime channel name per file. */
 export const realtimeChannelName = (fileId: string) =>
   `page-extraction:${fileId}`;
+
+// ─── Source variations (UI registry) ──────────────────────────────────────
+
+export interface SourceVariationDef {
+  kind: SourceVariationKind;
+  label: string;
+  description: string;
+  /** True if the variation requires per-page text fetched from
+   *  `processed_document_pages`. */
+  isTextual: boolean;
+  /** True when the variation isn't fully wired yet — UI shows a "preview"
+   *  affordance but disables it. */
+  comingSoon?: boolean;
+}
+
+export const SOURCE_VARIATIONS: SourceVariationDef[] = [
+  {
+    kind: "clean_text",
+    label: "Cleaned text",
+    description: "Per-page AI-cleaned text (System B output).",
+    isTextual: true,
+  },
+  {
+    kind: "raw_text",
+    label: "Raw text",
+    description: "Per-page raw OCR text (System A output).",
+    isTextual: true,
+  },
+  {
+    kind: "pdf_page",
+    label: "PDF page (attachment)",
+    description:
+      "Each page sent as an attachment so the agent can read it visually. Heavier; slower.",
+    isTextual: false,
+    comingSoon: true,
+  },
+];
+
+export const SOURCE_VARIATION_BY_KIND = new Map<
+  SourceVariationKind,
+  SourceVariationDef
+>(SOURCE_VARIATIONS.map((v) => [v.kind, v]));
+
+// ─── Chunking strategies (UI registry) ────────────────────────────────────
+
+export interface ChunkingStrategyDef {
+  kind: ChunkingStrategy;
+  label: string;
+  description: string;
+  comingSoon?: boolean;
+}
+
+export const CHUNKING_STRATEGIES: ChunkingStrategyDef[] = [
+  {
+    kind: "pages",
+    label: "By page count",
+    description: "Fixed number of pages per chunk.",
+  },
+  {
+    kind: "section",
+    label: "By section",
+    description:
+      "One chunk per detected section (uses outline). Coming after Phase A.",
+    comingSoon: true,
+  },
+  {
+    kind: "keyword",
+    label: "By keyword",
+    description:
+      "Chunk on pages matching a keyword filter. Coming after Phase A.",
+    comingSoon: true,
+  },
+  {
+    kind: "manual",
+    label: "Manual selection",
+    description: "Hand-pick which pages go in which chunk.",
+    comingSoon: true,
+  },
+];

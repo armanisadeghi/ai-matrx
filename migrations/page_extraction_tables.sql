@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS public.page_extraction_jobs (
 
   owner_id                uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   organization_id         uuid REFERENCES public.organizations(id) ON DELETE SET NULL,
-  project_id              uuid REFERENCES public.projects(id) ON DELETE SET NULL,
+  project_id              uuid REFERENCES public.ctx_projects(id) ON DELETE SET NULL,
 
   -- Pointer to the most recent successful run, for "default visible result set"
   latest_run_id           uuid,

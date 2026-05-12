@@ -1,6 +1,6 @@
 # FEATURE.md — `page-extraction`
 
-**Status:** `scaffolded`
+**Status:** `active`
 **Tier:** `1`
 **Last updated:** `2026-05-12`
 
@@ -117,6 +117,34 @@ Subsequent phases (see plan): Job editor + schema builder (Phase 2), resilience/
 
 ---
 
+## Phase 2 — user-driven chunking (this revision)
+
+Phase 1 hardcoded chunk size and assumed a Job picker. Phase 2 fixes that:
+
+- **`ChunkingConfigForm`** ([components/ChunkingConfigForm.tsx](components/ChunkingConfigForm.tsx)) lives in the PDF Extractor's inspector when scope = `chunked`. Required fields: agent, page range, chunk size, source variations. No silent defaults — the Run button is disabled until each is set explicitly.
+- **`AgentListDropdown`** (reused from `features/agents/...`) replaces the hardcoded shortcut list. The user picks from their own agents (and shared / builtin agents).
+- **`SourceVariation`** — a Job can request multiple inputs per chunk: `clean_text`, `raw_text`, `pdf_page` (Phase 3). Each variation gets its own surface-variables key so the Job's `variable_mapping` can route each to a specific agent variable.
+- **`ChunksTab`** ([components/ChunksTab.tsx](components/ChunksTab.tsx)) — Extractions pane is now tabbed (`Chunks` | `Results`). The Chunks tab visualizes every chunk as a card with page range, char count, per-variation breakdown, and expandable preview content. Aggregate stats: total chunks, total chars, avg / longest / shortest, empty count. Live, updates as the user edits.
+- **`is_saved`** column on jobs distinguishes user-named Jobs (visible in the picker) from ephemeral ones created automatically by the Run form. Ad-hoc runs default to `is_saved=false`; the user opts in to saving by ticking "Save as named Job".
+- **Per-file in-memory draft** lives in the `pageExtraction` slice under `draftsByFile[fileId]`. The inspector form and the Chunks tab both read it so they stay in sync.
+
+Schema additions in [`migrations/page_extraction_variations_and_strategy.sql`](../../migrations/page_extraction_variations_and_strategy.sql):
+- `page_extraction_jobs.source_variations jsonb` (default `["clean_text"]`)
+- `page_extraction_jobs.chunking_strategy text` (default `"pages"`, check-constrained to extension list)
+- `page_extraction_jobs.is_saved boolean` (default `true` so existing rows stay in the picker)
+
+Python side ([`aidream/api/routers/page_extraction.py`](../../../aidream/aidream/api/routers/page_extraction.py)):
+- `_load_page_text` now returns `{ page_number: { 'clean_text': '…', 'raw_text': '…' } }` so a single Job can request multiple variations without re-querying.
+- `_build_surface_vars` populates a per-variation key for each requested kind. Legacy `selection` / `content` are kept populated with the first non-empty variation so pre-Phase-2 Jobs keep working.
+
+## Roadmap (deferred from this commit)
+
+- **Document Types** — user-defined doc types with default agents and chunk configs. Auto-applies when a doc is tagged with a type.
+- **Saved chunking presets** distinct from Jobs (reusable chunking config that's agent-agnostic).
+- **PDF page attachments** — wire `pdf_page` variation through to a real message part (the extraction APIs already exist).
+- **Section / keyword / manual chunking strategies** — the `chunking_strategy` enum is in place; the strategies need implementations.
+
 ## Change Log
 
-- **2026-05-12** — Initial scaffold (Phase 1).
+- **2026-05-12** — Phase 1 scaffold (storage + minimal fan-out + first PDF Extractor wiring).
+- **2026-05-12** — Phase 2 rework: user-driven config, source variations, live chunk preview, tabbed Extractions pane, removed all hardcoded defaults. Migration `page_extraction_variations_and_strategy.sql` adds `source_variations`, `chunking_strategy`, `is_saved`.

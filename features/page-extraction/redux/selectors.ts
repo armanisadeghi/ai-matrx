@@ -9,7 +9,9 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import type {
   ActiveJobRun,
   ActivePageRun,
+  ChunkingConfigDraft,
 } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { emptyDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
 
 // Slice key is hardcoded to match the rootReducer mount point.
 const root = (s: RootState) =>
@@ -70,6 +72,21 @@ const IDLE_PROGRESS: RunProgressView = {
   totalCost: 0,
   totalTokens: 0,
 };
+
+// ─── Chunking config draft ────────────────────────────────────────────────
+
+/** Stable empty draft reference for files that haven't started a draft yet. */
+const EMPTY_DRAFT_SINGLETON = emptyDraft();
+
+export const selectDraftForFile = (
+  state: RootState,
+  fileId: string | null | undefined,
+): ChunkingConfigDraft => {
+  if (!fileId) return EMPTY_DRAFT_SINGLETON;
+  return root(state)?.draftsByFile[fileId] ?? EMPTY_DRAFT_SINGLETON;
+};
+
+// ─── Run progress ────────────────────────────────────────────────────────
 
 export const selectRunProgress = createSelector(
   [selectActiveRunByJob],

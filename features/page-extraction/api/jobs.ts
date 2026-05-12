@@ -26,12 +26,20 @@ const TABLE = "page_extraction_jobs";
 
 export async function listJobsForFile(
   fileId: string,
+  opts: { savedOnly?: boolean } = {},
 ): Promise<PageExtractionJob[]> {
-  const { data, error } = await db
+  let query = db
     .from(TABLE)
     .select("*")
-    .eq("file_id", fileId)
-    .order("created_at", { ascending: false });
+    .eq("file_id", fileId);
+  if (opts.savedOnly !== false) {
+    // Default to saved Jobs only — ephemeral/ad-hoc runs aren't worth
+    // cluttering the picker. Callers that need everything pass
+    // { savedOnly: false }.
+    query = query.eq("is_saved", true);
+  }
+  query = query.order("created_at", { ascending: false });
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as PageExtractionJob[];
 }

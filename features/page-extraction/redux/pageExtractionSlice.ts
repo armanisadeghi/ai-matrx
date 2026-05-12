@@ -16,6 +16,10 @@
 "use client";
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type {
+  ChunkingStrategy,
+  SourceVariationKind,
+} from "@/features/page-extraction/types";
 
 export interface ActivePageRun {
   pageRunId: string;
@@ -48,16 +52,73 @@ export interface ActiveJobRun {
   error?: string;
 }
 
+/**
+ * In-memory chunking configuration the user is building before clicking Run.
+ *
+ * The form lives in the inspector; the chunks visualization lives in the
+ * Extractions pane. Both read this object from Redux so they stay in sync
+ * as the user edits inputs.
+ *
+ * Nothing here is required to have a value — the run-launcher validates
+ * before dispatching. `chunkSize === null` and `scopePages === []` both
+ * mean "user hasn't filled this in yet" (NOT "default to all" — there
+ * are no silent defaults).
+ */
+export interface ChunkingConfigDraft {
+  /** User-picked agent to invoke. */
+  agentId: string | null;
+  /** Verbatim text of the page-range input (e.g. "1-50, 80-90"). */
+  scopePagesInputRaw: string;
+  /** Resolved page numbers parsed from the input. */
+  scopePages: number[];
+  /** Pages per chunk. Required before Run; null until set. */
+  chunkSize: number | null;
+  chunkOverlap: number;
+  /** Inputs to send to the agent per chunk. */
+  sourceVariations: SourceVariationKind[];
+  chunkingStrategy: ChunkingStrategy;
+  /** Optional Job name to attach (becomes a saved Job if user toggles save). */
+  jobName: string;
+  /** Whether clicking Run should persist this draft as a reusable Job. */
+  saveAsJob: boolean;
+  /** Per-surface → per-agent variable name overrides. The draft inherits
+   *  the chosen agent's defaults when set. */
+  variableMapping: Record<string, string>;
+  /** Optional output JSON schema the agent's response should conform to.
+   *  Null = inherit from agent. */
+  outputSchema: unknown | null;
+  /** Maximum concurrent chunks. */
+  maxConcurrent: number;
+}
+
+export const emptyDraft = (): ChunkingConfigDraft => ({
+  agentId: null,
+  scopePagesInputRaw: "",
+  scopePages: [],
+  chunkSize: null,
+  chunkOverlap: 0,
+  sourceVariations: ["clean_text"],
+  chunkingStrategy: "pages",
+  jobName: "",
+  saveAsJob: false,
+  variableMapping: {},
+  outputSchema: null,
+  maxConcurrent: 3,
+});
+
 export interface PageExtractionState {
   /** jobId → active or last-known run state for that job */
   activeRuns: Record<string, ActiveJobRun>;
   /** fileId → currently-visible jobId (UI selection). */
   selectedJobByFile: Record<string, string>;
+  /** fileId → in-memory chunking config the user is currently building. */
+  draftsByFile: Record<string, ChunkingConfigDraft>;
 }
 
 const initialState: PageExtractionState = {
   activeRuns: {},
   selectedJobByFile: {},
+  draftsByFile: {},
 };
 
 const slice = createSlice({
@@ -231,6 +292,49 @@ const slice = createSlice({
     clearRun(state, action: PayloadAction<{ jobId: string }>) {
       delete state.activeRuns[action.payload.jobId];
     },
+
+    // ── Chunking config draft ────────────────────────────────────────────
+
+    ensureDraft(state, action: PayloadAction<{ fileId: string }>) {
+      const { fileId } = action.payload;
+      if (!state.draftsByFile[fileId]) {
+        state.draftsByFile[fileId] = emptyDraft();
+      }
+    },
+
+    patchDraft(
+      state,
+      action: PayloadAction<{
+        fileId: string;
+        patch: Partial<ChunkingConfigDraft>;
+      }>,
+    ) {
+      const { fileId, patch } = action.payload;
+      const current = state.draftsByFile[fileId] ?? emptyDraft();
+      state.draftsByFile[fileId] = { ...current, ...patch };
+    },
+
+    toggleDraftVariation(
+      state,
+      action: PayloadAction<{
+        fileId: string;
+        kind: SourceVariationKind;
+      }>,
+    ) {
+      const { fileId, kind } = action.payload;
+      const draft = state.draftsByFile[fileId] ?? emptyDraft();
+      const set = new Set(draft.sourceVariations);
+      if (set.has(kind)) set.delete(kind);
+      else set.add(kind);
+      state.draftsByFile[fileId] = {
+        ...draft,
+        sourceVariations: Array.from(set),
+      };
+    },
+
+    clearDraft(state, action: PayloadAction<{ fileId: string }>) {
+      delete state.draftsByFile[action.payload.fileId];
+    },
   },
 });
 
@@ -243,6 +347,10 @@ export const {
   runCompleted,
   runFailed,
   clearRun,
+  ensureDraft,
+  patchDraft,
+  toggleDraftVariation,
+  clearDraft,
 } = slice.actions;
 
 export default slice.reducer;

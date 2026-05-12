@@ -300,6 +300,7 @@ export function PdfStudioReader({
                   ? doc.sourceId
                   : null
               }
+              processedDocumentId={doc.id}
               activePage={activePage}
               onJumpToPage={onJumpToPage}
             />
