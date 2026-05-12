@@ -258,6 +258,28 @@ export async function patchJson<T, B = unknown>(
   return { data, meta: meta(response, requestId) };
 }
 
+/** PUT with a JSON body. Replace-style semantics — for endpoints that
+ * accept the full resource (or full update body) and return the new state. */
+export async function putJson<T, B = unknown>(
+  path: string,
+  body: B,
+  opts: RequestOptions = {},
+): Promise<{ data: T; meta: ResponseMeta }> {
+  const { headers, requestId } = await buildHeaders(opts, true);
+  const response = await fetch(
+    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+      signal: opts.signal,
+    },
+  );
+  if (!response.ok) throw await parseHttpError(response);
+  const data = (await response.json()) as T;
+  return { data, meta: meta(response, requestId) };
+}
+
 /** DELETE. Returns parsed JSON if the server sends one; null otherwise. */
 export async function del<T = null>(
   path: string,

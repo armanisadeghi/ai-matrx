@@ -58,6 +58,7 @@ import { PreviewErrorBoundary } from "./PreviewErrorBoundary";
 import { FileInfoTab } from "./FileInfoTab";
 import { DocumentTab } from "./DocumentTab";
 import { FileShareTab } from "./FileShareTab";
+import { AnalysisTab } from "@/features/file-analysis/tab/AnalysisTab";
 import { FileLineageChip } from "./FileLineageChip";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 
@@ -519,10 +520,7 @@ export function PreviewPane({
           aria-hidden={activeTab !== "analysis"}
         >
           <PreviewErrorBoundary fileId={fileId}>
-            <ComingSoon
-              title="Analysis — coming soon"
-              description="AI-powered analysis of this file will live here."
-            />
+            <AnalysisTab fileId={fileId} className="h-full w-full" />
           </PreviewErrorBoundary>
         </div>
         <div

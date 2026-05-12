@@ -1,4 +1,5 @@
 import type { LLMParams } from "@/lib/api/types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 
 export type PromptMessageRole = "system" | "user" | "assistant";
 
@@ -50,8 +51,8 @@ export interface PromptSettings {
   internal_url_context?: LLMParams["internal_url_context"];
   tts_voice?: LLMParams["tts_voice"];
   audio_format?: LLMParams["audio_format"];
-  size?: LLMParams["size"];
-  quality?: LLMParams["quality"];
+  size?: FeLlmParams["size"];
+  quality?: FeLlmParams["quality"];
   count?: LLMParams["count"];
   seed?: LLMParams["seed"];
   steps?: LLMParams["steps"];
@@ -60,8 +61,8 @@ export interface PromptSettings {
   guidance_scale?: LLMParams["guidance_scale"];
   negative_prompt?: LLMParams["negative_prompt"];
   fps?: LLMParams["fps"];
-  seconds?: LLMParams["seconds"];
-  output_quality?: LLMParams["output_quality"];
+  seconds?: FeLlmParams["seconds"];
+  output_quality?: FeLlmParams["output_quality"];
   frame_images?: LLMParams["frame_images"];
   reference_images?: LLMParams["reference_images"];
   disable_safety_checker?: LLMParams["disable_safety_checker"];

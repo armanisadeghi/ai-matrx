@@ -66,13 +66,13 @@ export function AgentAppWidgetShell({ app }: AgentAppWidgetShellProps) {
     dispatch(
       setAllowChat({
         conversationId: cid,
-        allowChat: config.allowChat ?? false,
+        allow: config.allowChat ?? false,
       }),
     );
     if (config.autoRun != null) {
-      dispatch(setAutoRun({ conversationId: cid, autoRun: config.autoRun }));
+      dispatch(setAutoRun({ conversationId: cid, value: config.autoRun }));
     }
-    dispatch(setShowVariablePanel({ conversationId: cid, show: true }));
+    dispatch(setShowVariablePanel({ conversationId: cid, value: true }));
   }, [dispatch, ctx.conversationId, config.autoRun, config.allowChat]);
 
   if (!ctx.conversationId) {
@@ -120,12 +120,14 @@ export function AgentAppWidgetShell({ app }: AgentAppWidgetShellProps) {
                 Record<string, unknown>
               >
             }
-            props={{
-              ...ctx,
-              app,
-              config,
-              onSubmit: handleSubmit,
-            } as unknown as Record<string, unknown>}
+            props={
+              {
+                ...ctx,
+                app,
+                config,
+                onSubmit: handleSubmit,
+              } as unknown as Record<string, unknown>
+            }
           />
           <div className="flex justify-end pt-2">
             <Button

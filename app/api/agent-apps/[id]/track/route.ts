@@ -72,7 +72,9 @@ export async function POST(
       return NextResponse.json({ error: "Invalid app id" }, { status: 400 });
     }
 
-    const body = (await request.json().catch(() => null)) as TrackPayload | null;
+    const body = (await request
+      .json()
+      .catch(() => null)) as TrackPayload | null;
     if (!body || !body.event) {
       return NextResponse.json({ error: "Missing event" }, { status: 400 });
     }
@@ -94,7 +96,9 @@ export async function POST(
     // header. Both branches end up using the admin client to write so RLS
     // policies don't gate tracking against draft apps.
     const supabaseSsr = (await createClient()) as unknown as {
-      auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> };
+      auth: {
+        getUser: () => Promise<{ data: { user: { id: string } | null } }>;
+      };
     };
     const {
       data: { user },
@@ -168,11 +172,10 @@ export async function POST(
       referer,
       variables_provided:
         body.event === "run_start" ? (body.variables ?? {}) : {},
-      variables_used:
-        body.event === "run_start" ? (body.variables ?? {}) : {},
+      variables_used: body.event === "run_start" ? (body.variables ?? {}) : {},
       success: null,
       metadata: body.metadata ?? {},
-    } as unknown as Record<string, unknown>;
+    };
 
     const { error } = await admin.from("aga_executions").insert(insertPayload);
 

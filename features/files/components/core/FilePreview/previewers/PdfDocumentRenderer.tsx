@@ -102,6 +102,27 @@ export interface PdfDocumentRendererProps {
   pageNumber?: number;
   onPageChange?: (page: number) => void;
 
+  /**
+   * Optional render-slot for an overlay mounted directly on top of the
+   * rendered `<Page>` element. The renderer hands the caller the page
+   * geometry it needs to translate PDF user-space points into canvas
+   * pixels (the `<PdfAnnotationLayer/>` primitive uses exactly this).
+   *
+   * Use cases:
+   *   - Drawing annotation rectangles in the studio / analysis tab.
+   *   - Highlighting search hits.
+   *   - Showing a "this page is excluded" dim-out.
+   *
+   * The slot wraps in a flex-positioned container sized to match the
+   * page canvas. Children must position themselves absolutely.
+   */
+  renderOverlay?: (info: {
+    pageNumber: number;
+    pageWidthPt: number;
+    pageHeightPt: number;
+    rotation: number;
+  }) => React.ReactNode;
+
   className?: string;
 }
 
@@ -141,6 +162,7 @@ export default function PdfDocumentRenderer({
   error,
   pageNumber: controlledPage,
   onPageChange,
+  renderOverlay,
   className,
 }: PdfDocumentRendererProps) {
   const [numPages, setNumPages] = useState(0);
@@ -562,19 +584,31 @@ export default function PdfDocumentRenderer({
           }
           className="flex w-full flex-col items-center"
         >
-          <Page
-            pageNumber={pageNumber}
-            renderAnnotationLayer
-            renderTextLayer
-            // Use `scale` (not `width`) so rotation composes correctly:
-            // react-pdf rotates AFTER scaling, so we don't need to swap
-            // width/height ourselves. devicePixelRatio handling stays
-            // internal to pdfjs.
-            scale={pageScale && pageScale > 0 ? pageScale : undefined}
-            rotate={rotation}
-            onLoadSuccess={handlePageLoadSuccess}
-            className="my-4 shadow-sm"
-          />
+          <div className="relative my-4 shadow-sm">
+            <Page
+              pageNumber={pageNumber}
+              renderAnnotationLayer
+              renderTextLayer
+              // Use `scale` (not `width`) so rotation composes correctly:
+              // react-pdf rotates AFTER scaling, so we don't need to swap
+              // width/height ourselves. devicePixelRatio handling stays
+              // internal to pdfjs.
+              scale={pageScale && pageScale > 0 ? pageScale : undefined}
+              rotate={rotation}
+              onLoadSuccess={handlePageLoadSuccess}
+            />
+            {/* Overlay slot — annotation rectangles, search hits, etc.
+              * Mounts absolutely-positioned on top of the rendered Page.
+              * Caller positions children inside via PdfAnnotationLayer. */}
+            {renderOverlay && pageDims
+              ? renderOverlay({
+                  pageNumber,
+                  pageWidthPt: pageDims.width,
+                  pageHeightPt: pageDims.height,
+                  rotation,
+                })
+              : null}
+          </div>
         </Document>
       </div>
     </div>

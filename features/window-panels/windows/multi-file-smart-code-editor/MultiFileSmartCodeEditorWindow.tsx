@@ -61,6 +61,7 @@ import { useCodeEditorWidgetHandle } from "@/features/code-editor/agent-code-edi
 import { useIdeContextSync } from "@/features/code-editor/agent-code-editor/hooks/useIdeContextSync";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "@/features/code-editor/agent-code-editor/constants";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { setInputPlaceholder } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 import { useMultiFileSmartCodeEditorEmitter } from "./useMultiFileSmartCodeEditorEmitter";
 
@@ -158,6 +159,19 @@ export function MultiFileSmartCodeEditorWindow({
         content: f.content,
       })),
   );
+
+  // Sync input placeholder into Redux whenever the active file or conversationId changes.
+  useEffect(() => {
+    if (!conversationId) return;
+    dispatch(
+      setInputPlaceholder({
+        conversationId,
+        value: currentFile
+          ? `Describe the changes you want in ${currentFile.name}…`
+          : "Open a file to start a conversation…",
+      }),
+    );
+  }, [conversationId, currentFile, dispatch]);
 
   // Emit active-file-change whenever activeTab flips (including open/close).
   const lastEmittedActiveRef = useRef<string | null>(activeTab);
@@ -496,11 +510,6 @@ export function MultiFileSmartCodeEditorWindow({
         <div className="px-2 py-2 border-t shrink-0 bg-background">
           <SmartAgentInput
             conversationId={conversationId}
-            placeholder={
-              currentFile
-                ? `Describe the changes you want in ${currentFile.name}…`
-                : "Open a file to start a conversation…"
-            }
             sendButtonVariant="default"
             uploadBucket="userContent"
             uploadPath="code-editor-attachments"

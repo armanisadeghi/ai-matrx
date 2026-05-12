@@ -61,11 +61,11 @@ export function AgentAppFormToResultShell({
   useEffect(() => {
     if (!ctx.conversationId) return;
     const cid = ctx.conversationId;
-    dispatch(setAllowChat({ conversationId: cid, allowChat }));
+    dispatch(setAllowChat({ conversationId: cid, allow: allowChat }));
     if (config.autoRun != null) {
-      dispatch(setAutoRun({ conversationId: cid, autoRun: config.autoRun }));
+      dispatch(setAutoRun({ conversationId: cid, value: config.autoRun }));
     }
-    dispatch(setShowVariablePanel({ conversationId: cid, show: true }));
+    dispatch(setShowVariablePanel({ conversationId: cid, value: true }));
     // Follow-up input placeholder lives in Redux (no more prop chain).
     dispatch(
       setInputPlaceholder({ conversationId: cid, value: "Ask a follow-up…" }),
@@ -115,11 +115,13 @@ export function AgentAppFormToResultShell({
                 Record<string, unknown>
               >
             }
-            props={{
-              ...ctx,
-              app,
-              onContinue: () => setGateDismissed(true),
-            } as unknown as Record<string, unknown>}
+            props={
+              {
+                ...ctx,
+                app,
+                onContinue: () => setGateDismissed(true),
+              } as unknown as Record<string, unknown>
+            }
           />
         </div>
       </div>
@@ -157,12 +159,14 @@ export function AgentAppFormToResultShell({
                 Record<string, unknown>
               >
             }
-            props={{
-              ...ctx,
-              app,
-              config,
-              onSubmit: handleSubmit,
-            } as unknown as Record<string, unknown>}
+            props={
+              {
+                ...ctx,
+                app,
+                config,
+                onSubmit: handleSubmit,
+              } as unknown as Record<string, unknown>
+            }
           />
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60 mt-4">
             {hasResponse && (

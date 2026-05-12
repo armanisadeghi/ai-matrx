@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import {
   applyReconciliation,
   type ModelChangePlan,
@@ -51,10 +51,10 @@ interface ModelChangeReconciliationProps {
   onClose: () => void;
   oldModelName: string;
   newModelName: string;
-  oldSettings: LLMParams;
+  oldSettings: FeLlmParams;
   plan: ModelChangePlan;
   /** Dispatches both modelId change and reconciled settings in the same tick. */
-  onCommit: (nextSettings: LLMParams) => void;
+  onCommit: (nextSettings: FeLlmParams) => void;
 }
 
 const ISSUE_LABEL: Record<IncompatibleRow["issue"], string> = {
@@ -134,11 +134,11 @@ export function ModelChangeReconciliation({
     for (const row of plan.incompatible) {
       kept[row.key] = row.currentValue;
     }
-    onCommit(kept as LLMParams);
+    onCommit(kept as FeLlmParams);
   };
 
   const handleClearAll = () => {
-    onCommit({} as LLMParams);
+    onCommit({} as FeLlmParams);
   };
 
   const handleFixIncompatibleOnly = () => {

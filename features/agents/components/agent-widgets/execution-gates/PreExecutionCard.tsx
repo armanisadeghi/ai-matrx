@@ -90,7 +90,6 @@ export function PreExecutionCard({
           <SmartAgentInput
             conversationId={conversationId}
             compact
-            placeholder="Additional instructions (optional)..."
             showSubmitOnEnterToggle={false}
             disableSend
           />

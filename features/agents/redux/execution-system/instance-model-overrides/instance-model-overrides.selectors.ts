@@ -8,7 +8,10 @@
 
 import type { RootState } from "@/lib/redux/store";
 import type { InstanceModelOverrideState } from "@/features/agents/types/instance.types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type {
+  LLMParams,
+  FeLlmParams,
+} from "@/features/agents/types/agent-api-types";
 
 // Keys that exist in the model's controls as UI capability flags (e.g.
 // `{ allowed: true }`) but are NOT part of the LLMParams config_overrides
@@ -36,10 +39,14 @@ export const selectInstanceOverrideState =
  *
  * Merges the instance's snapshotted base settings + overrides, then strips removals.
  * Uses the instance-owned baseSettings — no agentId needed.
+ *
+ * Returns Partial<FeLlmParams> so the settings UI can work with legacy/alias keys
+ * (size, quality, ratio, etc.) that Python accepts via its aliasing layer but that
+ * are not in the canonical LLMParams OpenAPI schema.
  */
 export const selectCurrentSettings =
   (conversationId: string) =>
-  (state: RootState): Partial<LLMParams> | undefined => {
+  (state: RootState): Partial<FeLlmParams> | undefined => {
     const overrideState =
       state.instanceModelOverrides.byConversationId[conversationId];
     if (!overrideState) return undefined;
@@ -54,7 +61,7 @@ export const selectCurrentSettings =
       delete merged[key];
     }
 
-    return merged as Partial<LLMParams>;
+    return merged as Partial<FeLlmParams>;
   };
 
 /**
@@ -108,7 +115,7 @@ export const selectSettingsOverridesForApi =
  */
 export const selectSettingsForChatApi =
   (conversationId: string) =>
-  (state: RootState): Partial<LLMParams> | undefined => {
+  (state: RootState): Partial<FeLlmParams> | undefined => {
     const overrideState =
       state.instanceModelOverrides.byConversationId[conversationId];
     if (!overrideState) return undefined;
@@ -128,7 +135,7 @@ export const selectSettingsForChatApi =
     }
 
     return Object.keys(merged).length > 0
-      ? (merged as Partial<LLMParams>)
+      ? (merged as Partial<FeLlmParams>)
       : undefined;
   };
 

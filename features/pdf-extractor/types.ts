@@ -88,15 +88,18 @@ export type PdfStudioBundleSchema = Schemas["PdfStudioBundleSchema"];
 
 // ── Phase 3 — layout analysis ───────────────────────────────────────────────
 
-export type DetectRepeatedRegionsRequest = Schemas["DetectRepeatedRegionsRequest"];
-export type StripRepeatedRegionsRequest = Schemas["StripRepeatedRegionsRequest"];
+export type DetectRepeatedRegionsRequest =
+  Schemas["DetectRepeatedRegionsRequest"];
+export type StripRepeatedRegionsRequest =
+  Schemas["StripRepeatedRegionsRequest"];
 export type ClassifyPagesRequest = Schemas["ClassifyPagesRequest"];
 export type ExtractReadingOrderRequest = Schemas["ExtractReadingOrderRequest"];
 
 export type RepeatedRegion = Schemas["RepeatedRegion"];
 export type RepeatedRegionBbox = Schemas["RepeatedRegionBbox"];
 export type RepeatedRegionsReport = Schemas["RepeatedRegionsReport"];
-export type StripRepeatedRegionsResultSchema = Schemas["StripRepeatedRegionsResultSchema"];
+export type StripRepeatedRegionsResultSchema =
+  Schemas["StripRepeatedRegionsResultSchema"];
 
 export type PageClassification = Schemas["PageClassification"];
 export type LayoutClassificationReport = Schemas["LayoutClassificationReport"];
@@ -109,17 +112,12 @@ export type ReadingOrderReport = Schemas["ReadingOrderReport"];
 
 export type RedactRegionsRequest = Schemas["RedactRegionsRequest"];
 export type RedactPatternRequest = Schemas["RedactPatternRequest"];
-export type RedactRepeatedRegionsRequest = Schemas["RedactRepeatedRegionsRequest"];
+export type RedactRepeatedRegionsRequest =
+  Schemas["RedactRepeatedRegionsRequest"];
 export type StripMetadataRequest = Schemas["StripMetadataRequest"];
 export type ScrubRequest = Schemas["ScrubRequest"];
 export type FlattenAnnotationsRequest = Schemas["FlattenAnnotationsRequest"];
 
 export type RedactionRegion = Schemas["RedactionRegion"];
-export type RedactionAudit = Schemas["RedactionAudit"];
-export type RedactionResult = Schemas["RedactionResult"];
 export type PdfRedactionPatternCatalog = Schemas["PdfRedactionPatternCatalog"];
 export type PdfRedactionPatternEntry = Schemas["PdfRedactionPatternEntry"];
-
-/** Returned by every mutating PDF endpoint when `persist_output=true`. */
-export type PersistedPdfFile = Schemas["PersistedPdfFile"];
-export type PersistedRedactionResult = Schemas["PersistedRedactionResult"];

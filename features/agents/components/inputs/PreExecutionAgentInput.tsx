@@ -89,7 +89,6 @@ export function PreExecutionAgentInput({
         <SmartAgentInput
           conversationId={conversationId}
           compact
-          placeholder="Additional instructions (optional)..."
           showSubmitOnEnterToggle={false}
           disableSend
         />

@@ -23,23 +23,21 @@ export function claimDraftToCreate(claim: ClaimDraft): ClaimCreate {
     applicant_name: claim.applicant_name,
     occupational_code: claim.occupational_code,
     weekly_earnings: clampEarnings(claim.weekly_earnings),
+    is_public: false,
+    large_employer: claim.large_employer,
   };
   if (claim.age_at_doi != null) body.age_at_doi = claim.age_at_doi;
   if (claim.date_of_birth) body.date_of_birth = claim.date_of_birth;
   if (claim.date_of_injury) body.date_of_injury = claim.date_of_injury;
   // Optional record-keeping fields — only include when set so the backend's
   // create-vs-patch semantics aren't muddled with explicit nulls on create.
-  // Cast through `as Record<string, unknown>` because these fields aren't in
-  // the regenerated TS schema yet (see `pnpm sync-types`).
-  const extras = body as Record<string, unknown>;
-  if (claim.gender) extras.gender = claim.gender;
-  if (claim.case_number) extras.case_number = claim.case_number;
-  if (claim.evaluator_name) extras.evaluator_name = claim.evaluator_name;
-  if (claim.comments) extras.comments = claim.comments;
+  if (claim.gender) body.gender = claim.gender;
+  if (claim.case_number) body.case_number = claim.case_number;
+  if (claim.evaluator_name) body.evaluator_name = claim.evaluator_name;
+  if (claim.comments) body.comments = claim.comments;
   // Phase 3 compensation inputs (LC §4658(d) and §4659).
-  if (claim.p_s_date) extras.p_s_date = claim.p_s_date;
-  if (claim.job_offer_date) extras.job_offer_date = claim.job_offer_date;
-  if (claim.large_employer) extras.large_employer = true;
+  if (claim.p_s_date) body.p_s_date = claim.p_s_date;
+  if (claim.job_offer_date) body.job_offer_date = claim.job_offer_date;
   return body;
 }
 
@@ -71,14 +69,13 @@ export function injuryDraftToCreate(injury: InjuryDraft): InjuryCreate {
     impairment_definition_id: injury.impairment_definition_id,
     pain: injury.pain,
     industrial: injury.industrial,
+    ag: injury.ag,
   };
   if (injury.wpi != null) body.wpi = injury.wpi;
   if (injury.ue != null) body.ue = injury.ue;
   if (injury.le != null) body.le = injury.le;
   if (injury.digit != null) body.digit = injury.digit;
-  const extras = body as Record<string, unknown>;
-  extras.side = injury.side;
-  if (injury.ag) extras.ag = true;
+  if (injury.side) body.side = injury.side;
   return body;
 }
 

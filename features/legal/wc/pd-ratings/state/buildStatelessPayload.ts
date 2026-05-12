@@ -67,21 +67,15 @@ function clampEarnings(weekly: number): number {
 
 function buildClaimSection(claim: ClaimDraft): StatelessClaim {
   // Readiness has already proven date_of_injury is a valid YYYY-MM-DD string.
-  const section: StatelessClaim = {
+  return {
     occupational_code: claim.occupational_code!,
     weekly_earnings: clampEarnings(claim.weekly_earnings!),
-    age_at_doi: claim.age_at_doi ?? undefined,
+    age_at_doi: claim.age_at_doi,
     date_of_injury: claim.date_of_injury!,
+    p_s_date: claim.p_s_date,
+    job_offer_date: claim.job_offer_date,
+    large_employer: claim.large_employer,
   };
-  // Compensation-driving fields (LC §4658(d) and §4659). Backend treats
-  // missing values as "rule not triggered". Cast through `unknown` because
-  // these fields are not yet in the regenerated TS types — pnpm sync-types
-  // will pick them up from the OpenAPI schema.
-  const extras = section as unknown as Record<string, unknown>;
-  if (claim.p_s_date) extras.p_s_date = claim.p_s_date;
-  if (claim.job_offer_date) extras.job_offer_date = claim.job_offer_date;
-  if (claim.large_employer) extras.large_employer = true;
-  return section;
 }
 
 function buildInjurySection(injury: InjuryDraft): StatelessInjury {

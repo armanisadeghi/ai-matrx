@@ -159,16 +159,24 @@ export function useFileActions(fileId: string): FileActionHandlers {
       // download UI — the early return is belt-and-suspenders.
       return;
     }
-    const { data } = await Files.getSignedUrl(fileId, {
-      expiresIn: 120,
-    });
+    // Stream bytes through the Python backend (not via a signed S3 URL).
+    // S3 signed URLs are cross-origin and browsers silently ignore the
+    // `a.download` attribute on cross-origin URLs — the file saves with
+    // whatever name S3 puts in the URL path (usually a UUID, no extension).
+    // A blob: URL is always same-origin, so `a.download` is honoured and
+    // the browser saves with the correct filename and extension.
+    const { blob, filename } = await Files.downloadFile(fileId);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = data.url;
-    a.download = "";
+    a.href = url;
+    // Prefer the filename from Content-Disposition (set by the Python backend).
+    // Fall back to the name stored in Redux, then a generic fallback.
+    a.download = filename ?? file?.fileName ?? "download";
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }, [fileId, isVirtual]);
+    URL.revokeObjectURL(url);
+  }, [file?.fileName, fileId, isVirtual]);
 
   const copyShareUrl = useCallback(
     async (opts?: { expiresIn?: number }) => {

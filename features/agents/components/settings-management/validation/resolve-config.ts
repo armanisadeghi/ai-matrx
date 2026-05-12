@@ -4,7 +4,7 @@ import {
   ControlDefinition,
   NormalizedControls,
 } from "@/lib/redux/slices/agent-settings/types";
-import { LLMParams } from "@/lib/api/types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
 
 // UI capability flags from model controls (e.g. `tools: { allowed: true }`).
@@ -58,13 +58,13 @@ export function buildRecognizedKeys(
  * Consumers never access raw sources directly — this is the only entry point.
  */
 export function resolveConfig(
-  settings: LLMParams | null,
+  settings: FeLlmParams | null,
   modelId: string | null,
   normalizedControls: NormalizedControls | null,
   constraints?: ModelConstraint[] | null,
 ): ResolvedConfig {
   return {
-    settings: settings ?? ({} as LLMParams),
+    settings: settings ?? ({} as FeLlmParams),
     modelId,
     normalizedControls,
     recognizedKeys: buildRecognizedKeys(normalizedControls),

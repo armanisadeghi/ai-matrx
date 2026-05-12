@@ -423,12 +423,16 @@ export interface CreateAgentAppInput {
   description?: string;
   category?: string;
   tags?: string[];
-  component_code: string;
+  component_code?: string;
   component_language?: ComponentLanguage;
   variable_schema?: VariableSchemaItem[];
   allowed_imports?: string[];
   layout_config?: LayoutConfig;
   styling_config?: StylingConfig;
+  shell_kind?: AgentAppShellKind;
+  shell_config?: AgentAppShellConfigCommon;
+  slot_overrides?: AgentAppSlotOverrides;
+  slot_code?: AgentAppSlotCode;
   /** Ownership scope for the new app.
    *  - `"user"` (default) — owned by the authenticated user.
    *  - `"global"` — admin-only; creates a system app with all scope columns null. */

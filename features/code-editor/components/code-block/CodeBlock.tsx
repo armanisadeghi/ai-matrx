@@ -18,6 +18,7 @@ import {
   vs,
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { SmartCodeEditorModal } from "@/features/code-editor/agent-code-editor/components/SmartCodeEditorModal";
+import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 import {
   mapLanguageForPrism,
@@ -234,7 +235,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `code.${rawLanguage || "txt"}`;
+    const ext = codeLanguageToExtension(rawLanguage || "txt");
+    a.download = `code${ext}`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -510,23 +512,24 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         {/* AI Code Editor Modal — agent-system. v2 (current_code) and v3
             (dynamic_context) collapse to the same SmartCodeEditorModal; the
             agent UUID selects which variable receives the code. */}
-        {aiModalConfig && (() => {
-          const agent = agentForPromptKey(aiModalConfig.builtinId);
-          return (
-            <SmartCodeEditorModal
-              open={true}
-              onOpenChange={(open) => {
-                if (!open) handleCloseAIModal();
-              }}
-              agents={[agent]}
-              defaultPickerAgentId={agent.id}
-              initialCode={code}
-              language={monacoLanguage}
-              onCodeChange={(newCode) => handleAICodeChange(newCode)}
-              title={aiModalConfig.title}
-            />
-          );
-        })()}
+        {aiModalConfig &&
+          (() => {
+            const agent = agentForPromptKey(aiModalConfig.builtinId);
+            return (
+              <SmartCodeEditorModal
+                open={true}
+                onOpenChange={(open) => {
+                  if (!open) handleCloseAIModal();
+                }}
+                agents={[agent]}
+                defaultPickerAgentId={agent.id}
+                initialCode={code}
+                language={monacoLanguage}
+                onCodeChange={(newCode) => handleAICodeChange(newCode)}
+                title={aiModalConfig.title}
+              />
+            );
+          })()}
       </div>
     </>
   );

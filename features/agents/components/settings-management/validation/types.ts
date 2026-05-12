@@ -1,5 +1,5 @@
 import type { NormalizedControls } from "@/lib/redux/slices/agent-settings/types";
-import type { LLMParams } from "@/lib/api/types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
 
 // =============================================================================
@@ -46,7 +46,7 @@ export interface ValidationResult {
 // =============================================================================
 
 export interface ResolvedConfig {
-  settings: LLMParams;
+  settings: FeLlmParams;
   modelId: string | null;
   normalizedControls: NormalizedControls | null;
   recognizedKeys: Set<string>;

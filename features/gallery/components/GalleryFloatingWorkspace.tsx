@@ -20,6 +20,7 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
+import { mimeToExtension } from "@/utils/file-operations/utils";
 import {
   Search,
   Heart,
@@ -201,7 +202,8 @@ export function GalleryFloatingWorkspace() {
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = blobUrl;
-        a.download = `unsplash-${photo.id}.jpg`;
+        const ext = mimeToExtension(blob.type || "image/jpeg");
+        a.download = `unsplash-${photo.id}${ext}`;
         a.click();
         URL.revokeObjectURL(blobUrl);
         toast.success("Download started");

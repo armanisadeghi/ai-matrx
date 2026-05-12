@@ -33,9 +33,9 @@ const VARIABLE_INPUT_STYLES: NonNullable<
 >[] = ["form", "inline", "wizard", "compact", "guided", "cards"];
 
 const HISTORY_VIEWS: NonNullable<AgentAppShellConfigCommon["historyView"]>[] = [
-  "sidebar",
-  "drawer",
   "hidden",
+  "app",
+  "all",
 ];
 
 export function ShellConfigPanel({
@@ -88,7 +88,7 @@ export function ShellConfigPanel({
 
       <Row label="Allow follow-up chat">
         <Switch
-          checked={value.allowChat ?? (shellKind === "chat")}
+          checked={value.allowChat ?? shellKind === "chat"}
           onCheckedChange={(v) => set("allowChat", v)}
           disabled={disabled}
         />
@@ -133,10 +133,7 @@ export function ShellConfigPanel({
           <Select
             value={value.historyView ?? "sidebar"}
             onValueChange={(v) =>
-              set(
-                "historyView",
-                v as AgentAppShellConfigCommon["historyView"],
-              )
+              set("historyView", v as AgentAppShellConfigCommon["historyView"])
             }
             disabled={disabled}
           >

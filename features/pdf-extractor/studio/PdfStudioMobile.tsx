@@ -193,8 +193,8 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
             <div className="min-w-0">
               <p className="text-xs font-semibold truncate">{activeDoc.name}</p>
               <p className="text-[10px] text-muted-foreground truncate">
-                {(activeDoc.totalPages ?? pages.length).toLocaleString()} pages ·{" "}
-                {activeDoc.derivationKind}
+                {(activeDoc.totalPages ?? pages.length).toLocaleString()} pages
+                · {activeDoc.derivationKind}
               </p>
             </div>
           ) : (
@@ -278,9 +278,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
             activePage={activePage}
             onActivePage={(n) => setActivePage(n)}
             fallbackText={
-              tab === "clean"
-                ? activeDoc.cleanContent
-                : activeDoc.content
+              tab === "clean" ? activeDoc.cleanContent : activeDoc.content
             }
           />
         )}
@@ -291,7 +289,9 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
         <div className="shrink-0 border-t border-border bg-card/60 px-2 py-1.5 pb-safe flex items-center gap-2">
           <button
             type="button"
-            onClick={() => activePage && setActivePage(Math.max(1, activePage - 1))}
+            onClick={() =>
+              activePage && setActivePage(Math.max(1, activePage - 1))
+            }
             disabled={!activePage || activePage <= 1}
             className="h-9 w-9 rounded-md border border-border bg-background hover:bg-accent disabled:opacity-50 flex items-center justify-center"
           >
@@ -316,7 +316,10 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       )}
 
       {/* Drawers */}
-      <Drawer open={drawer === "docs"} onOpenChange={(o) => !o && setDrawer("none")}>
+      <Drawer
+        open={drawer === "docs"}
+        onOpenChange={(o) => !o && setDrawer("none")}
+      >
         <DrawerContent className="h-[85vh]">
           <div className="flex flex-col h-full min-h-0">
             <div className="shrink-0 px-3 py-2 flex items-center justify-between border-b border-border">
@@ -372,9 +375,15 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
               <div className="flex-1 min-h-0">
                 <PdfStudioInspector
                   doc={activeDoc}
+                  pages={pages}
+                  activePage={activePage}
                   onRunShortcut={handleRunShortcut}
                   onRunPipeline={handleRunPipeline}
                   pipelineRunning={pipelineRunning}
+                  pdfPaneEditMode={null}
+                  onStartCrop={() => {}}
+                  onStartReorder={() => {}}
+                  onEditModeCancel={() => {}}
                 />
               </div>
             )}
@@ -422,7 +431,12 @@ function MobileTextScroller({
   onActivePage,
   fallbackText,
 }: {
-  pages: { id: string; pageNumber: number; rawText: string; cleanedText: string }[];
+  pages: {
+    id: string;
+    pageNumber: number;
+    rawText: string;
+    cleanedText: string;
+  }[];
   field: "raw" | "cleaned";
   activePage: number | null;
   onActivePage: (n: number) => void;

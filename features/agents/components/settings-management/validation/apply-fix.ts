@@ -6,7 +6,7 @@
  * Extracted so the two surfaces share one code path.
  */
 
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type {
   NormalizedControls,
   ControlDefinition,
@@ -53,20 +53,20 @@ function clampNumber(
 }
 
 function omitKey(
-  settings: LLMParams,
+  settings: FeLlmParams,
   key: string,
-): LLMParams {
+): FeLlmParams {
   const { [key]: _drop, ...rest } = settings as Record<string, unknown>;
-  return rest as LLMParams;
+  return rest as FeLlmParams;
 }
 
 function setKey(
-  settings: LLMParams,
+  settings: FeLlmParams,
   key: string,
   value: unknown,
-): LLMParams {
+): FeLlmParams {
   if (value === undefined) return omitKey(settings, key);
-  return { ...settings, [key]: value } as LLMParams;
+  return { ...settings, [key]: value } as FeLlmParams;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -112,9 +112,9 @@ export function canFixIssue(
  */
 export function applyFixForIssue(
   issue: ValidationIssue,
-  settings: LLMParams,
+  settings: FeLlmParams,
   normalizedControls: NormalizedControls | null,
-): LLMParams {
+): FeLlmParams {
   const key = issue.key;
   const control = getControlForKey(normalizedControls, key);
 
@@ -214,9 +214,9 @@ export function applyFixForIssue(
  */
 export function applyAllFixableIssues(
   issues: ValidationIssue[],
-  settings: LLMParams,
+  settings: FeLlmParams,
   normalizedControls: NormalizedControls | null,
-): LLMParams {
+): FeLlmParams {
   let result = settings;
   for (const issue of issues) {
     if (canFixIssue(issue, normalizedControls)) {

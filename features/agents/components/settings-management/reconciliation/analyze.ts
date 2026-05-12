@@ -7,7 +7,7 @@
  * each resulting issue into an actionable row.
  */
 
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type { NormalizedControls } from "@/features/agents/hooks/useModelControls";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import type { ValidationIssue } from "../validation/types";
@@ -39,8 +39,8 @@ export interface IncompatibleRow {
 
 export interface ModelChangePlan {
   incompatible: IncompatibleRow[];
-  compatibleSettings: LLMParams;
-  newModelDefaults: LLMParams;
+  compatibleSettings: FeLlmParams;
+  newModelDefaults: FeLlmParams;
 }
 
 function mapIssueToKind(issue: ValidationIssue): IncompatibilityKind {
@@ -93,13 +93,13 @@ function suggestedActionFor(
  *   5. Compute newModelDefaults via getModelDefaults(newModel).
  */
 export function analyzeModelChange(
-  oldSettings: LLMParams,
+  oldSettings: FeLlmParams,
   newModelId: string,
   newModel: unknown,
   newModelControls: NormalizedControls | null,
   newModelConstraints: ModelConstraint[] | null,
 ): ModelChangePlan {
-  const safeSettings: LLMParams = oldSettings ?? ({} as LLMParams);
+  const safeSettings: FeLlmParams = oldSettings ?? ({} as FeLlmParams);
   const resolved = resolveConfig(
     safeSettings,
     newModelId,
@@ -130,7 +130,7 @@ export function analyzeModelChange(
     }
   }
 
-  const newModelDefaults = getModelDefaults(newModel) as LLMParams;
+  const newModelDefaults = getModelDefaults(newModel) as FeLlmParams;
 
   const incompatible: IncompatibleRow[] = [];
   const issuedKeys = new Set<string>();
@@ -154,11 +154,11 @@ export function analyzeModelChange(
   }
 
   // Everything without a flagged issue is compatible, carried over verbatim.
-  const compatibleSettings: LLMParams = Object.fromEntries(
+  const compatibleSettings: FeLlmParams = Object.fromEntries(
     Object.entries(safeSettings as Record<string, unknown>).filter(
       ([k]) => !issuedKeys.has(k),
     ),
-  ) as LLMParams;
+  ) as FeLlmParams;
 
   // Stable order: unsupported-key first, then out-of-range/invalid-enum, then others.
   incompatible.sort((a, b) => {
@@ -193,7 +193,7 @@ export function analyzeModelChange(
 export function applyReconciliation(
   plan: ModelChangePlan,
   actionsByKey: Record<string, ReconcileAction>,
-): LLMParams {
+): FeLlmParams {
   const out: Record<string, unknown> = {
     ...(plan.compatibleSettings as Record<string, unknown>),
   };
@@ -210,5 +210,5 @@ export function applyReconciliation(
       // if no default, this behaves as clear
     }
   }
-  return out as LLMParams;
+  return out as FeLlmParams;
 }

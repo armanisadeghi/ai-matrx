@@ -42,17 +42,15 @@ import {
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
-import {
-  setContextEntries,
-  type InstanceContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 
 import {
   addResource,
   removeResource,
-  type ManagedResource,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import type { ManagedResource } from "@/features/agents/types/instance.types";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -308,7 +306,9 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
 
   useEffect(() => {
     if (!conversationId || showFreeformInput === undefined) return;
-    dispatch(setShowFreeformInput({ conversationId, value: showFreeformInput }));
+    dispatch(
+      setShowFreeformInput({ conversationId, value: showFreeformInput }),
+    );
   }, [conversationId, showFreeformInput, dispatch]);
 
   useEffect(() => {
@@ -445,7 +445,14 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const addResourceCb = useCallback(
     (resource: ManagedResource) => {
       if (!conversationId) return;
-      dispatch(addResource({ conversationId, resource }));
+      dispatch(
+        addResource({
+          conversationId,
+          blockType: resource.blockType,
+          source: resource.source,
+          resourceId: resource.resourceId,
+        }),
+      );
     },
     [conversationId, dispatch],
   );
@@ -491,9 +498,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
         );
       }
       if (submitArgs?.text != null) {
-        dispatch(
-          setUserInputText({ conversationId, text: submitArgs.text }),
-        );
+        dispatch(setUserInputText({ conversationId, text: submitArgs.text }));
       }
       await dispatch(smartExecute({ conversationId, surfaceKey }));
     },

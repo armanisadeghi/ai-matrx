@@ -22,7 +22,7 @@ import { AlertTriangle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SmartModelSelect } from "./SmartModelSelect";
-import { LLMParams } from "@/features/agents/types/agent-api-types";
+import { FeLlmParams } from "@/features/agents/types/agent-api-types";
 
 /** Stable display order mirroring agent-api-types `LLMParams` sections. */
 const LLM_PARAM_ORDER = [
@@ -66,9 +66,9 @@ const LLM_PARAM_ORDER = [
   "reference_images",
   "image_loras",
   "disable_safety_checker",
-] as const satisfies readonly (keyof LLMParams)[];
+] as const satisfies readonly (keyof FeLlmParams)[];
 
-const MEDIA_STYLE_KEYS = new Set<keyof LLMParams>([
+const MEDIA_STYLE_KEYS = new Set<keyof FeLlmParams>([
   "size",
   "quality",
   "count",
@@ -105,7 +105,7 @@ function isEmptyForDisplay(value: unknown): boolean {
 }
 
 function formatLlmParamValue(
-  key: keyof LLMParams,
+  key: keyof FeLlmParams,
   value: unknown,
 ): string | null {
   if (isEmptyForDisplay(value)) return null;
@@ -178,7 +178,7 @@ function formatLlmParamValue(
 interface SmartModelConfigsProps {
   model: string;
   onModelChange: (value: string) => void;
-  llmParams: LLMParams;
+  llmParams: FeLlmParams;
   onSettingsClick: () => void;
   showSettingsDetails?: boolean;
   hasPendingConflict?: boolean;
@@ -194,7 +194,7 @@ export function SmartModelConfigs({
   hasPendingConflict,
   onOpenSettingsConflictModal,
 }: SmartModelConfigsProps) {
-  const badges: { key: keyof LLMParams; label: string; value: string }[] = [];
+  const badges: { key: keyof FeLlmParams; label: string; value: string }[] = [];
 
   for (const key of LLM_PARAM_ORDER) {
     if (!(key in llmParams)) continue;

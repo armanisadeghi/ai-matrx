@@ -42,6 +42,18 @@ export interface PdfPreviewProps {
    */
   pageNumber?: number;
   onPageChange?: (page: number) => void;
+  /**
+   * Optional render-slot for the overlay mounted on top of the rendered
+   * page (annotation rectangles, search highlights, etc.). Receives
+   * geometry the overlay needs to translate PDF user-space points into
+   * canvas pixels. Pass-through to `PdfDocumentRenderer.renderOverlay`.
+   */
+  renderOverlay?: (info: {
+    pageNumber: number;
+    pageWidthPt: number;
+    pageHeightPt: number;
+    rotation: number;
+  }) => React.ReactNode;
 }
 
 export default function PdfPreview({
@@ -49,6 +61,7 @@ export default function PdfPreview({
   className,
   pageNumber,
   onPageChange,
+  renderOverlay,
 }: PdfPreviewProps) {
   // Same-origin blob URL via the Python download endpoint — sidesteps
   // S3 CORS that would otherwise 403 a `fetch()` from pdfjs's worker.
@@ -83,6 +96,7 @@ export default function PdfPreview({
         error={blobError}
         pageNumber={pageNumber}
         onPageChange={onPageChange}
+        renderOverlay={renderOverlay}
         className="h-full w-full"
       />
     </div>

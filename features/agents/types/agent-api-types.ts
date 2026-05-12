@@ -55,6 +55,54 @@ type NonNullableFields<T> = {
 export type LLMParams = NonNullableFields<components["schemas"]["LLMParams"]>;
 
 /**
+ * Frontend-extended LLM params.
+ *
+ * Superset of LLMParams that adds legacy/alias keys and provider-specific keys
+ * not yet present in the canonical OpenAPI schema. All fields here ARE sent to
+ * the Python backend — Python accepts them via its deprecated-key aliasing layer
+ * and reports them in `deprecated_keys_found` on the response.
+ *
+ * Use this type everywhere in the settings UI and Redux state. The API-boundary
+ * selectors (selectSettingsOverridesForApi, selectSettingsForChatApi) return
+ * Record<string,unknown> / Partial<FeLlmParams> so no explicit key-stripping is
+ * needed — the untyped selector return is the intentional API boundary.
+ *
+ * Run `pnpm update-api-types` after backend changes. When a key graduates to
+ * the canonical LLMParams schema, remove it from here.
+ */
+export interface FeLlmParams extends LLMParams {
+  // ── Legacy / pre-rename aliases ─────────────────────────────────────────
+  /** Legacy image size (e.g. "1024x1024"). Python aliases → width+height or size config. */
+  size?: string | number;
+  /** Legacy quality string. Python aliases → render_quality. */
+  quality?: string | number;
+  /** Legacy duration as plain seconds number. Python aliases → duration_seconds. */
+  seconds?: number;
+  /** Legacy output quality. Python aliases → encode_quality / output_compression. */
+  output_quality?: string | number;
+  /** Aspect ratio alias used by Together AI / Runway. Python aliases → aspect_ratio. */
+  ratio?: string;
+
+  // ── Provider-specific keys not yet in canonical schema ───────────────────
+  /** Image size string for providers that take a single "WxH" param (e.g. Replicate). */
+  image_size?: string;
+  /** Number of outputs (Replicate / Stability). */
+  num_outputs?: number;
+  /** Number of images (OpenAI DALL-E style). */
+  number_of_images?: number;
+  /** Output MIME type (Google Imagen). */
+  output_mime_type?: string;
+  /** Person generation setting (Google Imagen). */
+  person_generation?: string;
+  /** Image format string (e.g. "png", "jpeg", "webp"). */
+  image_format?: string;
+  /** Duration in seconds (non-canonical; some providers use this instead of duration_seconds). */
+  duration?: number;
+  /** Include RAI (Responsible AI) reason in response (Google Vertex AI). */
+  include_rai_reason?: boolean;
+}
+
+/**
  * Wire shape for POST /ai/manual.
  *
  * Generated from OpenAPI `ChatRequest`. All fields are optional in the frontend

@@ -19,7 +19,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { InstanceModelOverrideState } from "@/features/agents/types/instance.types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { destroyInstance } from "../conversations/conversations.slice";
 
 // =============================================================================
@@ -50,7 +50,7 @@ const instanceModelOverridesSlice = createSlice({
       state,
       action: PayloadAction<{
         conversationId: string;
-        baseSettings?: Partial<LLMParams>;
+        baseSettings?: Partial<FeLlmParams>;
       }>,
     ) {
       const { conversationId, baseSettings = {} } = action.payload;
@@ -70,7 +70,7 @@ const instanceModelOverridesSlice = createSlice({
       state,
       action: PayloadAction<{
         conversationId: string;
-        changes: Partial<LLMParams>;
+        changes: Partial<FeLlmParams>;
       }>,
     ) {
       const { conversationId, changes } = action.payload;
@@ -129,7 +129,7 @@ const instanceModelOverridesSlice = createSlice({
       state,
       action: PayloadAction<{
         conversationId: string;
-        baseSettings: Partial<LLMParams>;
+        baseSettings: Partial<FeLlmParams>;
       }>,
     ) {
       const entry = state.byConversationId[action.payload.conversationId];

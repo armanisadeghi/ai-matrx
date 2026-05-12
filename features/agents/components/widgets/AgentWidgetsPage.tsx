@@ -37,7 +37,7 @@ import type {
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
 import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 import { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
@@ -225,7 +225,7 @@ export function AgentWidgetsPage({
 
     setJsonError(null);
 
-    let overrides: Partial<LLMParams> | undefined;
+    let overrides: Partial<FeLlmParams> | undefined;
     if (overridesJson.trim()) {
       try {
         const parsed = JSON.parse(overridesJson);

@@ -36,7 +36,7 @@ import {
   setAgentSettings,
   setAgentField,
 } from "@/features/agents/redux/agent-definition/slice";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { AgentSettingsCore } from "./AgentSettingsCore";
 
 interface AgentSettingsModalProps {
@@ -47,7 +47,7 @@ interface AgentSettingsModalProps {
 }
 
 interface SettingsSnapshot {
-  settings: LLMParams;
+  settings: FeLlmParams;
   modelId: string | null;
 }
 

@@ -52,7 +52,10 @@ import {
 } from "@/features/agents/redux/agent-definition/slice";
 import { selectAllModels } from "@/features/ai-models/redux/modelRegistrySlice";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type {
+  LLMParams,
+  FeLlmParams,
+} from "@/features/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import { useConfigValidation } from "./validation/useConfigValidation";
 import type { ValidationIssue } from "./validation/types";
@@ -1037,7 +1040,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
 
   const { normalizedControls, error } = useModelControls(models, modelId ?? "");
 
-  const currentSettings: LLMParams = settings ?? {};
+  const currentSettings: FeLlmParams = (settings ?? {}) as FeLlmParams;
 
   const modelConstraints = useMemo(() => {
     if (!modelId) return null;
@@ -1173,7 +1176,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSettingChange = (key: keyof LLMParams, value: any) => {
+  const handleSettingChange = (key: keyof FeLlmParams, value: any) => {
     if (!enabledSettings.has(key)) {
       setEnabledSettings(new Set(enabledSettings).add(key));
     }
@@ -1246,7 +1249,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
         ]
       : undefined;
 
-  const handleToggleSetting = (key: keyof LLMParams, enabled: boolean) => {
+  const handleToggleSetting = (key: keyof FeLlmParams, enabled: boolean) => {
     const newEnabled = new Set(enabledSettings);
     if (enabled) {
       newEnabled.add(key);
@@ -1294,7 +1297,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
       // When disabling tts_voice, also remove the coupled multi_speaker flag
       if (key === "tts_voice") {
         delete (cleaned as Record<string, unknown>).multi_speaker;
-        newEnabled.delete("multi_speaker" as keyof LLMParams);
+        newEnabled.delete("multi_speaker");
       }
       dispatch(
         setAgentSettings({ id: agentId, settings: cleaned as LLMParams }),
@@ -1378,7 +1381,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
   // ── render helpers ────────────────────────────────────────────────────────
 
   const renderControlInput = (
-    key: keyof LLMParams,
+    key: keyof FeLlmParams,
     control: ControlDefinition,
     value: unknown,
     isEnabled: boolean,
@@ -1542,7 +1545,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
   };
 
   const renderControl = (
-    key: keyof LLMParams,
+    key: keyof FeLlmParams,
     label: string,
     control: ControlDefinition | null,
   ) => {
@@ -1693,7 +1696,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
   };
 
   // Setting groups
-  const textModelSettings: { key: keyof LLMParams; label: string }[] = [
+  const textModelSettings: { key: keyof FeLlmParams; label: string }[] = [
     { key: "response_format", label: "Response Format" },
     { key: "stop_sequences", label: "Stop Sequences" },
     { key: "temperature", label: "Temperature" },
@@ -1708,7 +1711,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     { key: "tool_choice", label: "Tool Choice" },
   ];
 
-  const booleanSettings: { key: keyof LLMParams; label: string }[] = [
+  const booleanSettings: { key: keyof FeLlmParams; label: string }[] = [
     { key: "stream", label: "Stream Response" },
     { key: "store", label: "Store Conversation" },
     { key: "parallel_tool_calls", label: "Parallel Tool Calls" },
@@ -1719,18 +1722,14 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     { key: "clear_thinking", label: "Clear Thinking" },
     { key: "disable_reasoning", label: "Disable Reasoning" },
     // Media-gen booleans (canonical + provider-native)
-    { key: "generate_audio" as keyof LLMParams, label: "Generate Audio" },
-    { key: "enhance_prompt" as keyof LLMParams, label: "Enhance Prompt" },
-    {
-      key: "include_rai_reason" as keyof LLMParams,
-      label: "Include RAI Reason",
-    },
+    { key: "generate_audio", label: "Generate Audio" },
+    { key: "enhance_prompt", label: "Enhance Prompt" },
+    { key: "include_rai_reason", label: "Include RAI Reason" },
   ];
 
-  const imageVideoSettings: { key: keyof LLMParams; label: string }[] = [
-    // ── Existing keys (kept as-is; some are pre-canonical-rename names
-    // that the Python boundary aliases; safe to leave because the
-    // controls JSONB on existing rows still declares them.) ──
+  const imageVideoSettings: { key: keyof FeLlmParams; label: string }[] = [
+    // ── Existing keys — some are legacy/alias names sent to Python which
+    // aliases them transparently. All are declared in FeLlmParams. ──
     { key: "size", label: "Size" },
     { key: "quality", label: "Quality" },
     { key: "count", label: "Count" },
@@ -1746,43 +1745,34 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
 
     // ── Media-gen extensions (May 2026) ──
     // Dimensions
-    { key: "aspect_ratio" as keyof LLMParams, label: "Aspect Ratio" },
-    {
-      key: "ratio" as keyof LLMParams,
-      label: "Aspect Ratio (Together/Runway)",
-    },
-    { key: "resolution" as keyof LLMParams, label: "Resolution" },
-    { key: "image_size" as keyof LLMParams, label: "Image Size" },
-    { key: "num_outputs" as keyof LLMParams, label: "Outputs" },
-    { key: "number_of_images" as keyof LLMParams, label: "Number of Images" },
+    { key: "aspect_ratio", label: "Aspect Ratio" },
+    { key: "ratio", label: "Aspect Ratio (Together/Runway)" },
+    { key: "resolution", label: "Resolution" },
+    { key: "image_size", label: "Image Size" },
+    { key: "num_outputs", label: "Outputs" },
+    { key: "number_of_images", label: "Number of Images" },
 
     // Image quality / encoding
-    { key: "render_quality" as keyof LLMParams, label: "Render Quality" },
-    { key: "background" as keyof LLMParams, label: "Background" },
-    { key: "input_fidelity" as keyof LLMParams, label: "Input Fidelity" },
-    {
-      key: "output_compression" as keyof LLMParams,
-      label: "Output Compression",
-    },
-    { key: "moderation" as keyof LLMParams, label: "Moderation" },
-    { key: "partial_images" as keyof LLMParams, label: "Partial Images" },
-    { key: "output_mime_type" as keyof LLMParams, label: "Output MIME Type" },
-    { key: "person_generation" as keyof LLMParams, label: "Person Generation" },
-    { key: "image_format" as keyof LLMParams, label: "Image Format" },
-    { key: "style" as keyof LLMParams, label: "Style" },
-    {
-      key: "reference_strength" as keyof LLMParams,
-      label: "Reference Strength",
-    },
+    { key: "render_quality", label: "Render Quality" },
+    { key: "background", label: "Background" },
+    { key: "input_fidelity", label: "Input Fidelity" },
+    { key: "output_compression", label: "Output Compression" },
+    { key: "moderation", label: "Moderation" },
+    { key: "partial_images", label: "Partial Images" },
+    { key: "output_mime_type", label: "Output MIME Type" },
+    { key: "person_generation", label: "Person Generation" },
+    { key: "image_format", label: "Image Format" },
+    { key: "style", label: "Style" },
+    { key: "reference_strength", label: "Reference Strength" },
 
     // Video
-    { key: "duration_seconds" as keyof LLMParams, label: "Duration (s)" },
-    { key: "duration" as keyof LLMParams, label: "Duration" },
-    { key: "encode_quality" as keyof LLMParams, label: "Encode Quality" },
-    { key: "video_action" as keyof LLMParams, label: "Video Action" },
+    { key: "duration_seconds", label: "Duration (s)" },
+    { key: "duration", label: "Duration" },
+    { key: "encode_quality", label: "Encode Quality" },
+    { key: "video_action", label: "Video Action" },
   ];
 
-  const audioSettings: { key: keyof LLMParams; label: string }[] = [
+  const audioSettings: { key: keyof FeLlmParams; label: string }[] = [
     { key: "audio_format", label: "Audio Format" },
   ];
 
@@ -2032,7 +2022,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
                   </div>
                   {otherKeys.map((key) =>
                     renderControl(
-                      key as keyof LLMParams,
+                      key as keyof FeLlmParams,
                       humanizeKey(key),
                       getControl(key) ?? null,
                     ),

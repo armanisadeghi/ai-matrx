@@ -157,7 +157,6 @@ export function AgentGateBody({
       >
         <SmartAgentInput
           conversationId={conversationId}
-          placeholder="Additional instructions (optional)..."
           singleRowTextarea={false}
           compact={true}
           showSendButton={false}

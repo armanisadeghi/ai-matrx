@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   const { data: server, error: serverError } = await supabase
     .from("tl_mcp_server")
     .select(
-      "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes",
+      "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes, metadata",
     )
     .eq("id", serverId)
     .single();
@@ -57,35 +57,86 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (!server.endpoint_url) {
-    return errorRedirect(
-      req,
-      returnUrl,
-      `${server.name} has no endpoint URL configured yet. This integration may not be available.`,
-    );
-  }
-
   const baseUrl = getBaseUrl(req);
   const redirectUri = `${baseUrl}${CALLBACK_PATH}`;
   const clientMetadataUrl = `${baseUrl}${CLIENT_METADATA_PATH}`;
 
+  // Static auth endpoints stored in metadata (used as primary or fallback for
+  // servers like Canva that use traditional OAuth without MCP discovery).
+  const staticMeta = (server.metadata ?? {}) as Record<string, string>;
+  const staticAuthEndpoint = staticMeta["oauth_auth_endpoint"] as
+    | string
+    | undefined;
+  const staticTokenEndpoint = staticMeta["oauth_token_endpoint"] as
+    | string
+    | undefined;
+
   try {
-    console.log(
-      `[MCP OAuth] Starting discovery for ${server.slug} at ${server.endpoint_url}`,
-    );
+    let authServer:
+      | Awaited<ReturnType<typeof discoverOAuthEndpoints>>["authServer"]
+      | null = null;
+    let protectedResource: Awaited<
+      ReturnType<typeof discoverOAuthEndpoints>
+    >["protectedResource"] = null;
 
-    const { authServer, protectedResource } = await discoverOAuthEndpoints(
-      server.endpoint_url,
-    );
+    // If both static endpoints are known, skip discovery entirely — faster and
+    // more reliable for providers (e.g. Canva) that don't expose well-known docs.
+    if (staticAuthEndpoint && staticTokenEndpoint) {
+      console.log(
+        `[MCP OAuth] Using static endpoints for ${server.slug} (skipping discovery)`,
+      );
+      authServer = {
+        issuer: new URL(staticAuthEndpoint).origin,
+        authorization_endpoint: staticAuthEndpoint,
+        token_endpoint: staticTokenEndpoint,
+      };
+    } else if (server.endpoint_url) {
+      console.log(
+        `[MCP OAuth] Starting discovery for ${server.slug} at ${server.endpoint_url}`,
+      );
+      try {
+        const result = await discoverOAuthEndpoints(server.endpoint_url);
+        authServer = result.authServer;
+        protectedResource = result.protectedResource;
+      } catch (discoverErr) {
+        // If discovery fails AND we have at least an auth endpoint in metadata,
+        // fall back to static config rather than hard-failing.
+        if (staticAuthEndpoint) {
+          console.warn(
+            `[MCP OAuth] Discovery failed for ${server.slug}, falling back to static metadata:`,
+            discoverErr instanceof Error ? discoverErr.message : discoverErr,
+          );
+          authServer = {
+            issuer: new URL(staticAuthEndpoint).origin,
+            authorization_endpoint: staticAuthEndpoint,
+            token_endpoint:
+              staticTokenEndpoint ??
+              `${new URL(staticAuthEndpoint).origin}/oauth/token`,
+          };
+        } else {
+          throw discoverErr;
+        }
+      }
+    } else {
+      return errorRedirect(
+        req,
+        returnUrl,
+        `${server.name} has no endpoint URL or static auth endpoints configured.`,
+      );
+    }
 
-    console.log(`[MCP OAuth] Discovered auth server: ${authServer.issuer}`);
+    if (!authServer) {
+      return errorRedirect(
+        req,
+        returnUrl,
+        `Could not determine auth endpoints for ${server.name}.`,
+      );
+    }
+
     console.log(
-      `[MCP OAuth] Authorization endpoint: ${authServer.authorization_endpoint}`,
+      `[MCP OAuth] Auth endpoint: ${authServer.authorization_endpoint}`,
     );
     console.log(`[MCP OAuth] Token endpoint: ${authServer.token_endpoint}`);
-    console.log(
-      `[MCP OAuth] Registration endpoint: ${authServer.registration_endpoint ?? "none"}`,
-    );
 
     let clientId: string | undefined;
     let clientSecret: string | undefined;
@@ -206,7 +257,7 @@ export async function GET(req: NextRequest) {
     return errorRedirect(
       req,
       returnUrl,
-      `OAuth discovery failed for ${server.name}: ${message}`,
+      `OAuth connect failed for ${server.name}: ${message}`,
     );
   }
 }
