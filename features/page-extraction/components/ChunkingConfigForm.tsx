@@ -36,6 +36,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import {
   SOURCE_VARIATIONS,
 } from "@/features/page-extraction/constants";
@@ -49,6 +50,7 @@ import { useExtractionStream } from "@/features/page-extraction/hooks/useExtract
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
 import { parsePageRangeInput } from "@/features/page-extraction/utils/chunk-preview";
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
+import { SavedJobsList } from "@/features/page-extraction/components/SavedJobsList";
 import {
   createJobFromDraft,
   DraftValidationError,
@@ -85,23 +87,37 @@ export function ChunkingConfigForm({
     dispatch(ensureDraft({ fileId }));
   }, [dispatch, fileId]);
 
-  // Auto-derive variable_mapping when the agent or selected variations
-  // change. We DON'T overwrite a mapping the user has explicitly edited
-  // (tracked via `_mappingUserEdited` on the draft, set when they manually
-  // patch the mapping). The agent record's `variableDefinitions` drives
-  // the heuristic — see derive-variable-mapping.ts.
+  // When the agent changes, hydrate the FULL definition. The initial
+  // agent list only carries name/id/etc. — `variableDefinitions` is
+  // populated by the on-demand RPC `agx_get_execution_minimal`. Without
+  // this fetch our `deriveVariableMapping` heuristic has nothing to work
+  // with and Jobs get saved with `variable_mapping: {}` (the bug that
+  // caused empty `[]` agent responses across every chunk).
+  useEffect(() => {
+    if (!draft.agentId) return;
+    void dispatch(fetchAgentExecutionMinimal(draft.agentId));
+  }, [draft.agentId, dispatch]);
+
+  // Auto-derive variable_mapping once the agent's variableDefinitions are
+  // loaded (or when selected variations change). Re-runs when the agent
+  // changes too. If the user wants to lock in a custom mapping, save the
+  // Job and re-use it — saved Jobs keep their mapping verbatim on the
+  // server.
   useEffect(() => {
     if (!agent) return;
+    if (!agent.variableDefinitions) return; // still loading
     const derived = deriveVariableMapping(
       agent.variableDefinitions,
       draft.sourceVariations,
     );
-    // Always recompute when the agent/variations change. If the user wants
-    // to lock in a custom mapping, save the Job and re-use it (saved Jobs
-    // keep their mapping verbatim on the server).
     dispatch(patchDraft({ fileId, patch: { variableMapping: derived } }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agent?.id, draft.sourceVariations.join("|"), fileId]);
+  }, [
+    agent?.id,
+    agent?.variableDefinitions?.length,
+    draft.sourceVariations.join("|"),
+    fileId,
+  ]);
 
   // Local error for the page-range input only.
   const [rangeError, setRangeError] = useState<string | null>(null);
@@ -169,6 +185,9 @@ export function ChunkingConfigForm({
 
   return (
     <div className="p-3 space-y-3 text-[11px]">
+      {/* Saved Jobs — quick "run again" or "load into form" affordances. */}
+      <SavedJobsList fileId={fileId} />
+
       {/* Agent */}
       <Field label="Agent" required hint="Pick one of your agents.">
         <AgentListDropdown

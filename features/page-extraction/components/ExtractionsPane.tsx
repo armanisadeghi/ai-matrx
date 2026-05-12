@@ -28,6 +28,7 @@ import { RunProgressBar } from "@/features/page-extraction/components/RunProgres
 import { ResultsTable } from "@/features/page-extraction/components/ResultsTable";
 import { ChunksTab } from "@/features/page-extraction/components/ChunksTab";
 import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { usePageRunsRealtime } from "@/features/page-extraction/hooks/usePageRunsRealtime";
 
 export interface ExtractionsPaneProps {
   fileId: string | null;
@@ -46,6 +47,10 @@ export function ExtractionsPane({
   onJumpToPage,
 }: ExtractionsPaneProps) {
   const jobId = useAppSelector((s) => selectSelectedJobForFile(s, fileId));
+
+  // Realtime fallback: even if the SSE stream is interrupted, the
+  // per-chunk state (raw_response, parsed_payload) lands via Realtime.
+  usePageRunsRealtime({ fileId, jobId });
 
   return (
     <div className="flex flex-col h-full bg-card">

@@ -48,6 +48,19 @@ export function validateDraft(draft: ChunkingConfigDraft): string[] {
     issues.push("Set a chunk size.");
   if (draft.sourceVariations.length === 0)
     issues.push("Pick at least one source variation.");
+  // Empty variable_mapping means the agent's prompt template won't receive
+  // any of our surface vars — the chunk text never reaches the model and
+  // every agent call returns "[]". This is the silent failure mode that
+  // caused the first round of broken runs. Block the run until there's
+  // at least one wiring.
+  if (
+    draft.agentId &&
+    Object.keys(draft.variableMapping).length === 0
+  ) {
+    issues.push(
+      "Agent variables aren't wired yet. Wait for the agent definition to load (a moment after picking the agent).",
+    );
+  }
   return issues;
 }
 
