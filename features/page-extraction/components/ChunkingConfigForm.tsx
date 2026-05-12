@@ -52,12 +52,24 @@ import { parsePageRangeInput } from "@/features/page-extraction/utils/chunk-prev
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
 import { SavedJobsList } from "@/features/page-extraction/components/SavedJobsList";
 import {
-  createJobFromDraft,
   DraftValidationError,
+  draftDiffersFromJob,
+  saveTemplateFromDraft,
   validateDraft,
+  validateForRun,
 } from "@/features/page-extraction/services/run-from-draft";
-import { selectJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
-import type { SourceVariationKind } from "@/features/page-extraction/types";
+import {
+  clearDraft,
+  selectJobForFile,
+} from "@/features/page-extraction/redux/pageExtractionSlice";
+import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { getJob } from "@/features/page-extraction/api/jobs";
+import type {
+  PageExtractionJob,
+  SourceVariationKind,
+} from "@/features/page-extraction/types";
+import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
+import { Plus } from "lucide-react";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -74,6 +86,9 @@ export function ChunkingConfigForm({
   const toast = useToastManager("page-extraction");
   const userId = useAppSelector(selectUserId);
   const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
+  const selectedJobId = useAppSelector((s) =>
+    selectSelectedJobForFile(s, fileId),
+  );
   const { running, error: streamError, start } = useExtractionStream();
   const { chunks, stats, availablePages, loading: pagesLoading } =
     useChunkPreview({ fileId, processedDocumentId });
@@ -82,10 +97,64 @@ export function ChunkingConfigForm({
     draft.agentId ? selectAgentById(s, draft.agentId) : undefined,
   );
 
+  // Mirror of the currently-loaded saved Job — drives the "dirty?" check
+  // and the Save-vs-Update button label. Fetched on selectedJobId change.
+  const [loadedJob, setLoadedJob] = useState<PageExtractionJob | null>(null);
+  const [saving, setSaving] = useState(false);
+
   // Ensure a draft exists for this file on mount.
   useEffect(() => {
     dispatch(ensureDraft({ fileId }));
   }, [dispatch, fileId]);
+
+  // When the selected Job changes, hydrate the draft from the Job and
+  // remember the snapshot. This is what makes clicking a saved template
+  // row "view" it — the form just becomes that template.
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedJobId) {
+      setLoadedJob(null);
+      return;
+    }
+    void getJob(selectedJobId).then((job) => {
+      if (cancelled || !job) return;
+      setLoadedJob(job);
+      dispatch(
+        patchDraft({
+          fileId,
+          patch: {
+            agentId: job.agent_id,
+            scopePages: job.scope_pages ?? [],
+            scopePagesInputRaw: job.scope_pages?.length
+              ? formatPageRange(job.scope_pages)
+              : "",
+            chunkSize: job.chunk_size,
+            chunkOverlap: job.chunk_overlap,
+            sourceVariations: (job.source_variations ??
+              ["clean_text"]) as SourceVariationKind[],
+            chunkingStrategy: (job.chunking_strategy ?? "pages") as
+              | "pages"
+              | "keyword"
+              | "manual"
+              | "section",
+            jobName: job.name,
+            saveAsJob: true,
+            variableMapping: job.variable_mapping ?? {},
+            outputSchema: job.output_schema as unknown,
+            maxConcurrent: job.max_concurrent,
+          },
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedJobId, fileId, dispatch]);
+
+  const isDirty = useMemo(
+    () => draftDiffersFromJob(draft, loadedJob),
+    [draft, loadedJob],
+  );
 
   // When the agent changes, hydrate the FULL definition. The initial
   // agent list only carries name/id/etc. — `variableDefinitions` is
@@ -122,8 +191,16 @@ export function ChunkingConfigForm({
   // Local error for the page-range input only.
   const [rangeError, setRangeError] = useState<string | null>(null);
 
-  const validationIssues = useMemo(() => validateDraft(draft), [draft]);
-  const canRun = validationIssues.length === 0 && !running;
+  const saveIssues = useMemo(() => validateDraft(draft), [draft]);
+  const runIssues = useMemo(() => validateForRun(draft), [draft]);
+  const canSave = saveIssues.length === 0 && !saving;
+  // Running requires: a saved Job to exist (or just-saved one), no dirty
+  // state, all run-level fields filled in.
+  const canRun =
+    runIssues.length === 0 &&
+    !running &&
+    !!selectedJobId &&
+    !isDirty;
 
   const handleRangeChange = (raw: string) => {
     setRangeError(null);
@@ -155,37 +232,100 @@ export function ChunkingConfigForm({
     dispatch(patchDraft({ fileId, patch: { chunkSize: Math.max(1, n) } }));
   };
 
-  const handleRun = async () => {
+  const handleSave = async () => {
     if (!userId) {
       toast.error("Not signed in.");
       return;
     }
-    if (!canRun) {
-      toast.error(validationIssues[0] ?? "Form not complete.");
+    if (!canSave) {
+      toast.error(saveIssues[0] ?? "Form not complete.");
       return;
     }
+    setSaving(true);
     try {
-      const job = await createJobFromDraft(draft, {
+      const job = await saveTemplateFromDraft(draft, {
         fileId,
         processedDocumentId,
         ownerId: userId,
         fallbackName: documentName,
+        existingJobId: selectedJobId,
       });
-      // Make the new Job the active one so the results table follows it.
+      // Make the new/updated Job the active one and refresh the local
+      // snapshot so the "dirty" indicator clears.
       dispatch(selectJobForFile({ fileId, jobId: job.id }));
-      await start(fileId, { job_id: job.id });
+      setLoadedJob(job);
+      toast.success(selectedJobId ? "Template updated" : "Template saved");
     } catch (err) {
       if (err instanceof DraftValidationError) {
         toast.error(err.issues[0]);
       } else {
-        toast.error(err instanceof Error ? err.message : "Could not start run");
+        toast.error(err instanceof Error ? err.message : "Could not save");
       }
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const handleRun = async () => {
+    if (!selectedJobId) {
+      toast.error("Save the template first.");
+      return;
+    }
+    if (runIssues.length > 0) {
+      toast.error(runIssues[0]);
+      return;
+    }
+    if (isDirty) {
+      toast.error("Save your changes before running.");
+      return;
+    }
+    try {
+      await start(fileId, { job_id: selectedJobId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not start run");
+    }
+  };
+
+  const handleNewTemplate = () => {
+    dispatch(selectJobForFile({ fileId, jobId: null }));
+    dispatch(clearDraft({ fileId }));
+    dispatch(ensureDraft({ fileId }));
+    setLoadedJob(null);
+    toast.success("Started a new template");
   };
 
   return (
     <div className="p-3 space-y-3 text-[11px]">
-      {/* Saved Jobs — quick "run again" or "load into form" affordances. */}
+      {/* Status banner — what's loaded right now + start-fresh button */}
+      <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 border border-border">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            {selectedJobId ? "Editing" : "New template"}
+          </p>
+          <p className="text-[11px] font-medium truncate">
+            {loadedJob?.name ??
+              draft.jobName.trim() ??
+              "Untitled"}
+            {isDirty && selectedJobId && (
+              <span className="ml-1 text-amber-700 dark:text-amber-400">
+                · unsaved
+              </span>
+            )}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-[10px] shrink-0"
+          onClick={handleNewTemplate}
+          title="Start a fresh, blank template"
+        >
+          <Plus className="w-3 h-3 mr-0.5" />
+          New
+        </Button>
+      </div>
+
+      {/* Saved templates — click a row to view, play to run, trash to delete. */}
       <SavedJobsList fileId={fileId} />
 
       {/* Agent */}
@@ -324,67 +464,94 @@ export function ChunkingConfigForm({
         </div>
       </Field>
 
-      {/* Save as Job */}
-      <div className="border-t border-border pt-3 space-y-1.5">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox
-            checked={draft.saveAsJob}
-            onCheckedChange={(checked) =>
-              dispatch(
-                patchDraft({
-                  fileId,
-                  patch: { saveAsJob: checked === true },
-                }),
-              )
+      {/* Template name — always visible, required for Save */}
+      <Field
+        label="Template name"
+        hint="What to call this template in the Saved list."
+      >
+        <Input
+          value={draft.jobName}
+          onChange={(e) =>
+            dispatch(
+              patchDraft({ fileId, patch: { jobName: e.target.value } }),
+            )
+          }
+          placeholder={`e.g. "${documentName} extraction"`}
+          className="h-7 text-[11px]"
+        />
+      </Field>
+
+      {/* Save / Run buttons — two distinct actions. */}
+      <div className="border-t border-border pt-3 space-y-2">
+        {isDirty && selectedJobId && (
+          <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-snug flex items-center gap-1">
+            <AlertCircle className="w-3 h-3 shrink-0" />
+            Unsaved changes — Save before you can Run.
+          </p>
+        )}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={isDirty || !selectedJobId ? "default" : "outline"}
+            className="flex-1 h-8 text-[11px]"
+            disabled={!canSave}
+            onClick={() => void handleSave()}
+            title={
+              selectedJobId
+                ? "Update this template"
+                : "Save as a new template"
             }
-          />
-          <span className="text-[11px]">
-            <Save className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-            Save as a named Job
-          </span>
-        </label>
-        {draft.saveAsJob && (
-          <Input
-            value={draft.jobName}
-            onChange={(e) =>
-              dispatch(
-                patchDraft({ fileId, patch: { jobName: e.target.value } }),
-              )
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              <>
+                <Save className="w-3 h-3 mr-1" />
+                {selectedJobId ? "Update" : "Save template"}
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 h-8 text-[11px]"
+            variant={isDirty || !selectedJobId ? "outline" : "default"}
+            disabled={!canRun}
+            onClick={() => void handleRun()}
+            title={
+              !selectedJobId
+                ? "Save the template first"
+                : isDirty
+                  ? "Save changes before running"
+                  : "Run a new extraction"
             }
-            placeholder="Job name (visible in the Job picker)"
-            className="h-7 text-[11px]"
-          />
+          >
+            {running ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Running…
+              </>
+            ) : (
+              <>
+                <Repeat className="w-3 h-3 mr-1" /> Run
+              </>
+            )}
+          </Button>
+        </div>
+        {(saveIssues.length > 0 || (selectedJobId && runIssues.length > 0)) && (
+          <ul className="space-y-0.5 text-[10px] text-amber-700 dark:text-amber-400">
+            {[...saveIssues, ...(selectedJobId ? runIssues.filter((r) => !saveIssues.includes(r)) : [])].map(
+              (issue) => (
+                <li key={issue} className="flex items-start gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                  {issue}
+                </li>
+              ),
+            )}
+          </ul>
         )}
       </div>
-
-      {/* Validation summary + Run */}
-      {validationIssues.length > 0 && (
-        <ul className="space-y-0.5 pt-1 text-[10px] text-amber-700 dark:text-amber-400">
-          {validationIssues.map((issue) => (
-            <li key={issue} className="flex items-start gap-1">
-              <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-              {issue}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Button
-        size="sm"
-        className="w-full h-8 text-[11px]"
-        disabled={!canRun}
-        onClick={() => void handleRun()}
-      >
-        {running ? (
-          <>
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Running…
-          </>
-        ) : (
-          <>
-            <Repeat className="w-3 h-3 mr-1" /> Run extraction
-          </>
-        )}
-      </Button>
 
       {streamError && (
         <p className="text-[10px] text-destructive leading-snug">
@@ -393,9 +560,8 @@ export function ChunkingConfigForm({
       )}
 
       <p className="text-[10px] text-muted-foreground/70 leading-snug pt-1">
-        Chunks visualize in the <span className="font-medium">Extractions</span>{" "}
-        pane (Chunks tab). Results appear there as soon as each chunk
-        completes.
+        Live chunk progress + final results land in the{" "}
+        <span className="font-medium">Extractions</span> pane.
       </p>
     </div>
   );

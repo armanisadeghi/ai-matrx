@@ -103,7 +103,33 @@ export function ResultsTable({
     () => unwrapArraySchema(job?.output_schema),
     [job?.output_schema],
   );
-  const cols = useMemo(() => schemaColumns(schema), [schema]);
+  const schemaCols = useMemo(() => schemaColumns(schema), [schema]);
+
+  /**
+   * When the Job's output_schema has no properties (or the schema is just
+   * `{ type: "object", properties: {} }` — common when the user hasn't
+   * defined columns explicitly), fall back to the UNION of keys across
+   * all result payloads. This is the difference between "rows exist but
+   * the table looks empty" and "I can see my data."
+   *
+   * We sort keys by their first occurrence in the result set so the
+   * column order is stable across renders.
+   */
+  const cols = useMemo(() => {
+    if (schemaCols.length > 0) return schemaCols;
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+    for (const r of results) {
+      const payload = (r.payload ?? {}) as Record<string, unknown>;
+      for (const key of Object.keys(payload)) {
+        if (!seen.has(key)) {
+          seen.add(key);
+          ordered.push(key);
+        }
+      }
+    }
+    return ordered;
+  }, [schemaCols, results]);
 
   if (!jobId) {
     return (

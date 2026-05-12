@@ -1,35 +1,36 @@
 /**
  * features/page-extraction/services/run-from-draft.ts
  *
- * Takes an in-memory ChunkingConfigDraft and either:
- *   (a) reuses a saved Job that the user explicitly picked, OR
- *   (b) creates a new Job (ephemeral or named) from the draft
+ * Template lifecycle helpers. Three distinct operations:
  *
- * Then dispatches the streaming Run. Returns the resolved Job + Run-start
- * promise. Validation (page range, chunk size, agent) lives upstream — the
- * service refuses to create a Job for an incomplete draft.
+ *   1. validateDraft(draft)        — list blocking issues, used by Save + Run
+ *   2. saveTemplateFromDraft(...)  — INSERT a new Job or UPDATE an existing one
+ *   3. validateForRun(draft, job)  — extra checks needed to actually run
+ *
+ * The form is the single editor surface; this module owns the rules.
  */
 
 "use client";
 
-import { createJob } from "@/features/page-extraction/api/jobs";
+import { createJob, updateJob } from "@/features/page-extraction/api/jobs";
 import type {
   ChunkingConfigDraft,
 } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
   PageExtractionJob,
   PageExtractionJobInsert,
+  PageExtractionJobUpdate,
 } from "@/features/page-extraction/types";
 
-export interface DraftToJobOptions {
+export interface SaveTemplateOptions {
   fileId: string;
-  /** Optional anchor to a processed_documents row that owns the page text. */
   processedDocumentId: string | null;
-  /** auth.users.id of the runner. */
   ownerId: string;
   organizationId?: string | null;
   /** Human label when no explicit jobName is on the draft. */
   fallbackName: string;
+  /** When set, UPDATE this job instead of INSERTing a new one. */
+  existingJobId?: string | null;
 }
 
 export class DraftValidationError extends Error {
@@ -39,20 +40,17 @@ export class DraftValidationError extends Error {
   }
 }
 
+/**
+ * Save-level validation. Lighter than the run-level checks: we only refuse
+ * a Save when the draft is missing things that would make the row invalid
+ * (agent, source variations). Page range / chunk size can be set later
+ * before clicking Run.
+ */
 export function validateDraft(draft: ChunkingConfigDraft): string[] {
   const issues: string[] = [];
   if (!draft.agentId) issues.push("Pick an agent.");
-  if (draft.scopePages.length === 0)
-    issues.push("Specify the page range.");
-  if (draft.chunkSize == null || draft.chunkSize < 1)
-    issues.push("Set a chunk size.");
   if (draft.sourceVariations.length === 0)
     issues.push("Pick at least one source variation.");
-  // Empty variable_mapping means the agent's prompt template won't receive
-  // any of our surface vars — the chunk text never reaches the model and
-  // every agent call returns "[]". This is the silent failure mode that
-  // caused the first round of broken runs. Block the run until there's
-  // at least one wiring.
   if (
     draft.agentId &&
     Object.keys(draft.variableMapping).length === 0
@@ -65,20 +63,54 @@ export function validateDraft(draft: ChunkingConfigDraft): string[] {
 }
 
 /**
- * Create a Job row from the draft. Throws DraftValidationError when the
- * draft isn't complete enough. The created Job's `is_saved` reflects
- * `draft.saveAsJob`.
+ * Run-level validation. Save-level issues PLUS: page range must be
+ * specified and chunk size must be set.
  */
-export async function createJobFromDraft(
+export function validateForRun(draft: ChunkingConfigDraft): string[] {
+  const issues = validateDraft(draft);
+  if (draft.scopePages.length === 0) issues.push("Specify the page range.");
+  if (draft.chunkSize == null || draft.chunkSize < 1)
+    issues.push("Set a chunk size.");
+  return issues;
+}
+
+/**
+ * Persist the draft as a Job. If `existingJobId` is supplied, the Job is
+ * UPDATED in place (template editing). Otherwise a new Job is inserted.
+ *
+ * Throws DraftValidationError when the draft is incomplete.
+ */
+export async function saveTemplateFromDraft(
   draft: ChunkingConfigDraft,
-  opts: DraftToJobOptions,
+  opts: SaveTemplateOptions,
 ): Promise<PageExtractionJob> {
   const issues = validateDraft(draft);
   if (issues.length > 0) throw new DraftValidationError(issues);
 
   const name =
-    draft.jobName.trim() ||
-    `${opts.fallbackName} — ${new Date().toLocaleString()}`;
+    draft.jobName.trim() || `${opts.fallbackName} extraction`;
+
+  // Saved templates are always is_saved=true going forward. The
+  // distinction between "ad-hoc" and "saved" Jobs is going away — every
+  // template the user creates is a named row they explicitly saved.
+  if (opts.existingJobId) {
+    const patch: PageExtractionJobUpdate = {
+      name,
+      agent_id: draft.agentId,
+      variable_mapping: draft.variableMapping,
+      output_schema: (draft.outputSchema ??
+        { type: "object", properties: {} }) as never,
+      chunk_size: draft.chunkSize ?? 1,
+      chunk_overlap: draft.chunkOverlap,
+      scope_pages: draft.scopePages.length ? draft.scopePages : null,
+      source_variations: draft.sourceVariations,
+      chunking_strategy: draft.chunkingStrategy,
+      is_saved: true,
+      model_overrides: null,
+      max_concurrent: draft.maxConcurrent,
+    };
+    return updateJob(opts.existingJobId, patch);
+  }
 
   const insert: PageExtractionJobInsert = {
     file_id: opts.fileId,
@@ -88,13 +120,14 @@ export async function createJobFromDraft(
     agent_id: draft.agentId,
     shortcut_id: null,
     variable_mapping: draft.variableMapping,
-    output_schema: (draft.outputSchema ?? { type: "object", properties: {} }) as never,
-    chunk_size: draft.chunkSize as number,
+    output_schema: (draft.outputSchema ??
+      { type: "object", properties: {} }) as never,
+    chunk_size: draft.chunkSize ?? 1,
     chunk_overlap: draft.chunkOverlap,
-    scope_pages: draft.scopePages,
+    scope_pages: draft.scopePages.length ? draft.scopePages : null,
     source_variations: draft.sourceVariations,
     chunking_strategy: draft.chunkingStrategy,
-    is_saved: draft.saveAsJob,
+    is_saved: true,
     model_overrides: null,
     max_concurrent: draft.maxConcurrent,
     owner_id: opts.ownerId,
@@ -103,4 +136,55 @@ export async function createJobFromDraft(
   };
 
   return createJob(insert);
+}
+
+/**
+ * Compare draft against a persisted Job. Returns true when the draft has
+ * unsaved changes the user would lose if they hit Run before Save.
+ *
+ * Compared fields are the ones `saveTemplateFromDraft` writes — anything
+ * that doesn't round-trip through Save is excluded.
+ */
+export function draftDiffersFromJob(
+  draft: ChunkingConfigDraft,
+  job: PageExtractionJob | null | undefined,
+): boolean {
+  if (!job) return true;
+  if (draft.agentId !== job.agent_id) return true;
+  if ((draft.chunkSize ?? 1) !== job.chunk_size) return true;
+  if (draft.chunkOverlap !== job.chunk_overlap) return true;
+  if (draft.maxConcurrent !== job.max_concurrent) return true;
+  if (draft.chunkingStrategy !== job.chunking_strategy) return true;
+  if (draft.jobName.trim() && draft.jobName.trim() !== job.name) return true;
+  if (
+    !arraysEqual(draft.scopePages, job.scope_pages ?? [])
+  )
+    return true;
+  if (
+    !arraysEqual(
+      draft.sourceVariations,
+      (job.source_variations ?? []) as string[],
+    )
+  )
+    return true;
+  if (!shallowMapEqual(draft.variableMapping, job.variable_mapping ?? {}))
+    return true;
+  return false;
+}
+
+function arraysEqual<T>(a: T[], b: T[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function shallowMapEqual(
+  a: Record<string, string>,
+  b: Record<string, string>,
+): boolean {
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (a[k] !== b[k]) return false;
+  return true;
 }

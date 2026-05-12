@@ -1,47 +1,41 @@
 /**
  * features/page-extraction/components/SavedJobsList.tsx
  *
- * Lists the user's saved Templates (Jobs with is_saved=true and not
- * archived) for the current file. Each row carries three icons:
+ * The user's saved templates for the current file. Three interactions per
+ * row:
  *
- *   ✎ Edit   — load this template into the form for editing
- *   🗑 Delete — soft-delete (archive) the template. Does NOT delete the
- *               extraction data this template has produced.
- *   ▶ Play   — kick a fresh Run against the template with its current
- *               config.
+ *   • Click the ROW   — select this template (the form to the right
+ *                       hydrates from it; the user can view or edit)
+ *   • 🗑 trash         — soft-delete this template (data stays)
+ *   • ▶ play          — run a new extraction against this template
  *
- * Soft-deletion sets `archived_at` so the row is hidden from listings
- * but the results stay queryable. Permanent deletion is intentionally
- * not exposed in the UI — the data the template produced should outlive
- * the template itself.
+ * Soft-deletion sets `archived_at` so the template disappears from the
+ * picker but the results it produced remain queryable.
  */
 
 "use client";
 
 import { useState } from "react";
-import { Loader2, Play, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { cn } from "@/lib/utils";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
 import { deleteJob } from "@/features/page-extraction/api/jobs";
-import {
-  patchDraft,
-  selectJobForFile,
-} from "@/features/page-extraction/redux/pageExtractionSlice";
-import type {
-  PageExtractionJob,
-  SourceVariationKind,
-  ChunkingStrategy,
-} from "@/features/page-extraction/types";
-import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
+import { selectJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import type { PageExtractionJob } from "@/features/page-extraction/types";
 
 export function SavedJobsList({ fileId }: { fileId: string }) {
   const { jobs, loading, refetch } = useExtractionJobs(fileId);
   const dispatch = useAppDispatch();
   const toast = useToastManager("page-extraction");
+  const selectedJobId = useAppSelector((s) =>
+    selectSelectedJobForFile(s, fileId),
+  );
   const { running, start } = useExtractionStream();
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
@@ -51,11 +45,15 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
   if (jobs.length === 0) {
     return (
       <p className="text-[10px] text-muted-foreground/70 leading-snug px-1">
-        No saved templates yet. Configure below, tick{" "}
-        <span className="font-medium">Save as named Job</span>, and run.
+        No saved templates yet. Configure below and click{" "}
+        <span className="font-medium">Save template</span> to add one.
       </p>
     );
   }
+
+  const handleRowClick = (job: PageExtractionJob) => {
+    dispatch(selectJobForFile({ fileId, jobId: job.id }));
+  };
 
   const handleRunAgain = async (job: PageExtractionJob) => {
     dispatch(selectJobForFile({ fileId, jobId: job.id }));
@@ -69,43 +67,13 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
     }
   };
 
-  const handleEdit = (job: PageExtractionJob) => {
-    dispatch(selectJobForFile({ fileId, jobId: job.id }));
-    dispatch(
-      patchDraft({
-        fileId,
-        patch: {
-          agentId: job.agent_id,
-          scopePages: job.scope_pages ?? [],
-          scopePagesInputRaw: job.scope_pages?.length
-            ? formatPageRange(job.scope_pages)
-            : "",
-          chunkSize: job.chunk_size,
-          chunkOverlap: job.chunk_overlap,
-          sourceVariations: (job.source_variations ??
-            ["clean_text"]) as SourceVariationKind[],
-          chunkingStrategy: (job.chunking_strategy ?? "pages") as ChunkingStrategy,
-          jobName: job.name,
-          saveAsJob: true,
-          variableMapping: job.variable_mapping ?? {},
-          outputSchema: job.output_schema as unknown,
-          maxConcurrent: job.max_concurrent,
-        },
-      }),
-    );
-    toast.success(`Loaded "${job.name}" into the form`);
-  };
-
   const handleDelete = async (job: PageExtractionJob) => {
     const ok = await confirm({
       title: "Delete template",
-      description: (
-        <>
-          Delete <b>{job.name}</b>? The template will be removed from this
-          list. <span className="font-medium">Extracted data stays</span>{" "}
-          — clear it separately from the Results tab.
-        </>
-      ),
+      description:
+        'Delete "' +
+        job.name +
+        '"? The template will be removed from this list. Extraction data stays — clear it separately from the Results tab.',
       confirmLabel: "Delete template",
       variant: "destructive",
     });
@@ -113,6 +81,10 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
     setDeletingJobId(job.id);
     try {
       await deleteJob(job.id);
+      // If the deleted template was the active one, clear the selection.
+      if (selectedJobId === job.id) {
+        dispatch(selectJobForFile({ fileId, jobId: null }));
+      }
       refetch();
       toast.success(`Deleted "${job.name}"`);
     } catch (err) {
@@ -128,61 +100,75 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
         Saved templates ({jobs.length})
       </p>
       <ul className="space-y-1">
-        {jobs.map((job) => (
-          <li
-            key={job.id}
-            className="flex items-center gap-1 px-2 py-1.5 bg-card border border-border rounded-md text-[11px]"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground truncate">{job.name}</p>
-              <p className="text-[10px] text-muted-foreground tabular-nums">
-                chunk {job.chunk_size} ·{" "}
-                {job.source_variations?.length ?? 1} src ·{" "}
-                {job.scope_pages?.length
-                  ? `${job.scope_pages.length} pages`
-                  : "all pages"}
-              </p>
-            </div>
+        {jobs.map((job) => {
+          const isSelected = selectedJobId === job.id;
+          return (
+            <li
+              key={job.id}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1.5 border rounded-md text-[11px] transition-colors cursor-pointer",
+                isSelected
+                  ? "border-primary/60 bg-primary/5"
+                  : "border-border bg-card hover:bg-accent/30",
+              )}
+              onClick={() => handleRowClick(job)}
+              role="button"
+            >
+              <div className="flex-1 min-w-0">
+                <p
+                  className={cn(
+                    "font-medium truncate",
+                    isSelected ? "text-primary" : "text-foreground",
+                  )}
+                >
+                  {job.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  chunk {job.chunk_size} ·{" "}
+                  {job.source_variations?.length ?? 1} src ·{" "}
+                  {job.scope_pages?.length
+                    ? `${job.scope_pages.length} pages`
+                    : "all pages"}
+                </p>
+              </div>
 
-            {/* Three-icon row: edit, delete, play */}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0 shrink-0"
-              title="Load into form"
-              onClick={() => handleEdit(job)}
-            >
-              <Pencil className="w-3 h-3" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-              title="Delete template (data stays)"
-              disabled={deletingJobId === job.id}
-              onClick={() => void handleDelete(job)}
-            >
-              {deletingJobId === job.id ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Trash2 className="w-3 h-3" />
-              )}
-            </Button>
-            <Button
-              size="sm"
-              className="h-7 w-7 p-0 shrink-0"
-              title="Run a new instance with this template's config"
-              disabled={running || runningJobId === job.id}
-              onClick={() => void handleRunAgain(job)}
-            >
-              {runningJobId === job.id ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Play className="w-3 h-3" />
-              )}
-            </Button>
-          </li>
-        ))}
+              {/* Trash + play. No pencil — clicking the row loads it. */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                title="Delete template (data stays)"
+                disabled={deletingJobId === job.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleDelete(job);
+                }}
+              >
+                {deletingJobId === job.id ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3 h-3" />
+                )}
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0"
+                title="Run a new extraction with this template"
+                disabled={running || runningJobId === job.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleRunAgain(job);
+                }}
+              >
+                {runningJobId === job.id ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Play className="w-3 h-3" />
+                )}
+              </Button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

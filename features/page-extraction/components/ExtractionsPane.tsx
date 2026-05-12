@@ -29,6 +29,7 @@ import { ResultsTable } from "@/features/page-extraction/components/ResultsTable
 import { ChunksTab } from "@/features/page-extraction/components/ChunksTab";
 import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { usePageRunsRealtime } from "@/features/page-extraction/hooks/usePageRunsRealtime";
+import { usePersistedJobSelection } from "@/features/page-extraction/hooks/usePersistedJobSelection";
 
 export interface ExtractionsPaneProps {
   fileId: string | null;
@@ -47,6 +48,10 @@ export function ExtractionsPane({
   onJumpToPage,
 }: ExtractionsPaneProps) {
   const jobId = useAppSelector((s) => selectSelectedJobForFile(s, fileId));
+
+  // Restore the user's last-selected template across refreshes — the
+  // Redux selection slice is in-memory only.
+  usePersistedJobSelection(fileId);
 
   // Realtime fallback: even if the SSE stream is interrupted, the
   // per-chunk state (raw_response, parsed_payload) lands via Realtime.
