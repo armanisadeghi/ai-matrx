@@ -91,6 +91,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { InlineMediaRef } from "@/features/files";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;
@@ -1139,11 +1140,14 @@ export default function FeedbackDetailDialog({
                               rel="noopener noreferrer"
                               className="relative aspect-video rounded-lg overflow-hidden border border-border hover:border-primary transition-colors group"
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={url}
+                              <InlineMediaRef
+                                ref={url}
+                                size="fill"
+                                fit="cover"
+                                rounded="none"
+                                fallback={null}
+                                className="absolute inset-0 group-hover:scale-105 transition-transform"
                                 alt={`Screenshot ${index + 1}`}
-                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                 <ExternalLink className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
@@ -2247,10 +2251,14 @@ export default function FeedbackDetailDialog({
                             <div className="flex flex-wrap gap-2">
                               {composeImages.map((url, idx) => (
                                 <div key={idx} className="relative group">
-                                  <img
-                                    src={url}
+                                  <InlineMediaRef
+                                    ref={url}
+                                    size={{ width: 64, height: 64 }}
+                                    fit="cover"
+                                    rounded="sm"
+                                    border="subtle"
+                                    fallback={null}
                                     alt={`Attachment ${idx + 1}`}
-                                    className="h-16 w-16 rounded border border-border object-cover"
                                   />
                                   <button
                                     onClick={() =>
@@ -2450,10 +2458,15 @@ export default function FeedbackDetailDialog({
                                       target="_blank"
                                       rel="noopener noreferrer"
                                     >
-                                      <img
-                                        src={url}
+                                      <InlineMediaRef
+                                        ref={url}
+                                        size={{ width: 320, height: 192 }}
+                                        fit="contain"
+                                        rounded="sm"
+                                        border="subtle"
+                                        fallback={null}
+                                        className="cursor-pointer hover:opacity-90 transition-opacity max-h-48 max-w-xs"
                                         alt={`Attachment ${idx + 1}`}
-                                        className="max-h-48 max-w-xs rounded border border-border object-contain cursor-pointer hover:opacity-90 transition-opacity"
                                       />
                                     </a>
                                   ))}
@@ -2475,10 +2488,14 @@ export default function FeedbackDetailDialog({
                     <div className="flex flex-wrap gap-2 px-1">
                       {replyImages.map((url, idx) => (
                         <div key={idx} className="relative group">
-                          <img
-                            src={url}
+                          <InlineMediaRef
+                            ref={url}
+                            size={{ width: 64, height: 64 }}
+                            fit="cover"
+                            rounded="sm"
+                            border="subtle"
+                            fallback={null}
                             alt={`Attachment ${idx + 1}`}
-                            className="h-16 w-16 rounded border border-border object-cover"
                           />
                           <button
                             onClick={() =>

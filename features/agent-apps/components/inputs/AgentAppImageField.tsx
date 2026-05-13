@@ -14,7 +14,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ImagePlus, Loader2, RotateCcw, Upload, X } from "lucide-react";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { InlineMediaRef, useFileUpload } from "@/features/files";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
 
@@ -124,10 +124,13 @@ export function AgentAppImageField({
         </div>
       ) : value ? (
         <>
-          <img
-            src={value}
+          <InlineMediaRef
+            ref={value}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            fallback={null}
             alt=""
-            className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-background text-foreground text-xs font-medium">

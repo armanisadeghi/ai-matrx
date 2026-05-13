@@ -32,7 +32,7 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { submitFeedback, getUserFeedback } from "@/actions/feedback.actions";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { InlineMediaRef, useFileUpload } from "@/features/files";
 import {
   FileUploadWithStorage,
   type UploadedFileResult,
@@ -846,11 +846,14 @@ function AttachmentThumbnail({
           className="block w-full h-full"
           aria-label="View image fullsize"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={slot.url}
+          <InlineMediaRef
+            ref={slot.url ?? null}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            fallback={null}
+            className="group-hover:brightness-90 transition-[filter]"
             alt="Attachment"
-            className="w-full h-full object-cover group-hover:brightness-90 transition-[filter]"
           />
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
             <ImageIcon className="w-4 h-4 text-white drop-shadow" />

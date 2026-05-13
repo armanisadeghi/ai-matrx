@@ -41,6 +41,7 @@ import {
   messageContainsResources,
 } from "@/features/prompts/utils/resource-parsing";
 import { ResourcesContainer } from "@/features/prompts/components/resource-display/ResourceDisplay";
+import { InlineMediaRef } from "@/features/files";
 
 // ============================================================================
 // MESSAGE ERROR BOUNDARY
@@ -220,10 +221,13 @@ function AttachedResourcesDisplay({
             className="relative group rounded-lg overflow-hidden border border-border"
           >
             {isImage && resource.data.url ? (
-              <img
-                src={resource.data.url}
+              <InlineMediaRef
+                ref={resource.data.url}
+                size={{ width: 40, height: 40 }}
+                fit="cover"
+                rounded="none"
+                fallback={null}
                 alt={resource.data.filename || "Attached image"}
-                className="h-10 w-10 object-cover"
               />
             ) : (
               <div className="h-10 w-12 flex flex-col items-center justify-center bg-muted py-1">

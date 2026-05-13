@@ -32,6 +32,7 @@ import {
 } from "@/features/canvas/social/preset-covers";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { OPEN_PUBLIC_SEARCH_FILTERS_EVENT } from "@/features/image-manager/mobileEvents";
+import { InlineMediaRef } from "@/features/files";
 
 type ThemeFilter = "all" | PresetCover["theme"];
 
@@ -160,12 +161,14 @@ export function PublicImagesSection({
                 )}
                 title={`${cover.label} (${cover.theme})`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={cover.thumbUrl}
+                <InlineMediaRef
+                  ref={cover.thumbUrl}
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback={null}
+                  className="absolute inset-0"
                   alt={cover.label}
-                  className="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent text-white text-[11px] px-2 py-1 truncate">
                   {cover.label}

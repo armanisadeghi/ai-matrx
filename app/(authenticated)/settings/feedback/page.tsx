@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { InlineMediaRef } from '@/features/files';
 
 // ──────────────────────────────────────────────────
 // Progress Stepper - User-facing stage definitions
@@ -540,11 +541,13 @@ function FeedbackItem({ item, onUpdate }: { item: UserFeedback; onUpdate: () => 
                                         rel="noopener noreferrer"
                                         className="block w-20 h-20 rounded border border-border overflow-hidden bg-muted hover:ring-2 hover:ring-primary transition-all"
                                     >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={url}
+                                        <InlineMediaRef
+                                            ref={url}
+                                            size="fill"
+                                            fit="cover"
+                                            rounded="none"
+                                            fallback={null}
                                             alt={`Screenshot ${i + 1}`}
-                                            className="w-full h-full object-cover"
                                         />
                                     </a>
                                 ))}

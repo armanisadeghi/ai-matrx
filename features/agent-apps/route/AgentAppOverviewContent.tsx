@@ -49,6 +49,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
+import { InlineMediaRef } from "@/features/files";
 import { siteConfig } from "@/config/extras/site";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
@@ -222,15 +223,14 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <div className="flex items-start gap-5">
           <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-primary/10 text-primary inline-flex items-center justify-center">
-            {app.favicon_url ? (
-              <img
-                src={app.favicon_url}
-                alt=""
-                className="w-12 h-12 rounded-lg object-cover"
-              />
-            ) : (
-              <AppWindow className="w-7 h-7" />
-            )}
+            <InlineMediaRef
+              ref={app.favicon_url ?? null}
+              size={{ width: 48, height: 48 }}
+              fit="cover"
+              rounded="lg"
+              fallbackIcon={<AppWindow className="w-7 h-7" />}
+              alt=""
+            />
           </div>
           <div className="min-w-0 flex-1 space-y-1.5">
             <h1 className="text-3xl font-bold tracking-tight leading-tight text-foreground">

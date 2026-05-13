@@ -38,6 +38,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useUnsplashSearch } from "@/hooks/images/useUnsplashSearch";
 import { openImageViewer } from "@/features/window-panels/windows/image/ImageViewerWindow";
 import { toast } from "sonner";
+import { InlineMediaRef } from "@/features/files";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -293,12 +294,14 @@ export function GalleryFloatingWorkspace() {
                 }}
                 className="group relative w-full rounded overflow-hidden border border-transparent hover:border-primary/40 transition-all"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={fav.thumbUrl}
+                <InlineMediaRef
+                  ref={fav.thumbUrl}
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback={null}
+                  className="w-full aspect-square"
                   alt={fav.alt}
-                  draggable={false}
-                  className="w-full aspect-square object-cover"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                   <ImageIcon className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
@@ -527,17 +530,20 @@ function PhotoCard({
       )}
       onClick={onView}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={thumbUrl}
-        alt={alt}
-        draggable={false}
-        loading="lazy"
+      {/* `block` is set by InlineMediaRef's baseCls, so the
+          isMasonry-only `display:block` from the previous <img> is now
+          redundant and not propagated. */}
+      <InlineMediaRef
+        ref={thumbUrl ?? null}
+        size="fill"
+        fit="cover"
+        rounded="none"
+        fallback={null}
         className={cn(
-          "w-full object-cover transition-transform group-hover:scale-[1.02]",
+          "w-full transition-transform group-hover:scale-[1.02]",
           isCompact ? "aspect-square" : isMasonry ? "w-full" : "aspect-[4/3]",
         )}
-        style={isMasonry ? { display: "block" } : undefined}
+        alt={alt}
       />
 
       {/* Hover overlay */}

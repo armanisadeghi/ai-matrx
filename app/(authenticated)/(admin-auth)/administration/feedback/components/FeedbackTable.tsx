@@ -5,6 +5,7 @@ import { getAllFeedback, updateFeedback, setAdminDecision, forceCloseFeedback } 
 import { UserFeedback, FeedbackStatus, FeedbackType, FeedbackCategory, AdminDecision, TestingResult, ADMIN_DECISION_COLORS, ADMIN_DECISION_LABELS, ADMIN_STATUS_LABELS, CATEGORY_COLORS } from '@/types/feedback.types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { InlineMediaRef } from '@/features/files';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -180,11 +181,14 @@ function ImagePreviewModal({
                 ) : (
                     <div className="relative">
                         <div className="flex items-center justify-center min-h-[400px] max-h-[80vh]">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src={imageUrls[currentIndex]}
+                            <InlineMediaRef
+                                ref={imageUrls[currentIndex] ?? null}
+                                size="fill"
+                                fit="contain"
+                                rounded="none"
+                                fallback={null}
+                                className="max-w-full max-h-[80vh]"
                                 alt={`Screenshot ${currentIndex + 1}`}
-                                className="max-w-full max-h-[80vh] object-contain"
                             />
                         </div>
                         {imageUrls.length > 1 && (

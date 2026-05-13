@@ -27,6 +27,7 @@ import { PRESET_COVERS } from "./preset-covers";
 import { cn } from "@/utils/cn";
 import { uploadAsset } from "@/features/files/api/assets";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { InlineMediaRef } from "@/features/files";
 
 interface ShareCoverImagePickerProps {
   value: string | null;
@@ -164,11 +165,14 @@ export function ShareCoverImagePicker({
           >
             {value ? (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={value}
+                <InlineMediaRef
+                  ref={value}
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback={null}
+                  className="absolute inset-0"
                   alt="Cover preview"
-                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 {presetForCurrent && (
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-background/80 backdrop-blur text-xs font-medium border border-border">
@@ -248,12 +252,14 @@ export function ShareCoverImagePicker({
                   )}
                   title={cover.label}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={cover.thumbUrl}
+                  <InlineMediaRef
+                    ref={cover.thumbUrl}
+                    size="fill"
+                    fit="cover"
+                    rounded="none"
+                    fallback={null}
+                    className="absolute inset-0"
                     alt={cover.label}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover"
                   />
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pt-3 pb-1">
                     <span className="text-[10px] font-medium text-white leading-none">

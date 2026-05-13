@@ -20,6 +20,7 @@ import {
   messageContainsResources,
 } from "@/features/conversation/utils/resource-parsing";
 import { ResourcesContainer } from "@/features/prompts/components/resource-display/ResourceDisplay"; // shared UI component
+import { InlineMediaRef } from "@/features/files";
 import type {
   ConversationMessage,
   ConversationResource,
@@ -77,10 +78,13 @@ function AttachedResourcesDisplay({
             className="relative group rounded-lg overflow-hidden border border-border"
           >
             {isImage && data.url ? (
-              <img
-                src={data.url}
+              <InlineMediaRef
+                ref={data.url}
+                size={{ width: 40, height: 40 }}
+                fit="cover"
+                rounded="none"
+                fallback={null}
                 alt={data.filename || "Attached image"}
-                className="h-10 w-10 object-cover"
               />
             ) : (
               <div className="h-10 w-12 flex flex-col items-center justify-center bg-muted py-1">

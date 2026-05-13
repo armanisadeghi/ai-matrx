@@ -40,6 +40,7 @@ import {
   TapTargetButtonSolid,
 } from "@/components/icons/TapTargetButton";
 import { PublicResourcePickerMenu } from "./resource-picker/PublicResourcePickerMenu";
+import { InlineMediaRef } from "@/features/files";
 
 import type { PublicResource, PublicResourceType } from "../types/content";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
@@ -250,10 +251,13 @@ function ResourceChips({
             className="relative group rounded-lg overflow-hidden border border-border"
           >
             {isImage && resource.data.url ? (
-              <img
-                src={resource.data.url}
+              <InlineMediaRef
+                ref={resource.data.url}
+                size={{ width: 64, height: 64 }}
+                fit="cover"
+                rounded="none"
+                fallback={null}
                 alt={resource.data.filename || "Uploaded image"}
-                className="h-16 w-16 object-cover"
               />
             ) : (
               <div className="h-16 w-16 flex flex-col items-center justify-center bg-muted p-1">

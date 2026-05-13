@@ -44,6 +44,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
+import { InlineMediaRef } from "@/features/files";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CanvasType, CanvasVisibility } from "@/types/canvas-social";
@@ -126,11 +127,14 @@ function ShareFormContent({
           <div className="space-y-2">
             <Label>Social Preview</Label>
             <div className="relative aspect-[1200/630] w-full overflow-hidden rounded-lg border border-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={thumbnailUrl}
+              <InlineMediaRef
+                ref={thumbnailUrl}
+                size="fill"
+                fit="cover"
+                rounded="none"
+                fallback={null}
+                className="absolute inset-0"
                 alt="Social share cover"
-                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
           </div>

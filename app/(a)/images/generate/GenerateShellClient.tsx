@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateImage, type ImageResult } from "@/features/image-studio/api/python";
+import { InlineMediaRef } from "@/features/files";
 
 type Size = "square" | "portrait" | "landscape" | "wide" | "tall";
 
@@ -162,11 +163,17 @@ export default function GenerateShellClient() {
               key={r.cloud_file_id}
               className="group relative rounded-lg overflow-hidden border border-border bg-card"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={r.public_url}
+              {/* Pass cloud_file_id (UUID) so the handler routes through
+                  the auto-refresh + CDN-routing path; fall back to
+                  public_url if the UUID isn't present. */}
+              <InlineMediaRef
+                ref={r.cloud_file_id ?? r.public_url ?? null}
+                size="fill"
+                fit="cover"
+                rounded="none"
+                fallback="icon"
+                className="w-full aspect-square"
                 alt={r.cloud_file_id}
-                className="w-full aspect-square object-cover"
               />
               <div className="p-2 flex flex-wrap gap-1.5 text-xs">
                 <Link

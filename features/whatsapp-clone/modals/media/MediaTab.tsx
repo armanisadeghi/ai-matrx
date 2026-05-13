@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { InlineMediaRef } from "@/features/files";
 import { useInfiniteWindow } from "@/features/files";
 import {
   formatDuration,
@@ -169,11 +169,12 @@ function MediaTile({ item }: { item: WAMediaItem }) {
   }, [isVisible]);
 
   const inlineUrl = item.thumbnailUrl || item.url;
-  const needsSigned = isVisible && !inlineUrl && !!item.cloudFileId;
-  const signedUrl = useFileSrc(
-    needsSigned ? { kind: "file_id", fileId: item.cloudFileId! } : null,
-  );
-  const renderUrl = inlineUrl || signedUrl || "";
+  // InlineMediaRef does the cloud-files URL hop internally — we pass the
+  // preferred reference and let the universal handler pick the right URL
+  // flavour (cloud_file_id → CDN, else inline URL).
+  const ref = isVisible
+    ? (inlineUrl || item.cloudFileId || null)
+    : null;
 
   return (
     <button
@@ -182,14 +183,14 @@ function MediaTile({ item }: { item: WAMediaItem }) {
       className="group relative aspect-square overflow-hidden rounded-md bg-muted"
       title={item.conversationName ?? item.caption ?? ""}
     >
-      {isVisible && renderUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={renderUrl}
+      {ref ? (
+        <InlineMediaRef
+          ref={ref}
+          size="fill"
+          fit="cover"
+          rounded="none"
+          fallback={null}
           alt={item.caption ?? item.conversationName ?? "Media"}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
         />
       ) : null}
       {item.kind === "video" ? (

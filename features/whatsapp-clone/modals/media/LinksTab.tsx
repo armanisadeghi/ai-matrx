@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { WAAvatar } from "../../shared/WAAvatar";
 import { formatLinkTime } from "../../shared/relative-time";
 import type { WALinkItem } from "../../types";
+import { InlineMediaRef } from "@/features/files";
 
 interface LinksTabProps {
   items: WALinkItem[];
@@ -114,16 +115,14 @@ function LinkRow({ item }: { item: WALinkItem }) {
         className="flex min-w-0 items-center gap-3"
       >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-          {item.previewImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.previewImageUrl}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <LinkIcon className="h-4 w-4 text-muted-foreground" />
-          )}
+          <InlineMediaRef
+            ref={item.previewImageUrl ?? null}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            fallbackIcon={<LinkIcon className="h-4 w-4 text-muted-foreground" />}
+            alt=""
+          />
         </div>
         <div className="min-w-0">
           <div className="truncate text-[14px] font-medium text-foreground">
