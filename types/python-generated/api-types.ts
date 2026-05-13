@@ -4082,6 +4082,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/page-extraction/runs/{run_id}/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Index Run Into Rag
+         * @description Materialize a completed extraction run's results into RAG as
+         *     agent-derivative chunks. Idempotent (safe to call multiple times —
+         *     reuses the derivative row and rewrites the chunks).
+         *
+         *     This is the manual counterpart to the auto-hook in ``_finalize_run``.
+         *     Use it to:
+         *       * Retry indexing for runs that failed during auto-indexing
+         *       * Backfill runs that completed before the auto-hook was enabled
+         *       * Force a re-index after tuning the embedding model
+         *
+         *     Ownership: caller must own the parent job. The check happens before
+         *     we kick off any embedding work so a misbehaving FE can't trigger a
+         *     paid run on someone else's data.
+         */
+        post: operations["index_run_into_rag_page_extraction_runs__run_id__index_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/legal/search": {
         parameters: {
             query?: never;
@@ -26154,6 +26186,37 @@ export interface operations {
         };
     };
     cancel_run_page_extraction_runs__run_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_run_into_rag_page_extraction_runs__run_id__index_post: {
         parameters: {
             query?: never;
             header?: never;

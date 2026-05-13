@@ -10554,6 +10554,47 @@
         }
       }
     },
+    "/page-extraction/runs/{run_id}/index": {
+      "post": {
+        "tags": [
+          "Page Extraction"
+        ],
+        "summary": "Index Run Into Rag",
+        "description": "Materialize a completed extraction run's results into RAG as\nagent-derivative chunks. Idempotent (safe to call multiple times —\nreuses the derivative row and rewrites the chunks).\n\nThis is the manual counterpart to the auto-hook in ``_finalize_run``.\nUse it to:\n  * Retry indexing for runs that failed during auto-indexing\n  * Backfill runs that completed before the auto-hook was enabled\n  * Force a re-index after tuning the embedding model\n\nOwnership: caller must own the parent job. The check happens before\nwe kick off any embedding work so a misbehaving FE can't trigger a\npaid run on someone else's data.",
+        "operationId": "index_run_into_rag_page_extraction_runs__run_id__index_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legal/search": {
       "post": {
         "tags": [

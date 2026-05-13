@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Star, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { OVERVIEW_CARDS } from "../../constants";
 import type { AgentConnectionsSection } from "../../types";
 import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
@@ -13,10 +13,10 @@ import {
   selectRenderDefinitionsCount,
   selectResourcesCount,
 } from "../../redux/skl/selectors";
-import { setActiveSection } from "../../redux/ui/slice";
+import { useAgentConnectionsNav } from "../AgentConnectionsNavContext";
 
 export function OverviewSection() {
-  const dispatch = useAppDispatch();
+  const { navigate } = useAgentConnectionsNav();
   const [prompt, setPrompt] = useState("");
 
   const agentsCount = useAppSelector(selectLiveAgents).length;
@@ -109,7 +109,7 @@ export function OverviewSection() {
             <button
               key={card.value}
               type="button"
-              onClick={() => dispatch(setActiveSection(card.value))}
+              onClick={() => navigate(card.value)}
               className={cn(
                 "group flex flex-col gap-3 rounded-xl border border-border",
                 "bg-background p-5 text-left transition-colors",

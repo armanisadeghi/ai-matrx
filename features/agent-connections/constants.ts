@@ -12,23 +12,25 @@ import {
   Server,
   Plug,
   Library,
+  Sliders,
 } from "lucide-react";
 import type { OverviewCard, SidebarSection } from "./types";
 
 export const SIDEBAR_SECTIONS: SidebarSection[] = [
   { value: "overview", label: "Overview", icon: Home },
   { value: "agents", label: "Agents", icon: Hexagon },
-  { value: "subagents", label: "Sub-agents", icon: Brain },
+  { value: "subagents", label: "Sub-agents", icon: Brain, urlSegment: "sub-agents" },
   { value: "skills", label: "Skills", icon: Lightbulb },
-  { value: "renderBlocks", label: "Render Blocks", icon: Blocks },
+  { value: "renderBlocks", label: "Render Blocks", icon: Blocks, urlSegment: "render-blocks" },
   { value: "resources", label: "Resources", icon: FolderOpen },
   { value: "instructions", label: "Instructions", icon: BookOpen },
   { value: "prompts", label: "Prompts", icon: Bookmark },
   { value: "commands", label: "Commands", icon: TerminalSquare },
   { value: "hooks", label: "Hooks", icon: Zap },
-  { value: "mcpServers", label: "MCP Servers", icon: Server },
+  { value: "mcpServers", label: "MCP Servers", icon: Server, urlSegment: "mcp-servers" },
   { value: "plugins", label: "Plugins", icon: Plug },
   { value: "registries", label: "Registries", icon: Library },
+  { value: "preferences", label: "Preferences", icon: Sliders },
 ];
 
 export const OVERVIEW_CARDS: OverviewCard[] = [

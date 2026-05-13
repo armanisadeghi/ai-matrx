@@ -272,6 +272,36 @@ export interface TranscriptionPreferences {
   customCleanerAgents: CustomCleanerAgent[];
 }
 
+/** Captured keyboard shortcut — mirrors the `KeybindingValue` shape used by
+ *  `SettingsKeybinding` so the preference can be passed straight through. */
+export interface AgentConnectionsShortcut {
+  key: string;
+  display: string;
+  ctrl?: boolean;
+  alt?: boolean;
+  shift?: boolean;
+  meta?: boolean;
+}
+
+/** Preferences surfaced on the /agent-connections/preferences route. Each
+ *  field maps 1:1 to a primitive in the settings library, so the route serves
+ *  double duty as a working demo of the primitive set. */
+export interface AgentConnectionsPreferences {
+  notifyOnConnect: boolean;
+  autoReconnect: boolean;
+  confirmDestructive: boolean;
+  defaultScope: "user" | "organization" | "project" | "task";
+  densityMode: "compact" | "comfortable" | "spacious";
+  sidebarStyle: "icons" | "labels" | "full";
+  autoSaveDelayMs: number;
+  maxConcurrentAgents: number;
+  workspaceName: string;
+  welcomeMessage: string;
+  accentColor: string;
+  enabledRegistries: string[];
+  quickToggleShortcut: AgentConnectionsShortcut | null;
+}
+
 // Combine all module preferences into one interface
 export interface UserPreferences {
   display: DisplayPreferences;
@@ -292,6 +322,7 @@ export interface UserPreferences {
   messaging: MessagingPreferences;
   agentContext: AgentContextPreferences;
   transcription: TranscriptionPreferences;
+  agentConnections: AgentConnectionsPreferences;
 }
 
 // Add state interface for async operations
@@ -464,6 +495,21 @@ export const initializeUserPreferencesState = (
     transcription: {
       customCleanerAgents: [],
     },
+    agentConnections: {
+      notifyOnConnect: true,
+      autoReconnect: false,
+      confirmDestructive: true,
+      defaultScope: "user",
+      densityMode: "comfortable",
+      sidebarStyle: "full",
+      autoSaveDelayMs: 750,
+      maxConcurrentAgents: 4,
+      workspaceName: "",
+      welcomeMessage: "",
+      accentColor: "#3b82f6",
+      enabledRegistries: [],
+      quickToggleShortcut: null,
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -506,6 +552,10 @@ export const initializeUserPreferencesState = (
     transcription: {
       ...defaultPreferences.transcription,
       ...preferences.transcription,
+    },
+    agentConnections: {
+      ...defaultPreferences.agentConnections,
+      ...preferences.agentConnections,
     },
   };
 

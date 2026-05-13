@@ -1,10 +1,10 @@
 # FEATURE.md — `agent-connections`
 
-**Status:** `scaffolded` (UI shell only — all data is hardcoded mock, no Redux/service/DB wiring)
+**Status:** `scaffolded` (UI shell + route scaffold — all section data is still hardcoded mock; Preferences tab is real and synced to user prefs)
 **Tier:** `1`
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-05-13`
 
-> This is the agent-facing hub for "what can this agent reach?" — models, skills, instructions, prompts, hooks, MCP servers, plugins. It currently exists as a UI shell rendered in a floating window panel. Real data sources, CRUD, and auth storage are not yet wired. The broader MCP + external integrations story lives in the sibling feature `features/api-integrations/` (see forthcoming `features/api-integrations/FEATURE.md`).
+> This is the agent-facing hub for "what can this agent reach?" — models, skills, instructions, prompts, hooks, MCP servers, plugins. It is now mounted as a **Next.js route at `/agent-connections/*`** (one subroute per section, sidebar persists across navigations) AND still surfaced as a floating window panel for the legacy overlay flow. Most sections are still presentational; the new Preferences tab is wired through `useSetting()` to the user-preferences synced cache. The broader MCP + external integrations story lives in the sibling feature `features/api-integrations/` (see forthcoming `features/api-integrations/FEATURE.md`).
 
 ---
 
@@ -17,17 +17,23 @@ Agent Connections is the engineer-facing registry surface that governs **which t
 ## Entry points
 
 **Routes**
-- No dedicated route. The spec mentions `/app/(authenticated)/ai/agents/[id]/connections`, but that path does not exist in this codebase. The agent route tree lives under `app/(a)/agents/[id]/...` (`build`, `run`, `apps`, `shortcuts`, `widgets`) and none of them mount this hub as a page today.
-- Surfaced instead as a floating window: **`agent-connections-window`** (overlay id `agentConnectionsWindow`). Opened from the overlay controller and rendered via `features/window-panels/windows/agents/AgentConnectionsWindow.tsx`.
+- **`/agent-connections`** — Overview. Mounted via `app/(a)/agent-connections/page.tsx`.
+- **`/agent-connections/<segment>`** — one subroute per section. Segments are kebab-case (`sub-agents`, `render-blocks`, `mcp-servers`); other sections use their enum value directly. The mapping is declared once in `features/agent-connections/constants.ts → SIDEBAR_SECTIONS[].urlSegment`, and the helpers in `features/agent-connections/routing.ts` (`sectionToHref`, `segmentToSection`) translate both ways.
+- `app/(a)/agent-connections/layout.tsx` is the **persistent shell**: reads the panel-layout cookie server-side, then renders `<AgentConnectionsRouteShell>` with the sidebar mounted once and `{children}` filling the right pane. This is the canonical model for window-style pages — copy it for new feature shells.
+- Also surfaced as a floating window: **`agent-connections-window`** (overlay id `agentConnectionsWindow`). Opened from the overlay controller and rendered via `features/window-panels/windows/agents/AgentConnectionsWindow.tsx`. The route and the overlay share the same sidebar and section components — the only difference is which navigation mode is active.
 
-**Components (exported from `features/agent-connections/index.ts`)**
-- `AgentConnectionsSidebar` — left-rail section picker (8 entries)
-- `AgentConnectionsBody` — switch-based router for section content
-- Per-section components in `components/sections/`: `OverviewSection`, `AgentsSection`, `SkillsSection`, `InstructionsSection`, `PromptsSection`, `HooksSection`, `McpServersSection`, `PluginsSection`
-- Shared primitives: `SectionToolbar`, `GroupSection`, `ListRow`, `SectionFooter`
+**Components (in `features/agent-connections/components/`)**
+- `AgentConnectionsSidebar` — left-rail section picker. **Dual-mode**: when given `basePath`, it renders Next `<Link>`s and derives `activeSection` from `usePathname()`; when given `activeSection + onSelect`, it falls back to button + callback (legacy overlay mode).
+- `AgentConnectionsBody` — Redux switch-based router for section content (used by the overlay window only — routes mount the section components directly through their `page.tsx`).
+- `AgentConnectionsRouteShell` — client shell using `react-resizable-panels` v4 (`<ClientGroup>` + `<RegisteredPanel>` + `<Handle>` from `app/(ssr)/ssr/demos/resizables/_lib/`). Cookie-persisted sidebar width.
+- `AgentConnectionsNavContext` — provider exposing `navigate(section)`. `mode="route"` pushes a route; `mode="overlay"` dispatches `setActiveSection`. Used by `OverviewSection`'s card grid so the same component works in both surfaces.
+- Per-section components in `components/sections/`: `OverviewSection`, `AgentsSection`, `SubAgentsSection`, `SkillsSection`, `RenderBlocksSection`, `ResourcesSection`, `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `McpServersSection`, `PluginsSection`, `RegistriesSection`, `PreferencesSection`.
+- Shared primitives: `SectionToolbar`, `GroupSection`, `ListRow`, `SectionFooter`, `ScopePicker`.
 
 **Hooks / Services / Redux**
-- **None.** No hooks, no `service.ts`, no slice. Active section is held in local `useState` inside `AgentConnectionsWindow`. The window registry stores `activeSection` in its default data (`features/window-panels/registry/windowRegistry.ts:642`) but nothing consumes it yet.
+- `redux/ui/slice.ts` — `activeSection`, `viewScope`, `selectedItemId`. The route view does NOT read `activeSection` (the URL is the truth) — only the overlay window does. The slice stays for the overlay, for scope/selection state, and for the overview-card click that fires through `setActiveSection` in overlay mode.
+- `redux/skl/` — skill/render/resource definition state (shared with the agents system).
+- **Preferences tab** is wired to `useSetting<T>("userPreferences.agentConnections.<key>")` — the new `agentConnections` module on `UserPreferences` (`lib/redux/slices/userPreferencesSlice.ts`). Persistence (IDB + LS + Supabase) is handled automatically by the existing user-preferences engine. **No slice-binding entry was needed** — `features/settings/slice-bindings.ts → userPreferences` already does generic `module.preference` dispatch.
 
 **API endpoints**
 - None owned by this feature. Runtime tool access is resolved server-side from the agent definition (`POST /ai/agents/{id}` — see `features/agents/FEATURE.md`).
@@ -81,7 +87,9 @@ Agent invocations hit `POST /ai/agents/{id}` with the agent ID plus per-call inp
 - **Client never sees the full tool list.** The server owns tool resolution per agent invocation. If this hub grows editing capabilities, display must be selector-driven off the already-loaded agent definition, not a separate fetch that would leak the registry.
 - **Connection auth stays server-side.** API keys, OAuth tokens, MCP server credentials are never rendered or round-tripped through client state. `features/agents/services/mcp-oauth/` owns the OAuth dance.
 - **The stated route does not exist yet.** Docs and PRDs reference `/ai/agents/[id]/connections`; the code ships a floating window instead. Do not create the route without checking with the agent-system owners — it may be intentionally a window/overlay.
-- **`count` values in `SIDEBAR_SECTIONS` are hardcoded** (Agents: 8, Skills: 25, Prompts: 1, Hooks: 5, MCP Servers: 8). Replace with selectors before shipping.
+- **Sidebar contract is bi-modal.** Pass `basePath` for the route surface OR `activeSection + onSelect` for the overlay. Mixing both is a bug — `basePath` wins and `usePathname()` becomes the source of truth. New surfaces should always use `basePath`.
+- **OverviewSection must run inside `<AgentConnectionsNavProvider>`** (or it'll fall back to dispatching `setActiveSection`, which only works in the overlay world). The route shell and the overlay window both mount the provider; if you embed `OverviewSection` somewhere else, wrap it.
+- **Cookie name is versioned** (`panels:agent-connections:v1`). Bumping the panel layout's default sizes or panel ids requires bumping the version so old cookies don't clamp to invalid layouts.
 - **Prompts are dead.** The Prompts section is a placeholder row. The prompts system has been superseded by agents + shortcuts + agent-apps (see `features/agents/migration/`). A "Prompts" tab inside Connections is legacy surface by name; treat it as a slot to repurpose or remove.
 - **No permission gating lives here.** Scope (admin/user/org) is expected to apply to most sections (shortcuts, hooks, instructions are multi-scope by project rule), but nothing enforces or filters by scope in this feature yet.
 
@@ -113,6 +121,7 @@ Scaffolded UI only. Before adding real behavior:
 
 ## Change log
 
+- `2026-05-13` — Promoted to a real Next.js route family under `app/(a)/agent-connections/*` (14 subroutes, persistent sidebar via `layout.tsx`, cookie-persisted resizable shell). Added the `preferences` section + new `agentConnections` module on `UserPreferences` wired through `useSetting()`. Made the sidebar dual-mode (`basePath` for routes, `activeSection + onSelect` for the overlay). Introduced `AgentConnectionsNavContext` so `OverviewSection` works in both surfaces.
 - `2026-04-25` — `AgentConnectionsWindow` imports sidebar/body from `components/*` and `AgentConnectionsSection` from `types` instead of `@/features/agent-connections` barrel.
 - `2026-04-22` — claude: initial doc.
 

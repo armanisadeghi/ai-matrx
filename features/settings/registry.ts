@@ -31,6 +31,11 @@ import {
   Chrome,
   MessageSquareMore,
   FileText,
+  IdCard,
+  Phone,
+  Truck,
+  ShieldAlert,
+  Briefcase,
 } from "lucide-react";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
@@ -75,6 +80,11 @@ const SystemTab = lazyTab(() => import("./tabs/SystemTab"));
 const LanguageTab = lazyTab(() => import("./tabs/LanguageTab"));
 const PrivacyTab = lazyTab(() => import("./tabs/PrivacyTab"));
 const ProfileTab = lazyTab(() => import("./tabs/ProfileTab"));
+const ProfileIdentityTab = lazyTab(() => import("./tabs/ProfileIdentityTab"));
+const ProfileContactTab = lazyTab(() => import("./tabs/ProfileContactTab"));
+const ProfileAddressesTab = lazyTab(() => import("./tabs/ProfileAddressesTab"));
+const ProfileWorkTab = lazyTab(() => import("./tabs/ProfileWorkTab"));
+const ProfileEmergencyTab = lazyTab(() => import("./tabs/ProfileEmergencyTab"));
 const OrganizationsTab = lazyTab(() => import("./tabs/OrganizationsTab"));
 const IntegrationsTab = lazyTab(() => import("./tabs/IntegrationsTab"));
 const SandboxStorageTab = lazyTab(() => import("./tabs/SandboxStorageTab"));
@@ -378,6 +388,14 @@ export const settingsRegistry: SettingsTabDef[] = [
   },
 
   // ── Profile / Account ─────────────────────────────────────────────────────
+  //
+  // The five sub-tabs all render the same UserProfilePage; each just scrolls
+  // to its section on mount. Persistence model:
+  //   • "Profile" itself (parent) saves to auth.users.user_metadata + public.profiles
+  //     via /api/user/profile (custom Supabase write, not the unified sync engine).
+  //   • All children save to public.user_form_profile via /api/user/form-profile.
+  // We mark them all "synced" because saved data lives in Supabase and is
+  // available across all the user's devices.
   {
     id: "account",
     label: "Profile",
@@ -385,6 +403,96 @@ export const settingsRegistry: SettingsTabDef[] = [
     description: "Your profile, account info, and connected providers.",
     searchKeywords: ["account", "name", "email", "avatar", "profile"],
     component: ProfileTab,
+    persistence: "synced",
+  },
+  {
+    id: "account.identity",
+    label: "Identity",
+    icon: IdCard,
+    parentId: "account",
+    description:
+      "Legal name, pronouns, and date of birth — used by agents acting on your behalf.",
+    searchKeywords: [
+      "legal name",
+      "first name",
+      "last name",
+      "middle name",
+      "preferred name",
+      "pronouns",
+      "date of birth",
+      "dob",
+      "birthday",
+      "suffix",
+    ],
+    component: ProfileIdentityTab,
+    persistence: "synced",
+  },
+  {
+    id: "account.contact",
+    label: "Contact",
+    icon: Phone,
+    parentId: "account",
+    description: "Phones, additional emails, social handles, and website.",
+    searchKeywords: [
+      "phone",
+      "telephone",
+      "mobile",
+      "email addresses",
+      "social",
+      "twitter",
+      "linkedin",
+      "github",
+      "website",
+      "url",
+    ],
+    component: ProfileContactTab,
+    persistence: "synced",
+  },
+  {
+    id: "account.addresses",
+    label: "Addresses",
+    icon: Truck,
+    parentId: "account",
+    description: "Shipping and billing addresses for forms and deliveries.",
+    searchKeywords: [
+      "shipping",
+      "billing",
+      "address",
+      "postal",
+      "zip",
+      "country",
+      "state",
+      "city",
+    ],
+    component: ProfileAddressesTab,
+    persistence: "synced",
+  },
+  {
+    id: "account.work",
+    label: "Work",
+    icon: Briefcase,
+    parentId: "account",
+    description: "Company and job title — used for signatures and forms.",
+    searchKeywords: [
+      "company",
+      "employer",
+      "job",
+      "title",
+      "occupation",
+      "work",
+    ],
+    component: ProfileWorkTab,
+    persistence: "synced",
+  },
+  {
+    id: "account.emergency",
+    label: "Emergency contacts",
+    icon: ShieldAlert,
+    parentId: "account",
+    description:
+      "People to reach if something goes wrong. Visible only to you.",
+    searchKeywords: ["emergency", "contact", "next of kin", "icoe", "ice"],
+    component: ProfileEmergencyTab,
     persistence: "synced",
   },
 
@@ -456,7 +564,8 @@ export const settingsRegistry: SettingsTabDef[] = [
     id: "extension",
     label: "Chrome extension",
     icon: Chrome,
-    description: "Generate codes to authenticate the AI Matrx Chrome extension.",
+    description:
+      "Generate codes to authenticate the AI Matrx Chrome extension.",
     searchKeywords: ["chrome", "browser", "extension", "auth", "code"],
     component: ExtensionTab,
     persistence: "local-only",
