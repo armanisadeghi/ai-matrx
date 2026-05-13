@@ -34,6 +34,8 @@ import type { OrganizationMemberWithUser } from "@/features/organizations/types"
 import { format } from "date-fns";
 import { InlineMediaRef } from "@/features/files";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
+import { countOrgSharedResources } from "@/utils/permissions/orgResources";
+import { supabase } from "@/utils/supabase/client";
 
 export default function OrganizationOverviewPage() {
   const params = useParams();
@@ -46,6 +48,11 @@ export default function OrganizationOverviewPage() {
     [],
   );
   const [projectCount, setProjectCount] = React.useState<number | null>(null);
+  const [notesCount, setNotesCount] = React.useState<number | null>(null);
+  const [agentsCount, setAgentsCount] = React.useState<number | null>(null);
+  const [tasksCount, setTasksCount] = React.useState<number | null>(null);
+  const [tablesCount, setTablesCount] = React.useState<number | null>(null);
+  const [filesCount, setFilesCount] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -70,6 +77,44 @@ export default function OrganizationOverviewPage() {
 
         const orgProjects = await getOrgProjects(org.id);
         setProjectCount(orgProjects.length);
+
+        const [
+          notesOwned,
+          notesShared,
+          agentsOwned,
+          agentsShared,
+          tasksShared,
+          tasksViaProjects,
+          datasetsShared,
+          filesShared,
+        ] = await Promise.all([
+          supabase
+            .from("notes")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
+          countOrgSharedResources(org.id, "note"),
+          supabase
+            .from("agx_agent")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
+          countOrgSharedResources(org.id, "agent"),
+          countOrgSharedResources(org.id, "task"),
+          supabase
+            .from("ctx_tasks")
+            .select("id, projects:project_id(organization_id)", {
+              count: "exact",
+              head: false,
+            })
+            .eq("projects.organization_id", org.id),
+          countOrgSharedResources(org.id, "udt_datasets"),
+          countOrgSharedResources(org.id, "user_files"),
+        ]);
+
+        setNotesCount((notesOwned.count ?? 0) + notesShared);
+        setAgentsCount((agentsOwned.count ?? 0) + agentsShared);
+        setTasksCount((tasksViaProjects.data?.length ?? 0) + tasksShared);
+        setTablesCount(datasetsShared);
+        setFilesCount(filesShared);
       } catch (err: unknown) {
         const msg =
           err instanceof Error ? err.message : "Failed to load organization";
@@ -141,7 +186,7 @@ export default function OrganizationOverviewPage() {
       icon: <FaIndent className="h-5 w-5" />,
       href: `/organizations/${slug}/prompts`,
       color: "text-teal-600 dark:text-teal-400",
-      count: null,
+      count: agentsCount,
     },
     {
       name: "Agent Apps",
@@ -169,14 +214,14 @@ export default function OrganizationOverviewPage() {
       icon: <LuNotepadText className="h-5 w-5" />,
       href: `/organizations/${slug}/notes`,
       color: "text-amber-600 dark:text-amber-400",
-      count: null,
+      count: notesCount,
     },
     {
       name: "Files",
       icon: <FolderOpen className="h-5 w-5" />,
       href: `/organizations/${slug}/files`,
       color: "text-blue-600 dark:text-blue-400",
-      count: null,
+      count: filesCount,
     },
     {
       name: "Projects",
@@ -190,14 +235,14 @@ export default function OrganizationOverviewPage() {
       icon: <ListTodo className="h-5 w-5" />,
       href: `/organizations/${slug}/tasks`,
       color: "text-green-600 dark:text-green-400",
-      count: null,
+      count: tasksCount,
     },
     {
       name: "Tables",
       icon: <Table className="h-5 w-5" />,
       href: `/organizations/${slug}/tables`,
       color: "text-cyan-600 dark:text-cyan-400",
-      count: null,
+      count: tablesCount,
     },
     {
       name: "Workflows",
