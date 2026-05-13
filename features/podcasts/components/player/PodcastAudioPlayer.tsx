@@ -11,8 +11,14 @@ import {
   Repeat,
   RefreshCw,
   Music,
+  Check,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface PodcastAudioPlayerProps {
   audioUrl: string;
@@ -23,12 +29,26 @@ interface PodcastAudioPlayerProps {
   dark?: boolean;
 }
 
+// Standard variant of HTMLMediaElement extended with the older vendor-prefixed
+// preservesPitch properties — Safari < 15 and Firefox < 105 used these. Modern
+// browsers (2023+) all use the unprefixed standard `preservesPitch`.
+type AudioWithLegacyPitch = HTMLAudioElement & {
+  webkitPreservesPitch?: boolean;
+  mozPreservesPitch?: boolean;
+};
+
 const SKIP_SECONDS = 15;
+const SPEED_OPTIONS = [1, 1.25, 1.5, 2, 3] as const;
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatSpeed(speed: number): string {
+  // Use real multiplication sign (×) — matches YouTube/Spotify/Apple Podcasts.
+  return `${speed}×`;
 }
 
 /**
@@ -69,6 +89,8 @@ export function PodcastAudioPlayer({
   // Fixed waveform pattern — must not use Math.random() here because this component
   // is rendered on the server (SSR) and client, and random values would differ,
   // causing a hydration mismatch. This pseudo-random pattern is deterministic.
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [speedOpen, setSpeedOpen] = useState(false);
   const [waveformData] = useState<number[]>(() => {
     const bars = 80;
     // Deterministic sine-wave-based pattern that looks like a real waveform
@@ -148,6 +170,11 @@ export function PodcastAudioPlayer({
     setCurrentTime(t);
   }, []);
 
+  const handleSpeedChange = useCallback((speed: number) => {
+    setPlaybackSpeed(speed);
+    setSpeedOpen(false);
+  }, []);
+
   const restart = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -165,6 +192,21 @@ export function PodcastAudioPlayer({
     setDuration(0);
     setAudioError(false);
   }, [audioUrl]);
+
+  // Apply playback speed AND preserve pitch — this is the YouTube/Spotify
+  // technique that keeps voices natural-sounding at higher speeds (no chipmunk
+  // effect). `preservesPitch` is standard in modern browsers (defaults to true)
+  // but we set it explicitly along with the older vendor-prefixed names for
+  // Safari < 15 and Firefox < 105. Re-runs when `audioUrl` changes because a
+  // fresh source resets playbackRate to 1.
+  useEffect(() => {
+    const audio = audioRef.current as AudioWithLegacyPitch | null;
+    if (!audio) return;
+    audio.playbackRate = playbackSpeed;
+    audio.preservesPitch = true;
+    audio.webkitPreservesPitch = true;
+    audio.mozPreservesPitch = true;
+  }, [playbackSpeed, audioUrl]);
 
   // Keyboard shortcuts (←/→ for ±15s) are only active while THIS player is
   // playing. That way pages with multiple players (e.g. WhatsApp chat bubbles)
@@ -316,7 +358,7 @@ export function PodcastAudioPlayer({
 
       {/* Controls row */}
       <div className="flex items-center justify-between">
-        {/* Left: loop + restart */}
+        {/* Left: loop + restart + speed */}
         <div className="flex items-center gap-1">
           <button
             onClick={toggleLoop}
@@ -329,6 +371,58 @@ export function PodcastAudioPlayer({
           <button onClick={restart} className={iconBtn} aria-label="Restart">
             <RefreshCw className="h-4 w-4" />
           </button>
+          <Popover open={speedOpen} onOpenChange={setSpeedOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Playback speed: ${formatSpeed(playbackSpeed)}`}
+                title={`Playback speed (${formatSpeed(playbackSpeed)})`}
+                className={`h-8 min-w-[2.25rem] px-2 rounded-full text-xs font-semibold tabular-nums transition-colors ${
+                  playbackSpeed !== 1
+                    ? dark
+                      ? "bg-white/15 text-white"
+                      : "bg-primary/10 text-primary"
+                    : dark
+                      ? "text-white/70 hover:text-white hover:bg-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {formatSpeed(playbackSpeed)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              side="top"
+              sideOffset={8}
+              className="w-32 p-1"
+            >
+              <div
+                role="menu"
+                aria-label="Playback speed"
+                className="flex flex-col"
+              >
+                {SPEED_OPTIONS.map((s) => {
+                  const active = s === playbackSpeed;
+                  return (
+                    <button
+                      key={s}
+                      role="menuitemradio"
+                      aria-checked={active}
+                      onClick={() => handleSpeedChange(s)}
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-sm text-sm font-medium tabular-nums transition-colors ${
+                        active
+                          ? "bg-accent text-accent-foreground"
+                          : "text-foreground hover:bg-accent/60"
+                      }`}
+                    >
+                      <span>{formatSpeed(s)}</span>
+                      {active && <Check className="h-3.5 w-3.5 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Center: skip back 15s / play / skip forward 15s */}
