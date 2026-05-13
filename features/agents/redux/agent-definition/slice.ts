@@ -72,6 +72,8 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
     accessLevel: null,
     sharedByEmail: null,
 
+    defaultRagBoost: 0,
+
     _dirty: false,
     _dirtyFields: createFieldFlags<keyof AgentDefinition>(),
     _fieldHistory: {},
@@ -460,6 +462,7 @@ export const agentDefinitionSlice = createSlice({
         isOwner: true,
         accessLevel: "owner",
         sharedByEmail: null,
+        defaultRagBoost: data.defaultRagBoost ?? 0,
       };
       if (!state.agents[full.id]) {
         const record = makeEmptyRecord(full.id);

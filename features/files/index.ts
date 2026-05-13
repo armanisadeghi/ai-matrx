@@ -197,6 +197,10 @@ export {
 export { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 export { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 export { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
+export {
+  FileDuplicateOfBadge,
+  type FileDuplicateOfBadgeProps,
+} from "@/features/files/components/core/FileBadges/FileDuplicateOfBadge";
 export { FileChip } from "@/features/files/components/core/FileChip/FileChip";
 export { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 

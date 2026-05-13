@@ -200,6 +200,28 @@ export interface AgentDefinition {
   isOwner: boolean | null;
   accessLevel: AccessLevel | null;
   sharedByEmail: string | null; // null when isOwner = true or not yet loaded
+
+  /**
+   * Default RAG retrieval-boost for this agent's extracted content.
+   *
+   * Smallint, default 0. When this agent produces page-extraction
+   * derivatives (agent_structured_json / agent_extract / agent_summary
+   * rows in `processed_documents`), each derivative inherits this boost
+   * as its `rag_boost` — which is then mirrored into the chunks the
+   * page-extraction → kg_chunks bridge writes, where it multiplies the
+   * retrieval ranking score.
+   *
+   * Per-job overrides live on `page_extraction_jobs.rag_boost` — an
+   * individual extraction can override this agent default for one run
+   * (e.g. "this run is reference data — boost it harder"). The
+   * page-extraction job builder surfaces that override.
+   *
+   * Practical scale: 0 (no boost), 10 (small lift), 25 (definitive
+   * reference — beats most raw extracts), 50 (always-on-top). Negative
+   * values demote — useful for known-noisy agents whose output should
+   * tie-break lower.
+   */
+  defaultRagBoost: number;
 }
 
 // ---------------------------------------------------------------------------

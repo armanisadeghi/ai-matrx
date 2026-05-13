@@ -143,6 +143,7 @@ export function ChunkingConfigForm({
             outputSchema: job.output_schema as unknown,
             maxConcurrent: job.max_concurrent,
             extraInputs: job.extra_inputs ?? [],
+            ragBoost: job.rag_boost ?? null,
           },
         }),
       );
@@ -318,6 +319,7 @@ export function ChunkingConfigForm({
             outputSchema: loadedJob.output_schema as unknown,
             maxConcurrent: loadedJob.max_concurrent,
             extraInputs: loadedJob.extra_inputs ?? [],
+            ragBoost: loadedJob.rag_boost ?? null,
           },
         }),
       );
@@ -527,6 +529,38 @@ export function ChunkingConfigForm({
           dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
         }
       />
+
+      {/* 7. RAG-boost override — empty means "inherit the agent's
+              default_rag_boost", a number overrides for this job's
+              derivatives + bridged chunks. Power-user knob; collapsed
+              by default to avoid visual noise on the common path. */}
+      <Field
+        label="RAG boost override"
+        hint="Leave blank to inherit the agent's default. Number = override for this job."
+      >
+        <Input
+          value={draft.ragBoost ?? ""}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === "") {
+              dispatch(patchDraft({ fileId, patch: { ragBoost: null } }));
+              return;
+            }
+            const parsed = Math.round(Number.parseInt(raw, 10));
+            if (Number.isFinite(parsed)) {
+              dispatch(
+                patchDraft({ fileId, patch: { ragBoost: parsed } }),
+              );
+            }
+          }}
+          type="number"
+          step={5}
+          min={-50}
+          max={100}
+          placeholder="inherit"
+          className="h-7 text-[11px] font-mono"
+        />
+      </Field>
 
       {streamError && (
         <p className="text-[10px] text-destructive leading-snug">

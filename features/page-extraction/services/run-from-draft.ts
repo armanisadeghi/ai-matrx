@@ -130,6 +130,11 @@ export async function saveTemplateFromDraft(
     extra_inputs: draft.extraInputs,
     model_overrides: null,
     max_concurrent: draft.maxConcurrent,
+    // Null = inherit the agent's defaultRagBoost; a number overrides it
+    // for this job's derivatives + chunks. Drafts default to null
+    // (inherit) — users set non-null when they want this specific run
+    // to outrank or underrank the agent's usual output.
+    rag_boost: draft.ragBoost ?? null,
     owner_id: opts.ownerId,
     organization_id: opts.organizationId ?? null,
     project_id: null,
@@ -168,6 +173,7 @@ export function draftDiffersFromJob(
   if (!shallowMapEqual(draft.variableMapping, job.variable_mapping ?? {}))
     return true;
   if (!extraInputsEqual(draft.extraInputs, job.extra_inputs ?? [])) return true;
+  if ((draft.ragBoost ?? null) !== (job.rag_boost ?? null)) return true;
   return false;
 }
 

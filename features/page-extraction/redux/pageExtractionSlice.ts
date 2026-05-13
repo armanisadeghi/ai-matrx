@@ -103,6 +103,12 @@ export interface ChunkingConfigDraft {
    *  contributes a named surface variable the user can route via
    *  variable_mapping just like the built-in surface variations. */
   extraInputs: ExtraExtractionInput[];
+  /**
+   * Per-job override of the agent's default_rag_boost. `null` = inherit
+   * the agent default (the common case). A number overrides for this
+   * job's derivatives + the chunks the bridge writes from them.
+   */
+  ragBoost: number | null;
 }
 
 export const emptyDraft = (): ChunkingConfigDraft => ({
@@ -119,6 +125,7 @@ export const emptyDraft = (): ChunkingConfigDraft => ({
   outputSchema: null,
   maxConcurrent: 3,
   extraInputs: [],
+  ragBoost: null,
 });
 
 export interface PageExtractionState {

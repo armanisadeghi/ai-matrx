@@ -23,6 +23,7 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { truncateFilename, formatFileSize } from "@/features/files/utils/format";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileDuplicateOfBadge } from "@/features/files/components/core/FileBadges/FileDuplicateOfBadge";
 
 export interface FileChipProps {
   fileId: string;
@@ -117,6 +118,12 @@ export function FileChip({
         <span className="text-muted-foreground tabular-nums">
           {formatFileSize(size)}
         </span>
+      ) : null}
+      {file?.duplicateOfFileId ? (
+        <FileDuplicateOfBadge
+          keeperFileId={file.duplicateOfFileId}
+          density={density}
+        />
       ) : null}
       {showOpenButton ? (
         <button

@@ -166,6 +166,11 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     isOwner: null,
     accessLevel: null,
     sharedByEmail: null,
+
+    // RAG retrieval-boost for this agent's derivatives. DB default is 0
+    // (no boost); the column is non-nullable on agx_agent so we just
+    // pass it through.
+    defaultRagBoost: row.default_rag_boost ?? 0,
   };
 }
 
@@ -220,6 +225,8 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     organization_id: agent.organizationId,
     project_id: agent.projectId,
     task_id: agent.taskId,
+
+    default_rag_boost: agent.defaultRagBoost,
   };
 
   return stripNullish(raw) as AgentInsert;
@@ -283,6 +290,9 @@ export function agentDefinitionToUpdate(
   if (partial.projectId !== undefined) update.project_id = partial.projectId;
   if (partial.taskId !== undefined) update.task_id = partial.taskId;
 
+  if (partial.defaultRagBoost !== undefined)
+    update.default_rag_boost = partial.defaultRagBoost;
+
   return update;
 }
 
@@ -340,5 +350,11 @@ export function versionSnapshotRowToAgentDefinition(
     isOwner: null,
     accessLevel: null,
     sharedByEmail: null,
+    // Version snapshots predate the dedup-pyramid column. Default to 0
+    // (no boost) for snapshots that don't carry it; live agents read
+    // the real value via dbRowToAgentDefinition.
+    defaultRagBoost:
+      (row as unknown as { default_rag_boost?: number }).default_rag_boost ??
+      0,
   };
 }

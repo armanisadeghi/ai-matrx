@@ -42,6 +42,18 @@ export interface PageExtractionJob {
   extra_inputs: ExtraExtractionInput[];
   model_overrides: Record<string, Json> | null;
   max_concurrent: number;
+  /**
+   * Per-job override of the source agent's `default_rag_boost`. When
+   * non-null, derivatives produced by this job (and chunks the
+   * page-extraction → kg_chunks bridge writes) inherit this value
+   * instead of the agent default. Use when one job's output deserves a
+   * different retrieval weight than the agent's usual output — e.g.
+   * "this scope is reference data, boost harder" or "this scope is
+   * noisy, demote."
+   *
+   * Null means "inherit the agent default" (the common case).
+   */
+  rag_boost: number | null;
   owner_id: string;
   organization_id: string | null;
   project_id: string | null;

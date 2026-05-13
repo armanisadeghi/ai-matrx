@@ -222,6 +222,53 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
             </div>
           </div>
 
+          {/* RAG retrieval boost — controls how heavily this agent's
+              extracted content ranks against raw extracts in RAG search.
+              Per-job overrides live on the page-extraction job builder. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2 flex flex-col">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
+                Default RAG boost
+                <span className="text-xs font-normal text-muted-foreground">
+                  retrieval ranking
+                </span>
+              </Label>
+              <Input
+                type="number"
+                step={5}
+                min={-50}
+                max={100}
+                value={
+                  draft.defaultRagBoost ?? agent.defaultRagBoost ?? 0
+                }
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  // Treat empty as 0 — server has a NOT NULL default 0,
+                  // and "no boost" is the natural zero state.
+                  if (raw === "") {
+                    handleUpdate("defaultRagBoost", 0);
+                    return;
+                  }
+                  const parsed = Math.round(Number.parseInt(raw, 10));
+                  if (Number.isFinite(parsed)) {
+                    handleUpdate("defaultRagBoost", parsed);
+                  }
+                }}
+                placeholder="0"
+                className="bg-background/50 focus-visible:ring-primary/20 font-mono"
+              />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Multiplier applied to this agent's extracted content in
+                RAG search. <span className="font-medium">0</span> = no
+                boost (default). <span className="font-medium">10–25</span>{" "}
+                = lift over raw extracts.{" "}
+                <span className="font-medium">50+</span> = pin near top.
+                Negative values demote. Page-extraction jobs can override
+                per-run.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="flex flex-col lg:col-span-8">
               {/* Read-Only Info Space Block */}

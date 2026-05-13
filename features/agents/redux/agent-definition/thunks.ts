@@ -558,6 +558,10 @@ export const createAgent = createAsyncThunk<
     isOwner: true,
     accessLevel: "owner",
     sharedByEmail: null,
+
+    // Default 0 boost — user picks a non-zero value in Settings if they
+    // want this agent's derivatives to outrank raw extracts in RAG.
+    defaultRagBoost: partial.defaultRagBoost ?? 0,
   };
 
   const { data, error } = await supabase
