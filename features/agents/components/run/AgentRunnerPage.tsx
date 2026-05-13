@@ -24,6 +24,7 @@ import {
   selectAgentExecutionPayload,
   selectAgentName,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
@@ -151,13 +152,16 @@ export function AgentRunnerPage({
   const sidebarSurfaceKey = `${sourceFeature}-sidebar:${agentId}`;
 
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  // Wait for the browser Supabase session to hydrate before issuing the
+  // bundle queries — RLS denials look like empty `{}` errors otherwise.
+  const authReady = useAppSelector(selectAuthReady);
   // Sync ?conversationId= URL param → focus registry + load history.
   // When the user clicks a past conversation in the sidebar, the URL updates
   // and this effect creates/reuses an instance keyed by that server UUID,
   // loads the full message history, and switches focus.
   const lastSyncedUrl = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationIdFromUrl || isInitializing) return;
+    if (!conversationIdFromUrl || isInitializing || !authReady) return;
     if (conversationIdFromUrl === lastSyncedUrl.current) return;
     if (conversationIdFromUrl === conversationId) return;
     lastSyncedUrl.current = conversationIdFromUrl;
@@ -195,7 +199,7 @@ export function AgentRunnerPage({
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationIdFromUrl, isInitializing, conversationId]);
+  }, [conversationIdFromUrl, isInitializing, conversationId, authReady]);
 
   if (initError && !isInitializing) {
     return (

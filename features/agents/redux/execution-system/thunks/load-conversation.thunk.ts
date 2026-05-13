@@ -239,11 +239,48 @@ interface FetchBundleOptions {
   beforePosition?: number | null;
 }
 
+function describeSupabaseError(err: unknown): Record<string, unknown> {
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    return {
+      message: e.message,
+      code: e.code,
+      details: e.details,
+      hint: e.hint,
+      status: e.status,
+      statusCode: e.statusCode,
+      name: e.name,
+      raw: err,
+    };
+  }
+  return { raw: err };
+}
+
 async function fetchConversationBundle(
   conversationId: string,
   options: FetchBundleOptions = {},
 ): Promise<CxConversationBundle> {
   const { messageLimit = 50, beforePosition = null } = options;
+
+  // Auth diagnostics — needed because RLS-denied reads return as
+  // `PGRST116` (0 rows) with empty-looking errors, and the most common
+  // root cause is the browser session not being hydrated when the
+  // thunk fires.
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    // eslint-disable-next-line no-console
+    console.log(
+      "[loadConversation] auth at fetch time: userId=%s conversationId=%s",
+      authData?.user?.id ?? "(none)",
+      conversationId,
+    );
+  } catch (authErr) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[loadConversation] auth.getUser() threw:",
+      describeSupabaseError(authErr),
+    );
+  }
 
   // Preferred: single-round-trip RPC (`get_cx_conversation_bundle`) — SQL
   // signature: (p_conversation_id uuid, p_message_limit int, p_before_position smallint).
@@ -259,14 +296,14 @@ async function fetchConversationBundle(
     }
     // eslint-disable-next-line no-console
     console.warn(
-      "[loadConversation] RPC unavailable — falling back to parallel queries. error=%o",
-      error,
+      "[loadConversation] RPC unavailable — falling back to parallel queries.",
+      describeSupabaseError(error),
     );
   } catch (rpcErr) {
     // eslint-disable-next-line no-console
     console.warn(
-      "[loadConversation] RPC threw — falling back to parallel queries. error=%o",
-      rpcErr,
+      "[loadConversation] RPC threw — falling back to parallel queries.",
+      describeSupabaseError(rpcErr),
     );
   }
 
@@ -314,7 +351,7 @@ async function fetchConversationBundle(
     // eslint-disable-next-line no-console
     console.error(
       "[loadConversation] cx_conversation query error:",
-      conversationRes.error,
+      describeSupabaseError(conversationRes.error),
     );
     throw conversationRes.error;
   }
@@ -335,7 +372,7 @@ async function fetchConversationBundle(
     // eslint-disable-next-line no-console
     console.error(
       "[loadConversation] cx_message query error:",
-      messagesRes.error,
+      describeSupabaseError(messagesRes.error),
     );
   }
   return {
@@ -547,7 +584,10 @@ export const loadConversation = createAsyncThunk<
       });
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("[loadConversation] fetchConversationBundle failed:", err);
+      console.error(
+        "[loadConversation] fetchConversationBundle failed:",
+        describeSupabaseError(err),
+      );
       // Don't leave the history fetch dangling on a bundle failure.
       void historyPromise;
       throw err;

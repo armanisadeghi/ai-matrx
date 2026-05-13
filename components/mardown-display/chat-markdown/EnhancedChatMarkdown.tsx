@@ -147,7 +147,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const currentContent = editedContent ?? resolvedContent;
 
   const hasRequestOrTaskId = requestId || taskId;
-  const isWaitingForContent = hasRequestOrTaskId && !resolvedContent.trim();
+  const hasReceivedNonTextContent =
+    (serverProcessedBlocks && serverProcessedBlocks.length > 0) ||
+    hasClientBlocks;
+  const isWaitingForContent =
+    hasRequestOrTaskId &&
+    !resolvedContent.trim() &&
+    !hasReceivedNonTextContent;
 
   const hasUnifiedSpecial = unifiedSlots.some(
     (s) => s.kind === "tool" || s.kind === "status",
