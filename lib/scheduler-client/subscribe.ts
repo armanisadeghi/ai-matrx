@@ -57,11 +57,28 @@ export function subscribeToTasks(
         eventType: TaskEventType,
         payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
     ) => {
-        const row = (payload.new ?? payload.old) as SchTaskRow | undefined;
-        if (!row) return;
-        const surfaces = Array.isArray(row.surfaces) ? row.surfaces : [];
-        if (!surfaces.includes(opts.surface) && !surfaces.includes("any")) {
-            return;
+        // On DELETE, Supabase Realtime ships `payload.old` (PK-only by default,
+        // or full row if REPLICA IDENTITY FULL is set) and `payload.new` as
+        // an EMPTY object `{}` — not null. So nullish-coalesce against
+        // `payload.new` won't fall through. Pick the right side per event.
+        // INSERT and UPDATE always carry the new row in `payload.new`.
+        const candidate =
+            eventType === "DELETE"
+                ? payload.old
+                : (payload.new && Object.keys(payload.new as object).length > 0
+                      ? payload.new
+                      : payload.old);
+        const row = candidate as SchTaskRow | undefined;
+        if (!row || typeof row !== "object") return;
+        // DELETE with default REPLICA IDENTITY only carries PK columns; the
+        // surface filter would always fail. Deliver the DELETE through
+        // unconditionally so callers see "task gone" — they can refetch if
+        // they need the surfaces[] context. INSERT/UPDATE keep the filter.
+        if (eventType !== "DELETE") {
+            const surfaces = Array.isArray(row.surfaces) ? row.surfaces : [];
+            if (!surfaces.includes(opts.surface) && !surfaces.includes("any")) {
+                return;
+            }
         }
         opts.onTask({ type: eventType, task: row });
     };
