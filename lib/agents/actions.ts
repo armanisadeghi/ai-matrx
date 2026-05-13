@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 type AgentInsert = Omit<
   Database["public"]["Tables"]["agx_agent"]["Insert"],
@@ -41,11 +42,9 @@ function seedToInsertPayload(
       seed.variableDefinitions as unknown as AgentInsert["variable_definitions"],
     settings: seed.settings as unknown as AgentInsert["settings"],
     tools: seed.tools,
-    context_slots:
-      seed.contextSlots as unknown as AgentInsert["context_slots"],
+    context_slots: seed.contextSlots as unknown as AgentInsert["context_slots"],
     model_tiers: seed.modelTiers as unknown as AgentInsert["model_tiers"],
-    output_schema:
-      seed.outputSchema as unknown as AgentInsert["output_schema"],
+    output_schema: seed.outputSchema as unknown as AgentInsert["output_schema"],
     custom_tools: seed.customTools as unknown as AgentInsert["custom_tools"],
     mcp_servers: seed.mcpServers,
   };
@@ -77,7 +76,7 @@ export async function createAgentFromSeed(
     .select("id")
     .single();
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   redirect(`/agents/${data.id}/build`);
 }
 
@@ -122,6 +121,6 @@ export async function createSystemAgentFromSeed(
     .select("id")
     .single();
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   redirect(`/administration/system-agents/agents/${data.id}/build`);
 }

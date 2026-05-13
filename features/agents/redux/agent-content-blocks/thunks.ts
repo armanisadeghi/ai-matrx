@@ -20,10 +20,7 @@ import {
   upsertContentBlock,
   upsertContentBlocks,
 } from "./slice";
-import {
-  contentBlockDefToRowPatch,
-  contentBlockRowToDef,
-} from "./converters";
+import { contentBlockDefToRowPatch, contentBlockRowToDef } from "./converters";
 import type {
   AgentContentBlockDef,
   ContentBlockApiRow,
@@ -37,14 +34,19 @@ type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let message = `Request failed: ${response.status}`;
+    let message = `HTTP ${response.status} ${response.statusText}`;
     try {
       const body = await response.json();
-      if (body && typeof body === "object" && "error" in body) {
-        message = String((body as { error: unknown }).error);
+      if (body && typeof body === "object") {
+        const b = body as Record<string, unknown>;
+        const parts: string[] = [];
+        if (typeof b.error === "string") parts.push(b.error);
+        if (typeof b.details === "string") parts.push(`Details: ${b.details}`);
+        if (typeof b.hint === "string") parts.push(`Hint: ${b.hint}`);
+        if (parts.length > 0) message = parts.join(" — ");
       }
     } catch {
-      // fall through
+      // no body or non-JSON response — keep the HTTP status message
     }
     throw new Error(message);
   }
@@ -55,36 +57,31 @@ export const fetchContentBlocksForScope = createAsyncThunk<
   AgentContentBlockDef[],
   ScopeRef,
   ThunkApi
->(
-  "agentContentBlock/fetchForScope",
-  async (scopeRef, { dispatch }) => {
-    dispatch(setContentBlocksStatus("loading"));
-    dispatch(clearContentBlockScope({ scopeRef }));
-    try {
-      const qs = buildScopeQueryString(scopeRef);
-      const response = await fetch(
-        `/api/agent-content-blocks?${qs}`,
-        { method: "GET", credentials: "include" },
-      );
-      const payload = await parseJsonOrThrow<{
-        data: ContentBlockApiRow[];
-      }>(response);
-      const defs = payload.data.map(contentBlockRowToDef);
-      dispatch(upsertContentBlocks(defs));
-      dispatch(setContentBlockScopeLoaded({ scopeRef, loaded: true }));
-      dispatch(setContentBlocksStatus("succeeded"));
-      return defs;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to load content blocks";
-      dispatch(setContentBlocksError(message));
-      dispatch(setContentBlocksStatus("failed"));
-      throw error;
-    }
-  },
-);
+>("agentContentBlock/fetchForScope", async (scopeRef, { dispatch }) => {
+  dispatch(setContentBlocksStatus("loading"));
+  dispatch(clearContentBlockScope({ scopeRef }));
+  try {
+    const qs = buildScopeQueryString(scopeRef);
+    const response = await fetch(`/api/agent-content-blocks?${qs}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    const payload = await parseJsonOrThrow<{
+      data: ContentBlockApiRow[];
+    }>(response);
+    const defs = payload.data.map(contentBlockRowToDef);
+    dispatch(upsertContentBlocks(defs));
+    dispatch(setContentBlockScopeLoaded({ scopeRef, loaded: true }));
+    dispatch(setContentBlocksStatus("succeeded"));
+    return defs;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load content blocks";
+    dispatch(setContentBlocksError(message));
+    dispatch(setContentBlocksStatus("failed"));
+    throw error;
+  }
+});
 
 export const createContentBlock = createAsyncThunk<
   AgentContentBlockDef,
@@ -111,9 +108,7 @@ export const createContentBlock = createAsyncThunk<
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const result = await parseJsonOrThrow<{ data: ContentBlockApiRow }>(
-    response,
-  );
+  const result = await parseJsonOrThrow<{ data: ContentBlockApiRow }>(response);
   const def = contentBlockRowToDef(result.data);
   dispatch(upsertContentBlock(def));
   return def;
@@ -125,50 +120,45 @@ export const updateContentBlock = createAsyncThunk<
   AgentContentBlockDef,
   UpdateContentBlockInput,
   ThunkApi
->(
-  "agentContentBlock/update",
-  async (input, { dispatch, getState }) => {
-    const { id, ...patch } = input;
-    const existing = selectContentBlockById(getState(), id);
-    const snapshot: ContentBlockFieldSnapshot = existing
-      ? (Object.keys(patch) as (keyof AgentContentBlockDef)[]).reduce(
-          (acc, field) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (acc as any)[field] = (existing as any)[field];
-            return acc;
-          },
-          {} as ContentBlockFieldSnapshot,
-        )
-      : {};
+>("agentContentBlock/update", async (input, { dispatch, getState }) => {
+  const { id, ...patch } = input;
+  const existing = selectContentBlockById(getState(), id);
+  const snapshot: ContentBlockFieldSnapshot = existing
+    ? (Object.keys(patch) as (keyof AgentContentBlockDef)[]).reduce(
+        (acc, field) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (acc as any)[field] = (existing as any)[field];
+          return acc;
+        },
+        {} as ContentBlockFieldSnapshot,
+      )
+    : {};
 
-    dispatch(setContentBlockLoading({ id, loading: true }));
-    try {
-      const response = await fetch(`/api/agent-content-blocks/${id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(contentBlockDefToRowPatch(patch)),
-      });
-      const result = await parseJsonOrThrow<{ data: ContentBlockApiRow }>(
-        response,
-      );
-      const def = contentBlockRowToDef(result.data);
-      dispatch(upsertContentBlock(def));
-      dispatch(markContentBlockSaved({ id }));
-      return def;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to update content block";
-      dispatch(rollbackContentBlockOptimisticUpdate({ id, snapshot }));
-      dispatch(setContentBlockError({ id, error: message }));
-      throw error;
-    } finally {
-      dispatch(setContentBlockLoading({ id, loading: false }));
-    }
-  },
-);
+  dispatch(setContentBlockLoading({ id, loading: true }));
+  try {
+    const response = await fetch(`/api/agent-content-blocks/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(contentBlockDefToRowPatch(patch)),
+    });
+    const result = await parseJsonOrThrow<{ data: ContentBlockApiRow }>(
+      response,
+    );
+    const def = contentBlockRowToDef(result.data);
+    dispatch(upsertContentBlock(def));
+    dispatch(markContentBlockSaved({ id }));
+    return def;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to update content block";
+    dispatch(rollbackContentBlockOptimisticUpdate({ id, snapshot }));
+    dispatch(setContentBlockError({ id, error: message }));
+    throw error;
+  } finally {
+    dispatch(setContentBlockLoading({ id, loading: false }));
+  }
+});
 
 export const deleteContentBlock = createAsyncThunk<void, string, ThunkApi>(
   "agentContentBlock/delete",

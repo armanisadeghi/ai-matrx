@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
@@ -165,7 +166,7 @@ export async function updateProject(
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return {
       success: true,
@@ -188,7 +189,7 @@ export async function deleteProject(
       .from("ctx_projects")
       .delete()
       .eq("id", projectId);
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return { success: true, message: "Project deleted successfully" };
   } catch (error: unknown) {
     const msg =
@@ -205,7 +206,7 @@ export async function getProject(projectId: string): Promise<Project | null> {
       .select("*")
       .eq("id", projectId)
       .single();
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return transformProjectFromDb(data);
   } catch (error) {
     console.error("Error fetching project:", error);
@@ -234,7 +235,7 @@ export async function getProjectBySlug(
       : base.eq("slug", slugOrId);
 
     const { data, error } = await query.maybeSingle();
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return data ? transformProjectFromDb(data) : null;
   } catch (error) {
     console.error("Error fetching project by slug:", error);
@@ -259,7 +260,7 @@ export async function getPersonalProjectBySlug(
       : base.eq("slug", slugOrId);
 
     const { data, error } = await query.maybeSingle();
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return data ? transformProjectFromDb(data) : null;
   } catch (error) {
     console.error("Error fetching personal project by slug:", error);
@@ -440,7 +441,7 @@ export async function getProjectMembers(
         p_project_id: projectId,
       },
     );
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return ((data as unknown as ProjectMemberWithUserRow[]) ?? []).map(
       (row) => ({
@@ -501,7 +502,7 @@ export async function updateProjectMemberRole(
       .eq("user_id", userId)
       .select();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     if (!updatedRows || updatedRows.length === 0) {
       return {
@@ -550,7 +551,7 @@ export async function removeProjectMember(
       .eq("user_id", userId)
       .select();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     if (!deletedRows || deletedRows.length === 0) {
       return {
@@ -660,7 +661,7 @@ export async function getProjectInvitations(
       .eq("project_id", projectId)
       .order("invited_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return (data ?? []).map(transformInvitationFromDb);
   } catch (error) {
@@ -678,7 +679,7 @@ export async function cancelProjectInvitation(
       .delete()
       .eq("id", invitationId);
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return { success: true, message: "Invitation cancelled successfully" };
   } catch (error: unknown) {
     const msg =
@@ -784,7 +785,7 @@ export async function getUserProjectInvitations(): Promise<
       .gt("expires_at", new Date().toISOString())
       .order("invited_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return (data ?? []).map((item: Record<string, unknown>) => ({
       ...transformInvitationFromDb(item),

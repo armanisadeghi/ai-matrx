@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 
 type WithTools = { tools: { tools: DatabaseTool[]; status: string } };
@@ -20,6 +21,6 @@ export const fetchAvailableTools = createAsyncThunk<
     .order("category", { ascending: true })
     .order("name", { ascending: true });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   return data ?? [];
 });

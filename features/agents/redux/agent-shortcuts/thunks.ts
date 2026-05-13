@@ -20,6 +20,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type {
@@ -274,7 +275,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
   if (error) {
     dispatch(setShortcutsError(error.message));
     dispatch(setShortcutsStatus("failed"));
-    throw error;
+    throw pgErrorToError(error);
   }
 
   const results = (data ?? []) as unknown as AgentShortcutMenuResult[];
@@ -392,7 +393,7 @@ export const fetchShortcutsForContext = createAsyncThunk<
       },
     );
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     const rows = data ?? [];
     const shortcuts: AgentShortcut[] = [];
@@ -477,7 +478,7 @@ export const fetchFullShortcut = createAsyncThunk<void, string, ThunkApi>(
 
     if (error) {
       dispatch(setShortcutError({ id: shortcutId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     dispatch(upsertShortcut(dbRowToAgentShortcut(data)));
@@ -516,7 +517,7 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
     if (error) {
       dispatch(rollbackShortcutOptimisticUpdate({ id: shortcutId, snapshot }));
       dispatch(setShortcutError({ id: shortcutId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     dispatch(markShortcutSaved({ id: shortcutId }));
@@ -554,7 +555,7 @@ export const saveShortcutField = createAsyncThunk<
     if (error) {
       dispatch(rollbackShortcutOptimisticUpdate({ id: shortcutId, snapshot }));
       dispatch(setShortcutError({ id: shortcutId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     dispatch(markShortcutSaved({ id: shortcutId }));
@@ -588,7 +589,7 @@ export const createShortcut = createAsyncThunk<
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const newShortcut = dbRowToAgentShortcut(data);
   dispatch(upsertShortcut(newShortcut));
@@ -606,7 +607,7 @@ export const deleteShortcut = createAsyncThunk<void, string, ThunkApi>(
       .delete()
       .eq("id", shortcutId);
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     dispatch(removeShortcut(shortcutId));
   },
@@ -632,7 +633,7 @@ export const fetchUserShortcuts = createAsyncThunk<
 >("agentShortcut/fetchUserShortcuts", async () => {
   const { data, error } = await supabase.rpc("agx_get_user_shortcuts");
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return (data ?? []) as unknown as UserShortcutItem[];
 });
@@ -655,7 +656,7 @@ export const duplicateShortcut = createAsyncThunk<
     p_shortcut_id: shortcutId,
   });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const newShortcutId = data as string;
 
@@ -705,7 +706,7 @@ export const promoteShortcutToGlobal = createAsyncThunk<
       },
     );
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     const newShortcutId = data as string;
 
@@ -736,7 +737,7 @@ export const listNonGlobalShortcutsForAdmin = createAsyncThunk<
     "agx_list_non_global_shortcuts_for_admin",
   );
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return (data ?? []) as unknown as AdminNonGlobalShortcutRow[];
 });
@@ -766,7 +767,7 @@ export const createShortcutForAgent = createAsyncThunk<
 
   const { data, error } = await supabase.rpc("agx_create_shortcut", rpcParams);
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const newShortcutId = data as string;
 
@@ -950,14 +951,19 @@ function shortcutToApiBody(
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let message = `Request failed: ${response.status}`;
+    let message = `HTTP ${response.status} ${response.statusText}`;
     try {
       const body = await response.json();
-      if (body && typeof body === "object" && "error" in body) {
-        message = String((body as { error: unknown }).error);
+      if (body && typeof body === "object") {
+        const b = body as Record<string, unknown>;
+        const parts: string[] = [];
+        if (typeof b.error === "string") parts.push(b.error);
+        if (typeof b.details === "string") parts.push(`Details: ${b.details}`);
+        if (typeof b.hint === "string") parts.push(`Hint: ${b.hint}`);
+        if (parts.length > 0) message = parts.join(" — ");
       }
     } catch {
-      // no body or non-JSON response
+      // no body or non-JSON response — keep the HTTP status message
     }
     throw new Error(message);
   }
@@ -989,7 +995,7 @@ export const fetchShortcutsForScope = createAsyncThunk<
       error instanceof Error ? error.message : "Failed to load shortcuts";
     dispatch(setShortcutsError(message));
     dispatch(setShortcutsStatus("failed"));
-    throw error;
+    throw pgErrorToError(error);
   }
 });
 
@@ -1031,7 +1037,7 @@ export const updateShortcut = createAsyncThunk<
       error instanceof Error ? error.message : "Failed to update shortcut";
     dispatch(rollbackShortcutOptimisticUpdate({ id, snapshot }));
     dispatch(setShortcutError({ id, error: message }));
-    throw error;
+    throw pgErrorToError(error);
   } finally {
     dispatch(setShortcutLoading({ id, loading: false }));
   }
@@ -1265,7 +1271,7 @@ export const fetchUnifiedMenu = createAsyncThunk<
             : "Failed to load unified menu";
         dispatch(setShortcutsError(message));
         dispatch(setShortcutsStatus("failed"));
-        throw error;
+        throw pgErrorToError(error);
       } finally {
         inflightUnifiedMenu.delete(key);
       }

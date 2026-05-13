@@ -31,6 +31,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { withRetry } from "@/lib/net/retry";
 import { ConnectTimeoutError } from "@/lib/net/errors";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -94,7 +95,7 @@ export const fetchAgentsList = createAsyncThunk<void, void, ThunkApi>(
     if (error) {
       dispatch(setAgentsError(error.message));
       dispatch(setAgentsStatus("failed"));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     const rows = (data ?? []) as AgentListRow[];
@@ -145,7 +146,7 @@ export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
   async (_, { dispatch }) => {
     const { data, error } = await supabase.rpc("agx_get_list_full");
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     const rows = (data ?? []) as AgentListRow[];
 
@@ -225,7 +226,7 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
 
     if (error) {
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     const raw = Array.isArray(data) ? data[0] : data;
@@ -264,7 +265,7 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
 
     if (error) {
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     const raw = Array.isArray(data) ? data[0] : data;
@@ -306,7 +307,7 @@ export const fetchFullAgent = createAsyncThunk<void, string, ThunkApi>(
 
     if (error) {
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     dispatch(upsertAgent(dbRowToAgentDefinition(data)));
@@ -351,7 +352,7 @@ export const fetchAgentVersionHistory = createAsyncThunk<
       p_offset: offset,
     });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return (data ?? []) as AgentVersionHistoryItem[];
   },
@@ -374,7 +375,7 @@ export const fetchAgentVersionSnapshot = createAsyncThunk<
       p_version_number: version,
     });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     const raw = Array.isArray(data) ? data[0] : data;
     if (!raw) return;
@@ -422,7 +423,7 @@ export const saveAgentField = createAsyncThunk<
     if (error) {
       dispatch(rollbackAgentOptimisticUpdate({ id: agentId, snapshot }));
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     if (data) {
@@ -475,7 +476,7 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
     if (error) {
       dispatch(rollbackAgentOptimisticUpdate({ id: agentId, snapshot }));
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     if (data) {
@@ -570,7 +571,7 @@ export const createAgent = createAsyncThunk<
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const newAgent = dbRowToAgentDefinition(data);
   dispatch(upsertAgent(newAgent));
@@ -588,7 +589,7 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
       .delete()
       .eq("id", agentId);
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     dispatch(removeAgent(agentId));
   },
@@ -631,7 +632,7 @@ export const duplicateAgent = createAsyncThunk<
     p_as_system: Boolean(asSystem),
   });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const newAgentId = data as string;
   await dispatch(fetchFullAgent(newAgentId));
@@ -654,7 +655,7 @@ export const promoteAgentVersion = createAsyncThunk<
       p_version_number: version,
     });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     const result = data as unknown as PromoteVersionResult;
 
@@ -706,7 +707,7 @@ export const fetchSharedAgents = createAsyncThunk<
 >("agentDefinition/fetchShared", async (_, { dispatch }) => {
   const { data, error } = await supabase.rpc("agx_get_shared_with_me");
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const rows = (data ?? []) as SharedAgentItem[];
 
@@ -745,7 +746,7 @@ export const fetchSharedAgentsForChat = createAsyncThunk<
 >("agentDefinition/fetchSharedForChat", async () => {
   const { data, error } = await supabase.rpc("agx_get_shared_for_chat");
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return (data ?? []) as SharedAgentForChat[];
 });
@@ -783,7 +784,7 @@ export const fetchAgentAccessLevel = createAsyncThunk<
     p_agent_id: agentId,
   });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const rawRow = Array.isArray(data) ? data[0] : data;
   if (!rawRow) throw new Error(`No access level returned for agent ${agentId}`);
@@ -819,7 +820,7 @@ export const checkAgentDrift = createAsyncThunk<
   const params = agentId ? { p_agent_id: agentId } : {};
   const { data, error } = await supabase.rpc("agx_check_drift", params);
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return (data ?? []) as AgentDriftItem[];
 });
@@ -838,7 +839,7 @@ export const checkAgentReferences = createAsyncThunk<
     p_agent_id: agentId,
   });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return (data ?? []) as AgentReference[];
 });
@@ -874,7 +875,7 @@ export const purgeAgentVersions = createAsyncThunk<
 
   const { data, error } = await supabase.rpc("agx_purge_versions", params);
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return data as unknown as PurgeVersionsResult;
 });
@@ -900,7 +901,7 @@ export const acceptAgentVersion = createAsyncThunk<
     p_reference_id: refId,
   });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   return data as unknown as AcceptVersionResult;
 });
@@ -975,7 +976,7 @@ export const updateAgentFromSource = createAsyncThunk<
     p_agent_id: agentId,
   });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const result = data as unknown as UpdateFromSourceResult;
 

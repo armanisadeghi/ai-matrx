@@ -18,10 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  fetchScannerStatus,
-  type ScannerStatusResponse,
-} from "@/features/scheduling/service/pythonClient";
+import { getStatus } from "@/features/scheduling/service/schedulerClient";
+import type { ScannerStatusResponse } from "@/features/scheduling/service/schedulerApi.types";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 
 export default function ScannerHealthPage() {
@@ -33,7 +31,7 @@ export default function ScannerHealthPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchScannerStatus();
+      const data = await getStatus();
       setStatus(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -142,6 +140,16 @@ export default function ScannerHealthPage() {
               icon={Activity}
               label="Total dispatched"
               value={String(status.total_runs_dispatched)}
+            />
+            <Stat
+              icon={Activity}
+              label="Manual claimed (last tick)"
+              value={String(status.last_tick_manual_claimed)}
+            />
+            <Stat
+              icon={Activity}
+              label="In flight"
+              value={String(status.in_flight_count)}
             />
           </div>
 

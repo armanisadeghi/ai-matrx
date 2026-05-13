@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import cronstrue from "cronstrue";
-import { nextNCronFires, validateCron } from "../../../utils/nextFireTime";
+import { nextNCronFires, validateCron } from "@/lib/scheduler-client/next-due";
 import { humanizeRelative } from "../../../utils/triggerHumanize";
 
 interface Props {

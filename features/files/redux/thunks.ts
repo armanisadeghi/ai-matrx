@@ -23,6 +23,7 @@ import type { CloudFilesState } from "@/features/files/types";
 type StateWithCloudFiles = { cloudFiles: CloudFilesState };
 type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 import * as Files from "@/features/files/api/files";
 import * as Folders from "@/features/files/api/folders";
@@ -374,7 +375,7 @@ export const loadFileVersions = createAsyncThunk<
     .select("*")
     .eq("file_id", fileId)
     .order("version_number", { ascending: false });
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   const versions: CloudFileVersion[] = (data ?? []).map(
     dbRowToCloudFileVersion,
   );
@@ -391,7 +392,7 @@ export const loadPermissions = createAsyncThunk<
     .from("cld_file_permissions")
     .select("*")
     .eq("resource_id", resourceId);
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   const permissions: CloudFilePermission[] = (data ?? []).map(
     dbRowToCloudFilePermission,
   );
@@ -409,7 +410,7 @@ export const loadShareLinks = createAsyncThunk<
     .select("*")
     .eq("resource_id", resourceId)
     .eq("is_active", true);
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   const shareLinks: CloudShareLink[] = (data ?? []).map(dbRowToCloudShareLink);
   dispatch(upsertShareLinksForResource({ resourceId, shareLinks }));
 });

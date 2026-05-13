@@ -45,13 +45,28 @@ Execution happens on:
   - `useRunStream` — realtime on `sch_run` + `sch_task` for the
     visible task
 - **Services:**
-  - `features/scheduling/service/queries.ts` — Supabase façade. ONLY
-    place that calls `.from('sch_*')`.
-  - `features/scheduling/service/pythonClient.ts` — aidream `/scheduling/*`
-    routes (cron validation, compute-next-due-at, run-now,
-    scanner-status).
-  - `lib/services/scheduling-admin-service.ts` — admin reads / writes
-    using `is_super_admin()` RLS escape hatch.
+  - `features/scheduling/service/schedulerClient.ts` — typed HTTP
+    client for the aidream `/scheduler/*` router (matrx-scheduler
+    package). Primary path for **all user-facing writes** (task
+    create/patch/soft-delete/run-now, trigger CRUD) and authoritative
+    compute (cron validate, preview fires, next_due_at). Server
+    recomputes `next_due_at` on every trigger write — FE never sends
+    one.
+  - `features/scheduling/service/queries.ts` — Supabase read façade
+    (`listAgentTasks`, `getAgentTask`, `listRunsForTask`) + the
+    `rowToAgendaTask` / `taskDetailToAgendaTask` reshapes. Also holds
+    the single residual write (`updateAgentTaskFields`) until the
+    backend exposes a PATCH for `sch_agent_task`. ONLY place that
+    calls `.from('sch_*')`.
+  - `lib/services/scheduling-admin-service.ts` — admin cross-user
+    reads/writes using `is_super_admin()` RLS escape hatch. Stays on
+    Supabase: `/scheduler/*` is RLS-scoped to the caller, so admins
+    do NOT see other users' tasks/runs there. Orphan-lease cleanup
+    and `markRunFailed` also have no HTTP equivalent yet.
+  - `lib/scheduler-client/next-due.ts` — canonical TS twin of the
+    Python `next_due` module. Used by live-typing previews
+    (`CronForm`, admin cron-tester) and by non-HTTP clients (Chrome
+    extension, edge functions) that can't round-trip on keystroke.
 - **Redux state path:** `state.schedulingTasks`, `state.schedulingRuns`
 - **Migrations:** 6 SQL files
   - `migrations/sch_admin_rls.sql` (initial admin policy)
@@ -90,22 +105,26 @@ injection of triggers/runs).
 ## Key flows
 
 1. **Create a scheduled task** — Form runs Zod validation, builds
-   `CreateAgentTaskInput`, computes `next_due_at` via aidream
-   (`/scheduling/compute-next-due-at`) with FE shim fallback, calls
-   `create_agent_task` RPC (atomic 3-table insert).
-2. **Pause / resume** — `toggleTaskEnabled` thunk; optimistic-then-reconcile.
-3. **Run now** — `sch_enqueue_manual_run(p_task_id)` RPC. Validates
-   ownership server-side, stamps `user_id` from the task, sets
-   `status='queued'`, `surface=NULL`. The aidream scanner picks it up
-   within ~5 seconds.
+   `CreateAgentTaskInput`, calls `scheduler.createTask(...)` (POST
+   `/scheduler/tasks`). The server atomically inserts `sch_task` +
+   `sch_agent_task` + `sch_trigger`, computes `next_due_at`, and
+   returns the hydrated `TaskDetailResponse` — no separate re-fetch.
+2. **Pause / resume** — `toggleTaskEnabled` thunk; PATCH
+   `/scheduler/tasks/{id}` with `{ enabled }`; optimistic-then-reconcile.
+3. **Run now** — POST `/scheduler/tasks/{id}/run-now`. Server invokes
+   `sch_enqueue_manual_run` RPC under the user's JWT (validates
+   ownership, stamps `user_id` from the task, sets `status='queued'`,
+   `surface=NULL`). The aidream scanner picks it up within ~5 seconds.
 4. **Live updates** —
    - List view: `useTaskListStream` subscribes to INSERT/UPDATE/DELETE
      on `sch_task` filtered by `user_id=eq.${userId}`.
    - Detail view: `useRunStream` subscribes to `sch_run` for the task
      AND `sch_task` UPDATEs.
-5. **Cron preview** — FE renders `next 5 fires` inline via `cron-parser`
-   + `cronstrue`. Authoritative `next_due_at` written to DB comes from
-   aidream `croniter`.
+5. **Cron preview** — FE renders `next 5 fires` inline via
+   `lib/scheduler-client/next-due` (TS twin of the Python `next_due`
+   module) + `cronstrue`. Authoritative `next_due_at` written to the
+   DB always comes from aidream `croniter` (the server recomputes on
+   every trigger write).
 6. **Admin orphan-lease remediation** — `OrphanLeasesPage` lists runs
    with `claim_expires_at < now()`, plus a Force-fail button. The
    scanner re-enqueues recurring triggers on the next tick.
@@ -120,7 +139,9 @@ injection of triggers/runs).
 ## Invariants
 
 1. **Never call `.from('sch_*')` outside `service/queries.ts` or
-   `lib/services/scheduling-admin-service.ts`.**
+   `lib/services/scheduling-admin-service.ts`.** New user-facing
+   writes go through `service/schedulerClient.ts` (HTTP); don't add
+   parallel writes to `queries.ts`.
 2. **Never use the aidream service_role supabase singleton in
    scheduling routes** — `make_user_supabase_client(jwt)` is mandatory
    so RLS binds to the caller.
@@ -149,7 +170,7 @@ injection of triggers/runs).
 | Layer | Count | Location |
 |---|---|---|
 | Python | 25 (cron + edge cases + DST + malformed inputs) | `aidream/packages/matrx-scheduler/tests/` |
-| FE Jest | 34 (nextFireTime + triggerHumanize + validation) | `features/scheduling/utils/__tests__/` |
+| FE Jest | triggerHumanize + validation | `features/scheduling/utils/__tests__/` |
 
 Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 `uv run pytest packages/matrx-scheduler/tests`.
@@ -165,6 +186,24 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-05-13** — Migrated FE to aidream's new `/scheduler/*` HTTP
+  router (matrx-scheduler package): created typed
+  `service/schedulerClient.ts` covering all 16 endpoints; rewired
+  Redux thunks so `createScheduledTask`, `updateScheduledTask`
+  (task + trigger), `toggleTaskEnabled`, `deleteScheduledTask`
+  (soft-delete), and `runTaskNowThunk` go through HTTP; stripped
+  task/trigger writes out of `queries.ts` (left a single residual
+  `updateAgentTaskFields` write for the unmodelled `sch_agent_task`
+  PATCH gap); pointed admin scanner-health page at `/scheduler/status`
+  (gained `last_tick_manual_claimed` + `in_flight_count` stats);
+  pointed admin cron-tester and `CronForm` preview at the canonical
+  TS twin in `lib/scheduler-client/next-due`; deleted the
+  `features/scheduling/utils/nextFireTime.ts` FE-only fallback shim
+  and its Jest suite; deleted `service/pythonClient.ts`. Admin
+  cross-user surfaces (all-tasks list, orphan-leases,
+  `markRunFailed`) remain on Supabase via
+  `lib/services/scheduling-admin-service.ts` until aidream exposes
+  admin HTTP endpoints.
 - **2026-05-11** — Audit pass + hardening:
   - DB: super_admin RLS narrowing (was platform-admin); input CHECK caps
     on title/prompt/runtime/concurrent/tags/cron-expression; partial

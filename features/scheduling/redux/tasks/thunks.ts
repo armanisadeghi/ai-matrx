@@ -1,19 +1,28 @@
 // features/scheduling/redux/tasks/thunks.ts
+//
+// Task-write thunks route through the aidream /scheduler/* HTTP router via
+// schedulerClient.ts. The server is the authority for next_due_at — it
+// recomputes on every trigger write, so the FE never sends one.
+//
+// Reads remain on Supabase (queries.ts) for the joined SELECT_AGENT_TASK
+// shape. Agent-extension field patches (prompt/variables/etc.) still hit
+// Supabase via queries.updateAgentTaskFields — there's no HTTP PATCH for
+// sch_agent_task yet.
 
-import type { ThunkAction } from "redux-thunk";
 import type { Action } from "@reduxjs/toolkit";
+import type { ThunkAction } from "redux-thunk";
 import type { RootState } from "@/lib/redux/store";
 import {
-  createAgentTask,
-  deleteAgentTask,
   getAgentTask,
   listAgentTasks,
-  runTaskNow,
-  setTaskEnabled,
-  updateAgentTask,
+  taskDetailToAgendaTask,
+  updateAgentTaskFields,
 } from "../../service/queries";
-import { computeNextFireTime } from "../../utils/nextFireTime";
-import { computeNextDueAtServer } from "../../service/pythonClient";
+import * as scheduler from "../../service/schedulerClient";
+import type {
+  AgentTaskCreate,
+  TriggerCreate,
+} from "../../service/schedulerApi.types";
 import type {
   CreateAgentTaskInput,
   TriggerConfig,
@@ -36,29 +45,34 @@ function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-/**
- * Compute next_due_at for a trigger, preferring the server (Python authoritative
- * cron parser) when reachable; falling back to the local shim for offline /
- * server-not-running situations.
- */
-async function resolveNextDueAt(trigger: TriggerConfig): Promise<string | null> {
-  try {
-    const stripped = stripType(trigger);
-    const res = await computeNextDueAtServer(trigger.type, stripped);
-    return res.next_due_at;
-  } catch {
-    try {
-      return computeNextFireTime(trigger).nextDueAt;
-    } catch {
-      return null;
-    }
-  }
+function triggerToConfig(trigger: TriggerConfig): Record<string, unknown> {
+  const { type: _type, ...rest } = trigger as TriggerConfig & { type: string };
+  return rest;
 }
 
-function stripType(trigger: TriggerConfig): Record<string, unknown> {
-  const { type: _t, ...rest } = trigger as TriggerConfig & { type: string };
-  return rest as Record<string, unknown>;
+function inputToAgentTaskCreate(
+  input: CreateAgentTaskInput,
+): AgentTaskCreate {
+  return {
+    agent_id: input.agentId ?? null,
+    prompt: input.prompt,
+    variables: input.variables ?? {},
+    persistent_conversation_id: input.persistentConversationId ?? null,
+    auth_mode: input.authMode ?? "ask",
+    max_runtime_seconds: input.maxRuntimeSeconds ?? 600,
+    max_concurrent: input.maxConcurrent ?? 1,
+  };
 }
+
+function triggerToCreate(trigger: TriggerConfig): TriggerCreate {
+  return {
+    type: trigger.type,
+    config: triggerToConfig(trigger),
+    enabled: true,
+  };
+}
+
+// ── Reads ──────────────────────────────────────────────────────────────────
 
 export const fetchScheduledTasks = (): AppThunk => async (dispatch) => {
   dispatch(fetchTasksPending());
@@ -87,14 +101,26 @@ export const fetchScheduledTask =
     }
   };
 
+// ── Writes ─────────────────────────────────────────────────────────────────
+
 export const createScheduledTask =
   (input: CreateAgentTaskInput): AppThunk<string> =>
   async (dispatch) => {
-    const nextDueAt = await resolveNextDueAt(input.trigger);
-    const id = await createAgentTask(input, nextDueAt);
-    const task = await getAgentTask(id);
-    if (task) dispatch(upsertTask(task));
-    return id;
+    const detail = await scheduler.createTask({
+      kind: "agent",
+      title: input.title,
+      description: input.description ?? null,
+      surfaces: input.surfaces ?? ["any"],
+      tags: input.tags ?? [],
+      queue: input.queue ?? "default",
+      expires_at: input.expiresAt ?? null,
+      enabled: true,
+      agent_task: inputToAgentTaskCreate(input),
+      trigger: triggerToCreate(input.trigger),
+    });
+    const task = taskDetailToAgendaTask(detail);
+    dispatch(upsertTask(task));
+    return task.id;
   };
 
 export const updateScheduledTask =
@@ -102,11 +128,34 @@ export const updateScheduledTask =
   async (dispatch) => {
     dispatch(setMutationStatus({ id, status: "saving" }));
     try {
-      let nextDueAt: string | null | undefined;
-      if (patch.trigger) {
-        nextDueAt = await resolveNextDueAt(patch.trigger);
+      if (patch.taskPatch && Object.keys(patch.taskPatch).length > 0) {
+        await scheduler.patchTask(id, patch.taskPatch);
       }
-      await updateAgentTask(id, patch, nextDueAt);
+
+      if (patch.agentPatch && Object.keys(patch.agentPatch).length > 0) {
+        await updateAgentTaskFields(id, patch.agentPatch);
+      }
+
+      if (patch.trigger !== undefined && patch.trigger !== null) {
+        // v0 = at most one trigger per task. Look up the existing one; patch
+        // if present, otherwise create.
+        const { triggers } = await scheduler.listTriggers(id);
+        const existing = triggers[0];
+        const triggerBody = {
+          type: patch.trigger.type,
+          config: triggerToConfig(patch.trigger),
+        };
+        if (existing) {
+          await scheduler.patchTrigger(existing.id, triggerBody);
+        } else {
+          await scheduler.createTrigger({
+            task_id: id,
+            ...triggerBody,
+            enabled: true,
+          });
+        }
+      }
+
       const task = await getAgentTask(id);
       if (task) dispatch(upsertTask(task));
       dispatch(clearMutationStatus(id));
@@ -123,7 +172,7 @@ export const deleteScheduledTask =
   async (dispatch) => {
     dispatch(setMutationStatus({ id, status: "deleting" }));
     try {
-      await deleteAgentTask(id);
+      await scheduler.softDeleteTask(id);
       dispatch(removeTask(id));
     } catch (err) {
       dispatch(
@@ -138,7 +187,7 @@ export const toggleTaskEnabled =
   async (dispatch) => {
     dispatch(patchTask({ id, patch: { enabled } }));
     try {
-      await setTaskEnabled(id, enabled);
+      await scheduler.patchTask(id, { enabled });
     } catch (err) {
       dispatch(patchTask({ id, patch: { enabled: !enabled } }));
       dispatch(
@@ -151,5 +200,6 @@ export const toggleTaskEnabled =
 export const runTaskNowThunk =
   (id: string): AppThunk<string> =>
   async () => {
-    return runTaskNow(id);
+    const { run_id } = await scheduler.runNow(id);
+    return run_id;
   };

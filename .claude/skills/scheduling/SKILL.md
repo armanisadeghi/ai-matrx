@@ -59,8 +59,9 @@ cascade flow.
 |---|---|
 | DB migrations | `migrations/sch_*.sql` |
 | FE types | `features/scheduling/types.ts` |
-| FE Supabase façade | `features/scheduling/service/queries.ts` (ONLY place that `.from('sch_*')`) |
-| FE Python client | `features/scheduling/service/pythonClient.ts` (cron-validate, compute-next-due-at, run-now, scanner-status) |
+| FE Supabase façade (reads) | `features/scheduling/service/queries.ts` — joined task reads + `taskDetailToAgendaTask` reshape + residual `updateAgentTaskFields` write (the one `sch_agent_task` field-patch HTTP doesn't cover yet). ONLY place that `.from('sch_*')`. |
+| FE HTTP client (writes + compute) | `features/scheduling/service/schedulerClient.ts` — typed wrapper over aidream's `/scheduler/*` (16 endpoints): tasks/triggers/runs CRUD, cron validate, preview-fires, compute-next-due-at, scanner status. Primary path for all user-facing writes. |
+| FE TS twin of next_due | `lib/scheduler-client/next-due.ts` — used by `CronForm` and cron-tester for live-typing previews; also exported to non-HTTP clients (Chrome extension, edge functions). |
 | FE Redux slices | `features/scheduling/redux/{tasks,runs}/` |
 | FE hooks | `features/scheduling/hooks/` — useScheduledTasks (+ list realtime), useTaskDetail, useTaskRuns, useRunStream |
 | FE list / detail / form | `features/scheduling/components/{list,detail,form}/` |
@@ -75,7 +76,7 @@ cascade flow.
 
 ## Non-negotiable rules
 
-1. **NEVER call `.from('sch_*')` outside `features/scheduling/service/queries.ts` or `lib/services/scheduling-admin-service.ts`.** The select shape needs to stay consistent; row→AgendaTask flattening lives in one place.
+1. **NEVER call `.from('sch_*')` outside `features/scheduling/service/queries.ts` or `lib/services/scheduling-admin-service.ts`.** The select shape needs to stay consistent; row→AgendaTask flattening lives in one place. New user-facing writes go through `service/schedulerClient.ts` — don't add parallel Supabase writes to `queries.ts`.
 2. **NEVER use the aidream service_role supabase singleton in scheduling routes.** Use `make_user_supabase_client(jwt)` so RLS binds to the caller.
 3. **NEVER insert into `sch_run` directly from the FE.** Use the `sch_enqueue_manual_run(p_task_id)` RPC — it stamps `user_id` from the task row, sets `status='queued'`, and refuses to spoof other fields.
 4. **NEVER UPDATE `sch_task.next_due_at` from application code.** Write to `sch_trigger.next_due_at`; the DB trigger cascades.
@@ -87,8 +88,9 @@ cascade flow.
 
 1. Add to the `TriggerType` discriminated union in
    `features/scheduling/types.ts` and the Python `models.py`.
-2. Add the case to `computeNextFireTime` (FE shim) AND
-   `compute_next_due_at` (Python authoritative).
+2. Add the case to `computeNextDueAt` in `lib/scheduler-client/next-due.ts`
+   (TS twin used by previews) AND `compute_next_due_at` in the Python
+   `next_due` module (authoritative for writes).
 3. Add a subform component in
    `features/scheduling/components/form/triggers/` and wire it in
    `ScheduleForm.tsx`.
@@ -115,8 +117,8 @@ cascade flow.
    running on, it'll sit forever.
 2. Check `sch_task.surfaces` — does it contain `'any'` or a value that
    matches an online scanner?
-3. Check the scanner status: GET `/scheduling/scanner-status` (admin
-   only), or the FE admin page.
+3. Check the scanner status: GET `/scheduler/status` (admin only), or
+   the FE admin page at `/administration/scheduling/scanner-health`.
 4. Confirm `AIDREAM_SCHEDULER=1` is set on the host process you expect to
    execute the run.
 
@@ -135,7 +137,7 @@ After changes, always:
 
 - Python: `uv run pytest packages/matrx-scheduler/tests` (25 tests, must all pass).
 - TypeScript: `pnpm exec jest features/scheduling/utils/__tests__/`
-  (34 tests).
+  (triggerHumanize + validation).
 - Type check: `pnpm tsc --noEmit` clean across the feature.
 - Smoke: create a schedule via the form, confirm it lands in all 3
   tables (use Supabase MCP `execute_sql` to inspect).

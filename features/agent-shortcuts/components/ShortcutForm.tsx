@@ -84,6 +84,21 @@ import type {
   ShortcutFormData,
 } from "../types";
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    const parts: string[] = [];
+    if (typeof e.message === "string" && e.message) parts.push(e.message);
+    if (typeof e.details === "string" && e.details)
+      parts.push(`Details: ${e.details}`);
+    if (typeof e.hint === "string" && e.hint) parts.push(`Hint: ${e.hint}`);
+    if (typeof e.code === "string" && e.code) parts.push(`(code: ${e.code})`);
+    if (parts.length > 0) return parts.join(" — ");
+  }
+  return fallback;
+}
+
 export interface ShortcutFormProps extends ScopeProps {
   /**
    * Rendering mode.
@@ -429,8 +444,7 @@ export function ShortcutForm({
       }
       onClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to save shortcut";
+      const message = extractErrorMessage(err, "Failed to save shortcut");
       setError(message);
       toast({
         title: "Save failed",
@@ -452,8 +466,7 @@ export function ShortcutForm({
       onSuccess?.(null);
       onClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to delete shortcut";
+      const message = extractErrorMessage(err, "Failed to delete shortcut");
       toast({
         title: "Delete failed",
         description: message,

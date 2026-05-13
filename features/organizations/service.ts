@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import {
   Organization,
@@ -164,7 +165,7 @@ export async function updateOrganization(
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return {
       success: true,
@@ -205,7 +206,7 @@ export async function deleteOrganization(
       .delete()
       .eq("id", orgId);
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return {
       success: true,
@@ -235,7 +236,7 @@ export async function getOrganization(
       .eq("id", orgId)
       .single();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return transformOrganizationFromDb(data);
   } catch (error) {
     console.error("Error fetching organization:", error);
@@ -258,7 +259,7 @@ export async function getOrganizationBySlug(
       .eq("slug", slug)
       .single();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
     return transformOrganizationFromDb(data);
   } catch (error) {
     console.error("Error fetching organization by slug:", error);
@@ -304,7 +305,7 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
 
     if (error) {
       console.error("Error fetching user organizations:", error.message);
-      throw error;
+      throw pgErrorToError(error);
     }
 
     if (!data || data.length === 0) {
@@ -391,7 +392,7 @@ export async function getOrganizationMembers(
       { p_org_id: orgId },
     );
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     // Transform RPC result to application format
     return (data || []).map((row: any) => ({
@@ -461,7 +462,7 @@ export async function updateMemberRole(
       .eq("user_id", userId)
       .select();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     // Check if any rows were actually updated
     if (!updatedRows || updatedRows.length === 0) {
@@ -531,7 +532,7 @@ export async function removeMember(
       .eq("user_id", userId)
       .select();
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     // Check if any rows were actually deleted
     if (!deletedRows || deletedRows.length === 0) {
@@ -676,7 +677,7 @@ export async function getOrganizationInvitations(
       .eq("organization_id", orgId)
       .order("invited_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return (data || []).map(transformInvitationFromDb);
   } catch (error) {
@@ -699,7 +700,7 @@ export async function cancelInvitation(
       .delete()
       .eq("id", invitationId);
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return {
       success: true,
@@ -839,7 +840,7 @@ export async function getUserInvitations(): Promise<
       .gt("expires_at", new Date().toISOString())
       .order("invited_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw pgErrorToError(error);
 
     return (data || []).map((item: any) => ({
       ...transformInvitationFromDb(item),

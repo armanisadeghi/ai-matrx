@@ -6,6 +6,7 @@
 // service.ts. NEVER call this from non-admin UI.
 
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type {
   RunStatus,
   SchAgentTaskRow,
@@ -23,18 +24,23 @@ export interface AdminTaskRow extends SchTaskRow {
     | "max_runtime_seconds"
     | "max_concurrent"
   > | null;
-  trigger: Pick<SchTriggerRow, "type" | "config" | "enabled" | "next_due_at"> | null;
+  trigger: Pick<
+    SchTriggerRow,
+    "type" | "config" | "enabled" | "next_due_at"
+  > | null;
   user_email: string | null;
 }
 
 // ── List all-user tasks (admin) ────────────────────────────────────────────
 
-export async function fetchAllTasksAdmin(options: {
-  search?: string;
-  surface?: string;
-  enabled?: boolean | null;
-  limit?: number;
-} = {}): Promise<AdminTaskRow[]> {
+export async function fetchAllTasksAdmin(
+  options: {
+    search?: string;
+    surface?: string;
+    enabled?: boolean | null;
+    limit?: number;
+  } = {},
+): Promise<AdminTaskRow[]> {
   let q = supabase
     .from("sch_task")
     .select(
@@ -59,7 +65,7 @@ export async function fetchAllTasksAdmin(options: {
   }
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 
   const rows = (data ?? []) as unknown as Array<
     SchTaskRow & {
@@ -104,12 +110,14 @@ async function emailsForUserIds(
 
 // ── Admin runs ─────────────────────────────────────────────────────────────
 
-export async function fetchAllRunsAdmin(options: {
-  status?: RunStatus | null;
-  surface?: string | null;
-  limit?: number;
-  since?: string | null;
-} = {}): Promise<SchRunRow[]> {
+export async function fetchAllRunsAdmin(
+  options: {
+    status?: RunStatus | null;
+    surface?: string | null;
+    limit?: number;
+    since?: string | null;
+  } = {},
+): Promise<SchRunRow[]> {
   let q = supabase
     .from("sch_run")
     .select("*")
@@ -121,7 +129,7 @@ export async function fetchAllRunsAdmin(options: {
   if (options.since) q = q.gte("created_at", options.since);
 
   const { data, error } = await q;
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   return (data ?? []) as SchRunRow[];
 }
 
@@ -136,7 +144,7 @@ export async function fetchOrphanLeases(): Promise<SchRunRow[]> {
     .lt("claim_expires_at", nowIso)
     .order("claim_expires_at", { ascending: true })
     .limit(200);
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   return (data ?? []) as SchRunRow[];
 }
 
@@ -156,54 +164,48 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
   const dayAgoIso = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const hourFromNowIso = new Date(Date.now() + 3600 * 1000).toISOString();
 
-  const [
-    tasksTotal,
-    tasksEnabled,
-    upcoming,
-    runs24h,
-    failures24h,
-    orphans,
-  ] = await Promise.all([
-    // total tasks
-    supabase
-      .from("sch_task")
-      .select("*", { head: true, count: "exact" })
-      .then(unwrapCount),
-    // enabled tasks
-    supabase
-      .from("sch_task")
-      .select("*", { head: true, count: "exact" })
-      .eq("enabled", true)
-      .then(unwrapCount),
-    // due in next hour
-    supabase
-      .from("sch_task")
-      .select("*", { head: true, count: "exact" })
-      .eq("enabled", true)
-      .lte("next_due_at", hourFromNowIso)
-      .gte("next_due_at", nowIso)
-      .then(unwrapCount),
-    // runs last 24h
-    supabase
-      .from("sch_run")
-      .select("*", { head: true, count: "exact" })
-      .gte("created_at", dayAgoIso)
-      .then(unwrapCount),
-    // failures last 24h
-    supabase
-      .from("sch_run")
-      .select("*", { head: true, count: "exact" })
-      .gte("created_at", dayAgoIso)
-      .eq("status", "failed")
-      .then(unwrapCount),
-    // orphan leases
-    supabase
-      .from("sch_run")
-      .select("*", { head: true, count: "exact" })
-      .in("status", ["claimed", "running"])
-      .lt("claim_expires_at", nowIso)
-      .then(unwrapCount),
-  ]);
+  const [tasksTotal, tasksEnabled, upcoming, runs24h, failures24h, orphans] =
+    await Promise.all([
+      // total tasks
+      supabase
+        .from("sch_task")
+        .select("*", { head: true, count: "exact" })
+        .then(unwrapCount),
+      // enabled tasks
+      supabase
+        .from("sch_task")
+        .select("*", { head: true, count: "exact" })
+        .eq("enabled", true)
+        .then(unwrapCount),
+      // due in next hour
+      supabase
+        .from("sch_task")
+        .select("*", { head: true, count: "exact" })
+        .eq("enabled", true)
+        .lte("next_due_at", hourFromNowIso)
+        .gte("next_due_at", nowIso)
+        .then(unwrapCount),
+      // runs last 24h
+      supabase
+        .from("sch_run")
+        .select("*", { head: true, count: "exact" })
+        .gte("created_at", dayAgoIso)
+        .then(unwrapCount),
+      // failures last 24h
+      supabase
+        .from("sch_run")
+        .select("*", { head: true, count: "exact" })
+        .gte("created_at", dayAgoIso)
+        .eq("status", "failed")
+        .then(unwrapCount),
+      // orphan leases
+      supabase
+        .from("sch_run")
+        .select("*", { head: true, count: "exact" })
+        .in("status", ["claimed", "running"])
+        .lt("claim_expires_at", nowIso)
+        .then(unwrapCount),
+    ]);
 
   return {
     taskCount: tasksTotal,
@@ -230,7 +232,7 @@ export async function disableTaskAdmin(taskId: string): Promise<void> {
     .from("sch_task")
     .update({ enabled: false })
     .eq("id", taskId);
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 }
 
 export async function markRunFailedAdmin(
@@ -246,5 +248,5 @@ export async function markRunFailedAdmin(
       claim_token: null,
     })
     .eq("id", runId);
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
 }

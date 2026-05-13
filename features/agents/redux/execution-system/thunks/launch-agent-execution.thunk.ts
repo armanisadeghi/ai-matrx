@@ -29,6 +29,7 @@ import {
   mapScopeToInstanceWithSurface,
 } from "@/features/agents/utils/scope-mapping";
 import { createClient as createBrowserSupabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { isValueMappingMap } from "@/features/tool-registry/surfaces/types";
 import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -154,7 +155,7 @@ async function fetchSurfaceValueMappingsForLaunch(
     .eq("agent_id", agentId)
     .eq("surface_name", surfaceName);
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   if (!data || data.length === 0) return null;
 
   const userRow = userId ? data.find((r) => r.user_id === userId) : undefined;

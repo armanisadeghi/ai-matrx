@@ -19,7 +19,7 @@ import {
 import {
   nextNCronFires,
   validateCron,
-} from "@/features/scheduling/utils/nextFireTime";
+} from "@/lib/scheduler-client/next-due";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 
 const COMMON_TZ = [

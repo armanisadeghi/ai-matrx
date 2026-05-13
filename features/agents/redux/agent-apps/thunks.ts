@@ -17,6 +17,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fieldFlagsKeys } from "@/features/agents/redux/shared/field-flags";
 import type { AgentApp } from "./types";
@@ -55,7 +56,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
     if (error) {
       dispatch(agentAppActions.setAppsStatus("failed"));
       dispatch(agentAppActions.setAppsError(error.message));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     for (const row of (data ?? []) as AgentApp[]) {
@@ -90,7 +91,7 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
         }),
       );
       dispatch(agentAppActions.setAppLoading({ id: appId, loading: false }));
-      throw error ?? new Error("App not found");
+      throw error ? pgErrorToError(error) : new Error("App not found");
     }
 
     dispatch(agentAppActions.upsertApp(data as AgentApp));
@@ -137,7 +138,7 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
         agentAppActions.setAppError({ id: appId, error: error.message }),
       );
       dispatch(agentAppActions.setAppLoading({ id: appId, loading: false }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     dispatch(agentAppActions.markAppSaved({ id: appId }));
@@ -161,7 +162,7 @@ export const saveAppField = createAsyncThunk<
 
   if (error) {
     dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));
-    throw error;
+    throw pgErrorToError(error);
   }
 
   dispatch(
@@ -202,7 +203,7 @@ export const createApp = createAsyncThunk<
 
   if (error || !data) {
     dispatch(agentAppActions.setAppsError(error?.message ?? "Insert failed"));
-    throw error ?? new Error("Insert failed");
+    throw error ? pgErrorToError(error) : new Error("Insert failed");
   }
 
   const row = data as AgentApp;
@@ -230,7 +231,7 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
 
     if (error) {
       dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));
-      throw error;
+      throw pgErrorToError(error);
     }
 
     dispatch(agentAppActions.removeApp({ id: appId }));

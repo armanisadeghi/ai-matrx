@@ -12,10 +12,10 @@
 // version wins (the scanner runs server-side and writes the canonical
 // value).
 //
-// Lifted from features/scheduling/utils/nextFireTime.ts. The original
-// file in features/scheduling/ stays in place for now — Phase 3c will
-// decide whether to switch FE callers to this canonical home or keep
-// the FE wrapper as a thin re-export.
+// FE callers (CronForm preview, /administration/scheduling/cron-tester)
+// import directly from here. Web write paths go through the aidream
+// /scheduler/* HTTP router (features/scheduling/service/schedulerClient.ts)
+// which auto-computes next_due_at server-side.
 
 import { CronExpressionParser } from "cron-parser";
 

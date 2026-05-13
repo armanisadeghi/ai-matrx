@@ -1,22 +1,25 @@
 // features/scheduling/service/queries.ts
 //
-// Façade over supabase-js for the sch_* tables. Mirrors the structure of
-// matrx-extend's src/lib/agenda/queries.ts (cited 8× in docs/SCHEDULING.md).
+// Read façade over supabase-js for the sch_* tables. Mirrors the structure of
+// matrx-extend's src/lib/agenda/queries.ts.
+//
+// Writes have moved to schedulerClient.ts (HTTP /scheduler/*). This file keeps
+// only the joined reads + the row→AgendaTask reshape (used by both Supabase
+// reads and the HTTP TaskDetailResponse path).
 //
 // NEVER access .from('sch_*') outside this file — that's the rule that keeps
 // the data shape consistent across the FE.
 
 import { supabase } from "@/utils/supabase/client";
+import { pgErrorToError } from "@/utils/supabase/pg-error";
+import type { TaskDetailResponse } from "./schedulerApi.types";
 import type {
   AgendaTask,
   AgendaTrigger,
-  CreateAgentTaskInput,
   SchAgentTaskRow,
   SchRunRow,
   SchTaskRow,
   SchTriggerRow,
-  TriggerConfig,
-  UpdateAgentTaskInput,
 } from "../types";
 
 // ── The reusable select string (per spec §8) ───────────────────────────────
@@ -56,7 +59,7 @@ interface JoinedAgentTaskRow extends SchTaskRow {
   >;
 }
 
-// ── Row → AgendaTask reshape ───────────────────────────────────────────────
+// ── Row → AgendaTask reshape (Supabase joined-read path) ───────────────────
 
 export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
   const triggers: AgendaTrigger[] = (row.triggers ?? []).map((t) => ({
@@ -97,6 +100,49 @@ export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
   };
 }
 
+// ── TaskDetailResponse → AgendaTask reshape (HTTP path) ────────────────────
+
+export function taskDetailToAgendaTask(detail: TaskDetailResponse): AgendaTask {
+  const t = detail.task;
+  const agent = detail.agent_task;
+  const triggers: AgendaTrigger[] = (detail.triggers ?? []).map((tr) => ({
+    id: tr.id,
+    taskId: tr.task_id,
+    type: tr.type,
+    config: (tr.config ?? {}) as Record<string, unknown>,
+    enabled: tr.enabled,
+    nextDueAt: tr.next_due_at,
+    lastFiredAt: tr.last_fired_at,
+  }));
+
+  return {
+    id: t.id,
+    userId: t.user_id,
+    kind: t.kind as "agent",
+    title: t.title,
+    description: t.description,
+    queue: t.queue,
+    surfaces: t.surfaces,
+    enabled: t.enabled,
+    expiresAt: t.expires_at,
+    tags: t.tags,
+    nextDueAt: t.next_due_at,
+    lastRunAt: t.last_run_at,
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+
+    agentId: agent?.agent_id ?? null,
+    prompt: agent?.prompt ?? "",
+    variables: (agent?.variables ?? {}) as Record<string, unknown>,
+    persistentConversationId: agent?.persistent_conversation_id ?? null,
+    authMode: agent?.auth_mode ?? "ask",
+    maxRuntimeSeconds: agent?.max_runtime_seconds ?? 600,
+    maxConcurrent: agent?.max_concurrent ?? 1,
+
+    triggers,
+  };
+}
+
 // ── Reads ──────────────────────────────────────────────────────────────────
 
 export async function listAgentTasks(): Promise<AgendaTask[]> {
@@ -106,7 +152,7 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
     .eq("kind", "agent")
     .order("updated_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   return ((data ?? []) as unknown as JoinedAgentTaskRow[]).map(rowToAgendaTask);
 }
 
@@ -118,144 +164,40 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   if (!data) return null;
   return rowToAgendaTask(data as unknown as JoinedAgentTaskRow);
 }
 
-// ── Writes ─────────────────────────────────────────────────────────────────
+// ── Writes that the HTTP /scheduler/* surface doesn't cover yet ────────────
+//
+// /scheduler/tasks/{id} PATCH only patches task fields (title, description,
+// queue, surfaces, enabled, expires_at, tags). Agent-extension fields
+// (prompt, variables, agent_id, persistent_conversation_id, auth_mode,
+// max_runtime_seconds, max_concurrent) live on sch_agent_task and have no
+// HTTP equivalent today. Until aidream exposes a PATCH for those, we keep
+// this one focused Supabase write here.
 
-/**
- * Atomic create via the create_agent_task RPC (migrations/sch_create_agent_task.sql).
- * Returns the new task id; caller can then re-fetch via getAgentTask.
- *
- * The Python authoritative `next_due_at` computer will eventually move
- * server-side. Until then, callers pass a precomputed value (see
- * features/scheduling/utils/nextFireTime.ts).
- */
-export async function createAgentTask(
-  input: CreateAgentTaskInput,
-  nextDueAt: string | null,
-): Promise<string> {
-  const triggerConfig = stripTriggerType(input.trigger);
-
-  const { data, error } = await supabase.rpc("create_agent_task", {
-    p_title: input.title,
-    p_prompt: input.prompt,
-    p_trigger_type: input.trigger.type,
-    p_trigger_config: triggerConfig,
-    p_description: input.description ?? null,
-    p_surfaces: input.surfaces ?? ["any"],
-    p_tags: input.tags ?? [],
-    p_queue: input.queue ?? "default",
-    p_expires_at: input.expiresAt ?? null,
-    p_next_due_at: nextDueAt,
-    p_agent_id: input.agentId ?? null,
-    p_variables: input.variables ?? {},
-    p_persistent_conversation_id: input.persistentConversationId ?? null,
-    p_auth_mode: input.authMode ?? "ask",
-    p_max_runtime_seconds: input.maxRuntimeSeconds ?? 600,
-    p_max_concurrent: input.maxConcurrent ?? 1,
-  });
-
-  if (error) throw error;
-  if (typeof data !== "string") {
-    throw new Error("create_agent_task did not return a task id");
-  }
-  return data;
+export interface AgentTaskFieldsPatch {
+  agent_id?: string | null;
+  prompt?: string;
+  variables?: Record<string, unknown>;
+  persistent_conversation_id?: string | null;
+  auth_mode?: SchAgentTaskRow["auth_mode"];
+  max_runtime_seconds?: number;
+  max_concurrent?: number;
 }
 
-export async function updateAgentTask(
+export async function updateAgentTaskFields(
   id: string,
-  patch: UpdateAgentTaskInput,
-  nextDueAt?: string | null,
+  patch: AgentTaskFieldsPatch,
 ): Promise<void> {
-  if (patch.taskPatch && Object.keys(patch.taskPatch).length > 0) {
-    const { error } = await supabase
-      .from("sch_task")
-      .update(patch.taskPatch)
-      .eq("id", id);
-    if (error) throw error;
-  }
-
-  if (patch.agentPatch && Object.keys(patch.agentPatch).length > 0) {
-    const { error } = await supabase
-      .from("sch_agent_task")
-      .update(patch.agentPatch)
-      .eq("id", id);
-    if (error) throw error;
-  }
-
-  if (patch.trigger !== undefined && patch.trigger !== null) {
-    // v0 = at most one trigger per task. Look up the existing one; update if
-    // it exists, insert if not.
-    const { data: existing, error: selErr } = await supabase
-      .from("sch_trigger")
-      .select("id")
-      .eq("task_id", id)
-      .limit(1)
-      .maybeSingle();
-    if (selErr) throw selErr;
-
-    const config = stripTriggerType(patch.trigger);
-    if (existing) {
-      const { error } = await supabase
-        .from("sch_trigger")
-        .update({
-          type: patch.trigger.type,
-          config,
-          next_due_at: nextDueAt ?? null,
-        })
-        .eq("id", existing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("sch_trigger").insert({
-        task_id: id,
-        type: patch.trigger.type,
-        config,
-        enabled: true,
-        next_due_at: nextDueAt ?? null,
-      });
-      if (error) throw error;
-    }
-  }
-}
-
-export async function deleteAgentTask(id: string): Promise<void> {
-  // FK CASCADE drops sch_agent_task / sch_trigger / sch_run rows.
-  const { error } = await supabase.from("sch_task").delete().eq("id", id);
-  if (error) throw error;
-}
-
-export async function setTaskEnabled(
-  id: string,
-  enabled: boolean,
-): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
   const { error } = await supabase
-    .from("sch_task")
-    .update({ enabled })
+    .from("sch_agent_task")
+    .update(patch)
     .eq("id", id);
-  if (error) throw error;
-}
-
-// ── Manual fire ────────────────────────────────────────────────────────────
-
-/**
- * Enqueue a manual run via the sch_enqueue_manual_run RPC. The RPC:
- *  - validates task ownership (or super_admin)
- *  - stamps user_id from the task row (not the caller)
- *  - sets status='queued', surface=NULL (claiming scanner stamps its own)
- *
- * The matrx-scheduler picks up queued runs every tick (~5s) on whichever
- * surface the task targets ('any' / 'server' / 'chrome-extension-chat'…).
- */
-export async function runTaskNow(taskId: string): Promise<string> {
-  const { data, error } = await supabase.rpc("sch_enqueue_manual_run", {
-    p_task_id: taskId,
-  });
-  if (error) throw error;
-  if (!data) throw new Error("enqueue_manual_run returned no id");
-  return String(data);
+  if (error) throw pgErrorToError(error);
 }
 
 // ── Run history ────────────────────────────────────────────────────────────
@@ -271,16 +213,15 @@ export async function listRunsForTask(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) throw error;
+  if (error) throw pgErrorToError(error);
   return (data ?? []) as SchRunRow[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function stripTriggerType(trigger: TriggerConfig): Record<string, unknown> {
-  // Drop the `type` discriminator before storing in jsonb config column.
-  const { type: _type, ...rest } = trigger as TriggerConfig & {
-    type: string;
-  };
-  return rest as Record<string, unknown>;
+export function stripTriggerType(
+  trigger: { type: string } & Record<string, unknown>,
+): Record<string, unknown> {
+  const { type: _type, ...rest } = trigger;
+  return rest;
 }

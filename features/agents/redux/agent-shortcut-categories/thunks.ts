@@ -34,14 +34,19 @@ type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let message = `Request failed: ${response.status}`;
+    let message = `HTTP ${response.status} ${response.statusText}`;
     try {
       const body = await response.json();
-      if (body && typeof body === "object" && "error" in body) {
-        message = String((body as { error: unknown }).error);
+      if (body && typeof body === "object") {
+        const b = body as Record<string, unknown>;
+        const parts: string[] = [];
+        if (typeof b.error === "string") parts.push(b.error);
+        if (typeof b.details === "string") parts.push(`Details: ${b.details}`);
+        if (typeof b.hint === "string") parts.push(`Hint: ${b.hint}`);
+        if (parts.length > 0) message = parts.join(" — ");
       }
     } catch {
-      // fall through
+      // no body or non-JSON response — keep the HTTP status message
     }
     throw new Error(message);
   }
