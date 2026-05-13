@@ -17,7 +17,10 @@ import { normalize } from "./input/normalize";
 import { resolve as resolveImpl } from "./resolver";
 import { toTarget } from "./output/target";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { ensureFolderPath as ensureFolderPathThunk } from "@/features/files/redux/thunks";
+import {
+  deleteFile as deleteFileThunk,
+  ensureFolderPath as ensureFolderPathThunk,
+} from "@/features/files/redux/thunks";
 import type { EnsureFolderPathArg } from "@/features/files/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import type {
@@ -105,6 +108,28 @@ export const fileHandler = {
    */
   async toContentPart(source: FileSource) {
     return this.use(source).as({ kind: "jsonb_content_part" });
+  },
+
+  /**
+   * Imperatively soft- or hard-delete a file. Routes through the
+   * `deleteFile` thunk against the store singleton so the slice and
+   * realtime channel stay in sync — identical to `useFileMutation().remove()`.
+   *
+   * For service-layer and non-React callers (e.g. cleanup after a failed
+   * upload). React components should prefer `useFileMutation` so they get
+   * hook-lifecycle guarantees.
+   */
+  async remove(fileId: string, options?: { hard?: boolean }): Promise<void> {
+    const store = getStoreSingleton();
+    if (!store) {
+      throw new Error(
+        "fileHandler.remove called before the Redux store was ready.",
+      );
+    }
+    const dispatch = store.dispatch as AppDispatch;
+    await dispatch(
+      deleteFileThunk({ fileId, hardDelete: options?.hard }),
+    ).unwrap();
   },
 
   /**

@@ -175,14 +175,15 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
     return (
         <div className="flex flex-col gap-4">
 
-            {/* ── Cover image (shared pipeline) ───────────────────────────── */}
+            {/* ── Cover image (all 4 sources: upload / library / URL / generate) */}
             <ImageAssetUploader
                 onComplete={handleImageComplete}
                 preset="podcast"
                 folder={podcastId ? folderForPodcast(podcastId) : undefined}
                 currentUrl={currentImageUrl ?? null}
                 label="Cover Image"
-                allowUrlPaste={false}
+                showSourceTabs={true}
+                defaultTab="upload"
             />
 
             {/* ── Video upload (podcast-specific) ─────────────────────────── */}

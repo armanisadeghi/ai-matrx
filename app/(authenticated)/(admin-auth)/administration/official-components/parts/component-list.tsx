@@ -532,11 +532,13 @@ export const componentList: ComponentEntry[] = [
     name: "Image Asset Uploader",
     path: "components/official/ImageAssetUploader.tsx",
     description:
-      "Official image-first dropzone. Calls POST /assets to render server-side variants for any of the eight canonical presets (raw, podcast, social, web, email, logo, avatar, favicon), optional clipboard paste capture, and optional preview action into the shared image WindowPanel. For plain image uploads with no variant rendering, use <FileUploadDropzone> from @/features/files.",
+      "Official image uploader with two modes. Default mode (showSourceTabs={false}): classic drag-drop/paste dropzone. 4-source mode (showSourceTabs={true}): tab bar with Upload (drag-drop/paste), Library (pick existing cloud file → auto-detect variants, generate missing via POST /assets/{id}/variants), URL (fetch+upload for variants, CORS fallback to direct use), Generate (AI pipeline placeholder, shown when enableGenerate={true}). Renders server-side variants for any of the eight canonical presets (raw, podcast, social, web, email, logo, avatar, favicon). Identical onComplete shape (ImageUploaderResult) across all sources and modes.",
     categories: ["inputs", "media", "utilities"],
     tags: [
       "image",
       "upload",
+      "library",
+      "cloud",
       "asset",
       "variants",
       "og",
@@ -550,6 +552,8 @@ export const componentList: ComponentEntry[] = [
       "preset",
       "supabase",
       "url",
+      "generate",
+      "4-source",
     ],
   },
   {

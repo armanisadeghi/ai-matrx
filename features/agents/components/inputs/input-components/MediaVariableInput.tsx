@@ -33,8 +33,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFileUpload } from "@/features/files";
-import { useFileSrc } from "@/features/files";
+import { useFileUpload, useFileSrc, InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 
 // 36-char canonical UUID — what cld_files file_ids look like.
@@ -210,13 +209,15 @@ export function MediaVariableInput({
       {stored && (
         <div className="flex items-stretch gap-2 px-2 py-1.5 rounded-md border border-border bg-muted/40">
           {hasThumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewSrc!}
+            <InlineMediaRef
+              ref={previewSrc}
+              size={{ width: 40, height: 40 }}
+              fit="cover"
+              rounded="none"
               alt={variableName}
-              className="h-10 w-10 object-cover rounded border border-border shrink-0"
+              className="rounded border border-border shrink-0"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                (e.currentTarget as HTMLElement).style.visibility = "hidden";
               }}
             />
           ) : (

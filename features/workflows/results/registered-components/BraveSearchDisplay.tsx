@@ -255,12 +255,15 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                                 <div className="flex items-start gap-2 p-3 pr-10">
                                     <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center mt-0.5">
                                         {result.profile?.img ? (
-                                            <img 
-                                                src={result.profile.img} 
-                                                alt="" 
+                                            <InlineMediaRef
+                                                ref={result.profile.img}
+                                                size={{ width: 16, height: 16 }}
+                                                fit="cover"
+                                                rounded="none"
+                                                alt=""
                                                 className="w-4 h-4 rounded"
                                                 onError={(e) => {
-                                                    e.currentTarget.style.display = "none";
+                                                    (e.currentTarget as HTMLElement).style.display = "none";
                                                 }}
                                             />
                                         ) : (
@@ -373,12 +376,15 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                                         >
                                             {video.thumbnail?.src && (
                                                 <div className="relative bg-gray-900 dark:bg-black">
-                                                    <img 
-                                                        src={video.thumbnail.src} 
-                                                        alt={video.title} 
-                                                        className="w-full aspect-video object-contain"
+                                                    <InlineMediaRef
+                                                        ref={video.thumbnail.src}
+                                                        size={{ width: 0, height: 0 }}
+                                                        fit="contain"
+                                                        rounded="none"
+                                                        alt={video.title}
+                                                        className="w-full aspect-video"
                                                         onError={(e) => {
-                                                            e.currentTarget.parentElement!.style.display = "none";
+                                                            (e.currentTarget as HTMLElement).parentElement!.style.display = "none";
                                                         }}
                                                     />
                                                     {video.video?.duration && (
@@ -465,12 +471,15 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                                     {/* Favicon */}
                                     <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
                                         {result.profile?.img ? (
-                                            <img 
-                                                src={result.profile.img} 
-                                                alt="" 
+                                            <InlineMediaRef
+                                                ref={result.profile.img}
+                                                size={{ width: 20, height: 20 }}
+                                                fit="cover"
+                                                rounded="none"
+                                                alt=""
                                                 className="w-5 h-5 rounded"
                                                 onError={(e) => {
-                                                    e.currentTarget.style.display = "none";
+                                                    (e.currentTarget as HTMLElement).style.display = "none";
                                                 }}
                                             />
                                         ) : (

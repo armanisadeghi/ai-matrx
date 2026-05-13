@@ -37,9 +37,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { toast } from "sonner";
-import { useFileAs } from "@/features/files";
+import { useFileAs, useFileMutation } from "@/features/files";
 import type { FileSource } from "@/features/files";
-import * as Files from "@/features/files/api/files";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Extract the cloud_files UUID from an S3 path: /{userId}/{folder}/{uuid}.{ext}
@@ -139,6 +138,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
+  const fileMutation = useFileMutation();
 
   useEffect(() => {
     setImageLoaded(false);
@@ -180,17 +180,16 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   };
 
   const handleShare = async () => {
-    const fileId = extractCloudFileId(url);
     if (!fileId) {
       await handleCopyLink();
       return;
     }
     try {
-      await Files.patchFile(fileId, { visibility: "public" });
-      const { data } = await Files.getSignedUrl(fileId, {
+      await fileMutation.setVisibility(fileId, "public");
+      const { url: publicUrl } = await fileMutation.signedUrl(fileId, {
         expiresIn: 604_800,
       });
-      await navigator.clipboard.writeText(data.url);
+      await navigator.clipboard.writeText(publicUrl);
       toast.success("Public link copied");
     } catch {
       try {
