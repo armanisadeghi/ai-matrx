@@ -23,7 +23,7 @@
  * "File not found." fallback until the file appears in the store.
  */
 
-import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
+import { FilePreview } from "@/features/files";
 import type { EditorFile } from "../types";
 
 interface CloudFilePreviewerProps {

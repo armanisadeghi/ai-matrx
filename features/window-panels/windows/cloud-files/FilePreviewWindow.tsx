@@ -25,7 +25,7 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { PreviewPane } from "@/features/files/components/surfaces/PreviewPane";
+import { PreviewPane } from "@/features/files";
 
 export interface FilePreviewWindowProps {
   isOpen: boolean;

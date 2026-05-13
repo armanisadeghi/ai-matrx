@@ -26,7 +26,7 @@ import {
   selectAssociationCount,
   selectAssociationsLoading,
 } from "@/features/tasks/redux/taskAssociationsSlice";
-import { openFilePicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
+import { openFilePicker } from "@/features/files";
 import { requestUpload } from "@/features/files";
 import { folderForTask } from "@/features/files";
 import { Button } from "@/components/ui/button";

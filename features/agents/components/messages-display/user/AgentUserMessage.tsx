@@ -38,7 +38,7 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+import { FileResourceChip } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 
 // ─────────────────────────────────────────────────────────────────────────────

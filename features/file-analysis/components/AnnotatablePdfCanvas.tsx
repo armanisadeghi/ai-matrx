@@ -25,12 +25,12 @@
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import { PdfAnnotationLayer } from "@/features/files/components/core/PdfAnnotationLayer";
+import { PdfAnnotationLayer } from "@/features/files";
 import type {
   AnnotationLayerMode,
   PdfRegion,
   PendingDraw,
-} from "@/features/files/components/core/PdfAnnotationLayer";
+} from "@/features/files";
 import { LabelPicker } from "./LabelPicker";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import * as Api from "@/features/file-analysis/api/file-analysis";

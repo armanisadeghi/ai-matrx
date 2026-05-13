@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFileUpload } from "@/features/files";
-import { useFilePicker } from "@/features/files/components/pickers/FilePicker";
+import { useFilePicker } from "@/features/files";
 import { toast } from "sonner";
 
 export interface PdfSourcePayload {

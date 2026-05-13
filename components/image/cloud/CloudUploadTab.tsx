@@ -35,8 +35,8 @@ import {
   selectFileById,
 } from "@/features/files/redux/selectors";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { openFolderPicker } from "@/features/files";
+import { FileUploadDropzone } from "@/features/files";
 import { ImageIcon } from "lucide-react";
 import {
   useSelectedImages,

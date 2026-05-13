@@ -39,7 +39,7 @@ import { NoteHoverPreview } from "@/features/agents/components/previews/NoteHove
 import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHoverPreview";
 import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
 import { DataRefHoverPreview } from "@/features/agents/components/previews/DataRefHoverPreview";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+import { FileResourceChip } from "@/features/files";
 import type { DataRef } from "@/features/agents/types/message-types";
 
 function getBlockTypeDisplay(blockType: ResourceBlockType) {
