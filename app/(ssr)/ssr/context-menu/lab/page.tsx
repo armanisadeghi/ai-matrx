@@ -498,28 +498,31 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
   const allContentBlocks = useAppSelector(selectAllContentBlocksArray);
   const shortcutSlice = useAppSelector((s) => s.agentShortcut);
 
-  const shortcutsWithScope = useMemo(
-    () =>
-      allShortcuts.map((s) => ({
-        scope: resolveRowScope(s),
-        id: s.id,
-        label: s.label,
-        agentId: s.agentId,
-        userId: s.userId,
-        organizationId: s.organizationId,
-        projectId: s.projectId,
-        taskId: s.taskId,
-        categoryId: s.categoryId,
-        placementType: s.placementType,
-        enabledFeatures: s.enabledFeatures,
-        scopeMappings: s.scopeMappings ?? null,
-        contextMappings: s.contextMappings ?? null,
-        useLatest: s.useLatest,
-        agentVersionId: s.agentVersionId,
-        isActive: s.isActive,
-      })),
-    [allShortcuts],
-  );
+  const shortcutsWithScope = useMemo(() => {
+    const placementByCategoryId = new Map(
+      allCategories.map((c) => [c.id, c.placementType] as const),
+    );
+    return allShortcuts.map((s) => ({
+      scope: resolveRowScope(s),
+      id: s.id,
+      label: s.label,
+      agentId: s.agentId,
+      userId: s.userId,
+      organizationId: s.organizationId,
+      projectId: s.projectId,
+      taskId: s.taskId,
+      categoryId: s.categoryId,
+      // Placement is owned by the category, not the shortcut. Each shortcut
+      // belongs to exactly one category, so it inherits exactly one placement.
+      categoryPlacementType: placementByCategoryId.get(s.categoryId) ?? null,
+      enabledFeatures: s.enabledFeatures,
+      scopeMappings: s.scopeMappings ?? null,
+      contextMappings: s.contextMappings ?? null,
+      useLatest: s.useLatest,
+      agentVersionId: s.agentVersionId,
+      isActive: s.isActive,
+    }));
+  }, [allShortcuts, allCategories]);
   const categoriesWithScope = useMemo(
     () =>
       allCategories.map((c) => ({

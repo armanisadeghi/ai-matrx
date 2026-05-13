@@ -638,6 +638,7 @@ export type Database = {
           context_slots: Json
           created_at: string
           custom_tools: Json
+          default_rag_boost: number
           description: string | null
           id: string
           is_active: boolean
@@ -673,6 +674,7 @@ export type Database = {
           context_slots?: Json
           created_at?: string
           custom_tools?: Json
+          default_rag_boost?: number
           description?: string | null
           id?: string
           is_active?: boolean
@@ -708,6 +710,7 @@ export type Database = {
           context_slots?: Json
           created_at?: string
           custom_tools?: Json
+          default_rag_boost?: number
           description?: string | null
           id?: string
           is_active?: boolean
@@ -3422,6 +3425,7 @@ export type Database = {
       }
       cld_files: {
         Row: {
+          canonical_processed_document_id: string | null
           canonical_storage_uri: string | null
           checksum: string | null
           created_at: string
@@ -3429,6 +3433,7 @@ export type Database = {
           deleted_at: string | null
           derivation_kind: string | null
           derivation_metadata: Json
+          duplicate_of_file_id: string | null
           file_name: string
           file_path: string
           file_size: number | null
@@ -3446,6 +3451,7 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          canonical_processed_document_id?: string | null
           canonical_storage_uri?: string | null
           checksum?: string | null
           created_at?: string
@@ -3453,6 +3459,7 @@ export type Database = {
           deleted_at?: string | null
           derivation_kind?: string | null
           derivation_metadata?: Json
+          duplicate_of_file_id?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
@@ -3470,6 +3477,7 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          canonical_processed_document_id?: string | null
           canonical_storage_uri?: string | null
           checksum?: string | null
           created_at?: string
@@ -3477,6 +3485,7 @@ export type Database = {
           deleted_at?: string | null
           derivation_kind?: string | null
           derivation_metadata?: Json
+          duplicate_of_file_id?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
@@ -3494,6 +3503,27 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
+            columns: ["canonical_processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "extracted_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
+            columns: ["canonical_processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cld_files_duplicate_of_file_id_fkey"
+            columns: ["duplicate_of_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cld_files_parent_file_id_fkey"
             columns: ["parent_file_id"]
@@ -9907,6 +9937,7 @@ export type Database = {
           owner_id: string
           processed_document_id: string | null
           project_id: string | null
+          rag_boost: number | null
           scope_pages: number[] | null
           shortcut_id: string | null
           source_variations: Json
@@ -9934,6 +9965,7 @@ export type Database = {
           owner_id: string
           processed_document_id?: string | null
           project_id?: string | null
+          rag_boost?: number | null
           scope_pages?: number[] | null
           shortcut_id?: string | null
           source_variations?: Json
@@ -9961,6 +9993,7 @@ export type Database = {
           owner_id?: string
           processed_document_id?: string | null
           project_id?: string | null
+          rag_boost?: number | null
           scope_pages?: number[] | null
           shortcut_id?: string | null
           source_variations?: Json
@@ -10494,18 +10527,31 @@ export type Database = {
       }
       processed_documents: {
         Row: {
+          archived_at: string | null
+          archived_reason: string | null
+          canonical_clean_id: string | null
           clean_content: string | null
+          clean_content_completed_at: string | null
+          clean_content_cost_usd: number | null
+          cleaner_name: string | null
+          cleaner_version: string | null
           content: string | null
           created_at: string
           derivation_kind: string
           derivation_metadata: Json
+          extractor_name: string
+          extractor_version: string
+          file_content_hash: string | null
           id: string
           metadata: Json
           mime_type: string | null
           name: string
           organization_id: string | null
           owner_id: string
+          params_hash: string | null
           parent_processed_id: string | null
+          rag_boost: number
+          replace_reason: string | null
           source_hash: string
           source_id: string
           source_kind: string
@@ -10515,18 +10561,31 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_reason?: string | null
+          canonical_clean_id?: string | null
           clean_content?: string | null
+          clean_content_completed_at?: string | null
+          clean_content_cost_usd?: number | null
+          cleaner_name?: string | null
+          cleaner_version?: string | null
           content?: string | null
           created_at?: string
           derivation_kind?: string
           derivation_metadata?: Json
+          extractor_name?: string
+          extractor_version?: string
+          file_content_hash?: string | null
           id?: string
           metadata?: Json
           mime_type?: string | null
           name: string
           organization_id?: string | null
           owner_id: string
+          params_hash?: string | null
           parent_processed_id?: string | null
+          rag_boost?: number
+          replace_reason?: string | null
           source_hash: string
           source_id: string
           source_kind: string
@@ -10536,18 +10595,31 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_reason?: string | null
+          canonical_clean_id?: string | null
           clean_content?: string | null
+          clean_content_completed_at?: string | null
+          clean_content_cost_usd?: number | null
+          cleaner_name?: string | null
+          cleaner_version?: string | null
           content?: string | null
           created_at?: string
           derivation_kind?: string
           derivation_metadata?: Json
+          extractor_name?: string
+          extractor_version?: string
+          file_content_hash?: string | null
           id?: string
           metadata?: Json
           mime_type?: string | null
           name?: string
           organization_id?: string | null
           owner_id?: string
+          params_hash?: string | null
           parent_processed_id?: string | null
+          rag_boost?: number
+          replace_reason?: string | null
           source_hash?: string
           source_id?: string
           source_kind?: string
@@ -10557,6 +10629,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "processed_documents_canonical_clean_id_fkey"
+            columns: ["canonical_clean_id"]
+            isOneToOne: false
+            referencedRelation: "extracted_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processed_documents_canonical_clean_id_fkey"
+            columns: ["canonical_clean_id"]
+            isOneToOne: false
+            referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "processed_documents_parent_processed_id_fkey"
             columns: ["parent_processed_id"]

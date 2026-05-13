@@ -18562,7 +18562,7 @@
           "Files"
         ],
         "summary": "Finalize Presigned Upload",
-        "description": "Register a file in cld_files after the browser PUT completes.\n\nThe S3 object now exists; we record metadata + version + folder chain.\nNo bytes are read — we trust the actual_size_bytes the client reports\nand verify it via S3 HEAD if necessary.",
+        "description": "Register a presigned upload in cld_files after the browser PUT completes.",
         "operationId": "finalize_presigned_upload_files_finalize_upload_post",
         "requestBody": {
           "content": {
@@ -19617,6 +19617,7 @@
           "Files"
         ],
         "summary": "Download File",
+        "description": "Stream a file with Range / ETag / Content-Disposition handling.\n\nPublic + CDN-configured files redirect to the CDN (Range handled there).\nOther downloads delegate to ``FileService.open_stream`` which owns the\nS3 chunked stream + buffered fallback + RFC-7233 parsing.",
         "operationId": "download_file_files__file_id__download_get",
         "parameters": [
           {

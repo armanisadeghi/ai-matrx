@@ -6841,11 +6841,7 @@ export interface paths {
         put?: never;
         /**
          * Finalize Presigned Upload
-         * @description Register a file in cld_files after the browser PUT completes.
-         *
-         *     The S3 object now exists; we record metadata + version + folder chain.
-         *     No bytes are read — we trust the actual_size_bytes the client reports
-         *     and verify it via S3 HEAD if necessary.
+         * @description Register a presigned upload in cld_files after the browser PUT completes.
          */
         post: operations["finalize_presigned_upload_files_finalize_upload_post"];
         delete?: never;
@@ -7122,7 +7118,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download File */
+        /**
+         * Download File
+         * @description Stream a file with Range / ETag / Content-Disposition handling.
+         *
+         *     Public + CDN-configured files redirect to the CDN (Range handled there).
+         *     Other downloads delegate to ``FileService.open_stream`` which owns the
+         *     S3 chunked stream + buffered fallback + RFC-7233 parsing.
+         */
         get: operations["download_file_files__file_id__download_get"];
         put?: never;
         post?: never;

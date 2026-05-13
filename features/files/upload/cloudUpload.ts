@@ -62,10 +62,7 @@ import {
 } from "@/features/files/redux/slice";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import type { AppDispatch } from "@/lib/redux/store";
-import type {
-  PermissionLevel,
-  Visibility,
-} from "@/features/files/types";
+import type { PermissionLevel, Visibility } from "@/features/files/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -171,10 +168,7 @@ export function isCloudUploadSuccess(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
-function resolveFilePath(
-  file: File,
-  options: CloudUploadOptions,
-): string {
+function resolveFilePath(file: File, options: CloudUploadOptions): string {
   if (options.filePath) return options.filePath.replace(/^\/+/, "");
   if (options.folderPath) {
     const folder = options.folderPath.replace(/^\/+|\/+$/g, "");
@@ -184,8 +178,7 @@ function resolveFilePath(
 }
 
 function buildShareUrl(token: string): string {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
   return `${origin.replace(/\/$/, "")}/share/${token}`;
 }
 
@@ -231,19 +224,15 @@ export async function cloudUploadRaw(
     };
 
     const upload = options.onProgress
-      ? await Files_uploadFileWithProgress(
-          params,
-          options.onProgress,
-          {
-            requestId,
-            signal: options.signal,
-            // Reuse requestId as the idempotency key — single intended
-            // upload from the FE perspective, single key on the BE. Backend
-            // stores it in `metadata._idempotency_key` so retries don't
-            // double-create version rows.
-            idempotencyKey: requestId,
-          },
-        )
+      ? await Files_uploadFileWithProgress(params, options.onProgress, {
+          requestId,
+          signal: options.signal,
+          // Reuse requestId as the idempotency key — single intended
+          // upload from the FE perspective, single key on the BE. Backend
+          // stores it in `metadata._idempotency_key` so retries don't
+          // double-create version rows.
+          idempotencyKey: requestId,
+        })
       : await Files_uploadFile(params, {
           requestId,
           signal: options.signal,
@@ -537,5 +526,5 @@ export async function cloudUploadImperative(
       fileName: file.name,
     };
   }
-  return cloudUpload(file, options, store.dispatch);
+  return cloudUpload(file, options, store.dispatch as AppDispatch);
 }

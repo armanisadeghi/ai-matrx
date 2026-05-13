@@ -13,9 +13,7 @@
 "use client";
 
 import { createJob, updateJob } from "@/features/page-extraction/api/jobs";
-import type {
-  ChunkingConfigDraft,
-} from "@/features/page-extraction/redux/pageExtractionSlice";
+import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
   PageExtractionJob,
   PageExtractionJobInsert,
@@ -51,10 +49,7 @@ export function validateDraft(draft: ChunkingConfigDraft): string[] {
   if (!draft.agentId) issues.push("Pick an agent.");
   if (draft.sourceVariations.length === 0)
     issues.push("Pick at least one source variation.");
-  if (
-    draft.agentId &&
-    Object.keys(draft.variableMapping).length === 0
-  ) {
+  if (draft.agentId && Object.keys(draft.variableMapping).length === 0) {
     issues.push(
       "Agent variables aren't wired yet. Wait for the agent definition to load (a moment after picking the agent).",
     );
@@ -87,8 +82,7 @@ export async function saveTemplateFromDraft(
   const issues = validateDraft(draft);
   if (issues.length > 0) throw new DraftValidationError(issues);
 
-  const name =
-    draft.jobName.trim() || `${opts.fallbackName} extraction`;
+  const name = draft.jobName.trim() || `${opts.fallbackName} extraction`;
 
   // Saved templates are always is_saved=true going forward. The
   // distinction between "ad-hoc" and "saved" Jobs is going away — every
@@ -98,8 +92,10 @@ export async function saveTemplateFromDraft(
       name,
       agent_id: draft.agentId,
       variable_mapping: draft.variableMapping,
-      output_schema: (draft.outputSchema ??
-        { type: "object", properties: {} }) as never,
+      output_schema: (draft.outputSchema ?? {
+        type: "object",
+        properties: {},
+      }) as never,
       chunk_size: draft.chunkSize ?? 1,
       chunk_overlap: draft.chunkOverlap,
       scope_pages: draft.scopePages.length ? draft.scopePages : null,
@@ -121,8 +117,10 @@ export async function saveTemplateFromDraft(
     agent_id: draft.agentId,
     shortcut_id: null,
     variable_mapping: draft.variableMapping,
-    output_schema: (draft.outputSchema ??
-      { type: "object", properties: {} }) as never,
+    output_schema: (draft.outputSchema ?? {
+      type: "object",
+      properties: {},
+    }) as never,
     chunk_size: draft.chunkSize ?? 1,
     chunk_overlap: draft.chunkOverlap,
     scope_pages: draft.scopePages.length ? draft.scopePages : null,
@@ -135,6 +133,7 @@ export async function saveTemplateFromDraft(
     owner_id: opts.ownerId,
     organization_id: opts.organizationId ?? null,
     project_id: null,
+    archived_at: null,
   };
 
   return createJob(insert);
@@ -158,10 +157,7 @@ export function draftDiffersFromJob(
   if (draft.maxConcurrent !== job.max_concurrent) return true;
   if (draft.chunkingStrategy !== job.chunking_strategy) return true;
   if (draft.jobName.trim() && draft.jobName.trim() !== job.name) return true;
-  if (
-    !arraysEqual(draft.scopePages, job.scope_pages ?? [])
-  )
-    return true;
+  if (!arraysEqual(draft.scopePages, job.scope_pages ?? [])) return true;
   if (
     !arraysEqual(
       draft.sourceVariations,
@@ -171,8 +167,7 @@ export function draftDiffersFromJob(
     return true;
   if (!shallowMapEqual(draft.variableMapping, job.variable_mapping ?? {}))
     return true;
-  if (!extraInputsEqual(draft.extraInputs, job.extra_inputs ?? []))
-    return true;
+  if (!extraInputsEqual(draft.extraInputs, job.extra_inputs ?? [])) return true;
   return false;
 }
 

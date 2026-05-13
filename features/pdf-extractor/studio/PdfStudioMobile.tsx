@@ -341,6 +341,13 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                   setDrawer("none");
                   setUploadOpen(true);
                 }}
+                view="files"
+                onChangeView={() => {}}
+                pages={pages}
+                pagesLoading={false}
+                totalPages={activeDoc?.totalPages ?? pages.length}
+                activePage={activePage}
+                onSelectPage={setActivePage}
               />
             </div>
           </div>
