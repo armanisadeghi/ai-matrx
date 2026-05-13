@@ -5,18 +5,17 @@
  * ─────────────────────────────────────────────────────────────────────────
  * Drag-and-drop image upload with server-rendered preset variants.
  *
- * Pipeline: client sends the raw file to `POST /assets` on the Python
- * backend, the server renders every preset variant (cover, OG, thumbnail,
- * favicon sizes, avatar sizes, etc.) as separate `cld_files` rows under
- * one logical asset, and returns the canonical {@link Asset} envelope.
- * All variants land under the caller-supplied `folder` (or the server
- * default of `Assets/<uuid>`) so they appear together in the user's
- * file tree.
+ * **Single upload path** — every call routes through the universal handler's
+ * `useFileUpload({ preset })`, which posts to `POST /assets` so the Python
+ * backend renders every preset variant (cover, OG, thumbnail, favicon sizes,
+ * avatar sizes, etc.) as separate `cld_files` rows under one logical asset
+ * and returns the canonical {@link Asset} envelope. All variants land under
+ * the caller-supplied `folder` (or the server default of `Assets/<uuid>`)
+ * so they appear together in the user's file tree.
  *
- * Built from the proven podcast cover-art flow so any place that needs
- * "upload an image and get back a set of public URLs" can share the
- * same pipeline — podcasts, OG images, org logos, app favicons, avatars,
- * canvas covers, etc.
+ * For plain image uploads with no variant rendering, use
+ * `<FileUploadDropzone>` from `@/features/files` directly — this component
+ * is specifically for the preset-variant flow.
  *
  * Presets (mirror the backend registry — `GET /assets/presets` is the
  * authoritative list, but for static typing we hard-code the union in
@@ -30,10 +29,10 @@
  *   - "avatar"  → avatar_xl/lg/md/sm/xs_url
  *   - "favicon" → favicon_android/apple_touch/32/16_url
  *
- * Back-compat shim: every existing caller still receives `image_url`,
- * `og_image_url`, `thumbnail_url`, `tiny_url`, `primary_url`, and
- * `preset` on the `ImageUploaderResult`. New code should read
- * `result.asset` / `result.variants` directly.
+ * Back-compat note: every caller still receives `image_url`, `og_image_url`,
+ * `thumbnail_url`, `tiny_url`, `primary_url`, and `preset` on the
+ * `ImageUploaderResult`. New code should read `result.asset` /
+ * `result.variants` directly.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -41,12 +40,9 @@ import { useDropzone } from 'react-dropzone';
 import { AlertCircle, CheckCircle2, Eye, ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files/types';
-import { uploadAsset } from '@/features/files/api/assets';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useFileUpload } from '@/features/file-handler/hooks/useFileUpload';
+import { useAppDispatch } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
-import { selectActiveUploads } from '@/features/files/redux/selectors';
-import { useGuardedFileUpload } from '@/features/files/hooks/useGuardedFileUpload';
-import { UploadProgressList } from '@/features/files/components/core/FileUploadDropzone/UploadProgressList';
 import { extractErrorMessage } from '@/utils/errors';
 
 // ── Types exported for consumers ──────────────────────────────────────────
@@ -99,32 +95,17 @@ export interface ImageUploaderResult extends ImageUploaderVariants {
 }
 
 export interface ImageAssetUploaderProps {
-    /**
-     * Upload pipeline. "asset" routes through the `/assets` server pipeline
-     * (server renders preset variants). "cloud" uses the Cloud Files upload
-     * pipeline with this uploader's image-first UI (no variant rendering).
-     */
-    mode?: 'asset' | 'cloud';
     /** Fires whenever URLs change (successful upload or removal). */
     onComplete?: (result: ImageUploaderResult | null) => void;
-    /** Fires after cloud-mode uploads complete with new cloud file ids. */
-    onUploaded?: (fileIds: string[]) => void;
-    /** Fires when cloud-mode upload fails or an asset-mode upload errors. */
+    /** Fires when the upload errors. */
     onError?: (message: string) => void;
-    /** Parent folder for cloud-mode uploads. null = root. */
-    parentFolderId?: string | null;
-    /** Max size per cloud-mode file in bytes (UI-only; server enforces its own cap). */
+    /** Max size per file in bytes (UI-only; server enforces its own cap). */
     maxSize?: number;
     /**
-     * Clipboard paste capture. Defaults to "auto": enabled for cloud mode,
-     * disabled for asset mode. Use "asset" to let a variant uploader process
-     * pasted clipboard images through `/assets`.
+     * Enable capturing pasted clipboard images. Default true. The first
+     * image item on the clipboard is uploaded through the asset pipeline.
      */
-    pasteCaptureMode?: 'auto' | 'off' | 'cloud' | 'asset';
-    /** Enable paste from clipboard in cloud mode. Defaults true. Prefer `pasteCaptureMode` for new code. */
     enablePaste?: boolean;
-    /** Allow multiple files in cloud mode. Asset mode always uses the first file. */
-    multiple?: boolean;
     /** Preset dictating the variant set. Default: `"social"`. */
     preset?: AssetPreset;
     /** Primary image URL already set (shows as existing preview). */
@@ -315,12 +296,6 @@ function StatusIcon({ state }: { state: UploadState }) {
     return null;
 }
 
-export function formatCloudUploadFailures(
-    failed: Array<{ name: string; error: string }>,
-) {
-    return failed.map((f) => `${f.name}: ${f.error}`).join('; ');
-}
-
 export function buildPastedImageFileName(mimeType: string, timestamp = Date.now()) {
     const subtype = mimeType.split('/')[1]?.toLowerCase();
     const ext = subtype === 'jpeg' ? 'jpg' : subtype || 'png';
@@ -354,15 +329,10 @@ function assetToUploaderResult(asset: Asset): ImageUploaderResult {
 // ── Component ────────────────────────────────────────────────────────────
 
 export function ImageAssetUploader({
-    mode = 'asset',
     onComplete,
-    onUploaded,
     onError,
-    parentFolderId = null,
     maxSize,
-    pasteCaptureMode = 'auto',
     enablePaste = true,
-    multiple = false,
     preset = 'social',
     currentUrl,
     currentVariants,
@@ -378,8 +348,7 @@ export function ImageAssetUploader({
     className,
 }: ImageAssetUploaderProps) {
     const dispatch = useAppDispatch();
-    const activeUploads = useAppSelector(selectActiveUploads);
-    const { upload } = useGuardedFileUpload({ parentFolderId, visibility });
+    const { upload } = useFileUpload();
     const [section, setSection] = useState<SectionState>({ state: 'idle', error: null, fileName: null });
     const [pasteHighlight, setPasteHighlight] = useState(false);
     const [variants, setVariants] = useState<ImageUploaderVariants>({
@@ -406,12 +375,14 @@ export function ImageAssetUploader({
         if (disabled) return;
         setSection({ state: 'uploading', error: null, fileName: file.name });
         try {
-            const { data: asset } = await uploadAsset({
-                file,
-                preset,
-                folder,
-                visibility,
-            });
+            const normalized = await upload(
+                { kind: 'file', file },
+                { preset, folderPath: folder, visibility },
+            );
+            const asset = normalized.asset;
+            if (!asset) {
+                throw new Error('Upload succeeded but no asset envelope was returned');
+            }
             setVariants(mapAssetToLegacyVariants(asset));
             onComplete?.(assetToUploaderResult(asset));
             setSection({ state: 'success', error: null, fileName: file.name });
@@ -420,50 +391,7 @@ export function ImageAssetUploader({
             setSection({ state: 'error', error: message, fileName: file.name });
             onError?.(message);
         }
-    }, [disabled, preset, folder, visibility, onComplete, onError]);
-
-    const uploadCloudFiles = useCallback(async (files: File[]) => {
-        if (disabled || !files.length) return;
-        const uploadFiles = multiple ? files : files.slice(0, 1);
-        setSection({
-            state: 'uploading',
-            error: null,
-            fileName: uploadFiles.length === 1 ? uploadFiles[0].name : `${uploadFiles.length} files`,
-        });
-        try {
-            const { uploaded, failed, cancelled } = await upload(uploadFiles, {
-                parentFolderId,
-                visibility,
-            });
-            if (uploaded.length) {
-                onUploaded?.(uploaded);
-                setSection({
-                    state: 'success',
-                    error: null,
-                    fileName: uploadFiles.length === 1 ? uploadFiles[0].name : `${uploaded.length} files`,
-                });
-            } else if (cancelled) {
-                setSection({ state: 'idle', error: null, fileName: null });
-            }
-            if (failed.length) {
-                const message = formatCloudUploadFailures(failed);
-                setSection({
-                    state: 'error',
-                    error: message,
-                    fileName: uploadFiles.length === 1 ? uploadFiles[0].name : `${failed.length} failed`,
-                });
-                onError?.(message);
-            }
-        } catch (err) {
-            const message = extractErrorMessage(err);
-            setSection({
-                state: 'error',
-                error: message,
-                fileName: uploadFiles.length === 1 ? uploadFiles[0].name : `${uploadFiles.length} files`,
-            });
-            onError?.(message);
-        }
-    }, [disabled, multiple, upload, parentFolderId, visibility, onUploaded, onError]);
+    }, [disabled, preset, folder, visibility, upload, onComplete, onError]);
 
     const remove = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
@@ -525,13 +453,9 @@ export function ImageAssetUploader({
     }, [urlDraft, onComplete, preset, folder, visibility]);
 
     const handleFiles = useCallback((files: File[]) => {
-        if (mode === 'cloud') {
-            void uploadCloudFiles(files);
-            return;
-        }
         const file = files[0];
         if (file?.type.startsWith('image/')) void uploadFile(file);
-    }, [mode, uploadCloudFiles, uploadFile]);
+    }, [uploadFile]);
 
     const acceptValues = useMemo(
         () => Array.isArray(accept) ? accept : accept.split(',').map((value) => value.trim()).filter(Boolean),
@@ -558,38 +482,34 @@ export function ImageAssetUploader({
         noKeyboard: true,
         accept: acceptMap,
         maxSize,
-        multiple: mode === 'cloud' ? multiple : false,
+        multiple: false,
         disabled,
     });
 
-    const resolvedPasteCaptureMode = pasteCaptureMode === 'auto'
-        ? mode === 'cloud' && enablePaste ? 'cloud' : 'off'
-        : pasteCaptureMode;
-
+    // Paste capture — first image item on the clipboard is uploaded through
+    // the asset pipeline. Disable with `enablePaste={false}` when this
+    // uploader is rendered inside a surface that already owns paste
+    // (chat inputs, etc.).
     useEffect(() => {
-        if (resolvedPasteCaptureMode === 'off' || typeof window === 'undefined') return;
+        if (!enablePaste || typeof window === 'undefined') return;
         const handler = (event: ClipboardEvent) => {
             if (!event.clipboardData?.items) return;
-            const images: File[] = [];
             for (const item of Array.from(event.clipboardData.items)) {
                 if (!item.type.startsWith('image/')) continue;
                 const blob = item.getAsFile();
                 if (!blob) continue;
-                images.push(new File([blob], buildPastedImageFileName(blob.type), { type: blob.type }));
-            }
-            if (!images.length) return;
-            event.preventDefault();
-            setPasteHighlight(true);
-            setTimeout(() => setPasteHighlight(false), 400);
-            if (resolvedPasteCaptureMode === 'cloud') {
-                void uploadCloudFiles(images);
+                event.preventDefault();
+                setPasteHighlight(true);
+                setTimeout(() => setPasteHighlight(false), 400);
+                void uploadFile(
+                    new File([blob], buildPastedImageFileName(blob.type), { type: blob.type }),
+                );
                 return;
             }
-            void uploadFile(images[0]);
         };
         window.addEventListener('paste', handler);
         return () => window.removeEventListener('paste', handler);
-    }, [resolvedPasteCaptureMode, uploadCloudFiles, uploadFile]);
+    }, [enablePaste, uploadFile]);
 
     // Variant chips: when we have a populated four-key snapshot, render
     // a chip per populated entry plus any unpopulated ones the preset
@@ -758,24 +678,18 @@ export function ImageAssetUploader({
                         <div className="text-center px-3">
                             <p className="text-sm font-medium text-foreground">
                                 {section.state === 'uploading'
-                                    ? mode === 'cloud' ? 'Uploading…' : 'Processing…'
+                                    ? 'Processing…'
                                     : highlighted ? 'Drop to upload' : 'Drop image or click to upload'}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                {mode === 'cloud'
-                                    ? resolvedPasteCaptureMode === 'cloud' ? 'JPG, PNG, WebP · Paste with Ctrl/⌘V' : 'JPG, PNG, WebP'
-                                    : resolvedPasteCaptureMode === 'asset'
-                                        ? `JPG, PNG, WebP · ${blurb} · Paste with Ctrl/⌘V`
-                                        : `JPG, PNG, WebP · ${blurb}`}
+                                {enablePaste
+                                    ? `JPG, PNG, WebP · ${blurb} · Paste with Ctrl/⌘V`
+                                    : `JPG, PNG, WebP · ${blurb}`}
                             </p>
                         </div>
                     </div>
                 )}
             </div>
-
-            {mode === 'cloud' && activeUploads.length > 0 ? (
-                <UploadProgressList uploads={activeUploads} />
-            ) : null}
 
             {section.error && (
                 <p className="text-xs text-destructive flex items-center gap-1">

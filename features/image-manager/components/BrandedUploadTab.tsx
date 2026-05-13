@@ -210,7 +210,7 @@ export function BrandedUploadTab() {
         onComplete={handleComplete}
         label={`${preset.label} upload`}
         visibility="public"
-        pasteCaptureMode="asset"
+        enablePaste
       />
 
       {lastResult ? (

@@ -20,6 +20,10 @@ import {
   isCloudUploadFailure,
 } from "@/features/files/upload/cloudUpload";
 import * as Files from "@/features/files/api/files";
+import {
+  uploadAsset,
+  uploadAssetWithProgress,
+} from "@/features/files/api/assets";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import {
   selectOrganizationId,
@@ -56,6 +60,39 @@ export async function uploadInternal(
     opts.metadata ?? {},
     opts.inheritActiveScope ?? true,
   );
+
+  // Asset-pipeline branch — when `preset` is set the upload routes through
+  // `POST /assets`, which renders preset variants server-side and returns
+  // the canonical Asset envelope. The handler stitches the envelope onto
+  // the returned NormalizedFile so consumers can read every variant URL
+  // (og_url, thumbnail_url, etc.) without a second round-trip.
+  if (opts.preset) {
+    const params = {
+      file,
+      preset: opts.preset,
+      folder: folderPath.replace(/^\/+|\/+$/g, ""),
+      visibility: opts.visibility ?? "public",
+      customVariants: opts.customVariants,
+      shareWith: opts.shareWith,
+      shareLevel: opts.shareLevel,
+      metadata,
+    };
+    const { data: asset } = opts.onProgress
+      ? await uploadAssetWithProgress(params, (event) =>
+          opts.onProgress!(event.loaded, event.total),
+        )
+      : await uploadAsset(params);
+    // Hydrate the cloud-files row so the cloudFiles slice sees the new
+    // master record and downstream readers (selectors, realtime) get it.
+    const { data: full } = await Files.getFile(asset.file_id);
+    const cloudFile = apiFileRecordToCloudFile(full);
+    const normalized = fromCloudFile(cloudFile, source);
+    return {
+      ...normalized,
+      asset,
+      url: asset.primary_url ?? normalized.url,
+    };
+  }
 
   const result = await cloudUpload(
     file,

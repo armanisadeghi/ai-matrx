@@ -7,11 +7,10 @@ import {
   ImageAssetUploader,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
-import type { AssetPreset } from "@/features/files/types";
+import type { AssetPreset, Visibility } from "@/features/files/types";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import type { Visibility } from "@/features/files/types";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -67,24 +66,17 @@ const PRESETS: Array<{
   },
 ];
 
-type UploaderMode = "asset" | "cloud";
-type PasteCaptureMode = "auto" | "off" | "cloud" | "asset";
-
 export default function ImageAssetUploaderDisplay({
   component,
 }: ComponentDisplayProps) {
   const [preset, setPreset] = useState<AssetPreset>("social");
-  const [mode, setMode] = useState<UploaderMode>("asset");
-  const [pasteCaptureMode, setPasteCaptureMode] =
-    useState<PasteCaptureMode>("asset");
   const [visibility, setVisibility] = useState<Visibility>("public");
+  const [enablePaste, setEnablePaste] = useState(true);
   const [allowUrlPaste, setAllowUrlPaste] = useState(true);
   const [enableViewerAction, setEnableViewerAction] = useState(true);
   const [compact, setCompact] = useState(false);
   const [hideVariantBadges, setHideVariantBadges] = useState(false);
-  const [multiple, setMultiple] = useState(false);
   const [result, setResult] = useState<ImageUploaderResult | null>(null);
-  const [uploadedIds, setUploadedIds] = useState<string[]>([]);
   const openWindow = useOpenImageUploaderWindow();
 
   const code = `import { ImageAssetUploader, type ImageUploaderResult } from '@/components/official/ImageAssetUploader';
@@ -92,11 +84,10 @@ import { useOpenImageUploaderWindow } from '@/features/window-panels/windows/ima
 
 // ── Inline (embedded in a form) ──────────────────────────────────────────
 <ImageAssetUploader
-  mode="asset"                      // "asset" | "cloud"
   preset="social"                    // "raw" | "podcast" | "social" | "web" | "email" | "logo" | "avatar" | "favicon"
   folder={CloudFolders.SHARED_ASSETS_ORGS} // pick a CloudFolders constant — never hard-code
   currentUrl={form.image_url}
-  pasteCaptureMode="asset"           // paste clipboard images into the asset variant pipeline
+  enablePaste                        // first clipboard image goes through the asset pipeline
   allowUrlPaste
   visibility="public"
   enableViewerAction                 // preview opens the shared image window panel
@@ -124,12 +115,12 @@ openUploader({
 });
 
 // Features
-// - Server-side Sharp pipeline: all variants share one original, stay consistent
-// - 6 presets covering every common image shape (social, logo, favicon, …)
-// - mode="cloud" uses the Cloud Files upload pipeline for plain image uploads
+// - Server-side variant rendering: every preset variant shares one master, stays consistent
+// - 8 presets covering every common image shape (social, logo, favicon, …)
 // - Drag-drop, click, clipboard paste, OR paste a public URL
 // - Cloud-files backed uploads with configurable visibility + folder
-// - Optional preview action opens uploaded variants in the shared image panel`;
+// - Optional preview action opens uploaded variants in the shared image panel
+// - For plain (no-variants) image uploads, use <FileUploadDropzone> from @/features/files`;
 
   const handleOpenWindow = () => {
     openWindow({
@@ -149,46 +140,11 @@ openUploader({
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Drag-and-drop image upload with server-side Sharp processing. One file in, every configured size out. Ships with six presets covering podcasts, OG images, avatars, logos, and favicons. The inline preview can open the uploaded variants in the shared image WindowPanel."
+      description="Drag-and-drop image upload with server-rendered preset variants. One file in, every configured size out via POST /assets. Ships with eight presets covering podcasts, OG images, avatars, logos, and favicons. For plain image uploads with no variant rendering, use <FileUploadDropzone> from @/features/files."
     >
       <div className="w-full max-w-2xl space-y-4">
         <div className="rounded-lg border border-border bg-background/50 p-3 space-y-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <ControlGroup label="Mode">
-              <SegmentedOption
-                active={mode === "asset"}
-                onClick={() => {
-                  setMode("asset");
-                  setPasteCaptureMode("asset");
-                  setUploadedIds([]);
-                }}
-              >
-                Asset
-              </SegmentedOption>
-              <SegmentedOption
-                active={mode === "cloud"}
-                onClick={() => {
-                  setMode("cloud");
-                  setPasteCaptureMode("cloud");
-                  setResult(null);
-                }}
-              >
-                Cloud
-              </SegmentedOption>
-            </ControlGroup>
-
-            <ControlGroup label="Paste">
-              {(["auto", "off", "asset", "cloud"] as const).map((value) => (
-                <SegmentedOption
-                  key={value}
-                  active={pasteCaptureMode === value}
-                  onClick={() => setPasteCaptureMode(value)}
-                >
-                  {value}
-                </SegmentedOption>
-              ))}
-            </ControlGroup>
-
             <ControlGroup label="Visibility">
               {(["public", "private"] as const).map((value) => (
                 <SegmentedOption
@@ -204,6 +160,11 @@ openUploader({
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <ToggleRow
+              checked={enablePaste}
+              label="Capture paste"
+              onChange={setEnablePaste}
+            />
+            <ToggleRow
               checked={allowUrlPaste}
               label="URL paste"
               onChange={setAllowUrlPaste}
@@ -218,11 +179,6 @@ openUploader({
               checked={hideVariantBadges}
               label="Hide variant badges"
               onChange={setHideVariantBadges}
-            />
-            <ToggleRow
-              checked={multiple}
-              label="Multiple files"
-              onChange={setMultiple}
             />
           </div>
         </div>
@@ -249,19 +205,16 @@ openUploader({
 
         <div className="border border-border rounded-xl p-4 bg-muted/10">
           <ImageAssetUploader
-            mode={mode}
             preset={preset}
             onComplete={setResult}
-            onUploaded={setUploadedIds}
             currentUrl={result?.primary_url ?? null}
             currentVariants={result}
-            pasteCaptureMode={pasteCaptureMode}
+            enablePaste={enablePaste}
             visibility={visibility}
             allowUrlPaste={allowUrlPaste}
             enableViewerAction={enableViewerAction}
             compact={compact}
             hideVariantBadges={hideVariantBadges}
-            multiple={multiple}
             label={`${preset.charAt(0).toUpperCase()}${preset.slice(1)} image`}
           />
         </div>
@@ -292,15 +245,6 @@ openUploader({
             <p className="text-xs font-medium">Upload result</p>
             <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-all">
               {JSON.stringify(result, null, 2)}
-            </pre>
-          </div>
-        )}
-
-        {uploadedIds.length > 0 && (
-          <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
-            <p className="text-xs font-medium">Cloud upload file ids</p>
-            <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-all">
-              {JSON.stringify(uploadedIds, null, 2)}
             </pre>
           </div>
         )}

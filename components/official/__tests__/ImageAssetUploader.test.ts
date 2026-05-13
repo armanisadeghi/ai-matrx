@@ -1,7 +1,6 @@
 import {
   buildPastedImageFileName,
   buildImageAssetViewerPayload,
-  formatCloudUploadFailures,
 } from "@/components/official/ImageAssetUploader";
 
 describe("ImageAssetUploader", () => {
@@ -47,17 +46,6 @@ describe("ImageAssetUploader", () => {
         preset: "raw",
       }),
     ).toBeNull();
-  });
-
-  it("formats cloud upload failures with filename and backend reason", () => {
-    expect(
-      formatCloudUploadFailures([
-        { name: "hero.png", error: "File is too large" },
-        { name: "logo.webp", error: "Unsupported content type" },
-      ]),
-    ).toBe(
-      "hero.png: File is too large; logo.webp: Unsupported content type",
-    );
   });
 
   it("builds stable pasted image filenames from mime types", () => {

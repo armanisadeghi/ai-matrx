@@ -532,7 +532,7 @@ export const componentList: ComponentEntry[] = [
     name: "Image Asset Uploader",
     path: "components/official/ImageAssetUploader.tsx",
     description:
-      "Official image-first dropzone. Calls POST /assets to render server-side variants for any of the eight canonical presets (raw, podcast, social, web, email, logo, avatar, favicon), Cloud Files upload mode for plain image uploads, optional clipboard paste capture, and optional preview action into the shared image WindowPanel.",
+      "Official image-first dropzone. Calls POST /assets to render server-side variants for any of the eight canonical presets (raw, podcast, social, web, email, logo, avatar, favicon), optional clipboard paste capture, and optional preview action into the shared image WindowPanel. For plain image uploads with no variant rendering, use <FileUploadDropzone> from @/features/files.",
     categories: ["inputs", "media", "utilities"],
     tags: [
       "image",

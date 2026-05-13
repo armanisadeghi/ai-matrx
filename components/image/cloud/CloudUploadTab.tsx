@@ -2,10 +2,10 @@
  * components/image/cloud/CloudUploadTab.tsx
  *
  * Single consolidated image upload surface that replaces the legacy
- * "Upload", "Paste", and "Quick Upload" tabs. Wraps the official
- * `<ImageAssetUploader mode="cloud">` so the Image Manager uses one
- * consistent image-first dropzone while still flowing through the
- * cloud-files upload pipeline.
+ * "Upload", "Paste", and "Quick Upload" tabs. Wraps the canonical
+ * `<FileUploadDropzone>` from `features/files` so the Image Manager uses
+ * one consistent image-first dropzone backed by the universal cloud-files
+ * upload pipeline.
  *
  * Files land in `defaultUploadFolderPath` (default "Images/Uploads") —
  * resolved once via `ensureFolderPath`. Users can override the
@@ -36,7 +36,8 @@ import {
 } from "@/features/files/redux/selectors";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
+import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { ImageIcon } from "lucide-react";
 import {
   useSelectedImages,
 } from "@/components/image/context/SelectedImagesProvider";
@@ -200,18 +201,26 @@ export function CloudUploadTab({
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto overscroll-contain p-3 md:p-4 space-y-4">
-        <ImageAssetUploader
-          mode="cloud"
+        <FileUploadDropzone
+          mode="inline"
           parentFolderId={folderId}
           visibility={visibility}
           accept={accept}
           enablePaste
-          multiple
           onUploaded={handleUploaded}
           onError={handleError}
-          label="Upload"
-          allowUrlPaste={false}
-        />
+          className="rounded-xl border border-dashed border-border bg-card/40 py-8 px-4"
+        >
+          <div className="flex flex-col items-center gap-2 text-center">
+            <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">
+              Drop images or click to upload
+            </p>
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG, WebP · Paste with Ctrl/⌘V
+            </p>
+          </div>
+        </FileUploadDropzone>
 
         {!hideFolderControls ? (
           <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">

@@ -14,12 +14,15 @@
  */
 
 import type {
+  Asset,
+  AssetPreset,
   CloudFile,
   FileUploadResponse,
   MediaRef,
   PermissionLevel,
   Visibility,
 } from "@/features/files/types";
+import type { CustomVariantSpec } from "@/features/files/api/assets";
 import type {
   FileCategory,
   PreviewKind,
@@ -216,6 +219,15 @@ export interface NormalizedFile {
   derivedFrom?: { fileId: string; kind: string };
 
   /**
+   * Full {@link Asset} envelope — populated when the file was uploaded
+   * through the `/assets` preset pipeline (or when callers explicitly
+   * resolve to one). Carries every rendered variant URL keyed by
+   * canonical variant key (e.g. `og_url`, `thumbnail_url`). Read this
+   * instead of making a second round-trip for variants.
+   */
+  asset?: Asset;
+
+  /**
    * Original input — kept so we can re-resolve, refresh, or diagnose.
    * Never read this from a render path; use the normalized fields.
    */
@@ -384,6 +396,27 @@ export interface UploadOpts {
    * synthesize their own origin.
    */
   appOrigin?: string;
+
+  /**
+   * Asset-pipeline preset. When set, the handler routes through
+   * `POST /assets` (which renders preset variants server-side) instead of
+   * the plain `POST /files/upload` write. The returned `NormalizedFile`
+   * carries the full {@link Asset} envelope on `asset` so consumers can
+   * read every rendered variant URL without a second round-trip.
+   *
+   * Set this for image uploads that need server-rendered variant sets
+   * (podcast covers, OG cards, org logos, avatars, favicons). Omit for
+   * generic file uploads.
+   */
+  preset?: AssetPreset;
+
+  /**
+   * Ad-hoc custom variant specs sent verbatim to the server in
+   * `custom_variants_json`. Use when the preset registry doesn't carry a
+   * key you need; otherwise prefer presets so downstream renderers
+   * recognise the resulting variant keys.
+   */
+  customVariants?: CustomVariantSpec[];
 }
 
 // ===========================================================================
