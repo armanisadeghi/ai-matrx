@@ -12,7 +12,7 @@ import { updateOrganization } from "../service";
 import { validateOrgName, type Organization, type OrgRole } from "../types";
 import { InlineMediaRef } from "@/features/files";
 import { format } from "date-fns";
-import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
+import { ImageCropUploader } from "@/components/official/ImageCropUploader";
 import { folderForOrg } from "@/features/files";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
@@ -267,14 +267,14 @@ export function GeneralSettings({
         <div className="space-y-2">
           <Label>Logo</Label>
           {isEditing ? (
-            <ImageAssetUploader
+            <ImageCropUploader
               preset="logo"
               currentUrl={logoUrl || null}
               onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
               folder={`${folderForOrg(organization.id)}/logo`}
               disabled={isSaving}
-              enableViewerAction
               label="Organization logo"
+              defaultAspect={1}
             />
           ) : (
             <div className="flex items-center gap-4">
