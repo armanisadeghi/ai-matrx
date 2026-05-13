@@ -77,25 +77,23 @@ export default function ImageAssetUploaderDisplay({
   const [compact, setCompact] = useState(false);
   const [hideVariantBadges, setHideVariantBadges] = useState(false);
   const [result, setResult] = useState<ImageUploaderResult | null>(null);
+  const [tabResult, setTabResult] = useState<ImageUploaderResult | null>(null);
   const openWindow = useOpenImageUploaderWindow();
 
   const code = `import { ImageAssetUploader, type ImageUploaderResult } from '@/components/official/ImageAssetUploader';
 import { useOpenImageUploaderWindow } from '@/features/window-panels/windows/image/useOpenImageUploaderWindow';
 
-// ── Inline (embedded in a form) ──────────────────────────────────────────
+// ── Classic dropzone (default) ────────────────────────────────────────────
 <ImageAssetUploader
-  preset="social"                    // "raw" | "podcast" | "social" | "web" | "email" | "logo" | "avatar" | "favicon"
-  folder={CloudFolders.SHARED_ASSETS_ORGS} // pick a CloudFolders constant — never hard-code
+  preset="social"
   currentUrl={form.image_url}
-  enablePaste                        // first clipboard image goes through the asset pipeline
+  enablePaste
   allowUrlPaste
   visibility="public"
-  enableViewerAction                 // preview opens the shared image window panel
+  enableViewerAction
   onComplete={(result) => {
     if (!result) return clear();
-    // Canonical: read from result.asset.* — primary_url + every variant under variants.
     setForm({
-      ...form,
       image_url: result.asset.primary_url,
       og_image_url: result.asset.variants.og_url?.url ?? null,
       thumbnail_url: result.asset.variants.thumbnail_url?.url ?? null,
@@ -103,24 +101,25 @@ import { useOpenImageUploaderWindow } from '@/features/window-panels/windows/ima
   }}
 />
 
+// ── 4-source picker (Upload / Library / URL / Generate) ───────────────────
+<ImageAssetUploader
+  preset="podcast"
+  showSourceTabs           // enables tab bar — all 4 sources
+  defaultTab="upload"      // which tab opens first
+  enableGenerate           // show Generate tab (placeholder until pipeline ships)
+  currentUrl={form.image_url}
+  onComplete={(result) => { /* same ImageUploaderResult shape */ }}
+/>
+
 // ── As a floating window (imperative) ────────────────────────────────────
 const openUploader = useOpenImageUploaderWindow();
-
 openUploader({
   preset: "logo",
   title: "Upload organization logo",
   currentUrl: form.logoUrl,
   onUploaded: (e) => setLogoUrl(e.result.primary_url),
   onCleared:  () => setLogoUrl(""),
-});
-
-// Features
-// - Server-side variant rendering: every preset variant shares one master, stays consistent
-// - 8 presets covering every common image shape (social, logo, favicon, …)
-// - Drag-drop, click, clipboard paste, OR paste a public URL
-// - Cloud-files backed uploads with configurable visibility + folder
-// - Optional preview action opens uploaded variants in the shared image panel
-// - For plain (no-variants) image uploads, use <FileUploadDropzone> from @/features/files`;
+});`;
 
   const handleOpenWindow = () => {
     openWindow({
@@ -140,9 +139,9 @@ openUploader({
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Drag-and-drop image upload with server-rendered preset variants. One file in, every configured size out via POST /assets. Ships with eight presets covering podcasts, OG images, avatars, logos, and favicons. For plain image uploads with no variant rendering, use <FileUploadDropzone> from @/features/files."
+      description="Two modes in one component. Classic dropzone (default) for direct upload. 4-source tab picker (showSourceTabs) adds Library (pick existing cloud file, variants auto-attached) and URL (fetch+upload, CORS fallback). Same onComplete shape across all modes."
     >
-      <div className="w-full max-w-2xl space-y-4">
+      <div className="w-full max-w-2xl space-y-6">
         <div className="rounded-lg border border-border bg-background/50 p-3 space-y-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <ControlGroup label="Visibility">
@@ -248,6 +247,51 @@ openUploader({
             </pre>
           </div>
         )}
+
+        {/* ── 4-source tab picker demo ─────────────────────────────────── */}
+        <div className="space-y-2 pt-2 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">4-source picker — <code className="text-xs bg-muted px-1.5 py-0.5 rounded">showSourceTabs</code></p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Upload · Library · URL · Generate — same <code className="text-[11px]">ImageUploaderResult</code> shape from every source
+              </p>
+            </div>
+            {tabResult && (
+              <button
+                type="button"
+                onClick={() => setTabResult(null)}
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+
+          <div className="border border-border rounded-xl p-4 bg-muted/10">
+            <ImageAssetUploader
+              preset={preset}
+              showSourceTabs
+              enableGenerate
+              defaultTab="upload"
+              currentUrl={tabResult?.primary_url ?? null}
+              currentVariants={tabResult}
+              visibility={visibility}
+              enableViewerAction={enableViewerAction}
+              label={`${preset.charAt(0).toUpperCase()}${preset.slice(1)} image`}
+              onComplete={setTabResult}
+            />
+          </div>
+
+          {tabResult && (
+            <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
+              <p className="text-xs font-medium">Result</p>
+              <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-all">
+                {JSON.stringify(tabResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
     </ComponentDisplayWrapper>
   );
