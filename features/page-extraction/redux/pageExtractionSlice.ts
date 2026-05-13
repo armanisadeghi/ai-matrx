@@ -18,6 +18,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ChunkingStrategy,
+  ExtraExtractionInput,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 
@@ -98,6 +99,10 @@ export interface ChunkingConfigDraft {
   outputSchema: unknown | null;
   /** Maximum concurrent chunks. */
   maxConcurrent: number;
+  /** Extra inputs pulled from other templates' result rows. Each entry
+   *  contributes a named surface variable the user can route via
+   *  variable_mapping just like the built-in surface variations. */
+  extraInputs: ExtraExtractionInput[];
 }
 
 export const emptyDraft = (): ChunkingConfigDraft => ({
@@ -113,6 +118,7 @@ export const emptyDraft = (): ChunkingConfigDraft => ({
   variableMapping: {},
   outputSchema: null,
   maxConcurrent: 3,
+  extraInputs: [],
 });
 
 export interface PageExtractionState {

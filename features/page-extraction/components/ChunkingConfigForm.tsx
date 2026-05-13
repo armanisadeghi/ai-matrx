@@ -25,9 +25,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Loader2,
+  Plus,
   Repeat,
   Save,
+  X,
 } from "lucide-react";
+import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,7 +49,8 @@ import {
   toggleDraftVariation,
 } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { selectDraftForFile } from "@/features/page-extraction/redux/selectors";
-import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
+// useExtractionStream lives in SavedJobsList — Run is no longer
+// triggered from this form.
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
 import { parsePageRangeInput } from "@/features/page-extraction/utils/chunk-preview";
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
@@ -56,7 +60,6 @@ import {
   draftDiffersFromJob,
   saveTemplateFromDraft,
   validateDraft,
-  validateForRun,
 } from "@/features/page-extraction/services/run-from-draft";
 import {
   clearDraft,
@@ -69,7 +72,6 @@ import type {
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
-import { Plus } from "lucide-react";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -89,7 +91,9 @@ export function ChunkingConfigForm({
   const selectedJobId = useAppSelector((s) =>
     selectSelectedJobForFile(s, fileId),
   );
-  const { running, error: streamError, start } = useExtractionStream();
+  // streamError surfaces only if SavedJobsList propagates one; the form
+  // itself no longer initiates runs.
+  const streamError: string | null = null;
   const { chunks, stats, availablePages, loading: pagesLoading } =
     useChunkPreview({ fileId, processedDocumentId });
 
@@ -142,6 +146,7 @@ export function ChunkingConfigForm({
             variableMapping: job.variable_mapping ?? {},
             outputSchema: job.output_schema as unknown,
             maxConcurrent: job.max_concurrent,
+            extraInputs: job.extra_inputs ?? [],
           },
         }),
       );
@@ -192,15 +197,7 @@ export function ChunkingConfigForm({
   const [rangeError, setRangeError] = useState<string | null>(null);
 
   const saveIssues = useMemo(() => validateDraft(draft), [draft]);
-  const runIssues = useMemo(() => validateForRun(draft), [draft]);
   const canSave = saveIssues.length === 0 && !saving;
-  // Running requires: a saved Job to exist (or just-saved one), no dirty
-  // state, all run-level fields filled in.
-  const canRun =
-    runIssues.length === 0 &&
-    !running &&
-    !!selectedJobId &&
-    !isDirty;
 
   const handleRangeChange = (raw: string) => {
     setRangeError(null);
@@ -229,7 +226,33 @@ export function ChunkingConfigForm({
       dispatch(patchDraft({ fileId, patch: { chunkSize: null } }));
       return;
     }
-    dispatch(patchDraft({ fileId, patch: { chunkSize: Math.max(1, n) } }));
+    const next = Math.max(1, n);
+    // Clamp overlap so it remains < chunkSize.
+    const overlap = Math.max(
+      0,
+      Math.min(next - 1, draft.chunkOverlap),
+    );
+    dispatch(
+      patchDraft({
+        fileId,
+        patch: { chunkSize: next, chunkOverlap: overlap },
+      }),
+    );
+  };
+
+  const handleChunkOverlapChange = (raw: string) => {
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || raw.trim() === "") {
+      dispatch(patchDraft({ fileId, patch: { chunkOverlap: 0 } }));
+      return;
+    }
+    const maxOverlap = Math.max(0, (draft.chunkSize ?? 1) - 1);
+    dispatch(
+      patchDraft({
+        fileId,
+        patch: { chunkOverlap: Math.max(0, Math.min(maxOverlap, n)) },
+      }),
+    );
   };
 
   const handleSave = async () => {
@@ -266,32 +289,49 @@ export function ChunkingConfigForm({
     }
   };
 
-  const handleRun = async () => {
-    if (!selectedJobId) {
-      toast.error("Save the template first.");
-      return;
-    }
-    if (runIssues.length > 0) {
-      toast.error(runIssues[0]);
-      return;
-    }
-    if (isDirty) {
-      toast.error("Save your changes before running.");
-      return;
-    }
-    try {
-      await start(fileId, { job_id: selectedJobId });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not start run");
-    }
-  };
-
   const handleNewTemplate = () => {
     dispatch(selectJobForFile({ fileId, jobId: null }));
     dispatch(clearDraft({ fileId }));
     dispatch(ensureDraft({ fileId }));
     setLoadedJob(null);
     toast.success("Started a new template");
+  };
+
+  const handleCancel = () => {
+    if (selectedJobId && loadedJob) {
+      // Editing an existing template — reset to the persisted state.
+      dispatch(
+        patchDraft({
+          fileId,
+          patch: {
+            agentId: loadedJob.agent_id,
+            scopePages: loadedJob.scope_pages ?? [],
+            scopePagesInputRaw: loadedJob.scope_pages?.length
+              ? formatPageRange(loadedJob.scope_pages)
+              : "",
+            chunkSize: loadedJob.chunk_size,
+            chunkOverlap: loadedJob.chunk_overlap,
+            sourceVariations: (loadedJob.source_variations ??
+              ["clean_text"]) as SourceVariationKind[],
+            chunkingStrategy: (loadedJob.chunking_strategy ?? "pages") as
+              | "pages"
+              | "keyword"
+              | "manual"
+              | "section",
+            jobName: loadedJob.name,
+            saveAsJob: true,
+            variableMapping: loadedJob.variable_mapping ?? {},
+            outputSchema: loadedJob.output_schema as unknown,
+            maxConcurrent: loadedJob.max_concurrent,
+            extraInputs: loadedJob.extra_inputs ?? [],
+          },
+        }),
+      );
+      toast.success("Changes discarded");
+    } else {
+      // Composing a new template — drop it.
+      handleNewTemplate();
+    }
   };
 
   return (
@@ -303,9 +343,7 @@ export function ChunkingConfigForm({
             {selectedJobId ? "Editing" : "New template"}
           </p>
           <p className="text-[11px] font-medium truncate">
-            {loadedJob?.name ??
-              draft.jobName.trim() ??
-              "Untitled"}
+            {loadedJob?.name ?? draft.jobName.trim() ?? "Untitled"}
             {isDirty && selectedJobId && (
               <span className="ml-1 text-amber-700 dark:text-amber-400">
                 · unsaved
@@ -328,13 +366,31 @@ export function ChunkingConfigForm({
       {/* Saved templates — click a row to view, play to run, trash to delete. */}
       <SavedJobsList fileId={fileId} />
 
-      {/* Agent */}
+      {/* 1. Template name — first thing the user sets. */}
+      <Field
+        label="Template name"
+        required
+        hint="What to call this template in the Saved list."
+      >
+        <Input
+          value={draft.jobName}
+          onChange={(e) =>
+            dispatch(
+              patchDraft({ fileId, patch: { jobName: e.target.value } }),
+            )
+          }
+          placeholder={`e.g. "${documentName} extraction"`}
+          className="h-7 text-[11px]"
+        />
+      </Field>
+
+      {/* 2. Agent — second. Default label is the explicit "Select an Agent". */}
       <Field label="Agent" required hint="Pick one of your agents.">
         <AgentListDropdown
           onSelect={(id) =>
             dispatch(patchDraft({ fileId, patch: { agentId: id } }))
           }
-          label={agent?.name ?? "Pick agent…"}
+          label={agent?.name ?? "Select an Agent"}
           noBorder={false}
         />
         {agent && (
@@ -346,7 +402,7 @@ export function ChunkingConfigForm({
         )}
       </Field>
 
-      {/* Page range — REQUIRED, no default */}
+      {/* 3. Page range — REQUIRED, no default */}
       <Field
         label="Pages"
         required
@@ -377,42 +433,56 @@ export function ChunkingConfigForm({
         )}
       </Field>
 
-      {/* Chunk size — REQUIRED, no default */}
-      <Field
-        label="Chunk size"
-        required
-        hint="Pages per agent call. No default — pick deliberately."
-      >
-        <Input
-          value={draft.chunkSize ?? ""}
-          onChange={(e) => handleChunkSizeChange(e.target.value)}
-          type="number"
-          min={1}
-          max={50}
-          placeholder="e.g. 12"
-          className="h-7 text-[11px]"
-        />
-        {draft.chunkSize != null && draft.scopePages.length > 0 && (
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            →{" "}
-            <span className="font-mono text-foreground/80">
-              {chunks.length}
-            </span>{" "}
-            chunk{chunks.length === 1 ? "" : "s"}
-            {stats.avgChars > 0 && (
-              <>
-                {" "}· avg{" "}
-                <span className="font-mono">
-                  {stats.avgChars.toLocaleString()}
-                </span>{" "}
-                chars
-              </>
-            )}
-          </p>
-        )}
-      </Field>
+      {/* 4. Chunk size + overlap — overlap defaults to 0; user can set. */}
+      <div className="grid grid-cols-2 gap-2">
+        <Field
+          label="Chunk size"
+          required
+          hint="Pages per agent call."
+        >
+          <Input
+            value={draft.chunkSize ?? ""}
+            onChange={(e) => handleChunkSizeChange(e.target.value)}
+            type="number"
+            min={1}
+            max={50}
+            placeholder="e.g. 12"
+            className="h-7 text-[11px]"
+          />
+        </Field>
+        <Field
+          label="Overlap"
+          hint="Pages shared with the prev chunk."
+        >
+          <Input
+            value={draft.chunkOverlap}
+            onChange={(e) => handleChunkOverlapChange(e.target.value)}
+            type="number"
+            min={0}
+            max={Math.max(0, (draft.chunkSize ?? 1) - 1)}
+            placeholder="0"
+            className="h-7 text-[11px]"
+          />
+        </Field>
+      </div>
+      {draft.chunkSize != null && draft.scopePages.length > 0 && (
+        <p className="text-[10px] text-muted-foreground -mt-2">
+          →{" "}
+          <span className="font-mono text-foreground/80">{chunks.length}</span>{" "}
+          chunk{chunks.length === 1 ? "" : "s"}
+          {stats.avgChars > 0 && (
+            <>
+              {" "}· avg{" "}
+              <span className="font-mono">
+                {stats.avgChars.toLocaleString()}
+              </span>{" "}
+              chars
+            </>
+          )}
+        </p>
+      )}
 
-      {/* Source variations */}
+      {/* 5. Source variations */}
       <Field
         label="Source variations"
         required
@@ -464,35 +534,44 @@ export function ChunkingConfigForm({
         </div>
       </Field>
 
-      {/* Template name — always visible, required for Save */}
-      <Field
-        label="Template name"
-        hint="What to call this template in the Saved list."
-      >
-        <Input
-          value={draft.jobName}
-          onChange={(e) =>
-            dispatch(
-              patchDraft({ fileId, patch: { jobName: e.target.value } }),
-            )
-          }
-          placeholder={`e.g. "${documentName} extraction"`}
-          className="h-7 text-[11px]"
-        />
-      </Field>
+      {/* 6. Extra inputs — pull result rows from OTHER templates as
+              named variables for this template's agent. */}
+      <ExtraInputsEditor
+        fileId={fileId}
+        excludeJobId={selectedJobId}
+        extraInputs={draft.extraInputs}
+        onChange={(next) =>
+          dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
+        }
+      />
 
-      {/* Save / Run buttons — two distinct actions. */}
-      <div className="border-t border-border pt-3 space-y-2">
-        {isDirty && selectedJobId && (
-          <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-snug flex items-center gap-1">
-            <AlertCircle className="w-3 h-3 shrink-0" />
-            Unsaved changes — Save before you can Run.
-          </p>
-        )}
+      {streamError && (
+        <p className="text-[10px] text-destructive leading-snug">
+          {streamError}
+        </p>
+      )}
+
+      {/* Bottom — Cancel | Save. RUN is intentionally NOT here; it
+          lives on the play icon of saved templates so the template
+          editing flow and the run flow never share buttons. */}
+      <div className="sticky bottom-0 -mx-3 -mb-3 px-3 py-2 border-t border-border bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant={isDirty || !selectedJobId ? "default" : "outline"}
+            variant="ghost"
+            className="flex-1 h-8 text-[11px]"
+            onClick={handleCancel}
+            disabled={saving}
+            title={
+              selectedJobId
+                ? "Discard changes and reload the saved template"
+                : "Discard this new template"
+            }
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
             className="flex-1 h-8 text-[11px]"
             disabled={!canSave}
             onClick={() => void handleSave()}
@@ -510,60 +589,133 @@ export function ChunkingConfigForm({
             ) : (
               <>
                 <Save className="w-3 h-3 mr-1" />
-                {selectedJobId ? "Update" : "Save template"}
-              </>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1 h-8 text-[11px]"
-            variant={isDirty || !selectedJobId ? "outline" : "default"}
-            disabled={!canRun}
-            onClick={() => void handleRun()}
-            title={
-              !selectedJobId
-                ? "Save the template first"
-                : isDirty
-                  ? "Save changes before running"
-                  : "Run a new extraction"
-            }
-          >
-            {running ? (
-              <>
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Running…
-              </>
-            ) : (
-              <>
-                <Repeat className="w-3 h-3 mr-1" /> Run
+                {selectedJobId ? "Update" : "Save"}
               </>
             )}
           </Button>
         </div>
-        {(saveIssues.length > 0 || (selectedJobId && runIssues.length > 0)) && (
-          <ul className="space-y-0.5 text-[10px] text-amber-700 dark:text-amber-400">
-            {[...saveIssues, ...(selectedJobId ? runIssues.filter((r) => !saveIssues.includes(r)) : [])].map(
-              (issue) => (
-                <li key={issue} className="flex items-start gap-1">
-                  <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-                  {issue}
-                </li>
-              ),
-            )}
+        {saveIssues.length > 0 && (
+          <ul className="space-y-0.5 text-[10px] text-amber-700 dark:text-amber-400 mt-1.5">
+            {saveIssues.map((issue) => (
+              <li key={issue} className="flex items-start gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                {issue}
+              </li>
+            ))}
           </ul>
         )}
-      </div>
-
-      {streamError && (
-        <p className="text-[10px] text-destructive leading-snug">
-          {streamError}
+        <p className="text-[10px] text-muted-foreground/70 leading-snug mt-1.5">
+          To run an extraction, click the{" "}
+          <Repeat className="w-2.5 h-2.5 inline-block" /> on a saved
+          template above.
         </p>
-      )}
-
-      <p className="text-[10px] text-muted-foreground/70 leading-snug pt-1">
-        Live chunk progress + final results land in the{" "}
-        <span className="font-medium">Extractions</span> pane.
-      </p>
+      </div>
     </div>
+  );
+}
+
+// ─── Internal: extra-inputs editor ────────────────────────────────────────
+
+function ExtraInputsEditor({
+  fileId,
+  excludeJobId,
+  extraInputs,
+  onChange,
+}: {
+  fileId: string;
+  excludeJobId: string | null | undefined;
+  extraInputs: { name: string; source_job_id: string }[];
+  onChange: (next: { name: string; source_job_id: string }[]) => void;
+}) {
+  const { jobs } = useExtractionJobs(fileId);
+  const candidateJobs = jobs.filter((j) => j.id !== excludeJobId);
+
+  const addRow = () => {
+    onChange([...extraInputs, { name: "", source_job_id: "" }]);
+  };
+  const updateRow = (
+    idx: number,
+    patch: Partial<{ name: string; source_job_id: string }>,
+  ) => {
+    onChange(extraInputs.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
+  };
+  const removeRow = (idx: number) => {
+    onChange(extraInputs.filter((_, i) => i !== idx));
+  };
+
+  if (candidateJobs.length === 0 && extraInputs.length === 0) {
+    return (
+      <Field
+        label="Extra inputs"
+        hint="Use another template's results as variables."
+      >
+        <p className="text-[10px] text-muted-foreground/70 leading-snug">
+          Save another template first — you can then pipe its results
+          into this one as a named variable.
+        </p>
+      </Field>
+    );
+  }
+
+  return (
+    <Field
+      label="Extra inputs"
+      hint="Pull result rows from other templates."
+    >
+      <div className="space-y-1.5">
+        {extraInputs.map((row, idx) => (
+          <div key={idx} className="flex items-center gap-1.5">
+            <Input
+              value={row.name}
+              onChange={(e) => updateRow(idx, { name: e.target.value })}
+              placeholder="variable_name"
+              className="h-7 text-[11px] w-1/3 font-mono"
+            />
+            <span className="text-[10px] text-muted-foreground">←</span>
+            <select
+              value={row.source_job_id}
+              onChange={(e) =>
+                updateRow(idx, { source_job_id: e.target.value })
+              }
+              className="h-7 text-[11px] flex-1 min-w-0 rounded-md border border-input bg-background px-2"
+            >
+              <option value="">Select template…</option>
+              {candidateJobs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => removeRow(idx)}
+              title="Remove this input"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-[10px] w-full"
+          onClick={addRow}
+          disabled={candidateJobs.length === 0}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add input from another template
+        </Button>
+        {extraInputs.length > 0 && (
+          <p className="text-[10px] text-muted-foreground/70 leading-snug">
+            Each variable is a JSON array of result rows from the source
+            template, filtered to the current chunk&apos;s page range.
+            Route via the agent variable wiring above.
+          </p>
+        )}
+      </div>
+    </Field>
   );
 }
 

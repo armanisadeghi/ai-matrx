@@ -106,6 +106,7 @@ export async function saveTemplateFromDraft(
       source_variations: draft.sourceVariations,
       chunking_strategy: draft.chunkingStrategy,
       is_saved: true,
+      extra_inputs: draft.extraInputs,
       model_overrides: null,
       max_concurrent: draft.maxConcurrent,
     };
@@ -128,6 +129,7 @@ export async function saveTemplateFromDraft(
     source_variations: draft.sourceVariations,
     chunking_strategy: draft.chunkingStrategy,
     is_saved: true,
+    extra_inputs: draft.extraInputs,
     model_overrides: null,
     max_concurrent: draft.maxConcurrent,
     owner_id: opts.ownerId,
@@ -169,7 +171,21 @@ export function draftDiffersFromJob(
     return true;
   if (!shallowMapEqual(draft.variableMapping, job.variable_mapping ?? {}))
     return true;
+  if (!extraInputsEqual(draft.extraInputs, job.extra_inputs ?? []))
+    return true;
   return false;
+}
+
+function extraInputsEqual(
+  a: { name: string; source_job_id: string }[],
+  b: { name: string; source_job_id: string }[],
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].name !== b[i].name) return false;
+    if (a[i].source_job_id !== b[i].source_job_id) return false;
+  }
+  return true;
 }
 
 function arraysEqual<T>(a: T[], b: T[]): boolean {

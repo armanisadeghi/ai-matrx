@@ -35,6 +35,11 @@ export interface PageExtractionJob {
   source_variations: SourceVariationKind[];
   chunking_strategy: ChunkingStrategy;
   is_saved: boolean;
+  archived_at: string | null;
+  /** Extra inputs sourced from OTHER templates' result rows. See
+   *  `ExtraExtractionInput` for the shape. The wiring is described in
+   *  the migration `page_extraction_jobs_extra_inputs.sql`. */
+  extra_inputs: ExtraExtractionInput[];
   model_overrides: Record<string, Json> | null;
   max_concurrent: number;
   owner_id: string;
@@ -43,6 +48,23 @@ export interface PageExtractionJob {
   latest_run_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * A reference to another template's result rows that gets injected as an
+ * input variable for this template's agent.
+ *
+ *   { name: "medical_findings", source_job_id: "<uuid>" }
+ *
+ * `name` is the surface variable key — the Job's `variable_mapping`
+ * routes it to a specific agent variable name. The backend filters to
+ * results whose `source_pages` overlap the current chunk's pages so the
+ * variable is per-chunk-relevant; when the source template's results
+ * don't carry pages, the full result set is injected.
+ */
+export interface ExtraExtractionInput {
+  name: string;
+  source_job_id: string;
 }
 
 /**
