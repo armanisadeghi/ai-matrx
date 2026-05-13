@@ -64,7 +64,7 @@ export async function sendOrganizationInvitationEmail(
   role: string,
   invitationToken: string
 ): Promise<EmailResult> {
-  const invitationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com'}/invitations/accept/${invitationToken}`;
+  const invitationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com'}/invitations/organization/accept/${invitationToken}`;
 
   const html = `
     <!DOCTYPE html>

@@ -112,7 +112,7 @@ export function GeneralSettings({
 
   // Handle copy URL
   const handleCopyUrl = () => {
-    const orgUrl = `https://aimatrx.com/org/${organization.slug}`;
+    const orgUrl = `https://aimatrx.com/organizations/${organization.slug}`;
     navigator.clipboard.writeText(orgUrl);
     toast.success("Organization URL copied to clipboard");
   };
@@ -199,12 +199,12 @@ export function GeneralSettings({
           <Label htmlFor="slug">Organization URL</Label>
           <div className="flex items-center gap-2 flex-wrap">
             <a
-              href={`https://aimatrx.com/org/${organization.slug}`}
+              href={`https://aimatrx.com/organizations/${organization.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline decoration-dotted underline-offset-4 flex items-center gap-1"
             >
-              aimatrx.com/org/{organization.slug}
+              aimatrx.com/organizations/{organization.slug}
               <ExternalLink className="h-3 w-3" />
             </a>
             <Button

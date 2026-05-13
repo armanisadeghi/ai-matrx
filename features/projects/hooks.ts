@@ -8,7 +8,7 @@
  * NOTE: Listing hooks (useUserProjects / useOrgProjects / usePersonalProjects)
  * read from the Redux nav tree (`get_user_full_context`) — the same source the
  * agent-context hierarchy cascade uses. This keeps `/projects`,
- * `/org/[slug]/projects`, and any wizard view in lock-step. Mutations elsewhere
+ * `/organizations/[slug]/projects`, and any wizard view in lock-step. Mutations elsewhere
  * call `invalidateAndRefetchFullContext()` to refresh every consumer at once.
  */
 

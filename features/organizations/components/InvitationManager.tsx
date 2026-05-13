@@ -224,7 +224,7 @@ export function InvitationManager({
                 ? "Expired"
                 : `Expires ${formatDistanceToNow(expiresAt, { addSuffix: true })}`;
 
-              const invitationLink = `${typeof window !== "undefined" ? window.location.origin : "https://www.aimatrx.com"}/invitations/accept/${invitation.token}`;
+              const invitationLink = `${typeof window !== "undefined" ? window.location.origin : "https://www.aimatrx.com"}/invitations/organization/accept/${invitation.token}`;
 
               const handleCopyLink = async () => {
                 try {

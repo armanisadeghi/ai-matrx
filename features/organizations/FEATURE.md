@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-05-06`
+**Last updated:** `2026-05-13`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -16,14 +16,19 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 
 ## Entry points
 
-**Routes**
-- `app/(authenticated)/org/[slug]/page.tsx` — public landing page for an org (any authenticated user can view)
-- `app/(authenticated)/org/[slug]/{projects,tasks,notes,files,tables,workflows,shortcuts,templates,prompt-apps,prompts}/` — org-scoped resource views sharing `OrgResourceLayout.tsx`
-- `app/(authenticated)/org/[slug]/projects/[project-slug]/` — project-scoped view within an org
-- `app/(authenticated)/organizations/[id]/settings/page.tsx` — settings hub (members, invitations, general, scopes, danger zone)
-- `app/(authenticated)/organizations/[id]/settings/scopes/` — scope-system config (see `features/scope-system/FEATURE.md`)
-- `app/(authenticated)/invitations/accept/[token]/page.tsx` — accept org invitation
-- `app/(authenticated)/project-invitations/accept/[token]/page.tsx` — accept project invitation
+**Routes** — all under `/organizations/` with a single `[orgId]` dynamic segment that accepts either UUID or slug
+- `app/(authenticated)/organizations/page.tsx` — landing page listing all of the user's organizations
+- `app/(authenticated)/organizations/[orgId]/page.tsx` — org overview (any authenticated member can view); `[orgId]` resolves via `getOrganizationBySlugOrId()`
+- `app/(authenticated)/organizations/[orgId]/{projects,tasks,notes,files,tables,workflows,shortcuts,templates,prompt-apps,prompts,agent-apps}/` — org-scoped resource views sharing `OrgResourceLayout.tsx`
+- `app/(authenticated)/organizations/[orgId]/projects/[projectId]/` — project-scoped view within an org; `[projectId]` also accepts UUID or slug
+- `app/(authenticated)/organizations/[orgId]/settings/page.tsx` — settings hub (members, invitations, general, scopes, danger zone)
+- `app/(authenticated)/organizations/[orgId]/settings/scopes/` — scope-system config (see `features/scope-system/FEATURE.md`)
+- `app/(authenticated)/invitations/organization/accept/[token]/page.tsx` — accept org invitation
+- `app/(authenticated)/invitations/project/accept/[token]/page.tsx` — accept project invitation
+
+**Redirects** (in `next.config.js`)
+- `/org/:orgId/**` → `/organizations/:orgId/**` (permanent) — old slug-only path
+- `/org` → `/organizations` (permanent)
 
 **Hooks** (`features/organizations/hooks.ts`)
 - `useUserOrganizations()` — current user's orgs with role + member counts; sorted personal-first
@@ -102,9 +107,9 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
    - `expires_at = now + 7 days`.
    - INSERTs `organization_invitations` (unique on `(org, email)` → `23505` = already invited).
    - Looks up org name + inviter display name.
-   - `sendEmail()` with `emailTemplates.organizationInvitation(orgName, inviterName, url, expiresAt)` where url = `${SITE_URL}/invitations/accept/${token}`.
+   - `sendEmail()` with `emailTemplates.organizationInvitation(orgName, inviterName, url, expiresAt)` where url = `${SITE_URL}/invitations/organization/accept/${token}`.
    - On email success, updates `email_sent = true, email_sent_at = now`.
-4. Recipient opens email → `/invitations/accept/[token]`:
+4. Recipient opens email → `/invitations/organization/accept/[token]`:
    - Fetches invitation by token, checks expiry client-side, verifies `invitation.email === user.email`, checks no existing membership.
    - On Accept → `acceptInvitation(token)` in `service.ts`: INSERTs `organization_members` with invitation's role + `invited_by`, then DELETEs the invitation row.
    - Redirects to `/organizations/{id}/settings`.
@@ -112,7 +117,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 ### (c) Invite to a specific project (distinct from org invitation)
 
 - Use when the invitee needs project access but not broad org access (or is being added to a project in an org they already belong to).
-- Flow mirrors (b) but hits `/api/projects/invite`, writes `ctx_project_invitations`, and the accept route is `/project-invitations/accept/[token]`.
+- Flow mirrors (b) but hits `/api/projects/invite`, writes `ctx_project_invitations`, and the accept route is `/invitations/project/accept/[token]`.
 - On accept, `acceptProjectInvitation()` (in `features/projects/service.ts`) INSERTs `ctx_project_members`. **Does not automatically add the user to the parent org** — org membership is a separate concern.
 - Email template: `emailTemplates.projectInvitation(projectName, orgName, inviterName, url, expiresAt)`.
 
@@ -138,13 +143,13 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 2. Dispatch `appContextSlice.setOrganization({ id, name })`.
 3. **Slice resets all descendants on org change:** `scope_selections = {}`, `project_id = null`, `task_id = null`, `conversation_id = null`. A stale project from a previous org cannot leak across.
 4. All downstream hooks (`useContextScope`, agent invocations via `call-api.ts`) read `appContext` for the new scope.
-5. Route navigation is independent — switching the active context does not auto-navigate. URL-driven routes (`/org/[slug]/...`) sync the OTHER direction: on route load, read slug → call `setOrganization`.
+5. Route navigation is independent — switching the active context does not auto-navigate. URL-driven routes (`/organizations/[orgId]/...`) sync the OTHER direction: on route load, resolve `orgId` → call `setOrganization`.
 
 ### (f) Slugs in routes
 
-- Public landing: `/org/[slug]` — any authenticated user can view.
-- Nested resource routes: `/org/[slug]/{projects,tasks,...}` — all keyed by slug.
-- Settings routes use `[id]` not `[slug]`: `/organizations/[id]/settings` — stable across renames.
+- All org routes now live under `/organizations/[orgId]/` where `[orgId]` accepts **either a UUID or a slug**. Resolution is handled by `getOrganizationBySlugOrId(slugOrId)` in `service.ts` (UUID detected by regex; anything else is treated as a slug).
+- Navigation links always use the canonical slug (e.g., `org.slug`) when one exists, so bookmark-friendly URLs are the norm.
+- Project routes similarly use `[projectId]` accepting UUID or slug via a matching resolver inside the project page.
 - `generateSlug(name)`: lowercase, `[^a-z0-9]+ → -`, trim leading/trailing hyphens.
 - `validateOrgSlug`: 3–50 chars, `[a-z0-9-]` only.
 - Rename semantics: `updateOrganization` does NOT accept `slug` in `UpdateOrganizationOptions` — slugs are effectively immutable post-creation. If slug change is needed, do it via direct SQL / admin flow.
@@ -171,7 +176,7 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 ## Related features
 
 - **Depends on:** `features/agent-context/redux/appContextSlice.ts` (active org state), `features/email/` + `lib/email/client.ts` (Resend integration + templates), `@/utils/auth/getUserId` (user id/email helpers), `@/utils/supabase/{client,server}`
-- **Depended on by:** `features/projects/` (project FKs `organization_id`), `features/scope-system/`, `features/tasks/`, `features/sharing/`, `features/agents/` (agent ownership + multi-scope), every `/org/[slug]/**` route
+- **Depended on by:** `features/projects/` (project FKs `organization_id`), `features/scope-system/`, `features/tasks/`, `features/sharing/`, `features/agents/` (agent ownership + multi-scope), every `/organizations/[orgId]/**` route
 - **Cross-links:**
   - [`features/scope-system/FEATURE.md`](../scope-system/FEATURE.md) — scopes sit between org and project in the hierarchy
   - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — cross-org/user/project sharing of resources
@@ -191,6 +196,8 @@ Stable. No active migration. If org or project invitation flows evolve, keep `/a
 - `2026-04-25` — Removed use of the `features/organizations/index.ts` barrel: imports now target `hooks.ts`, `service.ts`, `types.ts`, and concrete files under `components/` (keeps re-export file for any stragglers; no API change).
 - `2026-04-22` — claude: initial combined doc for organizations + invitations.
 - `2026-05-06` — Organization logo upload now opts into the official image uploader's shared image-panel preview action in both create and general-settings edit flows.
+- `2026-05-13` — Unified route refactor: merged `/org/[slug]/**` and `/organizations/[id]/**` into a single `/organizations/[orgId]/**` tree that accepts both UUID and slug. Added `/organizations/page.tsx` landing page. Deleted old `/org/` and `/organizations/[id]/` route trees. Added permanent Next.js redirects from old paths. Updated `service.ts` with `getOrganizationBySlugOrId()`. All project feature components (`ProjectCard`, `ProjectFormSheet`, `CreateProjectModal`, `DangerZone`, `ProjectSidebar`) updated to build links under `/organizations/`.
+- `2026-05-13` — Consolidated all invitation accept pages under one namespace. Moved `/invitations/accept/[token]` → `/invitations/organization/accept/[token]` and `/project-invitations/accept/[token]` → `/invitations/project/accept/[token]`. Future resource invitations (notes, agents, etc.) plug in as `/invitations/<type>/accept/[token]`. Updated all email URL builders (`utils/email/emailService.ts`, `app/api/organizations/invite`, `app/api/organizations/invitations/resend`, `app/api/projects/invite`, `app/api/projects/invitations/resend`), the in-app copy-link button in `features/organizations/components/InvitationManager.tsx`, and the post-login redirect targets in both accept pages.
 
 ---
 

@@ -1,21 +1,25 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { Puzzle, Crown, Shield, User as UserIcon, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useOrgProjects } from '../hooks';
-import type { ProjectWithRole } from '../types';
+import React from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { Puzzle, Crown, Shield, User as UserIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useOrgProjects } from "../hooks";
+import type { ProjectWithRole } from "../types";
 
 interface ProjectSidebarProps {
   organizationId: string;
   orgSlug: string;
 }
 
-export function ProjectSidebar({ organizationId, orgSlug }: ProjectSidebarProps) {
+export function ProjectSidebar({
+  organizationId,
+  orgSlug,
+}: ProjectSidebarProps) {
   const params = useParams();
-  const activeProjectSlug = params['project-slug'] as string;
+  const activeProjectSlug = (params.projectId ??
+    params["project-slug"]) as string;
   const { projects, loading } = useOrgProjects(organizationId);
 
   if (loading) {
@@ -36,7 +40,10 @@ export function ProjectSidebar({ organizationId, orgSlug }: ProjectSidebarProps)
           key={project.id}
           project={project}
           orgSlug={orgSlug}
-          isActive={project.slug === activeProjectSlug || project.id === activeProjectSlug}
+          isActive={
+            project.slug === activeProjectSlug ||
+            project.id === activeProjectSlug
+          }
         />
       ))}
     </nav>
@@ -56,13 +63,13 @@ function ProjectNavItem({
 
   return (
     <Link
-      href={`/org/${orgSlug}/projects/${project.slug ?? project.id}/settings`}
+      href={`/organizations/${orgSlug}/projects/${project.slug ?? project.id}/settings`}
       className={cn(
-        'flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-sm',
-        'hover:bg-muted',
+        "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-sm",
+        "hover:bg-muted",
         isActive
-          ? 'bg-primary/10 text-primary font-medium'
-          : 'text-muted-foreground hover:text-foreground'
+          ? "bg-primary/10 text-primary font-medium"
+          : "text-muted-foreground hover:text-foreground",
       )}
     >
       <div className="flex-shrink-0 w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
@@ -70,7 +77,10 @@ function ProjectNavItem({
       </div>
       <span className="flex-1 truncate">{project.name}</span>
       <RoleIcon
-        className={cn('h-3 w-3 flex-shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')}
+        className={cn(
+          "h-3 w-3 flex-shrink-0",
+          isActive ? "text-primary" : "text-muted-foreground",
+        )}
       />
     </Link>
   );
@@ -78,8 +88,11 @@ function ProjectNavItem({
 
 function getRoleIcon(role: string) {
   switch (role) {
-    case 'owner': return Crown;
-    case 'admin': return Shield;
-    default: return UserIcon;
+    case "owner":
+      return Crown;
+    case "admin":
+      return Shield;
+    default:
+      return UserIcon;
   }
 }

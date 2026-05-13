@@ -117,7 +117,7 @@ export function CreateProjectModal({
       });
 
       if (result.success && result.project) {
-        // Refresh the global hierarchy so /projects, /org/[slug]/projects,
+        // Refresh the global hierarchy so /projects, /organizations/[slug]/projects,
         // and the agent-context cascade pick up the new project at once.
         dispatch(
           invalidateAndRefetchFullContext() as unknown as Parameters<
@@ -138,7 +138,9 @@ export function CreateProjectModal({
           // PG treats NULL org_ids as distinct in the unique constraint.
           if (orgSlug && result.project.organizationId) {
             const orgSegment = result.project.slug ?? result.project.id;
-            router.push(`/org/${orgSlug}/projects/${orgSegment}/settings`);
+            router.push(
+              `/organizations/${orgSlug}/projects/${orgSegment}/settings`,
+            );
           } else {
             router.push(`/projects/${result.project.id}/settings`);
           }
@@ -228,7 +230,7 @@ export function CreateProjectModal({
             <Label htmlFor="project-slug">URL Slug *</Label>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {orgSlug ? `/org/${orgSlug}/projects/` : "/projects/"}
+                {orgSlug ? `/organizations/${orgSlug}/projects/` : "/projects/"}
               </span>
               <Input
                 id="project-slug"

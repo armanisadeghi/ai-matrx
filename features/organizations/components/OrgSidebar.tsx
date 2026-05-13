@@ -25,7 +25,7 @@ import { InlineMediaRef } from "@/features/files";
 export function OrgSidebar() {
   const params = useParams();
   const pathname = usePathname();
-  const activeOrgId = params.id as string;
+  const activeOrgId = (params.orgId ?? params.id) as string;
   const { organizations, loading } = useUserOrganizations();
   const { isAdmin, isOwner } = useUserRole(activeOrgId);
 
@@ -40,6 +40,7 @@ export function OrgSidebar() {
   const personalOrg = organizations.find((org) => org.isPersonal);
   const teamOrgs = organizations.filter((org) => !org.isPersonal);
 
+  // activeOrgId may be a slug or UUID; OrgNavItem always uses org.id for href
   const settingsBase = `/organizations/${activeOrgId}/settings`;
   const isSettingsActive = pathname === settingsBase;
   const isScopesActive = pathname === `${settingsBase}/scopes`;
@@ -127,7 +128,7 @@ function OrgNavItem({
 
   return (
     <Link
-      href={`/organizations/${org.id}/settings`}
+      href={`/organizations/${org.slug ?? org.id}/settings`}
       className={cn(
         "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-sm",
         "hover:bg-muted",

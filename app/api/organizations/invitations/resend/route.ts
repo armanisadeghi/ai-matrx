@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Generate invitation URL
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com';
-    const invitationUrl = `${siteUrl}/invitations/accept/${invitation.token}`;
+    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitation.token}`;
     
     // Prepare email template (using reminder template for resend)
     const orgName = invitation.organizations?.name || 'the organization';

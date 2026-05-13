@@ -1,14 +1,14 @@
 /**
  * Prompt Execution Engine - Type Definitions
- * 
+ *
  * ARCHITECTURE NOTES:
  * - ExecutionInstance contains stable data that rarely changes after creation
  * - High-frequency update data (currentInput, resources, uiState) live in separate top-level maps
  * - This separation prevents re-renders when typing in input fields
  */
-import { PromptSettings, PromptVariable } from '@/features/prompts/types/core';
-import type { Resource } from '@/features/prompts/types/resources';
-import type { ArchivedContextsMap } from './types/dynamic-context';
+import { PromptSettings, PromptVariable } from "@/features/prompts/types/core";
+import type { Resource } from "@/features/prompts/types/resources";
+import type { ArchivedContextsMap } from "./types/dynamic-context";
 
 export interface ExecutionConfig {
   auto_run: boolean;
@@ -23,7 +23,7 @@ export interface ExecutionVariables {
   // User-provided values (from UI)
   userValues: Record<string, string>;
 
-  // Scoped variables (fetched from DB - user/org/project level)
+  // Scoped variables (fetched from DB - user/organizations/project level)
   scopedValues: Record<string, string>;
 
   // Runtime computed variables (e.g., current_date, user_timezone)
@@ -31,7 +31,7 @@ export interface ExecutionVariables {
 }
 
 export interface ConversationMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
   taskId?: string;
   timestamp: string;
@@ -41,7 +41,7 @@ export interface ConversationMessage {
     totalTime?: number;
     tokens?: number;
     cost?: number;
-    /** 
+    /**
      * Archived contexts for non-current messages.
      * Used to track which context versions existed at this point in the conversation
      * without including their full content (for token optimization).
@@ -73,22 +73,22 @@ export interface RunTracking {
 }
 
 export type ExecutionStatus =
-  | 'idle'           // Created but not started
-  | 'initializing'   // Loading prompt/variables
-  | 'ready'          // Ready to execute
-  | 'executing'      // Sending message
-  | 'streaming'      // Receiving response
-  | 'completed'      // Execution finished
-  | 'error';         // Error occurred
+  | "idle" // Created but not started
+  | "initializing" // Loading prompt/variables
+  | "ready" // Ready to execute
+  | "executing" // Sending message
+  | "streaming" // Receiving response
+  | "completed" // Execution finished
+  | "error"; // Error occurred
 
 /**
  * Core execution instance (Run)
- * 
+ *
  * Contains STABLE data that changes infrequently:
  * - Identity and configuration
  * - Message history (only changes during execution)
  * - Execution tracking
- * 
+ *
  * HIGH-FREQUENCY data lives in separate top-level maps:
  * - currentInputs[runId] - User typing
  * - resources[runId] - Attachments
@@ -98,7 +98,7 @@ export interface ExecutionInstance {
   // ========== Identity ==========
   runId: string;
   promptId: string;
-  promptSource: 'prompts' | 'prompt_builtins';
+  promptSource: "prompts" | "prompt_builtins";
   promptName: string; // Name of the prompt (from database)
 
   // ========== Status ==========
@@ -124,7 +124,7 @@ export interface ExecutionInstance {
   messages: ConversationMessage[];
 
   // ========== First Execution Flag ==========
-  /** 
+  /**
    * If true, indicates templates need variable replacement on first execution.
    * Set to false after first message is processed.
    */
@@ -145,7 +145,7 @@ export interface InstanceUIState {
   showVariables: boolean;
 
   // Creator/Debug controls
-  /** 
+  /**
    * Indicates if the current user is the creator of this prompt.
    * undefined = unknown, true = is creator, false = not creator
    */
@@ -169,19 +169,19 @@ export interface InstanceUIState {
 
 /**
  * Scoped variables fetched from database
- * These are user/org/project level variables that auto-populate
+ * These are user/organizations/project level variables that auto-populate
  */
 export interface ScopedVariables {
   user: Record<string, string> | null;
   org: Record<string, string> | null;
   project: Record<string, string> | null;
   fetchedAt: number | null;
-  status: 'idle' | 'loading' | 'loaded' | 'error';
+  status: "idle" | "loading" | "loaded" | "error";
 }
 
 /**
  * Main slice state
- * 
+ *
  * ARCHITECTURE:
  * - instances: Stable core data, changes only during execution
  * - currentInputs: Isolated input state, changes on every keystroke
@@ -211,7 +211,9 @@ export interface PromptExecutionState {
   // Dynamic contexts (versioned content that updates during execution)
   dynamicContexts: {
     [runId: string]: {
-      [contextId: string]: import('./types/dynamic-context').DynamicContextState;
+      [
+        contextId: string
+      ]: import("./types/dynamic-context").DynamicContextState;
     };
   };
 
@@ -228,7 +230,7 @@ export interface PromptExecutionState {
 
 export interface StartInstancePayload {
   promptId: string;
-  promptSource?: 'prompts' | 'prompt_builtins';
+  promptSource?: "prompts" | "prompt_builtins";
   executionConfig: ExecutionConfig;
   variables?: Record<string, string>;
   initialMessage?: string;
@@ -237,7 +239,7 @@ export interface StartInstancePayload {
   initialContexts?: Array<{
     contextId: string;
     content: string;
-    metadata: import('./types/dynamic-context').ContextMetadata;
+    metadata: import("./types/dynamic-context").ContextMetadata;
   }>;
 }
 

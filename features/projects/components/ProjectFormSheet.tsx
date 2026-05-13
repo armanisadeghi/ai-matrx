@@ -309,7 +309,7 @@ function ProjectFormInner({
       });
 
       if (result.success && result.project) {
-        // Refresh the global hierarchy so /projects, /org/[slug]/projects,
+        // Refresh the global hierarchy so /projects, /organizations/[slug]/projects,
         // and the agent-context cascade pick up the new project at once.
         dispatch(
           invalidateAndRefetchFullContext() as unknown as Parameters<
@@ -318,7 +318,7 @@ function ProjectFormInner({
         );
         // The canonical service normalizes the personal pseudo-org sentinel to
         // a null organization id; redirect to the personal /projects path in
-        // that case rather than the non-existent /org/personal route.
+        // that case rather than the non-existent /organizations/personal route.
         const persistedOrgId = result.project.organizationId;
         toast.success("Project created!", {
           description: "You can manage permissions in project settings.",
@@ -330,7 +330,7 @@ function ProjectFormInner({
                   // inside an org, so the personal route segment is `[id]`.
                   const base =
                     persistedOrgId && selectedOrg?.slug
-                      ? `/org/${selectedOrg.slug}/projects/${result.project!.slug ?? result.project!.id}/settings`
+                      ? `/organizations/${selectedOrg.slug}/projects/${result.project!.slug ?? result.project!.id}/settings`
                       : `/projects/${result.project!.id}/settings`;
                   router.push(base);
                 },
@@ -352,7 +352,7 @@ function ProjectFormInner({
   };
 
   const slugPrefix = selectedOrg?.slug
-    ? `/org/${selectedOrg.slug}/projects/`
+    ? `/organizations/${selectedOrg.slug}/projects/`
     : "/projects/";
 
   // ── Mobile layout ────────────────────────────────────────────────────────

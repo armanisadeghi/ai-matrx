@@ -81,14 +81,14 @@ export function ProjectCard({
   //     (DB only enforces uniqueness on `(organization_id, slug)`), so we use
   //     the UUID. We don't conditionally use slug here because that produces
   //     ambiguous URLs.
-  //   - Org projects → `/org/[orgSlug]/projects/[slug ?? id]`. Slug is unique
+  //   - Org projects → `/organizations/[orgSlug]/projects/[slug ?? id]`. Slug is unique
   //     inside an org. If the project is org-scoped but we don't have an
   //     orgSlug, that's a bug in the caller (the org list it came from didn't
   //     resolve the slug); fall through to `/projects/[id]` as a safety net
   //     so the card is still clickable.
   const isOrgScoped = !project.isPersonal && !!project.organizationId;
   const basePath =
-    isOrgScoped && orgSlug ? `/org/${orgSlug}/projects` : "/projects";
+    isOrgScoped && orgSlug ? `/organizations/${orgSlug}/projects` : "/projects";
   const projectSegment = isOrgScoped
     ? (project.slug ?? project.id)
     : project.id;

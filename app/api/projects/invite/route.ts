@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     const orgName = (projectData.organizations as { name?: string } | null)?.name ?? 'your organization';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.aimatrx.com';
-    const invitationUrl = `${siteUrl}/project-invitations/accept/${token}`;
+    const invitationUrl = `${siteUrl}/invitations/project/accept/${token}`;
 
     const emailTemplate = emailTemplates.projectInvitation(
       projectData.name,

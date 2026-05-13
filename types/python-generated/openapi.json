@@ -17879,13 +17879,13 @@
           "Assets"
         ],
         "summary": "Assets Preview",
-        "description": "No-persist preview rendering. Replaces Next.js Sharp route.\n\nAccepts a master via MediaRef (``{\"file_id\": \"...\"}``) + variant\nspecs. Returns base64 data URLs (≤256 KB) or 5-min ephemeral\nsigned URLs.",
+        "description": "No-persist preview rendering. Replaces Next.js Sharp route.\n\nFull studio surface: ``fit`` (cover/contain/inside), ``position``\n(9-anchor names or continuous ``{x, y}`` focal point — including the\nsmart-crop modes ``entropy`` / ``attention``), ``background_color``\n(alpha-flatten + contain padding). See ``PreviewVariantSpec``.\n\nReturns base64 ``data_url`` (size ≤ ``max_inline_bytes``) or a\n5-minute ephemeral ``signed_url`` for larger renders. Per-variant\nerrors surface as ``{\"preset_id\": ..., \"error\": \"...\"}`` entries.",
         "operationId": "assets_preview_assets_preview_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/_AssetPreviewRequest"
+                "$ref": "#/components/schemas/AssetPreviewRequest"
               }
             }
           },
@@ -17921,7 +17921,7 @@
           "Assets"
         ],
         "summary": "Assets Preview Multipart",
-        "description": "Multipart variant of /assets/preview — render directly without a\nprior cld_files row. Useful for Image Studio drag-and-drop preview\nbefore commit-to-save.",
+        "description": "Multipart variant of /assets/preview — render bytes directly\nwithout a prior cld_files row. Used by Image Studio for drag-and-drop\npreview before commit-to-save.\n\nThe variant spec surface is identical to the JSON endpoint —\n``variants_json`` is just a transport convenience because multipart\ncan't carry a typed list field cleanly. Each entry is validated\nserver-side as ``PreviewVariantSpec``.",
         "operationId": "assets_preview_multipart_assets_preview_multipart_post",
         "requestBody": {
           "content": {
@@ -24137,6 +24137,307 @@
         }
       }
     },
+    "/dedup/processed-documents/extract": {
+      "post": {
+        "tags": [
+          "Dedup"
+        ],
+        "summary": "Create or reuse an initial_extract row (strict intent)",
+        "operationId": "extract_endpoint_dedup_processed_documents_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DedupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dedup/processed-documents/{processed_document_id}/clean": {
+      "post": {
+        "tags": [
+          "Dedup"
+        ],
+        "summary": "Create or reuse a re_clean variant (strict intent)",
+        "operationId": "clean_endpoint_dedup_processed_documents__processed_document_id__clean_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CleanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DedupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dedup/processed-documents/{processed_document_id}/derivative": {
+      "post": {
+        "tags": [
+          "Dedup"
+        ],
+        "summary": "Create or reuse a derivative (agent extract, summary, etc.)",
+        "operationId": "derivative_endpoint_dedup_processed_documents__processed_document_id__derivative_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DerivativeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DedupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dedup/files/{file_id}/set-canonical-extract": {
+      "post": {
+        "tags": [
+          "Dedup"
+        ],
+        "summary": "Promote a processed_document to canonical for its cld_file",
+        "operationId": "set_canonical_extract_endpoint_dedup_files__file_id__set_canonical_extract_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCanonicalExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetCanonicalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dedup/processed-documents/{processed_document_id}/set-canonical-clean": {
+      "post": {
+        "tags": [
+          "Dedup"
+        ],
+        "summary": "Promote a re_clean variant to canonical for its parent",
+        "operationId": "set_canonical_clean_endpoint_dedup_processed_documents__processed_document_id__set_canonical_clean_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCanonicalCleanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetCanonicalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dedup/processed-documents/{processed_document_id}/archive": {
+      "post": {
+        "tags": [
+          "Dedup"
+        ],
+        "summary": "Soft-archive a processed_document",
+        "operationId": "archive_endpoint_dedup_processed_documents__processed_document_id__archive_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchiveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/{file_id}/analysis": {
       "get": {
         "tags": [
@@ -27747,6 +28048,44 @@
         "type": "object",
         "title": "AppExecuteRequest"
       },
+      "ArchiveRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 4,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "ArchiveRequest"
+      },
+      "ArchiveResponse": {
+        "properties": {
+          "processed_document_id": {
+            "type": "string",
+            "title": "Processed Document Id"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processed_document_id",
+          "archived",
+          "reason"
+        ],
+        "title": "ArchiveResponse"
+      },
       "Asset": {
         "properties": {
           "file_id": {
@@ -27977,6 +28316,34 @@
         "title": "AssetPdfCompressResponse",
         "description": "Response from POST /assets/pdf-compress — no-persist compression."
       },
+      "AssetPreviewRequest": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/PreviewSource"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewVariantSpec"
+            },
+            "type": "array",
+            "title": "Variants"
+          },
+          "max_inline_bytes": {
+            "type": "integer",
+            "minimum": 1024,
+            "title": "Max Inline Bytes",
+            "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
+            "default": 262144
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "variants"
+        ],
+        "title": "AssetPreviewRequest",
+        "description": "Request body for POST /assets/preview."
+      },
       "AssetPreviewResponse": {
         "properties": {
           "variants": {
@@ -27996,22 +28363,30 @@
       },
       "AssetPreviewVariant": {
         "properties": {
-          "key": {
+          "preset_id": {
             "type": "string",
-            "title": "Key"
+            "title": "Preset Id",
+            "description": "Echoed from the request spec"
           },
           "width": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Width"
           },
           "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "jpeg",
+              "png",
+              "webp",
+              "avif"
+            ],
+            "title": "Format"
+          },
+          "quality": {
             "anyOf": [
               {
                 "type": "integer"
@@ -28020,15 +28395,65 @@
                 "type": "null"
               }
             ],
-            "title": "Height"
+            "title": "Quality",
+            "description": "None when format='png'"
           },
-          "mime_type": {
-            "type": "string",
-            "title": "Mime Type"
-          },
-          "file_size": {
+          "size": {
             "type": "integer",
-            "title": "File Size"
+            "title": "Size",
+            "description": "Encoded byte length"
+          },
+          "fit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cover",
+                  "contain",
+                  "inside"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fit"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "center",
+                  "top",
+                  "bottom",
+                  "left",
+                  "right",
+                  "top-left",
+                  "top-right",
+                  "bottom-left",
+                  "bottom-right",
+                  "entropy",
+                  "attention"
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/matrx_utils__file_handling__asset_envelope__FocalPoint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position",
+            "description": "Echoed when fit='cover'. None for contain/inside."
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "description": "Soft warnings (e.g. 'anchor entropy unsupported, used center', 'exif-transpose failed'). Empty when nothing notable."
           },
           "data_url": {
             "anyOf": [
@@ -28040,7 +28465,7 @@
               }
             ],
             "title": "Data Url",
-            "description": "base64 data URL (small variants)"
+            "description": "base64 data URL when size <= max_inline_bytes"
           },
           "signed_url": {
             "anyOf": [
@@ -28052,17 +28477,42 @@
               }
             ],
             "title": "Signed Url",
-            "description": "Ephemeral signed URL (5-min TTL)"
+            "description": "Ephemeral signed URL when size > max_inline_bytes"
+          },
+          "expires_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In",
+            "description": "Seconds (with signed_url). 300 = 5-minute TTL."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           }
         },
         "type": "object",
         "required": [
-          "key",
-          "mime_type",
-          "file_size"
+          "preset_id",
+          "width",
+          "height",
+          "format",
+          "size"
         ],
         "title": "AssetPreviewVariant",
-        "description": "One rendered preview variant (no persistence)."
+        "description": "One rendered preview variant in the response.\n\nField names mirror ``ImageHandler.StudioRenderResult`` so the wire\ncontract is consistent end-to-end."
       },
       "AssetRenderMoreRequest": {
         "properties": {
@@ -28450,7 +28900,7 @@
           "variants_json": {
             "type": "string",
             "title": "Variants Json",
-            "description": "JSON-encoded list of preview variant specs"
+            "description": "JSON-encoded list of PreviewVariantSpec dicts. Each item: {preset_id, width, height, format?, quality?, fit?, position?, background_color?}. See the JSON variant of this endpoint for the typed schema."
           },
           "max_inline_bytes": {
             "type": "integer",
@@ -31224,6 +31674,77 @@
         "type": "object",
         "title": "ClassifyPagesRequest"
       },
+      "CleanRequest": {
+        "properties": {
+          "intent": {
+            "type": "string",
+            "enum": [
+              "clean",
+              "get_or_clean",
+              "replace_clean"
+            ],
+            "title": "Intent"
+          },
+          "cleaner_name": {
+            "type": "string",
+            "title": "Cleaner Name"
+          },
+          "cleaner_version": {
+            "type": "string",
+            "title": "Cleaner Version",
+            "default": "v1"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "clean_content": {
+            "type": "string",
+            "title": "Clean Content"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "rag_boost": {
+            "type": "integer",
+            "title": "Rag Boost",
+            "default": 0
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent",
+          "cleaner_name",
+          "clean_content"
+        ],
+        "title": "CleanRequest"
+      },
       "ClientContext": {
         "properties": {
           "capabilities": {
@@ -33639,6 +34160,67 @@
         ],
         "title": "DatasetCreate"
       },
+      "DedupResponse": {
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "created",
+              "reused",
+              "replaced"
+            ],
+            "title": "Outcome"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "derivation_kind": {
+            "type": "string",
+            "title": "Derivation Kind"
+          },
+          "parent_processed_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Processed Id"
+          },
+          "canonical_clean_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Clean Id"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "id",
+          "derivation_kind"
+        ],
+        "title": "DedupResponse"
+      },
       "DefaultsResponse": {
         "properties": {
           "max_weekly_earnings": {
@@ -33861,6 +34443,110 @@
           "embeddings_deleted"
         ],
         "title": "DeleteResult"
+      },
+      "DerivativeRequest": {
+        "properties": {
+          "intent": {
+            "type": "string",
+            "enum": [
+              "create_derivative",
+              "get_or_create_derivative"
+            ],
+            "title": "Intent"
+          },
+          "derivation_kind": {
+            "type": "string",
+            "enum": [
+              "agent_extract",
+              "agent_summary",
+              "agent_structured_json",
+              "page_image_caption",
+              "manual_curation"
+            ],
+            "title": "Derivation Kind"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "structured_json": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured Json"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "rag_boost": {
+            "type": "integer",
+            "title": "Rag Boost",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent",
+          "derivation_kind"
+        ],
+        "title": "DerivativeRequest"
       },
       "DetectRepeatedRegionsRequest": {
         "properties": {
@@ -35334,6 +36020,151 @@
         },
         "type": "object",
         "title": "ExtractReadingOrderRequest"
+      },
+      "ExtractRequest": {
+        "properties": {
+          "intent": {
+            "type": "string",
+            "enum": [
+              "extract",
+              "get_or_extract",
+              "replace_extract"
+            ],
+            "title": "Intent"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind",
+            "description": "One of cld_file/note/code_file/external_url/inline/legacy"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "file_content_hash": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "File Content Hash"
+          },
+          "extractor_name": {
+            "type": "string",
+            "title": "Extractor Name",
+            "default": "pymupdf"
+          },
+          "extractor_version": {
+            "type": "string",
+            "title": "Extractor Version",
+            "default": "v1"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "total_pages": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Pages"
+          },
+          "source_hash": {
+            "type": "string",
+            "title": "Source Hash"
+          },
+          "storage_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Uri"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "structured_json": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured Json"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "rag_boost": {
+            "type": "integer",
+            "title": "Rag Boost",
+            "default": 0
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent",
+          "source_kind",
+          "source_id",
+          "file_content_hash",
+          "name",
+          "source_hash"
+        ],
+        "title": "ExtractRequest"
       },
       "ExtractTablesRequest": {
         "properties": {
@@ -37192,19 +38023,21 @@
         "type": "object",
         "title": "FlattenAnnotationsRequest"
       },
-      "FocalPoint": {
+      "FocalPoint-Input": {
         "properties": {
           "x": {
             "type": "number",
             "maximum": 1,
             "minimum": 0,
-            "title": "X"
+            "title": "X",
+            "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
             "maximum": 1,
             "minimum": 0,
-            "title": "Y"
+            "title": "Y",
+            "description": "0=top, 1=bottom"
           }
         },
         "type": "object",
@@ -37212,7 +38045,8 @@
           "x",
           "y"
         ],
-        "title": "FocalPoint"
+        "title": "FocalPoint",
+        "description": "Continuous focal point — normalized [0..1] coordinates from the\ntop-left of the source. Used with fit='cover' to crop around a\nuser-chosen point of interest rather than a named anchor."
       },
       "FolderRecord": {
         "properties": {
@@ -44022,6 +44856,134 @@
         ],
         "title": "PreviewRequest"
       },
+      "PreviewSource": {
+        "properties": {
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "file_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Uri"
+          }
+        },
+        "type": "object",
+        "title": "PreviewSource",
+        "description": "The source bytes for /assets/preview.\n\nPass a MediaRef-shaped dict to render bytes already stored in\ncld_files. The multipart variant of the endpoint takes the bytes\ndirectly as ``file`` and ignores this shape."
+      },
+      "PreviewVariantSpec": {
+        "properties": {
+          "preset_id": {
+            "type": "string",
+            "title": "Preset Id",
+            "description": "Stable id echoed in the response (used as preset_id in render output)"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Height"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "jpeg",
+              "png",
+              "webp",
+              "avif"
+            ],
+            "title": "Format",
+            "default": "webp"
+          },
+          "quality": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Quality",
+            "description": "Ignored for png",
+            "default": 85
+          },
+          "fit": {
+            "type": "string",
+            "enum": [
+              "cover",
+              "contain",
+              "inside"
+            ],
+            "title": "Fit",
+            "default": "cover"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "center",
+                  "top",
+                  "bottom",
+                  "left",
+                  "right",
+                  "top-left",
+                  "top-right",
+                  "bottom-left",
+                  "bottom-right",
+                  "entropy",
+                  "attention"
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/FocalPoint-Input"
+              }
+            ],
+            "title": "Position",
+            "description": "Used when fit='cover'. Pass a named anchor string or {x, y} focal point. 'entropy' / 'attention' are smart-crop modes (energy-based, face-based).",
+            "default": "center"
+          },
+          "background_color": {
+            "type": "string",
+            "title": "Background Color",
+            "description": "Hex color (#rgb / #rrggbb / #rrggbbaa). Used to flatten alpha on jpeg/avif outputs and to pad letterbox when fit='contain' / 'inside'.",
+            "default": "#ffffff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preset_id",
+          "width",
+          "height"
+        ],
+        "title": "PreviewVariantSpec",
+        "description": "One target render for POST /assets/preview.\n\nMirrors ``ImageHandler.StudioRenderSpec`` — every field is reachable\nby the renderer. The discriminated union on ``position`` lets the FE\npass either a named anchor (including the smart-crop modes\n``entropy`` / ``attention``) or a continuous focal point."
+      },
       "ProcessBlocksRequest": {
         "properties": {
           "content": {
@@ -47483,6 +48445,103 @@
         ],
         "title": "SearchSourceRef"
       },
+      "SetCanonicalCleanRequest": {
+        "properties": {
+          "clean_id": {
+            "type": "string",
+            "title": "Clean Id"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 4,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "clean_id",
+          "reason"
+        ],
+        "title": "SetCanonicalCleanRequest"
+      },
+      "SetCanonicalExtractRequest": {
+        "properties": {
+          "processed_document_id": {
+            "type": "string",
+            "title": "Processed Document Id"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 4,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "processed_document_id",
+          "reason"
+        ],
+        "title": "SetCanonicalExtractRequest"
+      },
+      "SetCanonicalResponse": {
+        "properties": {
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "parent_processed_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Processed Id"
+          },
+          "canonical_processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Processed Document Id"
+          },
+          "canonical_clean_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Clean Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "SetCanonicalResponse"
+      },
       "ShareLinkInfo": {
         "properties": {
           "token": {
@@ -49210,7 +50269,7 @@
                 ]
               },
               {
-                "$ref": "#/components/schemas/FocalPoint"
+                "$ref": "#/components/schemas/aidream__api__routers__image_studio__FocalPoint"
               },
               {
                 "type": "null"
@@ -52066,35 +53125,6 @@
         ],
         "title": "WriteArgs"
       },
-      "_AssetPreviewRequest": {
-        "properties": {
-          "source": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Source"
-          },
-          "variants": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Variants"
-          },
-          "max_inline_bytes": {
-            "type": "integer",
-            "title": "Max Inline Bytes",
-            "default": 262144
-          }
-        },
-        "type": "object",
-        "required": [
-          "source",
-          "variants"
-        ],
-        "title": "_AssetPreviewRequest",
-        "description": "JSON body for ``POST /assets/preview`` (MediaRef source)."
-      },
       "_PdfCompressRequest": {
         "properties": {
           "source": {
@@ -52254,6 +53284,28 @@
           "query"
         ],
         "title": "SearchRequest"
+      },
+      "aidream__api__routers__image_studio__FocalPoint": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Y"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "FocalPoint"
       },
       "aidream__api__routers__rag__SearchHitOut": {
         "properties": {
@@ -52473,6 +53525,31 @@
           "query"
         ],
         "title": "SearchRequest"
+      },
+      "matrx_utils__file_handling__asset_envelope__FocalPoint": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "X",
+            "description": "0=left, 1=right"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Y",
+            "description": "0=top, 1=bottom"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "FocalPoint",
+        "description": "Continuous focal point — normalized [0..1] coordinates from the\ntop-left of the source. Used with fit='cover' to crop around a\nuser-chosen point of interest rather than a named anchor."
       }
     }
   }

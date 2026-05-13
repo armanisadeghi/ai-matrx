@@ -49,7 +49,9 @@ export function DangerZone({ project, orgSlug }: DangerZoneProps) {
           >[0],
         );
         toast.success("Project deleted");
-        router.push(orgSlug ? `/org/${orgSlug}/projects` : "/projects");
+        router.push(
+          orgSlug ? `/organizations/${orgSlug}/projects` : "/projects",
+        );
       } else {
         toast.error(result.error ?? "Failed to delete project");
       }

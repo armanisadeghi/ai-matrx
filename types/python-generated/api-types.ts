@@ -6575,9 +6575,14 @@ export interface paths {
          * Assets Preview
          * @description No-persist preview rendering. Replaces Next.js Sharp route.
          *
-         *     Accepts a master via MediaRef (``{"file_id": "..."}``) + variant
-         *     specs. Returns base64 data URLs (≤256 KB) or 5-min ephemeral
-         *     signed URLs.
+         *     Full studio surface: ``fit`` (cover/contain/inside), ``position``
+         *     (9-anchor names or continuous ``{x, y}`` focal point — including the
+         *     smart-crop modes ``entropy`` / ``attention``), ``background_color``
+         *     (alpha-flatten + contain padding). See ``PreviewVariantSpec``.
+         *
+         *     Returns base64 ``data_url`` (size ≤ ``max_inline_bytes``) or a
+         *     5-minute ephemeral ``signed_url`` for larger renders. Per-variant
+         *     errors surface as ``{"preset_id": ..., "error": "..."}`` entries.
          */
         post: operations["assets_preview_assets_preview_post"];
         delete?: never;
@@ -6597,9 +6602,14 @@ export interface paths {
         put?: never;
         /**
          * Assets Preview Multipart
-         * @description Multipart variant of /assets/preview — render directly without a
-         *     prior cld_files row. Useful for Image Studio drag-and-drop preview
-         *     before commit-to-save.
+         * @description Multipart variant of /assets/preview — render bytes directly
+         *     without a prior cld_files row. Used by Image Studio for drag-and-drop
+         *     preview before commit-to-save.
+         *
+         *     The variant spec surface is identical to the JSON endpoint —
+         *     ``variants_json`` is just a transport convenience because multipart
+         *     can't carry a typed list field cleanly. Each entry is validated
+         *     server-side as ``PreviewVariantSpec``.
          */
         post: operations["assets_preview_multipart_assets_preview_multipart_post"];
         delete?: never;
@@ -8467,6 +8477,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dedup/processed-documents/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create or reuse an initial_extract row (strict intent) */
+        post: operations["extract_endpoint_dedup_processed_documents_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dedup/processed-documents/{processed_document_id}/clean": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create or reuse a re_clean variant (strict intent) */
+        post: operations["clean_endpoint_dedup_processed_documents__processed_document_id__clean_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dedup/processed-documents/{processed_document_id}/derivative": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create or reuse a derivative (agent extract, summary, etc.) */
+        post: operations["derivative_endpoint_dedup_processed_documents__processed_document_id__derivative_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dedup/files/{file_id}/set-canonical-extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote a processed_document to canonical for its cld_file */
+        post: operations["set_canonical_extract_endpoint_dedup_files__file_id__set_canonical_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dedup/processed-documents/{processed_document_id}/set-canonical-clean": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote a re_clean variant to canonical for its parent */
+        post: operations["set_canonical_clean_endpoint_dedup_processed_documents__processed_document_id__set_canonical_clean_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dedup/processed-documents/{processed_document_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Soft-archive a processed_document */
+        post: operations["archive_endpoint_dedup_processed_documents__processed_document_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/analysis": {
         parameters: {
             query?: never;
@@ -9671,6 +9783,20 @@ export interface components {
             /** Is New */
             is_new?: boolean | null;
         };
+        /** ArchiveRequest */
+        ArchiveRequest: {
+            /** Reason */
+            reason: string;
+        };
+        /** ArchiveResponse */
+        ArchiveResponse: {
+            /** Processed Document Id */
+            processed_document_id: string;
+            /** Archived */
+            archived: boolean;
+            /** Reason */
+            reason: string;
+        };
         /** Asset */
         Asset: {
             /**
@@ -9772,6 +9898,21 @@ export interface components {
             signed_url?: string | null;
         };
         /**
+         * AssetPreviewRequest
+         * @description Request body for POST /assets/preview.
+         */
+        AssetPreviewRequest: {
+            source: components["schemas"]["PreviewSource"];
+            /** Variants */
+            variants: components["schemas"]["PreviewVariantSpec"][];
+            /**
+             * Max Inline Bytes
+             * @description Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.
+             * @default 262144
+             */
+            max_inline_bytes: number;
+        };
+        /**
          * AssetPreviewResponse
          * @description Response from POST /assets/preview — no-persist variant rendering.
          */
@@ -9781,29 +9922,65 @@ export interface components {
         };
         /**
          * AssetPreviewVariant
-         * @description One rendered preview variant (no persistence).
+         * @description One rendered preview variant in the response.
+         *
+         *     Field names mirror ``ImageHandler.StudioRenderResult`` so the wire
+         *     contract is consistent end-to-end.
          */
         AssetPreviewVariant: {
-            /** Key */
-            key: string;
+            /**
+             * Preset Id
+             * @description Echoed from the request spec
+             */
+            preset_id: string;
             /** Width */
-            width?: number | null;
+            width: number;
             /** Height */
-            height?: number | null;
-            /** Mime Type */
-            mime_type: string;
-            /** File Size */
-            file_size: number;
+            height: number;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "jpeg" | "png" | "webp" | "avif";
+            /**
+             * Quality
+             * @description None when format='png'
+             */
+            quality?: number | null;
+            /**
+             * Size
+             * @description Encoded byte length
+             */
+            size: number;
+            /** Fit */
+            fit?: ("cover" | "contain" | "inside") | null;
+            /**
+             * Position
+             * @description Echoed when fit='cover'. None for contain/inside.
+             */
+            position?: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["matrx_utils__file_handling__asset_envelope__FocalPoint"] | null;
+            /**
+             * Notes
+             * @description Soft warnings (e.g. 'anchor entropy unsupported, used center', 'exif-transpose failed'). Empty when nothing notable.
+             */
+            notes?: string[];
             /**
              * Data Url
-             * @description base64 data URL (small variants)
+             * @description base64 data URL when size <= max_inline_bytes
              */
             data_url?: string | null;
             /**
              * Signed Url
-             * @description Ephemeral signed URL (5-min TTL)
+             * @description Ephemeral signed URL when size > max_inline_bytes
              */
             signed_url?: string | null;
+            /**
+             * Expires In
+             * @description Seconds (with signed_url). 300 = 5-minute TTL.
+             */
+            expires_in?: number | null;
+            /** Error */
+            error?: string | null;
         };
         /**
          * AssetRenderMoreRequest
@@ -9954,7 +10131,7 @@ export interface components {
             file: string;
             /**
              * Variants Json
-             * @description JSON-encoded list of preview variant specs
+             * @description JSON-encoded list of PreviewVariantSpec dicts. Each item: {preset_id, width, height, format?, quality?, fit?, position?, background_color?}. See the JSON variant of this endpoint for the typed schema.
              */
             variants_json: string;
             /**
@@ -10803,6 +10980,40 @@ export interface components {
             url?: string | null;
             /** Local Path */
             local_path?: string | null;
+        };
+        /** CleanRequest */
+        CleanRequest: {
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "clean" | "get_or_clean" | "replace_clean";
+            /** Cleaner Name */
+            cleaner_name: string;
+            /**
+             * Cleaner Version
+             * @default v1
+             */
+            cleaner_version: string;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            };
+            /** Clean Content */
+            clean_content: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Rag Boost
+             * @default 0
+             */
+            rag_boost: number;
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /** Reason */
+            reason?: string | null;
         };
         /**
          * ClientContext
@@ -11706,6 +11917,24 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
         };
+        /** DedupResponse */
+        DedupResponse: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "created" | "reused" | "replaced";
+            /** Id */
+            id: string;
+            /** Derivation Kind */
+            derivation_kind: string;
+            /** Parent Processed Id */
+            parent_processed_id?: string | null;
+            /** Canonical Clean Id */
+            canonical_clean_id?: string | null;
+            /** Archived At */
+            archived_at?: string | null;
+        };
         /**
          * DefaultsResponse
          * @description Calc-relevant scalars from the rating engine's bundled defaults.
@@ -11802,6 +12031,44 @@ export interface components {
             chunks_deleted: number;
             /** Embeddings Deleted */
             embeddings_deleted: number;
+        };
+        /** DerivativeRequest */
+        DerivativeRequest: {
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "create_derivative" | "get_or_create_derivative";
+            /**
+             * Derivation Kind
+             * @enum {string}
+             */
+            derivation_kind: "agent_extract" | "agent_summary" | "agent_structured_json" | "page_image_caption" | "manual_curation";
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Agent Version */
+            agent_version?: number | string | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Structured Json */
+            structured_json?: {
+                [key: string]: unknown;
+            } | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Rag Boost
+             * @default 0
+             */
+            rag_boost: number;
         };
         /** DetectRepeatedRegionsRequest */
         DetectRepeatedRegionsRequest: {
@@ -12300,6 +12567,62 @@ export interface components {
             url?: string | null;
             /** Local Path */
             local_path?: string | null;
+        };
+        /** ExtractRequest */
+        ExtractRequest: {
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "extract" | "get_or_extract" | "replace_extract";
+            /**
+             * Source Kind
+             * @description One of cld_file/note/code_file/external_url/inline/legacy
+             */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** File Content Hash */
+            file_content_hash: string;
+            /**
+             * Extractor Name
+             * @default pymupdf
+             */
+            extractor_name: string;
+            /**
+             * Extractor Version
+             * @default v1
+             */
+            extractor_version: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Total Pages */
+            total_pages?: number | null;
+            /** Source Hash */
+            source_hash: string;
+            /** Storage Uri */
+            storage_uri?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Structured Json */
+            structured_json?: {
+                [key: string]: unknown;
+            } | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Rag Boost
+             * @default 0
+             */
+            rag_boost: number;
+            /** Reason */
+            reason?: string | null;
         };
         /** ExtractTablesRequest */
         ExtractTablesRequest: {
@@ -12999,11 +13322,22 @@ export interface components {
              */
             widgets: boolean;
         };
-        /** FocalPoint */
-        FocalPoint: {
-            /** X */
+        /**
+         * FocalPoint
+         * @description Continuous focal point — normalized [0..1] coordinates from the
+         *     top-left of the source. Used with fit='cover' to crop around a
+         *     user-chosen point of interest rather than a named anchor.
+         */
+        "FocalPoint-Input": {
+            /**
+             * X
+             * @description 0=left, 1=right
+             */
             x: number;
-            /** Y */
+            /**
+             * Y
+             * @description 0=top, 1=bottom
+             */
             y: number;
         };
         /** FolderRecord */
@@ -15413,6 +15747,72 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * PreviewSource
+         * @description The source bytes for /assets/preview.
+         *
+         *     Pass a MediaRef-shaped dict to render bytes already stored in
+         *     cld_files. The multipart variant of the endpoint takes the bytes
+         *     directly as ``file`` and ignores this shape.
+         */
+        PreviewSource: {
+            /** File Id */
+            file_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** File Uri */
+            file_uri?: string | null;
+        };
+        /**
+         * PreviewVariantSpec
+         * @description One target render for POST /assets/preview.
+         *
+         *     Mirrors ``ImageHandler.StudioRenderSpec`` — every field is reachable
+         *     by the renderer. The discriminated union on ``position`` lets the FE
+         *     pass either a named anchor (including the smart-crop modes
+         *     ``entropy`` / ``attention``) or a continuous focal point.
+         */
+        PreviewVariantSpec: {
+            /**
+             * Preset Id
+             * @description Stable id echoed in the response (used as preset_id in render output)
+             */
+            preset_id: string;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /**
+             * Format
+             * @default webp
+             * @enum {string}
+             */
+            format: "jpeg" | "png" | "webp" | "avif";
+            /**
+             * Quality
+             * @description Ignored for png
+             * @default 85
+             */
+            quality: number;
+            /**
+             * Fit
+             * @default cover
+             * @enum {string}
+             */
+            fit: "cover" | "contain" | "inside";
+            /**
+             * Position
+             * @description Used when fit='cover'. Pass a named anchor string or {x, y} focal point. 'entropy' / 'attention' are smart-crop modes (energy-based, face-based).
+             * @default center
+             */
+            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint-Input"];
+            /**
+             * Background Color
+             * @description Hex color (#rgb / #rrggbb / #rrggbbaa). Used to flatten alpha on jpeg/avif outputs and to pad letterbox when fit='contain' / 'inside'.
+             * @default #ffffff
+             */
+            background_color: string;
+        };
         /** ProcessBlocksRequest */
         ProcessBlocksRequest: {
             /**
@@ -16863,6 +17263,33 @@ export interface components {
             /** Source Id */
             source_id: string;
         };
+        /** SetCanonicalCleanRequest */
+        SetCanonicalCleanRequest: {
+            /** Clean Id */
+            clean_id: string;
+            /** Reason */
+            reason: string;
+        };
+        /** SetCanonicalExtractRequest */
+        SetCanonicalExtractRequest: {
+            /** Processed Document Id */
+            processed_document_id: string;
+            /** Reason */
+            reason: string;
+        };
+        /** SetCanonicalResponse */
+        SetCanonicalResponse: {
+            /** File Id */
+            file_id?: string | null;
+            /** Parent Processed Id */
+            parent_processed_id?: string | null;
+            /** Canonical Processed Document Id */
+            canonical_processed_document_id?: string | null;
+            /** Canonical Clean Id */
+            canonical_clean_id?: string | null;
+            /** Reason */
+            reason: string;
+        };
         /**
          * ShareLinkInfo
          * @description Share-link info returned in combined-op envelopes.
@@ -17405,7 +17832,7 @@ export interface components {
              */
             fit: "cover" | "contain" | "inside";
             /** Position */
-            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"] | null;
+            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["aidream__api__routers__image_studio__FocalPoint"] | null;
             /** Notes */
             notes?: string[];
             /** Error */
@@ -18360,25 +18787,6 @@ export interface components {
             expected_updated_at?: string | null;
         };
         /**
-         * _AssetPreviewRequest
-         * @description JSON body for ``POST /assets/preview`` (MediaRef source).
-         */
-        _AssetPreviewRequest: {
-            /** Source */
-            source: {
-                [key: string]: unknown;
-            };
-            /** Variants */
-            variants: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Max Inline Bytes
-             * @default 262144
-             */
-            max_inline_bytes: number;
-        };
-        /**
          * _PdfCompressRequest
          * @description JSON body for ``POST /assets/pdf-compress`` (MediaRef source).
          */
@@ -18453,6 +18861,13 @@ export interface components {
              * @default false
              */
             include_excluded_pages: boolean;
+        };
+        /** FocalPoint */
+        aidream__api__routers__image_studio__FocalPoint: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** SearchHitOut */
         aidream__api__routers__rag__SearchHitOut: {
@@ -18540,6 +18955,24 @@ export interface components {
              * @default true
              */
             use_mmr: boolean;
+        };
+        /**
+         * FocalPoint
+         * @description Continuous focal point — normalized [0..1] coordinates from the
+         *     top-left of the source. Used with fit='cover' to crop around a
+         *     user-chosen point of interest rather than a named anchor.
+         */
+        matrx_utils__file_handling__asset_envelope__FocalPoint: {
+            /**
+             * X
+             * @description 0=left, 1=right
+             */
+            x: number;
+            /**
+             * Y
+             * @description 0=top, 1=bottom
+             */
+            y: number;
         };
     };
     responses: never;
@@ -30591,7 +31024,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["_AssetPreviewRequest"];
+                "application/json": components["schemas"]["AssetPreviewRequest"];
             };
         };
         responses: {
@@ -34570,6 +35003,214 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForceDisableResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_endpoint_dedup_processed_documents_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DedupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clean_endpoint_dedup_processed_documents__processed_document_id__clean_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DedupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derivative_endpoint_dedup_processed_documents__processed_document_id__derivative_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DerivativeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DedupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_canonical_extract_endpoint_dedup_files__file_id__set_canonical_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCanonicalExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetCanonicalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_canonical_clean_endpoint_dedup_processed_documents__processed_document_id__set_canonical_clean_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCanonicalCleanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetCanonicalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_endpoint_dedup_processed_documents__processed_document_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchiveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchiveResponse"];
                 };
             };
             /** @description Validation Error */

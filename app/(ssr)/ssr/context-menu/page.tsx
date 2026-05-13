@@ -203,8 +203,8 @@ export default function ContextMenuHubPage() {
             </li>
             <li>
               Organization shortcuts:{" "}
-              <PageLink href="/org/admin/shortcuts/shortcuts">
-                /org/[slug]/shortcuts/shortcuts
+              <PageLink href="/organizations/admin/shortcuts/shortcuts">
+                /organizations/[slug]/shortcuts/shortcuts
               </PageLink>
             </li>
             <li>

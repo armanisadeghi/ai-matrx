@@ -19,7 +19,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 **Routes**
 - `app/(authenticated)/projects/` — project list + detail
 - `app/(authenticated)/tasks/` — task list + detail
-- `app/(authenticated)/project-invitations/` — project-scoped invitations
+- `app/(authenticated)/invitations/project/` — project-scoped invitation accept page (org invitations live at `/invitations/organization/`)
 
 **Feature code — `features/projects/`**
 - `components/`, `hooks.ts`, `service.ts`, `types.ts`, `index.ts`

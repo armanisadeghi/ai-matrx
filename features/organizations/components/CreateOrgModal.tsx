@@ -214,7 +214,7 @@ export function CreateOrgModal({
             </Label>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
-                aimatrx.com/org/
+                aimatrx.com/organizations/
               </span>
               <Input
                 id="slug"

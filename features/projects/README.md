@@ -71,7 +71,7 @@ owner > admin > member
 | `/org/[slug]/projects/[project-slug]` | Org project detail / task view. The segment accepts either the slug (unique within the org) or the project UUID. |
 | `/org/[slug]/projects/[project-slug]/settings` | Org project settings (tabbed) |
 | `/settings/projects` | User's projects across all orgs (routes each card to its correct personal- or org-scoped detail page) |
-| `/project-invitations/accept/[token]` | Accept project invitation |
+| `/invitations/project/accept/[token]` | Accept project invitation |
 
 ## Feature Directory
 

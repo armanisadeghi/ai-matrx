@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const orgName = project?.organizations?.name ?? 'your organization';
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.aimatrx.com';
-    const invitationUrl = `${siteUrl}/project-invitations/accept/${invitation.token}`;
+    const invitationUrl = `${siteUrl}/invitations/project/accept/${invitation.token}`;
 
     const emailTemplate = emailTemplates.projectInvitationReminder(
       projectName,

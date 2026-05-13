@@ -143,7 +143,9 @@ export default function SettingsProjectsPage() {
                     const orgSlug = orgSlugById.get(project.organizationId);
                     const segment = project.slug ?? project.id;
                     if (orgSlug) {
-                      router.push(`/org/${orgSlug}/projects/${segment}`);
+                      router.push(
+                        `/organizations/${orgSlug}/projects/${segment}`,
+                      );
                     } else {
                       router.push(`/projects/${project.id}`);
                     }

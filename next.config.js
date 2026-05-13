@@ -93,6 +93,17 @@ const nextConfig = {
             // so old bookmarks, share links, and external references keep working.
             { source: '/cloud-files/:path*', destination: '/files/:path*', permanent: true },
             { source: '/cloud-files', destination: '/files', permanent: true },
+            // /org/* (old slug-only path) and /organizations/[id]/* (old UUID-only settings path)
+            // are unified under /organizations/[orgId]/* which accepts both slug and UUID.
+            { source: '/org/:orgId/projects/:projectId/settings/:path*', destination: '/organizations/:orgId/projects/:projectId/settings/:path*', permanent: true },
+            { source: '/org/:orgId/projects/:projectId/settings', destination: '/organizations/:orgId/projects/:projectId/settings', permanent: true },
+            { source: '/org/:orgId/projects/:projectId/:path*', destination: '/organizations/:orgId/projects/:projectId/:path*', permanent: true },
+            { source: '/org/:orgId/projects/:projectId', destination: '/organizations/:orgId/projects/:projectId', permanent: true },
+            { source: '/org/:orgId/shortcuts/:path*', destination: '/organizations/:orgId/shortcuts/:path*', permanent: true },
+            { source: '/org/:orgId/shortcuts', destination: '/organizations/:orgId/shortcuts', permanent: true },
+            { source: '/org/:orgId/:path*', destination: '/organizations/:orgId/:path*', permanent: true },
+            { source: '/org/:orgId', destination: '/organizations/:orgId', permanent: true },
+            { source: '/org', destination: '/organizations', permanent: true },
             // Transcription hub: legacy transcript URLs → app/(a)/transcription/*
             { source: '/transcript-studio/:path*', destination: '/transcription/studio/:path*', permanent: true },
             { source: '/transcript-studio', destination: '/transcription/studio', permanent: true },
