@@ -62,6 +62,10 @@ export interface UserFeedback {
   parent_id: string | null;
   // Category
   category_id: string | null;
+  // Admin assignee (must be a user in the public.admins table). Set by admins
+  // at submit time or post-submit. When this changes to a non-null value other
+  // than the actor, an in-app DM + email notification is sent to the assignee.
+  assigned_to: string | null;
   // AI triage fields
   ai_solution_proposal: string | null;
   ai_suggested_priority: string | null;
@@ -105,6 +109,13 @@ export interface CreateFeedbackInput {
   route: string;
   description: string;
   image_urls?: string[];
+  /**
+   * Admin-only. Server action ignores these fields if the caller is not an
+   * admin. Setting `assigned_to` to a non-self admin user fires a DM + email
+   * notification post-insert.
+   */
+  category_id?: string | null;
+  assigned_to?: string | null;
 }
 
 export interface UpdateFeedbackInput {
@@ -128,6 +139,16 @@ export interface UpdateFeedbackInput {
   has_open_issues?: boolean;
   category_id?: string | null;
   parent_id?: string | null;
+  /** Admin-only. Reassigns the feedback item (DM + email fire on change). */
+  assigned_to?: string | null;
+}
+
+/** Minimal info about an admin who can be assigned a feedback item. */
+export interface FeedbackAssignableAdmin {
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  level: "developer" | "senior_admin" | "super_admin";
 }
 
 /** Category color mappings (Tailwind classes) matching the color field in feedback_categories */

@@ -21,11 +21,13 @@ import {
   Monitor,
   Plus,
   Send,
+  Settings2,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   WindowPanel,
@@ -37,7 +39,18 @@ import {
   FileUploadWithStorage,
   type UploadedFileResult,
 } from "@/components/ui/file-upload/FileUploadWithStorage";
-import type { FeedbackType } from "@/types/feedback.types";
+import type {
+  FeedbackType,
+  FeedbackCategory,
+  FeedbackAssignableAdmin,
+} from "@/types/feedback.types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { openImageViewer } from "@/features/window-panels/windows/image/ImageViewerWindow";
@@ -156,6 +169,7 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const reduxUser = useAppSelector(selectUser);
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   const username =
     reduxUser?.userMetadata?.name ||
@@ -177,6 +191,43 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
   const submitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slowHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortedRef = useRef(false);
+
+  // ── Admin-only extras: category + assignee ──
+  // Use "none" as the sentinel for "unset" because Radix Select cannot use "".
+  const [adminOptionsOpen, setAdminOptionsOpen] = useState(false);
+  const [categoryId, setCategoryId] = useState<string>("none");
+  const [assigneeId, setAssigneeId] = useState<string>("none");
+  const [categories, setCategories] = useState<FeedbackCategory[]>([]);
+  const [assignableAdmins, setAssignableAdmins] = useState<
+    FeedbackAssignableAdmin[]
+  >([]);
+  const [isLoadingAdminOptions, setIsLoadingAdminOptions] = useState(false);
+
+  // Fetch the admin-only dropdown data once when the window opens for an admin.
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    setIsLoadingAdminOptions(true);
+    Promise.all([
+      fetch("/api/admin/feedback/categories", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { categories: [] }))
+        .catch(() => ({ categories: [] })),
+      fetch("/api/admin/feedback/assignable-admins", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { admins: [] }))
+        .catch(() => ({ admins: [] })),
+    ])
+      .then(([catRes, adminRes]) => {
+        if (cancelled) return;
+        setCategories(catRes?.categories ?? []);
+        setAssignableAdmins(adminRes?.admins ?? []);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingAdminOptions(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
 
   // Derive the final URL list for submission
   const uploadedImages = attachments
@@ -436,6 +487,11 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
         route: pathname,
         description: description.trim(),
         image_urls: uploadedImages.length > 0 ? uploadedImages : undefined,
+        // Admin-only fields. Server silently drops these for non-admins, but we
+        // also skip sending them entirely when the caller isn't an admin so
+        // the wire payload stays clean.
+        category_id: isAdmin && categoryId !== "none" ? categoryId : undefined,
+        assigned_to: isAdmin && assigneeId !== "none" ? assigneeId : undefined,
       }),
       timeoutPromise,
     ]);
@@ -472,7 +528,16 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
     } else {
       setError(result.error ?? "Failed to submit feedback");
     }
-  }, [description, feedbackType, pathname, isSubmitting, uploadedImages]);
+  }, [
+    description,
+    feedbackType,
+    pathname,
+    isSubmitting,
+    uploadedImages,
+    isAdmin,
+    categoryId,
+    assigneeId,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -508,6 +573,9 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
     setError(null);
     setIsSlowConnection(false);
     setCopied(false);
+    setCategoryId("none");
+    setAssigneeId("none");
+    setAdminOptionsOpen(false);
     setTimeout(() => textareaRef.current?.focus(), 50);
   }, []);
 
@@ -653,6 +721,92 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
             Ctrl+Enter to submit · Ctrl+V to paste screenshots
           </p>
         </div>
+
+        {/* Admin-only: Category + Assignee */}
+        {isAdmin && (
+          <div className="rounded-lg border border-border bg-muted/30">
+            <button
+              type="button"
+              onClick={() => setAdminOptionsOpen((v) => !v)}
+              className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              aria-expanded={adminOptionsOpen}
+              aria-controls="feedback-admin-options"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span>Admin Options</span>
+              {(categoryId !== "none" || assigneeId !== "none") && (
+                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-medium">
+                  {(categoryId !== "none" ? 1 : 0) +
+                    (assigneeId !== "none" ? 1 : 0)}{" "}
+                  set
+                </span>
+              )}
+              <span className="ml-auto text-[10px] opacity-60">
+                {adminOptionsOpen ? "Hide" : "Show"}
+              </span>
+            </button>
+            {adminOptionsOpen && (
+              <div
+                id="feedback-admin-options"
+                className="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-border/60"
+              >
+                {/* Category */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                    Category
+                  </label>
+                  <Select
+                    value={categoryId}
+                    onValueChange={setCategoryId}
+                    disabled={isSubmitting || isLoadingAdminOptions}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Assignee */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                    Assign to
+                  </label>
+                  <Select
+                    value={assigneeId}
+                    onValueChange={setAssigneeId}
+                    disabled={isSubmitting || isLoadingAdminOptions}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {assignableAdmins.map((a) => (
+                        <SelectItem key={a.user_id} value={a.user_id}>
+                          {a.display_name || a.email || a.user_id.slice(0, 8)}
+                          {reduxUser?.id === a.user_id ? " (you)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                      The assignee will get an in-app message and an email.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Screenshots */}
         <div className="space-y-1.5">

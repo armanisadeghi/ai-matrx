@@ -6,6 +6,7 @@ import {
   CommentAddedEmail,
   MessageReceivedEmail,
   DueDateReminderEmail,
+  FeedbackAssignedEmail,
 } from "./templates/NotificationEmail";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { Database } from "@/types/database.types";
@@ -397,6 +398,93 @@ export async function sendDueDateReminderEmail(options: {
   return {
     success: false,
     message: "Failed to send due date reminder email",
+    error:
+      result.error instanceof Error
+        ? result.error.message
+        : String(result.error),
+  };
+}
+
+/**
+ * Send feedback assignment notification email.
+ * Reuses the `task_notifications` preference — a feedback assignment is
+ * conceptually the same kind of "you have a new work item" notification.
+ */
+export async function sendFeedbackAssignmentEmail(options: {
+  assigneeId: string;
+  assignerName: string;
+  feedbackId: string;
+  feedbackType: "bug" | "feature" | "suggestion" | "other";
+  feedbackPreview: string;
+  feedbackRoute: string;
+  categoryName?: string | null;
+}): Promise<NotificationResult> {
+  const {
+    assigneeId,
+    assignerName,
+    feedbackId,
+    feedbackType,
+    feedbackPreview,
+    feedbackRoute,
+    categoryName,
+  } = options;
+
+  // Check user preferences (reuse task_notifications — same surface)
+  const preferences = await getUserEmailPreferences(assigneeId);
+  if (!preferences?.task_notifications) {
+    return {
+      success: true,
+      message: "User has disabled task notifications",
+      skipped: true,
+    };
+  }
+
+  const assignee = await getUserDetails(assigneeId);
+  if (!assignee?.email) {
+    return { success: false, message: "Could not find assignee email" };
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
+  const feedbackUrl = `${baseUrl}/administration/feedback?feedback=${feedbackId}`;
+
+  const preview =
+    feedbackPreview.length > 200
+      ? feedbackPreview.substring(0, 200) + "..."
+      : feedbackPreview;
+
+  const html = await renderTemplate(
+    React.createElement(FeedbackAssignedEmail, {
+      assignerName,
+      feedbackType,
+      feedbackPreview: preview,
+      feedbackRoute,
+      feedbackUrl,
+      categoryName: categoryName ?? null,
+    }),
+  );
+
+  const typeLabel =
+    feedbackType === "bug"
+      ? "bug"
+      : feedbackType === "feature"
+        ? "feature request"
+        : feedbackType === "suggestion"
+          ? "suggestion"
+          : "feedback item";
+
+  const result = await sendEmail({
+    to: assignee.email,
+    subject: `${assignerName} assigned you a ${typeLabel}`,
+    html,
+  });
+
+  if (result.success) {
+    return { success: true, message: "Feedback assignment email sent" };
+  }
+
+  return {
+    success: false,
+    message: "Failed to send feedback assignment email",
     error:
       result.error instanceof Error
         ? result.error.message

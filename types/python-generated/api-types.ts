@@ -6894,76 +6894,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/files/groups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Groups Index */
-        get: operations["list_groups_index_files_groups_get"];
-        put?: never;
-        /** Create Group */
-        post: operations["create_group_files_groups_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/groups/{group_id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Group Members */
-        get: operations["list_group_members_files_groups__group_id__members_get"];
-        put?: never;
-        /** Add Group Member */
-        post: operations["add_group_member_files_groups__group_id__members_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/groups/{group_id}/members/{member_user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Remove Group Member */
-        delete: operations["remove_group_member_files_groups__group_id__members__member_user_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/share-links/{share_token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Deactivate Share Link */
-        delete: operations["deactivate_share_link_files_share_links__share_token__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/files/bulk": {
         parameters: {
             query?: never;
@@ -7195,55 +7125,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}/document": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get File Document
-         * @description Return the latest processed_documents row anchored to this file.
-         *
-         *     404 with `code: "no_processed_document"` when the file has never been
-         *     ingested for RAG. Callers that want "ingest if missing" should check
-         *     for the 404 then POST `/files/{file_id}/ingest`.
-         */
-        get: operations["get_file_document_files__file_id__document_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/{file_id}/lineage-summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get File Lineage Summary
-         * @description Light lineage chip data for the PreviewPane.
-         *
-         *     One query against `cld_files` returning parent + derivation kind +
-         *     descendant count. The PreviewPane shows the chip; the user can
-         *     drill into the full `/api/document/{id}/lineage` tree from there.
-         */
-        get: operations["get_file_lineage_summary_files__file_id__lineage_summary_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/{file_id}/ingest": {
+    "/folders": {
         parameters: {
             query?: never;
             header?: never;
@@ -7252,23 +7134,34 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Ingest File For Rag
-         * @description Convenience wrapper around `/rag/ingest` for the file-centric UI.
-         *
-         *     Internally calls the same `ingest_source` function with
-         *     `source_kind="cld_file"` and `source_id=file_id`. Lets the FE call
-         *     a file-action ("reprocess this file") without knowing the
-         *     `source_kind` taxonomy.
-         */
-        post: operations["ingest_file_for_rag_files__file_id__ingest_post"];
+        /** Create Folder */
+        post: operations["create_folder_folders_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}/ingest/stream": {
+    "/folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Folder */
+        get: operations["get_folder_folders__folder_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Folder */
+        delete: operations["delete_folder_folders__folder_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Folder */
+        patch: operations["patch_folder_folders__folder_id__patch"];
+        trace?: never;
+    };
+    "/folders/bulk/move": {
         parameters: {
             query?: never;
             header?: never;
@@ -7277,71 +7170,51 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Ingest File For Rag Stream
-         * @description Streaming variant. Emits `rag.ingest.progress` events at each
-         *     stage so the FE can render a live progress bar against a 500-page
-         *     PDF instead of a silent spinner.
-         */
-        post: operations["ingest_file_for_rag_stream_files__file_id__ingest_stream_post"];
+        /** Bulk Move Folders */
+        post: operations["bulk_move_folders_folders_bulk_move_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}/versions": {
+    "/files/groups": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List Versions */
-        get: operations["list_versions_files__file_id__versions_get"];
+        /** List Groups Index */
+        get: operations["list_groups_index_files_groups_get"];
         put?: never;
-        post?: never;
+        /** Create Group */
+        post: operations["create_group_files_groups_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}/versions/{version_number}": {
+    "/files/groups/{group_id}/members": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Version */
-        get: operations["get_version_files__file_id__versions__version_number__get"];
+        /** List Group Members */
+        get: operations["list_group_members_files_groups__group_id__members_get"];
         put?: never;
-        post?: never;
+        /** Add Group Member */
+        post: operations["add_group_member_files_groups__group_id__members_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}/versions/{version_number}/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download Version */
-        get: operations["download_version_files__file_id__versions__version_number__download_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/{file_id}/versions/{version_number}/restore": {
+    "/files/groups/{group_id}/members/{member_user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -7350,9 +7223,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Restore Version */
-        post: operations["restore_version_files__file_id__versions__version_number__restore_post"];
-        delete?: never;
+        post?: never;
+        /** Remove Group Member */
+        delete: operations["remove_group_member_files_groups__group_id__members__member_user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/share-links/{share_token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deactivate Share Link */
+        delete: operations["deactivate_share_link_files_share_links__share_token__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -7464,43 +7354,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/folders": {
+    "/files/{file_id}/document": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get File Document
+         * @description Return the latest processed_documents row anchored to this file.
+         *
+         *     404 with ``code: "no_processed_document"`` when the file has never been
+         *     ingested for RAG. Callers that want "ingest if missing" should check
+         *     for the 404 then POST ``/files/{file_id}/ingest``.
+         */
+        get: operations["get_file_document_files__file_id__document_get"];
         put?: never;
-        /** Create Folder */
-        post: operations["create_folder_folders_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/folders/{folder_id}": {
+    "/files/{file_id}/lineage-summary": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Folder */
-        get: operations["get_folder_folders__folder_id__get"];
+        /**
+         * Get File Lineage Summary
+         * @description Light lineage chip data for the PreviewPane.
+         *
+         *     One query against cld_files returning parent + derivation kind +
+         *     descendant count. The PreviewPane shows the chip; the user can
+         *     drill into the full ``/api/document/{id}/lineage`` tree from there.
+         */
+        get: operations["get_file_lineage_summary_files__file_id__lineage_summary_get"];
         put?: never;
         post?: never;
-        /** Delete Folder */
-        delete: operations["delete_folder_folders__folder_id__delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        /** Patch Folder */
-        patch: operations["patch_folder_folders__folder_id__patch"];
+        patch?: never;
         trace?: never;
     };
-    "/folders/bulk/move": {
+    "/files/{file_id}/ingest": {
         parameters: {
             query?: never;
             header?: never;
@@ -7509,8 +7411,106 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bulk Move Folders */
-        post: operations["bulk_move_folders_folders_bulk_move_post"];
+        /**
+         * Ingest File For Rag
+         * @description File-centric wrapper around ``/rag/ingest``.
+         *
+         *     Calls ``ingest_source`` with ``source_kind="cld_file"`` /
+         *     ``source_id=file_id``. Requires write access — ingestion writes
+         *     derived state (chunks, embeddings) and a read-only grantee shouldn't
+         *     be able to kick that off against someone else's file.
+         */
+        post: operations["ingest_file_for_rag_files__file_id__ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/ingest/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest File For Rag Stream
+         * @description Streaming ingest. Emits ``rag.ingest.progress`` events at each
+         *     stage so the FE can render a live progress bar against a 500-page
+         *     PDF instead of a silent spinner.
+         */
+        post: operations["ingest_file_for_rag_stream_files__file_id__ingest_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Versions */
+        get: operations["list_versions_files__file_id__versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/versions/{version_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Version */
+        get: operations["get_version_files__file_id__versions__version_number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/versions/{version_number}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Version */
+        get: operations["download_version_files__file_id__versions__version_number__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/versions/{version_number}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Version */
+        post: operations["restore_version_files__file_id__versions__version_number__restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -31536,196 +31536,6 @@ export interface operations {
             };
         };
     };
-    list_groups_index_files_groups_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
-                };
-            };
-        };
-    };
-    create_group_files_groups_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateGroupRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_group_members_files_groups__group_id__members_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                group_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_group_member_files_groups__group_id__members_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                group_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddGroupMemberRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_group_member_files_groups__group_id__members__member_user_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                group_id: string;
-                member_user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    deactivate_share_link_files_share_links__share_token__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                share_token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     bulk_op_discriminator_files_bulk_post: {
         parameters: {
             query?: never;
@@ -32177,12 +31987,45 @@ export interface operations {
             };
         };
     };
-    get_file_document_files__file_id__document_get: {
+    create_folder_folders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFolderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FolderRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_folder_folders__folder_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
+                folder_id: string;
             };
             cookie?: never;
         };
@@ -32194,7 +32037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileDocumentLookupResponse"];
+                    "application/json": components["schemas"]["FolderRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32208,12 +32051,12 @@ export interface operations {
             };
         };
     };
-    get_file_lineage_summary_files__file_id__lineage_summary_get: {
+    delete_folder_folders__folder_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
+                folder_id: string;
             };
             cookie?: never;
         };
@@ -32225,7 +32068,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileLineageSummary"];
+                    "application/json": components["schemas"]["DeleteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -32239,18 +32082,18 @@ export interface operations {
             };
         };
     };
-    ingest_file_for_rag_files__file_id__ingest_post: {
+    patch_folder_folders__folder_id__patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
+                folder_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["FileIngestRequest"];
+                "application/json": components["schemas"]["PatchFolderRequest"];
             };
         };
         responses: {
@@ -32260,7 +32103,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["FolderRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32274,18 +32117,16 @@ export interface operations {
             };
         };
     };
-    ingest_file_for_rag_stream_files__file_id__ingest_stream_post: {
+    bulk_move_folders_folders_bulk_move_post: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                file_id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["FileIngestRequest"];
+                "application/json": components["schemas"]["BulkFolderMoveRequest"];
             };
         };
         responses: {
@@ -32295,7 +32136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["BulkResponse"];
                 };
             };
             /** @description Validation Error */
@@ -32309,12 +32150,69 @@ export interface operations {
             };
         };
     };
-    list_versions_files__file_id__versions_get: {
+    list_groups_index_files_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    create_group_files_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_group_members_files_groups__group_id__members_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
+                group_id: string;
             };
             cookie?: never;
         };
@@ -32342,17 +32240,20 @@ export interface operations {
             };
         };
     };
-    get_version_files__file_id__versions__version_number__get: {
+    add_group_member_files_groups__group_id__members_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
-                version_number: number;
+                group_id: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddGroupMemberRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -32376,13 +32277,13 @@ export interface operations {
             };
         };
     };
-    download_version_files__file_id__versions__version_number__download_get: {
+    remove_group_member_files_groups__group_id__members__member_user_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
-                version_number: number;
+                group_id: string;
+                member_user_id: string;
             };
             cookie?: never;
         };
@@ -32394,7 +32295,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DeleteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -32408,13 +32309,12 @@ export interface operations {
             };
         };
     };
-    restore_version_files__file_id__versions__version_number__restore_post: {
+    deactivate_share_link_files_share_links__share_token__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                file_id: string;
-                version_number: number;
+                share_token: string;
             };
             cookie?: never;
         };
@@ -32426,9 +32326,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DeleteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -32790,45 +32688,12 @@ export interface operations {
             };
         };
     };
-    create_folder_folders_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateFolderRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FolderRecord"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_folder_folders__folder_id__get: {
+    get_file_document_files__file_id__document_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                folder_id: string;
+                file_id: string;
             };
             cookie?: never;
         };
@@ -32840,7 +32705,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FolderRecord"];
+                    "application/json": components["schemas"]["FileDocumentLookupResponse"];
                 };
             };
             /** @description Validation Error */
@@ -32854,12 +32719,12 @@ export interface operations {
             };
         };
     };
-    delete_folder_folders__folder_id__delete: {
+    get_file_lineage_summary_files__file_id__lineage_summary_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                folder_id: string;
+                file_id: string;
             };
             cookie?: never;
         };
@@ -32871,7 +32736,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteResponse"];
+                    "application/json": components["schemas"]["FileLineageSummary"];
                 };
             };
             /** @description Validation Error */
@@ -32885,18 +32750,18 @@ export interface operations {
             };
         };
     };
-    patch_folder_folders__folder_id__patch: {
+    ingest_file_for_rag_files__file_id__ingest_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                folder_id: string;
+                file_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchFolderRequest"];
+                "application/json": components["schemas"]["FileIngestRequest"];
             };
         };
         responses: {
@@ -32906,7 +32771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FolderRecord"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -32920,16 +32785,18 @@ export interface operations {
             };
         };
     };
-    bulk_move_folders_folders_bulk_move_post: {
+    ingest_file_for_rag_stream_files__file_id__ingest_stream_post: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                file_id: string;
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BulkFolderMoveRequest"];
+                "application/json": components["schemas"]["FileIngestRequest"];
             };
         };
         responses: {
@@ -32939,7 +32806,140 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BulkResponse"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_versions_files__file_id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_version_files__file_id__versions__version_number__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_version_files__file_id__versions__version_number__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_version_files__file_id__versions__version_number__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

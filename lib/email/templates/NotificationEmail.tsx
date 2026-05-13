@@ -109,6 +109,68 @@ export function MessageReceivedEmail({
   );
 }
 
+// ─── Feedback Assigned ─────────────────────────────────────────────────────
+
+interface FeedbackAssignedEmailProps {
+  assignerName: string;
+  feedbackType: "bug" | "feature" | "suggestion" | "other";
+  feedbackPreview: string;
+  feedbackRoute: string;
+  feedbackUrl: string;
+  categoryName?: string | null;
+}
+
+const feedbackTypeLabel: Record<
+  FeedbackAssignedEmailProps["feedbackType"],
+  string
+> = {
+  bug: "Bug",
+  feature: "Feature",
+  suggestion: "Suggestion",
+  other: "Feedback",
+};
+
+export function FeedbackAssignedEmail({
+  assignerName,
+  feedbackType,
+  feedbackPreview,
+  feedbackRoute,
+  feedbackUrl,
+  categoryName,
+}: FeedbackAssignedEmailProps) {
+  const typeLabel = feedbackTypeLabel[feedbackType];
+  return (
+    <BaseLayout
+      preview={`${assignerName} assigned you a ${typeLabel.toLowerCase()}`}
+    >
+      <Heading style={heading}>Feedback Assigned</Heading>
+      <Text style={text}>
+        <strong>{assignerName}</strong> assigned you a {typeLabel.toLowerCase()}
+        {categoryName ? (
+          <>
+            {" "}
+            in <strong>{categoryName}</strong>
+          </>
+        ) : null}
+        .
+      </Text>
+
+      <Section style={card}>
+        <Text style={cardTitle}>
+          {typeLabel} · {feedbackRoute}
+        </Text>
+        <Text style={cardBody}>{feedbackPreview}</Text>
+      </Section>
+
+      <Section style={buttonSection}>
+        <Button href={feedbackUrl} style={button}>
+          Open in Admin Dashboard
+        </Button>
+      </Section>
+    </BaseLayout>
+  );
+}
+
 // ─── Due Date Reminder ──────────────────────────────────────────────────────
 
 interface DueDateReminderEmailProps {

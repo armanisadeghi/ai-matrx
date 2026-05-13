@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * ImageAssetUploader
@@ -35,19 +35,52 @@
  * `result.variants` directly.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { AlertCircle, CheckCircle2, Eye, ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files';
-import { useFileUpload } from '@/features/files';
-import { useAppDispatch } from '@/lib/redux/hooks';
-import { openOverlay } from '@/lib/redux/slices/overlaySlice';
-import { extractErrorMessage } from '@/utils/errors';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import Cropper from "react-easy-crop";
+import { useDropzone } from "react-dropzone";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Crop,
+  Eye,
+  ImageIcon,
+  Link as LinkIcon,
+  Loader2,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type {
+  Asset,
+  AssetPreset,
+  AssetVariant,
+  Visibility,
+} from "@/features/files";
+import { useFileUpload } from "@/features/files";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { extractErrorMessage } from "@/utils/errors";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 // ── Types exported for consumers ──────────────────────────────────────────
 
-export type { AssetPreset } from '@/features/files';
+export type { AssetPreset } from "@/features/files";
 
 /**
  * Legacy four-key variant shape kept so callers reading
@@ -59,10 +92,10 @@ export type { AssetPreset } from '@/features/files';
  *   tiny_url      → asset.variants.tiny_url?.url
  */
 export interface ImageUploaderVariants {
-    image_url: string | null;
-    og_image_url: string | null;
-    thumbnail_url: string | null;
-    tiny_url: string | null;
+  image_url: string | null;
+  og_image_url: string | null;
+  thumbnail_url: string | null;
+  tiny_url: string | null;
 }
 
 /**
@@ -74,77 +107,89 @@ export interface ImageUploaderVariants {
  * `result.asset` / `result.variants` instead.
  */
 export interface ImageUploaderResult extends ImageUploaderVariants {
-    file_id: string;
-    /** Mirror of `asset.primary_url`. */
-    primary_url: string | null;
-    preset: string | null;
-    /** Full canonical envelope — use this in new code. */
-    asset: Asset;
-    /** Shortcut for `asset.variants`. Keyed by canonical variant key. */
-    variants: Record<string, AssetVariant>;
+  file_id: string;
+  /** Mirror of `asset.primary_url`. */
+  primary_url: string | null;
+  preset: string | null;
+  /** Full canonical envelope — use this in new code. */
+  asset: Asset;
+  /** Shortcut for `asset.variants`. Keyed by canonical variant key. */
+  variants: Record<string, AssetVariant>;
 }
 
 export interface ImageAssetUploaderProps {
-    /** Fires whenever URLs change (successful upload or removal). */
-    onComplete?: (result: ImageUploaderResult | null) => void;
-    /** Fires when the upload errors. */
-    onError?: (message: string) => void;
-    /** Max size per file in bytes (UI-only; server enforces its own cap). */
-    maxSize?: number;
-    /**
-     * Enable capturing pasted clipboard images. Default true. The first
-     * image item on the clipboard is uploaded through the asset pipeline.
-     */
-    enablePaste?: boolean;
-    /** Preset dictating the variant set. Default: `"social"`. */
-    preset?: AssetPreset;
-    /** Primary image URL already set (shows as existing preview). */
-    currentUrl?: string | null;
-    /** Optional pre-computed legacy variants to seed the preview (from a prior upload). */
-    currentVariants?: Partial<ImageUploaderVariants> | null;
-    /**
-     * Logical folder path under which every variant lands (e.g.
-     * "Shared Assets/orgs/<id>" or "App Assets/prompt-apps/favicons").
-     * Defaults to the preset's catch-all (`Assets/<uuid>`) when omitted,
-     * but every real caller should pass an explicit folder so files are
-     * discoverable in the user's file tree.
-     */
-    folder?: string;
-    /**
-     * Visibility for the uploaded variants. Default: `"public"` — every
-     * preset is meant to be rendered on a public surface so the response
-     * carries CDN URLs and pages render without `/share/{token}`
-     * redirects. Pass `"private"` for personal-use images (e.g. a recipe
-     * photo the user wants kept private).
-     */
-    visibility?: Visibility;
-    /** Compact mode — smaller drop zone, one-line status. */
-    compact?: boolean;
-    /** Show "or paste image URL" toggle. Default: true. */
-    allowUrlPaste?: boolean;
-    /** Show an action that opens the uploaded variants in the shared image viewer panel. */
-    enableViewerAction?: boolean;
-    /** Label shown above the drop zone. */
-    label?: string;
-    /** Hide the variant chips row even when URLs exist. */
-    hideVariantBadges?: boolean;
-    /** Accept attribute / dropzone patterns for the file input. */
-    accept?: string | string[];
-    /** Disable the whole uploader. */
-    disabled?: boolean;
-    /** Extra classes on the outer wrapper. */
-    className?: string;
+  /** Fires whenever URLs change (successful upload or removal). */
+  onComplete?: (result: ImageUploaderResult | null) => void;
+  /** Fires when the upload errors. */
+  onError?: (message: string) => void;
+  /** Max size per file in bytes (UI-only; server enforces its own cap). */
+  maxSize?: number;
+  /**
+   * Enable capturing pasted clipboard images. Default true. The first
+   * image item on the clipboard is uploaded through the asset pipeline.
+   */
+  enablePaste?: boolean;
+  /** Preset dictating the variant set. Default: `"social"`. */
+  preset?: AssetPreset;
+  /** Primary image URL already set (shows as existing preview). */
+  currentUrl?: string | null;
+  /** Optional pre-computed legacy variants to seed the preview (from a prior upload). */
+  currentVariants?: Partial<ImageUploaderVariants> | null;
+  /**
+   * Logical folder path under which every variant lands (e.g.
+   * "Shared Assets/orgs/<id>" or "App Assets/prompt-apps/favicons").
+   * Defaults to the preset's catch-all (`Assets/<uuid>`) when omitted,
+   * but every real caller should pass an explicit folder so files are
+   * discoverable in the user's file tree.
+   */
+  folder?: string;
+  /**
+   * Visibility for the uploaded variants. Default: `"public"` — every
+   * preset is meant to be rendered on a public surface so the response
+   * carries CDN URLs and pages render without `/share/{token}`
+   * redirects. Pass `"private"` for personal-use images (e.g. a recipe
+   * photo the user wants kept private).
+   */
+  visibility?: Visibility;
+  /** Compact mode — smaller drop zone, one-line status. */
+  compact?: boolean;
+  /** Show "or paste image URL" toggle. Default: true. */
+  allowUrlPaste?: boolean;
+  /** Show an action that opens the uploaded variants in the shared image viewer panel. */
+  enableViewerAction?: boolean;
+  /** Label shown above the drop zone. */
+  label?: string;
+  /** Hide the variant chips row even when URLs exist. */
+  hideVariantBadges?: boolean;
+  /** Accept attribute / dropzone patterns for the file input. */
+  accept?: string | string[];
+  /** Disable the whole uploader. */
+  disabled?: boolean;
+  /**
+   * When true, a crop dialog is presented after the user picks a file.
+   * The cropped blob is then fed through the normal preset upload pipeline.
+   * Has no effect on the URL-paste path.
+   */
+  enableCrop?: boolean;
+  /**
+   * Aspect ratio options shown in the crop dialog.
+   * Defaults to the most common ratios (square, 16:9, 4:3, free).
+   * Set to a single-entry array to lock the ratio.
+   */
+  cropAspectRatios?: CropAspectRatio[];
+  /** Extra classes on the outer wrapper. */
+  className?: string;
 }
 
-type UploadState = 'idle' | 'uploading' | 'success' | 'error';
+type UploadState = "idle" | "uploading" | "success" | "error";
 
 interface SectionState {
-    state: UploadState;
-    error: string | null;
-    fileName: string | null;
+  state: UploadState;
+  error: string | null;
+  fileName: string | null;
 }
 
-const DEFAULT_ACCEPT = '.jpg,.jpeg,.png,.webp,.gif,.heic';
+const DEFAULT_ACCEPT = ".jpg,.jpeg,.png,.webp,.gif,.heic";
 
 /**
  * Human-readable labels for every canonical variant key the new asset
@@ -162,50 +207,50 @@ const DEFAULT_ACCEPT = '.jpg,.jpeg,.png,.webp,.gif,.heic';
  * registry on mount.
  */
 export const ASSET_VARIANT_LABELS: Record<string, string> = {
-    // Master.
-    original: 'Original',
+  // Master.
+  original: "Original",
 
-    // Podcast.
-    cover_url: '3000 × 3000',
-    cover_sd_url: '1400 × 1400',
+  // Podcast.
+  cover_url: "3000 × 3000",
+  cover_sd_url: "1400 × 1400",
 
-    // Social.
-    og_url: '1200 × 630',
-    square_url: '1080 × 1080',
-    portrait_url: '1080 × 1350',
-    story_url: '1080 × 1920',
-    yt_thumbnail_url: '1280 × 720',
+  // Social.
+  og_url: "1200 × 630",
+  square_url: "1080 × 1080",
+  portrait_url: "1080 × 1350",
+  story_url: "1080 × 1920",
+  yt_thumbnail_url: "1280 × 720",
 
-    // Web.
-    hero_url: '1920 × 1080',
-    card_url: '600 × 400',
-    touch_icon_url: '180 × 180',
-    pwa_icon_url: '512 × 512',
+  // Web.
+  hero_url: "1920 × 1080",
+  card_url: "600 × 400",
+  touch_icon_url: "180 × 180",
+  pwa_icon_url: "512 × 512",
 
-    // Email.
-    header_url: '1200 × 400',
+  // Email.
+  header_url: "1200 × 400",
 
-    // Logo.
-    logo_lg_url: '512 × 512',
-    logo_md_url: '200 × 200',
-    logo_sm_url: '64 × 64',
+  // Logo.
+  logo_lg_url: "512 × 512",
+  logo_md_url: "200 × 200",
+  logo_sm_url: "64 × 64",
 
-    // Avatar.
-    avatar_xl_url: '400 × 400',
-    avatar_lg_url: '200 × 200',
-    avatar_md_url: '96 × 96',
-    avatar_sm_url: '48 × 48',
-    avatar_xs_url: '24 × 24',
+  // Avatar.
+  avatar_xl_url: "400 × 400",
+  avatar_lg_url: "200 × 200",
+  avatar_md_url: "96 × 96",
+  avatar_sm_url: "48 × 48",
+  avatar_xs_url: "24 × 24",
 
-    // Favicon.
-    favicon_android_url: '192 × 192',
-    favicon_apple_touch_url: '180 × 180',
-    favicon_32_url: '32 × 32',
-    favicon_16_url: '16 × 16',
+  // Favicon.
+  favicon_android_url: "192 × 192",
+  favicon_apple_touch_url: "180 × 180",
+  favicon_32_url: "32 × 32",
+  favicon_16_url: "16 × 16",
 
-    // Shared baseline.
-    thumbnail_url: '400 × 400',
-    tiny_url: '128 × 128',
+  // Shared baseline.
+  thumbnail_url: "400 × 400",
+  tiny_url: "128 × 128",
 };
 
 /**
@@ -214,34 +259,34 @@ export const ASSET_VARIANT_LABELS: Record<string, string> = {
  * preset registry; this is for UX only (no behavioural impact).
  */
 const PRESET_BLURB: Record<AssetPreset, string> = {
-    raw: 'Single original — no derived variants',
-    podcast: 'Auto-generates 3000², 1400², 1200×630, plus thumbnails',
-    social: 'Auto-generates OG, square, portrait, story, YouTube thumb',
-    web: 'Auto-generates hero, OG, card, touch icon, PWA icon, thumbnail',
-    email: 'Auto-generates 1200×400 header + 1080² square',
-    logo: 'Auto-generates 512², 200², 64²',
-    avatar: 'Auto-generates 400², 200², 96², 48², 24²',
-    favicon: 'Auto-generates 192, 180, 32, 16 px favicons',
+  raw: "Single original — no derived variants",
+  podcast: "Auto-generates 3000², 1400², 1200×630, plus thumbnails",
+  social: "Auto-generates OG, square, portrait, story, YouTube thumb",
+  web: "Auto-generates hero, OG, card, touch icon, PWA icon, thumbnail",
+  email: "Auto-generates 1200×400 header + 1080² square",
+  logo: "Auto-generates 512², 200², 64²",
+  avatar: "Auto-generates 400², 200², 96², 48², 24²",
+  favicon: "Auto-generates 192, 180, 32, 16 px favicons",
 };
 
 interface BuildImageAssetViewerPayloadArgs {
-    /** Legacy variants — flat four-key shape kept for back-compat. */
-    variants: ImageUploaderVariants;
-    label: string;
-    /**
-     * The preset that produced these variants. The argument is accepted
-     * but currently unused by the legacy four-key shape — every entry
-     * with a populated URL is included regardless of preset. Kept on
-     * the signature so callers don't have to change.
-     */
-    preset: AssetPreset;
+  /** Legacy variants — flat four-key shape kept for back-compat. */
+  variants: ImageUploaderVariants;
+  label: string;
+  /**
+   * The preset that produced these variants. The argument is accepted
+   * but currently unused by the legacy four-key shape — every entry
+   * with a populated URL is included regardless of preset. Kept on
+   * the signature so callers don't have to change.
+   */
+  preset: AssetPreset;
 }
 
 export interface ImageAssetViewerPayload {
-    images: string[];
-    initialIndex?: number;
-    alts?: string[];
-    title?: string;
+  images: string[];
+  initialIndex?: number;
+  alts?: string[];
+  title?: string;
 }
 
 /**
@@ -250,458 +295,819 @@ export interface ImageAssetViewerPayload {
  * variant key's dimension label.
  */
 export function buildImageAssetViewerPayload({
-    variants,
-    label,
+  variants,
+  label,
 }: BuildImageAssetViewerPayloadArgs): ImageAssetViewerPayload | null {
-    const legacyKeyToCanonical: Record<keyof ImageUploaderVariants, string> = {
-        image_url: 'original',
-        og_image_url: 'og_url',
-        thumbnail_url: 'thumbnail_url',
-        tiny_url: 'tiny_url',
-    };
-    const entries = (Object.keys(variants) as Array<keyof ImageUploaderVariants>)
-        .map((key) => {
-            const url = variants[key];
-            if (!url) return null;
-            const canonical = legacyKeyToCanonical[key];
-            const dim = ASSET_VARIANT_LABELS[canonical] ?? '';
-            const altDim = dim ? ` ${dim.replace(/×/g, 'x').replace(/\s/g, '')}` : '';
-            return { url, alt: `${label}${altDim}` };
-        })
-        .filter((entry): entry is { url: string; alt: string } => entry !== null);
+  const legacyKeyToCanonical: Record<keyof ImageUploaderVariants, string> = {
+    image_url: "original",
+    og_image_url: "og_url",
+    thumbnail_url: "thumbnail_url",
+    tiny_url: "tiny_url",
+  };
+  const entries = (Object.keys(variants) as Array<keyof ImageUploaderVariants>)
+    .map((key) => {
+      const url = variants[key];
+      if (!url) return null;
+      const canonical = legacyKeyToCanonical[key];
+      const dim = ASSET_VARIANT_LABELS[canonical] ?? "";
+      const altDim = dim ? ` ${dim.replace(/×/g, "x").replace(/\s/g, "")}` : "";
+      return { url, alt: `${label}${altDim}` };
+    })
+    .filter((entry): entry is { url: string; alt: string } => entry !== null);
 
-    if (!entries.length) return null;
+  if (!entries.length) return null;
 
-    return {
-        images: entries.map((entry) => entry.url),
-        alts: entries.map((entry) => entry.alt),
-        title: label,
-    };
+  return {
+    images: entries.map((entry) => entry.url),
+    alts: entries.map((entry) => entry.alt),
+    title: label,
+  };
 }
+
+// ── Crop types + helpers ──────────────────────────────────────────────────
+
+export interface CropAspectRatio {
+  label: string;
+  value: number | null;
+}
+
+const DEFAULT_CROP_RATIOS: CropAspectRatio[] = [
+  { label: "Free", value: null },
+  { label: "1:1", value: 1 },
+  { label: "16:9", value: 16 / 9 },
+  { label: "4:3", value: 4 / 3 },
+  { label: "9:16", value: 9 / 16 },
+];
+
+interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function buildCroppedBlob(
+  imageSrc: string,
+  pixelCrop: CropArea,
+): Promise<Blob> {
+  const loadImage = (src: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.addEventListener("load", () => resolve(img));
+      img.addEventListener("error", reject);
+      if (src.startsWith("data:")) {
+        img.src = src;
+      } else {
+        img.crossOrigin = "anonymous";
+        img.src = src;
+      }
+    });
+
+  let img: HTMLImageElement;
+  try {
+    img = await loadImage(imageSrc);
+  } catch {
+    // CORS fallback: paint to canvas first to make it same-origin
+    const tmp = new Image();
+    tmp.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      tmp.onload = () => resolve();
+      tmp.onerror = reject;
+      tmp.src = imageSrc;
+    });
+    const tmpCanvas = document.createElement("canvas");
+    tmpCanvas.width = tmp.width;
+    tmpCanvas.height = tmp.height;
+    tmpCanvas.getContext("2d")!.drawImage(tmp, 0, 0);
+    img = await loadImage(tmpCanvas.toDataURL("image/jpeg"));
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No 2d context");
+  ctx.drawImage(
+    img,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height,
+  );
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas produced empty blob"));
+      },
+      "image/jpeg",
+      0.92,
+    );
+  });
+}
+
+// ── Status icon ──────────────────────────────────────────────────────────
 
 function StatusIcon({ state }: { state: UploadState }) {
-    if (state === 'uploading') return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
-    if (state === 'success') return <CheckCircle2 className="h-4 w-4 text-success" />;
-    if (state === 'error') return <AlertCircle className="h-4 w-4 text-destructive" />;
-    return null;
+  if (state === "uploading")
+    return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
+  if (state === "success")
+    return <CheckCircle2 className="h-4 w-4 text-success" />;
+  if (state === "error")
+    return <AlertCircle className="h-4 w-4 text-destructive" />;
+  return null;
 }
 
-export function buildPastedImageFileName(mimeType: string, timestamp = Date.now()) {
-    const subtype = mimeType.split('/')[1]?.toLowerCase();
-    const ext = subtype === 'jpeg' ? 'jpg' : subtype || 'png';
-    return `pasted-${timestamp}.${ext}`;
+export function buildPastedImageFileName(
+  mimeType: string,
+  timestamp = Date.now(),
+) {
+  const subtype = mimeType.split("/")[1]?.toLowerCase();
+  const ext = subtype === "jpeg" ? "jpg" : subtype || "png";
+  return `pasted-${timestamp}.${ext}`;
 }
 
 // ── Helpers: map the new Asset envelope to the legacy four-key shape ──
 
 function mapAssetToLegacyVariants(asset: Asset): ImageUploaderVariants {
-    const v = asset.variants;
-    return {
-        image_url: asset.primary_url ?? v.original?.url ?? null,
-        og_image_url: v.og_url?.url ?? null,
-        thumbnail_url: v.thumbnail_url?.url ?? null,
-        tiny_url: v.tiny_url?.url ?? null,
-    };
+  const v = asset.variants;
+  return {
+    image_url: asset.primary_url ?? v.original?.url ?? null,
+    og_image_url: v.og_url?.url ?? null,
+    thumbnail_url: v.thumbnail_url?.url ?? null,
+    tiny_url: v.tiny_url?.url ?? null,
+  };
 }
 
 function assetToUploaderResult(asset: Asset): ImageUploaderResult {
-    const legacy = mapAssetToLegacyVariants(asset);
-    return {
-        ...legacy,
-        file_id: asset.file_id,
-        primary_url: asset.primary_url,
-        preset: asset.preset,
-        asset,
-        variants: asset.variants,
-    };
+  const legacy = mapAssetToLegacyVariants(asset);
+  return {
+    ...legacy,
+    file_id: asset.file_id,
+    primary_url: asset.primary_url,
+    preset: asset.preset,
+    asset,
+    variants: asset.variants,
+  };
 }
 
 // ── Component ────────────────────────────────────────────────────────────
 
 export function ImageAssetUploader({
-    onComplete,
-    onError,
-    maxSize,
-    enablePaste = true,
-    preset = 'social',
-    currentUrl,
-    currentVariants,
-    folder,
-    visibility = 'public',
-    compact = false,
-    allowUrlPaste = true,
-    enableViewerAction = false,
-    label = 'Image',
-    hideVariantBadges = false,
-    accept = DEFAULT_ACCEPT,
-    disabled = false,
-    className,
+  onComplete,
+  onError,
+  maxSize,
+  enablePaste = true,
+  preset = "social",
+  currentUrl,
+  currentVariants,
+  folder,
+  visibility = "public",
+  compact = false,
+  allowUrlPaste = true,
+  enableViewerAction = false,
+  label = "Image",
+  hideVariantBadges = false,
+  accept = DEFAULT_ACCEPT,
+  disabled = false,
+  enableCrop = false,
+  cropAspectRatios = DEFAULT_CROP_RATIOS,
+  className,
 }: ImageAssetUploaderProps) {
-    const dispatch = useAppDispatch();
-    const { upload } = useFileUpload();
-    const [section, setSection] = useState<SectionState>({ state: 'idle', error: null, fileName: null });
-    const [pasteHighlight, setPasteHighlight] = useState(false);
-    const [variants, setVariants] = useState<ImageUploaderVariants>({
-        image_url: currentUrl ?? currentVariants?.image_url ?? null,
-        og_image_url: currentVariants?.og_image_url ?? null,
-        thumbnail_url: currentVariants?.thumbnail_url ?? null,
-        tiny_url: currentVariants?.tiny_url ?? null,
+  const dispatch = useAppDispatch();
+  const { upload } = useFileUpload();
+  const [section, setSection] = useState<SectionState>({
+    state: "idle",
+    error: null,
+    fileName: null,
+  });
+  const [pasteHighlight, setPasteHighlight] = useState(false);
+  const [variants, setVariants] = useState<ImageUploaderVariants>({
+    image_url: currentUrl ?? currentVariants?.image_url ?? null,
+    og_image_url: currentVariants?.og_image_url ?? null,
+    thumbnail_url: currentVariants?.thumbnail_url ?? null,
+    tiny_url: currentVariants?.tiny_url ?? null,
+  });
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+
+  // Crop state
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropAspect, setCropAspect] = useState<number | null>(
+    cropAspectRatios[0]?.value ?? null,
+  );
+  const [cropAreaPixels, setCropAreaPixels] = useState<CropArea | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
+  const cropObjectUrlRef = useRef<string | null>(null);
+
+  // Sync previews when parent switches to a different entity
+  useEffect(() => {
+    setVariants({
+      image_url: currentUrl ?? currentVariants?.image_url ?? null,
+      og_image_url: currentVariants?.og_image_url ?? null,
+      thumbnail_url: currentVariants?.thumbnail_url ?? null,
+      tiny_url: currentVariants?.tiny_url ?? null,
     });
-    const [showUrlInput, setShowUrlInput] = useState(false);
-    const [urlDraft, setUrlDraft] = useState('');
+    setSection({ state: "idle", error: null, fileName: null });
+  }, [
+    currentUrl,
+    currentVariants?.image_url,
+    currentVariants?.og_image_url,
+    currentVariants?.thumbnail_url,
+    currentVariants?.tiny_url,
+  ]);
 
-    // Sync previews when parent switches to a different entity
-    useEffect(() => {
-        setVariants({
-            image_url: currentUrl ?? currentVariants?.image_url ?? null,
-            og_image_url: currentVariants?.og_image_url ?? null,
-            thumbnail_url: currentVariants?.thumbnail_url ?? null,
-            tiny_url: currentVariants?.tiny_url ?? null,
-        });
-        setSection({ state: 'idle', error: null, fileName: null });
-    }, [currentUrl, currentVariants?.image_url, currentVariants?.og_image_url, currentVariants?.thumbnail_url, currentVariants?.tiny_url]);
-
-    const uploadFile = useCallback(async (file: File) => {
-        if (disabled) return;
-        setSection({ state: 'uploading', error: null, fileName: file.name });
-        try {
-            const normalized = await upload(
-                { kind: 'file', file },
-                { preset, folderPath: folder, visibility },
-            );
-            const asset = normalized.asset;
-            if (!asset) {
-                throw new Error('Upload succeeded but no asset envelope was returned');
-            }
-            setVariants(mapAssetToLegacyVariants(asset));
-            onComplete?.(assetToUploaderResult(asset));
-            setSection({ state: 'success', error: null, fileName: file.name });
-        } catch (err) {
-            const message = extractErrorMessage(err) || 'Upload failed';
-            setSection({ state: 'error', error: message, fileName: file.name });
-            onError?.(message);
-        }
-    }, [disabled, preset, folder, visibility, upload, onComplete, onError]);
-
-    const remove = useCallback((e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        const cleared: ImageUploaderVariants = { image_url: null, og_image_url: null, thumbnail_url: null, tiny_url: null };
-        setVariants(cleared);
-        onComplete?.(null);
-        setSection({ state: 'idle', error: null, fileName: null });
-    }, [onComplete]);
-
-    const applyPastedUrl = useCallback(() => {
-        const trimmed = urlDraft.trim();
-        if (!trimmed) return;
-        // Pasted URLs are NOT uploaded server-side — they're a local
-        // override. We synthesize a minimal Asset envelope so callers
-        // that read `result.asset` still get a consistent shape.
-        const next: ImageUploaderVariants = {
-            image_url: trimmed,
-            og_image_url: null,
-            thumbnail_url: null,
-            tiny_url: null,
-        };
-        setVariants(next);
-        const synthAsset: Asset = {
-            file_id: '',
-            visibility: visibility,
-            folder: folder ?? '',
-            preset: preset,
-            primary_key: 'original',
-            primary_url: trimmed,
-            variants: {
-                original: {
-                    key: 'original',
-                    file_id: '',
-                    file_path: '',
-                    width: null,
-                    height: null,
-                    mime_type: null,
-                    file_size: null,
-                    url: trimmed,
-                    cdn_url: null,
-                    signed_url: null,
-                    download_url: null,
-                    metadata: {},
-                },
-            },
-            metadata: { _source: 'pasted-url' },
-        };
-        onComplete?.({
-            ...next,
-            file_id: '',
-            primary_url: trimmed,
-            preset,
-            asset: synthAsset,
-            variants: synthAsset.variants,
-        });
-        setSection({ state: 'idle', error: null, fileName: null });
-        setShowUrlInput(false);
-        setUrlDraft('');
-    }, [urlDraft, onComplete, preset, folder, visibility]);
-
-    const handleFiles = useCallback((files: File[]) => {
-        const file = files[0];
-        if (file?.type.startsWith('image/')) void uploadFile(file);
-    }, [uploadFile]);
-
-    const acceptValues = useMemo(
-        () => Array.isArray(accept) ? accept : accept.split(',').map((value) => value.trim()).filter(Boolean),
-        [accept],
-    );
-
-    const acceptMap = useMemo<Record<string, string[]> | undefined>(() => {
-        const mimePatterns = acceptValues.filter((pattern) => pattern.includes('/'));
-        if (!mimePatterns.length) return undefined;
-        return mimePatterns.reduce<Record<string, string[]>>((map, pattern) => {
-            map[pattern] = [];
-            return map;
-        }, {});
-    }, [acceptValues]);
-
-    const {
-        getRootProps,
-        getInputProps,
-        isDragActive,
-        open: openPicker,
-    } = useDropzone({
-        onDrop: (acceptedFiles) => handleFiles(acceptedFiles),
-        noClick: true,
-        noKeyboard: true,
-        accept: acceptMap,
-        maxSize,
-        multiple: false,
-        disabled,
-    });
-
-    // Paste capture — first image item on the clipboard is uploaded through
-    // the asset pipeline. Disable with `enablePaste={false}` when this
-    // uploader is rendered inside a surface that already owns paste
-    // (chat inputs, etc.).
-    useEffect(() => {
-        if (!enablePaste || typeof window === 'undefined') return;
-        const handler = (event: ClipboardEvent) => {
-            if (!event.clipboardData?.items) return;
-            for (const item of Array.from(event.clipboardData.items)) {
-                if (!item.type.startsWith('image/')) continue;
-                const blob = item.getAsFile();
-                if (!blob) continue;
-                event.preventDefault();
-                setPasteHighlight(true);
-                setTimeout(() => setPasteHighlight(false), 400);
-                void uploadFile(
-                    new File([blob], buildPastedImageFileName(blob.type), { type: blob.type }),
-                );
-                return;
-            }
-        };
-        window.addEventListener('paste', handler);
-        return () => window.removeEventListener('paste', handler);
-    }, [enablePaste, uploadFile]);
-
-    // Variant chips: when we have a populated four-key snapshot, render
-    // a chip per populated entry plus any unpopulated ones the preset
-    // is expected to fill. Built lazily — if the upload hasn't returned
-    // a populated set yet we hide the row entirely (matches the legacy
-    // behaviour).
-    const populatedLegacyEntries = useMemo(() => {
-        const order: Array<{ key: keyof ImageUploaderVariants; label: string }> = [
-            { key: 'image_url', label: ASSET_VARIANT_LABELS.original ?? 'Primary' },
-            { key: 'og_image_url', label: ASSET_VARIANT_LABELS.og_url ?? 'OG' },
-            { key: 'thumbnail_url', label: ASSET_VARIANT_LABELS.thumbnail_url ?? 'Thumbnail' },
-            { key: 'tiny_url', label: ASSET_VARIANT_LABELS.tiny_url ?? 'Tiny' },
-        ];
-        return order.filter(({ key }) => Boolean(variants[key]));
-    }, [variants]);
-
-    const blurb = PRESET_BLURB[preset] ?? '';
-    const highlighted = isDragActive || pasteHighlight;
-    const dropZoneHeight = compact ? 'py-4' : 'py-6';
-    const iconSize = compact ? 'h-6 w-6' : 'h-8 w-8';
-    const viewerPayload = buildImageAssetViewerPayload({ variants, label, preset });
-
-    const openViewer = useCallback((e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!viewerPayload) return;
-        dispatch(
-            openOverlay({
-                overlayId: 'imageViewer',
-                instanceId: 'default',
-                data: {
-                    ...viewerPayload,
-                    initialIndex: viewerPayload.initialIndex ?? 0,
-                },
-            }),
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (disabled) return;
+      setSection({ state: "uploading", error: null, fileName: file.name });
+      try {
+        const normalized = await upload(
+          { kind: "file", file },
+          { preset, folderPath: folder, visibility },
         );
-    }, [dispatch, viewerPayload]);
+        const asset = normalized.asset;
+        if (!asset) {
+          throw new Error(
+            "Upload succeeded but no asset envelope was returned",
+          );
+        }
+        setVariants(mapAssetToLegacyVariants(asset));
+        onComplete?.(assetToUploaderResult(asset));
+        setSection({ state: "success", error: null, fileName: file.name });
+      } catch (err) {
+        const message = extractErrorMessage(err) || "Upload failed";
+        setSection({ state: "error", error: message, fileName: file.name });
+        onError?.(message);
+      }
+    },
+    [disabled, preset, folder, visibility, upload, onComplete, onError],
+  );
 
-    return (
-        <div className={cn('flex flex-col gap-2', className)}>
-            {/* Header row: label + status + URL toggle */}
-            <div className="flex items-center justify-between">
-                <p className="text-sm font-medium flex items-center gap-1.5">
-                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                    {label}
-                </p>
-                <div className="flex items-center gap-2">
-                    <StatusIcon state={section.state} />
-                    {allowUrlPaste && !disabled && (
-                        <button
-                            type="button"
-                            onClick={() => setShowUrlInput((v) => !v)}
-                            title="Paste a public image URL instead"
-                            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                        >
-                            <LinkIcon className="h-3 w-3" />
-                            {showUrlInput ? 'Hide URL' : 'Use URL'}
-                        </button>
-                    )}
-                </div>
-            </div>
+  const remove = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      const cleared: ImageUploaderVariants = {
+        image_url: null,
+        og_image_url: null,
+        thumbnail_url: null,
+        tiny_url: null,
+      };
+      setVariants(cleared);
+      onComplete?.(null);
+      setSection({ state: "idle", error: null, fileName: null });
+    },
+    [onComplete],
+  );
 
-            {/* URL paste row */}
-            {showUrlInput && allowUrlPaste && (
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/20 p-2">
-                    <input
-                        type="url"
-                        value={urlDraft}
-                        onChange={(e) => setUrlDraft(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyPastedUrl(); } }}
-                        placeholder="https://example.com/image.jpg"
-                        className="flex-1 text-xs bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <button
-                        type="button"
-                        onClick={applyPastedUrl}
-                        disabled={!urlDraft.trim()}
-                        className="text-xs px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        Use URL
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { setShowUrlInput(false); setUrlDraft(''); }}
-                        className="text-xs px-1.5 py-1 rounded-md hover:bg-accent"
-                        title="Cancel"
-                    >
-                        <X className="h-3 w-3" />
-                    </button>
-                </div>
-            )}
+  const applyPastedUrl = useCallback(() => {
+    const trimmed = urlDraft.trim();
+    if (!trimmed) return;
+    // Pasted URLs are NOT uploaded server-side — they're a local
+    // override. We synthesize a minimal Asset envelope so callers
+    // that read `result.asset` still get a consistent shape.
+    const next: ImageUploaderVariants = {
+      image_url: trimmed,
+      og_image_url: null,
+      thumbnail_url: null,
+      tiny_url: null,
+    };
+    setVariants(next);
+    const synthAsset: Asset = {
+      file_id: "",
+      visibility: visibility,
+      folder: folder ?? "",
+      preset: preset,
+      primary_key: "original",
+      primary_url: trimmed,
+      variants: {
+        original: {
+          key: "original",
+          file_id: "",
+          file_path: "",
+          width: null,
+          height: null,
+          mime_type: null,
+          file_size: null,
+          url: trimmed,
+          cdn_url: null,
+          signed_url: null,
+          download_url: null,
+          metadata: {},
+        },
+      },
+      metadata: { _source: "pasted-url" },
+    };
+    onComplete?.({
+      ...next,
+      file_id: "",
+      primary_url: trimmed,
+      preset,
+      asset: synthAsset,
+      variants: synthAsset.variants,
+    });
+    setSection({ state: "idle", error: null, fileName: null });
+    setShowUrlInput(false);
+    setUrlDraft("");
+  }, [urlDraft, onComplete, preset, folder, visibility]);
 
-            {/* Drop zone */}
-            <div
-                {...getRootProps()}
-                onClick={() => {
-                    if (disabled || section.state === 'uploading') return;
-                    openPicker();
-                }}
-                className={cn(
-                    'relative border-2 border-dashed rounded-xl transition-colors',
-                    disabled
-                        ? 'border-border bg-muted/30 cursor-not-allowed opacity-60'
-                    : section.state === 'uploading'
-                        ? 'border-primary/40 bg-primary/5 cursor-not-allowed'
-                    : highlighted
-                        ? 'border-primary bg-primary/5 cursor-pointer'
-                        : 'border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer',
-                )}
-            >
-                <input
-                    {...getInputProps({
-                        accept: Array.isArray(accept) ? accept.join(',') : accept,
-                    })}
-                />
+  // Revoke the object URL when no longer needed to avoid memory leaks
+  const revokeCropObjectUrl = useCallback(() => {
+    if (cropObjectUrlRef.current) {
+      URL.revokeObjectURL(cropObjectUrlRef.current);
+      cropObjectUrlRef.current = null;
+    }
+  }, []);
 
-                {variants.image_url ? (
-                    <div className="flex items-center gap-3 p-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={variants.thumbnail_url ?? variants.tiny_url ?? variants.image_url}
-                            alt={label}
-                            className="w-14 h-14 rounded-lg object-cover border shrink-0"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                        <div className="min-w-0 flex-1 text-sm">
-                            {section.state === 'success' && (
-                                <p className="text-success text-xs font-medium">Processed successfully</p>
-                            )}
-                            {section.state === 'idle' && (
-                                <p className="text-xs text-muted-foreground font-medium">Image set</p>
-                            )}
-                            <p className="text-muted-foreground text-xs truncate">{section.fileName ?? 'Previously uploaded'}</p>
-                            {!disabled && <p className="text-xs text-muted-foreground mt-0.5">Click to replace</p>}
-                        </div>
-                        {!disabled && (
-                            <div className="shrink-0 flex items-center gap-1">
-                                {enableViewerAction && viewerPayload ? (
-                                    <button
-                                        type="button"
-                                        onClick={openViewer}
-                                        title="Open image panel"
-                                        aria-label="Open image panel"
-                                        className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </button>
-                                ) : null}
-                                <button
-                                    type="button"
-                                    onClick={remove}
-                                    title="Remove image"
-                                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className={cn('flex flex-col items-center justify-center gap-2', dropZoneHeight)}>
-                        {section.state === 'uploading' ? (
-                            <Loader2 className={cn(iconSize, 'animate-spin text-primary')} />
-                        ) : (
-                            <Upload className={cn(iconSize, 'text-muted-foreground')} />
-                        )}
-                        <div className="text-center px-3">
-                            <p className="text-sm font-medium text-foreground">
-                                {section.state === 'uploading'
-                                    ? 'Processing…'
-                                    : highlighted ? 'Drop to upload' : 'Drop image or click to upload'}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                {enablePaste
-                                    ? `JPG, PNG, WebP · ${blurb} · Paste with Ctrl/⌘V`
-                                    : `JPG, PNG, WebP · ${blurb}`}
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
+  const closeCropDialog = useCallback(() => {
+    setCropDialogOpen(false);
+    setCropSrc(null);
+    setPendingFile(null);
+    setCropPosition({ x: 0, y: 0 });
+    setCropZoom(1);
+    setCropAreaPixels(null);
+    revokeCropObjectUrl();
+  }, [revokeCropObjectUrl]);
 
-            {section.error && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> {section.error}
-                </p>
-            )}
+  const confirmCrop = useCallback(async () => {
+    if (!cropAreaPixels || !cropSrc || !pendingFile) return;
+    setIsCropping(true);
+    try {
+      const blob = await buildCroppedBlob(cropSrc, cropAreaPixels);
+      const ext = pendingFile.name.match(/\.[^.]+$/)?.[0] ?? ".jpg";
+      const croppedFile = new File(
+        [blob],
+        `cropped-${pendingFile.name.replace(/\.[^.]+$/, "")}${ext}`,
+        { type: blob.type },
+      );
+      closeCropDialog();
+      await uploadFile(croppedFile);
+    } catch (err) {
+      const message = extractErrorMessage(err) || "Crop failed";
+      setSection({
+        state: "error",
+        error: message,
+        fileName: pendingFile?.name ?? null,
+      });
+      onError?.(message);
+    } finally {
+      setIsCropping(false);
+    }
+  }, [
+    cropAreaPixels,
+    cropSrc,
+    pendingFile,
+    closeCropDialog,
+    uploadFile,
+    onError,
+  ]);
 
-            {variants.image_url && !hideVariantBadges && populatedLegacyEntries.length > 1 && (
-                <div className="flex gap-2 flex-wrap">
-                    {populatedLegacyEntries.map(({ key, label: vLabel }) => (
-                        <span
-                            key={key}
-                            className="text-xs px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
-                            title={vLabel}
-                        >
-                            {vLabel} ✓
-                        </span>
-                    ))}
-                </div>
-            )}
-        </div>
+  const handleFiles = useCallback(
+    (files: File[]) => {
+      const file = files[0];
+      if (!file?.type.startsWith("image/")) return;
+      if (enableCrop) {
+        revokeCropObjectUrl();
+        const objectUrl = URL.createObjectURL(file);
+        cropObjectUrlRef.current = objectUrl;
+        setCropSrc(objectUrl);
+        setPendingFile(file);
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1);
+        setCropAspect(cropAspectRatios[0]?.value ?? null);
+        setCropAreaPixels(null);
+        setCropDialogOpen(true);
+      } else {
+        void uploadFile(file);
+      }
+    },
+    [enableCrop, cropAspectRatios, uploadFile, revokeCropObjectUrl],
+  );
+
+  const acceptValues = useMemo(
+    () =>
+      Array.isArray(accept)
+        ? accept
+        : accept
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+    [accept],
+  );
+
+  const acceptMap = useMemo<Record<string, string[]> | undefined>(() => {
+    const mimePatterns = acceptValues.filter((pattern) =>
+      pattern.includes("/"),
     );
+    if (!mimePatterns.length) return undefined;
+    return mimePatterns.reduce<Record<string, string[]>>((map, pattern) => {
+      map[pattern] = [];
+      return map;
+    }, {});
+  }, [acceptValues]);
+
+  const {
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    open: openPicker,
+  } = useDropzone({
+    onDrop: (acceptedFiles) => handleFiles(acceptedFiles),
+    noClick: true,
+    noKeyboard: true,
+    accept: acceptMap,
+    maxSize,
+    multiple: false,
+    disabled,
+  });
+
+  // Paste capture — first image item on the clipboard is uploaded through
+  // the asset pipeline. Disable with `enablePaste={false}` when this
+  // uploader is rendered inside a surface that already owns paste
+  // (chat inputs, etc.).
+  useEffect(() => {
+    if (!enablePaste || typeof window === "undefined") return;
+    const handler = (event: ClipboardEvent) => {
+      if (!event.clipboardData?.items) return;
+      for (const item of Array.from(event.clipboardData.items)) {
+        if (!item.type.startsWith("image/")) continue;
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        event.preventDefault();
+        setPasteHighlight(true);
+        setTimeout(() => setPasteHighlight(false), 400);
+        void uploadFile(
+          new File([blob], buildPastedImageFileName(blob.type), {
+            type: blob.type,
+          }),
+        );
+        return;
+      }
+    };
+    window.addEventListener("paste", handler);
+    return () => window.removeEventListener("paste", handler);
+  }, [enablePaste, uploadFile]);
+
+  // Revoke the crop object URL when the component unmounts
+  useEffect(() => revokeCropObjectUrl, [revokeCropObjectUrl]);
+
+  // Variant chips: when we have a populated four-key snapshot, render
+  // a chip per populated entry plus any unpopulated ones the preset
+  // is expected to fill. Built lazily — if the upload hasn't returned
+  // a populated set yet we hide the row entirely (matches the legacy
+  // behaviour).
+  const populatedLegacyEntries = useMemo(() => {
+    const order: Array<{ key: keyof ImageUploaderVariants; label: string }> = [
+      { key: "image_url", label: ASSET_VARIANT_LABELS.original ?? "Primary" },
+      { key: "og_image_url", label: ASSET_VARIANT_LABELS.og_url ?? "OG" },
+      {
+        key: "thumbnail_url",
+        label: ASSET_VARIANT_LABELS.thumbnail_url ?? "Thumbnail",
+      },
+      { key: "tiny_url", label: ASSET_VARIANT_LABELS.tiny_url ?? "Tiny" },
+    ];
+    return order.filter(({ key }) => Boolean(variants[key]));
+  }, [variants]);
+
+  const blurb = PRESET_BLURB[preset] ?? "";
+  const highlighted = isDragActive || pasteHighlight;
+  const dropZoneHeight = compact ? "py-4" : "py-6";
+  const iconSize = compact ? "h-6 w-6" : "h-8 w-8";
+  const viewerPayload = buildImageAssetViewerPayload({
+    variants,
+    label,
+    preset,
+  });
+
+  const openViewer = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!viewerPayload) return;
+      dispatch(
+        openOverlay({
+          overlayId: "imageViewer",
+          instanceId: "default",
+          data: {
+            ...viewerPayload,
+            initialIndex: viewerPayload.initialIndex ?? 0,
+          },
+        }),
+      );
+    },
+    [dispatch, viewerPayload],
+  );
+
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      {/* Header row: label + status + URL toggle */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium flex items-center gap-1.5">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          {label}
+        </p>
+        <div className="flex items-center gap-2">
+          <StatusIcon state={section.state} />
+          {allowUrlPaste && !disabled && (
+            <button
+              type="button"
+              onClick={() => setShowUrlInput((v) => !v)}
+              title="Paste a public image URL instead"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <LinkIcon className="h-3 w-3" />
+              {showUrlInput ? "Hide URL" : "Use URL"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* URL paste row */}
+      {showUrlInput && allowUrlPaste && (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/20 p-2">
+          <input
+            type="url"
+            value={urlDraft}
+            onChange={(e) => setUrlDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                applyPastedUrl();
+              }
+            }}
+            placeholder="https://example.com/image.jpg"
+            className="flex-1 text-xs bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <button
+            type="button"
+            onClick={applyPastedUrl}
+            disabled={!urlDraft.trim()}
+            className="text-xs px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Use URL
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowUrlInput(false);
+              setUrlDraft("");
+            }}
+            className="text-xs px-1.5 py-1 rounded-md hover:bg-accent"
+            title="Cancel"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Drop zone */}
+      <div
+        {...getRootProps()}
+        onClick={() => {
+          if (disabled || section.state === "uploading") return;
+          openPicker();
+        }}
+        className={cn(
+          "relative border-2 border-dashed rounded-xl transition-colors",
+          disabled
+            ? "border-border bg-muted/30 cursor-not-allowed opacity-60"
+            : section.state === "uploading"
+              ? "border-primary/40 bg-primary/5 cursor-not-allowed"
+              : highlighted
+                ? "border-primary bg-primary/5 cursor-pointer"
+                : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
+        )}
+      >
+        <input
+          {...getInputProps({
+            accept: Array.isArray(accept) ? accept.join(",") : accept,
+          })}
+        />
+
+        {variants.image_url ? (
+          <div className="flex items-center gap-3 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={
+                variants.thumbnail_url ??
+                variants.tiny_url ??
+                variants.image_url
+              }
+              alt={label}
+              className="w-14 h-14 rounded-lg object-cover border shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+            <div className="min-w-0 flex-1 text-sm">
+              {section.state === "success" && (
+                <p className="text-success text-xs font-medium">
+                  Processed successfully
+                </p>
+              )}
+              {section.state === "idle" && (
+                <p className="text-xs text-muted-foreground font-medium">
+                  Image set
+                </p>
+              )}
+              <p className="text-muted-foreground text-xs truncate">
+                {section.fileName ?? "Previously uploaded"}
+              </p>
+              {!disabled && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Click to replace
+                </p>
+              )}
+            </div>
+            {!disabled && (
+              <div className="shrink-0 flex items-center gap-1">
+                {enableViewerAction && viewerPayload ? (
+                  <button
+                    type="button"
+                    onClick={openViewer}
+                    title="Open image panel"
+                    aria-label="Open image panel"
+                    className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={remove}
+                  title="Remove image"
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center gap-2",
+              dropZoneHeight,
+            )}
+          >
+            {section.state === "uploading" ? (
+              <Loader2 className={cn(iconSize, "animate-spin text-primary")} />
+            ) : (
+              <Upload className={cn(iconSize, "text-muted-foreground")} />
+            )}
+            <div className="text-center px-3">
+              <p className="text-sm font-medium text-foreground">
+                {section.state === "uploading"
+                  ? "Processing…"
+                  : highlighted
+                    ? "Drop to upload"
+                    : "Drop image or click to upload"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {enablePaste
+                  ? `JPG, PNG, WebP · ${blurb} · Paste with Ctrl/⌘V`
+                  : `JPG, PNG, WebP · ${blurb}`}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {section.error && (
+        <p className="text-xs text-destructive flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" /> {section.error}
+        </p>
+      )}
+
+      {variants.image_url &&
+        !hideVariantBadges &&
+        populatedLegacyEntries.length > 1 && (
+          <div className="flex gap-2 flex-wrap">
+            {populatedLegacyEntries.map(({ key, label: vLabel }) => (
+              <span
+                key={key}
+                className="text-xs px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
+                title={vLabel}
+              >
+                {vLabel} ✓
+              </span>
+            ))}
+          </div>
+        )}
+
+      {/* Crop dialog — only mounted when enableCrop is true and a file is pending */}
+      {enableCrop && (
+        <Dialog
+          open={cropDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) closeCropDialog();
+          }}
+        >
+          <DialogContent className="sm:max-w-md md:max-w-xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Crop className="h-4 w-4" />
+                Crop Image
+              </DialogTitle>
+            </DialogHeader>
+
+            {cropSrc && (
+              <div className="relative h-80 w-full bg-muted rounded-md overflow-hidden">
+                <Cropper
+                  image={cropSrc}
+                  crop={cropPosition}
+                  zoom={cropZoom}
+                  aspect={cropAspect ?? undefined}
+                  onCropChange={setCropPosition}
+                  onZoomChange={setCropZoom}
+                  onCropComplete={(_area, pixels) =>
+                    setCropAreaPixels(pixels as CropArea)
+                  }
+                  classes={{
+                    containerClassName: "bg-muted",
+                    mediaClassName: "bg-muted",
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm font-medium">Zoom</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {cropZoom.toFixed(1)}×
+                  </span>
+                </div>
+                <Slider
+                  value={[cropZoom]}
+                  min={1}
+                  max={3}
+                  step={0.05}
+                  onValueChange={([v]) => setCropZoom(v)}
+                />
+              </div>
+
+              {cropAspectRatios.length > 1 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Aspect Ratio</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {cropAspectRatios.map((ratio) => (
+                      <Button
+                        key={ratio.label}
+                        type="button"
+                        size="sm"
+                        variant={
+                          cropAspect === ratio.value ? "default" : "outline"
+                        }
+                        onClick={() => setCropAspect(ratio.value)}
+                        className="h-7 px-2.5 text-xs"
+                      >
+                        {ratio.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="sm:justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeCropDialog}
+                disabled={isCropping}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={confirmCrop}
+                disabled={isCropping || !cropAreaPixels}
+              >
+                {isCropping ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />{" "}
+                    Cropping…
+                  </>
+                ) : (
+                  "Crop & Upload"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
 }
 
 export default ImageAssetUploader;

@@ -18413,6 +18413,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -18446,6 +18447,7 @@ export type Database = {
           ai_estimated_files?: string[] | null
           ai_solution_proposal?: string | null
           ai_suggested_priority?: string | null
+          assigned_to?: string | null
           autonomy_score?: number | null
           category_id?: string | null
           created_at?: string
@@ -18479,6 +18481,7 @@ export type Database = {
           ai_estimated_files?: string[] | null
           ai_solution_proposal?: string | null
           ai_suggested_priority?: string | null
+          assigned_to?: string | null
           autonomy_score?: number | null
           category_id?: string | null
           created_at?: string
@@ -21593,6 +21596,15 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      admin_list_for_assignment: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          level: Database["public"]["Enums"]["admin_level"]
+          user_id: string
+        }[]
+      }
       admin_list_tables: {
         Args: never
         Returns: {
@@ -22247,6 +22259,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -22399,6 +22412,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -23155,6 +23169,15 @@ export type Database = {
             }
             Returns: string
           }
+      feedback_get_admin_info: {
+        Args: { p_user_id: string }
+        Returns: {
+          display_name: string
+          email: string
+          level: Database["public"]["Enums"]["admin_level"]
+          user_id: string
+        }[]
+      }
       fetch_all_action: {
         Args: never
         Returns: {
@@ -23969,6 +23992,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -24400,6 +24424,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -24580,6 +24605,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -24827,6 +24853,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -24965,6 +24992,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -25349,6 +25377,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -25412,6 +25441,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -25547,6 +25577,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -25629,6 +25660,7 @@ export type Database = {
           ai_estimated_files: string[] | null
           ai_solution_proposal: string | null
           ai_suggested_priority: string | null
+          assigned_to: string | null
           autonomy_score: number | null
           category_id: string | null
           created_at: string
@@ -25696,6 +25728,7 @@ export type Database = {
               ai_estimated_files: string[] | null
               ai_solution_proposal: string | null
               ai_suggested_priority: string | null
+              assigned_to: string | null
               autonomy_score: number | null
               category_id: string | null
               created_at: string
@@ -25747,6 +25780,7 @@ export type Database = {
               ai_estimated_files: string[] | null
               ai_solution_proposal: string | null
               ai_suggested_priority: string | null
+              assigned_to: string | null
               autonomy_score: number | null
               category_id: string | null
               created_at: string

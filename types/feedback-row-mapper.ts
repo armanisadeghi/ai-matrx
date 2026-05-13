@@ -171,6 +171,7 @@ function isUserFeedbackRowLike(val: Json): val is UserFeedbackRowLike {
     rn("resolved_by") &&
     rn("user_confirmed_at") &&
     rn("parent_id") &&
+    rn("assigned_to") &&
     r("admin_decision") &&
     rnn("work_priority") &&
     rn("testing_instructions") &&
@@ -347,6 +348,7 @@ export function mapUserFeedbackRow(row: UserFeedbackRowLike): UserFeedback {
     user_confirmed_at: row.user_confirmed_at,
     parent_id: row.parent_id,
     category_id: row.category_id,
+    assigned_to: row.assigned_to,
     ai_solution_proposal: row.ai_solution_proposal,
     ai_suggested_priority: row.ai_suggested_priority,
     ai_complexity: narrowAiComplexity(row.ai_complexity),

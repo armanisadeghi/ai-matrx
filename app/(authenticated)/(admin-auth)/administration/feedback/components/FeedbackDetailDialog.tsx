@@ -19,6 +19,7 @@ import {
   FeedbackStatus,
   FeedbackType,
   FeedbackCategory,
+  FeedbackAssignableAdmin,
   FeedbackComment,
   FeedbackUserMessage,
   AdminDecision,
@@ -181,6 +182,12 @@ export default function FeedbackDetailDialog({
     feedback.category_id ?? "none",
   );
   const [categories, setCategories] = useState<FeedbackCategory[]>([]);
+  const [assigneeId, setAssigneeId] = useState<string>(
+    feedback.assigned_to ?? "none",
+  );
+  const [assignableAdmins, setAssignableAdmins] = useState<
+    FeedbackAssignableAdmin[]
+  >([]);
 
   // Parent/child relationship state
   const [parentId, setParentId] = useState<string>(
@@ -269,8 +276,7 @@ export default function FeedbackDetailDialog({
               toast.error("Couldn't upload image: no URL returned");
             }
           } catch (err) {
-            const reason =
-              err instanceof Error ? err.message : "Upload failed";
+            const reason = err instanceof Error ? err.message : "Upload failed";
             toast.error(`Couldn't upload image: ${reason}`);
           } finally {
             setUploading(false);
@@ -363,6 +369,7 @@ export default function FeedbackDetailDialog({
     setFormStatus(fresh.status);
     setHasOpenIssues(fresh.has_open_issues ?? false);
     setCategoryId(fresh.category_id ?? "none");
+    setAssigneeId(fresh.assigned_to ?? "none");
     setParentId(fresh.parent_id ?? "none");
   }, []);
 
@@ -499,7 +506,6 @@ export default function FeedbackDetailDialog({
     }
   }, [item, comments]);
 
-
   const loadComments = useCallback(async () => {
     setIsLoadingComments(true);
     try {
@@ -540,14 +546,21 @@ export default function FeedbackDetailDialog({
     setFormStatus(feedback.status);
     setHasOpenIssues(feedback.has_open_issues ?? false);
     setCategoryId(feedback.category_id ?? "none");
+    setAssigneeId(feedback.assigned_to ?? "none");
   }, [feedback.id, feedback.updated_at]); // Re-sync on different item OR fresher data from parent
 
-  // Load categories and all feedback items once when dialog opens
+  // Load categories, assignable admins, and parent-picker list when dialog opens
   useEffect(() => {
     if (open && categories.length === 0) {
       fetch("/api/admin/feedback/categories")
         .then((r) => r.json())
         .then((d) => setCategories(d.categories ?? []))
+        .catch(() => {});
+    }
+    if (open && assignableAdmins.length === 0) {
+      fetch("/api/admin/feedback/assignable-admins")
+        .then((r) => r.json())
+        .then((d) => setAssignableAdmins(d.admins ?? []))
         .catch(() => {});
     }
     if (open && allFeedbackItems.length === 0) {
@@ -557,7 +570,12 @@ export default function FeedbackDetailDialog({
         .then((d) => setAllFeedbackItems(d.items ?? []))
         .catch(() => {});
     }
-  }, [open, categories.length, allFeedbackItems.length]);
+  }, [
+    open,
+    categories.length,
+    assignableAdmins.length,
+    allFeedbackItems.length,
+  ]);
 
   // Reset UI interaction state only when a completely different item is opened
   useEffect(() => {
@@ -627,6 +645,10 @@ export default function FeedbackDetailDialog({
       const newCategoryId = categoryId === "none" ? null : categoryId;
       if (newCategoryId !== (item.category_id ?? null)) {
         updates.category_id = newCategoryId;
+      }
+      const newAssigneeId = assigneeId === "none" ? null : assigneeId;
+      if (newAssigneeId !== (item.assigned_to ?? null)) {
+        updates.assigned_to = newAssigneeId;
       }
       const newParentId = parentId === "none" ? null : parentId;
       if (newParentId !== (item.parent_id ?? null)) {
@@ -1122,7 +1144,7 @@ export default function FeedbackDetailDialog({
                       <ImageIcon className="w-4 h-4" />
                       Screenshots ({item.image_urls.length})
                     </label>
-                    {(
+                    {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {item.image_urls.map((url, index) => {
                           // <img src> renders bytes inline regardless of
@@ -1156,7 +1178,7 @@ export default function FeedbackDetailDialog({
                           );
                         })}
                       </div>
-                    )}
+                    }
                   </div>
                 )}
 
@@ -1541,56 +1563,54 @@ export default function FeedbackDetailDialog({
                               )
                             : parentCandidates;
                           return (
-                        <div className="border rounded-lg p-2 bg-background shadow-md">
-                          <Input
-                            placeholder="Search feedback items..."
-                            value={parentSearchQuery}
-                            onChange={(e) =>
-                              setParentSearchQuery(e.target.value)
-                            }
-                            className="h-8 text-xs mb-2"
-                            autoFocus
-                          />
-                          <div className="max-h-48 overflow-y-auto space-y-1">
-                            {parentResults
-                              .slice(0, 20)
-                              .map((f) => (
-                                <button
-                                  key={f.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setParentId(f.id);
-                                    setShowParentPicker(false);
-                                    setParentSearchQuery("");
-                                  }}
-                                  className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted transition-colors"
-                                >
-                                  <span className="font-mono text-muted-foreground mr-2">
-                                    {f.id.slice(0, 8)}
-                                  </span>
-                                  {f.description.slice(0, 70)}
-                                  {f.description.length > 70 ? "…" : ""}
-                                </button>
-                              ))}
-                            {parentResults.length === 0 && (
-                              <p className="text-xs text-muted-foreground px-2 py-2">
-                                No items found
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setShowParentPicker(false);
-                              setParentSearchQuery("");
-                            }}
-                            className="w-full mt-1 h-7 text-xs"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
+                            <div className="border rounded-lg p-2 bg-background shadow-md">
+                              <Input
+                                placeholder="Search feedback items..."
+                                value={parentSearchQuery}
+                                onChange={(e) =>
+                                  setParentSearchQuery(e.target.value)
+                                }
+                                className="h-8 text-xs mb-2"
+                                autoFocus
+                              />
+                              <div className="max-h-48 overflow-y-auto space-y-1">
+                                {parentResults.slice(0, 20).map((f) => (
+                                  <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setParentId(f.id);
+                                      setShowParentPicker(false);
+                                      setParentSearchQuery("");
+                                    }}
+                                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted transition-colors"
+                                  >
+                                    <span className="font-mono text-muted-foreground mr-2">
+                                      {f.id.slice(0, 8)}
+                                    </span>
+                                    {f.description.slice(0, 70)}
+                                    {f.description.length > 70 ? "…" : ""}
+                                  </button>
+                                ))}
+                                {parentResults.length === 0 && (
+                                  <p className="text-xs text-muted-foreground px-2 py-2">
+                                    No items found
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setShowParentPicker(false);
+                                  setParentSearchQuery("");
+                                }}
+                                className="w-full mt-1 h-7 text-xs"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
                           );
                         })()
                       ) : (
@@ -1690,6 +1710,76 @@ export default function FeedbackDetailDialog({
                     </Select>
                   </div>
                 )}
+
+                {/* Assignee */}
+                <div>
+                  <label className="text-sm font-medium mb-1.5 flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5" />
+                    Assigned to
+                  </label>
+                  <Select value={assigneeId} onValueChange={setAssigneeId}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue>
+                        {(() => {
+                          if (assigneeId === "none")
+                            return (
+                              <span className="text-muted-foreground">
+                                Unassigned
+                              </span>
+                            );
+                          const admin = assignableAdmins.find(
+                            (a) => a.user_id === assigneeId,
+                          );
+                          if (!admin) {
+                            // Fall back to short id when we have an assignment
+                            // recorded but the admin list hasn't loaded (or
+                            // they were since deactivated).
+                            return (
+                              <span className="text-muted-foreground">
+                                {assigneeId.slice(0, 8)}…
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="text-sm font-medium truncate">
+                              {admin.display_name ||
+                                admin.email ||
+                                admin.user_id.slice(0, 8)}
+                            </span>
+                          );
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unassigned</SelectItem>
+                      {assignableAdmins.map((a) => (
+                        <SelectItem key={a.user_id} value={a.user_id}>
+                          <span className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {a.display_name ||
+                                a.email ||
+                                a.user_id.slice(0, 8)}
+                            </span>
+                            {a.email &&
+                              a.display_name &&
+                              a.email !== a.display_name && (
+                                <span className="text-[11px] text-muted-foreground">
+                                  {a.email}
+                                </span>
+                              )}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {assigneeId !== "none" &&
+                    assigneeId !== (item.assigned_to ?? "none") && (
+                      <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                        On save: the assignee will get an in-app DM and an email
+                        notification.
+                      </p>
+                    )}
+                </div>
 
                 <Separator />
 

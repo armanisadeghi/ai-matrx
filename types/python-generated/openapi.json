@@ -18725,265 +18725,6 @@
         }
       }
     },
-    "/files/groups": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "List Groups Index",
-        "operationId": "list_groups_index_files_groups_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  "type": "array",
-                  "title": "Response List Groups Index Files Groups Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Create Group",
-        "operationId": "create_group_files_groups_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateGroupRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Create Group Files Groups Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/groups/{group_id}/members": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "List Group Members",
-        "operationId": "list_group_members_files_groups__group_id__members_get",
-        "parameters": [
-          {
-            "name": "group_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Group Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "title": "Response List Group Members Files Groups  Group Id  Members Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Add Group Member",
-        "operationId": "add_group_member_files_groups__group_id__members_post",
-        "parameters": [
-          {
-            "name": "group_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Group Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddGroupMemberRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Add Group Member Files Groups  Group Id  Members Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/groups/{group_id}/members/{member_user_id}": {
-      "delete": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Remove Group Member",
-        "operationId": "remove_group_member_files_groups__group_id__members__member_user_id__delete",
-        "parameters": [
-          {
-            "name": "group_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Group Id"
-            }
-          },
-          {
-            "name": "member_user_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Member User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeleteResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/share-links/{share_token}": {
-      "delete": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Deactivate Share Link",
-        "operationId": "deactivate_share_link_files_share_links__share_token__delete",
-        "parameters": [
-          {
-            "name": "share_token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Share Token"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeleteResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/files/bulk": {
       "delete": {
         "tags": [
@@ -19788,108 +19529,102 @@
         }
       }
     },
-    "/files/{file_id}/document": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Get File Document",
-        "description": "Return the latest processed_documents row anchored to this file.\n\n404 with `code: \"no_processed_document\"` when the file has never been\ningested for RAG. Callers that want \"ingest if missing\" should check\nfor the 404 then POST `/files/{file_id}/ingest`.",
-        "operationId": "get_file_document_files__file_id__document_get",
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileDocumentLookupResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/{file_id}/lineage-summary": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Get File Lineage Summary",
-        "description": "Light lineage chip data for the PreviewPane.\n\nOne query against `cld_files` returning parent + derivation kind +\ndescendant count. The PreviewPane shows the chip; the user can\ndrill into the full `/api/document/{id}/lineage` tree from there.",
-        "operationId": "get_file_lineage_summary_files__file_id__lineage_summary_get",
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileLineageSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/{file_id}/ingest": {
+    "/folders": {
       "post": {
         "tags": [
           "Files"
         ],
-        "summary": "Ingest File For Rag",
-        "description": "Convenience wrapper around `/rag/ingest` for the file-centric UI.\n\nInternally calls the same `ingest_source` function with\n`source_kind=\"cld_file\"` and `source_id=file_id`. Lets the FE call\na file-action (\"reprocess this file\") without knowing the\n`source_kind` taxonomy.",
-        "operationId": "ingest_file_for_rag_files__file_id__ingest_post",
+        "summary": "Create Folder",
+        "operationId": "create_folder_folders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFolderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/folders/{folder_id}": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Get Folder",
+        "operationId": "get_folder_folders__folder_id__get",
         "parameters": [
           {
-            "name": "file_id",
+            "name": "folder_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "File Id"
+              "title": "Folder Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Patch Folder",
+        "operationId": "patch_folder_folders__folder_id__patch",
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Folder Id"
             }
           }
         ],
@@ -19898,7 +19633,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FileIngestRequest"
+                "$ref": "#/components/schemas/PatchFolderRequest"
               }
             }
           }
@@ -19908,7 +19643,49 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/FolderRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Delete Folder",
+        "operationId": "delete_folder_folders__folder_id__delete",
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Folder Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
               }
             }
           },
@@ -19925,41 +19702,31 @@
         }
       }
     },
-    "/files/{file_id}/ingest/stream": {
+    "/folders/bulk/move": {
       "post": {
         "tags": [
           "Files"
         ],
-        "summary": "Ingest File For Rag Stream",
-        "description": "Streaming variant. Emits `rag.ingest.progress` events at each\nstage so the FE can render a live progress bar against a 500-page\nPDF instead of a silent spinner.",
-        "operationId": "ingest_file_for_rag_stream_files__file_id__ingest_stream_post",
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Id"
-            }
-          }
-        ],
+        "summary": "Bulk Move Folders",
+        "operationId": "bulk_move_folders_folders_bulk_move_post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FileIngestRequest"
+                "$ref": "#/components/schemas/BulkFolderMoveRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/BulkResponse"
+                }
               }
             }
           },
@@ -19976,21 +19743,88 @@
         }
       }
     },
-    "/files/{file_id}/versions": {
+    "/files/groups": {
       "get": {
         "tags": [
           "Files"
         ],
-        "summary": "List Versions",
-        "operationId": "list_versions_files__file_id__versions_get",
+        "summary": "List Groups Index",
+        "operationId": "list_groups_index_files_groups_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Groups Index Files Groups Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Create Group",
+        "operationId": "create_group_files_groups_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Group Files Groups Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/groups/{group_id}/members": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "List Group Members",
+        "operationId": "list_group_members_files_groups__group_id__members_get",
         "parameters": [
           {
-            "name": "file_id",
+            "name": "group_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "File Id"
+              "title": "Group Id"
             }
           }
         ],
@@ -20005,7 +19839,7 @@
                     "type": "object",
                     "additionalProperties": true
                   },
-                  "title": "Response List Versions Files  File Id  Versions Get"
+                  "title": "Response List Group Members Files Groups  Group Id  Members Get"
                 }
               }
             }
@@ -20021,134 +19855,84 @@
             }
           }
         }
-      }
-    },
-    "/files/{file_id}/versions/{version_number}": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Get Version",
-        "operationId": "get_version_files__file_id__versions__version_number__get",
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Id"
-            }
-          },
-          {
-            "name": "version_number",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Version Number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Version Files  File Id  Versions  Version Number  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/{file_id}/versions/{version_number}/download": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Download Version",
-        "operationId": "download_version_files__file_id__versions__version_number__download_get",
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Id"
-            }
-          },
-          {
-            "name": "version_number",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Version Number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/{file_id}/versions/{version_number}/restore": {
+      },
       "post": {
         "tags": [
           "Files"
         ],
-        "summary": "Restore Version",
-        "operationId": "restore_version_files__file_id__versions__version_number__restore_post",
+        "summary": "Add Group Member",
+        "operationId": "add_group_member_files_groups__group_id__members_post",
         "parameters": [
           {
-            "name": "file_id",
+            "name": "group_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "File Id"
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddGroupMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Add Group Member Files Groups  Group Id  Members Post"
+                }
+              }
             }
           },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/groups/{group_id}/members/{member_user_id}": {
+      "delete": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Remove Group Member",
+        "operationId": "remove_group_member_files_groups__group_id__members__member_user_id__delete",
+        "parameters": [
           {
-            "name": "version_number",
+            "name": "group_id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "title": "Version Number"
+              "type": "string",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "member_user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Member User Id"
             }
           }
         ],
@@ -20158,9 +19942,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Restore Version Files  File Id  Versions  Version Number  Restore Post"
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/share-links/{share_token}": {
+      "delete": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Deactivate Share Link",
+        "operationId": "deactivate_share_link_files_share_links__share_token__delete",
+        "parameters": [
+          {
+            "name": "share_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Share Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
                 }
               }
             }
@@ -20704,30 +20528,32 @@
         }
       }
     },
-    "/folders": {
-      "post": {
+    "/files/{file_id}/document": {
+      "get": {
         "tags": [
           "Files"
         ],
-        "summary": "Create Folder",
-        "operationId": "create_folder_folders_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateFolderRequest"
-              }
+        "summary": "Get File Document",
+        "description": "Return the latest processed_documents row anchored to this file.\n\n404 with ``code: \"no_processed_document\"`` when the file has never been\ningested for RAG. Callers that want \"ingest if missing\" should check\nfor the 404 then POST ``/files/{file_id}/ingest``.",
+        "operationId": "get_file_document_files__file_id__document_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FolderRecord"
+                  "$ref": "#/components/schemas/FileDocumentLookupResponse"
                 }
               }
             }
@@ -20745,21 +20571,22 @@
         }
       }
     },
-    "/folders/{folder_id}": {
+    "/files/{file_id}/lineage-summary": {
       "get": {
         "tags": [
           "Files"
         ],
-        "summary": "Get Folder",
-        "operationId": "get_folder_folders__folder_id__get",
+        "summary": "Get File Lineage Summary",
+        "description": "Light lineage chip data for the PreviewPane.\n\nOne query against cld_files returning parent + derivation kind +\ndescendant count. The PreviewPane shows the chip; the user can\ndrill into the full ``/api/document/{id}/lineage`` tree from there.",
+        "operationId": "get_file_lineage_summary_files__file_id__lineage_summary_get",
         "parameters": [
           {
-            "name": "folder_id",
+            "name": "file_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Folder Id"
+              "title": "File Id"
             }
           }
         ],
@@ -20769,7 +20596,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FolderRecord"
+                  "$ref": "#/components/schemas/FileLineageSummary"
                 }
               }
             }
@@ -20785,21 +20612,24 @@
             }
           }
         }
-      },
-      "patch": {
+      }
+    },
+    "/files/{file_id}/ingest": {
+      "post": {
         "tags": [
           "Files"
         ],
-        "summary": "Patch Folder",
-        "operationId": "patch_folder_folders__folder_id__patch",
+        "summary": "Ingest File For Rag",
+        "description": "File-centric wrapper around ``/rag/ingest``.\n\nCalls ``ingest_source`` with ``source_kind=\"cld_file\"`` /\n``source_id=file_id``. Requires write access — ingestion writes\nderived state (chunks, embeddings) and a read-only grantee shouldn't\nbe able to kick that off against someone else's file.",
+        "operationId": "ingest_file_for_rag_files__file_id__ingest_post",
         "parameters": [
           {
-            "name": "folder_id",
+            "name": "file_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Folder Id"
+              "title": "File Id"
             }
           }
         ],
@@ -20808,7 +20638,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchFolderRequest"
+                "$ref": "#/components/schemas/FileIngestRequest"
               }
             }
           }
@@ -20818,9 +20648,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FolderRecord"
-                }
+                "schema": {}
               }
             }
           },
@@ -20835,21 +20663,74 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/files/{file_id}/ingest/stream": {
+      "post": {
         "tags": [
           "Files"
         ],
-        "summary": "Delete Folder",
-        "operationId": "delete_folder_folders__folder_id__delete",
+        "summary": "Ingest File For Rag Stream",
+        "description": "Streaming ingest. Emits ``rag.ingest.progress`` events at each\nstage so the FE can render a live progress bar against a 500-page\nPDF instead of a silent spinner.",
+        "operationId": "ingest_file_for_rag_stream_files__file_id__ingest_stream_post",
         "parameters": [
           {
-            "name": "folder_id",
+            "name": "file_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Folder Id"
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/versions": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "List Versions",
+        "operationId": "list_versions_files__file_id__versions_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
             }
           }
         ],
@@ -20859,7 +20740,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeleteResponse"
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response List Versions Files  File Id  Versions Get"
                 }
               }
             }
@@ -20877,30 +20763,144 @@
         }
       }
     },
-    "/folders/bulk/move": {
-      "post": {
+    "/files/{file_id}/versions/{version_number}": {
+      "get": {
         "tags": [
           "Files"
         ],
-        "summary": "Bulk Move Folders",
-        "operationId": "bulk_move_folders_folders_bulk_move_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkFolderMoveRequest"
-              }
+        "summary": "Get Version",
+        "operationId": "get_version_files__file_id__versions__version_number__get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
             }
           },
-          "required": true
-        },
+          {
+            "name": "version_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version Number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkResponse"
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Version Files  File Id  Versions  Version Number  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/versions/{version_number}/download": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Download Version",
+        "operationId": "download_version_files__file_id__versions__version_number__download_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "version_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/versions/{version_number}/restore": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Restore Version",
+        "operationId": "restore_version_files__file_id__versions__version_number__restore_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "version_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Restore Version Files  File Id  Versions  Version Number  Restore Post"
                 }
               }
             }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Save, X, Loader2, Check, Copy, ExternalLink } from "lucide-react";
+import { Save, X, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,11 +14,16 @@ import { InlineMediaRef } from "@/features/files";
 import { format } from "date-fns";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { folderForOrg } from "@/features/files";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { useOrgSettingsLayoutRefresh } from "./OrgSettingsLayoutContext";
 
 interface GeneralSettingsProps {
   organization: Organization;
   canEdit: boolean;
   userRole: OrgRole;
+  /** Called with the server row after a successful save so view mode updates without a full reload. */
+  onOrganizationUpdated?: (organization: Organization) => void;
 }
 
 /**
@@ -35,7 +40,10 @@ export function GeneralSettings({
   organization,
   canEdit,
   userRole,
+  onOrganizationUpdated,
 }: GeneralSettingsProps) {
+  const dispatch = useAppDispatch();
+  const refreshLayoutOrganization = useOrgSettingsLayoutRefresh();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -87,15 +95,29 @@ export function GeneralSettings({
       });
 
       if (result.success) {
+        if (result.organization) {
+          onOrganizationUpdated?.(result.organization);
+        }
+        try {
+          await dispatch(
+            invalidateAndRefetchFullContext() as unknown as Parameters<
+              typeof dispatch
+            >[0],
+          );
+        } catch {
+          // Hierarchy refresh is best-effort; org UI already updated from API row
+        }
+        void refreshLayoutOrganization?.();
         toast.success("Organization updated successfully");
         setIsEditing(false);
-        // The organization prop will be updated by parent refresh
       } else {
         toast.error(result.error || "Failed to update organization");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating organization:", error);
-      toast.error(error.message || "An unexpected error occurred");
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -119,51 +141,6 @@ export function GeneralSettings({
 
   return (
     <div className="space-y-5">
-      {/* Edit/Save buttons */}
-      {canEdit && (
-        <div className="flex justify-end gap-2">
-          {!isEditing ? (
-            <Button
-              onClick={() => setIsEditing(true)}
-              variant="outline"
-              size="sm"
-            >
-              Edit
-            </Button>
-          ) : (
-            <>
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                size="sm"
-                disabled={isSaving}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || !isFormValid || isSaving}
-                size="sm"
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </>
-                )}
-              </Button>
-            </>
-          )}
-        </div>
-      )}
-
       {/* Form Fields */}
       <div className="space-y-5">
         {/* Organization Name */}
@@ -190,7 +167,7 @@ export function GeneralSettings({
               </p>
             </>
           ) : (
-            <p className="text-sm font-medium">{organization.name}</p>
+            <p className="text-sm font-medium">{name}</p>
           )}
         </div>
 
@@ -245,7 +222,7 @@ export function GeneralSettings({
             </>
           ) : (
             <p className="text-sm">
-              {organization.description || (
+              {description || (
                 <span className="text-muted-foreground italic">
                   No description provided
                 </span>
@@ -268,14 +245,14 @@ export function GeneralSettings({
             />
           ) : (
             <p className="text-sm">
-              {organization.website ? (
+              {website ? (
                 <a
-                  href={organization.website}
+                  href={website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 >
-                  {organization.website}
+                  {website}
                 </a>
               ) : (
                 <span className="text-muted-foreground italic">
@@ -301,19 +278,19 @@ export function GeneralSettings({
             />
           ) : (
             <div className="flex items-center gap-4">
-              {organization.logoUrl ? (
+              {logoUrl ? (
                 <>
                   <InlineMediaRef
-                    ref={organization.logoUrl}
+                    ref={logoUrl}
                     size={{ width: 64, height: 64 }}
                     fit="cover"
                     rounded="lg"
                     border="subtle"
                     fallback={null}
-                    alt={organization.name}
+                    alt={name}
                   />
                   <a
-                    href={organization.logoUrl}
+                    href={logoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
@@ -378,6 +355,53 @@ export function GeneralSettings({
             </div>
           </div>
         </div>
+
+        {/* Action buttons — always at the bottom */}
+        {canEdit && (
+          <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-border">
+            {isEditing ? (
+              <>
+                <Button
+                  type="button"
+                  onClick={handleCancel}
+                  variant="outline"
+                  size="sm"
+                  disabled={isSaving}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={!hasChanges || !isFormValid || isSaving}
+                  size="sm"
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-1" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => setIsEditing(true)}
+                variant="outline"
+                size="sm"
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
+import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
 import type { Database } from "@/types/database.types";
 import {
   CreateFeedbackInput,
@@ -35,7 +37,12 @@ type UserFeedbackUpdate =
 // ============= USER FEEDBACK ACTIONS =============
 
 /**
- * Submit user feedback
+ * Submit user feedback.
+ *
+ * The optional `category_id` and `assigned_to` fields are admin-only — they
+ * are silently dropped when the caller is not an admin. When `assigned_to`
+ * is set to a non-self admin user, a DM + email notification fires
+ * post-insert (best-effort, non-blocking).
  */
 export async function submitFeedback(
   input: CreateFeedbackInput,
@@ -53,6 +60,11 @@ export async function submitFeedback(
     // Get user metadata for username
     const username = user.user_metadata?.username || user.email || "Anonymous";
 
+    // Admin-gated extras
+    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    const categoryId = isAdmin && input.category_id ? input.category_id : null;
+    const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
+
     const { data, error } = await supabase
       .from("user_feedback")
       .insert({
@@ -63,6 +75,8 @@ export async function submitFeedback(
         description: input.description,
         image_urls: input.image_urls || null,
         status: "new",
+        category_id: categoryId,
+        assigned_to: assignedTo,
       })
       .select()
       .single();
@@ -72,7 +86,27 @@ export async function submitFeedback(
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: mapUserFeedbackRow(data) };
+    const feedback = mapUserFeedbackRow(data);
+
+    // Best-effort notification fire-and-forget — never block the submit.
+    if (assignedTo && assignedTo !== user.id) {
+      const assignerName =
+        user.user_metadata?.name ||
+        user.user_metadata?.full_name ||
+        user.email ||
+        "An admin";
+      // Intentionally not awaited so the user gets their success response fast.
+      notifyFeedbackAssigned({
+        feedback,
+        assignerId: user.id,
+        assignerName,
+        previousAssignedTo: null,
+      }).catch((err) => {
+        console.error("[submitFeedback] notifyFeedbackAssigned failed:", err);
+      });
+    }
+
+    return { success: true, data: feedback };
   } catch (error: unknown) {
     console.error("Error in submitFeedback:", error);
     return {
@@ -622,7 +656,11 @@ export async function getAllFeedback(): Promise<{
 }
 
 /**
- * Update feedback status (admin only)
+ * Update a feedback row (admin only).
+ *
+ * Non-admin callers are rejected. When `assigned_to` is changed to a new,
+ * non-self admin user, a DM + email notification fires post-update
+ * (best-effort, non-blocking).
  */
 export async function updateFeedback(
   feedbackId: string,
@@ -636,6 +674,22 @@ export async function updateFeedback(
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
+    }
+
+    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    if (!isAdmin) {
+      return { success: false, error: "Admin access required" };
+    }
+
+    // Capture prior assigned_to so we only notify on a real change.
+    let previousAssignedTo: string | null = null;
+    if (Object.prototype.hasOwnProperty.call(updates, "assigned_to")) {
+      const { data: priorRow } = await supabase
+        .from("user_feedback")
+        .select("assigned_to")
+        .eq("id", feedbackId)
+        .single();
+      previousAssignedTo = priorRow?.assigned_to ?? null;
     }
 
     const updateData: UserFeedbackUpdate = { ...updates };
@@ -667,7 +721,32 @@ export async function updateFeedback(
       return { success: false, error: "Update succeeded but no row returned" };
     }
 
-    return { success: true, data: mapUserFeedbackRow(data) };
+    const feedback = mapUserFeedbackRow(data);
+
+    // Fire notification only when assignment actually changed to a new,
+    // non-self admin. Self-assignment is silently allowed without notify.
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "assigned_to") &&
+      feedback.assigned_to &&
+      feedback.assigned_to !== previousAssignedTo &&
+      feedback.assigned_to !== user.id
+    ) {
+      const assignerName =
+        user.user_metadata?.name ||
+        user.user_metadata?.full_name ||
+        user.email ||
+        "An admin";
+      notifyFeedbackAssigned({
+        feedback,
+        assignerId: user.id,
+        assignerName,
+        previousAssignedTo,
+      }).catch((err) => {
+        console.error("[updateFeedback] notifyFeedbackAssigned failed:", err);
+      });
+    }
+
+    return { success: true, data: feedback };
   } catch (error: unknown) {
     console.error("Error in updateFeedback:", error);
     return {

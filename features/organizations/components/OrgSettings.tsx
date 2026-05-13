@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Settings, Users, Mail, AlertTriangle, Send } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Organization, OrgRole } from "../types";
@@ -38,27 +38,33 @@ export function OrgSettings({
   isAdmin,
 }: OrgSettingsProps) {
   const [activeTab, setActiveTab] = useState("general");
+  const [displayOrganization, setDisplayOrganization] =
+    useState<Organization>(organization);
+
+  useEffect(() => {
+    setDisplayOrganization(organization);
+  }, [organization]);
 
   // Determine which tabs are available based on permissions
   const canManageSettings = isOwner || isAdmin;
   const canManageMembers = isOwner || isAdmin;
-  const canDelete = isOwner && !organization.isPersonal;
+  const canDelete = isOwner && !displayOrganization.isPersonal;
+
+  const orgSettingsTabTriggerClass =
+    "h-6 gap-1.5 rounded-none px-2.5 py-0 text-xs min-w-0 shadow-none data-[state=active]:shadow-none data-[state=active]:rounded-none";
 
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start gap-1 h-auto p-1 mb-4">
-          <TabsTrigger value="general" className="gap-1.5 px-3 py-1.5 text-sm">
-            <Settings className="h-3.5 w-3.5" />
+        <TabsList className="mb-4 h-auto min-h-0 w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0">
+          <TabsTrigger value="general" className={orgSettingsTabTriggerClass}>
+            <Settings className="h-3.5 w-3.5 shrink-0" />
             General
           </TabsTrigger>
 
           {canManageMembers && (
-            <TabsTrigger
-              value="members"
-              className="gap-1.5 px-3 py-1.5 text-sm"
-            >
-              <Users className="h-3.5 w-3.5" />
+            <TabsTrigger value="members" className={orgSettingsTabTriggerClass}>
+              <Users className="h-3.5 w-3.5 shrink-0" />
               Members
             </TabsTrigger>
           )}
@@ -66,16 +72,16 @@ export function OrgSettings({
           {canManageSettings && (
             <TabsTrigger
               value="invitations"
-              className="gap-1.5 px-3 py-1.5 text-sm"
+              className={orgSettingsTabTriggerClass}
             >
-              <Mail className="h-3.5 w-3.5" />
+              <Mail className="h-3.5 w-3.5 shrink-0" />
               Invites
             </TabsTrigger>
           )}
 
           {canManageMembers && (
-            <TabsTrigger value="email" className="gap-1.5 px-3 py-1.5 text-sm">
-              <Send className="h-3.5 w-3.5" />
+            <TabsTrigger value="email" className={orgSettingsTabTriggerClass}>
+              <Send className="h-3.5 w-3.5 shrink-0" />
               Email
             </TabsTrigger>
           )}
@@ -83,9 +89,9 @@ export function OrgSettings({
           {canDelete && (
             <TabsTrigger
               value="danger"
-              className="gap-1.5 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 data-[state=active]:text-red-600"
+              className={`${orgSettingsTabTriggerClass} text-red-600 dark:text-red-400 data-[state=active]:text-red-600`}
             >
-              <AlertTriangle className="h-3.5 w-3.5" />
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               Danger
             </TabsTrigger>
           )}
@@ -94,9 +100,10 @@ export function OrgSettings({
         {/* General Settings Tab */}
         <TabsContent value="general">
           <GeneralSettings
-            organization={organization}
+            organization={displayOrganization}
             canEdit={canManageSettings}
             userRole={userRole}
+            onOrganizationUpdated={setDisplayOrganization}
           />
         </TabsContent>
 
@@ -104,10 +111,10 @@ export function OrgSettings({
         {canManageMembers && (
           <TabsContent value="members">
             <MemberManagement
-              organizationId={organization.id}
+              organizationId={displayOrganization.id}
               userRole={userRole}
               isOwner={isOwner}
-              isPersonal={organization.isPersonal}
+              isPersonal={displayOrganization.isPersonal}
             />
           </TabsContent>
         )}
@@ -116,8 +123,8 @@ export function OrgSettings({
         {canManageSettings && (
           <TabsContent value="invitations">
             <InvitationManager
-              organizationId={organization.id}
-              organizationName={organization.name}
+              organizationId={displayOrganization.id}
+              organizationName={displayOrganization.name}
               userRole={userRole}
             />
           </TabsContent>
@@ -127,8 +134,8 @@ export function OrgSettings({
         {canManageMembers && (
           <TabsContent value="email">
             <OrgEmailTab
-              organizationId={organization.id}
-              organizationName={organization.name}
+              organizationId={displayOrganization.id}
+              organizationName={displayOrganization.name}
             />
           </TabsContent>
         )}
@@ -136,7 +143,7 @@ export function OrgSettings({
         {/* Danger Zone Tab */}
         {canDelete && (
           <TabsContent value="danger">
-            <DangerZone organization={organization} />
+            <DangerZone organization={displayOrganization} />
           </TabsContent>
         )}
       </Tabs>
