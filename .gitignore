@@ -93,3 +93,7 @@ directory-structure.json
 # SMS documentation with sensitive Twilio IDs
 features/sms/A2P_ISSUE.md
 features/sms/API_FIXES.md
+
+# pdfjs worker mirrored from node_modules by scripts/copy-pdfjs-worker.ts
+# Regenerated on every install (postinstall) and on every build.
+public/pdfjs/

@@ -90,8 +90,10 @@ function PdfPaneLoading() {
  * `processed_documents.storage_uri` is stored as an `s3://` protocol URI
  * that the Python backend uses internally — it can't be fetched from a
  * browser directly. When `source_kind = 'cld_file'` the correct path is
- * to proxy through the Python `/files/{id}/download` endpoint, which is
- * exactly what `useFileBlob` does.
+ * the Python `/files/{id}/download` endpoint with the user's
+ * Authorization header. We hand pdfjs the URL + headers directly and
+ * let it do progressive Range fetches (the blob-cache Service Worker
+ * fills in 206 from IDB when the file is already cached locally).
  */
 function PdfCldFileViewer({
   fileId,
@@ -104,14 +106,18 @@ function PdfCldFileViewer({
   pageNumber?: number;
   onPageChange?: (page: number) => void;
 }) {
-  const { url, loading, error, bytesLoaded, bytesTotal } = useFileBlob(fileId);
+  const {
+    remoteUrl,
+    headers,
+    loading,
+    error,
+  } = usePdfRemoteSource(fileId);
   return (
     <PdfDocumentRenderer
-      blobUrl={url}
+      remoteUrl={remoteUrl}
+      remoteHeaders={headers}
       fileName={fileName ?? null}
       loading={loading}
-      bytesLoaded={bytesLoaded}
-      bytesTotal={bytesTotal}
       error={error}
       pageNumber={pageNumber}
       onPageChange={onPageChange}
@@ -120,7 +126,7 @@ function PdfCldFileViewer({
   );
 }
 import { cn } from "@/lib/utils";
-import { useFileBlob } from "@/features/files";
+import { usePdfRemoteSource } from "@/features/files/hooks/usePdfRemoteSource";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";

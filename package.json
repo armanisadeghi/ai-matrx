@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && next dev",
-    "build": "ts-node scripts/generate-manifest.ts && tsx scripts/check-registry.ts && pnpm build:sw && next build",
+    "build": "ts-node scripts/generate-manifest.ts && tsx scripts/check-registry.ts && pnpm build:sw && pnpm build:pdfjs-worker && next build",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
+    "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
+    "postinstall": "tsx scripts/copy-pdfjs-worker.ts",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && tsx scripts/check-registry.ts && bash scripts/fix-encoding.sh && next build",
     "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",

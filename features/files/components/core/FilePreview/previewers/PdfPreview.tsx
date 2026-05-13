@@ -2,14 +2,23 @@
  * features/files/components/core/FilePreview/previewers/PdfPreview.tsx
  *
  * Cloud-files PDF previewer. Thin wrapper around the shared
- * `<PdfDocumentRenderer/>` core that handles bytes-fetch via the Python
- * `/files/{id}/download` endpoint.
+ * `<PdfDocumentRenderer/>` core. Uses pdfjs's progressive Range-based
+ * loading: pdfjs fetches the cross-ref table + first page's bytes and
+ * paints them while the rest of the document streams in.
  *
- * Same-origin blob URL (vs the S3 signed URL) keeps pdfjs's worker
- * fetch CORS-safe regardless of the bucket policy. All toolbar /
- * sizing / pagination / zoom logic lives in `PdfDocumentRenderer` so
- * fixes apply uniformly to every PDF surface in the app (preview pane,
- * pdf-extractor studio, future admin tools).
+ * Why progressive Range over pre-fetched blob URL
+ * ────────────────────────────────────────────────
+ * The old path fed `<Document>` a `blob:` URL built from `useFileBlob`,
+ * which downloaded every byte before pdfjs even started parsing. On a
+ * 50-page document over a slow connection that means the user stares
+ * at a spinner for the entire transfer. Range mode paints page 1 as
+ * soon as pdfjs has the table + first page's stream (typically a few
+ * hundred KB regardless of total file size).
+ *
+ * For warm caches the blob-cache Service Worker (`public/blob-sw.js`)
+ * intercepts the Range fetches and answers them with 206 Partial
+ * Content from IndexedDB — so previously-opened PDFs paint
+ * essentially instantly without re-hitting the network.
  *
  * NOTE: this file is dynamically imported by FilePreview (see
  * ../FilePreview.tsx). Non-PDF previews never pay the react-pdf bundle
@@ -21,7 +30,7 @@
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { usePdfRemoteSource } from "@/features/files/hooks/usePdfRemoteSource";
 import PdfDocumentRenderer from "./PdfDocumentRenderer";
 
 export interface PdfPreviewProps {
@@ -55,15 +64,12 @@ export default function PdfPreview({
   onPageChange,
   renderOverlay,
 }: PdfPreviewProps) {
-  // Same-origin blob URL via the Python download endpoint — sidesteps
-  // S3 CORS that would otherwise 403 a `fetch()` from pdfjs's worker.
   const {
-    url,
-    loading: blobLoading,
-    bytesLoaded,
-    bytesTotal,
-    error: blobError,
-  } = useFileBlob(fileId);
+    remoteUrl,
+    headers,
+    loading: sessionLoading,
+    error: sessionError,
+  } = usePdfRemoteSource(fileId);
   const file = useAppSelector((s) =>
     fileId ? selectFileById(s, fileId) : null,
   );
@@ -71,12 +77,11 @@ export default function PdfPreview({
   return (
     <div className={cn("relative h-full w-full", className)}>
       <PdfDocumentRenderer
-        blobUrl={url}
+        remoteUrl={remoteUrl}
+        remoteHeaders={headers}
         fileName={file?.fileName ?? null}
-        loading={blobLoading}
-        bytesLoaded={bytesLoaded}
-        bytesTotal={bytesTotal}
-        error={blobError}
+        loading={sessionLoading}
+        error={sessionError}
         pageNumber={pageNumber}
         onPageChange={onPageChange}
         renderOverlay={renderOverlay}

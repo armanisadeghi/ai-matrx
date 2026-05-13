@@ -54,12 +54,19 @@ import { cn } from "@/lib/utils";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { FileFetchProgress } from "../FileFetchProgress";
 
-// Worker source — pinned to the installed pdfjs version. Set once at
-// module load. Both wrappers (cld_files PdfPreview, URL-based viewer)
-// import this module before mounting any <Document>, so this runs
-// before pdfjs needs a worker.
+// Worker source — pinned to the installed pdfjs version and served from
+// our own origin (`/public/pdfjs/pdf.worker.min.mjs`, mirrored by a post-
+// install script). Set once at module load. Both wrappers (cld_files
+// PdfPreview, URL-based viewer) import this module before mounting any
+// <Document>, so this runs before pdfjs needs a worker.
+//
+// Why same-origin: progressive Range rendering needs the SW to see the
+// PDF byte fetches; an unpkg-hosted worker is itself cross-origin and
+// can introduce CORS preflights on its own initialization. Same-origin
+// is the dependable path now that we cache PDF bytes locally and want
+// the entire fetch graph to flow through our SW.
 if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
 }
 
 // ---------------------------------------------------------------------------
@@ -74,8 +81,48 @@ export interface PdfDocumentRendererProps {
    * IMPORTANT: must be a stable URL across renders. Wrappers should
    * memoise the URL so react-pdf's `<Document>` doesn't re-load on
    * every parent re-render.
+   *
+   * **Prefer `remoteUrl` for new code.** A `blob:` URL forces the caller
+   * to pre-fetch the entire file before rendering begins, which defeats
+   * pdfjs's native HTTP Range / progressive-loading support and blocks
+   * the first-page paint on the full download. `remoteUrl` lets pdfjs
+   * stream pages as bytes arrive (and lets the SW serve 206 Partial
+   * Content from cache instead of re-downloading).
    */
-  blobUrl: string | null;
+  blobUrl?: string | null;
+
+  /**
+   * Remote URL for the PDF bytes — typically the Python
+   * `/files/{id}/download` endpoint or a same-origin S3 URL. When set,
+   * the renderer hands pdfjs the URL directly along with `remoteHeaders`
+   * and lets pdfjs perform progressive Range fetches. Pages render as
+   * their bytes arrive; first-page paint typically lands long before
+   * the document finishes downloading.
+   *
+   * The blob-cache Service Worker (registered in app/DeferredSingletons)
+   * sees these fetches and serves 206 Partial Content from cache when
+   * the file is already known locally. On a cache miss, the network
+   * fetch primes the cache for next time.
+   *
+   * Either `blobUrl` OR `remoteUrl` — never both. `remoteUrl` wins if
+   * both are provided.
+   */
+  remoteUrl?: string | null;
+
+  /**
+   * HTTP headers applied to every pdfjs byte fetch (typically
+   * `Authorization: Bearer …` for the Python download endpoint). Pass
+   * an empty object for unauthenticated URLs (Supabase Storage public,
+   * external mirrors). Only consulted when `remoteUrl` is set.
+   */
+  remoteHeaders?: Record<string, string>;
+
+  /**
+   * Forwarded to pdfjs as `withCredentials`. Default `false` because our
+   * download endpoint is `Authorization` header-based, not cookie-based.
+   * Only relevant in conjunction with `remoteUrl`.
+   */
+  withCredentials?: boolean;
   /** Filename — surfaced in the loading + error UIs. */
   fileName?: string | null;
 
@@ -155,6 +202,9 @@ const VIEWPORT_PADDING_PX = 24;
 
 export default function PdfDocumentRenderer({
   blobUrl,
+  remoteUrl,
+  remoteHeaders,
+  withCredentials = false,
   fileName,
   loading,
   bytesLoaded = 0,
@@ -266,15 +316,47 @@ export default function PdfDocumentRenderer({
     return () => cancelAnimationFrame(raf);
   });
 
-  // Stable file descriptor — react-pdf reloads the document whenever
-  // the `file` prop's identity changes, so memoise it.
-  const documentFile = useMemo(
-    () => (blobUrl ? { url: blobUrl } : null),
-    [blobUrl],
+  // Stable header serialization — pdfjs reloads the document whenever
+  // the `file` prop's identity changes. Stringify headers so we don't
+  // remount on a fresh object literal that happens to have the same
+  // entries. The header set rarely changes (it's "Authorization: Bearer
+  // …" 99% of the time) so the serialization cost is irrelevant.
+  const remoteHeadersKey = useMemo(
+    () => (remoteHeaders ? JSON.stringify(remoteHeaders) : ""),
+    [remoteHeaders],
   );
 
+  // Stable file descriptor — react-pdf reloads the document whenever
+  // the `file` prop's identity changes, so memoise it. `remoteUrl`
+  // wins when both are provided so the progressive path is the
+  // forward-default.
+  const documentFile = useMemo(() => {
+    if (remoteUrl) {
+      const headers = remoteHeadersKey
+        ? (JSON.parse(remoteHeadersKey) as Record<string, string>)
+        : undefined;
+      // pdfjs accepts `url + httpHeaders + withCredentials` here and
+      // will issue partial-content Range requests against `url` rather
+      // than a single full-body GET. The SW intercepts those requests
+      // and serves cached bytes as 206 when available.
+      return {
+        url: remoteUrl,
+        httpHeaders: headers,
+        withCredentials,
+      };
+    }
+    if (blobUrl) return { url: blobUrl };
+    return null;
+  }, [remoteUrl, remoteHeadersKey, withCredentials, blobUrl]);
+
+  // The "document identity" for the reset-on-new-document effect below.
+  // Distinct from the memoised `documentFile` (whose identity tracks
+  // header changes too) — we only want to reset state when the URL
+  // itself changes.
+  const documentIdentityKey = remoteUrl ?? blobUrl ?? null;
+
   // Reset internal sizing/error/page state when a NEW document loads
-  // (i.e. `blobUrl` flips). Without this, switching the source URL
+  // (i.e. the source URL flips). Without this, switching the source
   // (e.g. clicking a different doc in PDF Studio) would carry over
   // stale `pageDims` from the previous document and re-render with
   // the wrong natural dimensions.
@@ -283,15 +365,15 @@ export default function PdfDocumentRenderer({
   // text pane drives `pageNumber` for scroll-sync, and including it
   // here would re-fit the page on every chunk click. Internal page
   // state is only reset when the document itself changes (uncontrolled
-  // case), which is naturally bound to `blobUrl`.
+  // case), which is naturally bound to the source URL.
   useEffect(() => {
     setLoadError(null);
     setPageDims(null);
     setNumPages(0);
     setInternalPage(1);
-    // Intentionally only `blobUrl` — see comment above.
+    // Intentionally only `documentIdentityKey` — see comment above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blobUrl]);
+  }, [documentIdentityKey]);
 
   const combinedError = loadError ?? error ?? null;
 
