@@ -48,7 +48,7 @@ import {
 import type {
   CloudFileRecord,
   CloudFolderRecord,
-} from "@/features/files/types";
+} from "@/features/files";
 import {
   useSelectedImages,
   type ImageSource,

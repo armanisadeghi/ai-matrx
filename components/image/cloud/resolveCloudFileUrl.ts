@@ -14,7 +14,7 @@
  */
 
 import { fileHandler } from "@/features/files";
-import type { CloudFileRecord } from "@/features/files/types";
+import type { CloudFileRecord } from "@/features/files";
 import type { AppStore } from "@/lib/redux/store";
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
 

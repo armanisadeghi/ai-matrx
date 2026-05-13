@@ -30,7 +30,7 @@ import {
   formatFileSize,
   formatRelativeTime,
 } from "@/features/files/utils/format";
-import type { CloudFileRecord } from "@/features/files/types";
+import type { CloudFileRecord } from "@/features/files";
 import { toast } from "sonner";
 
 export interface CloudFileMetadataSheetProps {

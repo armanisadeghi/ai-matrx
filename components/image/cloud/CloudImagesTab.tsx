@@ -84,7 +84,7 @@ import {
   updateFileMetadata,
 } from "@/features/files/redux/thunks";
 import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
-import type { CloudFileRecord, Visibility } from "@/features/files/types";
+import type { CloudFileRecord, Visibility } from "@/features/files";
 import {
   useSelectedImages,
   type ImageSource,

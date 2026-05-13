@@ -12,7 +12,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { AllowedFileKind } from "@/components/image/cloud/CloudFilesTab";
-import type { Visibility } from "@/features/files/types";
+import type { Visibility } from "@/features/files";
 import type { EmbeddedImageStudioProps } from "@/features/image-studio/components/EmbeddedImageStudio";
 
 export type SectionGroup = "primary" | "tools";

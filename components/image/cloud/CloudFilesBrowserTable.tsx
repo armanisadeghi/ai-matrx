@@ -57,7 +57,7 @@ import type {
   CloudFolderRecord,
   ResourceType,
   Visibility,
-} from "@/features/files/types";
+} from "@/features/files";
 import {
   allCloudBrowserRowIds,
   buildCloudFilesBrowserRows,

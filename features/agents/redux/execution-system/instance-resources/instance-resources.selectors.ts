@@ -13,7 +13,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { ManagedResource } from "@/features/agents/types/instance.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { MediaRef } from "@/features/files/types";
+import type { MediaRef } from "@/features/files";
 import {
   isEditorXmlResource,
   serializeEditorResourcesAsXml,

@@ -7,7 +7,7 @@ import {
   ImageAssetUploader,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
-import type { AssetPreset, Visibility } from "@/features/files/types";
+import type { AssetPreset, Visibility } from "@/features/files";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";

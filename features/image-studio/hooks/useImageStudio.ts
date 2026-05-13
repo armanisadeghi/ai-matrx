@@ -38,7 +38,7 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { uploadFiles, ensureFolderPath } from "@/features/files/redux/thunks";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
-import type { Visibility } from "@/features/files/types";
+import type { Visibility } from "@/features/files";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import {

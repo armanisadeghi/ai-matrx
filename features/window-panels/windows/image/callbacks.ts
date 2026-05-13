@@ -16,7 +16,7 @@
  */
 
 import { callbackManager } from "@/utils/callbackManager";
-import type { AssetPreset } from "@/features/files/types";
+import type { AssetPreset } from "@/features/files";
 import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
 
 // ─── Event surface ───────────────────────────────────────────────────────────

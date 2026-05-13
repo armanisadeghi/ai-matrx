@@ -27,7 +27,7 @@ import { ImagePreviewRow } from "@/components/image/shared/ImagePreviewRow";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 import type { AllowedFileKind } from "@/components/image/cloud/CloudFilesTab";
 import type { EmbeddedImageStudioProps } from "@/features/image-studio/components/EmbeddedImageStudio";
-import type { Visibility } from "@/features/files/types";
+import type { Visibility } from "@/features/files";
 import { buildImageManagerSections } from "@/features/image-manager/registry/sections";
 // Imported from the leaf `ids` module (not `sections.ts`) to avoid a circular
 // dependency: the section registry imports tab components, some of which
@@ -95,8 +95,8 @@ function aliasTabId(id: string): string {
 /**
  * Map the legacy `saveTo` / `bucket` / `path` props onto a cloud-files
  * folder path. This keeps every existing caller working without code
- * changes — the path scheme matches what `useFileUploadWithStorage`
- * mapped to internally.
+ * changes — the path scheme matches the legacy-bucket → cld_files
+ * folder mapping (`mapLegacyBucket()` in the upload layer).
  */
 function legacyPropsToFolderPath(
   saveTo: "public" | "private" | undefined,

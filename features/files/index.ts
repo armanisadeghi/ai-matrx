@@ -198,6 +198,16 @@ export { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 export { cloudFilesReducer } from "@/features/files/redux/slice";
 export { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
 
+// Explorer-side state — driven by the cloud-files side panel in the code
+// workspace and the `/files` selection model. These slice actions / selector
+// are the narrow contract consumers need to wire their own selection UI; the
+// rest of the slice stays internal.
+export {
+  setActiveFileId,
+  setActiveFolderId,
+} from "@/features/files/redux/slice";
+export { selectTreeStatus } from "@/features/files/redux/selectors";
+
 // Imperative upload entry — opens the dedup-guard dialog when needed and
 // dispatches the upload thunk. Most callers should prefer `useFileUpload`;
 // `requestUpload` exists for code paths that can't run a hook (event

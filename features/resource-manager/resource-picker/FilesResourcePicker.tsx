@@ -46,7 +46,7 @@ import {
 import type {
   CloudFileRecord,
   CloudFolderRecord,
-} from "@/features/files/types";
+} from "@/features/files";
 
 // ---------------------------------------------------------------------------
 // Types (preserve the legacy surface)

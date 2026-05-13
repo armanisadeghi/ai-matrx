@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesArray } from "@/features/files/redux/selectors";
-import type { CloudFileRecord } from "@/features/files/types";
+import type { CloudFileRecord } from "@/features/files";
 
 export interface CldFilePickerProps {
   /** When provided, only files whose mime_type starts with one of these is shown. */

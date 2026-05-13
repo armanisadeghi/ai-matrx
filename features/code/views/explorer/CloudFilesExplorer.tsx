@@ -29,12 +29,12 @@
 
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import {
+  FileTree,
   setActiveFileId,
   setActiveFolderId,
-} from "@/features/files/redux/slice";
-import { selectTreeStatus } from "@/features/files/redux/selectors";
+  selectTreeStatus,
+} from "@/features/files";
 import { useOpenCloudFile } from "../../hooks/useOpenCloudFile";
 
 interface CloudFilesExplorerProps {

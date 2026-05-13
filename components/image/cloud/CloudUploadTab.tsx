@@ -45,7 +45,7 @@ import {
   buildCloudImageSource,
   resolveCloudFileUrl,
 } from "@/components/image/cloud/resolveCloudFileUrl";
-import type { Visibility } from "@/features/files/types";
+import type { Visibility } from "@/features/files";
 import { Base64DecoderShell } from "@/features/image-studio/components/Base64DecoderShell";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/utils/errors";
