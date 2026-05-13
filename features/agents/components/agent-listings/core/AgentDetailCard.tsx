@@ -167,7 +167,12 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
         >
           Select
         </button>
-        <HoverCard open={peekOpen} onOpenChange={setPeekOpen} openDelay={200} closeDelay={120}>
+        <HoverCard
+          open={peekOpen}
+          onOpenChange={setPeekOpen}
+          openDelay={200}
+          closeDelay={120}
+        >
           <HoverCardTrigger asChild>
             <button
               type="button"
@@ -182,6 +187,8 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
             side="right"
             align="end"
             sideOffset={12}
+            avoidCollisions
+            collisionPadding={8}
             className="w-[420px] max-h-[70vh] p-4 bg-card border border-border flex flex-col gap-3"
           >
             <div className="text-sm font-semibold text-foreground pr-2 shrink-0">

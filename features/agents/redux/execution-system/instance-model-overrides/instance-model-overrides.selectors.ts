@@ -6,6 +6,7 @@
  * The agentDefinition slice is never accessed from here.
  */
 
+import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { InstanceModelOverrideState } from "@/features/agents/types/instance.types";
 import type {
@@ -139,6 +140,26 @@ export const selectSettingsForChatApi =
       : undefined;
   };
 
+export type AttachmentCapabilities = {
+  supportsImageUrls: boolean;
+  supportsFileUrls: boolean;
+  supportsYoutubeVideos: boolean;
+  supportsAudio: boolean;
+};
+
+/** Stable default — avoid new object refs when no override state exists. */
+const DEFAULT_ATTACHMENT_CAPABILITIES: AttachmentCapabilities = {
+  supportsImageUrls: false,
+  supportsFileUrls: false,
+  supportsYoutubeVideos: false,
+  supportsAudio: true,
+};
+
+const attachmentCapabilitiesSelectorsByConversationId = new Map<
+  string,
+  (state: RootState) => AttachmentCapabilities
+>();
+
 /**
  * Attachment capabilities derived from the merged settings.
  *
@@ -147,47 +168,51 @@ export const selectSettingsForChatApi =
  * stripped from the LLMParams type because they're never sent to the API.
  * Casting through unknown is intentional and the only way to reach them
  * without widening the LLMParams type.
+ *
+ * Memoized per conversationId — returns stable object references for useAppSelector.
  */
-export const selectAttachmentCapabilities =
-  (conversationId: string) =>
-  (
-    state: RootState,
-  ): {
-    supportsImageUrls: boolean;
-    supportsFileUrls: boolean;
-    supportsYoutubeVideos: boolean;
-    supportsAudio: boolean;
-  } => {
-    const overrideState =
-      state.instanceModelOverrides.byConversationId[conversationId];
+export const selectAttachmentCapabilities = (
+  conversationId: string,
+): ((state: RootState) => AttachmentCapabilities) => {
+  let selector =
+    attachmentCapabilitiesSelectorsByConversationId.get(conversationId);
+  if (!selector) {
+    selector = createSelector(
+      [
+        (state: RootState) =>
+          state.instanceModelOverrides.byConversationId[conversationId],
+      ],
+      (overrideState): AttachmentCapabilities => {
+        if (!overrideState) {
+          return DEFAULT_ATTACHMENT_CAPABILITIES;
+        }
 
-    if (!overrideState) {
-      return {
-        supportsImageUrls: false,
-        supportsFileUrls: false,
-        supportsYoutubeVideos: false,
-        supportsAudio: true,
-      };
-    }
+        // Merge base + overrides - removals, same logic as selectCurrentSettings
+        const merged: Record<string, unknown> = {
+          ...(overrideState.baseSettings as Record<string, unknown>),
+        };
+        for (const [key, value] of Object.entries(overrideState.overrides)) {
+          merged[key] = value;
+        }
+        for (const key of overrideState.removals) {
+          delete merged[key];
+        }
 
-    // Merge base + overrides - removals, same logic as selectCurrentSettings
-    const merged: Record<string, unknown> = {
-      ...(overrideState.baseSettings as Record<string, unknown>),
-    };
-    for (const [key, value] of Object.entries(overrideState.overrides)) {
-      merged[key] = value;
-    }
-    for (const key of overrideState.removals) {
-      delete merged[key];
-    }
-
-    return {
-      supportsImageUrls: merged["image_urls"] === true,
-      supportsFileUrls: merged["file_urls"] === true,
-      supportsYoutubeVideos: merged["youtube_videos"] === true,
-      supportsAudio: true,
-    };
-  };
+        return {
+          supportsImageUrls: merged["image_urls"] === true,
+          supportsFileUrls: merged["file_urls"] === true,
+          supportsYoutubeVideos: merged["youtube_videos"] === true,
+          supportsAudio: true,
+        };
+      },
+    );
+    attachmentCapabilitiesSelectorsByConversationId.set(
+      conversationId,
+      selector,
+    );
+  }
+  return selector;
+};
 
 /**
  * Check if an instance has any overrides at all.
@@ -200,18 +225,42 @@ export const selectHasOverrides =
     return Object.keys(entry.overrides).length > 0 || entry.removals.length > 0;
   };
 
+export type OverriddenKeysView = {
+  changed: string[];
+  removed: string[];
+};
+
+const overriddenKeysSelectorsByConversationId = new Map<
+  string,
+  (state: RootState) => OverriddenKeysView | undefined
+>();
+
 /**
  * Get the list of keys that have been explicitly changed or removed.
  * Useful for UI indicators showing "this setting is overridden."
  * Returns undefined when no override state exists — guard in component.
+ *
+ * Memoized per conversationId — stable refs for useAppSelector.
  */
-export const selectOverriddenKeys =
-  (conversationId: string) =>
-  (state: RootState): { changed: string[]; removed: string[] } | undefined => {
-    const entry = state.instanceModelOverrides.byConversationId[conversationId];
-    if (!entry) return undefined;
-    return {
-      changed: Object.keys(entry.overrides),
-      removed: [...entry.removals],
-    };
-  };
+export const selectOverriddenKeys = (
+  conversationId: string,
+): ((state: RootState) => OverriddenKeysView | undefined) => {
+  let selector = overriddenKeysSelectorsByConversationId.get(conversationId);
+  if (!selector) {
+    selector = createSelector(
+      [
+        (state: RootState) =>
+          state.instanceModelOverrides.byConversationId[conversationId],
+      ],
+      (entry): OverriddenKeysView | undefined => {
+        if (!entry) return undefined;
+        return {
+          changed: Object.keys(entry.overrides),
+          removed: [...entry.removals],
+        };
+      },
+    );
+    overriddenKeysSelectorsByConversationId.set(conversationId, selector);
+  }
+  return selector;
+};

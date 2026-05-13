@@ -301,60 +301,90 @@ export const selectHasAnyContent =
 // Instance Ready Check
 // =============================================================================
 
+export type InstanceReadyCheck = {
+  ready: boolean;
+  reasons: string[];
+};
+
+const INSTANCE_READY_NOT_FOUND: InstanceReadyCheck = {
+  ready: false,
+  reasons: ["Instance not found"],
+};
+
+const instanceReadySelectorsByConversationId = new Map<
+  string,
+  (state: RootState) => InstanceReadyCheck
+>();
+
 /**
  * Is this instance ready to execute?
  * Checks: all resources resolved, no missing required variables.
+ *
+ * Memoized per conversationId — stable object refs for useAppSelector.
  */
-export const selectIsInstanceReady =
-  (conversationId: string) =>
-  (state: RootState): { ready: boolean; reasons: string[] } => {
-    const reasons: string[] = [];
-    const instance = state.conversations?.byConversationId[conversationId];
+export const selectIsInstanceReady = (
+  conversationId: string,
+): ((state: RootState) => InstanceReadyCheck) => {
+  let selector = instanceReadySelectorsByConversationId.get(conversationId);
+  if (!selector) {
+    selector = createSelector(
+      [
+        (state: RootState) =>
+          state.conversations?.byConversationId[conversationId],
+        (state: RootState) =>
+          state.instanceResources?.byConversationId[conversationId],
+        (state: RootState) =>
+          state.instanceVariableValues?.byConversationId[conversationId],
+      ],
+      (conversation, resources, varEntry): InstanceReadyCheck => {
+        const reasons: string[] = [];
 
-    if (!instance) {
-      return { ready: false, reasons: ["Instance not found"] };
-    }
+        if (!conversation) {
+          return INSTANCE_READY_NOT_FOUND;
+        }
 
-    const resources = state.instanceResources?.byConversationId[conversationId];
-    if (resources) {
-      const pending = Object.values(resources).filter(
-        (r) => r.status === "pending" || r.status === "resolving",
-      );
-      if (pending.length > 0) {
-        reasons.push(`${pending.length} resource(s) still resolving`);
-      }
+        if (resources) {
+          const pending = Object.values(resources).filter(
+            (r) => r.status === "pending" || r.status === "resolving",
+          );
+          if (pending.length > 0) {
+            reasons.push(`${pending.length} resource(s) still resolving`);
+          }
 
-      const errored = Object.values(resources).filter(
-        (r) => r.status === "error" && !r.options.optionalContext,
-      );
-      if (errored.length > 0) {
-        reasons.push(`${errored.length} required resource(s) failed`);
-      }
-    }
+          const errored = Object.values(resources).filter(
+            (r) => r.status === "error" && !r.options.optionalContext,
+          );
+          if (errored.length > 0) {
+            reasons.push(`${errored.length} required resource(s) failed`);
+          }
+        }
 
-    const varEntry =
-      state.instanceVariableValues?.byConversationId[conversationId];
-    const definitions = varEntry?.definitions;
-    const userValues = varEntry?.userValues;
-    const scopeValues = varEntry?.scopeValues;
+        const definitions = varEntry?.definitions;
+        const userValues = varEntry?.userValues;
+        const scopeValues = varEntry?.scopeValues;
 
-    if (!definitions || !userValues || !scopeValues) {
-      return { ready: reasons.length === 0, reasons };
-    }
+        if (!definitions || !userValues || !scopeValues) {
+          return { ready: reasons.length === 0, reasons };
+        }
 
-    for (const def of definitions) {
-      if (!def.required) continue;
-      const hasValue =
-        def.name in userValues ||
-        def.name in scopeValues ||
-        (def.defaultValue !== undefined && def.defaultValue !== null);
-      if (!hasValue) {
-        reasons.push(`Required variable "${def.name}" is missing`);
-      }
-    }
+        for (const def of definitions) {
+          if (!def.required) continue;
+          const hasValue =
+            def.name in userValues ||
+            def.name in scopeValues ||
+            (def.defaultValue !== undefined && def.defaultValue !== null);
+          if (!hasValue) {
+            reasons.push(`Required variable "${def.name}" is missing`);
+          }
+        }
 
-    return { ready: reasons.length === 0, reasons };
-  };
+        return { ready: reasons.length === 0, reasons };
+      },
+    );
+    instanceReadySelectorsByConversationId.set(conversationId, selector);
+  }
+  return selector;
+};
 
 // =============================================================================
 // Debug / Summary

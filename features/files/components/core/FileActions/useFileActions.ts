@@ -32,6 +32,7 @@ import {
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
 import * as Files from "@/features/files/api/files";
 import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
+import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import type { Visibility } from "@/features/files/types";
 
 export interface FileActionHandlers {
@@ -50,19 +51,25 @@ export interface FileActionHandlers {
    */
   download: () => Promise<void>;
   /**
-   * Copies a public, embeddable URL to clipboard. The URL is backed by a
-   * persistent share token (read-only by default) and points directly at
-   * Python's public byte-streaming endpoint `{BACKEND}/share/<token>/download`,
-   * so it works as an `<img src>`, direct download, or anywhere else a
-   * recipient needs the bytes — no Next.js hop, no proxy.
+   * Copies a public, embeddable URL to clipboard.
    *
-   * If the file already has an active read-only share link, that one is
-   * reused. Otherwise a new one is created on demand. The link is
-   * revocable from the Share dialog.
+   * Priority order:
+   *   1. **CDN URL** (`file.publicUrl`) — used when the file's visibility is
+   *      "public" and the Python backend has CDN enabled. Permanent, cache-
+   *      accelerated, not revocable. Ideal for embedding in RSS feeds, OG
+   *      images, podcasts, or anywhere that needs a stable URL.
+   *   2. **Share-token URL** — `{BACKEND}/share/<token>/download`. Used for
+   *      private/shared files (or public files where CDN isn't configured).
+   *      Revocable from the Share dialog. Still works as `<img src>` or
+   *      direct download with no Next.js hop.
    *
-   * Pass `{ expiresIn }` to fall back to the legacy temporary signed-URL
-   * behavior — used by the duplicate flow (which fetches bytes and
-   * re-uploads, where a transient URL is the right tool).
+   * If the file is public but `publicUrl` is null in Redux (common when the
+   * file was loaded from the tree RPC rather than the REST endpoint), the
+   * handler fetches the REST record once to hydrate the CDN URL before
+   * falling back to share-token creation.
+   *
+   * Pass `{ expiresIn }` to use the legacy temporary signed-URL path —
+   * intended for the duplicate flow which needs to fetch bytes immediately.
    */
   copyShareUrl: (opts?: { expiresIn?: number }) => Promise<string | null>;
 }
@@ -197,6 +204,35 @@ export function useFileActions(fileId: string): FileActionHandlers {
           }
         }
         return result.url;
+      }
+
+      // For PUBLIC files, prefer the CDN URL (`publicUrl`) — it's
+      // permanent, CDN-cached, and doesn't require a revocable token.
+      // `publicUrl` is null when the file was loaded from the tree RPC
+      // (which doesn't return the computed CDN URL), so we fetch the
+      // REST record once to hydrate it.
+      if (file?.visibility === "public") {
+        let cdnUrl = file.publicUrl ?? null;
+        if (!cdnUrl) {
+          try {
+            const { data } = await Files.getFile(fileId);
+            cdnUrl = apiFileRecordToCloudFile(data).publicUrl ?? null;
+          } catch {
+            // REST fetch failed — fall through to share-token path.
+          }
+        }
+        if (cdnUrl) {
+          if (typeof navigator !== "undefined" && navigator.clipboard) {
+            try {
+              await navigator.clipboard.writeText(cdnUrl);
+            } catch {
+              /* ignore clipboard failures (non-secure contexts) */
+            }
+          }
+          return cdnUrl;
+        }
+        // publicUrl unavailable even after REST fetch (CDN not configured
+        // on the backend) — fall through to the share-token path below.
       }
 
       // Default path — return a persistent public URL backed by a share
