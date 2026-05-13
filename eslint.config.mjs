@@ -92,11 +92,6 @@ const deletedFileHooksRestriction = {
             message:
                 'cloudUpload is internal to features/file-handler. Use useFileUpload from @/features/file-handler.',
         },
-        {
-            name: '@/components/image/cloud/resolveCloudFileUrl',
-            message:
-                'resolveCloudFileUrl is scheduled for deletion. Use useFile / useFileSrc from @/features/file-handler.',
-        },
     ],
 };
 
