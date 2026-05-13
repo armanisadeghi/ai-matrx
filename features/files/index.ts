@@ -77,6 +77,12 @@ export { fileHandler } from "@/features/file-handler/handler";
 // <InlineMediaRef> doesn't exist yet — components that today build their own
 // <img src={file.publicUrl ?? signedUrl}> will migrate after it ships.
 
+export {
+  InlineMediaRef,
+  type InlineMediaRefProps,
+  type InlineMediaRefSize,
+  type InlineMediaRefFit,
+} from "@/features/files/components/inline/InlineMediaRef";
 export { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
 export { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
 export { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
