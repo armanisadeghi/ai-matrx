@@ -32,6 +32,7 @@ import {
 } from "@/features/organizations/service";
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
 import { format } from "date-fns";
+import { InlineMediaRef } from "@/features/files";
 
 /**
  * Public Organization Landing Page
@@ -211,11 +212,15 @@ export default function OrganizationPublicPage() {
         <Card className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             {organization.logoUrl && (
-              <div className="flex-shrink-0">
-                <img
-                  src={organization.logoUrl}
+              <div className="flex-shrink-0 w-20 h-20 md:w-24 md:h-24">
+                <InlineMediaRef
+                  ref={organization.logoUrl}
+                  size="fill"
+                  fit="cover"
+                  rounded="lg"
+                  fallback={null}
+                  className="border-2 border-border shadow-sm"
                   alt={organization.name}
-                  className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover border-2 border-border shadow-sm"
                 />
               </div>
             )}

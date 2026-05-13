@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { LoadingSpinner } from '@/components/ui/spinner';
 import AppDisplay from '@/features/applet/home/app-display/Default';
 import ModernAppletCard from '@/features/applet/home/applet-card/Modern';
+import { InlineMediaRef } from '@/features/files';
 
 
 const GridMainLayout: React.FC<MainLayoutProps> = ({
@@ -92,10 +93,13 @@ const GridMainLayout: React.FC<MainLayoutProps> = ({
                 {/* Card image/banner top section */}
                 <div className="h-20 bg-gray-100 dark:bg-gray-700 relative">
                   {applet.imageUrl ? (
-                    <img 
-                      src={applet.imageUrl} 
+                    <InlineMediaRef
+                      ref={applet.imageUrl}
+                      size="fill"
+                      fit="cover"
+                      rounded="none"
+                      fallback={null}
                       alt={applet.name}
-                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className={`w-full h-full flex items-center justify-center bg-${accentColor}-500 dark:bg-${accentColor}-600`}>

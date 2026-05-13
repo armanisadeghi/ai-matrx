@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { acceptInvitation } from "@/features/organizations/service";
 import type { OrganizationInvitationWithOrg } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
+import { InlineMediaRef } from "@/features/files";
 
 /**
  * Accept Invitation Page
@@ -311,17 +312,16 @@ export default function AcceptInvitationPage() {
             <div className="flex items-start gap-4">
               {/* Logo */}
               <div className="flex-shrink-0">
-                {invitation.organization.logoUrl ? (
-                  <img
-                    src={invitation.organization.logoUrl}
-                    alt={invitation.organization.name}
-                    className="w-16 h-16 rounded-lg object-cover border"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center border">
-                    <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />
-                  </div>
-                )}
+                <InlineMediaRef
+                  ref={invitation.organization.logoUrl ?? null}
+                  size={{ width: 64, height: 64 }}
+                  fit="cover"
+                  rounded="lg"
+                  border="subtle"
+                  fallbackIcon={<Building2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />}
+                  className="bg-blue-100 dark:bg-blue-900"
+                  alt={invitation.organization.name}
+                />
               </div>
 
               {/* Info */}

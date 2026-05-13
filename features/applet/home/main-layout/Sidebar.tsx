@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { LoadingSpinner } from '@/components/ui/spinner';
 import AppDisplay from '@/features/applet/home/app-display/Default';
 import ModernAppletCard from '@/features/applet/home/applet-card/Modern';
+import { InlineMediaRef } from '@/features/files';
 
 const SidebarMainLayout: React.FC<MainLayoutProps> = ({
   isInitialized,
@@ -131,10 +132,13 @@ const SidebarMainLayout: React.FC<MainLayoutProps> = ({
         {/* Banner Image */}
         {appImageUrl && (
           <div className="w-full aspect-[21/9] rounded-lg overflow-hidden mb-6 shadow-sm">
-            <img
-              src={appImageUrl}
+            <InlineMediaRef
+              ref={appImageUrl}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallback={null}
               alt={`${appName} banner`}
-              className="w-full h-full object-cover"
             />
           </div>
         )}

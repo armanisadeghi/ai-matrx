@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAppletsThunk, deleteAppletThunk } from "@/lib/redux/app-builder/thunks/appletBuilderThunks";
 import { startNewApplet, setActiveApplet } from "@/lib/redux/app-builder/slices/appletBuilderSlice";
 import { v4 as uuidv4 } from "uuid";
+import { InlineMediaRef } from "@/features/files";
 import {
     selectAllApplets,
     selectAppletLoading,
@@ -409,10 +410,13 @@ const SmartAppletList = forwardRef<
                                                 <div className="h-32 w-full relative">
                                                     {applet.imageUrl ? (
                                                         <>
-                                                            <img
-                                                                src={applet.imageUrl}
+                                                            <InlineMediaRef
+                                                                ref={applet.imageUrl}
+                                                                size="fill"
+                                                                fit="cover"
+                                                                rounded="none"
+                                                                fallback={null}
                                                                 alt={applet.name}
-                                                                className="w-full h-full object-cover"
                                                             />
                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                                         </>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { ICON_OPTIONS, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
+import { InlineMediaRef } from '@/features/files';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { 
   selectAppName,
@@ -73,10 +74,13 @@ const AppPreviewCard: React.FC<AppPreviewCardProps> = ({ appId, className }) => 
         {/* App Banner Image */}
         {imageUrl ? (
           <div className="w-full h-36 relative">
-            <img
-              src={imageUrl}
+            <InlineMediaRef
+              ref={imageUrl}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallback={null}
               alt={name || 'App Banner'}
-              className="w-full h-full object-cover"
             />
           </div>
         ) : (

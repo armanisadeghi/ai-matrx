@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { OrganizationWithRole } from "../types";
 import { cn } from "@/lib/utils";
+import { InlineMediaRef } from "@/features/files";
 
 interface OrganizationCardProps {
   organization: OrganizationWithRole;
@@ -136,22 +137,23 @@ export function OrganizationCard({
                   : "bg-blue-100 dark:bg-blue-900/50",
               )}
             >
-              {organization.logoUrl ? (
-                <img
-                  src={organization.logoUrl}
-                  alt={organization.name}
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <Building2
-                  className={cn(
-                    "h-6 w-6",
-                    isPersonal
-                      ? "text-purple-600 dark:text-purple-400"
-                      : "text-blue-600 dark:text-blue-400",
-                  )}
-                />
-              )}
+              <InlineMediaRef
+                ref={organization.logoUrl ?? null}
+                size="fill"
+                fit="cover"
+                rounded="lg"
+                fallbackIcon={
+                  <Building2
+                    className={cn(
+                      "h-6 w-6",
+                      isPersonal
+                        ? "text-purple-600 dark:text-purple-400"
+                        : "text-blue-600 dark:text-blue-400",
+                    )}
+                  />
+                }
+                alt={organization.name}
+              />
             </div>
 
             {/* Name and Role */}

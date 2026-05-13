@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useUserOrganizations, useUserRole } from "../hooks";
 import type { OrganizationWithRole } from "../types";
+import { InlineMediaRef } from "@/features/files";
 
 /**
  * Compact organization sidebar for org settings layout
@@ -143,22 +144,23 @@ function OrgNavItem({
             : "bg-blue-100 dark:bg-blue-900/30",
         )}
       >
-        {org.logoUrl ? (
-          <img
-            src={org.logoUrl}
-            alt=""
-            className="w-full h-full object-cover rounded"
-          />
-        ) : (
-          <Building2
-            className={cn(
-              "h-3.5 w-3.5",
-              org.isPersonal
-                ? "text-purple-600 dark:text-purple-400"
-                : "text-blue-600 dark:text-blue-400",
-            )}
-          />
-        )}
+        <InlineMediaRef
+          ref={org.logoUrl ?? null}
+          size="fill"
+          fit="cover"
+          rounded="sm"
+          fallbackIcon={
+            <Building2
+              className={cn(
+                "h-3.5 w-3.5",
+                org.isPersonal
+                  ? "text-purple-600 dark:text-purple-400"
+                  : "text-blue-600 dark:text-blue-400",
+              )}
+            />
+          }
+          alt=""
+        />
       </div>
       <span className="flex-1 truncate">{org.name}</span>
       <RoleIcon

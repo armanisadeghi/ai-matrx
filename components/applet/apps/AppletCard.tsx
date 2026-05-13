@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from 'next/link';
 import { ArrowRight, User, Clock } from 'lucide-react';
+import { InlineMediaRef } from '@/features/files';
 
 interface Applet {
   id: string;
@@ -37,10 +38,14 @@ const AppletCard: React.FC<AppletCardProps> = ({
     <Link href={`/applet/${id}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg">
       <Card className="h-full overflow-hidden bg-card hover:bg-accent/5 dark:bg-card dark:hover:bg-accent/5 transition-all duration-200 border dark:border-gray-800">
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          <img
-            src={imageUrl}
+          <InlineMediaRef
+            ref={imageUrl ?? null}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            fallback="icon"
+            className="transition-transform duration-300 group-hover:scale-105"
             alt={`${name} thumbnail`}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
         </div>

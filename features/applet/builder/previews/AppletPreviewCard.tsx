@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { ICON_OPTIONS } from '@/features/applet/styles/StyledComponents';
+import { InlineMediaRef } from '@/features/files';
 
 interface AppletPreviewCardProps {
   applet: CustomAppletConfig;
@@ -56,10 +57,13 @@ const AppletPreviewCard: React.FC<AppletPreviewCardProps> = ({ applet, className
         {/* Applet Banner Image */}
         {applet.imageUrl ? (
           <div className="w-full h-28 relative">
-            <img
-              src={applet.imageUrl}
+            <InlineMediaRef
+              ref={applet.imageUrl}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallback={null}
               alt={applet.name}
-              className="w-full h-full object-cover"
             />
           </div>
         ) : (

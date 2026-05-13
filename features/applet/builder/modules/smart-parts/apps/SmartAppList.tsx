@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAppsThunk, deleteAppThunk } from "@/lib/redux/app-builder/thunks/appBuilderThunks";
 import { selectAllApps, selectAppLoading, selectAppError, selectAppsByIds } from "@/lib/redux/app-builder/selectors/appSelectors";
 import { IconPicker } from "@/components/ui/IconPicker";
+import { InlineMediaRef } from "@/features/files";
 import { COLOR_VARIANTS } from "@/features/applet/styles/StyledComponents";
 import { CustomAppConfig } from "@/types/customAppTypes";
 import { getAppColorClasses } from "@/features/applet/styles/styles";
@@ -390,7 +391,14 @@ const SmartAppList = forwardRef<
                                                 <div className="h-32 w-full relative">
                                                     {app.imageUrl ? (
                                                         <>
-                                                            <img src={app.imageUrl} alt={app.name} className="w-full h-full object-cover" />
+                                                            <InlineMediaRef
+                                                                ref={app.imageUrl}
+                                                                size="fill"
+                                                                fit="cover"
+                                                                rounded="none"
+                                                                fallback={null}
+                                                                alt={app.name}
+                                                            />
                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                                         </>
                                                     ) : (

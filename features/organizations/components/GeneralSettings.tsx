@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { updateOrganization } from "../service";
 import { validateOrgName, type Organization, type OrgRole } from "../types";
+import { InlineMediaRef } from "@/features/files";
 import { format } from "date-fns";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { folderForOrg } from "@/features/files/utils/folder-conventions";
@@ -302,10 +303,14 @@ export function GeneralSettings({
             <div className="flex items-center gap-4">
               {organization.logoUrl ? (
                 <>
-                  <img
-                    src={organization.logoUrl}
+                  <InlineMediaRef
+                    ref={organization.logoUrl}
+                    size={{ width: 64, height: 64 }}
+                    fit="cover"
+                    rounded="lg"
+                    border="subtle"
+                    fallback={null}
                     alt={organization.name}
-                    className="w-16 h-16 rounded-lg object-cover border"
                   />
                   <a
                     href={organization.logoUrl}
