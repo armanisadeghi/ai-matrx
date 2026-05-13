@@ -95,6 +95,27 @@ export { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/
 export { FilePicker } from "@/features/files/components/pickers/FilePicker";
 export { FolderPicker } from "@/features/files/components/pickers/FolderPicker";
 export { SaveAsDialog } from "@/features/files/components/pickers/SaveAsDialog";
+export {
+  useFilePicker,
+  type FilePickerProps,
+  type UseFilePickerOpenOptions,
+  type UseFilePickerResult,
+} from "@/features/files/components/pickers/FilePicker";
+
+// CloudFilesPickerHost — mounted once at the app root (Providers.tsx). Pairs
+// with the imperative openers below so non-React code can pop pickers.
+export { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
+
+// Imperative picker openers — for thunks, services, and event handlers that
+// can't run a hook. Backed by CloudFilesPickerHost.
+export {
+  openFilePicker,
+  openFolderPicker,
+  openSaveAs,
+  type FileOpener,
+  type FolderOpener,
+  type SaveAsOpener,
+} from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 
 // Dialogs / context menus that consumers compose into their own surfaces.
 export { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
@@ -102,6 +123,50 @@ export { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialo
 export { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
 export { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 export { FolderContextMenu } from "@/features/files/components/core/FolderContextMenu/FolderContextMenu";
+
+// File / folder action hook bundles — used by context menus, browser tables,
+// and explorer rows.
+export {
+  useFileActions,
+  type FileActionHandlers,
+} from "@/features/files/components/core/FileActions/useFileActions";
+export {
+  useFolderActions,
+  type FolderActionHandlers,
+} from "@/features/files/components/core/FileActions/useFolderActions";
+
+// Composition primitives — chips, preview panes, window shells, tree views.
+// These are the legitimate "embed Files UI in another feature" surfaces.
+export {
+  FileResourceChip,
+  type FileResourceChipProps,
+} from "@/features/files/components/preview/FileResourceChip";
+export {
+  PreviewPane,
+  type PreviewPaneProps,
+} from "@/features/files/components/surfaces/PreviewPane";
+export {
+  WindowPanelShell,
+  type WindowPanelShellProps,
+  type CloudFilesWindowTab,
+} from "@/features/files/components/surfaces/WindowPanelShell";
+export {
+  FileTree,
+  type FileTreeProps,
+} from "@/features/files/components/core/FileTree/FileTree";
+
+// PDF annotation layer + types + helpers — used by file-analysis to render
+// region overlays on top of PdfPreview.
+export {
+  PdfAnnotationLayer,
+  type PdfAnnotationLayerProps,
+  type PdfBbox,
+  type PdfRegion,
+  type RegionKind,
+  type PendingDraw,
+  type AnnotationLayerMode,
+  colorsFor,
+} from "@/features/files/components/core/PdfAnnotationLayer";
 
 // Bits used by chips/lists/tree views that legitimately compose outside the
 // feature. These remain stable through the rebuild.
@@ -116,6 +181,13 @@ export { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumb
 // ---------------------------------------------------------------------------
 export { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 export { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
+
+// Store wiring — the slice reducer and realtime middleware. These are the
+// ONLY redux internals consumers may import, and only `lib/redux/{store,
+// entity-store, rootReducer}.ts` should reach for them. Once exposed here,
+// the redux/* ESLint ban can flip to error with no allowlist.
+export { cloudFilesReducer } from "@/features/files/redux/slice";
+export { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
 
 // Imperative upload entry — opens the dedup-guard dialog when needed and
 // dispatches the upload thunk. Most callers should prefer `useFileUpload`;
@@ -137,15 +209,78 @@ export {
 } from "@/features/files/redux/converters";
 
 // ---------------------------------------------------------------------------
-// 6. Folder conventions
+// 6. Folder conventions + file-type / format / URL helpers
 // ---------------------------------------------------------------------------
 export {
   CloudFolders,
+  CloudFolderDescriptions,
   folderForPodcast,
   folderForAgentApp,
+  folderForAgentBlock,
+  folderForConversation,
+  folderForOrg,
   folderForTask,
+  isHiddenFolder,
+  isConventionalFolder,
   resolveDefaultVisibility,
 } from "@/features/files/utils/folder-conventions";
+
+// MIME / file-type helpers — every callsite that asks "is this an image?"
+// should funnel through here so we don't fork the heuristic.
+export {
+  isImageMime,
+  isVideoMime,
+  isAudioMime,
+  isPdfMime,
+  isTextMime,
+  resolveMime,
+  mimeFromFilename,
+  getFileTypeDetails,
+  getFolderTypeDetails,
+  getAssumedTextDetails,
+  isLikelyTextFilename,
+  sniffTextBytes,
+  listSupportedTypes,
+  getFilePreviewProfile,
+  MAX_INLINE_PREVIEW_BYTES,
+  FILE_TYPES,
+  type FileCategory,
+  type FileTypeDetails,
+  type FileTypeEntry,
+  type FilePreviewProfile,
+  type PreviewKind,
+  type ThumbnailStrategy,
+  type TextSniffResult,
+  type SupportedTypeRow,
+} from "@/features/files/utils/file-types";
+
+// Format helpers — bytes / dates / filenames. The canonical formatters used
+// by FileChip, FilePreview, the browser table, and any consumer that needs
+// to display file metadata.
+export {
+  formatFileSize,
+  formatRelativeTime,
+  formatAbsoluteDate,
+  truncateFilename,
+} from "@/features/files/utils/format";
+
+// Python backend URL builders — for callers that need to render a media src
+// or a download/share link directly. Prefer `useFileSrc` / `useFile` for
+// reactive paths; these exist for non-React code and the few places that
+// legitimately need a raw URL (OG images, mailers, admin tools).
+export {
+  pythonBaseUrl,
+  pythonShareUrl,
+  pythonShareResolveUrl,
+  pythonFileDownloadUrl,
+  pythonFileInlineUrl,
+  shareUrls,
+  fileUrls,
+  tokenFromShareUrl,
+  imageViewUrl,
+  type ShareUrls,
+  type FileUrls,
+} from "@/features/files/handler/utils/python-base";
 
 // ---------------------------------------------------------------------------
 // 7. Types — the canonical type surface for everything outside the feature

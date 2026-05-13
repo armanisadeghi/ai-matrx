@@ -68,7 +68,7 @@ import codeDiagnosticsReducer from "@/features/code/redux/diagnosticsSlice";
 import codePatchesReducer from "@/features/code/redux/codePatchesSlice";
 import codeEditHistoryReducer from "@/features/code/redux/codeEditHistorySlice";
 import fsChangesReducer from "@/features/code/redux/fsChangesSlice";
-import { cloudFilesReducer } from "@/features/files/redux/slice";
+import { cloudFilesReducer } from "@/features/files";
 import messagingReducer from "@/features/messaging/redux/messagingSlice";
 import smsReducer from "@/features/sms/redux/smsSlice";
 import adminPreferencesReducer from "./slices/adminPreferencesSlice";

@@ -40,7 +40,7 @@ import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNu
 import DeferredSingletons from "./DeferredSingletons";
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
-import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
+import { CloudFilesPickerHost } from "@/features/files";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 // Phase 4 PR 4.C: deleted both imperative seed sites (setGlobalUserId from

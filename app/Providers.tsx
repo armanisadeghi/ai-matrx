@@ -64,8 +64,8 @@ import { WindowPersistenceManager } from "@/features/window-panels/WindowPersist
 import { ExtensionBridgeSubscriber } from "@/lib/extension-bridge/ExtensionBridgeSubscriber";
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
-import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
 import {
+  CloudFilesPickerHost,
   CloudFilesRealtimeProvider,
   UploadGuardHost,
 } from "@/features/files";
