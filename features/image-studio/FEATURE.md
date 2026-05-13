@@ -247,6 +247,10 @@ flow is generate → keep editing without an upload round-trip.
 
 ## Change Log
 
+- **2026-05-12** — Fixed two `/images/convert` paper cuts:
+  - **Public-by-default save.** `ExportPanel`'s "Make publicly viewable" checkbox now defaults to `true` so every Save-to-library run produces permanent Cloudflare CDN URLs on every variant. Matches the hook's documented intent and the way the rest of the studio (Edit/Annotate/Avatar/EmbeddedImageStudio) already saves.
+  - **Per-tile "Copy URL" never copies the base64 data URL anymore.** Before save (no `publicUrl` and no `fileId`) the button switches to "Save to share" + amber styling, and clicking it shows a toast directing the user to the Save panel instead of silently copying multi-MB base64. After save, behaviour is unchanged (public → CDN, private → fresh signed URL).
+  - **Surfaces where files went.** `ExportPanel` now shows the resolved destination folder inline before save (`Images/Generated/<folder>`) and, after a successful save, a green success card with the per-source folder path and an **Open folder** button that deep-links to `/files/<folder-path>`. `useImageStudio.lastSaveResult` was already populated — it just wasn't being rendered. Piped through both desktop and mobile `ExportPanel` instances in `ImageStudioShell`.
 - **2026-05-09** — Tightened the `/images/studio` mobile landing: smaller headline rhythm, full-width primary CTA, compact two-column secondary actions, denser stat cards, and reduced mobile section spacing while preserving the desktop hero layout.
 - **2026-05-05** — Refactored `ImageStudioHeader` to mirror the `AgentHeader` pattern: the top-level component is now a Server Component shell wrapped in `<PageHeader>` (single `children`) that splits desktop/mobile via CSS (`lg:hidden` / `hidden lg:flex`). Extracted two client islands:
   - `ImageStudioHeaderDesktop.tsx` — existing back + title + nav (reads `usePathname()`).

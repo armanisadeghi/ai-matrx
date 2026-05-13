@@ -12,8 +12,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
-import { SmartCodeEditorModal } from "@/features/code-editor/agent-code-editor/components/SmartCodeEditorModal";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
+import { useOpenSmartCodeEditorWindow } from "@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow";
 import {
   mapLanguageForMonaco,
   getMonacoFileExtension,
@@ -83,9 +83,7 @@ export default function MultiFileCodeEditor({
   const [minimapEnabled, setMinimapEnabled] = useState(false);
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   const [formatTrigger, setFormatTrigger] = useState(0);
-  const [aiModalConfig, setAiModalConfig] = useState<AIModalConfig | null>(
-    null,
-  );
+  const openSmartCodeEditorWindow = useOpenSmartCodeEditorWindow();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mode = useAppSelector((s) => s.theme.mode);
@@ -270,15 +268,18 @@ export default function MultiFileCodeEditor({
   };
 
   const handleOpenAIModal = (config: AIModalConfig) => {
-    setAiModalConfig(config);
-  };
-
-  const handleCloseAIModal = () => {
-    setAiModalConfig(null);
-  };
-
-  const handleAICodeChange = (newCode: string, _fileId: string | null) => {
-    onChange?.(activeFile, newCode);
+    const agent = agentForPromptKey(config.builtinId);
+    const targetFile = activeFile;
+    openSmartCodeEditorWindow({
+      agents: [agent],
+      defaultPickerAgentId: agent.id,
+      initialCode: code,
+      language: monacoLanguage,
+      title: config.title,
+      onCodeChange: (event) => {
+        onChange?.(targetFile, event.code);
+      },
+    });
   };
 
   // Function to detect if code is a complete HTML document
@@ -572,26 +573,6 @@ export default function MultiFileCodeEditor({
           </div>
         )}
       </div>
-
-      {/* AI Code Editor Modal — agent-system. v2 (current_code) and v3
-          (dynamic_context) collapse to the same SmartCodeEditorModal; the
-          agent UUID selects which variable receives the code. */}
-      {aiModalConfig &&
-        (() => {
-          const agent = agentForPromptKey(aiModalConfig.builtinId);
-          return (
-            <SmartCodeEditorModal
-              open={true}
-              onOpenChange={handleCloseAIModal}
-              agents={[agent]}
-              defaultPickerAgentId={agent.id}
-              initialCode={code}
-              language={monacoLanguage}
-              onCodeChange={handleAICodeChange}
-              title={aiModalConfig.title}
-            />
-          );
-        })()}
     </div>
   );
 }

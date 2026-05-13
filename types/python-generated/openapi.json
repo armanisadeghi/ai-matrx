@@ -2089,22 +2089,32 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 3,
+              "maximum": 5,
               "minimum": 1,
+              "description": "Minimum compression tier. 1=lossless, 2=light, 3=balanced, 4=aggressive, 5=max. Tier is escalated above this when max_size_mb forces it.",
               "default": 2,
               "title": "Level"
-            }
+            },
+            "description": "Minimum compression tier. 1=lossless, 2=light, 3=balanced, 4=aggressive, 5=max. Tier is escalated above this when max_size_mb forces it."
           },
           {
-            "name": "target_size_mb",
+            "name": "max_size_mb",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "number",
-              "exclusiveMinimum": 0,
-              "default": 10,
-              "title": "Target Size Mb"
-            }
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Absolute upper bound on the output size in MB. When set, the server escalates `level` one tier at a time until the output fits or tier 5 is reached. None = honour `level` exactly.",
+              "title": "Max Size Mb"
+            },
+            "description": "Absolute upper bound on the output size in MB. When set, the server escalates `level` one tier at a time until the output fits or tier 5 is reached. None = honour `level` exactly."
           },
           {
             "name": "persist_output",
@@ -2114,6 +2124,27 @@
               "type": "boolean",
               "default": false,
               "title": "Persist Output"
+            }
+          },
+          {
+            "name": "output_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "binary",
+                    "derivative",
+                    "replace"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Output Mode"
             }
           },
           {
@@ -2130,6 +2161,22 @@
                 }
               ],
               "title": "Parent File Id"
+            }
+          },
+          {
+            "name": "change_summary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Change Summary"
             }
           }
         ],
@@ -17564,6 +17611,245 @@
         }
       }
     },
+    "/assets/presets": {
+      "get": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "List Presets",
+        "description": "List every preset the server supports.\n\nUsed by the FE to render the upload picker dynamically — the server\nis the single source of truth.",
+        "operationId": "list_presets_assets_presets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Presets Assets Presets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Upload Asset",
+        "operationId": "upload_asset_assets_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_asset_assets_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/{file_id}": {
+      "get": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Get Asset",
+        "operationId": "get_asset_assets__file_id__get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "signed_url_ttl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 604800,
+              "minimum": 60,
+              "default": 3600,
+              "title": "Signed Url Ttl"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Patch Asset",
+        "operationId": "patch_asset_assets__file_id__patch",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/{file_id}/variants": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Render More Variants",
+        "operationId": "render_more_variants_assets__file_id__variants_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetRenderMoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/media/upload": {
       "post": {
         "tags": [
@@ -19110,6 +19396,7 @@
           "Files"
         ],
         "summary": "Get File Url",
+        "description": "Return the canonical inline-renderable URL for a file.\n\nMints via SyncEngine.build_urls_for_record_async — CDN if public + CDN\nconfigured, signed-inline otherwise. Use ``/files/{id}/asset`` if you\nalso need the download URL flavour or all variants in one response.",
         "operationId": "get_file_url_files__file_id__url_get",
         "parameters": [
           {
@@ -19142,6 +19429,59 @@
                 "schema": {
                   "$ref": "#/components/schemas/SignedUrlResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/asset": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Get File As Asset",
+        "description": "Return any cld_files row as an Asset envelope.\n\nSurfaces the same shape the new asset upload returns, so a file-\nbrowser click resolves to ``{url, cdn_url, signed_url, download_url}``\nplus every persisted variant. This is the platform-wide cure for\nthe \"click downloads when it should render\" bug class — the FE\nchooses inline vs. attachment per click, not per endpoint.",
+        "operationId": "get_file_as_asset_files__file_id__asset_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "signed_url_ttl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 604800,
+              "minimum": 60,
+              "default": 3600,
+              "title": "Signed Url Ttl"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -27117,6 +27457,312 @@
         "type": "object",
         "title": "AppExecuteRequest"
       },
+      "Asset": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "The master cld_files row id"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private",
+              "shared"
+            ],
+            "title": "Visibility",
+            "default": "private"
+          },
+          "folder": {
+            "type": "string",
+            "title": "Folder"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "primary_key": {
+            "type": "string",
+            "title": "Primary Key",
+            "default": "original"
+          },
+          "primary_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Url"
+          },
+          "variants": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AssetVariant"
+            },
+            "type": "object",
+            "title": "Variants"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "folder"
+        ],
+        "title": "Asset"
+      },
+      "AssetPatchRequest": {
+        "properties": {
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "public",
+                  "private",
+                  "shared"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "share_with": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share With"
+          },
+          "share_level": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write",
+              "admin"
+            ],
+            "title": "Share Level",
+            "default": "read"
+          },
+          "signed_url_ttl": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url Ttl"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "title": "AssetPatchRequest",
+        "description": "Mutate an existing asset.\n\nUse to:\n  - change visibility (also moves the S3 object between buckets)\n  - grant new sharees\n  - refresh signed URLs (signed_url_ttl)"
+      },
+      "AssetRenderMoreRequest": {
+        "properties": {
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset",
+            "description": "Known preset name"
+          },
+          "custom_variants": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Variants",
+            "description": "Optional list of ImageVariant dicts ({key, suffix, width, height, quality, format}). Merged with the preset's variants, dedup'd by key."
+          },
+          "include_social_baseline": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Social Baseline"
+          },
+          "signed_url_ttl": {
+            "type": "integer",
+            "title": "Signed Url Ttl",
+            "default": 3600
+          }
+        },
+        "type": "object",
+        "title": "AssetRenderMoreRequest",
+        "description": "Render additional variants for an existing asset.\n\nAccepts either a known preset name OR a list of custom ImageVariant\ndicts. Both paths run through the existing matrx-utils variants\nsubsystem so each rendered variant is an idempotent cld_files row."
+      },
+      "AssetVariant": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Variant identifier (e.g. 'original', 'cover_url', 'og_url')"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "cdn_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Url"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "file_id",
+          "file_path"
+        ],
+        "title": "AssetVariant"
+      },
       "AudioStyle": {
         "type": "string",
         "enum": [
@@ -27377,6 +28023,113 @@
           "file_path"
         ],
         "title": "Body_put_file_cloud_files_put_put"
+      },
+      "Body_upload_asset_assets_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "preset": {
+            "type": "string",
+            "title": "Preset",
+            "description": "One of: podcast, social, web, email, logo, avatar, favicon, raw",
+            "default": "raw"
+          },
+          "folder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder",
+            "description": "Logical folder path; defaults to Assets/<uuid>"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private",
+              "shared"
+            ],
+            "title": "Visibility",
+            "default": "public"
+          },
+          "share_with": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share With",
+            "description": "Comma-separated user IDs"
+          },
+          "share_level": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write",
+              "admin"
+            ],
+            "title": "Share Level",
+            "default": "read"
+          },
+          "signed_url_ttl": {
+            "type": "integer",
+            "maximum": 604800,
+            "minimum": 60,
+            "title": "Signed Url Ttl",
+            "default": 3600
+          },
+          "include_social_baseline": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Social Baseline",
+            "description": "Override preset baseline default"
+          },
+          "metadata_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Json",
+            "description": "JSON-encoded metadata dict"
+          },
+          "custom_variants_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Variants Json",
+            "description": "JSON list of ImageVariant dicts merged with the preset's variants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_asset_assets_post"
       },
       "Body_upload_file_files_upload_post": {
         "properties": {
@@ -31486,6 +32239,38 @@
       },
       "CropPagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -31557,11 +32342,6 @@
               }
             ],
             "title": "Page Ranges"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           },
           "crop_box": {
             "$ref": "#/components/schemas/PdfCropBox"
@@ -32197,6 +32977,38 @@
       },
       "DeletePagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -32268,11 +33080,6 @@
               }
             ],
             "title": "Page Ranges"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -32834,6 +33641,38 @@
       },
       "DuplicatePagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -32905,11 +33744,6 @@
               }
             ],
             "title": "Page Ranges"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           },
           "count": {
             "type": "integer",
@@ -33598,6 +34432,38 @@
       },
       "ExtractPagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -33669,11 +34535,6 @@
               }
             ],
             "title": "Page Ranges"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -35333,6 +36194,38 @@
       },
       "FlattenAnnotationsRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -35387,11 +36280,6 @@
             "type": "boolean",
             "title": "Widgets",
             "default": true
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -36425,6 +37313,38 @@
       },
       "InsertPagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -36564,11 +37484,6 @@
           "join_duplicates": {
             "type": "boolean",
             "title": "Join Duplicates",
-            "default": false
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
             "default": false
           }
         },
@@ -39661,6 +40576,38 @@
       },
       "MergePdfsRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/MergePdfSource"
@@ -39672,11 +40619,6 @@
             "type": "string",
             "title": "Filename",
             "default": "merged.pdf"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -41902,10 +42844,21 @@
               }
             ],
             "title": "Image File Id"
+          },
+          "asset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
-        "title": "PodcastMediaUploadResponse"
+        "title": "PodcastMediaUploadResponse",
+        "description": "Legacy response shape preserved for back-compat with existing FE callers.\n\nPrefer ``POST /assets`` for new integrations — it returns the full\nAsset envelope (all variants, CDN/signed/download URLs)."
       },
       "PodcastType": {
         "type": "string",
@@ -42586,6 +43539,38 @@
       },
       "RedactPatternRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -42649,11 +43634,6 @@
             "type": "boolean",
             "title": "Scrub Metadata",
             "default": true
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -42665,6 +43645,38 @@
       },
       "RedactRegionsRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -42725,11 +43737,6 @@
             "type": "boolean",
             "title": "Scrub Metadata",
             "default": true
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -42741,6 +43748,38 @@
       },
       "RedactRepeatedRegionsRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -42822,11 +43861,6 @@
             "type": "boolean",
             "title": "Scrub Metadata",
             "default": true
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -43163,6 +44197,38 @@
       },
       "RenderAllPagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -43242,11 +44308,6 @@
               }
             ],
             "title": "Pages"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -43514,6 +44575,38 @@
       },
       "ReorderPagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -43564,11 +44657,6 @@
             },
             "type": "array",
             "title": "New Order"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -44300,6 +45388,38 @@
       },
       "RotatePagesRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -44371,11 +45491,6 @@
               }
             ],
             "title": "Page Ranges"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           },
           "rotation": {
             "type": "integer",
@@ -44826,6 +45941,38 @@
       },
       "ScrubRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -44895,11 +46042,6 @@
             "minLength": 1,
             "title": "Reason",
             "default": "strip_all_pii"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -45871,6 +47013,38 @@
       },
       "SplitPdfRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -45939,11 +47113,6 @@
               }
             ],
             "title": "Max Pages Per Part"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",
@@ -46539,6 +47708,38 @@
       },
       "StripMetadataRequest": {
         "properties": {
+          "output_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "derivative",
+                  "replace"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Mode"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          },
+          "persist_output": {
+            "type": "boolean",
+            "title": "Persist Output",
+            "default": false
+          },
           "media": {
             "anyOf": [
               {
@@ -46588,11 +47789,6 @@
             "minLength": 1,
             "title": "Reason",
             "default": "strip_metadata"
-          },
-          "persist_output": {
-            "type": "boolean",
-            "title": "Persist Output",
-            "default": false
           }
         },
         "type": "object",

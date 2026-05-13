@@ -41,6 +41,7 @@
     "find-circular:count": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1 | grep 'Found'",
     "check:public-imports": "npx tsx scripts/check-public-imports.ts",
     "check:registry": "tsx scripts/check-registry.ts",
+    "check:surface-drift": "tsx scripts/check-surface-drift.ts",
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:bundle:capture": "tsx scripts/check-bundle-size.ts --capture",
     "check:bundle:update": "tsx scripts/check-bundle-size.ts --update-baseline",

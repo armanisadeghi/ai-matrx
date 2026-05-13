@@ -118,3 +118,43 @@ export const getAppsForAgent = cache(async (agentId: string) => {
   if (error) throw error;
   return (data as Record<string, unknown>[] | null) ?? [];
 });
+
+/**
+ * Surface bindings for a specific agent. Backs `/agents/[id]/surfaces`.
+ *
+ * Returns every `agx_agent_surface` row visible to the caller for this agent
+ * — global (all scope FKs null), the caller's personal binding, their org
+ * bindings, and project/task scopes per RLS. The page UI groups by scope.
+ *
+ * Joined columns from `ui_surface` are included so the user can see the
+ * client / description / is_active without a second round-trip.
+ */
+export const getSurfacesForAgent = cache(async (agentId: string) => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("agx_agent_surface")
+    .select(
+      `
+      id,
+      agent_id,
+      surface_name,
+      user_id,
+      organization_id,
+      project_id,
+      task_id,
+      value_mappings,
+      created_at,
+      ui_surface:surface_name (
+        name,
+        client_name,
+        description,
+        sort_order,
+        is_active
+      )
+    `,
+    )
+    .eq("agent_id", agentId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+});

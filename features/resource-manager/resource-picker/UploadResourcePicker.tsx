@@ -99,12 +99,14 @@ async function compressImageFile(file: File): Promise<{ file: File; note: string
     });
 }
 
-async function compressPdfFile(file: File, targetSizeMB = 50): Promise<{ file: File; note: string } | null> {
+async function compressPdfFile(file: File, maxSizeMB = 50): Promise<{ file: File; note: string } | null> {
     try {
         const formData = new FormData();
         formData.append("file", file);
+        // Level 2 = light cleanup. The cap drives the actual reduction
+        // — server escalates tiers as needed to fit under maxSizeMB.
         formData.append("level", "2");
-        formData.append("targetSizeMB", String(targetSizeMB));
+        formData.append("maxSizeMB", String(maxSizeMB));
         const response = await fetch("/api/pdf/compress", { method: "POST", body: formData });
         if (!response.ok) return null;
         const blob = await response.blob();

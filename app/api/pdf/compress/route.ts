@@ -10,8 +10,12 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const level = (formData.get("level") as string) || "2";
-    const targetSizeMB = (formData.get("targetSizeMB") as string) || "10";
+    const rawLevel = (formData.get("level") as string) || "2";
+    // Accept either field name; "maxSizeMB" is the new canonical form,
+    // "targetSizeMB" stays accepted while older clients migrate.
+    const rawMaxSize =
+      (formData.get("maxSizeMB") as string | null) ??
+      (formData.get("targetSizeMB") as string | null);
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -24,12 +28,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Forward to Python backend
     const backendFormData = new FormData();
     backendFormData.append("file", file);
 
+    const params = new URLSearchParams({ level: rawLevel });
+    if (rawMaxSize && Number(rawMaxSize) > 0) {
+      params.set("max_size_mb", rawMaxSize);
+    }
+
     const response = await fetch(
-      `${BACKEND_URL}${ENDPOINTS.pdf.compress}?level=${encodeURIComponent(level)}&target_size_mb=${encodeURIComponent(targetSizeMB)}`,
+      `${BACKEND_URL}${ENDPOINTS.pdf.compress}?${params.toString()}`,
       {
         method: "POST",
         body: backendFormData,
@@ -57,6 +65,12 @@ export async function POST(request: NextRequest) {
         "X-Compressed-Size": response.headers.get("X-Compressed-Size") || "",
         "X-Compression-Ratio":
           response.headers.get("X-Compression-Ratio") || "",
+        "X-Compression-Level-Requested":
+          response.headers.get("X-Compression-Level-Requested") || "",
+        "X-Compression-Level-Used":
+          response.headers.get("X-Compression-Level-Used") || "",
+        "X-Compression-Cap-Satisfied":
+          response.headers.get("X-Compression-Cap-Satisfied") || "",
       },
     });
   } catch (error: any) {

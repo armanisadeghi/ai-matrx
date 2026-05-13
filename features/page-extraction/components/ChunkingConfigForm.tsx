@@ -22,14 +22,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  Loader2,
-  Plus,
-  Repeat,
-  Save,
-  X,
-} from "lucide-react";
+import { AlertCircle, Loader2, Plus, Repeat, Save, X } from "lucide-react";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,9 +33,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  SOURCE_VARIATIONS,
-} from "@/features/page-extraction/constants";
+import { SOURCE_VARIATIONS } from "@/features/page-extraction/constants";
 import {
   ensureDraft,
   patchDraft,
@@ -94,8 +85,12 @@ export function ChunkingConfigForm({
   // streamError surfaces only if SavedJobsList propagates one; the form
   // itself no longer initiates runs.
   const streamError: string | null = null;
-  const { chunks, stats, availablePages, loading: pagesLoading } =
-    useChunkPreview({ fileId, processedDocumentId });
+  const {
+    chunks,
+    stats,
+    availablePages,
+    loading: pagesLoading,
+  } = useChunkPreview({ fileId, processedDocumentId });
 
   const agent = useAppSelector((s) =>
     draft.agentId ? selectAgentById(s, draft.agentId) : undefined,
@@ -134,8 +129,9 @@ export function ChunkingConfigForm({
               : "",
             chunkSize: job.chunk_size,
             chunkOverlap: job.chunk_overlap,
-            sourceVariations: (job.source_variations ??
-              ["clean_text"]) as SourceVariationKind[],
+            sourceVariations: (job.source_variations ?? [
+              "clean_text",
+            ]) as SourceVariationKind[],
             chunkingStrategy: (job.chunking_strategy ?? "pages") as
               | "pages"
               | "keyword"
@@ -228,10 +224,7 @@ export function ChunkingConfigForm({
     }
     const next = Math.max(1, n);
     // Clamp overlap so it remains < chunkSize.
-    const overlap = Math.max(
-      0,
-      Math.min(next - 1, draft.chunkOverlap),
-    );
+    const overlap = Math.max(0, Math.min(next - 1, draft.chunkOverlap));
     dispatch(
       patchDraft({
         fileId,
@@ -311,8 +304,9 @@ export function ChunkingConfigForm({
               : "",
             chunkSize: loadedJob.chunk_size,
             chunkOverlap: loadedJob.chunk_overlap,
-            sourceVariations: (loadedJob.source_variations ??
-              ["clean_text"]) as SourceVariationKind[],
+            sourceVariations: (loadedJob.source_variations ?? [
+              "clean_text",
+            ]) as SourceVariationKind[],
             chunkingStrategy: (loadedJob.chunking_strategy ?? "pages") as
               | "pages"
               | "keyword"
@@ -375,9 +369,7 @@ export function ChunkingConfigForm({
         <Input
           value={draft.jobName}
           onChange={(e) =>
-            dispatch(
-              patchDraft({ fileId, patch: { jobName: e.target.value } }),
-            )
+            dispatch(patchDraft({ fileId, patch: { jobName: e.target.value } }))
           }
           placeholder={`e.g. "${documentName} extraction"`}
           className="h-7 text-[11px]"
@@ -435,11 +427,7 @@ export function ChunkingConfigForm({
 
       {/* 4. Chunk size + overlap — overlap defaults to 0; user can set. */}
       <div className="grid grid-cols-2 gap-2">
-        <Field
-          label="Chunk size"
-          required
-          hint="Pages per agent call."
-        >
+        <Field label="Chunk size" required hint="Pages per agent call.">
           <Input
             value={draft.chunkSize ?? ""}
             onChange={(e) => handleChunkSizeChange(e.target.value)}
@@ -450,10 +438,7 @@ export function ChunkingConfigForm({
             className="h-7 text-[11px]"
           />
         </Field>
-        <Field
-          label="Overlap"
-          hint="Pages shared with the prev chunk."
-        >
+        <Field label="Overlap" hint="Repeat pages.">
           <Input
             value={draft.chunkOverlap}
             onChange={(e) => handleChunkOverlapChange(e.target.value)}
@@ -472,7 +457,8 @@ export function ChunkingConfigForm({
           chunk{chunks.length === 1 ? "" : "s"}
           {stats.avgChars > 0 && (
             <>
-              {" "}· avg{" "}
+              {" "}
+              · avg{" "}
               <span className="font-mono">
                 {stats.avgChars.toLocaleString()}
               </span>{" "}
@@ -484,9 +470,9 @@ export function ChunkingConfigForm({
 
       {/* 5. Source variations */}
       <Field
-        label="Source variations"
+        label="Content source"
         required
-        hint="What to send the agent for each chunk. Pick one or more."
+        hint="What the agent will see for each chunk."
       >
         <div className="space-y-1.5">
           {SOURCE_VARIATIONS.map((v) => {
@@ -524,9 +510,6 @@ export function ChunkingConfigForm({
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-snug">
-                    {v.description}
-                  </p>
                 </div>
               </label>
             );
@@ -576,9 +559,7 @@ export function ChunkingConfigForm({
             disabled={!canSave}
             onClick={() => void handleSave()}
             title={
-              selectedJobId
-                ? "Update this template"
-                : "Save as a new template"
+              selectedJobId ? "Update this template" : "Save as a new template"
             }
           >
             {saving ? (
@@ -606,8 +587,8 @@ export function ChunkingConfigForm({
         )}
         <p className="text-[10px] text-muted-foreground/70 leading-snug mt-1.5">
           To run an extraction, click the{" "}
-          <Repeat className="w-2.5 h-2.5 inline-block" /> on a saved
-          template above.
+          <Repeat className="w-2.5 h-2.5 inline-block" /> on a saved template
+          above.
         </p>
       </div>
     </div>
@@ -637,7 +618,9 @@ function ExtraInputsEditor({
     idx: number,
     patch: Partial<{ name: string; source_job_id: string }>,
   ) => {
-    onChange(extraInputs.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
+    onChange(
+      extraInputs.map((row, i) => (i === idx ? { ...row, ...patch } : row)),
+    );
   };
   const removeRow = (idx: number) => {
     onChange(extraInputs.filter((_, i) => i !== idx));
@@ -650,18 +633,15 @@ function ExtraInputsEditor({
         hint="Use another template's results as variables."
       >
         <p className="text-[10px] text-muted-foreground/70 leading-snug">
-          Save another template first — you can then pipe its results
-          into this one as a named variable.
+          Save another template first — you can then pipe its results into this
+          one as a named variable.
         </p>
       </Field>
     );
   }
 
   return (
-    <Field
-      label="Extra inputs"
-      hint="Pull result rows from other templates."
-    >
+    <Field label="Extra inputs" hint="Pull result rows from other templates.">
       <div className="space-y-1.5">
         {extraInputs.map((row, idx) => (
           <div key={idx} className="flex items-center gap-1.5">
@@ -710,8 +690,8 @@ function ExtraInputsEditor({
         {extraInputs.length > 0 && (
           <p className="text-[10px] text-muted-foreground/70 leading-snug">
             Each variable is a JSON array of result rows from the source
-            template, filtered to the current chunk&apos;s page range.
-            Route via the agent variable wiring above.
+            template, filtered to the current chunk&apos;s page range. Route via
+            the agent variable wiring above.
           </p>
         )}
       </div>
@@ -727,7 +707,10 @@ function VariableMappingPreview({
   mapping,
 }: {
   agentName: string;
-  agentVariables: { name: string; helpText?: string | null }[] | null | undefined;
+  agentVariables:
+    | { name: string; helpText?: string | null }[]
+    | null
+    | undefined;
   mapping: Record<string, string>;
 }) {
   if (!agentVariables || agentVariables.length === 0) {
@@ -753,11 +736,11 @@ function VariableMappingPreview({
   const allMapped = agentVariables.every((v) => inverse.has(v.name));
 
   return (
-    <div className="mt-1 space-y-0.5">
+    <div className="my-2 space-y-0.5">
       <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
         Variable wiring
       </p>
-      <ul className="space-y-0.5 text-[10px]">
+      <ul className="space-y-0.5 text-xs">
         {agentVariables.map((v) => {
           const sourceKey = inverse.get(v.name);
           return (
@@ -780,8 +763,8 @@ function VariableMappingPreview({
       </ul>
       {!allMapped && (
         <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-snug">
-          Some agent variables aren't wired up. The run may still work if
-          the agent treats them as optional.
+          Some agent variables aren't wired up. The run may still work if the
+          agent treats them as optional.
         </p>
       )}
     </div>

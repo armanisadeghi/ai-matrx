@@ -356,18 +356,13 @@ export function PodcastAudioPlayer({
         aria-label="Seek"
       />
 
-      {/* Controls row */}
-      <div className="flex items-center justify-between">
-        {/* Left: loop + restart + speed */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggleLoop}
-            className={`p-2 rounded-full transition-colors ${isLooping ? "text-primary" : dark ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground"}`}
-            aria-label="Toggle loop"
-            aria-pressed={isLooping}
-          >
-            <Repeat className="h-4 w-4" />
-          </button>
+      {/* Controls row — 3-column grid with `auto` center column and `1fr` outer
+          columns guarantees the play button is geometrically centered regardless
+          of how wide each side cluster is (e.g. when the volume slider is
+          hidden on mobile). */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+        {/* Left: restart + speed */}
+        <div className="flex items-center gap-1 justify-self-start">
           <button onClick={restart} className={iconBtn} aria-label="Restart">
             <RefreshCw className="h-4 w-4" />
           </button>
@@ -426,7 +421,7 @@ export function PodcastAudioPlayer({
         </div>
 
         {/* Center: skip back 15s / play / skip forward 15s */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 justify-self-center">
           <button
             onClick={skipBackward}
             className={skipBtn}
@@ -456,8 +451,16 @@ export function PodcastAudioPlayer({
           </button>
         </div>
 
-        {/* Right: mute + volume */}
-        <div className="flex items-center gap-1">
+        {/* Right: loop + mute + volume */}
+        <div className="flex items-center gap-1 justify-self-end">
+          <button
+            onClick={toggleLoop}
+            className={`p-2 rounded-full transition-colors ${isLooping ? "text-primary" : dark ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Toggle loop"
+            aria-pressed={isLooping}
+          >
+            <Repeat className="h-4 w-4" />
+          </button>
           <button
             onClick={toggleMute}
             className={iconBtn}

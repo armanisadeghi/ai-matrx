@@ -13,20 +13,38 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 import { PdfBinaryResult } from "@/features/pdf-demo/components/PdfBinaryResult";
 import { type BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 
+type CompressLevel = 1 | 2 | 3 | 4 | 5;
+
+const LEVEL_LABELS: Record<CompressLevel, string> = {
+  1: "1 — lossless (no image recompression)",
+  2: "2 — light (touches very large images only)",
+  3: "3 — balanced (default for everyday use)",
+  4: "4 — aggressive (smaller, visible quality loss)",
+  5: "5 — max (smallest, heavy quality loss)",
+};
+
+interface CompressMeta {
+  levelRequested: number | null;
+  levelUsed: number | null;
+  capSatisfied: boolean | null;
+}
+
 export default function CompressDemo() {
   const backendUrl = useAppSelector(selectResolvedBaseUrl);
   const { getHeaders, waitForAuth } = useApiAuth();
   const [file, setFile] = useState<File | null>(null);
-  const [level, setLevel] = useState<1 | 2 | 3>(2);
-  const [targetSizeMb, setTargetSizeMb] = useState(10);
+  const [level, setLevel] = useState<CompressLevel>(3);
+  const [maxSizeMb, setMaxSizeMb] = useState<number | "">("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BinaryResult | null>(null);
+  const [meta, setMeta] = useState<CompressMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function run() {
     setRunning(true);
     setError(null);
     setResult(null);
+    setMeta(null);
     try {
       if (!file) throw new Error("Choose a .pdf file first.");
       await waitForAuth();
@@ -37,7 +55,13 @@ export default function CompressDemo() {
 
       const form = new FormData();
       form.append("file", file);
-      const url = `${backendUrl}${ENDPOINTS.pdf.compress}?level=${level}&target_size_mb=${targetSizeMb}`;
+
+      const params = new URLSearchParams({ level: String(level) });
+      if (typeof maxSizeMb === "number" && maxSizeMb > 0) {
+        params.set("max_size_mb", String(maxSizeMb));
+      }
+
+      const url = `${backendUrl}${ENDPOINTS.pdf.compress}?${params.toString()}`;
       const response = await fetch(url, {
         method: "POST",
         headers: authHeaders,
@@ -53,6 +77,22 @@ export default function CompressDemo() {
       const contentType =
         response.headers.get("content-type") || "application/pdf";
       setResult({ blob, filename: `compressed_${file.name}`, contentType });
+
+      const levelRequestedHeader = response.headers.get(
+        "X-Compression-Level-Requested",
+      );
+      const levelUsedHeader = response.headers.get("X-Compression-Level-Used");
+      const capSatisfiedHeader = response.headers.get(
+        "X-Compression-Cap-Satisfied",
+      );
+      setMeta({
+        levelRequested: levelRequestedHeader
+          ? Number(levelRequestedHeader)
+          : null,
+        levelUsed: levelUsedHeader ? Number(levelUsedHeader) : null,
+        capSatisfied:
+          capSatisfiedHeader === null ? null : capSatisfiedHeader === "1",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -76,8 +116,12 @@ export default function CompressDemo() {
           </code>
         </div>
         <p className="text-sm text-muted-foreground">
-          Multipart upload — three quality tiers. Level 1 is lossless, 2 is the
-          balanced default, 3 re-encodes images aggressively + strips metadata.
+          Multipart upload — five quality tiers. <strong>Level</strong> is the
+          minimum compression tier to apply.{" "}
+          <strong>Max size (MB)</strong> is an optional absolute cap; when
+          set, the server escalates the level one tier at a time until the
+          output fits (or tier 5 is reached). Leave max size blank to honour
+          the level exactly.
         </p>
       </header>
 
@@ -92,25 +136,36 @@ export default function CompressDemo() {
         </label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Level</span>
+            <span className="font-medium">Level (minimum tier)</span>
             <select
               value={level}
-              onChange={(e) => setLevel(Number(e.target.value) as 1 | 2 | 3)}
+              onChange={(e) =>
+                setLevel(Number(e.target.value) as CompressLevel)
+              }
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
             >
-              <option value={1}>1 — lossless</option>
-              <option value={2}>2 — balanced (default)</option>
-              <option value={3}>3 — aggressive</option>
+              {([1, 2, 3, 4, 5] as const).map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {LEVEL_LABELS[lvl]}
+                </option>
+              ))}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Target size (MB)</span>
+            <span className="font-medium">
+              Max size (MB){" "}
+              <span className="text-muted-foreground">— optional cap</span>
+            </span>
             <Input
               type="number"
-              min={1}
-              step={1}
-              value={targetSizeMb}
-              onChange={(e) => setTargetSizeMb(Number(e.target.value) || 10)}
+              min={0}
+              step="0.1"
+              placeholder="leave blank for no cap"
+              value={maxSizeMb}
+              onChange={(e) => {
+                const v = e.target.value;
+                setMaxSizeMb(v === "" ? "" : Number(v));
+              }}
             />
           </label>
         </div>
@@ -136,6 +191,21 @@ export default function CompressDemo() {
           <pre className="whitespace-pre-wrap break-words font-mono text-xs">
             {error}
           </pre>
+        </div>
+      ) : null}
+
+      {meta && (meta.levelRequested !== null || meta.levelUsed !== null) ? (
+        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Requested level <strong>{meta.levelRequested ?? "?"}</strong>, used
+          level <strong>{meta.levelUsed ?? "?"}</strong>
+          {meta.levelUsed !== null &&
+          meta.levelRequested !== null &&
+          meta.levelUsed > meta.levelRequested
+            ? " (escalated to fit the size cap)"
+            : ""}
+          {meta.capSatisfied === false
+            ? " — cap not met even at tier 5; this is the smallest tier 5 could produce."
+            : ""}
         </div>
       ) : null}
 

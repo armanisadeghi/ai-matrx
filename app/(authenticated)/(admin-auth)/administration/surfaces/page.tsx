@@ -1,11 +1,11 @@
-import { SurfacesAdminPage } from "@/features/tool-registry/surfaces/components/SurfacesAdminPage";
+import { SurfacesContainer } from "@/features/tool-registry/surfaces/components/SurfacesContainer";
 
 export const metadata = {
   title: "UI Surfaces | Tool Registry | Administration",
   description:
-    "Rich admin for ui_surface — grouped by client and tier, with usage stats, bulk activate/deactivate, inline description edit, FK-aware delete, rename via FK CASCADE, and a curated candidate inventory for one-click bulk-add.",
+    "Admin for ui_surface — table-driven search/filter, per-surface detail panel with overview, declared SurfaceValues, agent and tool bindings, code-manifest drift report, and one-click Sync Manifests to apply code declarations to the database.",
 };
 
 export default function Page() {
-  return <SurfacesAdminPage />;
+  return <SurfacesContainer />;
 }

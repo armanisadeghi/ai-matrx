@@ -1,36 +1,33 @@
 "use client";
 
-import React, { lazy, Suspense, useMemo, useState } from "react";
+import React, { lazy, Suspense, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
-  Braces,
+  Copy,
   FileSpreadsheet,
   FileText,
   ListTree,
   Code2,
   Compass,
-  Database,
   FileJson,
   StretchHorizontal,
-  ChevronDown,
   Plus,
   TableProperties,
+  MoreHorizontal,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { cn } from "@/styles/themes/utils";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import IconButton from "@/components/official/IconButton";
+import AdvancedMenu, {
+  type MenuItem,
+} from "@/components/official/AdvancedMenu";
+import { useAdvancedMenu } from "@/hooks/use-advanced-menu";
 import {
   parseJsonSafe,
   detectTabular,
@@ -40,7 +37,6 @@ import {
   downloadText,
   defaultJsonFilename,
 } from "@/components/mardown-display/blocks/json/json-tabular-utils";
-import type { CodeBlockDownloadOption } from "@/features/code-editor/components/code-block/CodeBlockHeader";
 
 // Lazy-loaded — these are heavy and most JSON blocks never reach beyond
 // the default Code view.
@@ -97,8 +93,11 @@ interface JsonBlockProps {
 /**
  * JSON-aware wrapper around CodeBlock. Default view is the standard code
  * editor (zero regression); a small view-mode toggle in the header lets
- * the user switch to Tree, Table (when tabular), or Path Explorer. The
- * download button becomes a multi-format menu (.json, .ndjson, .csv, .xlsx).
+ * the user switch to Tree, Table (when tabular), or Path Explorer.
+ *
+ * JSON-specific extras (save-to-table, NDJSON/CSV/XLSX downloads) feed
+ * through CodeBlock's unified kebab menu via `extraMenuItems`. Non-code
+ * views render their own header using the same AdvancedMenu pattern.
  *
  * If JSON parsing fails or the content is mid-stream, falls back to a
  * plain CodeBlock with no view toggle — the user keeps the original
@@ -135,20 +134,46 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     return detectTabular(parsed.value);
   }, [parsed]);
 
-  // Download options must be computed unconditionally — otherwise React's
-  // hook ordering would change when the parse result flips. When parse
-  // fails, the array is empty and never gets passed downstream.
-  const downloadOptions: CodeBlockDownloadOption[] = useMemo(() => {
+  // Build the JSON-specific menu items. Computed unconditionally so hook
+  // ordering stays stable when the parse result flips.
+  const jsonMenuItems: MenuItem[] = useMemo(() => {
     if (!parsed.ok) return [];
     const data = parsed.value;
-    const opts: CodeBlockDownloadOption[] = [];
+    const items: MenuItem[] = [];
     const base = defaultJsonFilename();
+
+    if (tabular.isTabular) {
+      items.push({
+        key: "save-new-table",
+        icon: Plus,
+        iconColor: "text-emerald-600 dark:text-emerald-400",
+        label: "Save as new table…",
+        description: "Create a fresh data table from these rows",
+        category: "Data",
+        showToast: false,
+        action: () => setSaveNewOpen(true),
+      });
+      items.push({
+        key: "append-table",
+        icon: TableProperties,
+        iconColor: "text-emerald-600 dark:text-emerald-400",
+        label: "Append to existing table…",
+        description: "Map columns and insert into one of your tables",
+        category: "Data",
+        showToast: false,
+        action: () => setAppendOpen(true),
+      });
+    }
+
     if (Array.isArray(data)) {
-      opts.push({
-        label: "Download as NDJSON",
+      items.push({
+        key: "download-ndjson",
         icon: FileText,
+        label: "Download as NDJSON",
         description: "One object per line",
-        onClick: () =>
+        category: "Download",
+        showToast: false,
+        action: () =>
           downloadText(
             `${base}.ndjson`,
             rowsToNdjson(data as unknown[]),
@@ -156,28 +181,36 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           ),
       });
     }
+
     if (tabular.isTabular) {
-      opts.push({
-        label: "Download as CSV",
+      items.push({
+        key: "download-csv",
         icon: FileSpreadsheet,
+        label: "Download as CSV",
         description: `${tabular.rows.length} rows × ${tabular.columns.length} cols`,
-        onClick: () =>
+        category: "Download",
+        showToast: false,
+        action: () =>
           downloadText(
             `${base}.csv`,
             rowsToCsv(tabular.rows, tabular.columns),
             "text/csv",
           ),
       });
-      opts.push({
-        label: "Download as Excel (.xlsx)",
+      items.push({
+        key: "download-xlsx",
         icon: FileSpreadsheet,
+        label: "Download as Excel (.xlsx)",
         description: "Best for spreadsheets",
-        onClick: () => {
+        category: "Download",
+        showToast: false,
+        action: () => {
           void rowsToXlsx(tabular.rows, tabular.columns, `${base}.xlsx`);
         },
       });
     }
-    return opts;
+
+    return items;
   }, [parsed, tabular]);
 
   const suggestedTableName = useMemo(() => {
@@ -190,7 +223,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     return "JSON Data";
   }, [tabular]);
 
-  // Fallback path: streaming or unparseable → original CodeBlock with no extras.
+  // Fallback: streaming or unparseable → original CodeBlock with no extras.
   if (!parsed.ok) {
     return (
       <Suspense fallback={<PaneFallback label="Loading code…" />}>
@@ -209,9 +242,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 
   const data = parsed.value;
 
-  // View-mode toggle injected into the CodeBlock header (Code mode) or
-  // rendered standalone (other modes). One source of truth so the user can
-  // round-trip between modes without losing position.
   const viewToggle = (
     <ViewToggle
       mode={mode}
@@ -219,59 +249,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       tabularAvailable={tabular.isTabular}
     />
   );
-
-  // Save-to-table actions are offered whenever the JSON looks tabular.
-  // The dropdown collapses two related actions (new vs. append) into a
-  // single header button so the toolbar stays compact.
-  const saveButton = tabular.isTabular ? (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Database className="h-3.5 w-3.5 mr-1" />
-          <span className="text-xs">Save to Table</span>
-          <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="z-[9999] w-64">
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            setSaveNewOpen(true);
-          }}
-          className="flex items-start gap-2 cursor-pointer"
-        >
-          <Plus className="h-4 w-4 mt-0.5 shrink-0" />
-          <div className="flex flex-col">
-            <span>Save as new table…</span>
-            <span className="text-[10px] text-muted-foreground">
-              Create a fresh data table from these rows
-            </span>
-          </div>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            setAppendOpen(true);
-          }}
-          className="flex items-start gap-2 cursor-pointer"
-        >
-          <TableProperties className="h-4 w-4 mt-0.5 shrink-0" />
-          <div className="flex flex-col">
-            <span>Append to existing table…</span>
-            <span className="text-[10px] text-muted-foreground">
-              Map columns and insert rows into one of your tables
-            </span>
-          </div>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ) : null;
 
   const tabularCaption =
     tabular.isTabular &&
@@ -290,8 +267,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             customBuiltinKeys={customBuiltinKeys}
             onCodeChange={onCodeChange}
             headerLeftSlot={viewToggle}
-            headerActionsSlot={saveButton}
-            downloadOptions={downloadOptions}
+            extraMenuItems={jsonMenuItems}
           />
         </Suspense>
       ) : (
@@ -302,11 +278,10 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           )}
         >
           <JsonViewHeader
-            mode={mode}
             toggle={viewToggle}
-            saveButton={saveButton}
-            downloadOptions={downloadOptions}
+            menuItems={jsonMenuItems}
             caption={mode === "table" ? tabularCaption || "" : ""}
+            content={content}
           />
           <div className="bg-card">
             {mode === "tree" && (
@@ -429,21 +404,52 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
 };
 
 interface JsonViewHeaderProps {
-  mode: ViewMode;
   toggle: React.ReactNode;
-  saveButton: React.ReactNode;
-  downloadOptions: CodeBlockDownloadOption[];
+  menuItems: MenuItem[];
   caption: string;
+  content: string;
 }
 
+/**
+ * Header for non-code JSON views (Tree / Table / Path). Mirrors the
+ * 2-icon-plus-kebab pattern used by `CodeBlock` so the experience is
+ * consistent regardless of mode. Copy is always available; everything
+ * else (downloads, save-to-table) lives in the kebab menu.
+ */
 const JsonViewHeader: React.FC<JsonViewHeaderProps> = ({
-  mode,
   toggle,
-  saveButton,
-  downloadOptions,
+  menuItems,
   caption,
+  content,
 }) => {
-  const [open, setOpen] = useState(false);
+  const menu = useAdvancedMenu();
+  const kebabRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast.success("Copied JSON to clipboard");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  // Always-present copy entry, so the non-code view header has the same
+  // affordances as the code-mode header (4 icons + kebab).
+  const fullMenuItems: MenuItem[] = [
+    {
+      key: "copy-json",
+      icon: Copy,
+      label: "Copy JSON",
+      category: "Copy",
+      showToast: false,
+      action: handleCopy,
+    },
+    ...menuItems,
+  ];
 
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-zinc-300 dark:bg-zinc-700 text-xs text-gray-700 dark:text-gray-300">
@@ -461,55 +467,36 @@ const JsonViewHeader: React.FC<JsonViewHeaderProps> = ({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1">
-        {saveButton}
-        {downloadOptions.length > 0 && (
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setOpen((v) => !v)}
-            >
-              <Braces className="h-3.5 w-3.5 mr-1" />
-              Export
-            </Button>
-            {open && (
-              <>
-                <div
-                  className="fixed inset-0 z-[9998]"
-                  onClick={() => setOpen(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 z-[9999] min-w-[14rem] rounded-md border border-border bg-popover shadow-lg p-1">
-                  {downloadOptions.map((opt, idx) => {
-                    const Icon = opt.icon;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          opt.onClick();
-                          setOpen(false);
-                        }}
-                        className="w-full flex items-start gap-2 px-2 py-1.5 rounded-sm text-left hover:bg-accent text-xs"
-                      >
-                        <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                        <div className="flex flex-col">
-                          <span>{opt.label}</span>
-                          {opt.description && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {opt.description}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+      <div className="flex items-center gap-0.5">
+        <IconButton
+          icon={Copy}
+          tooltip={copied ? "Copied!" : "Copy JSON"}
+          size="sm"
+          variant="ghost"
+          onClick={handleCopy}
+          tooltipSide="bottom"
+        />
+        <div ref={kebabRef} onClick={(e) => e.stopPropagation()}>
+          <IconButton
+            icon={MoreHorizontal}
+            tooltip="More actions"
+            size="sm"
+            variant="ghost"
+            tooltipSide="bottom"
+            onClick={() => {
+              if (kebabRef.current) menu.open(kebabRef.current);
+            }}
+          />
+        </div>
+        <AdvancedMenu
+          {...menu.menuProps}
+          anchorElement={menu.anchorElement}
+          items={fullMenuItems}
+          title="JSON actions"
+          position="bottom-right"
+          width="260px"
+          maxWidth="300px"
+        />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Copy,
   Check,
@@ -11,22 +11,23 @@ import {
   Edit2,
   ChevronDown,
   ChevronUp,
-  Globe,
   Loader2,
   Wand2,
   RotateCcw,
   WrapText,
   Maximize2,
   ListOrdered,
-  FileText,
   Atom,
   Rocket,
   Zap,
   Paintbrush,
   Code2,
   Brain,
+  FileText,
   FileCode,
   SquareArrowOutUpRight,
+  MoreHorizontal,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
@@ -39,14 +40,11 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { getBuiltinInfoByKey } from "@/lib/redux/prompt-execution/builtins";
+import AdvancedMenu, {
+  type MenuItem,
+} from "@/components/official/AdvancedMenu";
+import { useAdvancedMenu } from "@/hooks/use-advanced-menu";
 
 type AIModalConfig = {
   version: "v2" | "v3";
@@ -54,14 +52,13 @@ type AIModalConfig = {
   title: string;
 };
 
-// Additive header slots. Used by language-specialized wrappers (e.g.
-// `JsonBlock`) to inject extra controls without forking CodeBlock itself.
-export type CodeBlockDownloadOption = {
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
-  description?: string;
-};
+/**
+ * Items that wrappers (e.g. `JsonBlock`) can append to the unified kebab menu.
+ * Use `category` to slot the item into one of the existing buckets — common
+ * choices: `"Data"`, `"Download"`, `"Save"`, `"AI"`, `"View"`. Any new category
+ * appears as its own section in the menu in the order it was first declared.
+ */
+export type CodeBlockMenuItem = MenuItem;
 
 interface CodeBlockHeaderProps {
   language: string;
@@ -92,15 +89,16 @@ interface CodeBlockHeaderProps {
   hideLanguageDisplay?: boolean;
   allowEdit?: boolean;
   customBuiltinKeys?: string[];
-  /** Rendered after the language display, before the optional "View HTML" pill. */
+  /** Rendered after the language display. Used by wrappers to inject
+   *  view-mode toggles (e.g. JsonBlock's Code/Tree/Table/Path switcher). */
   headerLeftSlot?: React.ReactNode;
-  /** Rendered immediately before the Download button in the action row. */
-  headerActionsSlot?: React.ReactNode;
   /**
-   * When provided, replaces the single Download button with a dropdown
-   * whose first item is the default download and additional items follow.
+   * Extra items appended to the kebab menu. Use `category` to control
+   * grouping inside the menu (the four section buckets the header already
+   * declares are: View · Edit · Download · Save · AI). New categories
+   * (e.g. "Data" from JsonBlock) appear as their own section.
    */
-  downloadOptions?: CodeBlockDownloadOption[];
+  extraMenuItems?: CodeBlockMenuItem[];
 }
 
 export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
@@ -115,7 +113,6 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
   toggleEdit,
   toggleFullScreen,
   toggleCollapse,
-  toggleLineNumbers,
   toggleWrapLines,
   isCopied,
   isMobile,
@@ -127,16 +124,13 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
   handleReset,
   minimapEnabled = false,
   toggleMinimap,
-  showLineNumbers = false,
   onAIEdit,
   hideLanguageDisplay = false,
   allowEdit = true,
   customBuiltinKeys = [],
   headerLeftSlot,
-  headerActionsSlot,
-  downloadOptions,
+  extraMenuItems,
 }) => {
-  // Determine if collapse functionality should be available
   const canCollapse = linesCount > 5;
 
   return (
@@ -171,7 +165,6 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
             )}
           </div>
         )}
-        {/* Optional left slot for language-specialized wrappers */}
         {headerLeftSlot && (
           <div
             onClick={(e) => e.stopPropagation()}
@@ -179,30 +172,6 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
           >
             {headerLeftSlot}
           </div>
-        )}
-        {/* View HTML Button */}
-        {isCompleteHTML && handleViewHTML && !isMobile && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleViewHTML();
-            }}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300"
-            title="Open HTML Preview in Canvas"
-            disabled={isCreatingPage}
-          >
-            {isCreatingPage ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                <span>Creating...</span>
-              </>
-            ) : (
-              <>
-                <Globe size={14} />
-                <span>Preview</span>
-              </>
-            )}
-          </button>
         )}
       </div>
       <CodeBlockButtons
@@ -217,7 +186,6 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
         handleDownload={handleDownload}
         toggleEdit={toggleEdit}
         toggleFullScreen={toggleFullScreen}
-        toggleLineNumbers={toggleLineNumbers}
         toggleWrapLines={toggleWrapLines}
         toggleCollapse={toggleCollapse}
         isMobile={isMobile}
@@ -226,12 +194,13 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
         handleReset={handleReset}
         minimapEnabled={minimapEnabled}
         toggleMinimap={toggleMinimap}
-        showLineNumbers={showLineNumbers}
         onAIEdit={onAIEdit}
         allowEdit={allowEdit}
         customBuiltinKeys={customBuiltinKeys}
-        headerActionsSlot={headerActionsSlot}
-        downloadOptions={downloadOptions}
+        isCompleteHTML={isCompleteHTML}
+        handleViewHTML={handleViewHTML}
+        isCreatingPage={isCreatingPage}
+        extraMenuItems={extraMenuItems}
       />
     </div>
   );
@@ -249,7 +218,6 @@ interface CodeBlockButtonsProps {
   handleDownload: (e: React.MouseEvent) => void;
   toggleEdit?: (e: React.MouseEvent) => void;
   toggleFullScreen?: (e: React.MouseEvent) => void;
-  toggleLineNumbers?: (e: React.MouseEvent) => void;
   toggleWrapLines?: (e: React.MouseEvent) => void;
   toggleCollapse?: (e?: React.MouseEvent) => void;
   isMobile: boolean;
@@ -258,15 +226,15 @@ interface CodeBlockButtonsProps {
   handleReset?: (e: React.MouseEvent) => void;
   minimapEnabled?: boolean;
   toggleMinimap?: (e: React.MouseEvent) => void;
-  showLineNumbers?: boolean;
   onAIEdit?: (config: AIModalConfig) => void;
   allowEdit?: boolean;
   customBuiltinKeys?: string[];
-  headerActionsSlot?: React.ReactNode;
-  downloadOptions?: CodeBlockDownloadOption[];
+  isCompleteHTML?: boolean;
+  handleViewHTML?: () => void;
+  isCreatingPage?: boolean;
+  extraMenuItems?: CodeBlockMenuItem[];
 }
 
-// Icon mapping for dynamic icon rendering
 const ICON_MAP: Record<string, LucideIcon> = {
   Rocket,
   Zap,
@@ -281,6 +249,14 @@ const getIconComponent = (iconName: string): LucideIcon => {
   return ICON_MAP[iconName] || Atom;
 };
 
+/**
+ * Synthetic event for menu-triggered actions. The existing handlers all
+ * begin with `e.stopPropagation()` — the menu already swallows propagation
+ * for us, so this stub satisfies the type while doing nothing observable.
+ */
+const noopEvent = (): React.MouseEvent =>
+  ({ stopPropagation() {} }) as unknown as React.MouseEvent;
+
 const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   code,
   language,
@@ -291,7 +267,6 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   isCollapsed,
   handleCopy,
   handleDownload,
-  toggleLineNumbers,
   toggleWrapLines,
   toggleEdit,
   toggleFullScreen,
@@ -302,21 +277,21 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   handleReset,
   minimapEnabled = false,
   toggleMinimap,
-  showLineNumbers = false,
   onAIEdit,
   allowEdit = true,
   customBuiltinKeys = [],
-  headerActionsSlot,
-  downloadOptions,
+  isCompleteHTML = false,
+  handleViewHTML,
+  isCreatingPage = false,
+  extraMenuItems,
 }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
+  const menu = useAdvancedMenu();
+  const kebabRef = useRef<HTMLDivElement>(null);
   const [isOpeningInEditor, setIsOpeningInEditor] = useState(false);
   const dispatch = useAppDispatch();
   const saveAndOpenInCodeEditor = useSaveAndOpenInCodeEditor();
 
-  const handleSaveToCode = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSaveToCode = () => {
     if (!code?.trim()) return;
     dispatch(
       openOverlay({
@@ -331,8 +306,7 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
     );
   };
 
-  const handleOpenInEditor = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenInEditor = async () => {
     if (!code?.trim() || isOpeningInEditor) return;
     setIsOpeningInEditor(true);
     try {
@@ -357,22 +331,175 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
     }
   };
 
-  // Merge default keys with custom keys and make unique
   const defaultKeys = ["generic-code-editor", "code-editor-dynamic-context"];
   const allKeys = [...defaultKeys, ...customBuiltinKeys];
   const uniqueKeys = Array.from(new Set(allKeys));
-
-  // Get builtin info for all unique keys
   const builtins = uniqueKeys
     .map((key) => getBuiltinInfoByKey(key))
     .filter((b): b is NonNullable<typeof b> => b !== undefined);
+
+  // Build the unified menu items list. Order here determines section order
+  // because `AdvancedMenu` preserves insertion order when grouping.
+  const menuItems: MenuItem[] = [];
+
+  if (toggleWrapLines) {
+    menuItems.push({
+      key: "wrap",
+      icon: WrapText,
+      iconColor: showWrapLines ? "text-blue-600 dark:text-blue-400" : undefined,
+      label: showWrapLines ? "Disable word wrap" : "Enable word wrap",
+      category: "View",
+      showToast: false,
+      action: () => toggleWrapLines(noopEvent()),
+    });
+  }
+
+  if (toggleMinimap) {
+    menuItems.push({
+      key: "minimap",
+      icon: Maximize2,
+      iconColor:
+        isEditing && minimapEnabled
+          ? "text-blue-600 dark:text-blue-400"
+          : undefined,
+      label: minimapEnabled ? "Hide minimap" : "Show minimap",
+      description: !isEditing ? "Only available in edit mode" : undefined,
+      disabled: !isEditing,
+      category: "View",
+      showToast: false,
+      action: () => toggleMinimap(noopEvent()),
+    });
+  }
+
+  if (handleFormat) {
+    menuItems.push({
+      key: "format",
+      icon: Wand2,
+      label: "Format code",
+      description: isEditing ? "Shift+Alt+F" : "Only available in edit mode",
+      disabled: !isEditing,
+      category: "Edit",
+      showToast: false,
+      action: () => handleFormat(noopEvent()),
+    });
+  }
+
+  if (handleReset) {
+    menuItems.push({
+      key: "reset",
+      icon: RotateCcw,
+      label: "Reset to original",
+      description: !isEditing ? "Only available in edit mode" : undefined,
+      disabled: !isEditing,
+      category: "Edit",
+      showToast: false,
+      action: () => handleReset(noopEvent()),
+    });
+  }
+
+  menuItems.push({
+    key: "copy-numbered",
+    icon: ListOrdered,
+    label: "Copy with line numbers",
+    category: "Copy",
+    showToast: false,
+    action: () => handleCopy(noopEvent(), true),
+  });
+
+  menuItems.push({
+    key: "download",
+    icon: Download,
+    label: "Download as code",
+    description: `code.${extensionForLanguage(language) || "txt"}`,
+    category: "Download",
+    showToast: false,
+    action: () => handleDownload(noopEvent()),
+  });
+
+  if (isCompleteHTML && handleViewHTML) {
+    menuItems.push({
+      key: "view-html",
+      icon: Globe,
+      iconColor: "text-purple-600 dark:text-purple-400",
+      label: "Open HTML preview",
+      description: "Render in Canvas",
+      disabled: isCreatingPage,
+      category: "Preview",
+      showToast: false,
+      action: handleViewHTML,
+    });
+  }
+
+  menuItems.push({
+    key: "save-to-code",
+    icon: FileCode,
+    iconColor: "text-rose-600 dark:text-rose-400",
+    label: "Save to Code files",
+    description: "Add to your /code workspace",
+    category: "Save",
+    showToast: false,
+    action: handleSaveToCode,
+  });
+
+  menuItems.push({
+    key: "save-and-open",
+    icon: isOpeningInEditor ? Loader2 : SquareArrowOutUpRight,
+    iconColor: "text-blue-600 dark:text-blue-400",
+    label: "Save and open in editor",
+    description: "Drops into Chat Captures",
+    disabled: isOpeningInEditor,
+    category: "Save",
+    showToast: false,
+    action: handleOpenInEditor,
+  });
+
+  if (allowEdit && onAIEdit) {
+    for (const builtin of builtins) {
+      const IconComp = getIconComponent(builtin.icon);
+      menuItems.push({
+        key: `ai-${builtin.key}`,
+        icon: IconComp,
+        iconColor: "text-purple-600 dark:text-purple-400",
+        label: builtin.name,
+        category: "AI",
+        showToast: false,
+        action: () =>
+          onAIEdit({
+            version: "v2",
+            builtinId: builtin.id,
+            title: builtin.name,
+          }),
+      });
+      if (builtin.context) {
+        menuItems.push({
+          key: `ai-${builtin.key}-ctx`,
+          icon: IconComp,
+          iconColor: "text-purple-600 dark:text-purple-400",
+          label: `${builtin.name} (Context)`,
+          category: "AI",
+          showToast: false,
+          action: () =>
+            onAIEdit({
+              version: "v3",
+              builtinId: builtin.id,
+              title: `${builtin.name} (Context)`,
+            }),
+        });
+      }
+    }
+  }
+
+  if (extraMenuItems && extraMenuItems.length > 0) {
+    menuItems.push(...extraMenuItems);
+  }
+
   return (
     <div className="flex items-center gap-0.5 pr-5">
-      {/* Fullscreen - Always visible on desktop */}
-      {toggleFullScreen && !isMobile && (
+      {/* 1. Fullscreen */}
+      {toggleFullScreen && (
         <IconButton
           icon={isFullScreen ? Minimize : Expand}
-          tooltip={isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
+          tooltip={isFullScreen ? "Exit fullscreen" : "Fullscreen"}
           size="sm"
           variant="ghost"
           onClick={toggleFullScreen}
@@ -380,8 +507,8 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
         />
       )}
 
-      {/* Collapse - Always rendered to prevent shifting, disabled when not applicable */}
-      {toggleCollapse && !isMobile && (
+      {/* 2. Collapse / Expand */}
+      {toggleCollapse && (
         <IconButton
           icon={isCollapsed ? ChevronDown : ChevronUp}
           tooltip={
@@ -404,298 +531,21 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
         />
       )}
 
-      {/* Word Wrap Toggle - Available in both modes */}
-      {toggleWrapLines && !isMobile && (
-        <IconButton
-          icon={WrapText}
-          tooltip={showWrapLines ? "Disable word wrap" : "Enable word wrap"}
-          size="sm"
-          variant={showWrapLines ? "default" : "ghost"}
-          onClick={toggleWrapLines}
-          tooltipSide="bottom"
-        />
-      )}
+      {/* 3. Copy */}
+      <IconButton
+        icon={isCopied ? Check : Copy}
+        tooltip={isCopied ? "Copied!" : "Copy code"}
+        size="sm"
+        variant="ghost"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleCopy(e);
+        }}
+        tooltipSide="bottom"
+      />
 
-      {/* Minimap Toggle - Only works in edit mode (Monaco Editor feature) */}
-      {toggleMinimap && !isMobile && (
-        <IconButton
-          icon={Maximize2}
-          tooltip={
-            !isEditing
-              ? "Minimap only available in edit mode"
-              : minimapEnabled
-                ? "Hide minimap"
-                : "Show minimap"
-          }
-          size="sm"
-          variant={minimapEnabled && isEditing ? "default" : "ghost"}
-          onClick={toggleMinimap}
-          tooltipSide="bottom"
-          disabled={!isEditing}
-          className={cn(!isEditing ? "opacity-40 cursor-not-allowed" : "")}
-        />
-      )}
-
-      {/* Format - Always rendered, disabled in view mode */}
-      {handleFormat && !isMobile && (
-        <IconButton
-          icon={Wand2}
-          tooltip={
-            isEditing
-              ? "Format code (Shift+Alt+F)"
-              : "Format only available in edit mode"
-          }
-          size="sm"
-          variant="ghost"
-          onClick={handleFormat}
-          tooltipSide="bottom"
-          disabled={!isEditing}
-          className={cn(!isEditing ? "opacity-40 cursor-not-allowed" : "")}
-        />
-      )}
-
-      {/* Reset - Always rendered, disabled in view mode */}
-      {handleReset && !isMobile && (
-        <IconButton
-          icon={RotateCcw}
-          tooltip={
-            isEditing
-              ? "Reset to original code"
-              : "Reset only available in edit mode"
-          }
-          size="sm"
-          variant="ghost"
-          onClick={handleReset}
-          tooltipSide="bottom"
-          disabled={!isEditing}
-          className={cn(!isEditing ? "opacity-40 cursor-not-allowed" : "")}
-        />
-      )}
-
-      {/* Save to Code - Always visible on desktop */}
-      {!isMobile && (
-        <IconButton
-          icon={FileCode}
-          tooltip="Save to Code files"
-          size="sm"
-          variant="ghost"
-          onClick={handleSaveToCode}
-          tooltipSide="bottom"
-          className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
-        />
-      )}
-
-      {/* Save & open in /code editor — one-click path from chat to the
-          full workspace. Uses the shared save-and-open helper so the
-          destination (Chat Captures folder) stays consistent with every
-          other surface that does this. */}
-      {!isMobile && (
-        <IconButton
-          icon={isOpeningInEditor ? Loader2 : SquareArrowOutUpRight}
-          tooltip="Save and open in editor"
-          size="sm"
-          variant="ghost"
-          onClick={handleOpenInEditor}
-          tooltipSide="bottom"
-          className={cn(
-            "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300",
-            isOpeningInEditor && "animate-spin",
-          )}
-        />
-      )}
-
-      {/* Optional action slot for language-specialized wrappers */}
-      {headerActionsSlot && !isMobile && (
-        <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-          {headerActionsSlot}
-        </div>
-      )}
-
-      {/* Download — single button by default, dropdown when extra options provided */}
-      {!isMobile &&
-        (downloadOptions && downloadOptions.length > 0 ? (
-          <DropdownMenu
-            open={isDownloadMenuOpen}
-            onOpenChange={setIsDownloadMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <div>
-                <IconButton
-                  icon={Download}
-                  tooltip="Download (more formats)"
-                  size="sm"
-                  variant="ghost"
-                  tooltipSide="bottom"
-                />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[9999] w-56">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload(e as unknown as React.MouseEvent);
-                  setIsDownloadMenuOpen(false);
-                }}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <Download className="h-4 w-4" />
-                <span>Download as code</span>
-              </DropdownMenuItem>
-              {downloadOptions.length > 0 && <DropdownMenuSeparator />}
-              {downloadOptions.map((opt, idx) => {
-                const Icon = opt.icon;
-                return (
-                  <DropdownMenuItem
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      opt.onClick();
-                      setIsDownloadMenuOpen(false);
-                    }}
-                    className="flex items-start gap-2 cursor-pointer"
-                  >
-                    <Icon className="h-4 w-4 mt-0.5 shrink-0" />
-                    <div className="flex flex-col">
-                      <span>{opt.label}</span>
-                      {opt.description && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {opt.description}
-                        </span>
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <IconButton
-            icon={Download}
-            tooltip="Download code"
-            size="sm"
-            variant="ghost"
-            onClick={handleDownload}
-            tooltipSide="bottom"
-          />
-        ))}
-
-      {/* Copy - Always visible with dropdown for line numbers option */}
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <div>
-            <IconButton
-              icon={isCopied ? Check : Copy}
-              tooltip={
-                isCopied ? "Copied!" : "Copy code (right-click for options)"
-              }
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (e.button === 0) {
-                  // Left click - default copy
-                  handleCopy(e);
-                }
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsDropdownOpen(true);
-              }}
-              tooltipSide="bottom"
-            />
-          </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="z-[9999]">
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCopy(e as any, false);
-              setIsDropdownOpen(false);
-            }}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            <FileText className="h-4 w-4" />
-            <span>Copy code only</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCopy(e as any, true);
-              setIsDropdownOpen(false);
-            }}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            <ListOrdered className="h-4 w-4" />
-            <span>Copy with line numbers</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* AI Edit - Available in both modes with dropdown for V2/V3 - Only if editing is allowed */}
-      {onAIEdit && !isMobile && allowEdit && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div>
-              <IconButton
-                icon={Atom}
-                tooltip="AI Code Editor (click for options)"
-                size="sm"
-                variant="ghost"
-                tooltipSide="bottom"
-                className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-              />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[9999] w-56">
-            {builtins.map((builtin, index) => {
-              const IconComponent = getIconComponent(builtin.icon);
-              return (
-                <React.Fragment key={builtin.key}>
-                  {/* Non-Context Aware mode (now using AICodeEditorModal instead of V2) */}
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAIEdit({
-                        version: "v2",
-                        builtinId: builtin.id,
-                        title: builtin.name,
-                      });
-                    }}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{builtin.name}</span>
-                  </DropdownMenuItem>
-
-                  {/* Context-Aware mode - KEEP THIS! IT WORKS BEAUTIFULLY! */}
-                  {builtin.context && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAIEdit({
-                          version: "v3",
-                          builtinId: builtin.id,
-                          title: `${builtin.name} (Context)`,
-                        });
-                      }}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <IconComponent className="h-4 w-4" />
-                      <span>{builtin.name} (Context)</span>
-                    </DropdownMenuItem>
-                  )}
-
-                  {index < builtins.length - 1 && <DropdownMenuSeparator />}
-                </React.Fragment>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-
-      {/* Edit/View Toggle - Always visible on desktop, icon switches based on mode - Only if editing is allowed */}
-      {toggleEdit && !isMobile && allowEdit && (
+      {/* 4. Edit / View */}
+      {toggleEdit && allowEdit && (
         <IconButton
           icon={isEditing ? Eye : Edit2}
           tooltip={isEditing ? "Exit edit mode" : "Edit code"}
@@ -705,6 +555,30 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
           tooltipSide="bottom"
         />
       )}
+
+      {/* 5. Kebab — everything else lives here */}
+      <div ref={kebabRef} onClick={(e) => e.stopPropagation()}>
+        <IconButton
+          icon={MoreHorizontal}
+          tooltip="More actions"
+          size="sm"
+          variant="ghost"
+          tooltipSide="bottom"
+          onClick={() => {
+            if (kebabRef.current) menu.open(kebabRef.current);
+          }}
+        />
+      </div>
+
+      <AdvancedMenu
+        {...menu.menuProps}
+        anchorElement={menu.anchorElement}
+        items={menuItems}
+        title="Code actions"
+        position="bottom-right"
+        width="260px"
+        maxWidth="300px"
+      />
     </div>
   );
 };

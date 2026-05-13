@@ -779,17 +779,35 @@ export type Database = {
         Row: {
           agent_id: string
           created_at: string
+          id: string
+          organization_id: string | null
+          project_id: string | null
           surface_name: string
+          task_id: string | null
+          user_id: string | null
+          value_mappings: Json
         }
         Insert: {
           agent_id: string
           created_at?: string
+          id?: string
+          organization_id?: string | null
+          project_id?: string | null
           surface_name: string
+          task_id?: string | null
+          user_id?: string | null
+          value_mappings?: Json
         }
         Update: {
           agent_id?: string
           created_at?: string
+          id?: string
+          organization_id?: string | null
+          project_id?: string | null
           surface_name?: string
+          task_id?: string | null
+          user_id?: string | null
+          value_mappings?: Json
         }
         Relationships: [
           {
@@ -797,6 +815,13 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agx_agent_surface_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -9869,6 +9894,7 @@ export type Database = {
           chunking_strategy: string
           created_at: string
           description: string | null
+          extra_inputs: Json
           file_id: string
           id: string
           is_saved: boolean
@@ -9895,6 +9921,7 @@ export type Database = {
           chunking_strategy?: string
           created_at?: string
           description?: string | null
+          extra_inputs?: Json
           file_id: string
           id?: string
           is_saved?: boolean
@@ -9921,6 +9948,7 @@ export type Database = {
           chunking_strategy?: string
           created_at?: string
           description?: string | null
+          extra_inputs?: Json
           file_id?: string
           id?: string
           is_saved?: boolean
@@ -16893,16 +16921,19 @@ export type Database = {
       }
       tl_def_surface: {
         Row: {
+          arg_mappings: Json
           created_at: string
           surface_name: string
           tool_id: string
         }
         Insert: {
+          arg_mappings?: Json
           created_at?: string
           surface_name: string
           tool_id: string
         }
         Update: {
+          arg_mappings?: Json
           created_at?: string
           surface_name?: string
           tool_id?: string
@@ -18098,6 +18129,53 @@ export type Database = {
             columns: ["client_name"]
             isOneToOne: false
             referencedRelation: "ui_client"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_value: {
+        Row: {
+          always_available: boolean
+          created_at: string
+          description: string
+          label: string
+          name: string
+          sort_order: number
+          surface_name: string
+          typical_char_count: number
+          updated_at: string
+          value_type: string
+        }
+        Insert: {
+          always_available?: boolean
+          created_at?: string
+          description?: string
+          label?: string
+          name: string
+          sort_order?: number
+          surface_name: string
+          typical_char_count?: number
+          updated_at?: string
+          value_type?: string
+        }
+        Update: {
+          always_available?: boolean
+          created_at?: string
+          description?: string
+          label?: string
+          name?: string
+          sort_order?: number
+          surface_name?: string
+          typical_char_count?: number
+          updated_at?: string
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_value_surface_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
             referencedColumns: ["name"]
           },
         ]

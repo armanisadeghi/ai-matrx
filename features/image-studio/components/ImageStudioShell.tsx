@@ -484,6 +484,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
           onDownloadAll={handleDownloadAll}
           onDownloadSelected={handleDownloadSelected}
           onSaveAll={handleSaveAll}
+          lastSaveResult={studio.lastSaveResult}
           onOpenPreview={() => openPreview()}
           canOpenPreview={studio.files.length > 0}
           isPreviewOpen={previewOpen}
@@ -600,6 +601,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
             onDownloadAll={handleDownloadAll}
             onDownloadSelected={handleDownloadSelected}
             onSaveAll={handleSaveAll}
+            lastSaveResult={studio.lastSaveResult}
             onOpenPreview={() => openPreview()}
             canOpenPreview={studio.files.length > 0}
             isPreviewOpen={previewOpen}

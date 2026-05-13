@@ -24,7 +24,13 @@ import type {
   ManagedAgentOptions,
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
-import { mapScopeToInstance } from "@/features/agents/utils/scope-mapping";
+import {
+  mapScopeToInstance,
+  mapScopeToInstanceWithSurface,
+} from "@/features/agents/utils/scope-mapping";
+import { createClient as createBrowserSupabase } from "@/utils/supabase/client";
+import { isValueMappingMap } from "@/features/tool-registry/surfaces/types";
+import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
@@ -110,6 +116,74 @@ async function pollForCompletion(
 }
 
 // =============================================================================
+// Surface value_mappings lookup
+//
+// Returns the most-specific `agx_agent_surface.value_mappings` JSONB for the
+// given (agentId, surfaceName) and the current Redux caller scope:
+//   1. user binding for the active auth user (most specific)
+//   2. organization binding for the active organization (when one is set)
+//   3. global binding (user_id IS NULL AND organization_id IS NULL ...)
+//
+// Returns `null` when no binding row matches. RLS does the heavy lifting —
+// this code only picks the priority order; it cannot read someone else's
+// rows even if it tried.
+// =============================================================================
+
+async function fetchSurfaceValueMappingsForLaunch(
+  agentId: string,
+  surfaceName: string,
+  state: RootState,
+): Promise<ValueMappingMap | null> {
+  const supabase = createBrowserSupabase();
+  const userId = state.userAuth?.id ?? null;
+  // Active org id, when the user has one selected. Read defensively — slice
+  // shape varies across feature flags. `organizationId` is the canonical key
+  // on most slices that expose it.
+  const orgState = (
+    state as unknown as {
+      organizations?: { activeOrganizationId?: string | null };
+    }
+  ).organizations;
+  const orgId = orgState?.activeOrganizationId ?? null;
+
+  // One query returns every row visible under RLS; pick the best match in JS
+  // to avoid a chain of conditional queries.
+  const { data, error } = await supabase
+    .from("agx_agent_surface")
+    .select("user_id, organization_id, project_id, task_id, value_mappings")
+    .eq("agent_id", agentId)
+    .eq("surface_name", surfaceName);
+
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+
+  const userRow = userId ? data.find((r) => r.user_id === userId) : undefined;
+  if (userRow && isValueMappingMap(userRow.value_mappings)) {
+    return userRow.value_mappings;
+  }
+
+  const orgRow = orgId
+    ? data.find((r) => r.organization_id === orgId)
+    : undefined;
+  if (orgRow && isValueMappingMap(orgRow.value_mappings)) {
+    return orgRow.value_mappings;
+  }
+
+  const globalRow = data.find(
+    (r) =>
+      r.user_id === null &&
+      r.organization_id === null &&
+      r.project_id === null &&
+      r.task_id === null,
+  );
+  if (globalRow && isValueMappingMap(globalRow.value_mappings)) {
+    return globalRow.value_mappings;
+  }
+
+  return null;
+}
+
+// =============================================================================
 // Orchestrator Thunk
 // =============================================================================
 
@@ -147,6 +221,7 @@ export const launchAgentExecution = createAsyncThunk<
   const originalText = runtime?.originalText;
   const widgetHandleId = runtime?.widgetHandleId;
   const variables = runtime?.variables;
+  const surfaceName = runtime?.surfaceName;
 
   const displayModeOverride = config?.displayMode;
   const autoRun = config?.autoRun;
@@ -338,21 +413,91 @@ export const launchAgentExecution = createAsyncThunk<
       const agState = getState() as RootState;
       const agent = agState.agentDefinition.agents?.[agentId];
       if (agent) {
-        const { variableValues, contextEntries } = mapScopeToInstance(
-          applicationScope,
-          null,
-          agent.variableDefinitions ?? [],
-          agent.contextSlots ?? [],
-        );
-        if (Object.keys(variableValues).length > 0) {
-          dispatch(
-            setUserVariableValues({ conversationId, values: variableValues }),
-          );
+        // When the caller passed `surfaceName`, look up the most-specific
+        // `agx_agent_surface` binding for (agentId, surfaceName, caller scope)
+        // and apply its `value_mappings` JSONB. The legacy auto-name-match
+        // still runs as a fallback for keys the binding didn't address.
+        let surfaceValueMappings: ValueMappingMap | null = null;
+        if (surfaceName) {
+          try {
+            surfaceValueMappings = await fetchSurfaceValueMappingsForLaunch(
+              agentId,
+              surfaceName,
+              agState,
+            );
+          } catch (err) {
+            console.warn(
+              "[launchAgentExecution] surface value_mappings lookup failed; falling back to legacy resolver",
+              err,
+            );
+          }
         }
-        if (contextEntries.length > 0) {
-          dispatch(
-            setContextEntries({ conversationId, entries: contextEntries }),
+
+        if (
+          surfaceValueMappings &&
+          Object.keys(surfaceValueMappings).length > 0
+        ) {
+          const result = mapScopeToInstanceWithSurface(
+            applicationScope,
+            null,
+            surfaceValueMappings,
+            agent.variableDefinitions ?? [],
+            agent.contextSlots ?? [],
           );
+          if (result.errors.length > 0) {
+            console.error(
+              "[launchAgentExecution] surface mapping errors:",
+              result.errors,
+            );
+            // Phase 1: surface the errors via console; user-facing remediation
+            // (pre-launch dialog for `prompt_user`, blocking on `required`)
+            // lands in Phase 2 alongside the mapping editor.
+          }
+          if (result.warnings.length > 0) {
+            console.warn(
+              "[launchAgentExecution] surface mapping warnings:",
+              result.warnings,
+            );
+          }
+          if (Object.keys(result.variableValues).length > 0) {
+            dispatch(
+              setUserVariableValues({
+                conversationId,
+                values: result.variableValues,
+              }),
+            );
+          }
+          if (result.contextEntries.length > 0) {
+            dispatch(
+              setContextEntries({
+                conversationId,
+                entries: result.contextEntries,
+              }),
+            );
+          }
+          if (result.pendingPrompts.length > 0) {
+            console.info(
+              "[launchAgentExecution] pendingPrompts deferred to Phase 2 UI:",
+              result.pendingPrompts.map((p) => p.targetName),
+            );
+          }
+        } else {
+          const { variableValues, contextEntries } = mapScopeToInstance(
+            applicationScope,
+            null,
+            agent.variableDefinitions ?? [],
+            agent.contextSlots ?? [],
+          );
+          if (Object.keys(variableValues).length > 0) {
+            dispatch(
+              setUserVariableValues({ conversationId, values: variableValues }),
+            );
+          }
+          if (contextEntries.length > 0) {
+            dispatch(
+              setContextEntries({ conversationId, entries: contextEntries }),
+            );
+          }
         }
       }
     }

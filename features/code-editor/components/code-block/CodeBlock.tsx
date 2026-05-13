@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/styles/themes/utils";
 import SmallCodeEditor from "./SmallCodeEditor";
 import CodeBlockHeader, {
-  type CodeBlockDownloadOption,
+  type CodeBlockMenuItem,
 } from "@/features/code-editor/components/code-block/CodeBlockHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import StickyButtons from "./StickyButtons";
@@ -19,9 +19,9 @@ import {
   vscDarkPlus,
   vs,
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { SmartCodeEditorModal } from "@/features/code-editor/agent-code-editor/components/SmartCodeEditorModal";
 import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
+import { useOpenSmartCodeEditorWindow } from "@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow";
 import {
   mapLanguageForPrism,
   mapLanguageForMonaco,
@@ -56,14 +56,11 @@ interface CodeBlockProps {
    */
   headerLeftSlot?: React.ReactNode;
   /**
-   * Optional node rendered immediately before the Download button.
+   * Extra items appended to the kebab menu. Use `category` on each item to
+   * place it in an existing section (View · Edit · Download · Save · AI) or
+   * introduce a new one (e.g. "Data" for tabular JSON actions).
    */
-  headerActionsSlot?: React.ReactNode;
-  /**
-   * When provided, the Download button becomes a dropdown whose first entry
-   * is the default download and subsequent entries come from this array.
-   */
-  downloadOptions?: CodeBlockDownloadOption[];
+  extraMenuItems?: CodeBlockMenuItem[];
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
@@ -79,8 +76,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   allowEdit = true,
   customBuiltinKeys = [],
   headerLeftSlot,
-  headerActionsSlot,
-  downloadOptions,
+  extraMenuItems,
 }) => {
   // Map language for respective editors (with additional safety checks)
   const prismLanguage = mapLanguageForPrism(rawLanguage);
@@ -123,9 +119,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const [isBottomInView, setIsBottomInView] = useState(false);
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   const [formatTrigger, setFormatTrigger] = useState(0);
-  const [aiModalConfig, setAiModalConfig] = useState<AIModalConfig | null>(
-    null,
-  );
+  const openSmartCodeEditorWindow = useOpenSmartCodeEditorWindow();
   const bottomRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -336,18 +330,18 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   };
 
   const handleOpenAIModal = (config: AIModalConfig) => {
-    console.log("AI Modal Opening with config:", config);
-    setAiModalConfig(config);
-  };
-
-  const handleCloseAIModal = () => {
-    setAiModalConfig(null);
-  };
-
-  const handleAICodeChange = (newCode: string, version?: number) => {
-    console.log("AI Code Change:", { version, codeLength: newCode.length });
-    setEditedCode(newCode);
-    onCodeChange?.(newCode);
+    const agent = agentForPromptKey(config.builtinId);
+    openSmartCodeEditorWindow({
+      agents: [agent],
+      defaultPickerAgentId: agent.id,
+      initialCode: editedCode,
+      language: monacoLanguage,
+      title: config.title,
+      onCodeChange: (event) => {
+        setEditedCode(event.code);
+        onCodeChange?.(event.code);
+      },
+    });
   };
 
   return (
@@ -413,8 +407,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           allowEdit={allowEdit}
           customBuiltinKeys={customBuiltinKeys}
           headerLeftSlot={headerLeftSlot}
-          headerActionsSlot={headerActionsSlot}
-          downloadOptions={downloadOptions}
+          extraMenuItems={extraMenuItems}
         />
         {showStickyButtons && (
           <StickyButtons
@@ -531,28 +524,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             </div>
           )}
         </div>
-
-        {/* AI Code Editor Modal — agent-system. v2 (current_code) and v3
-            (dynamic_context) collapse to the same SmartCodeEditorModal; the
-            agent UUID selects which variable receives the code. */}
-        {aiModalConfig &&
-          (() => {
-            const agent = agentForPromptKey(aiModalConfig.builtinId);
-            return (
-              <SmartCodeEditorModal
-                open={true}
-                onOpenChange={(open) => {
-                  if (!open) handleCloseAIModal();
-                }}
-                agents={[agent]}
-                defaultPickerAgentId={agent.id}
-                initialCode={code}
-                language={monacoLanguage}
-                onCodeChange={(newCode) => handleAICodeChange(newCode)}
-                title={aiModalConfig.title}
-              />
-            );
-          })()}
       </div>
     </>
   );

@@ -494,7 +494,7 @@ export function ManipulationPanel({
   const redact = useOpState();
 
   // ── Per-op input state ─────────────────────────────────────────────────────
-  const [compressLevel, setCompressLevel] = useState<1 | 2 | 3>(2);
+  const [compressLevel, setCompressLevel] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [rotPages, setRotPages] = useState("");
   const [rotation, setRotation] = useState<90 | 180 | 270>(90);
   const [delPages, setDelPages] = useState("");
@@ -652,13 +652,15 @@ export function ManipulationPanel({
           <select
             value={compressLevel}
             onChange={(e) =>
-              setCompressLevel(Number(e.target.value) as 1 | 2 | 3)
+              setCompressLevel(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)
             }
             className="w-full rounded border border-border bg-background px-2 py-0.5 text-[11px]"
           >
-            <option value={1}>1 — Smallest / low quality</option>
-            <option value={2}>2 — Medium (recommended)</option>
-            <option value={3}>3 — High quality</option>
+            <option value={1}>1 — Lossless (largest)</option>
+            <option value={2}>2 — Light</option>
+            <option value={3}>3 — Balanced (recommended)</option>
+            <option value={4}>4 — Aggressive</option>
+            <option value={5}>5 — Max (smallest)</option>
           </select>
         </Row>
       </OpCard>

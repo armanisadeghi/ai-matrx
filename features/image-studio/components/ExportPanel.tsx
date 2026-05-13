@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
+  CheckCircle2,
   CloudUpload,
   Download,
   Eye,
   FileDown,
   FolderInput,
+  FolderOpen,
   Gauge,
   Loader2,
   Paintbrush,
@@ -15,7 +18,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import type { ImageFit, ImagePosition, OutputFormat } from "../types";
+import type {
+  ImageFit,
+  ImagePosition,
+  OutputFormat,
+  SaveStudioResult,
+} from "../types";
 import { formatBytes } from "../utils/format-bytes";
 import { CropControls } from "./CropControls";
 
@@ -81,11 +89,18 @@ interface ExportPanelProps {
   onDownloadSelected: () => void;
   /**
    * Save all generated variants to the user's library. `makePublic`
-   * controls visibility — when true, files become public and the
-   * response carries permanent CDN URLs safe to share. When false
-   * (default), they're private and require auth to view.
+   * controls visibility — when true (default), files become public and
+   * the response carries permanent CDN URLs safe to share. When false,
+   * they're private and require auth to view.
    */
   onSaveAll: (folder: string, makePublic: boolean) => void;
+  /**
+   * Result of the last successful save — used to surface the
+   * destination folder (with a deep-link) inline so the user can
+   * navigate straight to their files instead of guessing where they
+   * went.
+   */
+  lastSaveResult?: SaveStudioResult | null;
   onOpenPreview?: () => void;
   canOpenPreview?: boolean;
   isPreviewOpen?: boolean;
@@ -123,6 +138,7 @@ export function ExportPanel({
   onDownloadAll,
   onDownloadSelected,
   onSaveAll,
+  lastSaveResult,
   onOpenPreview,
   canOpenPreview = false,
   isPreviewOpen = false,
@@ -131,7 +147,17 @@ export function ExportPanel({
   describedFileCount = 0,
 }: ExportPanelProps) {
   const [folder, setFolder] = useState("image-studio");
-  const [makePublic, setMakePublic] = useState(false);
+  // Default to PUBLIC — the whole point of saving from the studio is to
+  // get a permanent shareable URL on every variant. Matches the hook's
+  // default. Users who want private can flip the checkbox below.
+  const [makePublic, setMakePublic] = useState(true);
+
+  // Destination preview — what the folder field WILL resolve to. We
+  // show this both before and after save so the user always sees where
+  // their files are going / went.
+  const destinationFolderPath = `Images/Generated/${
+    folder.trim().replace(/^\/+|\/+$/g, "") || "image-studio"
+  }`;
 
   return (
     <aside className="flex flex-col h-full min-h-0 border-l border-border bg-card/50">
@@ -381,6 +407,25 @@ export function ExportPanel({
               placeholder="image-studio"
             />
           </div>
+
+          {/* Destination preview — always visible so the user knows
+              EXACTLY where the variants will land before they click Save. */}
+          <div className="mt-1.5 flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] text-muted-foreground">
+            <FolderOpen className="h-3 w-3 shrink-0 text-muted-foreground" />
+            <span className="truncate">
+              Saves to{" "}
+              <code
+                className="font-mono text-foreground"
+                title={destinationFolderPath}
+              >
+                {destinationFolderPath}
+              </code>
+              <span className="block text-[10px]">
+                Each source gets its own subfolder so variants stay grouped.
+              </span>
+            </span>
+          </div>
+
           <label className="mt-1.5 flex items-start gap-2 text-xs cursor-pointer select-none">
             <Checkbox
               checked={makePublic}
@@ -391,7 +436,8 @@ export function ExportPanel({
               <span className="font-medium">Make publicly viewable</span>
               <span className="block text-[10px] text-muted-foreground">
                 Returns permanent CDN URLs anyone can load — safe to share.
-                Leave unchecked to keep variants private to your account.
+                Uncheck to keep variants private to your account (URLs expire
+                ~1h).
               </span>
             </span>
           </label>
@@ -413,13 +459,61 @@ export function ExportPanel({
                 ? "Save all to library (public)"
                 : "Save all to library (private)"}
           </button>
-          <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
-            Uploads every generated variant to your cloud-files library under{" "}
-            <code className="font-mono">
-              Images/Generated/{folder || "image-studio"}
-            </code>
-            .
-          </p>
+
+          {/* Post-save success card — visible after a successful save
+              with a deep-link to the destination folder in /files. Stays
+              visible until the user kicks off another save, so they
+              don't lose track of where the last batch went. */}
+          {lastSaveResult && lastSaveResult.savedCount > 0 && (
+            <div className="mt-2 rounded-md border border-success/40 bg-success/5 p-2">
+              <div className="flex items-start gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-success">
+                    Saved {lastSaveResult.savedCount}{" "}
+                    {lastSaveResult.savedCount === 1 ? "variant" : "variants"}
+                    {lastSaveResult.failedFilenames.length > 0 && (
+                      <>
+                        {" "}
+                        <span className="text-destructive">
+                          ({lastSaveResult.failedFilenames.length} failed)
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  <p
+                    className="text-[10px] text-muted-foreground mt-0.5 truncate font-mono"
+                    title={lastSaveResult.folderPath}
+                  >
+                    {lastSaveResult.folderPath}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <Link
+                  href={`/files/${lastSaveResult.folderPath
+                    .split("/")
+                    .map(encodeURIComponent)
+                    .join("/")}`}
+                  className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-success/40 bg-success/10 hover:bg-success/20 px-2 py-1 text-[11px] font-medium text-success transition-colors"
+                  title="Open this folder in your Files browser"
+                >
+                  <FolderOpen className="h-3 w-3" />
+                  Open folder
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {!lastSaveResult && (
+            <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
+              Variants land at{" "}
+              <code className="font-mono">{destinationFolderPath}</code>. Public
+              saves return a permanent CDN URL on every variant — that&apos;s
+              what the per-tile <span className="font-medium">Copy URL</span>{" "}
+              button copies.
+            </p>
+          )}
         </div>
       </div>
     </aside>

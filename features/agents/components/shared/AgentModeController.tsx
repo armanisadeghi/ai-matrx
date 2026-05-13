@@ -7,6 +7,7 @@ import {
   AppWindow,
   Eye,
   History,
+  Layers,
   LayoutGrid,
   Pencil,
   Play,
@@ -33,6 +34,7 @@ export type AgentPageMode =
   | "run"
   | "shortcuts"
   | "apps"
+  | "surfaces"
   | "versions"
   | "widgets";
 export type ModeOption = AgentPageMode | "new";
@@ -43,6 +45,7 @@ export const MODES: { id: ModeOption; label: string; icon: typeof Eye }[] = [
   { id: "run", label: "Run", icon: Play },
   { id: "shortcuts", label: "Shortcuts", icon: Zap },
   { id: "apps", label: "Apps", icon: AppWindow },
+  { id: "surfaces", label: "Surfaces", icon: Layers },
   { id: "versions", label: "Versions", icon: History },
   { id: "widgets", label: "Widgets", icon: LayoutGrid },
   { id: "new", label: "New", icon: Plus },
@@ -62,6 +65,7 @@ export function getAgentModeHref(
     run: `${basePath}/${agentId}/run`,
     shortcuts: `${basePath}/${agentId}/shortcuts`,
     apps: `${basePath}/${agentId}/apps`,
+    surfaces: `${basePath}/${agentId}/surfaces`,
     versions: `${basePath}/${agentId}/latest`,
     widgets: `${basePath}/${agentId}/widgets`,
   };
@@ -78,6 +82,7 @@ export function deriveAgentMode(
   if (pathname.startsWith(`${base}/build`)) return "edit";
   if (pathname.startsWith(`${base}/shortcuts`)) return "shortcuts";
   if (pathname.startsWith(`${base}/apps`)) return "apps";
+  if (pathname.startsWith(`${base}/surfaces`)) return "surfaces";
   if (pathname.startsWith(`${base}/widgets`)) return "widgets";
   const versionPattern = new RegExp(
     `^${basePath.replace(/\//g, "\\/")}\\/[^/]+\\/v\\/\\d+$`,

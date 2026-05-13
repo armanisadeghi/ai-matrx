@@ -6478,6 +6478,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assets/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Presets
+         * @description List every preset the server supports.
+         *
+         *     Used by the FE to render the upload picker dynamically — the server
+         *     is the single source of truth.
+         */
+        get: operations["list_presets_assets_presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Asset */
+        post: operations["upload_asset_assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Asset */
+        get: operations["get_asset_assets__file_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Asset */
+        patch: operations["patch_asset_assets__file_id__patch"];
+        trace?: never;
+    };
+    "/assets/{file_id}/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render More Variants */
+        post: operations["render_more_variants_assets__file_id__variants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media/upload": {
         parameters: {
             query?: never;
@@ -6955,8 +7030,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get File Url */
+        /**
+         * Get File Url
+         * @description Return the canonical inline-renderable URL for a file.
+         *
+         *     Mints via SyncEngine.build_urls_for_record_async — CDN if public + CDN
+         *     configured, signed-inline otherwise. Use ``/files/{id}/asset`` if you
+         *     also need the download URL flavour or all variants in one response.
+         */
         get: operations["get_file_url_files__file_id__url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/asset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get File As Asset
+         * @description Return any cld_files row as an Asset envelope.
+         *
+         *     Surfaces the same shape the new asset upload returns, so a file-
+         *     browser click resolves to ``{url, cdn_url, signed_url, download_url}``
+         *     plus every persisted variant. This is the platform-wide cure for
+         *     the "click downloads when it should render" bug class — the FE
+         *     chooses inline vs. attachment per click, not per endpoint.
+         */
+        get: operations["get_file_as_asset_files__file_id__asset_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9451,6 +9559,127 @@ export interface components {
             /** Is New */
             is_new?: boolean | null;
         };
+        /** Asset */
+        Asset: {
+            /**
+             * File Id
+             * @description The master cld_files row id
+             */
+            file_id: string;
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility: "public" | "private" | "shared";
+            /** Folder */
+            folder: string;
+            /** Preset */
+            preset?: string | null;
+            /**
+             * Primary Key
+             * @default original
+             */
+            primary_key: string;
+            /** Primary Url */
+            primary_url?: string | null;
+            /** Variants */
+            variants?: {
+                [key: string]: components["schemas"]["AssetVariant"];
+            };
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * AssetPatchRequest
+         * @description Mutate an existing asset.
+         *
+         *     Use to:
+         *       - change visibility (also moves the S3 object between buckets)
+         *       - grant new sharees
+         *       - refresh signed URLs (signed_url_ttl)
+         */
+        AssetPatchRequest: {
+            /** Visibility */
+            visibility?: ("public" | "private" | "shared") | null;
+            /** Share With */
+            share_with?: string[] | null;
+            /**
+             * Share Level
+             * @default read
+             * @enum {string}
+             */
+            share_level: "read" | "write" | "admin";
+            /** Signed Url Ttl */
+            signed_url_ttl?: number | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * AssetRenderMoreRequest
+         * @description Render additional variants for an existing asset.
+         *
+         *     Accepts either a known preset name OR a list of custom ImageVariant
+         *     dicts. Both paths run through the existing matrx-utils variants
+         *     subsystem so each rendered variant is an idempotent cld_files row.
+         */
+        AssetRenderMoreRequest: {
+            /**
+             * Preset
+             * @description Known preset name
+             */
+            preset?: string | null;
+            /**
+             * Custom Variants
+             * @description Optional list of ImageVariant dicts ({key, suffix, width, height, quality, format}). Merged with the preset's variants, dedup'd by key.
+             */
+            custom_variants?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Include Social Baseline */
+            include_social_baseline?: boolean | null;
+            /**
+             * Signed Url Ttl
+             * @default 3600
+             */
+            signed_url_ttl: number;
+        };
+        /** AssetVariant */
+        AssetVariant: {
+            /**
+             * Key
+             * @description Variant identifier (e.g. 'original', 'cover_url', 'og_url')
+             */
+            key: string;
+            /** File Id */
+            file_id: string;
+            /** File Path */
+            file_path: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** File Size */
+            file_size?: number | null;
+            /** Url */
+            url?: string | null;
+            /** Cdn Url */
+            cdn_url?: string | null;
+            /** Signed Url */
+            signed_url?: string | null;
+            /** Download Url */
+            download_url?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * AudioStyle
          * @enum {string}
@@ -9550,6 +9779,59 @@ export interface components {
              * @description Destination cld_files.file_path
              */
             file_path: string;
+        };
+        /** Body_upload_asset_assets_post */
+        Body_upload_asset_assets_post: {
+            /** File */
+            file: string;
+            /**
+             * Preset
+             * @description One of: podcast, social, web, email, logo, avatar, favicon, raw
+             * @default raw
+             */
+            preset: string;
+            /**
+             * Folder
+             * @description Logical folder path; defaults to Assets/<uuid>
+             */
+            folder?: string | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private" | "shared";
+            /**
+             * Share With
+             * @description Comma-separated user IDs
+             */
+            share_with?: string | null;
+            /**
+             * Share Level
+             * @default read
+             * @enum {string}
+             */
+            share_level: "read" | "write" | "admin";
+            /**
+             * Signed Url Ttl
+             * @default 3600
+             */
+            signed_url_ttl: number;
+            /**
+             * Include Social Baseline
+             * @description Override preset baseline default
+             */
+            include_social_baseline?: boolean | null;
+            /**
+             * Metadata Json
+             * @description JSON-encoded metadata dict
+             */
+            metadata_json?: string | null;
+            /**
+             * Custom Variants Json
+             * @description JSON list of ImageVariant dicts merged with the preset's variants
+             */
+            custom_variants_json?: string | null;
         };
         /** Body_upload_file_files_upload_post */
         Body_upload_file_files_upload_post: {
@@ -10896,6 +11178,15 @@ export interface components {
         };
         /** CropPagesRequest */
         CropPagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -10909,11 +11200,6 @@ export interface components {
             pages?: number[] | null;
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
             crop_box: components["schemas"]["PdfCropBox"];
         };
         /** CrossDocRequest */
@@ -11189,6 +11475,15 @@ export interface components {
         };
         /** DeletePagesRequest */
         DeletePagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -11202,11 +11497,6 @@ export interface components {
             pages?: number[] | null;
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** DeleteResponse */
         DeleteResponse: {
@@ -11408,6 +11698,15 @@ export interface components {
         };
         /** DuplicatePagesRequest */
         DuplicatePagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -11421,11 +11720,6 @@ export interface components {
             pages?: number[] | null;
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
             /**
              * Count
              * @default 1
@@ -11679,6 +11973,15 @@ export interface components {
         };
         /** ExtractPagesRequest */
         ExtractPagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -11692,11 +11995,6 @@ export interface components {
             pages?: number[] | null;
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** ExtractReadingOrderRequest */
         ExtractReadingOrderRequest: {
@@ -12330,6 +12628,15 @@ export interface components {
         };
         /** FlattenAnnotationsRequest */
         FlattenAnnotationsRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -12349,11 +12656,6 @@ export interface components {
              * @default true
              */
             widgets: boolean;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** FocalPoint */
         FocalPoint: {
@@ -12789,6 +13091,15 @@ export interface components {
         InputDataType: "topic" | "partial_content" | "full_content" | "file_url";
         /** InsertPagesRequest */
         InsertPagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -12836,11 +13147,6 @@ export interface components {
              * @default false
              */
             join_duplicates: boolean;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** IntersectingImageOut */
         IntersectingImageOut: {
@@ -13780,6 +14086,15 @@ export interface components {
         };
         /** MergePdfsRequest */
         MergePdfsRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             /** Sources */
             sources: components["schemas"]["MergePdfSource"][];
             /**
@@ -13787,11 +14102,6 @@ export interface components {
              * @default merged.pdf
              */
             filename: string;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /**
          * MessageUpdate
@@ -14633,7 +14943,13 @@ export interface components {
              */
             truncate_audio_for_testing: boolean;
         };
-        /** PodcastMediaUploadResponse */
+        /**
+         * PodcastMediaUploadResponse
+         * @description Legacy response shape preserved for back-compat with existing FE callers.
+         *
+         *     Prefer ``POST /assets`` for new integrations — it returns the full
+         *     Asset envelope (all variants, CDN/signed/download URLs).
+         */
         PodcastMediaUploadResponse: {
             /** Video Url */
             video_url?: string | null;
@@ -14647,6 +14963,7 @@ export interface components {
             video_file_id?: string | null;
             /** Image File Id */
             image_file_id?: string | null;
+            asset?: components["schemas"]["Asset"] | null;
         };
         /**
          * PodcastType
@@ -14941,6 +15258,15 @@ export interface components {
         };
         /** RedactPatternRequest */
         RedactPatternRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -14964,14 +15290,18 @@ export interface components {
              * @default true
              */
             scrub_metadata: boolean;
+        };
+        /** RedactRegionsRequest */
+        RedactRegionsRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
             /**
              * Persist Output
              * @default false
              */
             persist_output: boolean;
-        };
-        /** RedactRegionsRequest */
-        RedactRegionsRequest: {
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -14990,14 +15320,18 @@ export interface components {
              * @default true
              */
             scrub_metadata: boolean;
+        };
+        /** RedactRepeatedRegionsRequest */
+        RedactRepeatedRegionsRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
             /**
              * Persist Output
              * @default false
              */
             persist_output: boolean;
-        };
-        /** RedactRepeatedRegionsRequest */
-        RedactRepeatedRegionsRequest: {
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -15026,11 +15360,6 @@ export interface components {
              * @default true
              */
             scrub_metadata: boolean;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /**
          * RedactionRegion
@@ -15192,6 +15521,15 @@ export interface components {
         };
         /** RenderAllPagesRequest */
         RenderAllPagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -15219,11 +15557,6 @@ export interface components {
             jpeg_quality: number;
             /** Pages */
             pages?: number[] | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** RenderPageRequest */
         RenderPageRequest: {
@@ -15345,6 +15678,15 @@ export interface components {
         };
         /** ReorderPagesRequest */
         ReorderPagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -15356,11 +15698,6 @@ export interface components {
             local_path?: string | null;
             /** New Order */
             new_order: number[];
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /**
          * RepeatedRegion
@@ -15633,6 +15970,15 @@ export interface components {
         };
         /** RotatePagesRequest */
         RotatePagesRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -15646,11 +15992,6 @@ export interface components {
             pages?: number[] | null;
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
             /** Rotation */
             rotation: number;
         };
@@ -15841,6 +16182,15 @@ export interface components {
          * @description Composite scrub call — wipes the categories opted-in via flags.
          */
         ScrubRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -15875,11 +16225,6 @@ export interface components {
              * @default strip_all_pii
              */
             reason: string;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** SearchAndScrapeLimitedRequest */
         SearchAndScrapeLimitedRequest: {
@@ -16303,6 +16648,15 @@ export interface components {
         };
         /** SplitPdfRequest */
         SplitPdfRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -16316,11 +16670,6 @@ export interface components {
             parts?: components["schemas"]["SplitPartRequest"][] | null;
             /** Max Pages Per Part */
             max_pages_per_part?: number | null;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** StageStatus */
         StageStatus: {
@@ -16529,6 +16878,15 @@ export interface components {
         };
         /** StripMetadataRequest */
         StripMetadataRequest: {
+            /** Output Mode */
+            output_mode?: ("binary" | "derivative" | "replace") | null;
+            /** Change Summary */
+            change_summary?: string | null;
+            /**
+             * Persist Output
+             * @default false
+             */
+            persist_output: boolean;
             media?: components["schemas"]["MediaRef"] | null;
             /** File */
             file?: {
@@ -16543,11 +16901,6 @@ export interface components {
              * @default strip_metadata
              */
             reason: string;
-            /**
-             * Persist Output
-             * @default false
-             */
-            persist_output: boolean;
         };
         /** StripRepeatedRegionsRequest */
         StripRepeatedRegionsRequest: {
@@ -19266,10 +19619,14 @@ export interface operations {
     compress_pdf_utilities_pdf_compress_post: {
         parameters: {
             query?: {
+                /** @description Minimum compression tier. 1=lossless, 2=light, 3=balanced, 4=aggressive, 5=max. Tier is escalated above this when max_size_mb forces it. */
                 level?: number;
-                target_size_mb?: number;
+                /** @description Absolute upper bound on the output size in MB. When set, the server escalates `level` one tier at a time until the output fits or tier 5 is reached. None = honour `level` exactly. */
+                max_size_mb?: number | null;
                 persist_output?: boolean;
+                output_mode?: ("binary" | "derivative" | "replace") | null;
                 parent_file_id?: string | null;
+                change_summary?: string | null;
             };
             header?: never;
             path?: never;
@@ -29608,6 +29965,166 @@ export interface operations {
             };
         };
     };
+    list_presets_assets_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    upload_asset_assets_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_asset_assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_asset_assets__file_id__get: {
+        parameters: {
+            query?: {
+                signed_url_ttl?: number;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_asset_assets__file_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_more_variants_assets__file_id__variants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetRenderMoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_vision_master_media_upload_post: {
         parameters: {
             query?: never;
@@ -30554,6 +31071,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignedUrlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_file_as_asset_files__file_id__asset_get: {
+        parameters: {
+            query?: {
+                signed_url_ttl?: number;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

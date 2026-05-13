@@ -172,7 +172,15 @@ export const ENDPOINTS = {
    */
   pdf: {
     // ── Lifecycle ─────────────────────────────────────────────────────────
-    /** POST — Compress PDF (multipart file upload), query `level=1..3`, `target_size_mb`. */
+    /**
+     * POST — Compress PDF (multipart file upload). Query params:
+     *   - `level` (1..5): minimum quality tier. 1=lossless, 5=max compression.
+     *   - `max_size_mb` (optional float): absolute upper bound on output size;
+     *     when set, the server escalates `level` one tier at a time until the
+     *     output fits (or tier 5 is reached). Omit for "honour level exactly."
+     * Response headers include `X-Compression-Level-Used` and
+     * `X-Compression-Cap-Satisfied` so the caller can see what actually ran.
+     */
     compress: "/utilities/pdf/compress" as const,
     /** POST — Single-file text extraction (stateless, legacy multipart). Returns `{ filename, text_content }`. */
     extractText: "/utilities/pdf/extract-text" as const,

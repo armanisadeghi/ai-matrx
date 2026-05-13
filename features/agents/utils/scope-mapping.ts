@@ -19,12 +19,27 @@ import type {
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
+import {
+  resolveValueMappings,
+  type PendingPrompt,
+} from "@/features/tool-registry/surfaces/utils/value-mapping-resolver";
 
 export type { ApplicationScope } from "@/features/agents/types/scope.types";
+export type { PendingPrompt } from "@/features/tool-registry/surfaces/utils/value-mapping-resolver";
 
 export interface ScopeMappingResult {
   variableValues: Record<string, unknown>;
   contextEntries: InstanceContextEntry[];
+}
+
+export interface SurfaceBoundScopeMappingResult extends ScopeMappingResult {
+  /** Targets that need user-input via a pre-launch dialog. */
+  pendingPrompts: PendingPrompt[];
+  /** Non-fatal warnings emitted by the SurfaceValue resolver. */
+  warnings: string[];
+  /** Fatal errors — if non-empty the caller should abort the launch. */
+  errors: string[];
 }
 
 function inferContextType(value: unknown): ContextObjectType {
@@ -207,4 +222,75 @@ function previewValue(v: unknown): string {
     return `<${Array.isArray(v) ? "array" : "object"} ${Object.keys(v as object).length} keys>`;
   }
   return String(v);
+}
+
+/**
+ * Combine the **legacy** scope mapping pass (shortcut bundle's
+ * `scopeMappings`) with the new **SurfaceValue** mapping pass
+ * (`agx_agent_surface.value_mappings`) into a single result.
+ *
+ * Order of resolution:
+ *   1. Legacy `mapScopeToInstance` runs first — it produces the baseline
+ *      `variableValues` / `contextEntries` from the shortcut's mapping
+ *      bundle and from raw `applicationScope` keys that match agent names.
+ *   2. Surface `value_mappings` runs next via `resolveValueMappings`. Its
+ *      output overlays the legacy result (surface bindings win on conflict
+ *      because they're the more specific, user-defined layer).
+ *
+ * Auto-name-match is disabled on the second pass — the legacy pass already
+ * did it. The new pass only applies explicit ValueMapping entries.
+ */
+export function mapScopeToInstanceWithSurface(
+  applicationScope: ApplicationScope,
+  scopeMappings: Record<string, string> | null,
+  surfaceValueMappings: ValueMappingMap | null,
+  variableDefinitions: VariableDefinition[] | null | undefined,
+  contextSlots:
+    | Array<{
+        key: string;
+        type?: ContextObjectType;
+        label?: string;
+      }>
+    | null
+    | undefined,
+  contextMappings: Record<string, string> | null = null,
+): SurfaceBoundScopeMappingResult {
+  // Pass 1 — legacy.
+  const legacy = mapScopeToInstance(
+    applicationScope,
+    scopeMappings,
+    variableDefinitions,
+    contextSlots,
+    contextMappings,
+  );
+
+  // Pass 2 — surface value_mappings (no auto-name-match; legacy already covered it).
+  const surface = resolveValueMappings(
+    applicationScope,
+    surfaceValueMappings ?? {},
+    variableDefinitions,
+    contextSlots,
+    { autoNameMatch: false },
+  );
+
+  // Surface bindings win on conflict.
+  const variableValues = {
+    ...legacy.variableValues,
+    ...surface.variableValues,
+  };
+
+  // Context entries: replace any legacy entries whose key matches a surface entry.
+  const surfaceKeys = new Set(surface.contextEntries.map((e) => e.key));
+  const contextEntries: InstanceContextEntry[] = [
+    ...legacy.contextEntries.filter((e) => !surfaceKeys.has(e.key)),
+    ...surface.contextEntries,
+  ];
+
+  return {
+    variableValues,
+    contextEntries,
+    pendingPrompts: surface.pendingPrompts,
+    warnings: surface.warnings,
+    errors: surface.errors,
+  };
 }

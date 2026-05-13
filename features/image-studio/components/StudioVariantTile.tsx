@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { toast } from "sonner";
 import {
   Check,
   CheckCircle2,
+  CloudUpload,
   Copy,
   Crop,
   Download,
@@ -80,6 +82,13 @@ export function StudioVariantTile({
   const usage = preset?.usage ?? "";
   const presetName = preset?.name ?? variant.presetId;
 
+  // A variant is "shareable" only once it has a server-side identity
+  // (publicUrl OR fileId). Until then it's just bytes in the browser —
+  // we deliberately refuse to copy the base64 data URL to the clipboard
+  // (pasting a multi-MB string into chat/HTML/Notes is a disaster and
+  // is never what the user actually wants).
+  const isShareable = Boolean(variant.publicUrl || variant.fileId);
+
   /**
    * Resolve the URL we want users to actually paste. Priority:
    *   1. Permanent CDN URL — set on save when visibility=public.
@@ -87,9 +96,7 @@ export function StudioVariantTile({
    *      expires. ALWAYS prefer this.
    *   2. Signed URL — for private saved variants, lazy-fetch from the API
    *      (good for ~1h). Better than nothing, never as good as #1.
-   *   3. Data URL — base64 in-memory bytes. ONLY for variants that haven't
-   *      been saved yet. We never copy this to the clipboard for saved
-   *      variants because pasting a 2MB string into chat/HTML is a disaster.
+   * Callers must check `isShareable` first; this throws otherwise.
    */
   const resolveCopyableUrl = async (): Promise<string> => {
     if (variant.publicUrl) return variant.publicUrl;
@@ -97,11 +104,21 @@ export function StudioVariantTile({
       const { data } = await getSignedUrl(variant.fileId, { expiresIn: 3600 });
       return data.url;
     }
-    return variant.dataUrl;
+    throw new Error("Save to the library first to get a shareable URL");
   };
 
   const handleCopyUrl = async () => {
     setCopyError(null);
+    // Pre-save: never silently copy the base64 data URL. Surface a
+    // toast that points the user at the Save action in the side panel,
+    // which is where the permanent CDN URL actually comes from.
+    if (!isShareable) {
+      toast.warning("Save to the library first", {
+        description:
+          "Use the Save to library button in the Export panel — public saves give every variant a permanent CDN URL.",
+      });
+      return;
+    }
     try {
       const url = await resolveCopyableUrl();
       await navigator.clipboard.writeText(url);
@@ -245,13 +262,18 @@ export function StudioVariantTile({
         <button
           type="button"
           onClick={handleCopyUrl}
-          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs transition-colors",
+            isShareable
+              ? "text-muted-foreground hover:bg-accent hover:text-foreground"
+              : "text-amber-700 dark:text-amber-400 hover:bg-amber-500/10",
+          )}
           title={
             variant.publicUrl
               ? "Copy permanent CDN URL"
               : variant.fileId
                 ? "Copy a fresh signed URL (≈1h)"
-                : "Save first to get a sharable URL — copies the data URL otherwise"
+                : "Save to the library first to get a permanent shareable URL"
           }
         >
           {copyError ? (
@@ -263,14 +285,15 @@ export function StudioVariantTile({
               <Check className="h-3 w-3 text-success" />
               <span className="text-success">Copied</span>
             </>
-          ) : (
+          ) : isShareable ? (
             <>
               <Copy className="h-3 w-3" />
-              {variant.publicUrl
-                ? "Copy CDN"
-                : variant.fileId
-                  ? "Copy URL"
-                  : "Copy URL"}
+              {variant.publicUrl ? "Copy CDN" : "Copy URL"}
+            </>
+          ) : (
+            <>
+              <CloudUpload className="h-3 w-3" />
+              Save to share
             </>
           )}
         </button>
