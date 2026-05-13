@@ -34,6 +34,21 @@ export interface UploadGuardResult {
   failed: Array<{ name: string; error: string }>;
   /** True when the user dismissed the duplicate dialog. */
   cancelled: boolean;
+  /**
+   * Files the user chose to NOT re-upload because a duplicate already
+   * exists, and they explicitly picked "use the existing one." Each
+   * entry maps the index of the original input file (in `arg.files`)
+   * to the existing `cld_files.id` the user picked.
+   *
+   * The chat-resource-attach flow uses this to wire the existing
+   * fileId into its parent context (e.g. attach the existing PDF to
+   * the conversation) so the user gets a confirmed-and-attached file
+   * with zero wasted bytes. Other callers can iterate `aliased` to
+   * surface "found N existing matches" UI.
+   *
+   * Empty for the normal "no duplicates" upload path.
+   */
+  aliased: Array<{ inputIndex: number; existingFileId: string }>;
 }
 
 let registered: UploadGuardHandler | null = null;
@@ -90,12 +105,13 @@ export async function requestUpload(
         error: "Store not ready",
       })),
       cancelled: false,
+      aliased: [],
     };
   }
   try {
     const dispatch = store.dispatch as AppDispatch;
     const result = await dispatch(uploadFiles(arg)).unwrap();
-    return { ...result, cancelled: false };
+    return { ...result, cancelled: false, aliased: [] };
   } catch (err) {
     return {
       uploaded: [],
@@ -104,6 +120,7 @@ export async function requestUpload(
         error: err instanceof Error ? err.message : String(err),
       })),
       cancelled: false,
+      aliased: [],
     };
   }
 }

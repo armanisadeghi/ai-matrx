@@ -86,6 +86,11 @@ export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
     // should fall back to useFileSrc({ kind: "file_id", fileId }) when this is null.
     publicUrl: null,
     source: { kind: "real" },
+    // Dedup-pyramid columns from Phase 2.0. Null on rows uploaded before
+    // the dedup consolidation script ran or on rows that have never been
+    // identified as duplicates / never had their canonical extract set.
+    duplicateOfFileId: row.duplicate_of_file_id ?? null,
+    canonicalProcessedDocumentId: row.canonical_processed_document_id ?? null,
   };
 }
 
@@ -94,6 +99,16 @@ export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
  * is identical to CloudFileRow modulo a few nullable defaults.
  */
 export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
+  // The Python FileRecord schema is gaining `duplicate_of_file_id` and
+  // `canonical_processed_document_id` per the Phase 2.0 dedup handoff.
+  // The OpenAPI types haven't been regenerated to include them yet, so
+  // read defensively through a Record cast and treat them as optional.
+  // Once the OpenAPI types ship the new fields, this cast becomes a
+  // no-op and the values flow through unchanged.
+  const extras = row as unknown as {
+    duplicate_of_file_id?: string | null;
+    canonical_processed_document_id?: string | null;
+  };
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -114,6 +129,8 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     // feature enabled. Includes a ?v=<checksum[:8]> cache-buster.
     publicUrl: row.public_url ?? null,
     source: { kind: "real" },
+    duplicateOfFileId: extras.duplicate_of_file_id ?? null,
+    canonicalProcessedDocumentId: extras.canonical_processed_document_id ?? null,
   };
 }
 

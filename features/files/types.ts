@@ -195,6 +195,27 @@ export interface CloudFile {
    */
   derivationKind?: string | null;
   derivationMetadata?: Record<string, unknown> | null;
+  /**
+   * When set, this row is a deliberate parallel copy of `duplicateOfFileId`
+   * (the keeper). Set by:
+   *   - the dedup consolidation script (soft-deletes the duplicate row +
+   *     stamps the keeper's id here so refs to the dup still resolve), or
+   *   - `intent: "force_new_copy"` uploads (user explicitly asked for a
+   *     second copy of identical content).
+   * Null for every freshly-uploaded file.
+   *
+   * UI: surface a "duplicate of <keeper>" chip on rows where this is set.
+   * Refs that hit a `deletedAt != null` row should `useFile(duplicateOfFileId)`
+   * to follow the chain to the live keeper.
+   */
+  duplicateOfFileId?: string | null;
+  /**
+   * Points at the "official" `processed_documents.id` for this file —
+   * the canonical text-extraction row out of potentially many re_extract /
+   * re_clean variants. UIs that show "extracted text" or feed RAG should
+   * use this column to find THE extract, not the freshest one.
+   */
+  canonicalProcessedDocumentId?: string | null;
 }
 
 export interface CloudFolder {

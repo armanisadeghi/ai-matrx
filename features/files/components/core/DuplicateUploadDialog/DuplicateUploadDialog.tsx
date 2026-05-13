@@ -30,7 +30,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, FileWarning, RotateCw, X } from "lucide-react";
+import { Check, Copy, FileWarning, Link2, RotateCw, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -44,10 +44,27 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/features/files/utils/format";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import type { CloudFile } from "@/features/files/types";
 import type { DuplicateMatch } from "@/features/files/utils/upload-duplicate-detect";
 
-export type DuplicateAction = "overwrite" | "copy" | "skip";
+/**
+ * Per-conflict resolution.
+ *
+ * - `use_existing` — DON'T upload. The user confirms the existing file
+ *   is what they meant. The host returns the existing `cld_files.id`
+ *   in `aliased[]` so the caller (chat attach, agent resource picker,
+ *   etc.) can wire that id into its context. Default for identical-
+ *   content matches in same folder.
+ * - `overwrite` — re-upload to the existing file's exact path; the
+ *   backend version-bumps in place.
+ * - `copy` — proceed with a unique `" (1)" / " (2)"` name. Both files
+ *   coexist.
+ * - `skip` — don't upload AND don't alias. The conflict is just
+ *   dropped. Use when the user wants to abandon this one specific
+ *   file without committing to "yes, attach the existing one."
+ */
+export type DuplicateAction = "use_existing" | "overwrite" | "copy" | "skip";
 
 export interface DuplicateUploadDialogProps {
   open: boolean;
@@ -129,14 +146,10 @@ export function DuplicateUploadDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileWarning className="h-5 w-5 text-amber-500" />
-            {conflicts.length === 1
-              ? "This file looks familiar"
-              : `${conflicts.length} files look familiar`}
+            {titleFor(conflicts)}
           </DialogTitle>
           <DialogDescription>
-            {conflicts.length === 1
-              ? "Choose what to do with the duplicate before uploading."
-              : "Choose what to do with each duplicate. Use “Apply to all” to make one decision for everything."}
+            {descriptionFor(conflicts)}
           </DialogDescription>
         </DialogHeader>
 
@@ -196,26 +209,78 @@ function ConflictRow({
   onChange: (action: DuplicateAction) => void;
 }) {
   const { file, match } = conflict;
+  const existing = match.existing;
   const description = describeMatch(match, file);
+  const isIdenticalContent =
+    match.kind === "identical_content_same_folder" ||
+    match.kind === "identical_content_other_folder";
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border bg-card p-3">
-      <div className="flex items-start gap-2">
-        <FileIcon fileName={file.name} size={20} className="mt-0.5 shrink-0" />
+    <li
+      className={cn(
+        "flex flex-col gap-2 rounded-lg border bg-card p-3",
+        // Make identical-content rows visually distinct — these are the
+        // ones where "use existing" is almost always the right answer.
+        isIdenticalContent &&
+          action === "use_existing" &&
+          "border-primary/40 bg-primary/[0.03]",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        {/* Existing file thumbnail — InlineMediaRef handles every mime,
+            falls back to a sized icon for non-renderables (PDF, doc). */}
+        <InlineMediaRef
+          ref={existing.id}
+          size="md"
+          fit="cover"
+          rounded="md"
+          border="subtle"
+          fallback="icon"
+          alt={existing.fileName}
+          className="shrink-0"
+        />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium" title={file.name}>
-            {file.name}
-          </p>
-          <p className="text-[11px] text-muted-foreground tabular-nums">
-            {formatFileSize(file.size)} · uploading
+          <div className="flex items-center gap-1.5">
+            <FileIcon fileName={file.name} size={14} className="shrink-0" />
+            <p className="truncate text-sm font-medium" title={file.name}>
+              {file.name}
+            </p>
+          </div>
+          <p className="text-[11px] text-muted-foreground tabular-nums mt-0.5">
+            {formatFileSize(file.size)} · trying to upload
           </p>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {description}
+          </p>
+          {/* Path of the existing match — gives the user enough context
+              to confirm "yes, that's the one I meant" without leaving
+              the dialog. */}
+          <p
+            className="mt-1 text-[11px] text-muted-foreground truncate"
+            title={existing.filePath}
+          >
+            <span className="opacity-70">Existing:</span>{" "}
+            <span className="font-mono">{pathLabelFor(existing)}</span>
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-border/40">
+        {/* "Use existing" is the prominent CTA for identical-content
+            matches — the canonical answer for "I'm uploading this PDF
+            to attach to a chat and we already have it." */}
+        <ActionPill
+          icon={<Link2 className="h-3 w-3" />}
+          label="Use existing"
+          tooltip="Don't re-upload. Attach the existing file from your library and proceed with whatever you were doing."
+          // Only meaningful when bytes match. For name-only conflicts
+          // there's no semantic equivalence, so this would silently
+          // attach the wrong content.
+          disabled={!isIdenticalContent}
+          active={action === "use_existing"}
+          primary
+          onClick={() => onChange("use_existing")}
+        />
         <ActionPill
           icon={<RotateCw className="h-3 w-3" />}
           label="Overwrite"
@@ -240,7 +305,7 @@ function ConflictRow({
         <ActionPill
           icon={<X className="h-3 w-3" />}
           label="Skip"
-          tooltip="Don't upload this file. The existing copy stays as-is."
+          tooltip="Don't upload AND don't attach the existing one. Just drop this file from the batch."
           active={action === "skip"}
           onClick={() => onChange("skip")}
         />
@@ -255,6 +320,7 @@ function ActionPill({
   tooltip,
   active,
   disabled,
+  primary,
   onClick,
 }: {
   icon: React.ReactNode;
@@ -262,6 +328,13 @@ function ActionPill({
   tooltip: string;
   active: boolean;
   disabled?: boolean;
+  /**
+   * When true and inactive, the pill renders with a subtle primary
+   * accent so the user's eye lands on it as the recommended choice.
+   * Active state still wins; this is a visual nudge, not a forced
+   * default.
+   */
+  primary?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -275,7 +348,9 @@ function ActionPill({
         "disabled:cursor-not-allowed disabled:opacity-40",
         active
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background hover:bg-accent",
+          : primary
+            ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
+            : "border-border bg-background hover:bg-accent",
       )}
     >
       {icon}
@@ -293,14 +368,17 @@ function buildDefaultDecisions(
 ): Record<string, DuplicateAction> {
   const out: Record<string, DuplicateAction> = {};
   for (const c of conflicts) {
-    // Identical content → skip is the safer default. Pure name
-    // conflict → copy preserves both files.
+    // Identical content → "use existing" is what 95% of users want.
+    // Same bytes already in their library: don't waste storage, just
+    // attach the existing one. The user's other options stay one
+    // click away.
+    // Pure name conflict → "copy" preserves both files (the bytes
+    // differ, so we can't safely treat them as the same content).
     out[c.id] =
-      c.match.kind === "identical_content_same_folder"
-        ? "skip"
-        : c.match.kind === "identical_content_other_folder"
-          ? "skip"
-          : "copy";
+      c.match.kind === "identical_content_same_folder" ||
+      c.match.kind === "identical_content_other_folder"
+        ? "use_existing"
+        : "copy";
   }
   return out;
 }
@@ -309,7 +387,7 @@ function describeMatch(match: DuplicateMatch, file: File): string {
   const existing = match.existing;
   switch (match.kind) {
     case "identical_content_same_folder":
-      return `Identical bytes already saved here as “${existing.fileName}” — uploading again would just create another copy of the same content.`;
+      return `Identical bytes already saved here as “${existing.fileName}”. We can attach the existing file instead of uploading again.`;
     case "name_only":
       return `A different file named “${existing.fileName}” already exists in this folder${
         existing.fileSize != null
@@ -318,12 +396,40 @@ function describeMatch(match: DuplicateMatch, file: File): string {
       }.`;
     case "identical_content_other_folder": {
       const path = pathLabelFor(existing);
-      return `Same exact bytes are already saved at ${path}. Uploading here will keep both unless you skip.`;
+      return `Same exact bytes are already saved at ${path}. Attach the existing one or upload a separate copy here.`;
     }
     default:
       void file;
       return "Possible duplicate detected.";
   }
+}
+
+function titleFor(conflicts: DuplicateConflictRow[]): string {
+  if (conflicts.length === 1) {
+    const kind = conflicts[0]!.match.kind;
+    if (
+      kind === "identical_content_same_folder" ||
+      kind === "identical_content_other_folder"
+    ) {
+      return "You already have this file";
+    }
+    return "This file looks familiar";
+  }
+  return `${conflicts.length} files look familiar`;
+}
+
+function descriptionFor(conflicts: DuplicateConflictRow[]): string {
+  if (conflicts.length === 1) {
+    const kind = conflicts[0]!.match.kind;
+    if (
+      kind === "identical_content_same_folder" ||
+      kind === "identical_content_other_folder"
+    ) {
+      return "Confirm we picked the right one and we'll attach the existing file. Or pick another action.";
+    }
+    return "Choose what to do with the duplicate before uploading.";
+  }
+  return "Choose what to do with each duplicate. Use “Apply to all” to make one decision for everything.";
 }
 
 function pathLabelFor(file: CloudFile): string {

@@ -48,6 +48,19 @@ export interface MultiUploadResult {
   failed: Array<{ name: string; error: string }>;
   /** True when the user dismissed the duplicate-upload dialog. */
   cancelled: boolean;
+  /**
+   * Files the user chose to attach as the EXISTING copy (via "Use
+   * existing" in the duplicate dialog) instead of re-uploading. Each
+   * entry carries the index into the original `files` argument plus
+   * the live `cld_files.id` the caller should wire into its parent
+   * context (chat attachment, agent resource, etc.). Follows the
+   * `duplicate_of_file_id` chain so dup ids resolve to live keepers.
+   *
+   * Empty for the normal no-conflict path. See
+   * `features/files/upload/uploadGuardOpeners.ts` for the underlying
+   * shape.
+   */
+  aliased: Array<{ inputIndex: number; existingFileId: string }>;
 }
 
 export interface UseFileUploadResult {

@@ -91,10 +91,13 @@ export default function UploadGuardHostImpl() {
   // result. Shared between the no-conflict fast path and the
   // post-dialog "user confirmed" path.
   const runUpload = useCallback(
-    async (arg: UploadFilesArg): Promise<UploadGuardResult> => {
+    async (
+      arg: UploadFilesArg,
+      aliased: Array<{ inputIndex: number; existingFileId: string }> = [],
+    ): Promise<UploadGuardResult> => {
       try {
         const result = await dispatch(uploadFilesThunk(arg)).unwrap();
-        return { ...result, cancelled: false };
+        return { ...result, cancelled: false, aliased };
       } catch (err) {
         return {
           uploaded: [],
@@ -103,6 +106,7 @@ export default function UploadGuardHostImpl() {
             error: err instanceof Error ? err.message : String(err),
           })),
           cancelled: false,
+          aliased,
         };
       }
     },
@@ -165,13 +169,26 @@ export default function UploadGuardHostImpl() {
     async (decisions: ResolvedDecision[]) => {
       const cur = pendingRef.current;
       if (!cur) return;
-      // Translate decisions into thunk overrides.
+      // Translate decisions into thunk overrides + aliased-file mapping.
       const filenameOverrides: Record<number, string> = {};
       const skipIndices: number[] = [];
+      const aliased: Array<{ inputIndex: number; existingFileId: string }> =
+        [];
       const decisionById = new Map(decisions.map((d) => [d.id, d.action]));
       for (const c of cur.conflicts) {
         const action = decisionById.get(c.id) ?? "skip";
-        if (action === "skip") {
+        if (action === "use_existing") {
+          // The user confirmed the existing file IS what they meant.
+          // Don't re-upload; surface the existing id back to the caller
+          // so they can wire it into the parent context (chat attach,
+          // agent resource, etc.). Follow the duplicate_of_file_id
+          // chain so consolidation-killed dup ids resolve to the live
+          // keeper.
+          const liveId =
+            c.match.existing.duplicateOfFileId ?? c.match.existing.id;
+          aliased.push({ inputIndex: c.index, existingFileId: liveId });
+          skipIndices.push(c.index);
+        } else if (action === "skip") {
           skipIndices.push(c.index);
         } else if (action === "overwrite") {
           // Overwrite — upload to the EXISTING file's exact name so
@@ -179,7 +196,8 @@ export default function UploadGuardHostImpl() {
           filenameOverrides[c.index] = c.match.existing.fileName;
         }
         // "copy" — leave entry untouched; the thunk's auto " (1)"
-        // rename takes care of the unique name.
+        // rename takes care of the unique name. The future BE flip
+        // will additionally stamp `intent: "force_new_copy"` here.
       }
 
       // Close the dialog before awaiting the upload so the UI
@@ -195,13 +213,20 @@ export default function UploadGuardHostImpl() {
         skipIndices: [...(cur.arg.skipIndices ?? []), ...skipIndices],
       };
 
-      // If every file was skipped there's nothing to dispatch.
+      // If every file was skipped or aliased there's nothing to
+      // dispatch — return the aliased list so the caller can still
+      // wire the existing files into their parent context.
       if (skipIndices.length === cur.arg.files.length) {
-        cur.resolve({ uploaded: [], failed: [], cancelled: false });
+        cur.resolve({
+          uploaded: [],
+          failed: [],
+          cancelled: false,
+          aliased,
+        });
         return;
       }
 
-      const result = await runUpload(finalArg);
+      const result = await runUpload(finalArg, aliased);
       cur.resolve(result);
     },
     [runUpload],
@@ -211,7 +236,12 @@ export default function UploadGuardHostImpl() {
     const cur = pendingRef.current;
     if (!cur) return;
     setPending(null);
-    cur.resolve({ uploaded: [], failed: [], cancelled: true });
+    cur.resolve({
+      uploaded: [],
+      failed: [],
+      cancelled: true,
+      aliased: [],
+    });
   }, []);
 
   // ── Render the dialog when there's a pending resolution ──────────

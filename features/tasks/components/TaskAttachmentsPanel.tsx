@@ -115,8 +115,16 @@ export default function TaskAttachmentsPanel({
         visibility: "private",
       });
       if (result.cancelled) return;
+      // Attach BOTH freshly-uploaded files AND files the user chose to
+      // reuse via the duplicate dialog's "Use existing" action. From
+      // the task's point of view there's no difference — the user
+      // wanted these files attached and we have a cld_files.id for
+      // each. The `aliased` path is the "we already had this PDF,
+      // attach that copy instead of wasting storage" path.
+      const aliasedIds = result.aliased.map((a) => a.existingFileId);
+      const fileIdsToAttach = [...result.uploaded, ...aliasedIds];
       let attached = 0;
-      for (const fileId of result.uploaded) {
+      for (const fileId of fileIdsToAttach) {
         try {
           await dispatch(
             associateWithTask({
@@ -131,10 +139,16 @@ export default function TaskAttachmentsPanel({
         }
       }
       if (attached > 0) {
+        const allExisting =
+          result.uploaded.length === 0 && aliasedIds.length > 0;
         toast.success(
-          attached === 1
-            ? "Uploaded and attached 1 file"
-            : `Uploaded and attached ${attached} files`,
+          allExisting
+            ? attached === 1
+              ? "Attached existing file"
+              : `Attached ${attached} existing files`
+            : attached === 1
+              ? "Uploaded and attached 1 file"
+              : `Uploaded and attached ${attached} files`,
         );
       }
       if (result.failed.length > 0) {
