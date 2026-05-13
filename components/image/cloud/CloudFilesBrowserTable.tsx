@@ -49,8 +49,8 @@ import {
 } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
-import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
-import { isImageMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
+import { formatFileSize, formatRelativeTime } from "@/features/files";
+import { isImageMime, isVideoMime, resolveMime } from "@/features/files";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   CloudFileRecord,

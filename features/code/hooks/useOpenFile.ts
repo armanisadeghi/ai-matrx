@@ -5,7 +5,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCodeWorkspace } from "../CodeWorkspaceProvider";
 import { openTab } from "../redux/tabsSlice";
 import { languageFromFilename } from "../styles/file-icon";
-import { getFilePreviewProfile } from "@/features/files/utils/file-types";
+import { getFilePreviewProfile } from "@/features/files";
 
 /**
  * Returns a callback that opens a file from the active filesystem adapter

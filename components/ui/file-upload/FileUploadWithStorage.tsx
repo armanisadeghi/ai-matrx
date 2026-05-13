@@ -10,7 +10,7 @@ import {
   getFileDetailsByUrl,
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import type { Visibility } from "@/features/files";
 import type { NormalizedFile } from "@/features/files";
 import type { StorageMetadata } from "@/utils/file-operations/types";

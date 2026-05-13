@@ -83,7 +83,7 @@ import {
   moveFile,
   updateFileMetadata,
 } from "@/features/files/redux/thunks";
-import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
+import { isImageMime, resolveMime } from "@/features/files";
 import type { CloudFileRecord, Visibility } from "@/features/files";
 import {
   useSelectedImages,

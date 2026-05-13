@@ -36,7 +36,7 @@ import {
 } from "@/features/html-pages/css/wordpress-styles";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface HtmlPreviewModalProps {

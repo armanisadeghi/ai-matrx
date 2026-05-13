@@ -20,7 +20,7 @@ import { createOrganization } from "../service";
 import { generateSlug, validateOrgName, validateOrgSlug } from "../types";
 import { useSlugAvailability } from "../hooks";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 
 interface CreateOrgModalProps {
   isOpen: boolean;

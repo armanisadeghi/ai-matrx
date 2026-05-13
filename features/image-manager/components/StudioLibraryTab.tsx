@@ -19,7 +19,7 @@ import Link from "next/link";
 import { ExternalLink, Library, Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { CloudFilesTab } from "@/components/image/cloud/CloudFilesTab";
 import { extractErrorMessage } from "@/utils/errors";
 

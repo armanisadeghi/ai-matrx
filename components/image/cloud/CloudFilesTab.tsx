@@ -44,7 +44,7 @@ import { useFolderContents } from "@/features/files";
 import {
   isImageMime,
   resolveMime,
-} from "@/features/files/utils/file-types";
+} from "@/features/files";
 import type {
   CloudFileRecord,
   CloudFolderRecord,

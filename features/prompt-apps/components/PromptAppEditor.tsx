@@ -52,7 +52,7 @@ import { cn } from "@/lib/utils";
 import { PromptAppHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { UpdatePromptAppModal } from "./UpdatePromptAppModal";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 
 // Lazy-load CodeBlock to avoid circular dependency with Providers

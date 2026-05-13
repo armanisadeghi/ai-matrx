@@ -6,7 +6,7 @@
 // file flow in the app.
 
 import { fileHandler } from "@/features/files";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 
 export interface S3UploadResult {
   s3_key: string;

@@ -28,7 +28,7 @@ import {
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { openFilePicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
 import { requestUpload } from "@/features/files";
-import { folderForTask } from "@/features/files/utils/folder-conventions";
+import { folderForTask } from "@/features/files";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";

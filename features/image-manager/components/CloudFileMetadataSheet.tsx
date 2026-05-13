@@ -29,7 +29,7 @@ import {
   formatAbsoluteDate,
   formatFileSize,
   formatRelativeTime,
-} from "@/features/files/utils/format";
+} from "@/features/files";
 import type { CloudFileRecord } from "@/features/files";
 import { toast } from "sonner";
 

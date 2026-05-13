@@ -8,7 +8,7 @@ import {
   ImageAssetUploader,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import type { ImageSource } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(

@@ -10,7 +10,7 @@ import {
   uploadFiles as cloudUploadFiles,
 } from "@/features/files/redux/thunks";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { folderForTask } from "@/features/files/utils/folder-conventions";
+import { folderForTask } from "@/features/files";
 import { getStore } from "@/lib/redux/store-singleton";
 // Type-only import — does not introduce a runtime cycle through store-singleton.
 import type { AppDispatch } from "@/lib/redux/store";

@@ -28,7 +28,7 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "sonner";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 
 export function ProfilePhotoTab() {

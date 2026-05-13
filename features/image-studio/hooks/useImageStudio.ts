@@ -34,7 +34,7 @@ import { buildDescribePreview } from "../utils/build-describe-preview";
 import { DESCRIBE_TEMP_FOLDER_PATH } from "../constants/describe";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { uploadFiles, ensureFolderPath } from "@/features/files/redux/thunks";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";

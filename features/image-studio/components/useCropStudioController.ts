@@ -29,10 +29,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { useFileUpload } from "@/features/files";
+import { useFileUpload, useFolderNode } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { cropFileToFile } from "../utils/crop-file";
 import {
@@ -134,7 +132,6 @@ const DEFAULT_FOLDER_PATH = "Images/Crops";
 export function useCropStudioController(
   options: CropStudioControllerOptions = {},
 ): CropStudioController {
-  const foldersById = useAppSelector(selectAllFoldersMap);
   const { upload } = useFileUpload();
 
   // ── Entries ───────────────────────────────────────────────────────────────
@@ -436,7 +433,7 @@ export function useCropStudioController(
     options.initialFolderId ?? null,
   );
 
-  const folderRecord = folderId ? (foldersById[folderId] ?? null) : null;
+  const { folder: folderRecord } = useFolderNode(folderId);
   const folderName =
     folderRecord?.folderName ??
     (options.defaultFolderPath || DEFAULT_FOLDER_PATH).split("/").pop() ??

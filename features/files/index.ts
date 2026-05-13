@@ -63,6 +63,7 @@ export { useSharing } from "@/features/files/hooks/useSharing";
 export { useCloudTree } from "@/features/files/hooks/useCloudTree";
 export { useFolderContents } from "@/features/files/hooks/useFolderContents";
 export { useFileNode } from "@/features/files/hooks/useFileNode";
+export { useFolderNode } from "@/features/files/hooks/useFolderNode";
 export { useFileSelection } from "@/features/files/hooks/useFileSelection";
 export { useFileSearch } from "@/features/files/hooks/useFileSearch";
 export { useStorageQuota } from "@/features/files/hooks/useStorageQuota";

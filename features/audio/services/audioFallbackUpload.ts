@@ -21,7 +21,7 @@
 import { getStore } from "@/lib/redux/store-singleton";
 import type { AppDispatch } from "@/lib/redux/store";
 import * as Api from "@/features/files/api";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   deleteFile,
