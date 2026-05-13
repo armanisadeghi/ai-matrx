@@ -42,7 +42,10 @@
 export { useFile } from "@/features/files/handler/hooks/useFile";
 export { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 export { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-export { useFileBlob } from "@/features/files/handler/hooks/useFileBlob";
+// useFileBlob — the RICH version (fileId-based, 3-tier-cached, loading
+// state + progress + retry). The handler also has a minimal Blob-only
+// shorthand that's internal-only.
+export { useFileBlob } from "@/features/files/hooks/useFileBlob";
 export { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 
 // Existing data-layer hooks staying available through Phase 1. The Asset
@@ -63,6 +66,7 @@ export { useFileNode } from "@/features/files/hooks/useFileNode";
 export { useFileSelection } from "@/features/files/hooks/useFileSelection";
 export { useFileSearch } from "@/features/files/hooks/useFileSearch";
 export { useStorageQuota } from "@/features/files/hooks/useStorageQuota";
+export { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 
 // ---------------------------------------------------------------------------
 // 2. Facade — for non-React callers (services, thunks, agent prep)
@@ -108,9 +112,16 @@ export { FileChip } from "@/features/files/components/core/FileChip/FileChip";
 export { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 
 // ---------------------------------------------------------------------------
-// 4. Realtime provider — mounted ONCE in app/Providers.tsx after Phase 0
+// 4. Realtime + upload guard providers — mounted ONCE in app/Providers.tsx
 // ---------------------------------------------------------------------------
 export { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
+export { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
+
+// Imperative upload entry — opens the dedup-guard dialog when needed and
+// dispatches the upload thunk. Most callers should prefer `useFileUpload`;
+// `requestUpload` exists for code paths that can't run a hook (event
+// handlers in non-React imperative shells).
+export { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 
 // ---------------------------------------------------------------------------
 // 5. MediaRef construction — the only sanctioned path

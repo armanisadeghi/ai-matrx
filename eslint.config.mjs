@@ -54,6 +54,42 @@ const windowPanelsImportRestriction = {
             message:
                 'features/files/virtual-sources is internal — the adapters are registered at module load. External code should compose against the public hooks / handler facade.',
         },
+        // Tier 2 of the file-handling ring-fence (post-Tier-1, the
+        // tier-2 sweep cleared every external violator): hooks, upload,
+        // providers, services. Everything that was importable here is
+        // now re-exported on the public index.
+        {
+            group: [
+                '@/features/files/hooks',
+                '@/features/files/hooks/*',
+            ],
+            message:
+                'features/files/hooks is internal. Import the hook you need from @/features/files (the public surface index).',
+        },
+        {
+            group: [
+                '@/features/files/upload',
+                '@/features/files/upload/*',
+            ],
+            message:
+                'features/files/upload is internal. Use useFileUpload from @/features/files (or `requestUpload` for non-React imperative call sites — also exported from @/features/files).',
+        },
+        {
+            group: [
+                '@/features/files/providers',
+                '@/features/files/providers/*',
+            ],
+            message:
+                'features/files/providers is internal. The single CloudFilesRealtimeProvider mount lives in app/Providers.tsx; import via @/features/files if you really need it.',
+        },
+        {
+            group: [
+                '@/features/files/services',
+                '@/features/files/services/*',
+            ],
+            message:
+                'features/files/services is internal. Use the public hooks from @/features/files.',
+        },
     ],
 };
 

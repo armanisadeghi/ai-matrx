@@ -120,7 +120,7 @@ function PdfCldFileViewer({
   );
 }
 import { cn } from "@/lib/utils";
-import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { useFileBlob } from "@/features/files";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";

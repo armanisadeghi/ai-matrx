@@ -40,7 +40,7 @@ import {
   selectTreeStatus,
 } from "@/features/files/redux/selectors";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
-import { useFolderContents } from "@/features/files/hooks/useFolderContents";
+import { useFolderContents } from "@/features/files";
 import {
   isImageMime,
   resolveMime,

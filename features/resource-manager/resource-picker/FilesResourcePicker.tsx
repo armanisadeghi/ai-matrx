@@ -34,7 +34,7 @@ import {
 } from "@/utils/file-operations/constants";
 import { useAppSelector } from "@/lib/redux/hooks";
 import * as Api from "@/features/files/api";
-import { useCloudTree } from "@/features/files/hooks/useCloudTree";
+import { useCloudTree } from "@/features/files";
 import {
   selectAllFilesMap,
   selectAllFoldersMap,

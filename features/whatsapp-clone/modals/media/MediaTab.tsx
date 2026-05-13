@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
+import { useInfiniteWindow } from "@/features/files";
 import {
   formatDuration,
   formatRangeHeader,

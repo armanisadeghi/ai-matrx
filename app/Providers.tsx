@@ -65,8 +65,10 @@ import { ExtensionBridgeSubscriber } from "@/lib/extension-bridge/ExtensionBridg
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
 import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
-import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
-import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
+import {
+  CloudFilesRealtimeProvider,
+  UploadGuardHost,
+} from "@/features/files";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 // Side-effect import: registers every client-capability provider with the

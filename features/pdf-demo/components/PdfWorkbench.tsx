@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useCloudTree } from "@/features/files/hooks/useCloudTree";
+import { useCloudTree } from "@/features/files";
 
 import {
   PdfSourcePicker,
