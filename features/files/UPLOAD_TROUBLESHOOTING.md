@@ -6,11 +6,11 @@
 
 ## The single upload primitive
 
-Every file flow goes through the **universal file handler** at
-`features/file-handler`. There is one upload primitive — anything else is wrong.
+Every file flow goes through the **universal file handler** exposed by
+`@/features/files`. There is one upload primitive — anything else is wrong.
 
 ```ts
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 
 const { upload, uploading, progress, error } = useFileUpload();
 
@@ -34,7 +34,7 @@ For one-off uploads outside React (thunks, server code), call the handler
 directly:
 
 ```ts
-import { fileHandler } from "@/features/file-handler/handler";
+import { fileHandler } from "@/features/files/handler/handler";
 
 const normalized = await fileHandler.upload(
   { kind: "blob", blob, fileName: "screenshot.png" },
@@ -51,7 +51,7 @@ session JWT — see `features/files/api/server-client.ts`.
 ## How to diagnose a failure
 
 1. **Check the Error subclass.** The handler throws specific errors from
-   `@/features/file-handler/errors`:
+   `@/features/files/handler/errors`:
    - `FileUploadError` — generic upload failure (wraps backend message)
    - `FileAccessDeniedError` — auth/RLS denied the request
    - `FileExpiredError` — signed URL aged out (the resolver auto-refreshes,
@@ -80,7 +80,7 @@ session JWT — see `features/files/api/server-client.ts`.
 - **`fetch("/api/files/...")`, `fetch("/api/share/...")`, etc.** — Next.js
   has no file routes. Files go directly browser ↔ Python.
 - **Direct `Files.uploadFile` (the typed Python client)** outside
-  `features/file-handler/` and `features/files/upload/`. Always go through
+  `features/files/handler/` and `features/files/upload/`. Always go through
   `fileHandler.upload(...)`.
 - **Custom retry/queue layers around uploads.** The handler already
   handles progress, dispatches optimistic Redux updates, and emits typed

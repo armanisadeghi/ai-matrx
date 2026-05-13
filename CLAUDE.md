@@ -147,17 +147,17 @@ If you find yourself writing a new admin gate primitive (a new boolean selector,
 
 ## File handling — single entry point (MANDATORY)
 
-Every file flow in the app — `<img>` rendering, AI media blocks, downloads, uploads, share links, mid-stream agent file references, RAG ingest, OG previews — funnels through `features/file-handler`. Read [`features/file-handler/FEATURE.md`](./features/file-handler/FEATURE.md) before touching anything that loads, displays, uploads, or attaches a file.
+Every file flow in the app — `<img>` rendering, AI media blocks, downloads, uploads, share links, mid-stream agent file references, RAG ingest, OG previews — funnels through `@/features/files` (the public surface index). Read [`features/files/handler/FEATURE.md`](./features/files/handler/FEATURE.md) before touching anything that loads, displays, uploads, or attaches a file.
 
 **Non-negotiable rules:**
 
-1. **Use `fileHandler` for all file work.** `import { fileHandler } from "@/features/file-handler/handler"` and pass it a `FileSource`. Never construct `ImageBlock | AudioBlock | VideoBlock | DocumentBlock` literals by hand. Never call `Files.uploadFile` from outside the handler. Never call `useSignedUrl` directly — use `useFileSrc` instead.
-2. **No `supabase.storage` anywhere outside `features/file-handler/**` and `features/files/**`.** Anonymous users get an anonymous Supabase auth UUID and use the same `cld_files` system as everyone else. ESLint enforces this; the `no-restricted-syntax` rule catches `supabase.storage.from(...)` and `getPublicUrl`.
+1. **Use `fileHandler` for all file work.** `import { fileHandler } from "@/features/files/handler/handler"` and pass it a `FileSource`. Never construct `ImageBlock | AudioBlock | VideoBlock | DocumentBlock` literals by hand. Never call `Files.uploadFile` from outside the handler. Never call `useSignedUrl` directly — use `useFileSrc` instead.
+2. **No `supabase.storage` anywhere outside `features/files/handler/**` and `features/files/**`.** Anonymous users get an anonymous Supabase auth UUID and use the same `cld_files` system as everyone else. ESLint enforces this; the `no-restricted-syntax` rule catches `supabase.storage.from(...)` and `getPublicUrl`.
 3. **No Next.js server-side file routes.** Files travel directly between the browser and Python — never via `/app/api/*`. The handler emits Python URLs (`{BACKEND_URL}/files/{id}/download`, `{BACKEND_URL}/share/{token}`); no proxy hops.
 4. **Single internal representation.** Every codepath past `normalize()` sees only `NormalizedFile`. Adding a second internal shape defeats the point of this feature.
 5. **The handler self-resolves.** It reads `userAuth`, `cloudFiles`, and `appContext` from Redux on its own. Callsites pass the file; they don't pass the user, the org, or the active project.
 
-If a file shape isn't in the existing `FileSource` union, add it to `features/file-handler/types.ts` and write the input adapter — don't fork a parallel handler.
+If a file shape isn't in the existing `FileSource` union, add it to `features/files/handler/types.ts` and write the input adapter — don't fork a parallel handler.
 
 ---
 
@@ -195,7 +195,7 @@ Every Tier 1 / Tier 2 feature has a `FEATURE.md` inside its feature directory. T
 | Window Panels (all overlays) | `features/window-panels/FEATURE.md` |
 | Settings system (preferences shell, primitives, `useSetting`) | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |
 | RAG (library, data stores, document viewer, search, repositories, ingest/search clients, hooks) | `features/rag/FEATURE.md` |
-| Universal file handler (single entry point for every file flow) | `features/file-handler/FEATURE.md` |
+| Universal file handler (single entry point for every file flow) | `features/files/handler/FEATURE.md` |
 | Scheduling (sch_* spine, `/schedules` user UI, `/administration/scheduling` admin, matrx-scheduler Python package on aidream) | `features/scheduling/FEATURE.md` |
 
 ### Tier 2 — secondary features

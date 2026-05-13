@@ -50,16 +50,6 @@ import { extractErrorMessage } from '@/utils/errors';
 export type { AssetPreset } from '@/features/files/types';
 
 /**
- * Back-compat alias. The component's `preset` prop used to be typed as
- * the legacy `ImagePreset` union (`"social" | "cover" | "avatar" | ...`).
- * The new union — {@link AssetPreset} — drops `"cover"` and `"square"` in
- * favour of the richer preset surface. New code should import `AssetPreset`.
- *
- * @deprecated Use `AssetPreset` from `@/features/files/types`.
- */
-export type ImagePreset = AssetPreset;
-
-/**
  * Legacy four-key variant shape kept so callers reading
  * `result.image_url` / `og_image_url` / `thumbnail_url` / `tiny_url`
  * still compile. Maps to the new envelope as:

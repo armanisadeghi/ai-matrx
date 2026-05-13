@@ -34,11 +34,26 @@ const windowPanelsImportRestriction = {
             message:
                 'Do not import from features/files/api — use @/features/files (the public surface). HTTP helpers (getJson/postJson/del/patchJson/etc.) live at @/lib/python-client.',
         },
-        // NOTE (Phase 1 will wire this in): once features/files/handler/*
-        // is folded into features/files/, add a deny pattern for
-        // `@/features/files/*`. Not added now because many call sites
-        // still import handler hooks directly; the consolidation sweep in
-        // Phase 1 will migrate them and the pattern then locks the door.
+        // Tier 1 of the file-handling ring-fence (per
+        // docs/SWEEP_INTERNAL_IMPORTS.md): zero external importers today,
+        // so the ban lands now with no migration. New external imports of
+        // these internal subdirs fail the build.
+        {
+            group: [
+                '@/features/files/cache',
+                '@/features/files/cache/*',
+            ],
+            message:
+                'features/files/cache is internal infrastructure (in-memory LRU, IndexedDB store, Service Worker registration). Use the public hooks from @/features/files instead.',
+        },
+        {
+            group: [
+                '@/features/files/virtual-sources',
+                '@/features/files/virtual-sources/*',
+            ],
+            message:
+                'features/files/virtual-sources is internal — the adapters are registered at module load. External code should compose against the public hooks / handler facade.',
+        },
     ],
 };
 

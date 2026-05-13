@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
-import { uploadFileWithProgress } from "@/features/files/api/files";
+import { useFileUpload } from "@/features/files";
 import { toast } from "sonner";
 import { cn } from "@/styles/themes/utils";
 import { MessageInputAttachMenu } from "./MessageInputAttachMenu";
@@ -44,6 +44,8 @@ export function MessageInputBar({
   const docInputRef = useRef<HTMLInputElement>(null);
   const trimmed = value.trim();
 
+  const { upload } = useFileUpload();
+
   const recorder = useSimpleRecorder({
     onRecordingComplete: async (blob) => {
       try {
@@ -52,27 +54,26 @@ export function MessageInputBar({
         const file = new File([blob], `voice-${Date.now()}.${ext}`, {
           type: blob.type || "audio/webm",
         });
-        const { data } = await uploadFileWithProgress(
+        const normalized = await upload(
+          { kind: "file", file },
           {
-            file,
-            filePath: `messages/${conversationId}/${file.name}`,
+            folderPath: `messages/${conversationId}`,
             visibility: "private",
             metadata: {
               kind: "voice_message",
               duration_sec: recorder.duration,
             },
           },
-          () => {},
         );
-        const url = data.cdn_url ?? data.url;
+        const url = normalized.url;
         await onSend("", {
           message_type: "audio",
           media_url: url ?? undefined,
           media_metadata: {
             duration_sec: recorder.duration,
             mime_type: file.type,
-            file_size: data.file_size ?? blob.size,
-            file_id: data.file_id,
+            file_size: normalized.meta.sizeBytes ?? blob.size,
+            file_id: normalized.fileId,
           },
         });
       } catch (err) {
@@ -142,24 +143,23 @@ export function MessageInputBar({
   ) => {
     setIsUploading(true);
     try {
-      const { data } = await uploadFileWithProgress(
+      const normalized = await upload(
+        { kind: "file", file },
         {
-          file,
-          filePath: `messages/${conversationId}/${file.name}`,
+          folderPath: `messages/${conversationId}`,
           visibility: "private",
           metadata: { kind: `chat_${kind}` },
         },
-        () => {},
       );
-      const url = data.cdn_url ?? data.url;
+      const url = normalized.url;
       await onSend("", {
         message_type: kind,
         media_url: url ?? undefined,
         media_metadata: {
           file_name: file.name,
-          file_size: data.file_size ?? file.size,
+          file_size: normalized.meta.sizeBytes ?? file.size,
           mime_type: file.type,
-          file_id: data.file_id,
+          file_id: normalized.fileId,
         },
       });
     } catch (err) {

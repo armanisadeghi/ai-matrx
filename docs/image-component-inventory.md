@@ -36,9 +36,9 @@ These components call a hook to resolve the URL, then render. Changing the hook 
 | File | Hook(s) used | What it does | Status |
 |------|-------------|-------------|--------|
 | `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx` | `useSignedUrl` | THE single source of truth for cloud-file thumbnails. Picks CDN URL (public files) or signed URL (private). Renders `<img>` for images, `<video>` for video posters. | Active — canonical |
-| `features/file-handler/hooks/useFileSrc.ts` | `useFileAs` → `useSignedUrl` | Convenience hook: takes any `FileSource`, returns an `<img src>`-ready string. Abstracts CDN vs signed URL vs share link selection. | Active — canonical |
-| `features/file-handler/hooks/useFile.ts` | (handler internals) | Full `NormalizedFile` from any `FileSource`. Used when you need more than just the URL. | Active |
-| `features/file-handler/hooks/useFileAs.ts` | (handler internals) | Typed output variant of `useFile` — returns `html_src`, `blob`, `download_url`, etc. | Active |
+| `features/files/handler/hooks/useFileSrc.ts` | `useFileAs` → `useSignedUrl` | Convenience hook: takes any `FileSource`, returns an `<img src>`-ready string. Abstracts CDN vs signed URL vs share link selection. | Active — canonical |
+| `features/files/handler/hooks/useFile.ts` | (handler internals) | Full `NormalizedFile` from any `FileSource`. Used when you need more than just the URL. | Active |
+| `features/files/handler/hooks/useFileAs.ts` | (handler internals) | Typed output variant of `useFile` — returns `html_src`, `blob`, `download_url`, etc. | Active |
 | `hooks/images/useImage.ts` | none (takes raw `src`) | UI-behavior hook: zoom, fullscreen, copy, download, dimensions for a given `src` string. Does NOT fetch URLs — assumes URL is already resolved. | Active — mostly used by `ImageBlock` |
 | `hooks/images/useDownloadImage.ts` | (fetch) | Fetches image as blob, triggers browser download. | Active |
 | `hooks/images/useImageDimensions.ts` | (Image constructor) | Loads image in memory to compute natural dimensions. | Possibly unused — verify |
@@ -105,8 +105,8 @@ These compose the layers above. Modifying lower layers flows up here automatical
 
 | File | Hook(s) / function used | What it does | Status |
 |------|------------------------|-------------|--------|
-| `features/file-handler/hooks/useFileUpload.ts` | `fileHandler.upload()` → `cloudUpload` | THE canonical React upload hook. Manages `uploading / progress / result / error` state. All UI upload surfaces should use this. | Active — canonical |
-| `features/file-handler/upload.ts` (`uploadInternal`) | `cloudUpload` | Non-hook imperative wrapper used by `fileHandler.upload()`. Stamps org/project/task scope onto metadata. | Active |
+| `features/files/handler/hooks/useFileUpload.ts` | `fileHandler.upload()` → `cloudUpload` | THE canonical React upload hook. Manages `uploading / progress / result / error` state. All UI upload surfaces should use this. | Active — canonical |
+| `features/files/handler/upload.ts` (`uploadInternal`) | `cloudUpload` | Non-hook imperative wrapper used by `fileHandler.upload()`. Stamps org/project/task scope onto metadata. | Active |
 | `features/files/hooks/useGuardedFileUpload.ts` | `useFileUpload` + duplicate-detect | Wraps `useFileUpload` with file-hash duplicate detection before committing upload. Used by the main dropzone. | Active |
 | `components/ui/file-upload/usePasteImageUpload.ts` | (clipboard API + upload) | Hook for clipboard paste → upload. Verify whether it routes through `useFileUpload` or the legacy path. | Verify |
 | `components/ui/file-upload/useFileUploadWithStorage.ts` | Supabase storage directly | **Legacy.** Bypasses the canonical `cloudUpload` path; writes to Supabase Storage instead of cld_files via Python. Needs migration. | ⚠️ Legacy — bypasses handler |
@@ -191,11 +191,11 @@ These compose the layers above. Modifying lower layers flows up here automatical
 - `features/files/hooks/useSignedUrl.ts` — URL resolution for private files
 - `features/files/api/files.ts` — REST client
 - `components/image/cloud/resolveCloudFileUrl.ts` — imperative URL resolution at selection time
-- `features/file-handler/hooks/useFileSrc.ts` — universal hook for any FileSource → img src
+- `features/files/handler/hooks/useFileSrc.ts` — universal hook for any FileSource → img src
 
 ### Uploading
 - `features/files/upload/cloudUpload.ts` — THE upload primitive (99% of uploads)
-- `features/file-handler/hooks/useFileUpload.ts` — canonical React hook over cloudUpload
+- `features/files/handler/hooks/useFileUpload.ts` — canonical React hook over cloudUpload
 - `app/api/images/upload/route.ts` — separate Sharp variant track (used by `ImageAssetUploader`)
 
 ### Modifying

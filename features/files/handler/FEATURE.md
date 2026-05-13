@@ -18,16 +18,16 @@ This feature is the **single source of resistance** for file flows: direct const
 
 **Public API** — import directly, no barrel:
 
-- `import { fileHandler } from "@/features/file-handler/handler"` — read/write/refresh
-- `import { useFile } from "@/features/file-handler/hooks/useFile"` — generic resolve
-- `import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc"` — `<img src>` URL
-- `import { useFileBlob } from "@/features/file-handler/hooks/useFileBlob"` — bytes
-- `import { useFileMediaBlock } from "@/features/file-handler/hooks/useFileMediaBlock"` — AI block
-- `import { useFileDownloadUrl } from "@/features/file-handler/hooks/useFileDownloadUrl"` — `<a download>`
-- `import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload"` — write path
+- `import { fileHandler } from "@/features/files/handler/handler"` — read/write/refresh
+- `import { useFile } from "@/features/files/handler/hooks/useFile"` — generic resolve
+- `import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc"` — `<img src>` URL
+- `import { useFileBlob } from "@/features/files/handler/hooks/useFileBlob"` — bytes
+- `import { useFileMediaBlock } from "@/features/files/handler/hooks/useFileMediaBlock"` — AI block
+- `import { useFileDownloadUrl } from "@/features/files/handler/hooks/useFileDownloadUrl"` — `<a download>`
+- `import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload"` — write path
 
-**Types** — `@/features/file-handler/types`
-**Errors** — `@/features/file-handler/errors`
+**Types** — `@/features/files/handler/types`
+**Errors** — `@/features/files/handler/errors`
 
 **Routes:** none. The handler is a library, not a page.
 
@@ -43,7 +43,7 @@ This feature is the **single source of resistance** for file flows: direct const
 
 **Servers touched:** Python only (`server.app.matrxserver.com/files/*`, `/assets`, and `/share/*`). The handler never crosses through Next.js. No `/api/files/*`, no `/api/share/*`. (The legacy Next.js+Sharp route at `/api/images/upload` was deleted on 2026-05-12 — preset-variant image uploads now go directly to Python's `POST /assets`.) Telemetry lives on the Python side.
 
-**Key types** (`features/file-handler/types.ts`):
+**Key types** (`features/files/handler/types.ts`):
 - `FileSource` — discriminated union over every input shape (16 variants).
 - `NormalizedFile` — the one internal representation. Carries `fileId | url | fileUri | base64`, `origin`, `capabilities`, `meta`, `lifecycle`, `scope`, `derivedFrom`.
 - `FileTarget` — discriminated union over every consumer surface (11 variants).
