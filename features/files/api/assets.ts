@@ -255,7 +255,38 @@ export async function getAssetPresets(
  * Spec for a single preview variant — width/height drives the resize;
  * `format` and `quality` control the output encoding. Sent verbatim to
  * the server (no client-side image processing).
+ *
+ * `position` and `background_color` are honored when `fit: "cover"`:
+ *   - Anchor strings (`"top"`, `"top-left"`, `"entropy"`, etc.) pick the
+ *     crop region against one of nine fixed anchors or sharp's smart
+ *     strategies.
+ *   - A `{x, y}` point (each in `[0, 1]`) places the crop's centre at
+ *     that focal point in the source image. The server clamps so the
+ *     crop never escapes the source bounds.
+ *
+ * `background_color` is consulted in two places:
+ *   - `fit: "contain"` — letterbox padding colour.
+ *   - `format: "jpeg" | "avif"` — alpha-flatten colour (those formats
+ *     don't carry alpha; transparent pixels become opaque).
+ *
+ * Field names are snake_case to match the Python multipart body schema
+ * verbatim — `position` / `background_color` reach Python as-is inside
+ * the `variants_json` array.
  */
+export type PreviewVariantPosition =
+  | "center"
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right"
+  | "entropy"
+  | "attention"
+  | { x: number; y: number };
+
 export interface PreviewVariantSpec {
   key: string;
   width?: number;
@@ -263,6 +294,8 @@ export interface PreviewVariantSpec {
   format?: "jpeg" | "png" | "webp" | "avif";
   quality?: number;
   fit?: "cover" | "contain" | "fill";
+  position?: PreviewVariantPosition;
+  background_color?: string;
 }
 
 export interface PreviewVariantResult {
@@ -307,7 +340,9 @@ export async function previewAssetMultipart(
 ): Promise<{ data: AssetPreviewResult; meta: ResponseMeta }> {
   const form = new FormData();
   form.append("file", file);
-  form.append("variants", JSON.stringify(variants));
+  // Python's multipart body declares `variants_json` (not `variants`) per
+  // its OpenAPI schema. Match the wire name verbatim.
+  form.append("variants_json", JSON.stringify(variants));
   if (typeof options.maxInlineBytes === "number") {
     form.append("max_inline_bytes", String(options.maxInlineBytes));
   }

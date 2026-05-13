@@ -221,7 +221,6 @@
     "remirror": "latest",
     "resend": "^6.9.3",
     "server-only": "^0.0.1",
-    "sharp": "latest",
     "socket.io-client": "latest",
     "sonner": "latest",
     "styled-components": "^6.4.1",
@@ -305,7 +304,6 @@
       "core-js",
       "es5-ext",
       "protobufjs",
-      "sharp",
       "supabase",
       "utf-8-validate"
     ]

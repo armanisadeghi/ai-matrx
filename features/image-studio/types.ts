@@ -182,64 +182,6 @@ export interface SaveStudioResult {
     failedFilenames: string[];
 }
 
-// ── Processing request / response ─────────────────────────────────────────
-
-export interface ProcessVariantSpec {
-    presetId: string;
-    /** Override the preset's default format. */
-    format?: OutputFormat;
-    /** Override the default filename base. */
-    filenameBase?: string;
-    /** Per-variant fit override (default: spec.defaultFit). */
-    fit?: ImageFit;
-    /** Per-variant focal point (cover mode only). */
-    position?: ImagePosition;
-}
-
-export interface ProcessStudioRequestBody {
-    /** Quality 1–100. Applies to jpeg/webp/avif only. */
-    quality: number;
-    /** Global output format when a preset doesn't define its own. */
-    defaultFormat: OutputFormat;
-    /** Background colour for transparent inputs AND contain-mode padding (hex). */
-    backgroundColor?: string;
-    /** Default fit mode. Individual variants may override. */
-    defaultFit?: ImageFit;
-    /** Default focal point for cover mode. Individual variants may override. */
-    defaultPosition?: ImagePosition;
-    /** Preset ids + per-variant overrides. */
-    variants: ProcessVariantSpec[];
-    /** Filename base (falls back to uploaded filename without ext). */
-    filenameBase: string;
-}
-
-export interface ProcessStudioResponseVariant {
-    presetId: string;
-    filename: string;
-    format: OutputFormat;
-    width: number;
-    height: number;
-    quality: number | null;
-    size: number;
-    dataUrl: string;
-    compressionRatio: number | null;
-    /** The fit mode actually applied (server resolves defaults + overrides). */
-    fit: ImageFit;
-    /** The position actually applied (cover mode only). */
-    position: ImagePosition | null;
-    error?: string;
-}
-
-export interface ProcessStudioResponse {
-    original: {
-        width: number;
-        height: number;
-        size: number;
-        format: string;
-    };
-    variants: ProcessStudioResponseVariant[];
-}
-
 // ── Save pipeline (cloud-files) ───────────────────────────────────────────
 // Saving is no longer a bespoke POST — variants are uploaded via the
 // `uploadFiles` thunk from `@/features/files` after ensuring the target

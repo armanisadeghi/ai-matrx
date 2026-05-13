@@ -23,12 +23,11 @@ import type {
   ImageMetadata,
   ImagePosition,
   OutputFormat,
-  ProcessStudioRequestBody,
-  ProcessStudioResponse,
   ProcessedVariant,
   StudioMetadataStatus,
   StudioSourceFile,
 } from "../types";
+import { getPresetById } from "../presets";
 import { slugifyFilename } from "../utils/slugify-filename";
 import { buildDescribePreview } from "../utils/build-describe-preview";
 import { DESCRIBE_TEMP_FOLDER_PATH } from "../constants/describe";
@@ -36,6 +35,10 @@ import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts"
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { CloudFolders } from "@/features/files";
 import { uploadFiles, ensureFolderPath } from "@/features/files/redux/thunks";
+import {
+  previewAssetMultipart,
+  type PreviewVariantSpec,
+} from "@/features/files/api/assets";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import type { Visibility } from "@/features/files";
@@ -327,7 +330,11 @@ export function useImageStudio(
   }, []);
 
   // The core action: for each file, send it + the selected variants to the
-  // process API, then fold the returned dataUrls back into the file entry.
+  // Python `/assets/preview/multipart` endpoint and fold the returned URLs
+  // (data: for small variants, ephemeral https for large) back into the
+  // file entry. The studio runs zero image processing client-side; the
+  // Next.js sharp route this used to call was deleted in favour of the
+  // unified backend pipeline.
   const generate = useCallback(async () => {
     if (files.length === 0 || selectedPresetIds.length === 0) return;
     setIsProcessing(true);
@@ -343,57 +350,100 @@ export function useImageStudio(
       })),
     );
 
+    // Map the studio's `inside` fit value (Sharp-flavoured "don't
+    // enlarge") onto Python's `contain`. The studio has always sent the
+    // resize with withoutEnlargement: false, so `inside` and `contain`
+    // were already behaviourally identical for callsites here.
+    const apiFit: PreviewVariantSpec["fit"] =
+      fit === "inside" ? "contain" : fit;
+
     await Promise.all(
       files.map(async (sourceFile) => {
-        const spec: ProcessStudioRequestBody = {
-          quality,
-          defaultFormat: format,
-          backgroundColor,
-          defaultFit: fit,
-          defaultPosition: position,
-          filenameBase: sourceFile.filenameBase,
-          variants: selectedPresetIds.map((presetId) => ({
-            presetId,
-            filenameBase: sourceFile.filenameBase,
-          })),
-        };
+        // Resolve every selected preset to a concrete dimension + format
+        // spec. Unknown ids drop silently — the old route returned an
+        // `error` shaped result; we just skip so the UI doesn't get
+        // ghost-variant rows for presets that were removed mid-session.
+        const variantSpecs: PreviewVariantSpec[] = selectedPresetIds
+          .map((presetId): PreviewVariantSpec | null => {
+            const preset = getPresetById(presetId);
+            if (!preset) return null;
+            return {
+              key: presetId,
+              width: preset.width,
+              height: preset.height,
+              format: preset.defaultFormat ?? format,
+              quality,
+              fit: apiFit,
+              position,
+              background_color: backgroundColor,
+            };
+          })
+          .filter((v): v is PreviewVariantSpec => v !== null);
 
-        const formData = new FormData();
-        formData.append("file", sourceFile.file);
-        formData.append("spec", JSON.stringify(spec));
+        if (variantSpecs.length === 0) {
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === sourceFile.id
+                ? { ...f, status: "processed", variants: {} }
+                : f,
+            ),
+          );
+          return;
+        }
 
         try {
-          const res = await fetch("/api/images/studio/process", {
-            method: "POST",
-            body: formData,
-          });
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(
-              (body as { error?: string }).error ??
-                `Process failed (${res.status})`,
-            );
-          }
-          const data = (await res.json()) as ProcessStudioResponse;
+          const { data } = await previewAssetMultipart(
+            sourceFile.file,
+            variantSpecs,
+          );
 
           setFiles((prev) =>
             prev.map((f) => {
               if (f.id !== sourceFile.id) return f;
               const variants: Record<string, ProcessedVariant> = {};
               for (const v of data.variants) {
-                if (v.error || !v.dataUrl) continue;
-                variants[v.presetId] = {
-                  presetId: v.presetId,
-                  filename: v.filename,
-                  width: v.width,
-                  height: v.height,
-                  format: v.format,
-                  quality: v.quality,
-                  size: v.size,
-                  dataUrl: v.dataUrl,
-                  compressionRatio: v.compressionRatio,
-                  fit: v.fit,
-                  position: v.position,
+                const preset = getPresetById(v.key);
+                if (!preset) continue;
+                const url = v.data_url ?? v.signed_url;
+                if (!url) continue;
+
+                // Derive the variant's real format from the returned
+                // MIME so the UI's "Save as .webp" label matches what
+                // the server actually encoded. Falls back to the
+                // requested format if MIME is missing.
+                const variantFormat: OutputFormat = (() => {
+                  if (v.mime_type === "image/jpeg") return "jpeg";
+                  if (v.mime_type === "image/png") return "png";
+                  if (v.mime_type === "image/webp") return "webp";
+                  if (v.mime_type === "image/avif") return "avif";
+                  return preset.defaultFormat ?? format;
+                })();
+
+                const ext = variantFormat === "jpeg" ? "jpg" : variantFormat;
+                const filenameBase = slugifyFilename(
+                  sourceFile.filenameBase || sourceFile.originalName,
+                );
+                const filename = `${filenameBase || "image"}-${preset.id}.${ext}`;
+
+                const compressionRatio =
+                  sourceFile.file.size > 0
+                    ? Math.round(
+                        (1 - v.file_size / sourceFile.file.size) * 100,
+                      )
+                    : null;
+
+                variants[v.key] = {
+                  presetId: v.key,
+                  filename,
+                  width: v.width ?? preset.width,
+                  height: v.height ?? preset.height,
+                  format: variantFormat,
+                  quality: variantFormat === "png" ? null : quality,
+                  size: v.file_size,
+                  dataUrl: url,
+                  compressionRatio,
+                  fit,
+                  position: apiFit === "cover" ? position : null,
                   fileId: null,
                   savedAt: null,
                 };
@@ -402,8 +452,6 @@ export function useImageStudio(
                 ...f,
                 status: "processed",
                 error: null,
-                width: data.original.width || f.width,
-                height: data.original.height || f.height,
                 variants,
               };
             }),
