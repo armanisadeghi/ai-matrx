@@ -164,7 +164,7 @@ export interface CloudFile {
   /**
    * Permanent CDN URL (Cloudflare-fronted) when the file is public AND
    * the server has the CDN feature enabled. ``null`` otherwise — callers
-   * should fall back to ``useSignedUrl(fileId)`` for a 1h AWS-signed URL.
+   * should fall back to ``useFileSrc({ kind: "file_id", fileId })`` for a 1h AWS-signed URL.
    *
    * Carries a ``?v=<checksum[:8]>`` cache-buster so a content change
    * invalidates the cache instantly. **Do not strip the query string.**
@@ -173,7 +173,7 @@ export interface CloudFile {
    * always ``null`` for rows that came in via the direct DB read path
    * because the DB has no ``public_url`` column — it's computed
    * server-side from visibility + storage_uri + checksum. For DB-sourced
-   * rows, fall back to ``useSignedUrl(fileId)`` to fetch the canonical
+   * rows, fall back to ``useFileSrc({ kind: "file_id", fileId })`` to fetch the canonical
    * URL (which the server returns as a CDN URL when applicable).
    */
   publicUrl: string | null;

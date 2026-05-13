@@ -20,11 +20,13 @@
  * through `@/features/files/handler/*`.
  */
 
-import type { MediaRef } from "@/features/files/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
-import { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
-import type { FileSource, NormalizedFile } from "@/features/files/handler/types";
-import { normalize } from "@/features/files/handler/input/normalize";
+import type {
+  FileSource,
+  MediaRef,
+  NormalizedFile,
+} from "@/features/files";
+import { normalize, preferIdentityLocator } from "@/features/files";
 
 const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "image",

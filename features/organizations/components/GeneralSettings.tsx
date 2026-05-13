@@ -13,7 +13,7 @@ import { validateOrgName, type Organization, type OrgRole } from "../types";
 import { InlineMediaRef } from "@/features/files";
 import { format } from "date-fns";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
-import { folderForOrg } from "@/features/files/utils/folder-conventions";
+import { folderForOrg } from "@/features/files";
 
 interface GeneralSettingsProps {
   organization: Organization;

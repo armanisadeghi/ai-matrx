@@ -5,22 +5,22 @@
  * `GET /files/{file_id}/asset` endpoint and exposes the resulting
  * {@link Asset} envelope plus the primary inline-renderable URL.
  *
- * Why this hook instead of {@link useSignedUrl}: the asset endpoint
+ * Why this hook instead of {@link useFileSrc}: the asset endpoint
  * returns every preset variant in one shot (cover, OG, thumbnail,
  * favicons, etc.) AND it honours the same CDN-vs-signed routing rules
  * the rest of the system uses (public files get CDN URLs; private/shared
  * get signed-inline URLs). New renderers should default to this hook;
- * `useSignedUrl` stays for legacy callers that only need the raw signed
- * URL for the original file.
+ * `useFileSrc` covers callers that only need the raw inline URL
+ * for the original file.
  *
  * Lifecycle:
  *   - Re-fetches whenever `fileId` or `signedUrlTtl` changes.
- *   - Auto-refreshes 30s before the signed URL expires (matching
- *     `useSignedUrl`'s policy). Public/CDN URLs never expire so the
+ *   - Auto-refreshes 30s before the signed URL expires (matching the
+ *     handler's expiry-wheel policy). Public/CDN URLs never expire so the
  *     refresh timer is skipped.
  *
- * Pattern matches `useSignedUrl.ts` — no TanStack Query in
- * `features/files/hooks/` yet, so plain React state + effects.
+ * Pattern: plain React state + effects — no TanStack Query in
+ * `features/files/hooks/` yet.
  */
 
 "use client";

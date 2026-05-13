@@ -6,6 +6,7 @@ import {
   sendMessage,
   joinChannel
 } from '../utils/slackUtils';
+import { InlineMediaRef } from '@/features/files';
 
 interface SlackManagerProps {
   tokenData: SlackTokenResponse | { access_token: string };
@@ -334,7 +335,13 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                         <div key={message.ts} className="flex items-start">
                           <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 flex items-center justify-center overflow-hidden">
                             {getUserAvatar(message.user) ? (
-                                <img src={getUserAvatar(message.user)!} alt={getUserName(message.user)} className="w-full h-full object-cover" />
+                                <InlineMediaRef
+                                    ref={getUserAvatar(message.user)!}
+                                    alt={getUserName(message.user)}
+                                    size="fill"
+                                    fit="cover"
+                                    rounded="full"
+                                />
                             ) : (
                                 <span className="text-xs font-medium text-gray-600">
                           {isBotMessage(message) ? 'Bot' : getUserName(message.user).charAt(0)}

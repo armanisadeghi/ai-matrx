@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllFoldersMap,
@@ -27,6 +27,13 @@ export interface UseCloudTreeResult {
   error: string | null;
   rootFolders: CloudFolderRecord[];
   rootFiles: CloudFileRecord[];
+  /**
+   * Re-fetch the user's cloud-files tree from the API. The realtime
+   * channel normally keeps the tree live; this is an explicit-refresh
+   * escape hatch for UI surfaces (e.g. the explorer refresh button).
+   * No-op when `userId` is null.
+   */
+  refresh: () => void;
 }
 
 /**
@@ -59,5 +66,10 @@ export function useCloudTree(userId: string | null): UseCloudTreeResult {
     .map((id) => filesById[id])
     .filter(Boolean) as CloudFileRecord[];
 
-  return { status, error, rootFolders, rootFiles };
+  const refresh = useCallback(() => {
+    if (!userId) return;
+    void dispatch(loadUserFileTree({ userId }));
+  }, [dispatch, userId]);
+
+  return { status, error, rootFolders, rootFiles, refresh };
 }

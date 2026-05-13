@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { PRESET_COVERS } from "./preset-covers";
 import { cn } from "@/utils/cn";
 import { uploadAsset } from "@/features/files/api/assets";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 
 interface ShareCoverImagePickerProps {

@@ -18,7 +18,7 @@ import {
   FileIcon as FileIconLucide,
 } from "lucide-react";
 import { PublicDownloadButton } from "./_components/PublicDownloadButton";
-import type { ShareLinkResolveResponse } from "@/features/files/types";
+import type { ShareLinkResolveResponse } from "@/features/files";
 
 /**
  * Files we know render richly in the authenticated app's PreviewPane —

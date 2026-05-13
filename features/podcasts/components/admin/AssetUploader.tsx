@@ -21,7 +21,7 @@ import {
     ImageAssetUploader,
     type ImageUploaderResult,
 } from '@/components/official/ImageAssetUploader';
-import { folderForPodcast } from '@/features/files/utils/folder-conventions';
+import { folderForPodcast } from '@/features/files';
 import type { components } from '@/types/python-generated/api-types';
 
 /**

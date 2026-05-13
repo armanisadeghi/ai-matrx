@@ -165,7 +165,7 @@ export interface PublicCdnSource {
   mime?: string;
 }
 
-/** Legacy-compat shape from `components/ui/file-upload/useFileUploadWithStorage`. */
+/** Legacy-compat shape — `{ fileId, url, ... }` payload emitted by older upload pathways. */
 export interface UploadResultSource {
   kind: "upload_result";
   uploadResult: {

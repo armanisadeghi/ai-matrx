@@ -24,7 +24,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   WindowPanelShell,
   type CloudFilesWindowTab,
-} from "@/features/files/components/surfaces/WindowPanelShell";
+} from "@/features/files";
 
 export interface CloudFilesWindowProps {
   isOpen: boolean;

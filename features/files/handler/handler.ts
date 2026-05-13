@@ -16,6 +16,10 @@ import { uploadInternal } from "./upload";
 import { normalize } from "./input/normalize";
 import { resolve as resolveImpl } from "./resolver";
 import { toTarget } from "./output/target";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { ensureFolderPath as ensureFolderPathThunk } from "@/features/files/redux/thunks";
+import type { EnsureFolderPathArg } from "@/features/files/types";
+import type { AppDispatch } from "@/lib/redux/store";
 import type {
   FileSource,
   FileTarget,
@@ -101,6 +105,27 @@ export const fileHandler = {
    */
   async toContentPart(source: FileSource) {
     return this.use(source).as({ kind: "jsonb_content_part" });
+  },
+
+  /**
+   * Idempotently create (or look up) a folder path like `"Images/Crops"`,
+   * walking each segment and creating any that are missing. Returns the
+   * leaf folder id.
+   *
+   * Non-React entry point — for services and thunks that need to stage
+   * an upload destination without owning a React hook. Routes through
+   * the `ensureFolderPath` thunk against the store singleton, so realtime
+   * channel updates land in the slice the same way.
+   */
+  async ensureFolderPath(arg: EnsureFolderPathArg): Promise<string> {
+    const store = getStoreSingleton();
+    if (!store) {
+      throw new Error(
+        "fileHandler.ensureFolderPath called before the Redux store was ready.",
+      );
+    }
+    const dispatch = store.dispatch as AppDispatch;
+    return await dispatch(ensureFolderPathThunk(arg)).unwrap();
   },
 };
 

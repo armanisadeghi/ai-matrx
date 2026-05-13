@@ -25,7 +25,7 @@ import { ResourceChips } from "./resource-display/ResourceChips";
 import type { Resource } from "../types/resources";
 import ResourcePreviewSheet from "./resource-display/ResourcePreviewSheet";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { toast } from "sonner";

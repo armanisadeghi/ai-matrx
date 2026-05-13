@@ -45,7 +45,7 @@ import {
   sniffTextBytes,
   type PreviewKind,
   type TextSniffResult,
-} from "@/features/files/utils/file-types";
+} from "@/features/files";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCodeWorkspace } from "../CodeWorkspaceProvider";
 import { convertTabToEditor } from "../redux/tabsSlice";

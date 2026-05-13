@@ -52,7 +52,8 @@ import { cn } from "@/lib/utils";
 import { PromptAppHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { UpdatePromptAppModal } from "./UpdatePromptAppModal";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { CloudFolders } from "@/features/files";
+import { InlineMediaRef } from "@/features/files";
 
 // Lazy-load CodeBlock to avoid circular dependency with Providers
 const CodeBlock = lazy(
@@ -1019,11 +1020,12 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
                     <div className="flex items-center gap-2">
                       {editFaviconUrl && (
                         <div className="flex-shrink-0 w-8 h-8 rounded-md border border-border overflow-hidden bg-muted">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={editFaviconUrl}
+                          <InlineMediaRef
+                            ref={editFaviconUrl}
                             alt="App favicon"
-                            className="w-full h-full object-cover"
+                            size="fill"
+                            fit="cover"
+                            rounded="none"
                           />
                         </div>
                       )}

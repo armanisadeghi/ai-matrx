@@ -58,9 +58,9 @@ await dispatch(
 ### Render a file as `<img>` / `<video>`
 
 ```ts
-import { useSignedUrl } from '@/features/files/hooks/useSignedUrl';
+import { useFileSrc } from '@/features/files';
 
-const { url } = useSignedUrl(fileId);
+const { url } = useFileSrc({ kind: 'file_id', fileId });
 return <img src={url ?? undefined} />;
 ```
 
@@ -117,7 +117,7 @@ const link = await createShareLink(fileId, {
 |---|---|
 | Optimistic update flickers/reverts after a second | Missing `requestId` on the REST write. Realtime echo is overwriting state. |
 | Uploads succeed but don't appear in tree | Realtime middleware not attached. Check `<CloudFilesRealtimeProvider>` is mounted under the user-scoped layout. |
-| Signed URL returns 403 | Expired. Use `useSignedUrl` (auto-refreshes). Never cache raw signed URLs across mounts. |
+| Signed URL returns 403 | Expired. Use `useFileSrc` (the handler's expiry-wheel auto-refreshes). Never cache raw signed URLs across mounts. |
 | Tree shows stale state after reconnect | `reconcileTree()` dispatch missing from the realtime middleware's `SUBSCRIBED`-after-error handler. |
 | Type error on `CloudFile.metadata` | You're using an inline type somewhere. Delete it and import from [types.ts](types.ts). |
 | 413 on upload | File >tier cap (or >100MB free). No chunked path yet — see [for_python/REQUESTS.md](for_python/REQUESTS.md) item 3. |

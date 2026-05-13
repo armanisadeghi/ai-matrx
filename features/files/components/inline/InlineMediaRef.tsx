@@ -71,6 +71,54 @@ export interface InlineMediaRefProps {
   rounded?: "none" | "sm" | "md" | "lg" | "full";
   /** Click handler — wires up cursor + role + keyboard activation. */
   onClick?: (event: React.MouseEvent | React.KeyboardEvent) => void;
+  /**
+   * Error handler — fires when the underlying media element fails to load
+   * (network 404, broken bytes, expired signature). Use this to hide the
+   * element or fall back to a sibling. When supplied, the component skips
+   * the `next/image` branch unconditionally so the native error event
+   * reaches your handler with the original `SyntheticEvent` shape.
+   *
+   * Note: distinct from the `fallback` prop, which renders an internal
+   * icon/skeleton when the `ref` couldn't be resolved to a URL at all
+   * (no remote attempt made). `onError` fires *after* a URL is resolved
+   * and the remote fetch fails.
+   */
+  onError?: (
+    event: React.SyntheticEvent<
+      HTMLImageElement | HTMLVideoElement | HTMLAudioElement
+    >,
+  ) => void;
+  /**
+   * Load handler — fires when the underlying media element finishes
+   * loading. Use this for fade-in transitions, canvas initialization, or
+   * measuring rendered dimensions. When supplied, the component skips the
+   * `next/image` branch so the native `onLoad` event reaches your handler.
+   */
+  onLoad?: (
+    event: React.SyntheticEvent<
+      HTMLImageElement | HTMLVideoElement | HTMLAudioElement
+    >,
+  ) => void;
+  /**
+   * Forwarded directly to the underlying `<img>` / `<video>` / `<audio>`
+   * element for imperative DOM access (annotation canvas overlays,
+   * transform calculations, getBoundingClientRect, etc.). Not a React
+   * `forwardRef` because the component already uses `ref` as a content
+   * prop — pass any ref-like value here instead.
+   *
+   * When supplied, the component skips the `next/image` branch so your
+   * ref attaches to the real DOM node, not next/image's wrapper.
+   */
+  mediaElementRef?: React.Ref<
+    HTMLImageElement | HTMLVideoElement | HTMLAudioElement
+  >;
+  /**
+   * Forwarded to `<img crossorigin>`. Required for canvas pixel reads of
+   * cross-origin images (e.g. the annotate-mode tool draws on top of a
+   * loaded image and needs `crossOrigin="anonymous"` to avoid tainting
+   * the canvas). When supplied, the component skips `next/image`.
+   */
+  crossOrigin?: "anonymous" | "use-credentials";
   /** Optional border style. Default `"none"`. */
   border?: "none" | "subtle";
   /** Extra class names. */
@@ -193,6 +241,10 @@ export function InlineMediaRef({
   as,
   rounded = "md",
   onClick,
+  onError,
+  onLoad,
+  mediaElementRef,
+  crossOrigin,
   border = "none",
   className,
 }: InlineMediaRefProps) {
@@ -264,10 +316,20 @@ export function InlineMediaRef({
   if (elementType === "video") {
     return (
       <video
+        ref={
+          mediaElementRef as React.Ref<HTMLVideoElement> | undefined
+        }
         src={url}
         {...sizeAttrs}
         className={cn(baseCls, objectFitClass)}
         controls
+        onLoadedData={
+          onLoad as React.ReactEventHandler<HTMLVideoElement> | undefined
+        }
+        onError={
+          onError as React.ReactEventHandler<HTMLVideoElement> | undefined
+        }
+        crossOrigin={crossOrigin}
         {...interactiveProps}
       />
     );
@@ -275,19 +337,38 @@ export function InlineMediaRef({
   if (elementType === "audio") {
     return (
       <audio
+        ref={
+          mediaElementRef as React.Ref<HTMLAudioElement> | undefined
+        }
         src={url}
         className={cn(baseCls)}
         controls
+        onLoadedData={
+          onLoad as React.ReactEventHandler<HTMLAudioElement> | undefined
+        }
+        onError={
+          onError as React.ReactEventHandler<HTMLAudioElement> | undefined
+        }
+        crossOrigin={crossOrigin}
         {...interactiveProps}
       />
     );
   }
 
+  // Bail to plain <img> when the caller needs any escape hatch
+  // (onError / onLoad / element ref / crossOrigin). next/image accepts
+  // its own onLoad/onError but wraps the DOM node, mangles the event
+  // target, and refuses crossOrigin — none of which is useful for the
+  // canvas-overlay / fade-in / "hide-on-404" cases that drive these
+  // props.
+  const needsPlainImg =
+    !!onError || !!onLoad || !!mediaElementRef || !!crossOrigin;
+
   // Use next/image for cld_files-hosted CDN URLs (better lazy-loading +
   // device-pixel-ratio handling); external arbitrary URLs may not be on
   // the configured remotePatterns list, so fall back to a plain <img>.
   const isCdnUrl = url.startsWith("https://cdn.") || url.includes("/cdn/");
-  if (isCdnUrl && !isFill) {
+  if (isCdnUrl && !isFill && !needsPlainImg) {
     return (
       <Image
         src={url}
@@ -308,10 +389,16 @@ export function InlineMediaRef({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={mediaElementRef as React.Ref<HTMLImageElement> | undefined}
       src={url}
       alt={alt}
       {...sizeAttrs}
       className={cn(baseCls, objectFitClass)}
+      onLoad={onLoad as React.ReactEventHandler<HTMLImageElement> | undefined}
+      onError={
+        onError as React.ReactEventHandler<HTMLImageElement> | undefined
+      }
+      crossOrigin={crossOrigin}
       {...interactiveProps}
     />
   );

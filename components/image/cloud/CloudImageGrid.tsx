@@ -4,8 +4,8 @@ import React from "react";
 import { Check, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
-import type { CloudFileRecord } from "@/features/files/types";
+import { MediaThumbnail } from "@/features/files";
+import type { CloudFileRecord } from "@/features/files";
 
 export type CloudImageViewMode = "cozy" | "compact";
 

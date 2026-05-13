@@ -153,7 +153,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 ### Browse-mode click
 
 1. Tab calls `useBrowseAction()` and gets a `browse(payload)` function.
-2. On click, the tab resolves cloud-file references through the shared cached renderer path (`features/files/utils/resolveRenderableImageUrl.ts` via `resolveCloudFileUrl`) and dispatches `browse({ images, alts, initialIndex, title })`.
+2. On click, the tab resolves cloud-file references through `resolveCloudFileUrl` (which delegates to `fileHandler.use(source).as({ kind: "html_src" })`, registering signed URLs with the handler's expiry-wheel) and dispatches `browse({ images, alts, initialIndex, title })`.
 3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `ImageViewerWindow.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
 4. `OverlayController` mounts `ImageViewerWindow` with the payload spread as props.
 
@@ -174,7 +174,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 - **`/images/upload` uses `ImageAssetUploader` in cloud mode, not `FileUploadDropzone`.** Keep `FileUploadDropzone` in `features/files` for generic files and overlay upload surfaces; Image Manager uses the official image-first uploader for visual consistency.
 - **Server-only Unsplash key.** `NEXT_PUBLIC_UNSPLASH_ACCESS_KEY` was removed. Every Unsplash call goes through `/api/unsplash` via `hooks/images/unsplashClient.ts` (or the GET form for `PublicImageSearch`). Don't reintroduce a `NEXT_PUBLIC_*` Unsplash key.
 - **`ImageManagerContent` is a deprecated alias** of `<ImageManager>` — kept for legacy callers. New code imports `ImageManager` directly.
-- **Cloud-file image URLs must resolve through the central cached resolver.** Use `resolveCloudFileUrl()` / `resolveRenderableImageUrl()` instead of calling `/files/{id}/url` directly from image-manager UI. Viewer payloads must pass plain URL strings, never resolver objects.
+- **Cloud-file image URLs must resolve through the universal handler.** Use `resolveCloudFileUrl()` (or `fileHandler.use(source).as({ kind: "html_src" })` directly) instead of calling `/files/{id}/url` from image-manager UI. Viewer payloads must pass plain URL strings, never resolver objects.
 
 ---
 

@@ -63,6 +63,7 @@ export { useSharing } from "@/features/files/hooks/useSharing";
 export { useCloudTree } from "@/features/files/hooks/useCloudTree";
 export { useFolderContents } from "@/features/files/hooks/useFolderContents";
 export { useFileNode } from "@/features/files/hooks/useFileNode";
+export { useFolderNode } from "@/features/files/hooks/useFolderNode";
 export { useFileSelection } from "@/features/files/hooks/useFileSelection";
 export { useFileSearch } from "@/features/files/hooks/useFileSearch";
 export { useStorageQuota } from "@/features/files/hooks/useStorageQuota";
@@ -72,6 +73,15 @@ export { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 // 2. Facade — for non-React callers (services, thunks, agent prep)
 // ---------------------------------------------------------------------------
 export { fileHandler } from "@/features/files/handler/handler";
+
+// Synchronous lower-level primitives — exposed for the rare callsite that
+// needs them inline (e.g. slice reducers like
+// `features/agents/redux/execution-system/instance-resources/resource-source.ts`
+// where `fileHandler.resolve` is async and a `MediaRef` must be derived
+// during a synchronous redux action). Prefer `fileHandler.*` ops for
+// everything else.
+export { normalize } from "@/features/files/handler/input/normalize";
+export { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
 
 // ---------------------------------------------------------------------------
 // 3. Components — the canonical render / upload / pick surface
@@ -119,7 +129,10 @@ export {
 
 // Dialogs / context menus that consumers compose into their own surfaces.
 export { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
-export { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+export {
+  ShareLinkDialog,
+  ShareLinkDialogBody,
+} from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 export { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
 export { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 export { FolderContextMenu } from "@/features/files/components/core/FolderContextMenu/FolderContextMenu";
@@ -188,6 +201,16 @@ export { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 // the redux/* ESLint ban can flip to error with no allowlist.
 export { cloudFilesReducer } from "@/features/files/redux/slice";
 export { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
+
+// Explorer-side state — driven by the cloud-files side panel in the code
+// workspace and the `/files` selection model. These slice actions / selector
+// are the narrow contract consumers need to wire their own selection UI; the
+// rest of the slice stays internal.
+export {
+  setActiveFileId,
+  setActiveFolderId,
+} from "@/features/files/redux/slice";
+export { selectTreeStatus } from "@/features/files/redux/selectors";
 
 // Imperative upload entry — opens the dedup-guard dialog when needed and
 // dispatches the upload thunk. Most callers should prefer `useFileUpload`;

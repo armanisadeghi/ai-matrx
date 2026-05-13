@@ -16,9 +16,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import type { Visibility } from "@/features/files/types";
+import { useFileUpload } from "@/features/files";
+import { CloudFolders } from "@/features/files";
+import type { Visibility } from "@/features/files";
 
 type SaveToOption = "public" | "private";
 

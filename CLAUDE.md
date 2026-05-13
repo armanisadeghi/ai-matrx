@@ -151,7 +151,7 @@ Every file flow in the app — `<img>` rendering, AI media blocks, downloads, up
 
 **Non-negotiable rules:**
 
-1. **Use `fileHandler` for all file work.** `import { fileHandler } from "@/features/files/handler/handler"` and pass it a `FileSource`. Never construct `ImageBlock | AudioBlock | VideoBlock | DocumentBlock` literals by hand. Never call `Files.uploadFile` from outside the handler. Never call `useSignedUrl` directly — use `useFileSrc` instead.
+1. **Use `fileHandler` for all file work.** `import { fileHandler } from "@/features/files/handler/handler"` and pass it a `FileSource`. Never construct `ImageBlock | AudioBlock | VideoBlock | DocumentBlock` literals by hand. Never call `Files.uploadFile` from outside the handler. For `<img>`/`<video>`/`<audio>` `src` values, use `useFileSrc` from `@/features/files`.
 2. **No `supabase.storage` anywhere outside `features/files/handler/**` and `features/files/**`.** Anonymous users get an anonymous Supabase auth UUID and use the same `cld_files` system as everyone else. ESLint enforces this; the `no-restricted-syntax` rule catches `supabase.storage.from(...)` and `getPublicUrl`.
 3. **No Next.js server-side file routes.** Files travel directly between the browser and Python — never via `/app/api/*`. The handler emits Python URLs (`{BACKEND_URL}/files/{id}/download`, `{BACKEND_URL}/share/{token}`); no proxy hops.
 4. **Single internal representation.** Every codepath past `normalize()` sees only `NormalizedFile`. Adding a second internal shape defeats the point of this feature.

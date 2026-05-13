@@ -5,8 +5,8 @@
 // `cld_files` storage, RLS, and signed-URL refresh logic as every other
 // file flow in the app.
 
-import { fileHandler } from "@/features/files/handler/handler";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { fileHandler } from "@/features/files";
+import { CloudFolders } from "@/features/files";
 
 export interface S3UploadResult {
   s3_key: string;

@@ -33,8 +33,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileUpload } from "@/features/files";
+import { useFileSrc } from "@/features/files";
 import { cn } from "@/lib/utils";
 
 // 36-char canonical UUID — what cld_files file_ids look like.

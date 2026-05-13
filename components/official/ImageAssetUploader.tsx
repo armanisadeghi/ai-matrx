@@ -39,15 +39,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { AlertCircle, CheckCircle2, Eye, ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files/types';
-import { useFileUpload } from '@/features/files/handler/hooks/useFileUpload';
+import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files';
+import { useFileUpload } from '@/features/files';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
 import { extractErrorMessage } from '@/utils/errors';
 
 // ── Types exported for consumers ──────────────────────────────────────────
 
-export type { AssetPreset } from '@/features/files/types';
+export type { AssetPreset } from '@/features/files';
 
 /**
  * Legacy four-key variant shape kept so callers reading

@@ -61,7 +61,7 @@ import { formatBytes, formatDimensions } from "../utils/format-bytes";
 import type { ImagePosition, StudioSourceFile } from "../types";
 import dynamic from "next/dynamic";
 import { StudioDropZone } from "./StudioDropZone";
-import { useFilePicker } from "@/features/files/components/pickers/FilePicker";
+import { useFilePicker } from "@/features/files";
 
 // InitialCropWindow renders <WindowPanel> as styling chrome — keep it
 // out of EmbeddedImageStudio's static graph so the parent's chunk

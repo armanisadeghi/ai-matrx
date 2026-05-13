@@ -20,8 +20,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon, Maximize2, Loader2 } from "lucide-react";
-import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
-import type { FileSource } from "@/features/files/handler/types";
+import { useFileAs } from "@/features/files";
+import { InlineMediaRef } from "@/features/files";
+import type { FileSource } from "@/features/files";
 
 // Extract the cloud_files UUID from an S3 path:
 //   /{userId}/{folder}/{uuid}.{ext}
@@ -168,11 +169,13 @@ export function ImageArrivalPeek({
               </div>
             ) : (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
+                <InlineMediaRef
+                  ref={url}
                   alt="AI image output"
-                  className="w-full h-full object-cover"
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback="skeleton"
                 />
                 {/* Hover overlay hint */}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">

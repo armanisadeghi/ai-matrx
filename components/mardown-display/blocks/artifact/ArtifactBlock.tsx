@@ -9,6 +9,7 @@ import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
+import { InlineMediaRef } from "@/features/files";
 
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(() => import("@/features/code-editor/components/code-block/CodeBlock"));
@@ -164,7 +165,14 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
             case "image":
                 return (
                     <div className="flex items-center justify-center p-4 bg-muted/30">
-                        <img src={content} alt={artifactTitle} className="max-w-full max-h-[400px] object-contain rounded" />
+                        <InlineMediaRef
+                            ref={content}
+                            alt={artifactTitle}
+                            size="fill"
+                            fit="contain"
+                            rounded="md"
+                            className="max-w-full max-h-[400px]"
+                        />
                     </div>
                 );
 

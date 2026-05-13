@@ -28,7 +28,7 @@ import {
     type ImageUploaderWindowHandlers,
     type ImageUploaderWindowData,
 } from "./callbacks";
-import type { AssetPreset } from "@/features/files/types";
+import type { AssetPreset } from "@/features/files";
 
 const OVERLAY_ID = "imageUploaderWindow";
 

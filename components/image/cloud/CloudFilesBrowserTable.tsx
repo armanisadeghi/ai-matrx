@@ -40,24 +40,24 @@ import {
   updateFileMetadata,
   updateFolder as updateFolderThunk,
 } from "@/features/files/redux/thunks";
-import { openFolderPicker } from "@/features/files/components/pickers/CloudFilesPickerHost";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { openFolderPicker } from "@/features/files";
+import { FileIcon } from "@/features/files";
+import { MediaThumbnail } from "@/features/files";
 import {
   ShareLinkDialog,
   ShareLinkDialogBody,
-} from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
-import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
-import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
-import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
-import { isImageMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
+} from "@/features/files";
+import { useFileActions } from "@/features/files";
+import { useFolderActions } from "@/features/files";
+import { formatFileSize, formatRelativeTime } from "@/features/files";
+import { isImageMime, isVideoMime, resolveMime } from "@/features/files";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   CloudFileRecord,
   CloudFolderRecord,
   ResourceType,
   Visibility,
-} from "@/features/files/types";
+} from "@/features/files";
 import {
   allCloudBrowserRowIds,
   buildCloudFilesBrowserRows,

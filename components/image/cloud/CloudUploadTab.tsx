@@ -35,8 +35,8 @@ import {
   selectFileById,
 } from "@/features/files/redux/selectors";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { openFolderPicker } from "@/features/files";
+import { FileUploadDropzone } from "@/features/files";
 import { ImageIcon } from "lucide-react";
 import {
   useSelectedImages,
@@ -45,7 +45,7 @@ import {
   buildCloudImageSource,
   resolveCloudFileUrl,
 } from "@/components/image/cloud/resolveCloudFileUrl";
-import type { Visibility } from "@/features/files/types";
+import type { Visibility } from "@/features/files";
 import { Base64DecoderShell } from "@/features/image-studio/components/Base64DecoderShell";
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/utils/errors";

@@ -288,7 +288,7 @@ Do not violate. If you're tempted, update this doc first with the reasoning.
 7. **Realtime dedup via request ledger** — every REST write ships a `requestId`.
 8. **Dialog on desktop, Drawer on mobile** — enforced by surface branching.
 9. **`dvh` not `vh`** under `app/(a)/files/`.
-10. **Renderable image/file URLs are centrally cached** — use [utils/resolveRenderableImageUrl.ts](utils/resolveRenderableImageUrl.ts) or hooks/helpers that delegate to it. Do not call `/files/{id}/url` directly from image or thumbnail UI; signed URLs must be reused while valid and refreshed when expired.
+10. **Renderable image/file URLs are centrally cached** — use `useFileSrc` (or `fileHandler.use(...).as({ kind: "html_src" })` from non-React code), which routes through the handler's resolver + expiry-wheel. Do not call `/files/{id}/url` directly from image or thumbnail UI; signed URLs must be reused while valid and refreshed when expired.
 11. **Docs updated in the same change as code.**
 
 ---

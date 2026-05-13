@@ -75,8 +75,6 @@ features/transcripts/
 │   └── transcriptsService.ts             # CRUD operations + storage deletion
 ├── context/
 │   └── TranscriptsContext.tsx            # React context with optimistic updates
-├── hooks/
-│   └── useSignedUrl.ts                   # Auto-refreshing signed URLs
 ├── utils/
 │   ├── dateFormatting.ts                 # Time/date formatting utilities
 │   └── index.ts                          # Utils exports

@@ -204,7 +204,7 @@ These are all non-generic dependencies the unified system relies on. They live o
 | `useDomCapturePrint` | `features/chat/hooks/useDomCapturePrint.ts` | `AssistantMessage` | `captureRef` (attach to DOM element), `captureAsPDF({ filename })` |
 | `useHtmlPreviewState` | `features/html-pages/hooks/useHtmlPreviewState.ts` | `AssistantMessage` | Manages state for the 6-tab HTML preview editor |
 | `useRecordAndTranscribe` | `features/audio/hooks/useRecordAndTranscribe.ts` | `ConversationInput` | `startRecording`, `stopRecording`, `isRecording`, `isTranscribing`, `onTranscriptionComplete` |
-| `useFileUploadWithStorage` | `components/ui/file-upload/useFileUploadWithStorage.ts` | `ConversationInput` | `uploadFile(file)` → `{ url, type, details }`, `isLoading` |
+| `useFileUpload` | `@/features/files` | `ConversationInput` | `upload(source)` / `uploadMany(sources)` → fileId + share URL, plus per-file progress state |
 | `useClipboardPaste` | `components/ui/file-upload/useClipboardPaste.ts` | `ConversationInput` | Intercepts clipboard paste events on a textarea, calls `onPasteImage` for image items |
 | `useQuickActions` | `features/quick-actions/hooks/useQuickActions.ts` | `MessageOptionsMenu` | `openQuickTasks({ content, prePopulate })` |
 

@@ -19,11 +19,11 @@ import type {
   EmbeddedImageStudioProps,
   EmbeddedImageStudioResult,
 } from "@/features/image-studio/components/EmbeddedImageStudio";
-import { selectFileById } from "@/features/files/redux/selectors";
 import {
   useSelectedImages,
   type ImageSource,
 } from "@/components/image/context/SelectedImagesProvider";
+import type { CloudFileRecord } from "@/features/files";
 
 const DEFAULT_PRESET_IDS = ["og-image", "ig-square"];
 const DEFAULT_PRIMARY_PRESET = "og-image";
@@ -136,15 +136,12 @@ export function ImageStudioTab({
 function findFileByPublicUrl(
   store: ReturnType<typeof useAppStore>,
   url: string,
-) {
+): CloudFileRecord | null {
   const state = store.getState();
   const filesById = state.cloudFiles?.filesById ?? {};
-  for (const file of Object.values(filesById) as Array<{
-    publicUrl: string | null;
-    id: string;
-  }>) {
+  for (const file of Object.values(filesById) as CloudFileRecord[]) {
     if (file.publicUrl && url.startsWith(file.publicUrl)) {
-      return selectFileById(state, file.id);
+      return file;
     }
   }
   return null;

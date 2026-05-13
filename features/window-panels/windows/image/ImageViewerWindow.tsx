@@ -36,6 +36,7 @@ import {
   getImageViewerTransformStyle,
   initialImageViewerTransform,
 } from "./imageViewerTransforms";
+import { InlineMediaRef } from "@/features/files";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -361,12 +362,13 @@ function ThumbnailSidebar({
           title={alts?.[i] ?? `Image ${i + 1}`}
           aria-label={alts?.[i] ?? `Image ${i + 1}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
+          <InlineMediaRef
+            ref={url}
             alt={alts?.[i] ?? `Image ${i + 1}`}
-            draggable={false}
-            className="w-full aspect-square object-cover"
+            size="fill"
+            fit="cover"
+            rounded="none"
+            className="w-full aspect-square"
           />
         </button>
       ))}

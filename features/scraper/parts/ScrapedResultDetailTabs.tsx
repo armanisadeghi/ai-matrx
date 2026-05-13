@@ -15,6 +15,7 @@ import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPre
 import { contentLength } from "@/features/scraper/utils/scraper-floating-helpers";
 import type { ScraperResult } from "@/features/scraper/hooks/useScraperApi";
 import { cn } from "@/lib/utils";
+import { InlineMediaRef } from "@/features/files";
 
 export type ScrapedDetailTabId = "pretty" | "overview" | "text" | "raw";
 
@@ -229,11 +230,13 @@ function ScrapedOverviewPanel({ selected }: { selected: ScraperResult }) {
 
       {selected.mainImage && (
         <div className="rounded-md border border-border overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={selected.mainImage}
+          <InlineMediaRef
+            ref={selected.mainImage as string}
             alt="Main"
-            className="w-full max-h-36 object-cover"
+            size="fill"
+            fit="cover"
+            rounded="none"
+            className="w-full max-h-36"
           />
         </div>
       )}

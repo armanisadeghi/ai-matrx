@@ -36,7 +36,7 @@ import { CustomAppletConfig, AppletContainer } from '@/types/customAppTypes';
 import { ICON_OPTIONS, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { RecipeInfo } from "@/features/recipes/types";
 import { ImageAssetUploader } from '@/components/official/ImageAssetUploader';
-import { CloudFolders } from '@/features/files/utils/folder-conventions';
+import { CloudFolders } from '@/features/files';
 
 interface CreateAppletTabProps {
   newApplet: Partial<CustomAppletConfig>;

@@ -56,7 +56,7 @@ import {
   refineBlockType,
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
-import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { fileIdToMediaRef } from "@/features/files";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
@@ -75,7 +75,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
 import { toast } from "sonner";
 import type { PromptSettings } from "@/features/prompts/types/core";

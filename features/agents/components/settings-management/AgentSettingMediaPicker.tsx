@@ -36,7 +36,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import type { Resource } from "@/features/prompts/types/resources";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
-import type { MediaRef } from "@/features/files/types";
+import type { MediaRef } from "@/features/files";
 
 // Map a Resource type → the closest ResourceBlockType so refineBlockType
 // can do the MIME-driven narrowing. Mirrors the mapping in

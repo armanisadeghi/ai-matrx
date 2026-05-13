@@ -20,6 +20,7 @@ import { Card } from "@/components/official/PageTemplate";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InlineMediaRef } from "@/features/files";
 
 export interface BraveSearchData {
     type: string;
@@ -576,7 +577,13 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                     <div className="flex items-start gap-3 pr-8">
                         {video.thumbnail?.src && (
                             <div className="relative flex-shrink-0">
-                                <img src={video.thumbnail.src} alt="" className="w-32 h-20 rounded object-cover" />
+                                <InlineMediaRef
+                                    ref={video.thumbnail.src}
+                                    alt=""
+                                    size={{ width: 128, height: 80 }}
+                                    fit="cover"
+                                    rounded="md"
+                                />
                                 {video.video?.duration && (
                                     <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
                                         {video.video.duration}
@@ -597,7 +604,13 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
 
                             <div className="flex items-center gap-2 mb-2 flex-wrap text-xs text-gray-600 dark:text-gray-400">
                                 {video.meta_url?.favicon && (
-                                    <img src={video.meta_url.favicon} alt="" className="h-3 w-3 rounded" />
+                                    <InlineMediaRef
+                                        ref={video.meta_url.favicon}
+                                        alt=""
+                                        size={{ width: 12, height: 12 }}
+                                        fit="cover"
+                                        rounded="md"
+                                    />
                                 )}
                                 {video.video?.creator && <span>{video.video.creator}</span>}
                                 {video.video?.publisher && (
@@ -636,7 +649,13 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                         <div className="flex items-center justify-between w-full pr-4">
                             <div className="flex items-center gap-2">
                                 {results[0]?.profile?.img && (
-                                    <img src={results[0].profile.img} alt="" className="h-4 w-4 rounded" />
+                                    <InlineMediaRef
+                                        ref={results[0].profile.img}
+                                        alt=""
+                                        size={{ width: 16, height: 16 }}
+                                        fit="cover"
+                                        rounded="md"
+                                    />
                                 )}
                                 <span className="font-medium text-gray-800 dark:text-gray-200 text-sm">{domain}</span>
                             </div>

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { loadUserFileTree } from "@/features/files/redux/thunks";
+import { useCloudTree } from "@/features/files";
 import {
   selectActiveSandboxId,
   selectExplorerRootOverride,
@@ -62,6 +62,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [editing, setEditing] = useState(false);
   const [draftPath, setDraftPath] = useState(rootPath);
+  const { refresh: refreshCloudTree } = useCloudTree(userId);
 
   // A sandbox is "connected" when the workspace has been pointed at one
   // *and* the active filesystem adapter isn't the default Mock fallback.
@@ -97,13 +98,13 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
     if (showFileTree) {
       // Sandbox FS — bump the watcher key, the FileTree will refetch.
       setRefreshKey((k) => k + 1);
-    } else if (userId) {
+    } else {
       // Cloud files — re-hydrate the tree from the API. The realtime
       // channel keeps us live, but explicit refresh is the user's
-      // escape hatch when something gets wedged.
-      void dispatch(loadUserFileTree({ userId }));
+      // escape hatch when something gets wedged. No-op when unauth.
+      refreshCloudTree();
     }
-  }, [dispatch, showFileTree, userId]);
+  }, [refreshCloudTree, showFileTree]);
 
   const openSandboxes = useCallback(() => {
     dispatch(setActiveView("sandboxes"));

@@ -5,15 +5,7 @@ import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { DatabaseTask } from "../types";
 import * as FilesApi from "@/features/files/api";
-import {
-  deleteFile as cloudDeleteFile,
-  uploadFiles as cloudUploadFiles,
-} from "@/features/files/redux/thunks";
-import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { folderForTask } from "@/features/files/utils/folder-conventions";
-import { getStore } from "@/lib/redux/store-singleton";
-// Type-only import — does not introduce a runtime cycle through store-singleton.
-import type { AppDispatch } from "@/lib/redux/store";
+import { fileHandler, folderForTask } from "@/features/files";
 
 export interface CreateTaskInput {
   title: string;
@@ -201,50 +193,40 @@ export async function uploadTaskAttachment(
 ): Promise<TaskAttachment | null> {
   try {
     const userId = requireUserId();
-    const store = getStore();
-    if (!store) {
-      console.error("Redux store not ready for upload");
-      return null;
-    }
-    // store-singleton intentionally types dispatch loosely (EnhancedStore<any,any,any>)
-    // to stay cycle-free; recover the thunk-aware Promise so `.unwrap()` resolves.
-    const dispatch = store.dispatch as AppDispatch;
 
     // Ensure the user-visible folder `Task Attachments/{taskId}` exists.
-    let parentFolderId: string | null = null;
+    const folderPath = folderForTask(taskId);
     try {
-      parentFolderId = await dispatch(
-        ensureFolderPath({
-          folderPath: folderForTask(taskId),
-          visibility: "private",
-        }),
-      ).unwrap();
+      await fileHandler.ensureFolderPath({
+        folderPath,
+        visibility: "private",
+      });
     } catch (err) {
       console.error("Failed to ensure task attachments folder:", err);
     }
 
-    const { uploaded, failed } = await dispatch(
-      cloudUploadFiles({
-        files: [file],
-        parentFolderId,
-        visibility: "private",
-        metadata: {
-          origin: "task-attachment",
-          task_id: taskId,
+    let fileId: string;
+    try {
+      const normalized = await fileHandler.upload(
+        { kind: "file", file },
+        {
+          folderPath,
+          visibility: "private",
+          metadata: {
+            origin: "task-attachment",
+            task_id: taskId,
+          },
         },
-        concurrency: 1,
-      }),
-    ).unwrap();
-
-    if (failed.length > 0 || uploaded.length === 0) {
-      // `failed` is `Array<{name, error}>` since 2026-04-24 — extract the
-      // real backend error so callers can surface it to the user instead
-      // of seeing a silent null return.
-      const reason = failed[0]?.error ?? "Upload failed";
-      console.error("Task attachment upload failed:", failed);
+      );
+      if (!normalized.fileId) {
+        throw new Error("Upload returned no fileId");
+      }
+      fileId = normalized.fileId;
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "Upload failed";
+      console.error("Task attachment upload failed:", err);
       throw new Error(`Couldn't attach file: ${reason}`);
     }
-    const fileId = uploaded[0];
 
     const { data, error: insertError } = await supabase
       .from("ctx_task_attachments")
@@ -262,9 +244,11 @@ export async function uploadTaskAttachment(
       .single();
     if (insertError) {
       console.error("Error recording attachment:", insertError.message);
-      // Best-effort cleanup of the orphaned cloud-files upload.
+      // Best-effort cleanup of the orphaned cloud-files upload via the raw
+      // API (a thunk dispatch is overkill in this best-effort cleanup path;
+      // realtime reconciles the slice asynchronously).
       try {
-        await dispatch(cloudDeleteFile({ fileId, hardDelete: false })).unwrap();
+        await FilesApi.Files.deleteFile(fileId, { hardDelete: false });
       } catch {
         /* best effort */
       }
@@ -298,16 +282,13 @@ export async function deleteTaskAttachment(
   fileId: string,
 ): Promise<boolean> {
   try {
-    const store = getStore();
-    if (store) {
-      try {
-        const dispatch = store.dispatch as AppDispatch;
-        await dispatch(
-          cloudDeleteFile({ fileId, hardDelete: false }),
-        ).unwrap();
-      } catch (err) {
-        console.error("cloud-files delete failed:", err);
-      }
+    // Soft-delete the cloud-files row via the raw API. Realtime reconciles
+    // the slice; this avoids needing to wire a thunk dispatch through the
+    // store singleton in service code.
+    try {
+      await FilesApi.Files.deleteFile(fileId, { hardDelete: false });
+    } catch (err) {
+      console.error("cloud-files delete failed:", err);
     }
     const { error } = await supabase
       .from("ctx_task_attachments")

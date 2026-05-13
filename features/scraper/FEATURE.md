@@ -105,7 +105,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 - Route: `app/(a)/transcription/processor/` — public URL `/transcription/processor` (legacy `/transcripts` → permanent redirect in `next.config.js`).
 - Service: `features/transcripts/service/transcriptsService.ts` (CRUD + storage-file deletion), `service/audioStorageService.ts` (Supabase Storage uploads).
 - Context: `features/transcripts/context/TranscriptsContext.tsx` — optimistic updates, real-time subscription, `createTranscript`, `updateTranscript`, `deleteTranscript`, `copyTranscript`, `refreshTranscripts`.
-- Hooks: `useSignedUrl` (auto-refreshing storage signed URLs).
+- Hooks: `useFileSrc` (resolves a renderable URL; signed-URL refresh handled centrally by the handler's expiry-wheel).
 - Components: `TranscriptsLayout`, `TranscriptsHeader` (portal-injected), `TranscriptsSidebar`, `TranscriptViewer`, `CreateTranscriptModal` (Upload Only / Upload & Transcribe), `ImportTranscriptModal`, `RecordingInterface`, `RecordingPreview`, `DeleteTranscriptDialog`, `DraftIndicator`.
 
 **Data model (Supabase)**

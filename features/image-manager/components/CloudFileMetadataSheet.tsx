@@ -24,13 +24,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@/features/files";
 import {
   formatAbsoluteDate,
   formatFileSize,
   formatRelativeTime,
-} from "@/features/files/utils/format";
-import type { CloudFileRecord } from "@/features/files/types";
+} from "@/features/files";
+import type { CloudFileRecord } from "@/features/files";
 import { toast } from "sonner";
 
 export interface CloudFileMetadataSheetProps {

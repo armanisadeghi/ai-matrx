@@ -16,6 +16,7 @@ import type { ComponentType } from "react";
 import { useMemo } from "react";
 import type { DocumentDetail } from "@/features/rag/types/documents";
 import { pageImageUrl } from "@/features/rag/api/document";
+import { InlineMediaRef } from "@/features/files";
 
 interface PdfPreviewProps {
   fileId: string;
@@ -51,11 +52,13 @@ export function PdfPane({
           Page {activePageIndex + 1}
         </header>
         <div className="flex-1 overflow-auto p-3 grid place-items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={pageImageUrl(document.id, activePageIndex)}
+          <InlineMediaRef
+            ref={pageImageUrl(document.id, activePageIndex)}
             alt={`Page ${activePageIndex + 1}`}
-            className="max-w-full h-auto rounded shadow-sm"
+            size="fill"
+            fit="contain"
+            rounded="sm"
+            className="max-w-full h-auto shadow-sm"
           />
         </div>
       </div>
