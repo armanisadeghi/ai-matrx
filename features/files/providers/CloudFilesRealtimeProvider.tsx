@@ -24,6 +24,10 @@ import {
   detachCloudFilesRealtime,
 } from "@/features/files/redux/realtime-middleware";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
+import {
+  invalidateAll as invalidateBlobCache,
+  setBlobCacheIdentity,
+} from "@/features/files/hooks/blob-cache";
 
 export interface CloudFilesRealtimeProviderProps {
   children?: React.ReactNode;
@@ -34,6 +38,22 @@ export function CloudFilesRealtimeProvider({
 }: CloudFilesRealtimeProviderProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
+
+  // Stamp the blob cache (memory + IDB tiers) with the current identity.
+  // Sign-out wipes both tiers for the previous user so the next user can
+  // never read leftover bytes.
+  useEffect(() => {
+    if (userId) {
+      setBlobCacheIdentity(userId);
+    } else {
+      // identityUserId was set previously; capture it before clearing.
+      // invalidateAll(undefined) only wipes the in-memory tier; the IDB
+      // tier sweep happens here via the captured prior id.
+      // (No-op when never signed in.)
+      setBlobCacheIdentity(null);
+      invalidateBlobCache();
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {

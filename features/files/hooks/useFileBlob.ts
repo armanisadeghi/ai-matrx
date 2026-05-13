@@ -43,7 +43,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as Files from "@/features/files/api/files";
 import { extractErrorMessage } from "@/utils/errors";
-import { getCached, setCached } from "./blob-cache";
+import { getCached, hydrateFromIdb, setCached } from "./blob-cache";
 
 export interface UseFileBlobResult {
   /** `blob:`-scheme URL safe to feed into any browser API. `null` until ready. */
@@ -112,7 +112,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       return;
     }
 
-    // 1. Cache hit — show the cached blob immediately, no fetch.
+    // 1. In-memory cache hit — show the cached blob immediately, no fetch.
     const cached = getCached(fileId);
     if (cached) {
       setUrl(cached.url);
@@ -124,7 +124,8 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       return;
     }
 
-    // 2. Cache miss — fetch with progress.
+    // 2. Miss — try IDB before going to network. Async; show loading state
+    // in the meantime so the consumer renders its skeleton.
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -133,26 +134,39 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
     setUrl(null);
     setBlob(null);
 
-    Files.downloadFileWithProgress(fileId, (ev) => {
+    (async () => {
+      const idbHit = await hydrateFromIdb(fileId);
       if (cancelled) return;
-      setBytesLoaded(ev.loaded);
-      if (ev.total !== null) setBytesTotal(ev.total);
-    })
-      .then(({ blob: b }) => {
+      if (idbHit) {
+        setUrl(idbHit.url);
+        setBlob(idbHit.blob);
+        setLoading(false);
+        setBytesLoaded(idbHit.blob.size);
+        setBytesTotal(idbHit.blob.size);
+        return;
+      }
+
+      // 3. IDB miss — fetch with progress.
+      try {
+        const { blob: b } = await Files.downloadFileWithProgress(fileId, (ev) => {
+          if (cancelled) return;
+          setBytesLoaded(ev.loaded);
+          if (ev.total !== null) setBytesTotal(ev.total);
+        });
         if (cancelled) return;
         const objectUrl = URL.createObjectURL(b);
-        // Insert into the cache. From now on the cache owns the URL —
+        // Insert into both cache tiers. From now on the cache owns the URL —
         // do NOT revoke it on unmount; the cache will do it on eviction.
-        setCached(fileId, b, objectUrl);
+        setCached(fileId, b, objectUrl, { mimeType: b.type });
         setBlob(b);
         setUrl(objectUrl);
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return;
         setError(extractErrorMessage(err) || "Failed to load file");
         setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;

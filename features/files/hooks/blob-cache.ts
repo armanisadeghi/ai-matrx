@@ -1,10 +1,19 @@
 /**
  * features/files/hooks/blob-cache.ts
  *
- * Module-level LRU cache for file blobs that survives React mount /
- * unmount cycles. Without it, closing and reopening a 10MB PDF re-fetches
- * the whole blob over the wire — useFileBlob keeps its blob in component
- * state, so unmount = `URL.revokeObjectURL` + lost bytes.
+ * Layer 1 (in-memory LRU) of the 3-tier byte cache. Survives React mount /
+ * unmount cycles within a session. Without it, closing and reopening a
+ * 10MB PDF re-fetches the whole blob over the wire — useFileBlob keeps
+ * its blob in component state, so unmount = `URL.revokeObjectURL` +
+ * lost bytes.
+ *
+ * 3-tier read path (see features/files/cache/):
+ *   1. In-memory LRU (this module)              — synchronous, session
+ *   2. IndexedDB (features/files/cache/idb-store) — persistent, async
+ *   3. Network                                   — Python /files/{id}/download
+ *
+ * Writes populate both tiers when the MIME policy permits IDB persistence
+ * (PDFs, ≤50 MB video, ≤100 MB audio, images, etc. — see cache/policy.ts).
  *
  * Design:
  *   - Single `Map<fileId, CacheEntry>`. Map iteration order = insertion
@@ -18,19 +27,36 @@
  * Invalidation hooks:
  *   - `invalidate(fileId)` — single file. Used by upload-version /
  *     restore-version / delete thunks + realtime middleware on
- *     cross-device version inserts.
- *   - `invalidateAll()` — for sign-out / identity swap.
+ *     cross-device version inserts. Drops from BOTH tiers.
+ *   - `invalidateAll()` — for sign-out / identity swap. Drops in-memory
+ *     immediately; pass a userId to also wipe IDB for that user.
  *
  * Why not Redux: Blobs are not serialisable; storing them in the slice
  * would trigger RTK serializableCheck warnings on every dispatch and
  * the full blob would be passed through every middleware. A module-
  * level Map is the right primitive for this.
- *
- * Why not IndexedDB: re-fetching a blob from IndexedDB on every mount
- * would still be measurably slower than an in-memory Blob, and the
- * cache lives only for a session anyway — we don't need persistence
- * across page reloads.
  */
+
+import {
+  deleteEntriesForFile,
+  clearForUser,
+  getEntry as getIdbEntry,
+  putEntry as putIdbEntry,
+  type BlobCacheEntry as IdbBlobCacheEntry,
+} from "@/features/files/cache/idb-store";
+import { shouldPersistInIdb } from "@/features/files/cache/policy";
+
+let identityUserId: string | null = null;
+
+/**
+ * Stamp every subsequent put/invalidate with the current user. Called
+ * from the sign-in flow (after Supabase session resolves). Without this
+ * IDB entries are written under an empty userId — readable but not
+ * scoped, which would leak across user swaps. Memory LRU is unaffected.
+ */
+export function setBlobCacheIdentity(userId: string | null): void {
+  identityUserId = userId;
+}
 
 const DEFAULT_BUDGET_BYTES = 250 * 1024 * 1024; // 250 MB total
 
@@ -63,14 +89,97 @@ export function getCached(fileId: string): CacheEntry | null {
 }
 
 /**
+ * Hydrate the in-memory tier from IndexedDB for a single fileId. Returns
+ * the hydrated entry on hit, `null` on miss or when IDB is unavailable.
+ *
+ * Use this in `useFileBlob`'s effect when the in-memory LRU misses but
+ * we want to avoid a network round-trip if the bytes persisted from a
+ * previous session.
+ */
+export async function hydrateFromIdb(fileId: string): Promise<CacheEntry | null> {
+  if (!identityUserId) return null;
+  try {
+    // Read the most recent version's entry. Cache keys embed the version
+    // suffix, so we scan with a prefix match via the deleteEntriesForFile
+    // family. For now we attempt the "current" key shape; the SW layer
+    // (Phase 2) will register canonical (url → key) mappings the page can
+    // consult before this read.
+    // FIRST-CUT: try the canonical "current" key shape with a wildcard
+    // checksum. The IDB store doesn't support prefix queries directly, so
+    // we fall back to scanning the user's entries for a matching fileId.
+    // This stays O(entries-per-user) which is fine for the realistic upper
+    // bound (~hundreds of cached PDFs).
+    const { openBlobCacheDb } = await import("@/features/files/cache/idb-store");
+    const db = await openBlobCacheDb();
+    if (!db) return null;
+    const matches = await db.blobs
+      .where("userId")
+      .equals(identityUserId)
+      .and((e: IdbBlobCacheEntry) => e.fileId === fileId)
+      .toArray();
+    if (matches.length === 0) return null;
+    // Prefer the entry with the most recent `lastAccessedAt`.
+    const winner = matches.reduce<IdbBlobCacheEntry>(
+      (best, candidate) =>
+        candidate.lastAccessedAt > best.lastAccessedAt ? candidate : best,
+      matches[0],
+    );
+    // Promote into the in-memory tier so the next read is synchronous.
+    const objectUrl = URL.createObjectURL(winner.blob);
+    setCachedMemoryOnly(fileId, winner.blob, objectUrl);
+    return cache.get(fileId) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Insert (or overwrite) a cached entry. The cache takes ownership of
  * `blob` + `url` — callers should NOT revoke the URL themselves.
+ *
+ * Writes the entry into the in-memory LRU AND (when the MIME policy
+ * permits — see `features/files/cache/policy.ts`) into IndexedDB so the
+ * bytes survive page reloads.
  *
  * If a previous entry for the same fileId exists, its URL is revoked
  * and the entry is replaced. After insert, the cache evicts oldest
  * entries until the total byte size is under the budget.
  */
-export function setCached(fileId: string, blob: Blob, url: string): void {
+export function setCached(
+  fileId: string,
+  blob: Blob,
+  url: string,
+  meta?: { mimeType?: string; version?: number | null; checksum?: string | null },
+): void {
+  setCachedMemoryOnly(fileId, blob, url);
+  // Best-effort write to IDB. The promise is intentionally not awaited —
+  // the caller's render path is already complete; IDB persistence is a
+  // background side-effect that's safe to fail (the in-memory tier is
+  // already populated).
+  const mime = meta?.mimeType ?? blob.type ?? "application/octet-stream";
+  if (identityUserId && shouldPersistInIdb(mime, blob.size)) {
+    const version = meta?.version ?? null;
+    const checksum = meta?.checksum ?? null;
+    const versionSegment = version != null ? String(version) : "current";
+    const checksumSegment = checksum ?? "unknown";
+    void putIdbEntry({
+      key: `${identityUserId}:${fileId}:${versionSegment}:${checksumSegment}`,
+      userId: identityUserId,
+      fileId,
+      version,
+      checksum,
+      mimeType: mime,
+      bytes: blob.size,
+      blob,
+      etag: checksum,
+      fetchedAt: Date.now(),
+      lastAccessedAt: Date.now(),
+      source: "files-download",
+    });
+  }
+}
+
+function setCachedMemoryOnly(fileId: string, blob: Blob, url: string): void {
   // Replace any existing entry — must revoke the old URL.
   const existing = cache.get(fileId);
   if (existing) {
@@ -103,29 +212,38 @@ export function setCached(fileId: string, blob: Blob, url: string): void {
 }
 
 /**
- * Drop a single file's cached entry. Use this from any code path that
- * makes the cached bytes stale: new-version upload, restore-version,
- * hard-delete, realtime-broadcast cross-device version insert.
+ * Drop a single file's cached entry from both tiers. Use this from any
+ * code path that makes the cached bytes stale: new-version upload,
+ * restore-version, hard-delete, realtime-broadcast cross-device version
+ * insert.
  */
 export function invalidate(fileId: string): void {
   const entry = cache.get(fileId);
-  if (!entry) return;
-  URL.revokeObjectURL(entry.url);
-  totalBytes -= entry.bytes;
-  cache.delete(fileId);
+  if (entry) {
+    URL.revokeObjectURL(entry.url);
+    totalBytes -= entry.bytes;
+    cache.delete(fileId);
+  }
+  // Fire-and-forget: clear every version of this file in IDB.
+  if (identityUserId) {
+    void deleteEntriesForFile(identityUserId, fileId);
+  }
 }
 
 /**
- * Drop the entire cache. Use on sign-out / identity swap so the next
- * user can never see the previous user's blob URLs lingering in
- * memory.
+ * Drop every in-memory entry. Use on sign-out / identity swap so the
+ * next user can never see the previous user's blob URLs lingering in
+ * memory. When `userId` is provided, also clears IDB for that user.
  */
-export function invalidateAll(): void {
+export function invalidateAll(userId?: string): void {
   for (const entry of cache.values()) {
     URL.revokeObjectURL(entry.url);
   }
   cache.clear();
   totalBytes = 0;
+  if (userId) {
+    void clearForUser(userId);
+  }
 }
 
 /**
