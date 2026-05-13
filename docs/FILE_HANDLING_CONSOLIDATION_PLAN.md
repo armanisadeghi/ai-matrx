@@ -347,25 +347,50 @@ Do NOT rebuild these — they already work. They migrate into the new directory 
 
 ---
 
-## Part 5 — Gap list to send to the backend team
+## Part 5 — Gap list — backend response (2026-05-13)
 
-Single email-ready list. Each item is a yes/no/spec-it answer needed before the integrated plan freezes.
+The backend team confirmed responses to all 15 (renumbered to A.1–F.18 in the message to them). Status:
 
-1. **Combined-operation endpoints.** Can `POST /assets` accept `{ share, permissions, variants }` and `PATCH /files/{id}` accept the full mutation union? Bundled atomic transactions, idempotent on `X-Idempotency-Key`. → **§3 Gap 1**
-2. **Mandatory social baseline.** Confirm `VariantsService` always merges `og_image_url + thumbnail_url + tiny_url` into every public image-asset preset. No opt-out. → **§3 Gap 2**
-3. **Preset variant set.** Confirm the variants in the table at **§3 Gap 3** are all present across `podcast/social/web/email/logo/avatar/favicon` presets. Add any missing.
-4. **CDN URL guarantee.** `UrlMinter.build_urls()` always returns the permanent Cloudflare CDN URL for `visibility="public"`. Never re-sign. → **§3 Gap 4**
-5. **`ETag` + 206 Range on `/files/{id}/download`.** Confirm. Required for Service Worker cache + PDF.js Range rendering. → **§3 Gap 5**
-6. **`X-Request-Id` echo in realtime payloads.** Confirm `metadata.request_id` populated. → **§3 Gap 6**
-7. **Idempotency covers combined operations.** Retry with same `X-Idempotency-Key` returns identical envelope (same file, same share token, same permissions). → **§3 Gap 7**
-8. **SVG first-class.** `preset="logo"` accepts SVG master, renders raster fallbacks. → **§3 Gap 8**
-9. **`POST /assets/preview`** spec confirmed (base64 or ephemeral signed URLs, 5-min TTL). Unblocks Sharp deletion. → **§3 Gap 9**
-10. **`POST /assets/pdf-compress`** equivalent for PDF compress. Unblocks deleting `app/api/pdf/compress`. → **§3 Gap 10**
-11. **Mid-stream MediaRef events** — confirm stream-event resolver path survives. → **§3 Gap 11**
-12. **Webhooks/SSE outbox** (`cld_events`) — confirm dispatcher fires events for `file.*`, `share_link.*`, `permission.*`. → **§3 Gap 12**
-13. **`cld_files.checksum` always populated** at upload time + exposed in Asset envelope. → **§3 Gap 13**
-14. **`Content-Length` on every byte response** (full and 206 partial). → **§3 Gap 14**
-15. **Realtime publication** confirmed on `processed_documents`, `cld_share_links`, `cld_file_permissions`. → **§3 Gap 15**
+**✅ Confirmed already done in matrx-utils today (10 items):**
+
+| Tag | Item | Where |
+|---|---|---|
+| B.5 | `UrlMinter.build_urls()` returns permanent CDN URL for `visibility="public"`. No re-sign. | [build_urls_for_record_async](packages/matrx-utils/matrx_utils/file_handling/cloud_sync/sync_engine.py) |
+| B.6 | Social baseline auto-merged into public-by-default presets. Per-preset opt-out preserved (avatar/email/favicon don't get OG cards by convention — they don't need them). | [compose_preset()](packages/matrx-utils/matrx_utils/file_handling/specific_handlers/image_handler.py) |
+| B.7 | Preset dimension additions confirmed: `social.twitter_card_url` (1200×675), `web.content_url` (1200×800), `favicon.favicon_512_url` (512²). | image_handler.py |
+| C.9 | `ETag: "<checksum>"` on every `/files/{id}/download` response. | [build_file_router](packages/matrx-utils/matrx_utils/file_handling/fastapi/router_files.py) |
+| C.10 | `Range:` → `206 Partial Content` with `Content-Range` + `Accept-Ranges`. 256 KiB chunks. S3 streams chunk-by-chunk; other backends fall back to buffered. | router_files.py |
+| C.11 | `Content-Length` on every 200/206 response. | router_files.py |
+| C.12 | SHA-256 `checksum` populated on every write by `SyncEngine.managed_write_async`. | sync_engine.py |
+| D.13 | `X-Request-Id` header on `POST /files/upload` stamped into `cld_files.metadata.request_id` for realtime dedup. | router_files.py |
+| D.15 | Realtime publication on `cld_files`, `cld_share_links`, `cld_file_permissions` (and `processed_documents`). | migration 005 |
+| F.18 | Mid-stream MediaRef resolution path unchanged. | n/a |
+
+**⏳ Up next in matrx-utils v1.1.0 — landing with the rebuild (7 items):**
+
+| Tag | Item | Notes |
+|---|---|---|
+| A.1 | `POST /assets` with bundled `options.share / permissions / variants`. | **Best-effort atomicity, NOT full rollback.** Upload always lands; sub-op failures surface in a top-level `errors[]` array on the response. FE must handle partial-success. |
+| A.2 | `PATCH /files/{id}` with the full union body. | Same best-effort semantics. Returns the new envelope. |
+| A.3 | `POST /files/bulk` with `{ ids[], op, ...args }` discriminator. | Replaces `/files/bulk-delete` and `/files/bulk-move`. |
+| A.4 | `X-Idempotency-Key` covers the entire combined operation. | Backed by existing `cld_uploads_inflight` + a **new `cld_idempotency` table** for completed-op memoization. Retry returns identical envelope. |
+| D.14 | `default_audit_logger` shipped in matrx-utils — auto-emits to `cld_events` outbox. | Standalone hosts `configure_audit_logger(default_audit_logger)` and get webhook fan-out for free. |
+| E.16 | `POST /assets/preview` — no-persist preview. base64 ≤256 KB, otherwise 5-min ephemeral signed URL. | Unblocks deleting `app/api/images/studio/process/route.ts` + removing `sharp` from `package.json`. |
+| E.17 | `POST /assets/pdf-compress` — wraps existing matrx-utils PDF compression with the asset envelope. | Unblocks deleting `app/api/pdf/compress/route.ts`. |
+
+**🗓 Deferred to matrx-utils v1.2 (1 item):**
+
+| Tag | Item | Notes |
+|---|---|---|
+| B.8 | SVG-as-master in `preset="logo"` — accept SVG, persist as master, rasterize PNG fallbacks (cairosvg or rsvg-convert). | New optional dependency; clean as its own minor release. **FE interim:** for v1.1 logo uploads, callers either upload PNG masters as today OR upload an SVG with `preset="raw"` (no auto-rasterization) and we surface the SVG only. No new FE code path. |
+
+### Implications for the FE plan
+
+1. **Partial-success handling on combined ops (A.1, A.2).** `useFileUpload` and `useFileMutation` must surface `errors[]` from the response and propagate them to the caller. The optimistic-update path must roll back per-sub-op based on which entries succeeded — not all-or-nothing. UX: if the upload itself succeeded and only the bundled share-link grant failed, the file appears in the gallery and a toast says "shared link couldn't be created — retry?". This is a small contract change in the hook return shape; bake it in from day one rather than retrofitting.
+2. **`cld_idempotency` table is new.** No FE code change — the table is server-side memoization keyed by `X-Idempotency-Key`. FE just sets the header on every combined-op call (we already do).
+3. **B.8 SVG path.** For Phase 3 we ship "PNG master + raster variants" only. Add a FEATURE.md note that logo SVG masters are a v1.2 unlock, not a regression — until then designers either upload PNG OR upload SVG with `preset="raw"` and the variant set is empty.
+4. **D.14 default audit logger.** No FE work; just keeps the webhook channel live without aidream-side custom wiring.
+5. **Phase 0 ESLint chokepoint and FE bypass migration (steps 1–10 of PR3) can start immediately** — none of them depends on the BE v1.1.0 endpoints. Steps 11+ (cache layer, combined-op call sites, PDF/Sharp endpoint replacements) start after matrx-utils v1.1.0 ships.
 
 ---
 
@@ -619,25 +644,20 @@ Aligned with the backend plan's PR structure. FE PR depends on BE PRs landing.
 
 ### PR 1 — `matrx-utils` v1.1.0 (backend team, ~2 weeks)
 
-Backend plan §4.1, plus the gap items from Part 5:
+Backend plan §4.1 1–11, plus the **⏳ up-next** items from Part 5. The **✅ already-confirmed** items (B.5, B.6, B.7, C.9, C.10, C.11, C.12, D.13, D.15, F.18) require no work from us beyond verifying they survive the rebuild.
 
 | # | Step | Source |
 |---|---|---|
 | 1–11 | Backend §4.1 1–11 | backend |
-| 12 | Combined-operation endpoints (`POST /assets` with `options.share / permissions / variants`; `PATCH /files/{id}` union; `POST /files/bulk` discriminator) | **§5 gap 1** |
-| 13 | Mandatory social baseline merge in `VariantsService` for public images | **§5 gap 2** |
-| 14 | Confirmed preset variant set per checklist | **§5 gap 3** |
-| 15 | `UrlMinter` always returns CDN URL for `visibility="public"` | **§5 gap 4** |
-| 16 | `ETag` + 206 Range on `/files/{id}/download` | **§5 gap 5** |
-| 17 | `X-Request-Id` echo in realtime metadata | **§5 gap 6** |
-| 18 | Idempotency covers combined operations | **§5 gap 7** |
-| 19 | SVG first-class in `preset="logo"` | **§5 gap 8** |
-| 20 | `POST /assets/preview` spec | **§5 gap 9** |
-| 21 | `POST /assets/pdf-compress` spec | **§5 gap 10** |
-| 22 | `cld_events` outbox + webhook dispatcher exposed | **§5 gap 12** |
-| 23 | `cld_files.checksum` always populated + exposed in envelope | **§5 gap 13** |
-| 24 | `Content-Length` on every response | **§5 gap 14** |
-| 25 | Realtime publication on `processed_documents`, `cld_share_links`, `cld_file_permissions` | **§5 gap 15** |
+| 12 | `POST /assets` with bundled `options.share / permissions / variants`. Best-effort atomicity; `errors[]` array on response. | **A.1** |
+| 13 | `PATCH /files/{id}` with the full union body. Same best-effort semantics. | **A.2** |
+| 14 | `POST /files/bulk` with `{ ids[], op, ...args }` discriminator. Replaces `/files/bulk-delete` + `/files/bulk-move`. | **A.3** |
+| 15 | `X-Idempotency-Key` covers entire combined operation. New `cld_idempotency` table for completed-op memoization. | **A.4** |
+| 16 | `default_audit_logger` shipped in matrx-utils → `cld_events` outbox auto-emit. | **D.14** |
+| 17 | `POST /assets/preview` — no-persist preview rendering. | **E.16** |
+| 18 | `POST /assets/pdf-compress` — wraps matrx-utils PDF compression with asset envelope. | **E.17** |
+
+Deferred to matrx-utils v1.2: **B.8** (SVG-as-master in `preset="logo"`).
 
 ### PR 2 — `aidream` slim (backend team, ~1 week)
 
