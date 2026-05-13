@@ -17,14 +17,11 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Library, Loader2 } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { ensureFolderPath } from "@/features/files/redux/thunks";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders, fileHandler } from "@/features/files";
 import { CloudFilesTab } from "@/components/image/cloud/CloudFilesTab";
 import { extractErrorMessage } from "@/utils/errors";
 
 export function StudioLibraryTab() {
-  const dispatch = useAppDispatch();
   const [folderId, setFolderId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(true);
   const [resolveError, setResolveError] = useState<string | null>(null);
@@ -33,13 +30,11 @@ export function StudioLibraryTab() {
     let cancelled = false;
     setResolving(true);
     setResolveError(null);
-    dispatch(
-      ensureFolderPath({
+    fileHandler
+      .ensureFolderPath({
         folderPath: CloudFolders.IMAGES_GENERATED,
         visibility: "private",
-      }),
-    )
-      .unwrap()
+      })
       .then((id) => {
         if (!cancelled) setFolderId(id);
       })
@@ -52,7 +47,7 @@ export function StudioLibraryTab() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch]);
+  }, []);
 
   return (
     <div className="h-full flex flex-col">
