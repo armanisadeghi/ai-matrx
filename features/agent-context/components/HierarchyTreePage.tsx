@@ -310,7 +310,7 @@ export function HierarchyTreePage() {
       const params = new URLSearchParams(searchParams.toString());
       params.set("id", id);
       params.set("type", type);
-      router.push(`/app-context/hierarchy?${params.toString()}`, {
+      router.push(`/agent-context/hierarchy?${params.toString()}`, {
         scroll: false,
       });
     },

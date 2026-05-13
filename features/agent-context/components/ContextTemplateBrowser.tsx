@@ -313,7 +313,7 @@ export function ContextTemplateBrowser({ scope }: Props) {
             applyMutation.mutate(selectedItems, {
               onSuccess: () => {
                 setApplyDialog(null);
-                router.push("/app-context?tab=items");
+                router.push("/agent-context?tab=items");
               },
             });
           }}

@@ -81,7 +81,7 @@ export function ContextItemCard({
 
   const handleClick = () => {
     startTransition(() => {
-      router.push(`/app-context/items/${item.id}`);
+      router.push(`/agent-context/items/${item.id}`);
     });
   };
 
@@ -125,7 +125,7 @@ export function ContextItemCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem
-                  onClick={() => router.push(`/app-context/items/${item.id}`)}
+                  onClick={() => router.push(`/agent-context/items/${item.id}`)}
                 >
                   Edit
                 </DropdownMenuItem>
@@ -134,7 +134,7 @@ export function ContextItemCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(`/app-context/items/${item.id}/history`)
+                    router.push(`/agent-context/items/${item.id}/history`)
                   }
                 >
                   <History className="h-3.5 w-3.5 mr-2" /> View History

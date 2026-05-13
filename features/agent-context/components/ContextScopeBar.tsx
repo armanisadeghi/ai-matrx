@@ -86,7 +86,7 @@ export function ContextScopeBar({ scope, onScopeChange }: Props) {
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink
-            href="/app-context"
+            href="/agent-context"
             className="text-xs text-muted-foreground hover:text-foreground"
             onClick={(e) => {
               e.preventDefault();

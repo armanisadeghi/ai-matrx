@@ -21,12 +21,12 @@ export function useContextKeyboard() {
         case "n":
         case "N":
           e.preventDefault();
-          router.push("/app-context/items/new");
+          router.push("/agent-context/items/new");
           break;
         case "t":
         case "T":
           e.preventDefault();
-          router.push("/app-context/templates");
+          router.push("/agent-context/templates");
           break;
         case "/":
           e.preventDefault();

@@ -158,7 +158,7 @@ export function ContextAnalytics({ scope }: Props) {
                           className={`text-xs cursor-pointer hover:bg-muted/50 ${isNever ? "bg-red-500/5" : lowUseful ? "bg-orange-500/5" : ""}`}
                           onClick={() =>
                             startTransition(() =>
-                              router.push(`/app-context/items/${item.id}`),
+                              router.push(`/agent-context/items/${item.id}`),
                             )
                           }
                         >

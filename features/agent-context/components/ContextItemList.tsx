@@ -174,7 +174,7 @@ export function ContextItemList({ scope }: Props) {
             className="shrink-0 text-xs h-7"
             asChild
           >
-            <Link href="/app-context/templates">Browse Templates</Link>
+            <Link href="/agent-context/templates">Browse Templates</Link>
           </Button>
           <Button
             variant="ghost"
@@ -249,7 +249,7 @@ export function ContextItemList({ scope }: Props) {
         </div>
 
         <Button size="sm" className="h-8 text-xs gap-1" asChild>
-          <Link href="/app-context/items/new">
+          <Link href="/agent-context/items/new">
             <Plus className="h-3.5 w-3.5" /> New Item
           </Link>
         </Button>

@@ -133,21 +133,19 @@ export function ContextDashboard({ scope }: Props) {
                 ))}
               </div>
             ) : attention && attention.length > 0 ? (
-              attention
-                .slice(0, 8)
-                .map((item) => (
-                  <AttentionItem
-                    key={item.id}
-                    item={item}
-                    onStatusChange={(status, note) =>
-                      statusMutation.mutate({
-                        itemId: item.id,
-                        status,
-                        statusNote: note,
-                      })
-                    }
-                  />
-                ))
+              attention.slice(0, 8).map((item) => (
+                <AttentionItem
+                  key={item.id}
+                  item={item}
+                  onStatusChange={(status, note) =>
+                    statusMutation.mutate({
+                      itemId: item.id,
+                      status,
+                      statusNote: note,
+                    })
+                  }
+                />
+              ))
             ) : (
               <div className="py-4 text-center">
                 <CheckCircle className="h-8 w-8 text-green-500/30 mx-auto mb-2" />
@@ -271,7 +269,7 @@ function AttentionItem({
     <div
       className={`flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors ${isPending ? "opacity-60" : ""}`}
       onClick={() =>
-        startTransition(() => router.push(`/app-context/items/${item.id}`))
+        startTransition(() => router.push(`/agent-context/items/${item.id}`))
       }
     >
       <span className={`h-2 w-2 rounded-full shrink-0 ${config.colorDot}`} />
@@ -287,7 +285,7 @@ function AttentionItem({
         className="h-6 text-[11px] px-2 shrink-0"
         onClick={(e) => {
           e.stopPropagation();
-          startTransition(() => router.push(`/app-context/items/${item.id}`));
+          startTransition(() => router.push(`/agent-context/items/${item.id}`));
         }}
       >
         {ctaLabel}

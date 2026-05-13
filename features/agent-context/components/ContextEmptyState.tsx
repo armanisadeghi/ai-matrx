@@ -46,13 +46,13 @@ export function ContextEmptyState({
       </p>
       <div className="flex gap-3">
         <Button size="sm" className="gap-1.5" asChild>
-          <Link href="/app-context/items/new">
+          <Link href="/agent-context/items/new">
             <Plus className="h-3.5 w-3.5" />
             Create your first item
           </Link>
         </Button>
         <Button variant="outline" size="sm" className="gap-1.5" asChild>
-          <Link href="/app-context/templates">
+          <Link href="/agent-context/templates">
             <LayoutTemplate className="h-3.5 w-3.5" />
             Start from a template
           </Link>

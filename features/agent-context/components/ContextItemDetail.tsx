@@ -140,7 +140,7 @@ export function ContextItemDetail({ itemId, scope }: Props) {
             className="text-xs gap-1"
             onClick={() =>
               startTransition(() =>
-                router.push(`/app-context/items/${item.id}/edit`),
+                router.push(`/agent-context/items/${item.id}/edit`),
               )
             }
           >
@@ -161,7 +161,7 @@ export function ContextItemDetail({ itemId, scope }: Props) {
               <DropdownMenuItem
                 onClick={() =>
                   startTransition(() =>
-                    router.push(`/app-context/items/${item.id}/history`),
+                    router.push(`/agent-context/items/${item.id}/history`),
                   )
                 }
               >
@@ -211,7 +211,7 @@ export function ContextItemDetail({ itemId, scope }: Props) {
                   className="h-auto p-0 text-xs"
                   onClick={() =>
                     startTransition(() =>
-                      router.push(`/app-context/items/${item.id}/history`),
+                      router.push(`/agent-context/items/${item.id}/history`),
                     )
                   }
                 >

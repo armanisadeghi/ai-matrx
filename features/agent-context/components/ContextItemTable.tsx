@@ -50,7 +50,7 @@ export function ContextItemTable({ items, onStatusChange }: Props) {
               className="cursor-pointer hover:bg-muted/50 text-xs"
               onClick={() =>
                 startTransition(() =>
-                  router.push(`/app-context/items/${item.id}`),
+                  router.push(`/agent-context/items/${item.id}`),
                 )
               }
             >

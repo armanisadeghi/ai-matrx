@@ -41,7 +41,7 @@ export function ContextKanban({ items, onStatusChange }: Props) {
                   className={`rounded-lg border border-border p-2.5 cursor-pointer hover:border-primary/30 transition-colors bg-card ${isPending ? "opacity-60" : ""}`}
                   onClick={() =>
                     startTransition(() =>
-                      router.push(`/app-context/items/${item.id}`),
+                      router.push(`/agent-context/items/${item.id}`),
                     )
                   }
                 >

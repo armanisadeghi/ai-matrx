@@ -9,14 +9,14 @@
  * watch the system breathe.
  *
  * What it exposes (left → right, top → bottom):
- *   • Identity banner — who is logged in, app-context org / project / task,
+ *   • Identity banner — who is logged in, agent-context org / project / task,
  *     resolved scope ref. If user/org items aren't showing, this is the
  *     first place to look (RLS only returns rows that match the caller).
  *
  *   • Scope picker — re-fetches the unified menu under a different
  *     scope ref (global / user / organization / project / task). Adding
  *     a scopeId lets you scope to a specific id; otherwise we use the
- *     ids from app-context where applicable.
+ *     ids from agent-context where applicable.
  *
  *   • Surface picker — select a SurfaceManifest (matrx-user/notes,
  *     matrx-user/code, or none). The selection is passed verbatim to
@@ -780,7 +780,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                   <Label className="text-[11px]">
                     Scope id{" "}
                     <span className="text-muted-foreground font-normal">
-                      (override; defaults to app-context where applicable)
+                      (override; defaults to agent-context where applicable)
                     </span>
                   </Label>
                   <div className="flex gap-1">

@@ -35,7 +35,7 @@ export default function ContextPage() {
           </p>
         </div>
         <Button size="sm" className="text-xs gap-1 shrink-0" asChild>
-          <Link href="/app-context/hierarchy">
+          <Link href="/agent-context/hierarchy">
             Open <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
