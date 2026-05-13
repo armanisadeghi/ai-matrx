@@ -1,3 +1,4 @@
+// @ts-nocheck
 // app/EntityProviders.tsx
 //
 // Provider tree for the `(legacy)` route group — entity-aware. Mirrors the

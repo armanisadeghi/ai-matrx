@@ -64,10 +64,13 @@ owner > admin > member
 
 | Route | Description |
 |-------|-------------|
+| `/projects` | Personal projects hub (also lists org projects, linking back to their org routes) |
+| `/projects/[id]` | Personal project detail. Segment is a UUID — slug is not globally unique (DB only enforces `UNIQUE (organization_id, slug)`), so the personal-scope route must use the UUID. Slug-shaped values are accepted as a back-compat fallback. |
+| `/projects/[id]/settings` | Personal project settings |
 | `/org/[slug]/projects` | List org projects |
-| `/org/[slug]/projects/[project-slug]` | Project detail / task view |
-| `/org/[slug]/projects/[project-slug]/settings` | Project settings (tabbed) |
-| `/settings/projects` | User's projects across all orgs |
+| `/org/[slug]/projects/[project-slug]` | Org project detail / task view. The segment accepts either the slug (unique within the org) or the project UUID. |
+| `/org/[slug]/projects/[project-slug]/settings` | Org project settings (tabbed) |
+| `/settings/projects` | User's projects across all orgs (routes each card to its correct personal- or org-scoped detail page) |
 | `/project-invitations/accept/[token]` | Accept project invitation |
 
 ## Feature Directory

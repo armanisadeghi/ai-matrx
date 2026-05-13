@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Puzzle } from "lucide-react";
 import { useProject } from "@/features/projects/hooks";
-import { getPersonalProjectBySlug } from "@/features/projects/service";
+import {
+  getProject,
+  getPersonalProjectBySlug,
+} from "@/features/projects/service";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function PersonalProjectSettingsLayoutClient({
   children,
@@ -13,21 +19,23 @@ export function PersonalProjectSettingsLayoutClient({
   children: React.ReactNode;
 }) {
   const params = useParams();
-  const projectSlug = params["project-slug"] as string;
+  const projectIdParam = params.id as string;
 
   const [projectId, setProjectId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     async function load() {
       try {
-        const proj = await getPersonalProjectBySlug(projectSlug);
+        const proj = UUID_PATTERN.test(projectIdParam)
+          ? await getProject(projectIdParam)
+          : await getPersonalProjectBySlug(projectIdParam);
         if (proj) setProjectId(proj.id);
       } catch (err) {
         console.error("Error loading personal project settings layout:", err);
       }
     }
     load();
-  }, [projectSlug]);
+  }, [projectIdParam]);
 
   const { project } = useProject(projectId ?? undefined);
 

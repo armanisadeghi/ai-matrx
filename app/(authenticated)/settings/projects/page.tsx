@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { useUserProjects } from "@/features/projects/hooks";
 import type { ProjectWithRole } from "@/features/projects/types";
 import { cn } from "@/lib/utils";
-import { useUserOrganizations } from "@/features/organizations/hooks";
+import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 /**
@@ -29,11 +29,14 @@ export default function SettingsProjectsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const { projects, loading, error, refresh } = useUserProjects();
-  const { organizations } = useUserOrganizations();
+  // Pull org slugs from the nav tree — same source as `projects` — to avoid a
+  // race where a parallel `useUserOrganizations()` query is still loading and
+  // org projects get misrouted to the personal `/projects/[id]` route.
+  const { orgs } = useNavTree();
 
   const orgSlugById = useMemo(
-    () => new Map(organizations.map((o) => [o.id, o.slug])),
-    [organizations],
+    () => new Map(orgs.map((o) => [o.id, o.slug])),
+    [orgs],
   );
 
   const filteredProjects = searchTerm
@@ -128,16 +131,21 @@ export default function SettingsProjectsPage() {
                     "p-4 cursor-pointer transition-all duration-200 hover:shadow-md",
                   )}
                   onClick={() => {
-                    const slug = project.slug ?? project.id;
+                    // Personal projects always use UUID — `slug` is only
+                    // unique inside an org. Org projects prefer slug, fall
+                    // back to UUID. If we somehow can't resolve an org slug,
+                    // fall back to the universal personal route by UUID
+                    // rather than producing a broken URL.
                     if (project.isPersonal || !project.organizationId) {
-                      router.push(`/projects/${slug}/settings`);
+                      router.push(`/projects/${project.id}/settings`);
+                      return;
+                    }
+                    const orgSlug = orgSlugById.get(project.organizationId);
+                    const segment = project.slug ?? project.id;
+                    if (orgSlug) {
+                      router.push(`/org/${orgSlug}/projects/${segment}`);
                     } else {
-                      const orgSlug = orgSlugById.get(project.organizationId);
-                      if (orgSlug) {
-                        router.push(`/org/${orgSlug}/projects/${slug}`);
-                      } else {
-                        router.push(`/projects/${slug}`);
-                      }
+                      router.push(`/projects/${project.id}`);
                     }
                   }}
                 >

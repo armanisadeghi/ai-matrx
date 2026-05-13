@@ -9,6 +9,8 @@ alwaysApply: true
 
 **Stack:** React 19, Next.js 16, Tailwind CSS, TypeScript, Redux (@/lib/redux/store.ts), Supabase (@/utils/supabase/client.ts)
 
+**Supabase project:** `txzxabzwovsujtloxrus` (**Matrx Main**, `us-west-1`). Only this project — `db.matrxserver.com` routes to it. Always pass `project_id: "txzxabzwovsujtloxrus"` to Supabase MCP calls. Other matrxorg projects (My Matrx, Matrx Flow, Matrx DM, Matrx Games) are separate products with separate databases.
+
 # Web Access For Testing
 - user: admin@admin.com
 - Password: Password1234#

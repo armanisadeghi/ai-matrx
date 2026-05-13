@@ -1,22 +1,39 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Puzzle, Settings, ArrowLeft, Loader2, CheckSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { getPersonalProjectBySlug, getProjectUserRole } from '@/features/projects/service';
-import type { Project, ProjectRole } from '@/features/projects/types';
+import React from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  Puzzle,
+  Settings,
+  ArrowLeft,
+  Loader2,
+  CheckSquare,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import {
+  getProject,
+  getPersonalProjectBySlug,
+  getProjectUserRole,
+} from "@/features/projects/service";
+import type { Project, ProjectRole } from "@/features/projects/types";
+
+// Personal project slugs are NOT globally unique (DB only enforces uniqueness on
+// `(organization_id, slug)`, and PG treats NULL org_ids as distinct). So this
+// route's segment is `[id]` — UUIDs are the only safe public identifier here.
+// Slugs are tolerated as a fallback for back-compat with old links.
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Personal Project Detail Page
- * Route: /projects/[project-slug]
+ * Route: /projects/[id]
  */
 export default function PersonalProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const projectSlug = params['project-slug'] as string;
+  const projectIdParam = params.id as string;
 
   const [project, setProject] = React.useState<Project | null>(null);
   const [userRole, setUserRole] = React.useState<ProjectRole | null>(null);
@@ -27,23 +44,26 @@ export default function PersonalProjectDetailPage() {
     async function load() {
       try {
         setLoading(true);
-        const proj = await getPersonalProjectBySlug(projectSlug);
+        const proj = UUID_PATTERN.test(projectIdParam)
+          ? await getProject(projectIdParam)
+          : await getPersonalProjectBySlug(projectIdParam);
         if (!proj) {
-          setError('Project not found');
+          setError("Project not found");
           return;
         }
         setProject(proj);
         const role = await getProjectUserRole(proj.id);
         setUserRole(role);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to load project';
+        const msg =
+          err instanceof Error ? err.message : "Failed to load project";
         setError(msg);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [projectSlug]);
+  }, [projectIdParam]);
 
   if (loading) {
     return (
@@ -70,7 +90,11 @@ export default function PersonalProjectDetailPage() {
             <p className="text-sm text-red-700 dark:text-red-300 mb-6">
               {error ?? "This project doesn't exist or you don't have access."}
             </p>
-            <Button onClick={() => router.push('/projects')} variant="outline" size="sm">
+            <Button
+              onClick={() => router.push("/projects")}
+              variant="outline"
+              size="sm"
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Button>
@@ -80,11 +104,10 @@ export default function PersonalProjectDetailPage() {
     );
   }
 
-  const canManage = userRole === 'owner' || userRole === 'admin';
+  const canManage = userRole === "owner" || userRole === "admin";
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-textured">
-      {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
           <div className="flex items-center justify-between gap-4">
@@ -92,7 +115,7 @@ export default function PersonalProjectDetailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push('/projects')}
+                onClick={() => router.push("/projects")}
                 className="flex-shrink-0"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -101,7 +124,9 @@ export default function PersonalProjectDetailPage() {
               <span className="text-sm text-muted-foreground">/</span>
               <div className="flex items-center gap-2">
                 <Puzzle className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                <span className="text-sm font-medium truncate">{project.name}</span>
+                <span className="text-sm font-medium truncate">
+                  {project.name}
+                </span>
               </div>
             </div>
 
@@ -115,7 +140,9 @@ export default function PersonalProjectDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/projects/${projectSlug}/settings`)}
+                  onClick={() =>
+                    router.push(`/projects/${project.id}/settings`)
+                  }
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
@@ -126,13 +153,14 @@ export default function PersonalProjectDetailPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
           <div>
             <h1 className="text-2xl font-bold">{project.name}</h1>
             {project.description && (
-              <p className="text-muted-foreground mt-1">{project.description}</p>
+              <p className="text-muted-foreground mt-1">
+                {project.description}
+              </p>
             )}
           </div>
 
@@ -149,7 +177,9 @@ export default function PersonalProjectDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/projects/${projectSlug}/settings`)}
+                  onClick={() =>
+                    router.push(`/projects/${project.id}/settings`)
+                  }
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Manage Project

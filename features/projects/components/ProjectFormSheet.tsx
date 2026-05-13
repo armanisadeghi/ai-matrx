@@ -326,10 +326,12 @@ function ProjectFormInner({
             ? {
                 label: "Open Settings",
                 onClick: () => {
+                  // Personal projects always use UUID — slug is only unique
+                  // inside an org, so the personal route segment is `[id]`.
                   const base =
                     persistedOrgId && selectedOrg?.slug
                       ? `/org/${selectedOrg.slug}/projects/${result.project!.slug ?? result.project!.id}/settings`
-                      : `/projects/${result.project!.slug ?? result.project!.id}/settings`;
+                      : `/projects/${result.project!.id}/settings`;
                   router.push(base);
                 },
               }

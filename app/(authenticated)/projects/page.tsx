@@ -10,9 +10,9 @@ import { ProjectCard } from "@/features/projects/components/ProjectCard";
 import { ProjectFormSheet } from "@/features/projects/components/ProjectFormSheet";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { useHierarchyReduxBridge } from "@/features/agent-context/components/hierarchy-selection/useReduxBridge";
+import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
-import { useUserOrganizations } from "@/features/organizations/hooks";
 
 /**
  * Standalone Projects Hub
@@ -23,13 +23,18 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 export default function ProjectsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { projects, loading, refresh } = useUserProjects();
-  const { organizations } = useUserOrganizations();
+  // Pull org metadata from the same nav-tree source that supplied `projects`.
+  // Using a parallel `useUserOrganizations()` query here caused org cards to
+  // race the org list — when it was still loading, `orgSlug` was undefined and
+  // the card linked to `/projects/[id]` (the personal route), routing org
+  // projects through the personal lookup and triggering "Project Not Found".
+  const { orgs } = useNavTree();
   const activeOrgId = useAppSelector(selectOrganizationId);
   const { value: ctxValue, onChange: ctxOnChange } = useHierarchyReduxBridge();
 
   const orgSlugById = useMemo(
-    () => new Map(organizations.map((o) => [o.id, o.slug])),
-    [organizations],
+    () => new Map(orgs.map((o) => [o.id, o.slug])),
+    [orgs],
   );
 
   const orgProjects = projects.filter(

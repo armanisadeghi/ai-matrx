@@ -84,6 +84,8 @@ Always use the latest stable release of every package — no deprecated APIs. Al
 - Supabase-generated types as source of truth — end-to-end type safety, strict mode, no `any`
 - Every async operation has structured error handling — never swallow errors
 
+**Supabase project:** `txzxabzwovsujtloxrus` (**Matrx Main**, region `us-west-1`, Postgres 17). This is the only project the matrx-frontend codebase talks to — `NEXT_PUBLIC_SUPABASE_URL` points at the `db.matrxserver.com` custom domain in front of it. When using the Supabase MCP (`list_tables`, `execute_sql`, `apply_migration`, etc.) always pass `project_id: "txzxabzwovsujtloxrus"`. Do NOT guess between Matrx Main / My Matrx / Matrx Flow / Matrx DM / Matrx Games — they're separate databases for separate products and `db.matrxserver.com` only routes to Matrx Main.
+
 **Supabase clients:**
 - Client-side: `import { supabase } from "@/utils/supabase/client"`
 - Server-side: `import { createClient } from '@/utils/supabase/server'`

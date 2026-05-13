@@ -133,14 +133,14 @@ export function CreateProjectModal({
           organizationId: result.project.organizationId ?? null,
         });
         if (redirectOnSuccess) {
-          // The canonical service normalizes the personal pseudo-org sentinel
-          // to a null organization id; redirect personal projects to /projects
-          // rather than the non-existent /org/personal route.
-          const projectPath = result.project.slug ?? result.project.id;
+          // Org projects use slug-or-id (slug is unique per org).
+          // Personal projects must use UUID — slug isn't globally unique and
+          // PG treats NULL org_ids as distinct in the unique constraint.
           if (orgSlug && result.project.organizationId) {
-            router.push(`/org/${orgSlug}/projects/${projectPath}/settings`);
+            const orgSegment = result.project.slug ?? result.project.id;
+            router.push(`/org/${orgSlug}/projects/${orgSegment}/settings`);
           } else {
-            router.push(`/projects/${projectPath}/settings`);
+            router.push(`/projects/${result.project.id}/settings`);
           }
         }
       } else {

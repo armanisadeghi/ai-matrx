@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition } from "react";
 import {
   Puzzle,
   Users,
@@ -10,14 +10,14 @@ import {
   User as UserIcon,
   ChevronRight,
   Loader2,
-} from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import type { ProjectWithRole } from '../types';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { ProjectWithRole } from "../types";
+import { cn } from "@/lib/utils";
 
 interface ProjectCardProps {
   project: ProjectWithRole;
@@ -26,7 +26,12 @@ interface ProjectCardProps {
   isAnyNavigating?: boolean;
 }
 
-export function ProjectCard({ project, orgSlug, onUpdate, isAnyNavigating }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  orgSlug,
+  onUpdate,
+  isAnyNavigating,
+}: ProjectCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [navigating, setNavigating] = useState(false);
@@ -36,29 +41,32 @@ export function ProjectCard({ project, orgSlug, onUpdate, isAnyNavigating }: Pro
 
   const getRoleDisplay = () => {
     switch (project.role) {
-      case 'owner':
+      case "owner":
         return {
           icon: <Crown className="h-3 w-3" />,
-          label: 'Owner',
-          color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+          label: "Owner",
+          color:
+            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
         };
-      case 'admin':
+      case "admin":
         return {
           icon: <Shield className="h-3 w-3" />,
-          label: 'Admin',
-          color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+          label: "Admin",
+          color:
+            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
         };
       default:
         return {
           icon: <UserIcon className="h-3 w-3" />,
-          label: 'Member',
-          color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+          label: "Member",
+          color:
+            "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
         };
     }
   };
 
   const roleDisplay = getRoleDisplay();
-  const canManage = project.role === 'owner' || project.role === 'admin';
+  const canManage = project.role === "owner" || project.role === "admin";
 
   const handleNavigate = (path: string, e?: React.MouseEvent) => {
     if (e && (e.metaKey || e.ctrlKey)) return;
@@ -68,19 +76,34 @@ export function ProjectCard({ project, orgSlug, onUpdate, isAnyNavigating }: Pro
     startTransition(() => router.push(path));
   };
 
-  const basePath = orgSlug ? `/org/${orgSlug}/projects` : '/projects';
-  const projectPath = `${basePath}/${project.slug ?? project.id}`;
+  // Routing rules (see CLAUDE.md "Projects" section):
+  //   - Personal projects → `/projects/[id]`. Slug is NOT globally unique
+  //     (DB only enforces uniqueness on `(organization_id, slug)`), so we use
+  //     the UUID. We don't conditionally use slug here because that produces
+  //     ambiguous URLs.
+  //   - Org projects → `/org/[orgSlug]/projects/[slug ?? id]`. Slug is unique
+  //     inside an org. If the project is org-scoped but we don't have an
+  //     orgSlug, that's a bug in the caller (the org list it came from didn't
+  //     resolve the slug); fall through to `/projects/[id]` as a safety net
+  //     so the card is still clickable.
+  const isOrgScoped = !project.isPersonal && !!project.organizationId;
+  const basePath =
+    isOrgScoped && orgSlug ? `/org/${orgSlug}/projects` : "/projects";
+  const projectSegment = isOrgScoped
+    ? (project.slug ?? project.id)
+    : project.id;
+  const projectPath = `${basePath}/${projectSegment}`;
   const settingsPath = `${projectPath}/settings`;
 
   return (
     <Card
       className={cn(
-        'p-5 transition-all duration-200 hover:shadow-md cursor-pointer group relative',
-        isNavigating && 'opacity-50 pointer-events-none'
+        "p-5 transition-all duration-200 hover:shadow-md cursor-pointer group relative",
+        isNavigating && "opacity-50 pointer-events-none",
       )}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey) {
-          window.open(projectPath, '_blank');
+          window.open(projectPath, "_blank");
           return;
         }
         handleNavigate(projectPath);
@@ -101,14 +124,23 @@ export function ProjectCard({ project, orgSlug, onUpdate, isAnyNavigating }: Pro
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="text-base font-semibold text-foreground truncate">{project.name}</h3>
-                <Badge className={cn('flex items-center gap-1 text-xs', roleDisplay.color)}>
+                <h3 className="text-base font-semibold text-foreground truncate">
+                  {project.name}
+                </h3>
+                <Badge
+                  className={cn(
+                    "flex items-center gap-1 text-xs",
+                    roleDisplay.color,
+                  )}
+                >
                   {roleDisplay.icon}
                   {roleDisplay.label}
                 </Badge>
               </div>
               {project.description && (
-                <p className="text-sm text-muted-foreground line-clamp-1">{project.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-1">
+                  {project.description}
+                </p>
               )}
             </div>
           </div>
@@ -117,18 +149,29 @@ export function ProjectCard({ project, orgSlug, onUpdate, isAnyNavigating }: Pro
             <div className="flex items-center gap-1">
               <Users className="h-3.5 w-3.5" />
               <span>
-                {project.memberCount === 1 ? '1 member' : `${project.memberCount ?? 0} members`}
+                {project.memberCount === 1
+                  ? "1 member"
+                  : `${project.memberCount ?? 0} members`}
               </span>
             </div>
             {project.slug && (
-              <span className="text-xs font-mono text-muted-foreground">/{project.slug}</span>
+              <span className="text-xs font-mono text-muted-foreground">
+                /{project.slug}
+              </span>
             )}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 items-end">
           {canManage ? (
-            <Link href={settingsPath} tabIndex={-1} onClick={(e) => { e.stopPropagation(); handleNavigate(settingsPath, e); }}>
+            <Link
+              href={settingsPath}
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNavigate(settingsPath, e);
+              }}
+            >
               <Button
                 variant="ghost"
                 size="sm"
@@ -140,7 +183,14 @@ export function ProjectCard({ project, orgSlug, onUpdate, isAnyNavigating }: Pro
               </Button>
             </Link>
           ) : (
-            <Link href={projectPath} tabIndex={-1} onClick={(e) => { e.stopPropagation(); handleNavigate(projectPath, e); }}>
+            <Link
+              href={projectPath}
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNavigate(projectPath, e);
+              }}
+            >
               <Button
                 variant="ghost"
                 size="sm"

@@ -213,19 +213,29 @@ export async function getProject(projectId: string): Promise<Project | null> {
   }
 }
 
+// URL params may carry either a slug or a project UUID — newly-created projects
+// always get a slug, but older projects (and any built without one) fall back
+// to the UUID in `${project.slug ?? project.id}` route construction.
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getProjectBySlug(
-  slug: string,
+  slugOrId: string,
   organizationId: string,
 ): Promise<Project | null> {
   try {
-    const { data, error } = await supabase
+    const base = supabase
       .from("ctx_projects")
       .select("*")
-      .eq("slug", slug)
-      .eq("organization_id", organizationId)
-      .single();
+      .eq("organization_id", organizationId);
+
+    const query = UUID_PATTERN.test(slugOrId)
+      ? base.eq("id", slugOrId)
+      : base.eq("slug", slugOrId);
+
+    const { data, error } = await query.maybeSingle();
     if (error) throw error;
-    return transformProjectFromDb(data);
+    return data ? transformProjectFromDb(data) : null;
   } catch (error) {
     console.error("Error fetching project by slug:", error);
     return null;
@@ -233,20 +243,24 @@ export async function getProjectBySlug(
 }
 
 export async function getPersonalProjectBySlug(
-  slug: string,
+  slugOrId: string,
 ): Promise<Project | null> {
   try {
     const userId = requireUserId();
 
-    const { data, error } = await supabase
+    const base = supabase
       .from("ctx_projects")
       .select("*")
-      .eq("slug", slug)
       .is("organization_id", null)
-      .eq("created_by", userId)
-      .single();
+      .eq("created_by", userId);
+
+    const query = UUID_PATTERN.test(slugOrId)
+      ? base.eq("id", slugOrId)
+      : base.eq("slug", slugOrId);
+
+    const { data, error } = await query.maybeSingle();
     if (error) throw error;
-    return transformProjectFromDb(data);
+    return data ? transformProjectFromDb(data) : null;
   } catch (error) {
     console.error("Error fetching personal project by slug:", error);
     return null;
