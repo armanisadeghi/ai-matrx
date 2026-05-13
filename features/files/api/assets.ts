@@ -246,3 +246,127 @@ export async function getAssetPresets(
 ): Promise<{ data: PresetsRegistryResponse; meta: ResponseMeta }> {
   return getJson<PresetsRegistryResponse>(ENDPOINTS.assets.presets, opts);
 }
+
+// ---------------------------------------------------------------------------
+// No-persist preview + PDF compress (E.16 + E.17, matrx-utils v1.1.0)
+// ---------------------------------------------------------------------------
+
+/**
+ * Spec for a single preview variant — width/height drives the resize;
+ * `format` and `quality` control the output encoding. Sent verbatim to
+ * the server (no client-side image processing).
+ */
+export interface PreviewVariantSpec {
+  key: string;
+  width?: number;
+  height?: number;
+  format?: "jpeg" | "png" | "webp" | "avif";
+  quality?: number;
+  fit?: "cover" | "contain" | "fill";
+}
+
+export interface PreviewVariantResult {
+  key: string;
+  width: number | null;
+  height: number | null;
+  mime_type: string;
+  file_size: number;
+  /** base64 data URL for small variants (≤256 KB). */
+  data_url: string | null;
+  /** 5-min ephemeral signed URL for larger variants. */
+  signed_url: string | null;
+}
+
+export interface AssetPreviewResult {
+  variants: PreviewVariantResult[];
+}
+
+export interface PdfCompressResult {
+  original_size: number;
+  compressed_size: number;
+  /** 0..1 — fraction of bytes saved. */
+  reduction_ratio: number;
+  mime_type: string;
+  data_url: string | null;
+  signed_url: string | null;
+}
+
+/**
+ * `POST /assets/preview/multipart` — render preview variants WITHOUT
+ * persisting the master. Image Studio uses this for the drag-and-drop
+ * preview flow; the user can then commit-to-save via `POST /assets`.
+ *
+ * Each variant comes back as either an inline `data_url` (small) or an
+ * ephemeral `signed_url` (5-minute TTL).
+ */
+export async function previewAssetMultipart(
+  file: File | Blob,
+  variants: PreviewVariantSpec[],
+  options: { maxInlineBytes?: number } = {},
+  opts: RequestOptions = {},
+): Promise<{ data: AssetPreviewResult; meta: ResponseMeta }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("variants", JSON.stringify(variants));
+  if (typeof options.maxInlineBytes === "number") {
+    form.append("max_inline_bytes", String(options.maxInlineBytes));
+  }
+  return postMultipart<AssetPreviewResult>(
+    ENDPOINTS.assets.previewMultipart,
+    form,
+    opts,
+  );
+}
+
+/**
+ * `POST /assets/pdf-compress/multipart` — compress a PDF WITHOUT
+ * persisting it. Returns `data_url` (≤256 KB) or `signed_url`
+ * (5-minute TTL). Replaces the deleted Next.js Sharp/PDF route.
+ *
+ * @param level minimum compression tier (1..5). Default 3. Server may
+ *   escalate above this when `maxSizeBytes` forces it.
+ * @param maxSizeBytes optional absolute upper bound on output size.
+ */
+export async function compressPdfMultipart(
+  file: File | Blob,
+  options: { level?: number; maxSizeBytes?: number; maxInlineBytes?: number } = {},
+  opts: RequestOptions = {},
+): Promise<{ data: PdfCompressResult; meta: ResponseMeta }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("level", String(options.level ?? 3));
+  if (typeof options.maxSizeBytes === "number") {
+    form.append("max_size_bytes", String(options.maxSizeBytes));
+  }
+  if (typeof options.maxInlineBytes === "number") {
+    form.append("max_inline_bytes", String(options.maxInlineBytes));
+  }
+  return postMultipart<PdfCompressResult>(
+    ENDPOINTS.assets.pdfCompressMultipart,
+    form,
+    opts,
+  );
+}
+
+/**
+ * Materialize a `PreviewVariantResult` / `PdfCompressResult` body that
+ * carries either `data_url` or `signed_url` into a `Blob`. Useful when
+ * the FE needs the bytes locally (e.g. to wrap in a `File` for further
+ * upload).
+ */
+export async function materializeAssetResult(
+  result: { data_url: string | null; signed_url: string | null; mime_type: string },
+): Promise<Blob> {
+  if (result.data_url) {
+    const response = await fetch(result.data_url);
+    return response.blob();
+  }
+  if (result.signed_url) {
+    const response = await fetch(result.signed_url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ephemeral asset URL: HTTP ${response.status}`);
+    }
+    return response.blob();
+  }
+  throw new Error("Asset result has neither data_url nor signed_url");
+}

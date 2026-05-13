@@ -11,8 +11,8 @@
  *  - Clicking the X or the thumbnail dismisses immediately.
  *  - The image is NOT downloaded twice: the browser cache deduplicates the
  *    request because `ImageOutputBlock` (inline) and this card both render
- *    the same URL string.  useAiImageUrl's module-level cache ensures that
- *    any URL-refresh API call is also made only once.
+ *    the same URL string. The universal handler's expiry-wheel ensures
+ *    any signed-URL refresh is also coalesced across components.
  */
 
 "use client";
@@ -20,7 +20,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon, Maximize2, Loader2 } from "lucide-react";
-import { useAiImageUrl } from "@/features/agents/hooks/useAiImageUrl";
+import { useFileAs } from "@/features/file-handler/hooks/useFileAs";
+import type { FileSource } from "@/features/file-handler/types";
+
+// Extract the cloud_files UUID from an S3 path:
+//   /{userId}/{folder}/{uuid}.{ext}
+// AI-generated images are registered in cloud_files at upload time, so we
+// route through the handler (which auto-refreshes signed URLs via the
+// expiry-wheel). When the URL isn't a recognisable cloud-file shape we
+// fall back to using it directly as the <img src>.
+function fileSourceFromS3Url(url: string): FileSource | null {
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    const last = parts[parts.length - 1] ?? "";
+    const uuid = last.replace(/\.[^.]+$/, "");
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRe.test(uuid) ? { kind: "file_id", fileId: uuid } : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface ImageArrivalPeekProps {
   /** `${requestId}:${blockId}` — globally unique across all requests. */
@@ -47,7 +67,14 @@ export function ImageArrivalPeek({
   onImageClick,
   autoHideMs = 5_000,
 }: ImageArrivalPeekProps) {
-  const { url, loading, onImageError } = useAiImageUrl(initialUrl);
+  // Route the AI-generated S3 URL through the universal handler so the
+  // signed URL auto-refreshes via the expiry-wheel. The handler picks the
+  // right URL flavour (CDN for public, signed for private). If the input
+  // URL doesn't carry a cloud-file UUID we render it directly.
+  const source = fileSourceFromS3Url(initialUrl);
+  const { result, status } = useFileAs(source, { kind: "html_src" });
+  const url = result ?? initialUrl;
+  const loading = status === "resolving";
 
   const [visible, setVisible] = useState(true);
 
@@ -146,7 +173,6 @@ export function ImageArrivalPeek({
                   src={url}
                   alt="AI image output"
                   className="w-full h-full object-cover"
-                  onError={onImageError}
                 />
                 {/* Hover overlay hint */}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">

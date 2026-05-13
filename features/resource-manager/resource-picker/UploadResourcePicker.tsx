@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
 import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -101,15 +102,14 @@ async function compressImageFile(file: File): Promise<{ file: File; note: string
 
 async function compressPdfFile(file: File, maxSizeMB = 50): Promise<{ file: File; note: string } | null> {
     try {
-        const formData = new FormData();
-        formData.append("file", file);
-        // Level 2 = light cleanup. The cap drives the actual reduction
-        // — server escalates tiers as needed to fit under maxSizeMB.
-        formData.append("level", "2");
-        formData.append("maxSizeMB", String(maxSizeMB));
-        const response = await fetch("/api/pdf/compress", { method: "POST", body: formData });
-        if (!response.ok) return null;
-        const blob = await response.blob();
+        // Calls Python /assets/pdf-compress/multipart directly (no Next.js
+        // hop). Level 2 = light cleanup; the server escalates tiers as
+        // needed to fit under maxSizeMB.
+        const { data } = await compressPdfMultipart(file, {
+            level: 2,
+            maxSizeBytes: maxSizeMB * 1024 * 1024,
+        });
+        const blob = await materializeAssetResult(data);
         const compressed = new File([blob], file.name, { type: "application/pdf" });
         return {
             file: compressed,

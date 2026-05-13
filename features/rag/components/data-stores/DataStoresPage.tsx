@@ -56,7 +56,7 @@ import {
   SOURCE_KINDS,
 } from "@/features/rag/types/data-stores-ext";
 import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores";
-import { uploadFile } from "@/features/files/api/files";
+import { fileHandler } from "@/features/files";
 
 export function DataStoresPage() {
   const router = useRouter();
@@ -410,14 +410,15 @@ function StoreDetailPanel({
         try {
           // file_path lands in the user's root. The user can move it
           // later from the files page if they want a different folder.
-          const { data } = await uploadFile({
-            file,
-            filePath: `/${file.name}`,
-            visibility: "private",
-            metadata: { uploaded_via: "data-store-drop" },
-          });
-          if (data?.file_id) {
-            picks.push({ cldFileId: data.file_id, fileName: file.name });
+          const normalized = await fileHandler.upload(
+            { kind: "file", file },
+            {
+              visibility: "private",
+              metadata: { uploaded_via: "data-store-drop" },
+            },
+          );
+          if (normalized.fileId) {
+            picks.push({ cldFileId: normalized.fileId, fileName: file.name });
           }
         } catch (err) {
           toast.error(`Upload failed for ${file.name}`, {

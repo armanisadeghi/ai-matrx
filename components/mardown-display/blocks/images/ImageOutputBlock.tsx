@@ -37,12 +37,28 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { toast } from "sonner";
-import {
-  extractFileId,
-  useAiImageUrl,
-} from "@/features/agents/hooks/useAiImageUrl";
+import { useFileAs } from "@/features/file-handler/hooks/useFileAs";
+import type { FileSource } from "@/features/file-handler/types";
 import * as Files from "@/features/files/api/files";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Extract the cloud_files UUID from an S3 path: /{userId}/{folder}/{uuid}.{ext}
+// AI-generated images are registered in cloud_files at upload time, so we
+// route through the universal handler (which auto-refreshes signed URLs via
+// the expiry-wheel and returns the right URL flavour). When the URL doesn't
+// carry a recognisable UUID we render it directly.
+function extractCloudFileId(url: string): string | null {
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    const last = parts[parts.length - 1] ?? "";
+    const uuid = last.replace(/\.[^.]+$/, "");
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRe.test(uuid) ? uuid : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface ImageOutputBlockProps {
   url: string;
@@ -106,8 +122,18 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   url: initialUrl,
   mimeType,
 }) => {
-  const { url, loading, error, onImageError, refresh } =
-    useAiImageUrl(initialUrl);
+  const fileId = extractCloudFileId(initialUrl);
+  const source: FileSource | null = fileId
+    ? { kind: "file_id", fileId }
+    : null;
+  const { result, status, error: resolveError } = useFileAs(source, {
+    kind: "html_src",
+  });
+  const url = result ?? initialUrl;
+  const loading = status === "resolving";
+  const error = resolveError?.message ?? null;
+  // No imperative refresh — the handler's expiry-wheel auto-mints new URLs.
+  const refresh = () => {};
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -154,7 +180,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   };
 
   const handleShare = async () => {
-    const fileId = extractFileId(url);
+    const fileId = extractCloudFileId(url);
     if (!fileId) {
       await handleCopyLink();
       return;
@@ -298,7 +324,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
                 imageLoaded ? "opacity-100" : "opacity-0",
               ].join(" ")}
               onLoad={() => setImageLoaded(true)}
-              onError={onImageError}
+              onError={undefined}
             />
 
             {/* Hover toolbar (desktop) */}
@@ -427,7 +453,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
               src={url}
               alt="AI generated image"
               className="max-w-full max-h-[85dvh] object-contain rounded-lg"
-              onError={onImageError}
+              onError={undefined}
             />
             <button
               onClick={() => setIsExpanded(false)}

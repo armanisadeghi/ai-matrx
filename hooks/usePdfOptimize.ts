@@ -1,4 +1,20 @@
+/**
+ * usePdfOptimize — PDF compression on the Python backend.
+ *
+ * Calls `POST /assets/pdf-compress/multipart` (matrx-utils v1.1.0) directly;
+ * no Next.js hop. The previous proxy at `app/api/pdf/compress/route.ts`
+ * was deleted in Phase 1 of the file-handling consolidation
+ * (docs/FILE_HANDLING_CONSOLIDATION_PLAN.md).
+ *
+ * The endpoint returns either `data_url` (≤256 KB) or a 5-min ephemeral
+ * `signed_url`; this hook materializes either into a `File` so consumers
+ * see the same return shape as before.
+ */
 import { useState, useCallback } from 'react';
+import {
+    compressPdfMultipart,
+    materializeAssetResult,
+} from '@/features/files/api/assets';
 
 export interface PdfOptimizeResult {
     optimizedFile: File;
@@ -41,47 +57,31 @@ export function usePdfOptimize(): UsePdfOptimizeReturn {
         const opts: OptimizeOptions =
             typeof options === 'number' ? { level: options } : options;
         const level = opts.level ?? 2;
-        const maxSizeMB = opts.maxSizeMB;
+        const maxSizeBytes =
+            typeof opts.maxSizeMB === 'number' && opts.maxSizeMB > 0
+                ? Math.floor(opts.maxSizeMB * 1024 * 1024)
+                : undefined;
 
         setError(null);
         setIsOptimizing(true);
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('level', String(level));
-            if (typeof maxSizeMB === 'number' && maxSizeMB > 0) {
-                formData.append('maxSizeMB', String(maxSizeMB));
-            }
-
-            const response = await fetch('/api/pdf/compress', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({ error: 'Compression failed' }));
-                throw new Error(data.error || 'Compression failed');
-            }
-
-            const originalSize = parseInt(response.headers.get('X-Original-Size') || '0', 10);
-            const compressedSize = parseInt(response.headers.get('X-Compressed-Size') || '0', 10);
-            const compressionRatio = parseFloat(response.headers.get('X-Compression-Ratio') || '0');
-            const levelRequestedHeader = response.headers.get('X-Compression-Level-Requested');
-            const levelUsedHeader = response.headers.get('X-Compression-Level-Used');
-            const capHeader = response.headers.get('X-Compression-Cap-Satisfied');
-
-            const blob = await response.blob();
+            const { data } = await compressPdfMultipart(file, { level, maxSizeBytes });
+            const blob = await materializeAssetResult(data);
             const optimizedFile = new File([blob], file.name, { type: 'application/pdf' });
 
+            // The new endpoint does not return per-tier breakdown headers.
+            // `levelRequested` is the input; `levelUsed` and `capSatisfied`
+            // are no longer signaled and surface as null. Callers that
+            // displayed them now show the requested level only.
             return {
                 optimizedFile,
-                originalSize: originalSize || file.size,
-                compressedSize: compressedSize || blob.size,
-                compressionRatio,
-                levelRequested: levelRequestedHeader ? Number(levelRequestedHeader) : null,
-                levelUsed: levelUsedHeader ? Number(levelUsedHeader) : null,
-                capSatisfied: capHeader === null || capHeader === '' ? null : capHeader === '1',
+                originalSize: data.original_size || file.size,
+                compressedSize: data.compressed_size || blob.size,
+                compressionRatio: data.reduction_ratio,
+                levelRequested: level,
+                levelUsed: null,
+                capSatisfied: null,
             };
         } catch (err) {
             const message = err instanceof Error ? err.message : 'PDF optimization failed';

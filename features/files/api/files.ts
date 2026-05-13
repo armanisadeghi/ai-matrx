@@ -154,21 +154,38 @@ export async function getFileTree(
 // ---------------------------------------------------------------------------
 
 /**
- * Patch a file's metadata / visibility.
+ * Patch a file. Union body (A.2 — landed in matrx-utils v1.1.0): can rename,
+ * move (`folder`), change visibility, merge metadata, grant/revoke share,
+ * grant/revoke permissions, request variants, restore a version, restore
+ * from trash, or copy — in any combination, in a single round-trip.
+ *
+ * Sub-operations run sequentially with best-effort atomicity: the upload
+ * piece always lands, but downstream sub-ops can fail individually and
+ * surface in the response envelope's `errors[]` array (FE handles partial
+ * success — see useFileMutation in Phase 1).
  *
  * **Metadata is MERGED by default** — only the keys you send are touched
- * on the server-side jsonb blob. This matches what the FE has always
- * assumed (every thunk patches a small slice). For the rare "rewrite the
- * whole metadata blob" tool, use `patchFileReplaceMetadata` below.
+ * on the server-side jsonb blob. For the rare "rewrite the whole metadata
+ * blob" tool, use `patchFileReplaceMetadata` below.
+ *
+ * `share_revoke` and `restore_from_trash` default to false; callers only
+ * need to set them when intentionally invoking that sub-op.
  */
+export type FilePatchBody = Partial<FilePatchRequest>;
+
 export async function patchFile(
   fileId: string,
-  body: FilePatchRequest,
+  body: FilePatchBody,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
+  const fullBody: FilePatchRequest = {
+    share_revoke: false,
+    restore_from_trash: false,
+    ...body,
+  };
   return patchJson<FileRecordApi, FilePatchRequest>(
     `/files/${fileId}`,
-    body,
+    fullBody,
     opts,
   );
 }
@@ -180,12 +197,17 @@ export async function patchFile(
  */
 export async function patchFileReplaceMetadata(
   fileId: string,
-  body: FilePatchRequest,
+  body: FilePatchBody,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
+  const fullBody: FilePatchRequest = {
+    share_revoke: false,
+    restore_from_trash: false,
+    ...body,
+  };
   return patchJson<FileRecordApi, FilePatchRequest>(
     `/files/${fileId}?metadata_merge=false`,
-    body,
+    fullBody,
     opts,
   );
 }

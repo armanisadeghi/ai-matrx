@@ -350,6 +350,27 @@ export const ENDPOINTS = {
      * variants the FE can render directly.
      */
     forFile: (fileId: string) => `/files/${fileId}/asset` as const,
+    /**
+     * POST — no-persist preview rendering (E.16, matrx-utils v1.1.0).
+     * Accepts a `MediaRef` source + variants[]. Returns either base64
+     * `data_url` (≤256 KB) or 5-min ephemeral `signed_url`. Replaces the
+     * deleted Next.js Sharp route at app/api/images/studio/process.
+     */
+    preview: "/assets/preview" as const,
+    /**
+     * POST — multipart variant of {@link preview}. Render directly without
+     * a prior `cld_files` row. Useful for Image Studio drag-and-drop
+     * preview before commit-to-save.
+     */
+    previewMultipart: "/assets/preview/multipart" as const,
+    /**
+     * POST — no-persist PDF compression (E.17). Accepts a `MediaRef` source.
+     * Returns `data_url` (≤256 KB) or 5-min ephemeral `signed_url`.
+     * Replaces the deleted Next.js route at app/api/pdf/compress.
+     */
+    pdfCompress: "/assets/pdf-compress" as const,
+    /** POST — multipart variant of {@link pdfCompress}. */
+    pdfCompressMultipart: "/assets/pdf-compress/multipart" as const,
   },
 
   /** Health endpoints — Public (aligned with types/python-generated OpenAPI) */

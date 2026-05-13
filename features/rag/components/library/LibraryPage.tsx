@@ -53,7 +53,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadFile } from "@/features/files/api/files";
+import { fileHandler } from "@/features/files";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingProgressSheet } from "./ProcessingProgressSheet";
 import { ActiveJobsStrip } from "./ActiveJobsStrip";
@@ -141,20 +141,19 @@ export function LibraryPage() {
     setUploading(true);
     const tid = toast.loading(`Uploading ${file.name}…`);
     try {
-      const { data } = await uploadFile({
-        file,
-        filePath: file.name,
-        visibility: "private",
-      });
+      const normalized = await fileHandler.upload(
+        { kind: "file", file },
+        { visibility: "private" },
+      );
       toast.dismiss(tid);
-      if (!data?.file_id) {
+      if (!normalized.fileId) {
         toast.error("Upload succeeded but no file_id returned");
         return;
       }
       toast.success("Upload complete — pipeline starting");
       setRefreshKey((n) => n + 1);
       const jobId = await runner.runForCldFile(
-        data.file_id,
+        normalized.fileId,
         file.name,
         "Upload + full pipeline (extract → clean → chunk → embed)",
       );
