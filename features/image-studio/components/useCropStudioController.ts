@@ -29,15 +29,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import {
-  cloudUploadMany,
-  isCloudUploadFailure,
-  isCloudUploadSuccess,
-  type CloudUploadSuccess,
-} from "@/features/files/upload/cloudUpload";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { extractErrorMessage } from "@/utils/errors";
 import { cropFileToFile } from "../utils/crop-file";
 import {
@@ -139,8 +134,8 @@ const DEFAULT_FOLDER_PATH = "Images/Crops";
 export function useCropStudioController(
   options: CropStudioControllerOptions = {},
 ): CropStudioController {
-  const dispatch = useAppDispatch();
   const foldersById = useAppSelector(selectAllFoldersMap);
+  const { upload } = useFileUpload();
 
   // ── Entries ───────────────────────────────────────────────────────────────
   const [entries, setEntries] = useState<CropStudioEntry[]>([]);
@@ -548,66 +543,90 @@ export function useCropStudioController(
           return;
         }
 
-        const filesToUpload = uploadable.map((b) => b.file);
-        const result = await cloudUploadMany(
-          filesToUpload,
-          folderId
-            ? { parentFolderId: folderId, visibility: "private" }
-            : { folderPath, visibility: "private" },
-          dispatch,
-        );
+        // Per-entry upload via the universal handler so each call returns
+        // the rich NormalizedFile (fileId + share URL), avoiding the
+        // filename/size matching dance the old cloudUploadMany required.
+        // Uploads run in parallel; per-entry success/failure is collected
+        // for the toast tally below.
+        type EntryUploadOutcome =
+          | { entryId: string; ok: true; fileId?: string; shareUrl: string }
+          | { entryId: string; ok: false; error: string };
 
-        // Map successes back to entries by file name. cloudUploadMany
-        // preserves order within a worker but not globally; matching by
-        // filename + size is safer.
-        const successByName = new Map<string, CloudUploadSuccess>();
-        for (const s of result.successes) {
-          if (isCloudUploadSuccess(s)) {
-            const key = `${s.filePath.split("/").pop() ?? ""}|${s.fileSize ?? ""}`;
-            successByName.set(key, s);
-          }
-        }
-
-        setEntries((prev) =>
-          prev.map((entry) => {
-            const matching = uploadable.find((b) => b.entry.id === entry.id);
-            if (!matching) return entry;
-            const key = `${matching.file.name}|${matching.file.size}`;
-            const success = successByName.get(key);
-            if (success) {
+        const uploadResults: EntryUploadOutcome[] = await Promise.all(
+          uploadable.map(async ({ entry, file }): Promise<EntryUploadOutcome> => {
+            try {
+              const normalized = await upload(
+                { kind: "file", file },
+                folderId
+                  ? {
+                      // The handler accepts folderPath today; folderId is
+                      // resolved server-side from the persisted record's
+                      // parent_folder_id, so passing the path keeps the
+                      // wire surface identical.
+                      folderPath,
+                      visibility: "private",
+                      createShareLink: true,
+                      shareLinkPermissionLevel: "read",
+                    }
+                  : {
+                      folderPath,
+                      visibility: "private",
+                      createShareLink: true,
+                      shareLinkPermissionLevel: "read",
+                    },
+              );
               return {
-                ...entry,
-                status: "saved" as const,
-                savedFileId: success.fileId,
-                savedShareUrl: success.shareUrl,
-                errorMessage: undefined,
+                entryId: entry.id,
+                ok: true,
+                fileId: normalized.fileId,
+                shareUrl: normalized.url ?? "",
+              };
+            } catch (err) {
+              return {
+                entryId: entry.id,
+                ok: false,
+                error: extractErrorMessage(err) || "Upload failed",
               };
             }
-            const failure = result.failures.find(
-              (f) =>
-                isCloudUploadFailure(f) && f.fileName === matching.file.name,
-            );
-            return {
-              ...entry,
-              status: "error" as const,
-              errorMessage:
-                failure && isCloudUploadFailure(failure)
-                  ? failure.error
-                  : "Upload failed",
-            };
           }),
         );
 
-        if (result.successes.length > 0 && result.failures.length === 0) {
+        const outcomeById = new Map<string, EntryUploadOutcome>(
+          uploadResults.map((r) => [r.entryId, r]),
+        );
+
+        setEntries((prev) =>
+          prev.map((entry) => {
+            const outcome = outcomeById.get(entry.id);
+            if (!outcome) return entry;
+            if (outcome.ok === true) {
+              return {
+                ...entry,
+                status: "saved" as const,
+                savedFileId: outcome.fileId,
+                savedShareUrl: outcome.shareUrl,
+                errorMessage: undefined,
+              };
+            } else {
+              return {
+                ...entry,
+                status: "error" as const,
+                errorMessage: outcome.error,
+              };
+            }
+          }),
+        );
+
+        const successCount = uploadResults.filter((r) => r.ok).length;
+        const failureCount = uploadResults.length - successCount;
+        if (successCount > 0 && failureCount === 0) {
           toast.success(
-            result.successes.length === 1
+            successCount === 1
               ? "Saved to cloud"
-              : `Saved ${result.successes.length} files to cloud`,
+              : `Saved ${successCount} files to cloud`,
           );
-        } else if (result.successes.length > 0) {
-          toast.warning(
-            `Saved ${result.successes.length}, ${result.failures.length} failed`,
-          );
+        } else if (successCount > 0) {
+          toast.warning(`Saved ${successCount}, ${failureCount} failed`);
         } else {
           toast.error("All uploads failed");
         }
@@ -628,7 +647,7 @@ export function useCropStudioController(
         setIsSaving(false);
       }
     },
-    [buildOutputFile, dispatch, folderId, folderPath],
+    [buildOutputFile, upload, folderId, folderPath],
   );
 
   const saveActive = useCallback(async () => {
