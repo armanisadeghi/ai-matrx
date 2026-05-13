@@ -4,6 +4,7 @@ import { cn } from "@/styles/themes/utils";
 import { formatBubbleTime } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import type { WAMessage } from "../../types";
+import { InlineMediaRef } from "@/features/files";
 
 interface ImageBubbleProps {
   message: WAMessage;
@@ -30,11 +31,14 @@ export function ImageBubble({ message }: ImageBubbleProps) {
       >
         <div className="overflow-hidden rounded-md">
           {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={src}
-              alt={message.content || "image"}
+            <InlineMediaRef
+              ref={src}
+              size={{ width: 0, height: 0 }}
+              fit="contain"
+              rounded="none"
+              fallback={null}
               className="block h-auto w-full"
+              alt={message.content || "image"}
             />
           ) : (
             <div className="flex h-48 w-72 items-center justify-center bg-muted text-[12px] text-muted-foreground">

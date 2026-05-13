@@ -5,6 +5,7 @@ import { cn } from "@/styles/themes/utils";
 import { formatBubbleTime, formatDuration } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import type { WAMessage } from "../../types";
+import { InlineMediaRef } from "@/features/files";
 
 interface VideoBubbleProps {
   message: WAMessage;
@@ -28,11 +29,15 @@ export function VideoBubble({ message }: VideoBubbleProps) {
       >
         <div className="relative overflow-hidden rounded-md">
           {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={src}
-              alt={message.content || "video"}
+            <InlineMediaRef
+              ref={src}
+              as="img"
+              size={{ width: 0, height: 0 }}
+              fit="contain"
+              rounded="none"
+              fallback={null}
               className="block h-auto w-full"
+              alt={message.content || "video"}
             />
           ) : (
             <div className="flex h-48 w-72 items-center justify-center bg-muted">
