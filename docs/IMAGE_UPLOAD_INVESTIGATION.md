@@ -378,3 +378,23 @@ Edit each file in the table at the end:
 6. **`tiny_url` column on `podcasts`** — currently dropped by `AssetUploader`'s local type. Add the column or keep dropping it?
 
 Once you sign off, I'll do P1 + P2 in the Python repo, regenerate the FE OpenAPI types, then sweep all the FE callers and delete the Sharp route. Estimated ~2 hours work split roughly 30% Python, 70% FE sweep.
+
+---
+## Additional thoughts on public asset sets
+
+| Purpose | Dimensions | Format | Max File Size |
+|---|---|---|---|
+| **Source master** (what you start with) | 3000×3000px+ | PNG or TIFF | Keep original quality |
+| **Featured / Hero** | 1920×1080px (16:9) | WebP | 200 KB |
+| **Open Graph** (FB, LinkedIn, Slack) | 1200×630px (1.91:1) | JPEG | 500 KB |
+| **Twitter / X Card** | 1200×675px (16:9) | JPEG | 500 KB |
+| **Podcast Artwork** | 3000×3000px (1:1) | JPEG | 500 KB |
+| **Video Thumbnail** | 1280×720px (16:9) | JPEG | 2 MB |
+| **In-Content / Inline** | 1200×800px | WebP | 150 KB |
+| **Mobile / Responsive** | 800×450px | WebP | 80 KB |
+
+**Two things that make this work from a single source:**
+
+1. Start with a **square, high-res master (3000×3000 minimum)** with the subject centered. That way you can crop down to 16:9 (hero, Twitter, video), 1.91:1 (OG), or stay square (podcast) without losing the focal point.
+
+2. **Favicons and logos aren't on this list** — they come from your brand mark, not a content image. The table above is for the image that represents *this specific piece of content.*

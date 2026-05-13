@@ -61,7 +61,11 @@ import {
   type SourceFeature,
   type VariablesPanelStyle,
 } from "@/features/agents/types/instance.types";
-import { mapScopeToInstance } from "@/features/agents/utils/scope-mapping";
+import {
+  mapScopeToInstance,
+  mapScopeToInstanceWithSurface,
+} from "@/features/agents/utils/scope-mapping";
+import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.
@@ -250,6 +254,16 @@ interface CreateShortcutInstanceArgs {
   variablesPanelStyle?: VariablesPanelStyle;
   jsonExtraction?: JsonExtractionConfig | null;
   originalText?: string | null;
+  /**
+   * Surface value mappings resolved upstream by the launch thunk for the
+   * (shortcut.agentId, surfaceName, caller scope) tuple. When present and
+   * non-empty, scope→variable resolution runs through
+   * `mapScopeToInstanceWithSurface` instead of the legacy
+   * `mapScopeToInstance`, applying explicit `ValueMapping` rules from
+   * `agx_agent_surface.value_mappings`. `null` (the common case) skips the
+   * surface path and uses the shortcut's own scopeMappings.
+   */
+  surfaceValueMappings?: ValueMappingMap | null;
 }
 
 export const createInstanceFromShortcut = createAsyncThunk<
@@ -279,6 +293,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
     variablesPanelStyle,
     jsonExtraction,
     originalText,
+    surfaceValueMappings,
   } = args;
 
   const conversationId = generateConversationId();
@@ -491,23 +506,85 @@ export const createInstanceFromShortcut = createAsyncThunk<
     );
   }
 
-  const { variableValues, contextEntries } = mapScopeToInstance(
-    uiScopes,
-    shortcut.scopeMappings,
-    shortcutVariableDefinitions,
-    shortcutContextSlots,
-    shortcut.contextMappings,
-  );
+  // Scope → variable / context-slot resolution.
+  //
+  // Two paths:
+  //
+  //   A. SURFACE PATH — caller passed `surfaceValueMappings` (resolved by
+  //      the launch thunk from `agx_agent_surface.value_mappings` for
+  //      (shortcut.agentId, surfaceName, caller scope)). Apply explicit
+  //      ValueMapping rules via `mapScopeToInstanceWithSurface`. The
+  //      shortcut's own `scopeMappings`/`contextMappings` are ignored —
+  //      surface bindings are authoritative when present.
+  //
+  //   B. LEGACY PATH — no surface binding for this surface, fall back to
+  //      the shortcut's persisted `scopeMappings`/`contextMappings` and
+  //      auto-name-match. This is the universal path until every shortcut
+  //      gets an explicit surface binding.
+  //
+  // pendingPrompts / warnings / errors from path A are logged for now;
+  // user-facing remediation (pre-launch dialog for `prompt_user`, blocking
+  // on `required`) lands in the Phase 2 mapping editor.
+  if (surfaceValueMappings && Object.keys(surfaceValueMappings).length > 0) {
+    const result = mapScopeToInstanceWithSurface(
+      uiScopes,
+      null,
+      surfaceValueMappings,
+      shortcutVariableDefinitions,
+      shortcutContextSlots,
+    );
+    if (result.errors.length > 0) {
+      console.error(
+        "[createInstanceFromShortcut] surface mapping errors:",
+        result.errors,
+      );
+    }
+    if (result.warnings.length > 0) {
+      console.warn(
+        "[createInstanceFromShortcut] surface mapping warnings:",
+        result.warnings,
+      );
+    }
+    if (Object.keys(result.variableValues).length > 0) {
+      dispatch(
+        setUserVariableValues({
+          conversationId,
+          values: result.variableValues,
+        }),
+      );
+    }
+    if (result.contextEntries.length > 0) {
+      dispatch(
+        setContextEntries({ conversationId, entries: result.contextEntries }),
+      );
+    }
+    if (result.pendingPrompts.length > 0) {
+      console.info(
+        "[createInstanceFromShortcut] pendingPrompts deferred to Phase 2 UI:",
+        result.pendingPrompts.map((p) => p.targetName),
+      );
+    }
+  } else {
+    const { variableValues, contextEntries } = mapScopeToInstance(
+      uiScopes,
+      shortcut.scopeMappings,
+      shortcutVariableDefinitions,
+      shortcutContextSlots,
+      shortcut.contextMappings,
+    );
 
-  // Always apply scope-mapped variables — they override shortcut defaults.
-  // (apply_variables conditional removed in Phase 3.5: defaults always apply,
-  // visibility is controlled by show_variable_panel.)
-  if (Object.keys(variableValues).length > 0) {
-    dispatch(setUserVariableValues({ conversationId, values: variableValues }));
-  }
+    // Always apply scope-mapped variables — they override shortcut defaults.
+    // (apply_variables conditional removed in Phase 3.5: defaults always
+    // apply, visibility is controlled by show_variable_panel.)
+    if (Object.keys(variableValues).length > 0) {
+      dispatch(
+        setUserVariableValues({ conversationId, values: variableValues }),
+      );
+    }
 
-  if (contextEntries.length > 0) {
-    dispatch(setContextEntries({ conversationId, entries: contextEntries }));
+    if (contextEntries.length > 0) {
+      dispatch(setContextEntries({ conversationId, entries: contextEntries }));
+    }
   }
 
   dispatch(

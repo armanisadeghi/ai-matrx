@@ -337,6 +337,32 @@ export const launchAgentExecution = createAsyncThunk<
     const resolvedJsonExtraction =
       jsonExtraction ?? shortcut.jsonExtraction ?? undefined;
 
+    // ── Surface mapping resolution for shortcuts ────────────────────────
+    // When the caller passed `runtime.surfaceName` AND the shortcut has
+    // an agentId, look up the most-specific `agx_agent_surface.value_mappings`
+    // for (agentId, surfaceName, caller scope). If found, the shortcut
+    // path applies those mappings via `mapScopeToInstanceWithSurface`
+    // inside `createInstanceFromShortcut`. If absent, the legacy
+    // `mapScopeToInstance` path runs with the shortcut's persisted
+    // `scopeMappings`/`contextMappings`. Both paths funnel through
+    // `createInstanceFromShortcut` so the rest of the instance
+    // initialization stays identical.
+    let shortcutSurfaceMappings: ValueMappingMap | null = null;
+    if (surfaceName && shortcut.agentId) {
+      try {
+        shortcutSurfaceMappings = await fetchSurfaceValueMappingsForLaunch(
+          shortcut.agentId,
+          surfaceName,
+          state,
+        );
+      } catch (err) {
+        console.warn(
+          "[launchAgentExecution] shortcut surface value_mappings lookup failed; falling back to scopeMappings",
+          err,
+        );
+      }
+    }
+
     conversationId = await dispatch(
       createInstanceFromShortcut({
         shortcutId,
@@ -361,6 +387,7 @@ export const launchAgentExecution = createAsyncThunk<
         bypassGateSeconds,
         jsonExtraction: resolvedJsonExtraction,
         originalText,
+        surfaceValueMappings: shortcutSurfaceMappings,
       }),
     ).unwrap();
 

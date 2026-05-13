@@ -78,6 +78,23 @@ export interface UnifiedAgentContextMenuProps {
    * "notes", "agent-builder", or "demo:context-menu-v2".
    */
   sourceFeature: SourceFeature;
+  /**
+   * OPTIONAL. The Surface Registry name (`<client>/<surface>`) for the UI
+   * that hosts this menu, e.g. `"matrx-user/notes"` or `"matrx-user/code"`.
+   *
+   * When provided, every shortcut launched from this menu carries
+   * `runtime.surfaceName` end-to-end. The launch thunk uses it to look up
+   * the most-specific `agx_agent_surface.value_mappings` for
+   * `(shortcut.agentId, surfaceName, caller scope)` and to apply those
+   * explicit mappings instead of (or in addition to) the legacy
+   * auto-name-match. When omitted, the launch thunk falls back to the
+   * shortcut's persisted `scopeMappings` and `contextMappings` only.
+   *
+   * Surface names must match a row in `public.ui_surface` (synced from the
+   * code-first SurfaceManifest registry). See `features/tool-registry/
+   * surfaces/SKILL.md` for the full contract.
+   */
+  surfaceName?: string;
   editorId?: string;
   getTextarea?: () => HTMLTextAreaElement | null;
   onContentInserted?: () => void;
@@ -168,6 +185,7 @@ function resolvePlacementMode(
 export function UnifiedAgentContextMenu({
   children,
   sourceFeature,
+  surfaceName,
   editorId,
   getTextarea,
   onContentInserted,
@@ -619,6 +637,13 @@ export function UnifiedAgentContextMenu({
         // The shortcut's persisted config is loaded by createInstanceFromShortcut
         // in the launch thunk. We forward only minimal overrides — the bundle
         // wins. Runtime values go in `runtime`.
+        //
+        // `runtime.surfaceName` is what triggers the surface-mapping
+        // resolution in launchAgentExecution. When set, the thunk looks up
+        // `agx_agent_surface.value_mappings` for (shortcut.agentId,
+        // surfaceName, caller scope) and applies them via
+        // mapScopeToInstanceWithSurface — falling back to the shortcut's
+        // own scopeMappings when no surface binding exists.
         await launchShortcut(entry.id, applicationScope, {
           surfaceKey: `${sourceFeature}:${entry.id}`,
           sourceFeature,
@@ -627,6 +652,7 @@ export function UnifiedAgentContextMenu({
           },
           runtime: {
             originalText: selectionText,
+            surfaceName,
           },
         });
       } catch (error) {
@@ -643,7 +669,14 @@ export function UnifiedAgentContextMenu({
         });
       }
     },
-    [contextData, launchShortcut, selectedText],
+    [
+      contextData,
+      launchShortcut,
+      selectedText,
+      selectionRange,
+      sourceFeature,
+      surfaceName,
+    ],
   );
 
   const handleContentBlockInsert = useCallback(
