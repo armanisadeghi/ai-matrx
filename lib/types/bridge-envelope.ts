@@ -280,3 +280,76 @@ export const AppendMessageResponseSchema = z.discriminatedUnion("ok", [
 ]);
 
 export type AppendMessageResponse = z.infer<typeof AppendMessageResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Cross-component envelope (v2) — superset of BridgeEnvelope
+// ---------------------------------------------------------------------------
+//
+// The schemas above describe the existing extension ↔ frontend bridge with
+// its narrow direction enum and rpc-only semantics. The v2 schema below
+// extends that to all four components (extension, local, frontend, server)
+// with an explicit `kind` discriminator and instance disambiguation.
+//
+// Back-compat: v1 publishers don't set `kind` (defaults to `"rpc"`) and
+// don't set `fromInstance` (defaults to `unknown / unknown`). The schemas
+// above keep working unchanged — this is purely additive.
+//
+// `kind:"task"` is intentionally absent. Cross-component tasks live in the
+// `sch_task` table (matrx-scheduler), not in bus envelopes. Wake envelopes
+// carry `payload: {taskId: string}` pointing at the durable row.
+
+/**
+ * v2 direction string — free-form because cross-component traffic flows
+ * between arbitrary (src, dst) pairs (`server->extension`, `local->frontend`,
+ * etc.). The legacy {@link BridgeDirectionSchema} closed enum still applies
+ * for v1 envelopes.
+ */
+export const CrossComponentDirectionSchema = z.string().min(1);
+
+/**
+ * Identifies a specific running instance of a component. The `component`
+ * field is the surface identifier (`extension`, `local`, `frontend`,
+ * `server`); `instanceId` is a per-process UUID minted at startup.
+ */
+export const InstanceRefSchema = z.object({
+  component: z.string(),
+  instanceId: z.string(),
+});
+
+export type InstanceRef = z.infer<typeof InstanceRefSchema>;
+
+/**
+ * The v2 cross-component envelope. Carried over Supabase Broadcast on
+ * the per-user buses (`matrx-extension-bridge:<userId>`,
+ * `matrx-local-bridge:<userId>`, `matrx-server-bus:<userId>`).
+ *
+ * Defaults applied when v1 publishers send minimal payloads:
+ *  - `kind` → `"rpc"`
+ *  - `payload` → `null`
+ *  - `fromInstance` → `{component: "unknown", instanceId: "unknown"}`
+ *  - `toInstance` → undefined (treated as broadcast to any instance)
+ */
+export const CrossComponentEnvelopeSchema = z.object({
+  kind: z.enum(["rpc", "wake", "presence"]).default("rpc"),
+  direction: CrossComponentDirectionSchema,
+  action: z.string(),
+  requestId: z.string(),
+  payload: z.unknown().optional().default(null),
+  timestamp: z.number(),
+  fromInstance: InstanceRefSchema.default({ component: "unknown", instanceId: "unknown" }),
+  toInstance: InstanceRefSchema.partial({ instanceId: true }).optional(),
+});
+
+export type CrossComponentEnvelope = z.infer<typeof CrossComponentEnvelopeSchema>;
+
+/**
+ * Parse a raw broadcast payload (from `chrome.runtime.sendMessage`,
+ * Supabase Broadcast event, or any wire source) into a fully-typed v2
+ * envelope. v1 payloads parse cleanly thanks to the defaults above.
+ *
+ * Throws (Zod error) if required fields (`direction`, `action`,
+ * `requestId`, `timestamp`) are missing.
+ */
+export function parseEnvelope(raw: unknown): CrossComponentEnvelope {
+  return CrossComponentEnvelopeSchema.parse(raw);
+}
