@@ -67,6 +67,14 @@ export {
   type UseFileAssetOptions,
   type UseFileAssetResult,
 } from "@/features/files/hooks/useFileAsset";
+
+// Asset API — direct access for components that need fine-grained control
+// (e.g. UniversalImageSourcePicker: pick from library → ensure preset variants).
+// Import from here, never from @/features/files/api/* directly.
+export {
+  getAssetForFile,
+  addAssetVariants,
+} from "@/features/files/api/assets";
 export { useFileDocument } from "@/features/files/hooks/useFileDocument";
 export { useSharing } from "@/features/files/hooks/useSharing";
 
