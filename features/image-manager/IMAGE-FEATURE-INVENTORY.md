@@ -53,7 +53,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 ### 2.3 Upload surfaces (single, multi, paste, URL, base64)
 
 - **`CloudUploadTab`** → already in `/image-manager`.
-- **`ImageAssetUploader`** (official) → `components/official/ImageAssetUploader.tsx` — drag/drop + Sharp variants (social/cover/avatar/logo/favicon/square) via `/api/images/upload`. Used by org logos, podcast covers, etc. **ABSORB as the "Branded Upload" tab (variant-generating upload).**
+- **`ImageAssetUploader`** (official) → `components/official/ImageAssetUploader.tsx` — drag/drop + preset variants (social/cover/avatar/logo/favicon/square) via the Python `POST /assets` endpoint (was the Next.js+Sharp route at `/api/images/upload` until 2026-05-12). Used by org logos, podcast covers, etc. **ABSORB as the "Branded Upload" tab (variant-generating upload).**
 - **`ImageUploaderWindow`** → `features/window-panels/windows/image/ImageUploaderWindow.tsx` + opener hook `useOpenImageUploaderWindow.ts` + `callbacks.ts` — floating-window wrapper around `ImageAssetUploader` for callback-based async upload from any feature. **LINK-FROM (programmatic surface).**
 - **`ImageUploadField`** → `components/ui/file-upload/ImageUploadField.tsx` — small inline upload field with preview (uses `useFileUploadWithStorage`). **LINK-FROM.**
 - **`PasteImageHandler`** + **`usePasteImageUpload`** → `components/ui/file-upload/PasteImageHandler.tsx`, `usePasteImageUpload.ts`, `useClipboardPaste.ts` — invisible wrapper enabling clipboard paste anywhere. **Already in CloudUploadTab via dropzone, but worth surfacing separately.** LINK-FROM.
@@ -117,7 +117,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 ### 2.9 OG / social card / banner generation
 
 - **OG generation (real, runtime)** → `app/(public)/canvas/shared/[token]/opengraph-image.tsx` — Next.js `ImageResponse` rendering a 1200×630 OG card for shared canvases. **KEEP (canonical pattern).**
-- **`ShareCoverImagePicker`** → `features/canvas/social/ShareCoverImagePicker.tsx` + `preset-covers.ts` — picks a preset Unsplash cover or uploads a custom one (via `/api/images/upload`). **LINK-FROM (canvas-scoped).**
+- **`ShareCoverImagePicker`** → `features/canvas/social/ShareCoverImagePicker.tsx` + `preset-covers.ts` — picks a preset Unsplash cover or uploads a custom one (via the Python `POST /assets` endpoint, through `<ImageAssetUploader>`). **LINK-FROM (canvas-scoped).**
 - **`ImageAssetUploader` presets** include `"cover"` (1200×630 only) — ready for any OG flow. **ABSORB as the "Branded Upload" tab.**
 - **Image Studio presets** include "Open Graph", "Twitter Card", "Schema.org" presets in the SEO bundle. **Already in tab.**
 - **Favicon generation** → `app/api/agent-apps/generate-favicon/route.ts`, `app/api/prompt-apps/generate-favicon/route.ts` — generates colored letter-based favicons and saves them via `Api.uploadAndShare` to the agent-app / prompt-app folder. **LINK-FROM (per-app feature).**
@@ -164,7 +164,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 | Component | Path | Purpose | Image-related | Recommended /image-manager tab |
 |---|---|---|---|---|
 | `PublicImageSearch` | `components/official/PublicImageSearch.tsx` | Unsplash search + URL paste in compact dialog | Yes | LINK-FROM Public Images tab (it predates the in-tab search) |
-| `ImageAssetUploader` | `components/official/ImageAssetUploader.tsx` | Drag/drop upload → Sharp variants (social/cover/avatar/logo/favicon/square) | Yes | ABSORB as "Branded Upload" tab |
+| `ImageAssetUploader` | `components/official/ImageAssetUploader.tsx` | Drag/drop upload → preset variants (social/cover/avatar/logo/favicon/square) via `POST /assets` (Python) | Yes | ABSORB as "Branded Upload" tab |
 | `ImageCropper` | `components/official/image-cropper/ImageCropper.tsx` | react-easy-crop dialog + aspect ratio | Yes | LINK-FROM "Edit" sub-action |
 | `ImageCropperWithSelect` | `components/official/image-cropper/ImageCropperWithSelect.tsx` | Pick + crop in one component | Yes | LINK-FROM |
 | `EasyImageCropper` | `components/official/image-cropper/EasyImageCropper.tsx` | Auto-open cropper after image select | Yes | LINK-FROM |
@@ -207,8 +207,8 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
 
 ## 5. Storage / pipeline / API surfaces
 
-- **`/api/images/upload`** → `app/api/images/upload/route.ts` — multi-variant Sharp pipeline (presets `social`, `cover`, `avatar`, `logo`, `favicon`, `square`). Variants land in `Images/<folder>/<uuid>/` via `Api.Server.uploadAndShare`; defaults `visibility=public` → permanent CDN URLs. (Allowed exception to "no Next.js file routes" because it only writes to cld_files and Sharp is a server-only library.)
-- **`/api/images/studio/process`** → `app/api/images/studio/process/route.ts` — Sharp batch processor for the Image Studio convert flow. Returns base64 data URLs (no storage write).
+- **`POST /assets`** (Python backend) — canonical multi-variant asset pipeline (presets `social`, `cover`, `avatar`, `logo`, `favicon`, `square`). Variants land in `Images/<folder>/<uuid>/` and return permanent CDN URLs. Called from the FE via `features/files/api/assets.ts` (`uploadAsset()`) and the `useFileAsset` hook. **Replaced** the legacy Next.js+Sharp route at `/api/images/upload`, which was deleted on 2026-05-12.
+- **`/api/images/studio/process`** → `app/api/images/studio/process/route.ts` — Sharp batch processor for the Image Studio convert flow. Returns base64 data URLs (no storage write). (This is the only remaining caller of the `sharp` npm package on the FE.)
 - **`/api/unsplash`** → `app/api/unsplash/route.ts` — Unsplash search/random/collections via `UNSPLASH_ACCESS_KEY`.
 - **`/api/proxy-image`** and **`/api/image-proxy`** → external image proxies (CORS / cross-origin embedding). The two routes overlap; the `image-proxy` variant is the better one (Cache-Control, CORP).
 - **`/api/agent-apps/generate-favicon`** → procedurally-generated favicon, uploaded to cld_files via `Api.Server.uploadAndShare`. (The legacy `/api/prompt-apps/generate-favicon` was deleted along with prompt-apps deprecation.)
@@ -220,7 +220,7 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
   - `Images/Avatars`
   - `Images/Generated` (AI / studio outputs)
   - `Images/Uploads`, `Images/Uploads/Public`, `Images/Uploads/Private` (legacy aliases mapped from `ImageManager.saveTo`).
-- **No Supabase Storage anywhere** — every image upload routes through the universal file handler (`fileHandler.upload`, `useFileUpload`) which calls Python's `/files/upload`. Server-side routes (e.g. `/api/images/upload` for Sharp variants) use `Api.Server.uploadAndShare`. The `bucket`/`path` legacy props on `ImageManager` and `PasteImageHandler` are remapped to cloud-files folder paths.
+- **No Supabase Storage anywhere** — every image upload routes through the universal file handler (`fileHandler.upload`, `useFileUpload`) which calls Python's `/files/upload`, or through the canonical `POST /assets` endpoint for preset-variant uploads. The `bucket`/`path` legacy props on `ImageManager` and `PasteImageHandler` are remapped to cloud-files folder paths.
 - **CDN migration** → `scripts/migrate-public-assets-to-cdn.ts` + `lib/cdn-assets.ts` constants.
 - **Compression / utils** → `utils/image/imageCompression.ts` (canvas resize/quality + thumbnail).
 - **Hooks** → `hooks/images/{useImage,useImageDimensions,useDownloadImage,useUnsplashGallery,useUnsplashSearch}.ts`.

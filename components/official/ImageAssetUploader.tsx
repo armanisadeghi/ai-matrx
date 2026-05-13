@@ -3,33 +3,45 @@
 /**
  * ImageAssetUploader
  * ─────────────────────────────────────────────────────────────────────────
- * Drag-and-drop image upload with Sharp-processed variants on the server.
+ * Drag-and-drop image upload with server-rendered preset variants.
  *
- * Pipeline: client sends the raw file to `/api/images/upload`, the server
- * resizes and writes every configured variant to cloud-files (one file per
- * variant under `Images/<folder>/<uuid>/`), and returns persistent share
- * URLs. All variants come from the same original image, so they stay in
- * lock-step and all appear together in the user's Files tree.
+ * Pipeline: client sends the raw file to `POST /assets` on the Python
+ * backend, the server renders every preset variant (cover, OG, thumbnail,
+ * favicon sizes, avatar sizes, etc.) as separate `cld_files` rows under
+ * one logical asset, and returns the canonical {@link Asset} envelope.
+ * All variants land under the caller-supplied `folder` (or the server
+ * default of `Assets/<uuid>`) so they appear together in the user's
+ * file tree.
  *
  * Built from the proven podcast cover-art flow so any place that needs
- * "upload an image and get back a set of public URLs" can share the same
- * pipeline — podcasts, OG images, org logos, app favicons, avatars, etc.
+ * "upload an image and get back a set of public URLs" can share the
+ * same pipeline — podcasts, OG images, org logos, app favicons, avatars,
+ * canvas covers, etc.
  *
- * Presets:
- *   - "social"   1400² cover, 1200×630 OG, 400² thumb     (default)
- *   - "cover"    1200×630 only
- *   - "avatar"   400 / 128 / 48
- *   - "logo"     512 / 200 / 64
- *   - "favicon"  192 / 64
- *   - "square"   1024²
+ * Presets (mirror the backend registry — `GET /assets/presets` is the
+ * authoritative list, but for static typing we hard-code the union in
+ * `features/files/types.ts::AssetPreset`):
+ *   - "raw"     → original only (no derived variants)
+ *   - "podcast" → cover_url (3000²), cover_sd_url (1400²), og_url, thumbnail_url, tiny_url
+ *   - "social"  → og_url (1200×630), square_url, portrait_url, story_url, yt_thumbnail_url + baseline
+ *   - "web"     → hero_url, og_url, card_url, touch_icon_url, pwa_icon_url, thumbnail_url + baseline
+ *   - "email"   → header_url, square_url
+ *   - "logo"    → logo_lg_url, logo_md_url, logo_sm_url + baseline
+ *   - "avatar"  → avatar_xl/lg/md/sm/xs_url
+ *   - "favicon" → favicon_android/apple_touch/32/16_url
+ *
+ * Back-compat shim: every existing caller still receives `image_url`,
+ * `og_image_url`, `thumbnail_url`, `tiny_url`, `primary_url`, and
+ * `preset` on the `ImageUploaderResult`. New code should read
+ * `result.asset` / `result.variants` directly.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { AlertCircle, CheckCircle2, Eye, ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ImagePreset, ImageUploadResponse } from '@/app/api/images/upload/route';
-import type { Visibility } from '@/features/files/types';
+import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files/types';
+import { uploadAsset } from '@/features/files/api/assets';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
 import { selectActiveUploads } from '@/features/files/redux/selectors';
@@ -39,8 +51,27 @@ import { extractErrorMessage } from '@/utils/errors';
 
 // ── Types exported for consumers ──────────────────────────────────────────
 
-export type { ImagePreset } from '@/app/api/images/upload/route';
+export type { AssetPreset } from '@/features/files/types';
 
+/**
+ * Back-compat alias. The component's `preset` prop used to be typed as
+ * the legacy `ImagePreset` union (`"social" | "cover" | "avatar" | ...`).
+ * The new union — {@link AssetPreset} — drops `"cover"` and `"square"` in
+ * favour of the richer preset surface. New code should import `AssetPreset`.
+ *
+ * @deprecated Use `AssetPreset` from `@/features/files/types`.
+ */
+export type ImagePreset = AssetPreset;
+
+/**
+ * Legacy four-key variant shape kept so callers reading
+ * `result.image_url` / `og_image_url` / `thumbnail_url` / `tiny_url`
+ * still compile. Maps to the new envelope as:
+ *   image_url     → asset.primary_url
+ *   og_image_url  → asset.variants.og_url?.url
+ *   thumbnail_url → asset.variants.thumbnail_url?.url
+ *   tiny_url      → asset.variants.tiny_url?.url
+ */
 export interface ImageUploaderVariants {
     image_url: string | null;
     og_image_url: string | null;
@@ -48,16 +79,30 @@ export interface ImageUploaderVariants {
     tiny_url: string | null;
 }
 
+/**
+ * Result shape passed to `onComplete`.
+ *
+ * Legacy aliases (`image_url`, `og_image_url`, `thumbnail_url`,
+ * `tiny_url`, `primary_url`) are populated from the new `Asset`
+ * envelope for back-compat. New code should read from
+ * `result.asset` / `result.variants` instead.
+ */
 export interface ImageUploaderResult extends ImageUploaderVariants {
-    /** Primary URL — always equal to `image_url` when set. Convenience for single-URL callers. */
-    primary_url: string;
-    preset: string;
+    file_id: string;
+    /** Mirror of `asset.primary_url`. */
+    primary_url: string | null;
+    preset: string | null;
+    /** Full canonical envelope — use this in new code. */
+    asset: Asset;
+    /** Shortcut for `asset.variants`. Keyed by canonical variant key. */
+    variants: Record<string, AssetVariant>;
 }
 
 export interface ImageAssetUploaderProps {
     /**
-     * Upload pipeline. "asset" preserves the Sharp variant flow. "cloud"
-     * uses the Cloud Files upload pipeline with this uploader's image-first UI.
+     * Upload pipeline. "asset" routes through the `/assets` server pipeline
+     * (server renders preset variants). "cloud" uses the Cloud Files upload
+     * pipeline with this uploader's image-first UI (no variant rendering).
      */
     mode?: 'asset' | 'cloud';
     /** Fires whenever URLs change (successful upload or removal). */
@@ -73,32 +118,33 @@ export interface ImageAssetUploaderProps {
     /**
      * Clipboard paste capture. Defaults to "auto": enabled for cloud mode,
      * disabled for asset mode. Use "asset" to let a variant uploader process
-     * pasted clipboard images through `/api/images/upload`.
+     * pasted clipboard images through `/assets`.
      */
     pasteCaptureMode?: 'auto' | 'off' | 'cloud' | 'asset';
     /** Enable paste from clipboard in cloud mode. Defaults true. Prefer `pasteCaptureMode` for new code. */
     enablePaste?: boolean;
     /** Allow multiple files in cloud mode. Asset mode always uses the first file. */
     multiple?: boolean;
-    /** Preset dictating the variant dimensions. Default: "social". */
-    preset?: ImagePreset;
+    /** Preset dictating the variant set. Default: `"social"`. */
+    preset?: AssetPreset;
     /** Primary image URL already set (shows as existing preview). */
     currentUrl?: string | null;
-    /** Optional pre-computed variants to seed the preview (from a prior upload). */
+    /** Optional pre-computed legacy variants to seed the preview (from a prior upload). */
     currentVariants?: Partial<ImageUploaderVariants> | null;
     /**
-     * @deprecated Ignored since the cloud-files migration. Kept for back-compat.
-     * All variants now land in `Images/<folder>/<uuid>/` regardless of this value.
+     * Logical folder path under which every variant lands (e.g.
+     * "Shared Assets/orgs/<id>" or "App Assets/prompt-apps/favicons").
+     * Defaults to the preset's catch-all (`Assets/<uuid>`) when omitted,
+     * but every real caller should pass an explicit folder so files are
+     * discoverable in the user's file tree.
      */
-    bucket?: string;
-    /** Optional folder prefix under `Images/` (e.g. "logos" → `Images/logos/{uuid}/`). */
     folder?: string;
     /**
      * Visibility for the uploaded variants. Default: `"public"` — every
-     * preset (avatar/logo/og/cover/social/favicon/square) is meant to be
-     * rendered on a public surface, so the response carries CDN URLs and
-     * pages render without `/share/{token}` redirects. Pass `"private"` for
-     * personal-use images (e.g. a recipe photo the user wants kept private).
+     * preset is meant to be rendered on a public surface so the response
+     * carries CDN URLs and pages render without `/share/{token}`
+     * redirects. Pass `"private"` for personal-use images (e.g. a recipe
+     * photo the user wants kept private).
      */
     visibility?: Visibility;
     /** Compact mode — smaller drop zone, one-line status. */
@@ -129,52 +175,95 @@ interface SectionState {
 
 const DEFAULT_ACCEPT = '.jpg,.jpeg,.png,.webp,.gif,.heic';
 
-// Labels shown in the variant badge row for each preset. Kept in sync with
-// `IMAGE_PRESETS` in app/api/images/upload/route.ts.
-const PRESET_VARIANT_LABELS: Record<ImagePreset, Array<{ key: keyof ImageUploaderVariants; label: string; title: string }>> = {
-    social: [
-        { key: 'image_url',     label: '1400×1400', title: 'Cover art' },
-        { key: 'og_image_url',  label: '1200×630',  title: 'OG / Social' },
-        { key: 'thumbnail_url', label: '400×400',   title: 'Thumbnail' },
-        { key: 'tiny_url',      label: '128×128',   title: 'Tiny icon' },
-    ],
-    cover: [
-        { key: 'image_url',     label: '1200×630', title: 'Cover' },
-        { key: 'thumbnail_url', label: '600×315',  title: 'Thumbnail' },
-        { key: 'tiny_url',      label: '200×105',  title: 'Tiny' },
-    ],
-    avatar: [
-        { key: 'image_url',     label: '400×400', title: 'Avatar' },
-        { key: 'thumbnail_url', label: '128×128', title: 'Thumb' },
-        { key: 'tiny_url',      label: '48×48',   title: 'Tiny' },
-    ],
-    logo: [
-        { key: 'image_url',     label: '512×512', title: 'Logo' },
-        { key: 'thumbnail_url', label: '200×200', title: 'Medium' },
-        { key: 'tiny_url',      label: '64×64',   title: 'Small' },
-    ],
-    favicon: [
-        { key: 'image_url', label: '192×192', title: 'Favicon' },
-        { key: 'tiny_url',  label: '64×64',   title: 'Small' },
-    ],
-    square: [
-        { key: 'image_url', label: '1024×1024', title: 'Square' },
-    ],
+/**
+ * Human-readable labels for every canonical variant key the new asset
+ * pipeline emits. Used by:
+ *   - {@link buildImageAssetViewerPayload} (alt-text generation)
+ *   - the variant-chip row at the bottom of the drop zone
+ *
+ * Keys are the wire-format variant keys returned in `asset.variants`.
+ * Format: dimension string (e.g. "3000 × 3000") for size-fixed
+ * variants, or a short descriptor for shape-named ones.
+ *
+ * Backend source of truth: the preset registry (`GET /assets/presets`)
+ * returns every variant's width/height/format. Hardcoded here for the
+ * static label-row UI; in a future iteration this can fetch the
+ * registry on mount.
+ */
+export const ASSET_VARIANT_LABELS: Record<string, string> = {
+    // Master.
+    original: 'Original',
+
+    // Podcast.
+    cover_url: '3000 × 3000',
+    cover_sd_url: '1400 × 1400',
+
+    // Social.
+    og_url: '1200 × 630',
+    square_url: '1080 × 1080',
+    portrait_url: '1080 × 1350',
+    story_url: '1080 × 1920',
+    yt_thumbnail_url: '1280 × 720',
+
+    // Web.
+    hero_url: '1920 × 1080',
+    card_url: '600 × 400',
+    touch_icon_url: '180 × 180',
+    pwa_icon_url: '512 × 512',
+
+    // Email.
+    header_url: '1200 × 400',
+
+    // Logo.
+    logo_lg_url: '512 × 512',
+    logo_md_url: '200 × 200',
+    logo_sm_url: '64 × 64',
+
+    // Avatar.
+    avatar_xl_url: '400 × 400',
+    avatar_lg_url: '200 × 200',
+    avatar_md_url: '96 × 96',
+    avatar_sm_url: '48 × 48',
+    avatar_xs_url: '24 × 24',
+
+    // Favicon.
+    favicon_android_url: '192 × 192',
+    favicon_apple_touch_url: '180 × 180',
+    favicon_32_url: '32 × 32',
+    favicon_16_url: '16 × 16',
+
+    // Shared baseline.
+    thumbnail_url: '400 × 400',
+    tiny_url: '128 × 128',
 };
 
-const PRESET_BLURB: Record<ImagePreset, string> = {
-    social: 'Auto-generates 1400×1400, 1200×630, 400×400, 128×128',
-    cover: 'Auto-generates 1200×630, 600×315, 200×105',
-    avatar: 'Generates 400×400, 128×128, 48×48',
-    logo: 'Generates 512×512, 200×200, 64×64',
-    favicon: 'Generates 192×192, 64×64',
-    square: 'Generates 1024×1024',
+/**
+ * Preset → short blurb describing what the server will render. Drives
+ * the helper text under the drop zone. Keep in sync with the backend
+ * preset registry; this is for UX only (no behavioural impact).
+ */
+const PRESET_BLURB: Record<AssetPreset, string> = {
+    raw: 'Single original — no derived variants',
+    podcast: 'Auto-generates 3000², 1400², 1200×630, plus thumbnails',
+    social: 'Auto-generates OG, square, portrait, story, YouTube thumb',
+    web: 'Auto-generates hero, OG, card, touch icon, PWA icon, thumbnail',
+    email: 'Auto-generates 1200×400 header + 1080² square',
+    logo: 'Auto-generates 512², 200², 64²',
+    avatar: 'Auto-generates 400², 200², 96², 48², 24²',
+    favicon: 'Auto-generates 192, 180, 32, 16 px favicons',
 };
 
 interface BuildImageAssetViewerPayloadArgs {
+    /** Legacy variants — flat four-key shape kept for back-compat. */
     variants: ImageUploaderVariants;
     label: string;
-    preset: ImagePreset;
+    /**
+     * The preset that produced these variants. The argument is accepted
+     * but currently unused by the legacy four-key shape — every entry
+     * with a populated URL is included regardless of preset. Kept on
+     * the signature so callers don't have to change.
+     */
+    preset: AssetPreset;
 }
 
 export interface ImageAssetViewerPayload {
@@ -184,18 +273,31 @@ export interface ImageAssetViewerPayload {
     title?: string;
 }
 
+/**
+ * Build a viewer payload from the legacy four-key variant shape. Only
+ * URLs that are actually populated are included; alt text uses the
+ * variant key's dimension label.
+ */
 export function buildImageAssetViewerPayload({
     variants,
     label,
-    preset,
 }: BuildImageAssetViewerPayloadArgs): ImageAssetViewerPayload | null {
-    const presetLabels = PRESET_VARIANT_LABELS[preset];
-    const entries = presetLabels
-        .map(({ key, label: variantLabel }) => ({
-            url: variants[key],
-            alt: `${label} ${variantLabel.replace(/×/g, 'x')}`,
-        }))
-        .filter((entry): entry is { url: string; alt: string } => Boolean(entry.url));
+    const legacyKeyToCanonical: Record<keyof ImageUploaderVariants, string> = {
+        image_url: 'original',
+        og_image_url: 'og_url',
+        thumbnail_url: 'thumbnail_url',
+        tiny_url: 'tiny_url',
+    };
+    const entries = (Object.keys(variants) as Array<keyof ImageUploaderVariants>)
+        .map((key) => {
+            const url = variants[key];
+            if (!url) return null;
+            const canonical = legacyKeyToCanonical[key];
+            const dim = ASSET_VARIANT_LABELS[canonical] ?? '';
+            const altDim = dim ? ` ${dim.replace(/×/g, 'x').replace(/\s/g, '')}` : '';
+            return { url, alt: `${label}${altDim}` };
+        })
+        .filter((entry): entry is { url: string; alt: string } => entry !== null);
 
     if (!entries.length) return null;
 
@@ -225,6 +327,32 @@ export function buildPastedImageFileName(mimeType: string, timestamp = Date.now(
     return `pasted-${timestamp}.${ext}`;
 }
 
+// ── Helpers: map the new Asset envelope to the legacy four-key shape ──
+
+function mapAssetToLegacyVariants(asset: Asset): ImageUploaderVariants {
+    const v = asset.variants;
+    return {
+        image_url: asset.primary_url ?? v.original?.url ?? null,
+        og_image_url: v.og_url?.url ?? null,
+        thumbnail_url: v.thumbnail_url?.url ?? null,
+        tiny_url: v.tiny_url?.url ?? null,
+    };
+}
+
+function assetToUploaderResult(asset: Asset): ImageUploaderResult {
+    const legacy = mapAssetToLegacyVariants(asset);
+    return {
+        ...legacy,
+        file_id: asset.file_id,
+        primary_url: asset.primary_url,
+        preset: asset.preset,
+        asset,
+        variants: asset.variants,
+    };
+}
+
+// ── Component ────────────────────────────────────────────────────────────
+
 export function ImageAssetUploader({
     mode = 'asset',
     onComplete,
@@ -238,7 +366,6 @@ export function ImageAssetUploader({
     preset = 'social',
     currentUrl,
     currentVariants,
-    bucket,
     folder,
     visibility = 'public',
     compact = false,
@@ -279,34 +406,21 @@ export function ImageAssetUploader({
         if (disabled) return;
         setSection({ state: 'uploading', error: null, fileName: file.name });
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('preset', preset);
-            formData.append('visibility', visibility);
-            if (bucket) formData.append('bucket', bucket);
-            if (folder) formData.append('folder', folder);
-
-            const res = await fetch('/api/images/upload', { method: 'POST', body: formData });
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error((body as { error?: string }).error ?? `Upload failed (${res.status})`);
-            }
-            const data = (await res.json()) as ImageUploadResponse;
-            const next: ImageUploaderVariants = {
-                image_url: data.image_url,
-                og_image_url: data.og_image_url,
-                thumbnail_url: data.thumbnail_url,
-                tiny_url: data.tiny_url,
-            };
-            setVariants(next);
-            onComplete?.({ ...next, primary_url: data.primary_url, preset: data.preset });
+            const { data: asset } = await uploadAsset({
+                file,
+                preset,
+                folder,
+                visibility,
+            });
+            setVariants(mapAssetToLegacyVariants(asset));
+            onComplete?.(assetToUploaderResult(asset));
             setSection({ state: 'success', error: null, fileName: file.name });
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Upload failed';
+            const message = extractErrorMessage(err) || 'Upload failed';
             setSection({ state: 'error', error: message, fileName: file.name });
             onError?.(message);
         }
-    }, [disabled, preset, bucket, folder, visibility, onComplete]);
+    }, [disabled, preset, folder, visibility, onComplete, onError]);
 
     const uploadCloudFiles = useCallback(async (files: File[]) => {
         if (disabled || !files.length) return;
@@ -362,6 +476,9 @@ export function ImageAssetUploader({
     const applyPastedUrl = useCallback(() => {
         const trimmed = urlDraft.trim();
         if (!trimmed) return;
+        // Pasted URLs are NOT uploaded server-side — they're a local
+        // override. We synthesize a minimal Asset envelope so callers
+        // that read `result.asset` still get a consistent shape.
         const next: ImageUploaderVariants = {
             image_url: trimmed,
             og_image_url: null,
@@ -369,11 +486,43 @@ export function ImageAssetUploader({
             tiny_url: null,
         };
         setVariants(next);
-        onComplete?.({ ...next, primary_url: trimmed, preset });
+        const synthAsset: Asset = {
+            file_id: '',
+            visibility: visibility,
+            folder: folder ?? '',
+            preset: preset,
+            primary_key: 'original',
+            primary_url: trimmed,
+            variants: {
+                original: {
+                    key: 'original',
+                    file_id: '',
+                    file_path: '',
+                    width: null,
+                    height: null,
+                    mime_type: null,
+                    file_size: null,
+                    url: trimmed,
+                    cdn_url: null,
+                    signed_url: null,
+                    download_url: null,
+                    metadata: {},
+                },
+            },
+            metadata: { _source: 'pasted-url' },
+        };
+        onComplete?.({
+            ...next,
+            file_id: '',
+            primary_url: trimmed,
+            preset,
+            asset: synthAsset,
+            variants: synthAsset.variants,
+        });
         setSection({ state: 'idle', error: null, fileName: null });
         setShowUrlInput(false);
         setUrlDraft('');
-    }, [urlDraft, onComplete, preset]);
+    }, [urlDraft, onComplete, preset, folder, visibility]);
 
     const handleFiles = useCallback((files: File[]) => {
         if (mode === 'cloud') {
@@ -442,8 +591,22 @@ export function ImageAssetUploader({
         return () => window.removeEventListener('paste', handler);
     }, [resolvedPasteCaptureMode, uploadCloudFiles, uploadFile]);
 
-    const presetLabels = PRESET_VARIANT_LABELS[preset];
-    const blurb = PRESET_BLURB[preset];
+    // Variant chips: when we have a populated four-key snapshot, render
+    // a chip per populated entry plus any unpopulated ones the preset
+    // is expected to fill. Built lazily — if the upload hasn't returned
+    // a populated set yet we hide the row entirely (matches the legacy
+    // behaviour).
+    const populatedLegacyEntries = useMemo(() => {
+        const order: Array<{ key: keyof ImageUploaderVariants; label: string }> = [
+            { key: 'image_url', label: ASSET_VARIANT_LABELS.original ?? 'Primary' },
+            { key: 'og_image_url', label: ASSET_VARIANT_LABELS.og_url ?? 'OG' },
+            { key: 'thumbnail_url', label: ASSET_VARIANT_LABELS.thumbnail_url ?? 'Thumbnail' },
+            { key: 'tiny_url', label: ASSET_VARIANT_LABELS.tiny_url ?? 'Tiny' },
+        ];
+        return order.filter(({ key }) => Boolean(variants[key]));
+    }, [variants]);
+
+    const blurb = PRESET_BLURB[preset] ?? '';
     const highlighted = isDragActive || pasteHighlight;
     const dropZoneHeight = compact ? 'py-4' : 'py-6';
     const iconSize = compact ? 'h-6 w-6' : 'h-8 w-8';
@@ -620,20 +783,15 @@ export function ImageAssetUploader({
                 </p>
             )}
 
-            {variants.image_url && !hideVariantBadges && presetLabels.length > 1 && (
+            {variants.image_url && !hideVariantBadges && populatedLegacyEntries.length > 1 && (
                 <div className="flex gap-2 flex-wrap">
-                    {presetLabels.map(({ key, label: vLabel, title }) => (
+                    {populatedLegacyEntries.map(({ key, label: vLabel }) => (
                         <span
                             key={key}
-                            className={cn(
-                                'text-xs px-2 py-0.5 rounded-full border',
-                                variants[key]
-                                    ? 'border-success/40 text-success bg-success/5'
-                                    : 'border-muted text-muted-foreground',
-                            )}
-                            title={title}
+                            className="text-xs px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
+                            title={vLabel}
                         >
-                            {vLabel} {variants[key] ? '✓' : '—'}
+                            {vLabel} ✓
                         </span>
                     ))}
                 </div>

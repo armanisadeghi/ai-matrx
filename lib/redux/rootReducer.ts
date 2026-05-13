@@ -56,6 +56,7 @@ import notesReducer from "@/features/notes/redux/slice";
 import schedulingTasksReducer from "@/features/scheduling/redux/tasks/slice";
 import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import pageExtractionReducer from "@/features/page-extraction/redux/pageExtractionSlice";
+import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
@@ -329,6 +330,7 @@ export const slimReducerMap = {
   schedulingRuns: schedulingRunsReducer,
 
   pageExtraction: pageExtractionReducer,
+  pdfStudio: pdfStudioReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);

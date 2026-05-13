@@ -11,22 +11,16 @@
  *   │      │              │ synced       │ synced         │              │
  *   └──────┴──────────────┴──────────────┴────────────────┴──────────────┘
  *
- * Built for project managers handling tens of thousands of pages:
- *   - Persistent doc list with search / filter / sort.
- *   - Three reading panes that scroll together.
- *   - Find-in-document with highlighting.
- *   - Keyboard shortcuts: j/k page nav, [/] toggle panes, / focus search,
- *     Cmd+F find, Esc to close find.
- *   - Inspector tabs for AI Actions, Data Stores, Manipulate, Lineage.
+ * Sidebar flips between Files and Pages views (auto-flip on doc select).
+ * Reader supports an optional Chunks pane synced bidirectionally with
+ * the active page. Per-file pane visibility + sidebar view persist in
+ * localStorage via `pdfStudioPersistenceMiddleware`.
  *
- * State that lives here (and only here):
- *   - active doc (resolved from id; lazy-fetches via the existing hook)
- *   - active page (for sync) + pendingScrollPage (for programmatic jumps)
- *   - find query
- *   - visible-panes set (each pane togglable)
+ * Reader sync (active page, pending scroll, visible panes) lives in the
+ * `pdfStudio` Redux slice so new panes/columns share the same contract.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -47,10 +41,9 @@ import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfStudioToolbar } from "./PdfStudioToolbar";
 import {
   PdfStudioReader,
-  type PaneKey,
   type PdfPaneEditMode,
 } from "./PdfStudioReader";
-import { PdfStudioInspector } from "./PdfStudioInspector";
+import { PdfStudioInspector, type SectionKey } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
 import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
@@ -58,15 +51,32 @@ import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useRouter } from "next/navigation";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import type { PaneKey } from "../state/types";
+import {
+  clearActiveDoc,
+  clearPendingScroll,
+  setActiveDocId,
+  setActivePage,
+  setPendingScrollPage,
+  setScrollSource,
+  setSidebarView,
+  togglePane as togglePaneAction,
+} from "../state/pdfStudioSlice";
+import {
+  selectActivePage,
+  selectPendingScrollPage,
+  selectSidebarView,
+  selectVisiblePanesForActiveDoc,
+} from "../state/selectors";
 
 interface PdfStudioShellProps {
   initialDocumentId?: string;
 }
 
-const PANE_ORDER: PaneKey[] = ["pdf", "raw", "clean", "extractions"];
+const PANE_ORDER: PaneKey[] = ["pdf", "raw", "clean", "chunks", "extractions"];
 
 /**
  * Convert a metadata-only sidebar summary into a provisional PdfDocument so
@@ -106,17 +116,22 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const toast = useToastManager("pdf-extractor");
   const { getHeaders, waitForAuth } = useApiAuth();
   const backendUrl = useAppSelector(selectResolvedBaseUrl);
+  const dispatch = useAppDispatch();
 
-  const [activeDoc, setActiveDoc] = useState<PdfDocument | null>(null);
-  const [activePage, setActivePage] = useState<number | null>(null);
-  const [pendingScrollPage, setPendingScrollPage] = useState<number | null>(
-    null,
+  // Slice-driven state.
+  const activePage = useAppSelector(selectActivePage);
+  const pendingScrollPage = useAppSelector(selectPendingScrollPage);
+  const visiblePanesArray = useAppSelector(selectVisiblePanesForActiveDoc);
+  const sidebarView = useAppSelector(selectSidebarView);
+  const visiblePanes = useMemo(
+    () => new Set<PaneKey>(visiblePanesArray),
+    [visiblePanesArray],
   );
+
+  // Local state that doesn't (yet) need to be shared across features.
+  const [activeDoc, setActiveDoc] = useState<PdfDocument | null>(null);
   const [findQuery, setFindQuery] = useState("");
   const [findOpen, setFindOpen] = useState(false);
-  const [visiblePanes, setVisiblePanes] = useState<Set<PaneKey>>(
-    () => new Set<PaneKey>(["pdf", "raw", "clean"]),
-  );
   const [pipelineRunning, setPipelineRunning] = useState(false);
   const [aiCleanRunning, setAiCleanRunning] = useState(false);
   const [liveStatus, setLiveStatus] = useState<string | null>(null);
@@ -126,10 +141,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [pdfPaneEditMode, setPdfPaneEditMode] = useState<PdfPaneEditMode>(null);
   const [cropPagesInput, setCropPagesInput] = useState("");
   const [copyPagesOpen, setCopyPagesOpen] = useState(false);
+  const [inspectorRequestedSection, setInspectorRequestedSection] =
+    useState<SectionKey | null>(null);
   // True while a doc fetch is in-flight. Initialized to `true` when an
   // initialDocumentId is present so the skeleton shows immediately on mount
-  // instead of the upload EmptyShell (which confuses users into thinking
-  // they should re-upload during every doc switch).
+  // instead of the upload EmptyShell.
   const [docLoading, setDocLoading] = useState(!!initialDocumentId);
 
   // Per-page rows for the active doc.
@@ -145,30 +161,37 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   // Auto-pick first page once pages land.
   useEffect(() => {
-    if (!activeDoc) {
-      setActivePage(null);
-      return;
-    }
+    if (!activeDoc) return;
     if (pages.length > 0 && activePage == null) {
-      setActivePage(pages[0].pageNumber);
+      dispatch(setScrollSource(null));
+      dispatch(setActivePage(pages[0].pageNumber));
     }
-  }, [activeDoc, pages, activePage]);
+  }, [activeDoc, pages, activePage, dispatch]);
+
+  // Clean up slice state when the shell unmounts (e.g. navigation away).
+  useEffect(() => {
+    return () => {
+      dispatch(clearActiveDoc());
+    };
+  }, [dispatch]);
 
   // ── Doc selection ─────────────────────────────────────────────────────
 
   const selectDocById = useCallback(
     async (id: string) => {
       setDocLoading(true);
+      // Tell the slice immediately so persistence middleware can hydrate
+      // the per-doc pane visibility before the reader mounts.
+      dispatch(setActiveDocId(id));
       const full = await extractor.fetchDocument(id);
       if (full) {
         setActiveDoc(full);
-        setActivePage(null);
       } else {
         toast.error("Could not load that document");
       }
       setDocLoading(false);
     },
-    [extractor, toast],
+    [extractor, toast, dispatch],
   );
 
   // Initial load if a doc id is in the URL.
@@ -183,43 +206,53 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     (summary: StudioDocSummary) => {
       // Set a provisional doc immediately from the sidebar metadata so the
       // PDF viewer and inspector appear without waiting for the full fetch.
-      // The full content (text, structured_json, etc.) arrives moments later.
       setActiveDoc(summaryToProvisionalDoc(summary));
-      setActivePage(null);
+      dispatch(setActiveDocId(summary.id));
       router.push(`/tools/pdf-extractor/${summary.id}`);
       void selectDocById(summary.id);
     },
-    [router, selectDocById],
+    [router, selectDocById, dispatch],
   );
 
   // ── Page nav ──────────────────────────────────────────────────────────
 
-  const jumpToPage = useCallback((n: number) => {
-    setActivePage(n);
-    setPendingScrollPage(n);
-  }, []);
+  const jumpToPage = useCallback(
+    (n: number) => {
+      dispatch(setScrollSource(null));
+      dispatch(setActivePage(n));
+      dispatch(setPendingScrollPage(n));
+    },
+    [dispatch],
+  );
 
-  const handleActivePage = useCallback((n: number | null) => {
-    setActivePage(n);
-  }, []);
+  const handleActivePage = useCallback(
+    (n: number | null) => {
+      dispatch(setActivePage(n));
+    },
+    [dispatch],
+  );
 
   const handleScrollHandled = useCallback(() => {
-    setPendingScrollPage(null);
-  }, []);
+    dispatch(clearPendingScroll());
+  }, [dispatch]);
 
   // ── Pane toggles ──────────────────────────────────────────────────────
 
-  const togglePane = useCallback((p: PaneKey) => {
-    setVisiblePanes((prev) => {
-      const next = new Set(prev);
-      if (next.has(p)) {
-        // Don't allow zero panes — keep at least one visible.
-        if (next.size <= 1) return prev;
-        next.delete(p);
-      } else next.add(p);
-      return next;
-    });
-  }, []);
+  const togglePane = useCallback(
+    (p: PaneKey) => {
+      dispatch(togglePaneAction(p));
+    },
+    [dispatch],
+  );
+
+  // ── Sidebar view ──────────────────────────────────────────────────────
+
+  const handleChangeSidebarView = useCallback(
+    (view: "files" | "pages") => {
+      dispatch(setSidebarView(view));
+    },
+    [dispatch],
+  );
 
   // ── Pipeline run ──────────────────────────────────────────────────────
 
@@ -228,11 +261,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     setPipelineRunning(true);
     setLiveStatus("Starting pipeline…");
     try {
-      // The extractor's `runFullPipeline` updates the *tab* in its internal
-      // state. The shell doesn't use those tabs — but we can trigger the
-      // same backend call directly. Reuse `extractor.runFullPipeline` to
-      // keep the flow identical with the floating window: it requires a
-      // live tab so we open one via `openDocument` first if needed.
       let openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
       if (!openTab) {
         extractor.openDocument(activeDoc);
@@ -240,7 +268,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       await extractor.runFullPipeline(activeDoc.id, {
         persist_output: true,
       });
-      // Refresh list so the new derivative appears.
       docsState.refresh();
       toast.success("Pipeline run complete");
     } catch (err) {
@@ -252,13 +279,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   }, [activeDoc, extractor, docsState, toast]);
 
   // ── AI Clean ──────────────────────────────────────────────────────────
-  //
-  // Direct stream of `/utilities/pdf/clean-content/{doc_id}` so we can
-  // surface progress in the toolbar's live-status strip and refresh the
-  // active doc the moment it succeeds. The `extractor.cleanContent` hook
-  // exists, but it writes to its private `tabs` array — the studio
-  // doesn't observe that, so feedback would be invisible. Inlining keeps
-  // the user fully informed.
 
   const handleRunAiClean = useCallback(async () => {
     if (!activeDoc) return;
@@ -267,8 +287,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     try {
       await waitForAuth();
       const rawHeaders = getHeaders() as Record<string, string>;
-      // Strip Content-Type — this is a no-body POST and the server is
-      // strict about request shape.
       const { "Content-Type": _ct, ...headers } = rawHeaders;
 
       const response = await fetch(
@@ -282,7 +300,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         );
       }
 
-      // Parse NDJSON
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -322,8 +339,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         );
       }
 
-      // Patch the active doc in place so the AI-cleaned pane re-renders
-      // immediately. Refresh the sidebar so the "cleaned" chip shows up.
       setActiveDoc((d) => (d ? { ...d, cleanContent: cleanedText } : d));
       docsState.refresh();
       toast.success("AI cleanup complete");
@@ -352,12 +367,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   }, []);
 
   // ── Upload hand-off ───────────────────────────────────────────────────
-  //
-  // `PdfStudioUpload` notifies us as soon as the FIRST file in a session
-  // finishes streaming. We refresh the sidebar list and (if the studio is
-  // empty) auto-select the new doc so the user "instantly sees" their
-  // upload in the reader. When the whole session finishes we refresh
-  // again to pick up any stragglers.
 
   const handleFirstUpload = useCallback(
     (docId: string) => {
@@ -401,6 +410,13 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     [activeDoc, triggerShortcut, toast],
   );
 
+  // ── Chunked Runs jump (from Chunks pane CTA) ──────────────────────────
+
+  const handleOpenChunkedRuns = useCallback(() => {
+    setInspectorOpen(true);
+    setInspectorRequestedSection("chunked");
+  }, []);
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────
 
   useEffect(() => {
@@ -412,7 +428,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
 
-      // Cmd/Ctrl+F → open find
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
         e.preventDefault();
         setFindOpen(true);
@@ -430,11 +445,9 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         setFindQuery("");
         return;
       }
-      // j / k for page nav
       if (e.key === "j" && activePage) jumpToPage(activePage + 1);
       else if (e.key === "k" && activePage && activePage > 1)
         jumpToPage(activePage - 1);
-      // [ / ] to toggle panes — left-most / right-most
       else if (e.key === "[") togglePane("pdf");
       else if (e.key === "]") togglePane("clean");
       else if (e.key === "\\") togglePane("raw");
@@ -469,6 +482,13 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               activeDocId={activeDoc?.id ?? null}
               onSelectDoc={handleSelectDoc}
               onAddDocs={() => setUploadOpen(true)}
+              view={sidebarView}
+              onChangeView={handleChangeSidebarView}
+              pages={pages}
+              pagesLoading={pagesLoading}
+              totalPages={activeDoc?.totalPages ?? pages.length}
+              activePage={activePage}
+              onSelectPage={jumpToPage}
             />
           </>
         ) : (
@@ -483,7 +503,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         )}
       </div>
 
-      {/* Upload drawer — opened from sidebar `+ Add` */}
+      {/* Upload drawer */}
       <PdfStudioUploadDrawer
         open={uploadOpen}
         onOpenChange={setUploadOpen}
@@ -492,7 +512,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         onUploadComplete={handleUploadComplete}
       />
 
-      {/* Copy Pages overlay — pages already loaded by the shell */}
+      {/* Copy Pages overlay */}
       {activeDoc && (
         <CopyPagesOverlay
           open={copyPagesOpen}
@@ -590,6 +610,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             onEditModeCancel={handleEditModeCancel}
             onRefreshPages={refreshPages}
             onJumpToPage={jumpToPage}
+            onOpenChunkedRuns={handleOpenChunkedRuns}
           />
         ) : docLoading ? (
           <DocLoadingSkeleton />
@@ -633,6 +654,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
                 onStartCrop={handleStartCrop}
                 onStartReorder={handleStartReorder}
                 onEditModeCancel={handleEditModeCancel}
+                requestedSection={inspectorRequestedSection}
+                onSectionConsumed={() => setInspectorRequestedSection(null)}
               />
             ) : (
               <div className="flex-1 bg-card/30" />
@@ -653,12 +676,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   );
 }
 
-/** Shown while a document is being fetched — prevents the upload EmptyShell
- *  from briefly appearing during doc switches or initial URL load. */
+/** Shown while a document is being fetched. */
 function DocLoadingSkeleton() {
   return (
     <div className="flex-1 flex min-h-0">
-      {/* Mimics three reader panes with pulse animation */}
       {[0, 1, 2].map((i) => (
         <div
           key={i}
@@ -728,13 +749,13 @@ function PaneVisibilityStrip({
   visiblePanes: Set<PaneKey>;
   onTogglePane: (p: PaneKey) => void;
 }) {
-  // Show only when a pane is hidden — restore-affordance only.
   const hidden = PANE_ORDER.filter((p) => !visiblePanes.has(p));
   if (hidden.length === 0) return null;
   const labels: Record<PaneKey, string> = {
     pdf: "Source PDF",
     raw: "Raw text",
     clean: "AI-cleaned",
+    chunks: "Chunks",
     extractions: "Extractions",
   };
   return (

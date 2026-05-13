@@ -45,7 +45,7 @@ Layout/sidebar shell: `app/(a)/images/layout.tsx` + `app/(a)/images/_components/
 **API endpoints**
 - `app/api/unsplash/route.ts` — Unsplash proxy (POST + GET). Consumes the server-only `UNSPLASH_ACCESS_KEY`. Used by both `components/official/PublicImageSearch.tsx` and `hooks/images/useUnsplashGallery.ts` (via `hooks/images/unsplashClient.ts`).
 - `app/api/image-proxy/route.ts` — image proxy with Cache-Control + CORP. Sole survivor; the legacy `/api/proxy-image` was deleted.
-- `app/api/images/upload/route.ts` — Sharp-based variant generator (powers the Branded Upload tab via `<ImageAssetUploader>`).
+- **`POST /assets`** (Python backend, called via `features/files/api/assets.ts` → `useFileAsset`) — canonical asset-upload endpoint with preset variant generation (Pillow on the Python side). Powers the Branded Upload tab via `<ImageAssetUploader>`. (Replaces the legacy Next.js+Sharp route at `/api/images/upload`, which was deleted on 2026-05-12 after the FE finished migrating.)
 
 **Redux**
 - No new slice — uses `cloudFiles` (from `features/files/`), the existing `SelectedImagesProvider` context, and the overlay slice for the floating viewer / floating gallery / settings deep-link.
@@ -118,7 +118,7 @@ Primary group:
 2. **Your Cloud** (`CloudImagesTab`) — image-filtered view of `cloud_files`. Includes a per-tile `Info` button that opens the `CloudFileMetadataSheet` side drawer.
 3. **All Files** (`CloudFilesTab`) — full cloud-files browser. Includes a "Photos" link to `/files/photos` for the deeper file-management view.
 4. **Upload** (`CloudUploadTab`) — image-first drag/drop/paste/picker powered by `<ImageAssetUploader mode="cloud">`, while preserving the Cloud Files upload pipeline. Includes a collapsible "Paste base64 instead" sub-tool (`Base64DecoderShell`).
-5. **Branded Upload** (`BrandedUploadTab`) — wraps `<ImageAssetUploader pasteCaptureMode="asset">`. Presets: `social | cover | avatar | logo | favicon | square`. Dragged, picked, or pasted images run through the Sharp variant pipeline and generated variants are auto-pushed to `SelectedImagesProvider`.
+5. **Branded Upload** (`BrandedUploadTab`) — wraps `<ImageAssetUploader pasteCaptureMode="asset">`. Presets: `social | cover | avatar | logo | favicon | square`. Dragged, picked, or pasted images run through the Python `POST /assets` variant pipeline and generated variants are auto-pushed to `SelectedImagesProvider`.
 6. **Image Studio** (`FullImageStudioTab`, id `studio-full`) — embeds the full three-column `<ImageStudioShell>` (the same component that powers `/image-studio/convert`). Lazy-loaded with `dynamic(... ssr: false)`. Users get the complete preset-catalog → file-card grid → export-panel pipeline without leaving the hub.
 7. **Studio Light** (`ImageStudioTab`, id `image-studio`) — embeds the picker-tuned `<EmbeddedImageStudio hideTitle>`. Returns variant URLs straight to `SelectedImagesProvider`, which the full shell does not — picker callers still want this.
 8. **Studio Library** (`StudioLibraryTab`) — read-only embed of the `Images/Generated/...` cloud folder. Resolves the folder ID via `ensureFolderPath`, then keys a `<CloudFilesTab>` to it.
@@ -157,11 +157,11 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `ImageViewerWindow.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
 4. `OverlayController` mounts `ImageViewerWindow` with the payload spread as props.
 
-### Branded upload flow (Sharp variants)
+### Branded upload flow (preset variants)
 
 1. User picks a preset chip and uploads by drop, picker, or clipboard paste.
-2. `<ImageAssetUploader pasteCaptureMode="asset">` POSTs to `/api/images/upload` with the preset key.
-3. Server returns `{ image_url, primary_url, social_url, ... }` — every populated URL is auto-added to `SelectedImagesProvider` so the user can drag the variant into a form afterwards.
+2. `<ImageAssetUploader pasteCaptureMode="asset">` calls `uploadAsset()` (`features/files/api/assets.ts`) which POSTs to the Python `POST /assets` endpoint with the preset key.
+3. Server returns the asset record (with `image_url`, `primary_url`, `social_url`, etc.) — every populated URL is auto-added to `SelectedImagesProvider` so the user can drag the variant into a form afterwards.
 
 ---
 

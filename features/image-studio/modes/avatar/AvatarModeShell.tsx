@@ -12,9 +12,10 @@
  *     centroid of detected faces and fits the circle around it)
  *
  * Save pipeline: crop → 512² PNG (high-quality avatar source) → upload via
- * the universal handler into `Images/Avatars/`. The standard
- * `/api/images/upload?preset=avatar` route resizes into the 400/128/48
- * variants for downstream consumption — that part is unchanged.
+ * the universal handler into `Images/Avatars/`. The canonical `POST /assets`
+ * endpoint on the Python backend (called via the `avatar` preset) resizes
+ * into the 400/128/48 variants for downstream consumption — that part is
+ * unchanged.
  */
 
 import { useCallback, useState } from "react";

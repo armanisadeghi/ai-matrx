@@ -537,11 +537,11 @@ function DirectValueInput({
   const onRawChange = (next: string) => {
     setRaw(next);
     const parsed = parseLiteral(next, targetType);
-    if (parsed.ok) {
+    if (parsed.ok === false) {
+      setParseError(parsed.error);
+    } else {
       setParseError(null);
       onChange({ ...mapping, target: parsed.value });
-    } else {
-      setParseError(parsed.error);
     }
   };
 

@@ -8,6 +8,7 @@ import {
   ImageAssetUploader,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import type { ImageSource } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(
@@ -62,8 +63,8 @@ export default function EditShellClient({
 
             <ImageAssetUploader
               onComplete={handleUploadedSource}
-              preset="square"
-              folder="Edited/Sources"
+              preset="raw"
+              folder={CloudFolders.IMAGES_EDITED_SOURCES}
               visibility="private"
               label="Edit source"
               allowUrlPaste

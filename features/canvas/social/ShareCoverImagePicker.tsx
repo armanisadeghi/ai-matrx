@@ -25,7 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PRESET_COVERS } from "./preset-covers";
 import { cn } from "@/utils/cn";
-import type { ImageUploadResponse } from "@/app/api/images/upload/route";
+import { uploadAsset } from "@/features/files/api/assets";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 interface ShareCoverImagePickerProps {
   value: string | null;
@@ -48,9 +49,9 @@ export function ShareCoverImagePicker({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Canvas covers go through the shared Sharp pipeline with the `cover`
-  // preset so every canvas gets a consistent 1200×630 OG image regardless
-  // of what the user uploads.
+  // Canvas covers go through the canonical asset pipeline with the `social`
+  // preset so every canvas gets a consistent OG image + square + portrait +
+  // story + YT thumbnail derived from one upload.
   const handleFileSelected = useCallback(
     async (file: File) => {
       if (!file.type.startsWith("image/")) {
@@ -65,24 +66,14 @@ export function ShareCoverImagePicker({
       setUploadError(null);
       setUploading(true);
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("preset", "cover");
-        formData.append("folder", "canvas/covers");
-
-        const res = await fetch("/api/images/upload", {
-          method: "POST",
-          body: formData,
+        const { data: asset } = await uploadAsset({
+          file,
+          preset: "social",
+          folder: CloudFolders.CANVAS_COVERS,
+          visibility: "public",
         });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(
-            (body as { error?: string }).error ?? `Upload failed (${res.status})`,
-          );
-        }
-        const data = (await res.json()) as ImageUploadResponse;
-        if (data.primary_url) {
-          onChange(data.primary_url);
+        if (asset.primary_url) {
+          onChange(asset.primary_url);
           setView("idle");
         } else {
           setUploadError("Upload failed. Please try again.");

@@ -12,6 +12,7 @@ import { updateOrganization } from "../service";
 import { validateOrgName, type Organization, type OrgRole } from "../types";
 import { format } from "date-fns";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
+import { folderForOrg } from "@/features/files/utils/folder-conventions";
 
 interface GeneralSettingsProps {
   organization: Organization;
@@ -292,7 +293,7 @@ export function GeneralSettings({
               preset="logo"
               currentUrl={logoUrl || null}
               onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
-              folder="organizations/logos"
+              folder={`${folderForOrg(organization.id)}/logo`}
               disabled={isSaving}
               enableViewerAction
               label="Organization logo"

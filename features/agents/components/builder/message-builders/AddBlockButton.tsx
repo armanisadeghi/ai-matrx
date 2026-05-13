@@ -37,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -404,7 +405,7 @@ export function BlockEditor({
                       preset: "social",
                       title: "Upload image for block",
                       currentUrl: values[key] ?? null,
-                      folder: "agent-blocks",
+                      folder: CloudFolders.AGENT_BLOCKS,
                       onUploaded: (e) => setValue(key, e.result.primary_url),
                       onCleared: () => setValue(key, ""),
                     })

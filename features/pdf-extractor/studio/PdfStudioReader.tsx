@@ -124,8 +124,10 @@ import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
+import { PdfStudioChunksPane } from "./PdfStudioChunksPane";
 
-export type PaneKey = "pdf" | "raw" | "clean" | "extractions";
+export type { PaneKey } from "../state/types";
+import type { PaneKey } from "../state/types";
 export type PdfPaneEditMode = "crop" | "reorder" | null;
 
 export interface PdfStudioReaderProps {
@@ -156,6 +158,8 @@ export interface PdfStudioReaderProps {
   onRefreshPages: () => void;
   /** Jump all synced panes to this page (used by the extractions pane). */
   onJumpToPage?: (page: number) => void;
+  /** Called when the user wants to jump to the Chunked Runs inspector tab. */
+  onOpenChunkedRuns?: () => void;
 }
 
 export function PdfStudioReader({
@@ -178,6 +182,7 @@ export function PdfStudioReader({
   onEditModeCancel,
   onRefreshPages,
   onJumpToPage,
+  onOpenChunkedRuns,
 }: PdfStudioReaderProps) {
   const hasPages = pages.length > 0;
   // True when per-page rows exist but every row's text is empty — typically
@@ -273,6 +278,15 @@ export function PdfStudioReader({
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
           onRefreshPages={onRefreshPages}
+        />
+      )}
+      {visiblePanes.has("chunks") && (
+        <PdfStudioChunksPane
+          docId={doc.id}
+          activePage={activePage}
+          hasCldFile={doc.sourceKind === "cld_file" && !!doc.sourceId}
+          onOpenChunkedRuns={onOpenChunkedRuns ?? (() => undefined)}
+          onClose={() => onTogglePane("chunks")}
         />
       )}
       {visiblePanes.has("extractions") && (

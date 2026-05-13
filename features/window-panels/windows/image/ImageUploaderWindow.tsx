@@ -20,7 +20,7 @@ import {
     type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
 import { emitImageUploaderEvent } from "./callbacks";
-import type { ImagePreset } from "@/app/api/images/upload/route";
+import type { AssetPreset } from "@/features/files/types";
 
 export interface ImageUploaderWindowProps {
     isOpen: boolean;
@@ -28,8 +28,7 @@ export interface ImageUploaderWindowProps {
     instanceId: string;
 
     callbackGroupId?: string | null;
-    preset?: ImagePreset;
-    bucket?: string;
+    preset?: AssetPreset;
     folder?: string;
     title?: string | null;
     description?: string | null;
@@ -43,7 +42,6 @@ export default function ImageUploaderWindow({
     instanceId,
     callbackGroupId,
     preset = "social",
-    bucket,
     folder,
     title,
     description,
@@ -143,7 +141,6 @@ export default function ImageUploaderWindow({
                 <ImageAssetUploader
                     onComplete={handleComplete}
                     preset={preset}
-                    bucket={bucket}
                     folder={folder}
                     currentUrl={currentUrl ?? null}
                     allowUrlPaste={allowUrlPaste}

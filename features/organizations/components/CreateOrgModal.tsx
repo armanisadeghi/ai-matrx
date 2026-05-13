@@ -20,6 +20,7 @@ import { createOrganization } from "../service";
 import { generateSlug, validateOrgName, validateOrgSlug } from "../types";
 import { useSlugAvailability } from "../hooks";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 interface CreateOrgModalProps {
   isOpen: boolean;
@@ -279,14 +280,14 @@ export function CreateOrgModal({
             />
           </div>
 
-          {/* Logo — drag-drop with Sharp variants, or paste a URL */}
+          {/* Logo — drag-drop with asset variants, or paste a URL */}
           <div className="space-y-2">
             <Label>Logo</Label>
             <ImageAssetUploader
               preset="logo"
               currentUrl={logoUrl || null}
               onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
-              folder="organizations/logos"
+              folder={`${CloudFolders.SHARED_ASSETS_ORGS}/logos`}
               disabled={isSubmitting}
               enableViewerAction
               label="Organization logo"

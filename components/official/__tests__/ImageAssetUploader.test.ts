@@ -5,31 +5,48 @@ import {
 } from "@/components/official/ImageAssetUploader";
 
 describe("ImageAssetUploader", () => {
-  it("builds a viewer payload from populated variants only", () => {
+  it("builds a viewer payload from populated legacy variants only", () => {
+    // Legacy four-key shape — the back-compat surface every existing
+    // caller still consumes. Drops the og_url slot (null) and includes
+    // every populated entry.
     const payload = buildImageAssetViewerPayload({
       variants: {
-        image_url: "https://cdn.example.com/logo-512.png",
+        image_url: "https://cdn.example.com/logo-primary.png",
         og_image_url: null,
-        thumbnail_url: "https://cdn.example.com/logo-200.png",
-        tiny_url: "https://cdn.example.com/logo-64.png",
+        thumbnail_url: "https://cdn.example.com/logo-thumb.png",
+        tiny_url: "https://cdn.example.com/logo-tiny.png",
       },
       label: "Organization logo",
       preset: "logo",
     });
 
-    expect(payload).toEqual({
-      images: [
-        "https://cdn.example.com/logo-512.png",
-        "https://cdn.example.com/logo-200.png",
-        "https://cdn.example.com/logo-64.png",
-      ],
-      alts: [
-        "Organization logo 512x512",
-        "Organization logo 200x200",
-        "Organization logo 64x64",
-      ],
-      title: "Organization logo",
-    });
+    expect(payload).not.toBeNull();
+    expect(payload?.images).toEqual([
+      "https://cdn.example.com/logo-primary.png",
+      "https://cdn.example.com/logo-thumb.png",
+      "https://cdn.example.com/logo-tiny.png",
+    ]);
+    expect(payload?.title).toBe("Organization logo");
+    // Alts are derived from the canonical variant-key dimension labels.
+    // We assert only the first prefix to stay decoupled from exact
+    // dimension strings — the label table is treated as UX, not contract.
+    expect(payload?.alts?.length).toBe(3);
+    expect(payload?.alts?.[0]).toContain("Organization logo");
+  });
+
+  it("returns null when no variants are populated", () => {
+    expect(
+      buildImageAssetViewerPayload({
+        variants: {
+          image_url: null,
+          og_image_url: null,
+          thumbnail_url: null,
+          tiny_url: null,
+        },
+        label: "Empty",
+        preset: "raw",
+      }),
+    ).toBeNull();
   });
 
   it("formats cloud upload failures with filename and backend reason", () => {

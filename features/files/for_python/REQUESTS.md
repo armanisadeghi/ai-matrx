@@ -580,8 +580,10 @@ browser-default headers). Starlette's `CORSMiddleware` only echoes
 back what's in `allow_headers`, so the preflight silently rejected
 any request whose actual request-header set wasn't a subset. Browser
 symptom: every direct (non-proxy) upload returned `xhr.error` after
-~30 ms — a cached preflight rejection. Only the same-origin Next.js
-`/api/images/upload` proxy worked.
+~30 ms — a cached preflight rejection. At the time, only the
+same-origin Next.js+Sharp `/api/images/upload` proxy worked. (That
+route was deleted on 2026-05-12 once the FE migrated to calling
+the canonical Python `POST /assets` endpoint directly.)
 
 **What shipped:** Python's `aidream/api/app.py` middleware now
 allows the full canonical set:

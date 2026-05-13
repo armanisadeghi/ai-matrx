@@ -304,10 +304,52 @@ export const ENDPOINTS = {
 
   /** Media processing endpoints — Authenticated */
   media: {
-    /** POST — Upload podcast image → resize to 3 variants, returns URLs */
-    uploadPodcastImage: "/media/podcast/upload-image" as const,
-    /** POST — Upload podcast video → extract frame, resize to 3 variants, returns URLs */
+    /**
+     * POST — Upload podcast video → extract cover frame, render podcast
+     * variants, returns URLs + Asset envelope. Image-only uploads now go
+     * through {@link ENDPOINTS.assets.upload} with `preset="podcast"`.
+     */
     uploadPodcastVideo: "/media/podcast/upload-video" as const,
+  },
+
+  /**
+   * Unified asset (image / media) upload + render-variants pipeline.
+   *
+   * One endpoint family handles every media upload in the platform. The
+   * server renders preset variants (cover, OG, thumbnail, avatar sizes,
+   * favicons, etc.) and returns the canonical {@link Asset} envelope —
+   * see `features/files/types.ts` for the wire shape.
+   *
+   * Preset → variant key map (high level):
+   *   - raw      → only `original`
+   *   - podcast  → cover_url (3000²), cover_sd_url (1400²) + social baseline
+   *   - social   → og_url, square_url, portrait_url, story_url, yt_thumbnail_url + baseline
+   *   - web      → hero_url, og_url, card_url, touch_icon_url, pwa_icon_url, thumbnail_url + baseline
+   *   - email    → header_url, square_url (no baseline)
+   *   - logo     → logo_lg_url, logo_md_url, logo_sm_url + baseline
+   *   - avatar   → avatar_xl/lg/md/sm/xs_url (no baseline)
+   *   - favicon  → favicon_android/apple_touch/32/16_url (no baseline)
+   *
+   * Authenticated. See `features/files/api/assets.ts` for the typed
+   * client wrapper.
+   */
+  assets: {
+    /** POST — multipart upload + render preset variants. */
+    upload: "/assets" as const,
+    /** GET — read the canonical Asset envelope for an upload's master file. */
+    detail: (fileId: string) => `/assets/${fileId}` as const,
+    /** PATCH — change visibility / share / metadata. */
+    patch: (fileId: string) => `/assets/${fileId}` as const,
+    /** POST — render more variants (idempotent). */
+    addVariants: (fileId: string) => `/assets/${fileId}/variants` as const,
+    /** GET — list every server-known preset. */
+    presets: "/assets/presets" as const,
+    /**
+     * GET — convert any cld_files row to an Asset envelope. The
+     * click-to-render primitive: hand any file_id, get back URLs +
+     * variants the FE can render directly.
+     */
+    forFile: (fileId: string) => `/files/${fileId}/asset` as const,
   },
 
   /** Health endpoints — Public (aligned with types/python-generated OpenAPI) */

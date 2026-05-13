@@ -27,6 +27,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useSignedUrl } from "@/features/files/hooks/useSignedUrl";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
@@ -145,8 +146,42 @@ export function FilePreview({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const file = useAppSelector((s) => selectFileById(s, fileId));
-  const { url, loading } = useSignedUrl(fileId, { expiresIn: urlExpiresIn });
   const actions = useFileActions(fileId);
+
+  // Inline preview URL resolution.
+  //
+  // For image and PDF files, prefer `/files/{id}/asset`: it returns the
+  // canonical inline-renderable URL (CDN if public, signed-inline otherwise)
+  // AND surfaces every preset variant — so a future enhancement can choose
+  // e.g. `hero_url` for a fullscreen image preview without another fetch.
+  //
+  // For everything else (video / audio / svg / fetched-by-fileId previewers
+  // like data / code / markdown / text — those don't actually consume `url`),
+  // fall back to the legacy signed-URL hook. The asset endpoint works for
+  // any cld_files row, but the round-trip adds latency and the asset
+  // metadata doesn't help video/audio playback.
+  const fileMime = file?.mimeType ?? "";
+  const useAssetForPreview =
+    fileMime.startsWith("image/") || fileMime === "application/pdf";
+  const { asset, isLoading: assetLoading } = useFileAsset(
+    useAssetForPreview ? fileId : null,
+    { signedUrlTtl: urlExpiresIn },
+  );
+  const { url: signedUrl, loading: signedLoading } = useSignedUrl(
+    useAssetForPreview ? null : fileId,
+    { expiresIn: urlExpiresIn },
+  );
+  // Prefer a larger variant (hero / cover) when present, else the canonical
+  // `primary_url`, else the original variant. Asset endpoint guarantees at
+  // least `original`, so the third arm is a safety net.
+  const assetUrl =
+    asset?.variants?.hero_url?.url ??
+    asset?.variants?.cover_url?.url ??
+    asset?.primary_url ??
+    asset?.variants?.original?.url ??
+    null;
+  const url = useAssetForPreview ? assetUrl : signedUrl;
+  const loading = useAssetForPreview ? assetLoading : signedLoading;
 
   const capability = useMemo(() => {
     if (!file) return null;

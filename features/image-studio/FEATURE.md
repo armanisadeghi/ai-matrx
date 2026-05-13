@@ -204,8 +204,9 @@ AI assist (next wave): Suggest annotations, Redact PII, Detect faces.
 
 `cropShape="round"`, 1:1 lock, zoom + rotation. **Smart Crop** button calls
 the `face-detect` Python endpoint and re-centers/zooms to fit detected faces.
-Output is always a 512² PNG written into `Images/Avatars/` so downstream
-`/api/images/upload?preset=avatar` can produce 400/128/48 variants.
+Output is always a 512² PNG written into `Images/Avatars/` so the downstream
+Python `POST /assets` endpoint (called with `preset=avatar`) can produce
+the 400/128/48 variants.
 
 ### Generate mode
 

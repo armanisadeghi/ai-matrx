@@ -36,6 +36,7 @@ import {
 } from "@/features/html-pages/css/wordpress-styles";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface HtmlPreviewModalProps {
@@ -1065,6 +1066,7 @@ ${wordPressCSS}
                               </label>
                               <ImageAssetUploader
                                 preset="social"
+                                folder={CloudFolders.HTML_PAGES_OG}
                                 currentUrl={ogImage || null}
                                 currentVariants={{
                                   og_image_url: ogImage || null,
@@ -1080,9 +1082,9 @@ ${wordPressCSS}
                                 label="Social Share Image"
                               />
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Drop one image — auto-generates 1400×1400 cover,
-                                1200×630 link preview, 400×400 thumb, and
-                                128×128 tiny.
+                                Drop one image — auto-generates a 1200×630 OG
+                                card, 1080² square, portrait, story, and
+                                YouTube thumbnail.
                               </p>
                             </div>
 

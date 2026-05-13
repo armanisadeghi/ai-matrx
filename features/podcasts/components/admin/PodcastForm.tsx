@@ -172,6 +172,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
           onComplete={handleAssetComplete}
           currentImageUrl={form.image_url || null}
           showVideoUpload={false}
+          podcastId={show?.id ?? null}
         />
       </div>
 
@@ -193,7 +194,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
         <div className="flex flex-col gap-3 border rounded-xl p-3 bg-muted/10">
           <div className="grid gap-1.5">
             <Label htmlFor="show-image" className="text-xs">
-              Cover Image URL (1400×1400)
+              Cover Image URL (3000×3000)
             </Label>
             <Input
               id="show-image"
@@ -534,6 +535,7 @@ export function EpisodeForm({
           currentImageUrl={form.image_url || null}
           currentVideoUrl={form.video_url || null}
           showVideoUpload={true}
+          podcastId={episode?.id ?? null}
         />
       </div>
 
@@ -605,7 +607,7 @@ export function EpisodeForm({
         <div className="flex flex-col gap-3 border rounded-xl p-3 bg-muted/10">
           <div className="grid gap-1.5">
             <Label htmlFor="ep-image" className="text-xs">
-              Cover Image URL (1400×1400)
+              Cover Image URL (3000×3000)
             </Label>
             <Input
               id="ep-image"

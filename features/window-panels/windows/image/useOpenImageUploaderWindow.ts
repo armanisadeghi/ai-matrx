@@ -28,7 +28,7 @@ import {
     type ImageUploaderWindowHandlers,
     type ImageUploaderWindowData,
 } from "./callbacks";
-import type { ImagePreset } from "@/app/api/images/upload/route";
+import type { AssetPreset } from "@/features/files/types";
 
 const OVERLAY_ID = "imageUploaderWindow";
 
@@ -36,8 +36,7 @@ export interface OpenImageUploaderWindowOptions
     extends ImageUploaderWindowHandlers {
     /** Optional stable instance id. Omit for a unique new window each call. */
     windowInstanceId?: string;
-    preset?: ImagePreset;
-    bucket?: string;
+    preset?: AssetPreset;
     folder?: string;
     title?: string | null;
     description?: string | null;
@@ -89,7 +88,6 @@ export function useOpenImageUploaderWindow() {
             const data: ImageUploaderWindowData = {
                 callbackGroupId,
                 preset: options.preset ?? "social",
-                bucket: options.bucket,
                 folder: options.folder,
                 title: options.title ?? null,
                 description: options.description ?? null,

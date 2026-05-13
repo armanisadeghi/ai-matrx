@@ -10,7 +10,7 @@
  * a doc", inspector handles "do something with a doc".
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Rocket,
   GitBranch,
@@ -34,7 +34,7 @@ import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 
-type SectionKey =
+export type SectionKey =
   | "widgets"
   | "chunked"
   | "stores"
@@ -64,6 +64,9 @@ interface PdfStudioInspectorProps {
   onStartCrop: (pagesInput: string) => void;
   onStartReorder: () => void;
   onEditModeCancel: () => void;
+  /** When this changes (e.g. from the Chunks pane CTA), jump to that section. */
+  requestedSection?: SectionKey | null;
+  onSectionConsumed?: () => void;
 }
 
 export function PdfStudioInspector({
@@ -77,8 +80,19 @@ export function PdfStudioInspector({
   onStartCrop,
   onStartReorder,
   onEditModeCancel,
+  requestedSection,
+  onSectionConsumed,
 }: PdfStudioInspectorProps) {
   const [section, setSection] = useState<SectionKey>("widgets");
+
+  useEffect(() => {
+    if (requestedSection && requestedSection !== section) {
+      setSection(requestedSection);
+      onSectionConsumed?.();
+    } else if (requestedSection) {
+      onSectionConsumed?.();
+    }
+  }, [requestedSection, section, onSectionConsumed]);
 
   // Chunked Runs needs a cld_file source. If the doc doesn't have one,
   // the section is still mounted but renders a guidance message.

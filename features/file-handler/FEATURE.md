@@ -41,7 +41,7 @@ This feature is the **single source of resistance** for file flows: direct const
 
 **Tables written:** `cld_files` (via `Files.uploadFile`).
 
-**Servers touched:** Python only (`server.app.matrxserver.com/files/*` and `/share/*`). The handler never crosses through Next.js. No `/api/files/*`, no `/api/share/*`, no `/api/images/upload`. Telemetry lives on the Python side.
+**Servers touched:** Python only (`server.app.matrxserver.com/files/*`, `/assets`, and `/share/*`). The handler never crosses through Next.js. No `/api/files/*`, no `/api/share/*`. (The legacy Next.js+Sharp route at `/api/images/upload` was deleted on 2026-05-12 — preset-variant image uploads now go directly to Python's `POST /assets`.) Telemetry lives on the Python side.
 
 **Key types** (`features/file-handler/types.ts`):
 - `FileSource` — discriminated union over every input shape (16 variants).

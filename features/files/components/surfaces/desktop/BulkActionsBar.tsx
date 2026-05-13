@@ -131,6 +131,15 @@ export function BulkActionsBar({ className }: { className?: string }) {
       // Fan-out to /files/{id}/url with bounded concurrency, then trigger a
       // hidden-anchor click for each. Browsers handle the queue. We avoid
       // window.open() which would be blocked as a popup.
+      //
+      // FUTURE: /files/{id}/url returns a signed INLINE URL; depending on
+      // mime type some files render in the tab instead of downloading. Once
+      // the asset endpoint is hooked into the bulk flow we should switch to
+      // `asset.variants.original.download_url` (forces Content-Disposition:
+      // attachment server-side). The single-file ActionBar already prefers
+      // /files/{id}/download via `useFileActions.download` for this reason.
+      // The bulk fan-out keeps the signed-URL path for now to avoid N
+      // round-trips to the asset endpoint just to pick a different URL key.
       await runWithConcurrency(selectedFileIds, MAX_PARALLEL, async (id) => {
         const result = await dispatch(
           getSignedUrlThunk({ fileId: id, expiresIn: 3600 }),

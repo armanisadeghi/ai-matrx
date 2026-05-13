@@ -373,9 +373,9 @@ export const componentList: ComponentEntry[] = [
     name: "Branded Upload",
     path: "features/image-manager/components/BrandedUploadTab.tsx",
     description:
-      "Wraps ImageAssetUploader with preset chips (social/cover/avatar/logo/favicon/square). Generates Sharp variants and adds them to the SelectedImagesProvider.",
+      "Wraps ImageAssetUploader with preset chips (raw/podcast/social/web/email/logo/avatar/favicon). Renders server-side asset variants via POST /assets and adds the full variant bag to the SelectedImagesProvider.",
     categories: ["media", "inputs"],
-    tags: ["image", "upload", "variants", "branded", "sharp", "preset"],
+    tags: ["image", "upload", "variants", "branded", "asset", "preset"],
   },
   {
     id: "studio-library-tab",
@@ -532,15 +532,16 @@ export const componentList: ComponentEntry[] = [
     name: "Image Asset Uploader",
     path: "components/official/ImageAssetUploader.tsx",
     description:
-      "Official image-first dropzone. Supports Sharp-processed asset variants (cover/OG/thumbnail/avatar/logo/favicon), Cloud Files upload mode for plain image uploads, optional clipboard paste capture, and optional preview action into the shared image WindowPanel.",
+      "Official image-first dropzone. Calls POST /assets to render server-side variants for any of the eight canonical presets (raw, podcast, social, web, email, logo, avatar, favicon), Cloud Files upload mode for plain image uploads, optional clipboard paste capture, and optional preview action into the shared image WindowPanel.",
     categories: ["inputs", "media", "utilities"],
     tags: [
       "image",
       "upload",
-      "sharp",
+      "asset",
       "variants",
       "og",
-      "cover",
+      "podcast",
+      "web",
       "thumbnail",
       "avatar",
       "logo",

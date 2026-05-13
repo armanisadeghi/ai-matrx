@@ -14,6 +14,7 @@ import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
 import { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
+import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import {
   createSyncMiddleware,
   type SyncEngineApi,
@@ -197,6 +198,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         codeFilesAutoSaveMiddleware,
         cloudFilesRealtimeMiddleware,
         transcriptStudioRealtimeMiddleware,
+        pdfStudioPersistenceMiddleware,
       ),
     devTools: process.env.NODE_ENV !== "production",
   });

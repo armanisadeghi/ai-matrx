@@ -229,14 +229,22 @@ hasn't picked visibility explicitly:
   `uploadToPublicUserAssets` / `uploadToPrivateUserAssets` are
   explicit and ignore the bucket-derived default.
 
-### Image upload route — `/api/images/upload`
+### Preset-variant image uploads — `POST /assets` (Python)
+
+The canonical asset endpoint on the Python backend. Called from the FE
+via `features/files/api/assets.ts` (`uploadAsset()`) and the
+`useFileAsset` hook; this is what `<ImageAssetUploader>` POSTs to.
 
 Defaults to `visibility=public` because every preset (avatar, logo,
 og, cover, social, favicon, square) is meant for a public surface.
-Pass `visibility=private` (or `shared`) on the FormData to override.
+Pass `visibility=private` (or `shared`) on the request to override.
 For public uploads the response carries direct CDN URLs (no
 `/share/{token}` redirect hop); for private/shared, stable share-link
 URLs.
+
+> The legacy Next.js+Sharp route at `/api/images/upload` (which used
+> to fan out variants in Node before forwarding to Python) was deleted
+> on 2026-05-12 — the FE now goes straight to `POST /assets`.
 
 ### Image Studio save
 

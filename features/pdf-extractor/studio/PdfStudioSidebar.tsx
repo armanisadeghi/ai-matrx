@@ -37,6 +37,10 @@ import {
   usePdfStudioDocs,
   type StudioDocSummary,
 } from "./hooks/usePdfStudioDocs";
+import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
+import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
+import type { SidebarView } from "../state/types";
+import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 
 export type StudioDocsState = ReturnType<typeof usePdfStudioDocs>;
 
@@ -46,6 +50,15 @@ interface PdfStudioSidebarProps {
   onSelectDoc: (doc: StudioDocSummary) => void;
   /** Opens the upload drawer. When omitted the `+ Add` button is hidden. */
   onAddDocs?: () => void;
+  /** Which view to render: files list or pages list. */
+  view: SidebarView;
+  onChangeView: (view: SidebarView) => void;
+  /** For the pages view. */
+  pages: PdfPageRow[];
+  pagesLoading: boolean;
+  totalPages: number;
+  activePage: number | null;
+  onSelectPage: (pageNumber: number) => void;
 }
 
 export function PdfStudioSidebar({
@@ -53,6 +66,13 @@ export function PdfStudioSidebar({
   activeDocId,
   onSelectDoc,
   onAddDocs,
+  view,
+  onChangeView,
+  pages,
+  pagesLoading,
+  totalPages,
+  activePage,
+  onSelectPage,
 }: PdfStudioSidebarProps) {
   const {
     visible,
@@ -80,10 +100,31 @@ export function PdfStudioSidebar({
     el?.scrollIntoView({ block: "nearest" });
   }, [activeDocId]);
 
+  const inPagesView = view === "pages" && activeDocId != null;
+
   return (
     <aside className="flex flex-col h-full min-h-0 border-r border-border bg-card/30">
+      {/* Toggle: files ↔ pages */}
+      <div className="shrink-0 px-3 pt-2.5 pb-1.5">
+        <PdfStudioSidebarToggle
+          view={inPagesView ? "pages" : "files"}
+          onChange={onChangeView}
+          disablePages={!activeDocId}
+        />
+      </div>
+
+      {inPagesView ? (
+        <PdfStudioPagesNav
+          pages={pages}
+          totalPages={totalPages || pages.length}
+          activePage={activePage}
+          loading={pagesLoading}
+          onSelectPage={onSelectPage}
+        />
+      ) : (
+        <>
       {/* Search + Add */}
-      <div className="shrink-0 px-3 pt-3 pb-2 space-y-2">
+      <div className="shrink-0 px-3 pt-1 pb-2 space-y-2">
         {onAddDocs && (
           <button
             type="button"
@@ -205,6 +246,8 @@ export function PdfStudioSidebar({
           <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} />
         </button>
       </div>
+        </>
+      )}
     </aside>
   );
 }

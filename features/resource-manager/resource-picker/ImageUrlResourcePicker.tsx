@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 interface ImageUrlResourcePickerProps {
   onBack: () => void;
@@ -184,7 +185,7 @@ export function ImageUrlResourcePicker({
       preset: "social",
       title: "Upload image",
       description: "Drop an image to upload — we'll fill the URL below.",
-      folder: "chat-resources",
+      folder: `${CloudFolders.CHAT_ATTACHMENTS}/resources`,
       currentUrl: url || null,
       onUploaded: (e) => {
         setUrl(e.result.primary_url);

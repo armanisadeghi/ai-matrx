@@ -1,5 +1,6 @@
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
-import type { SignedUrlResponse } from "@/features/files/types";
+import type { Asset, SignedUrlResponse } from "@/features/files/types";
+import { getAssetForFile } from "@/features/files/api/assets";
 
 const DEFAULT_EXPIRES_IN_SECONDS = 3600;
 const EXPIRY_SAFETY_MARGIN_MS = 30 * 1000;
@@ -85,6 +86,70 @@ export async function resolveRenderableImageUrl(
 export function __clearRenderableImageUrlCacheForTests() {
   urlCache.clear();
   inFlight.clear();
+}
+
+/**
+ * Async variant of {@link resolveRenderableImageUrl} that adds the
+ * `GET /files/{id}/asset` endpoint as a third resolution tier. The
+ * synchronous resolver picks between (1) `publicUrl` (CDN, permanent)
+ * and (2) the caller-supplied `getSignedUrl` fallback. This helper adds
+ * (3): when neither yields a URL, fall through to the asset endpoint,
+ * which works regardless of whether the file was uploaded through the
+ * asset pipeline.
+ *
+ * Use this when the caller has a `file_id` and wants the best-quality
+ * inline URL the system can produce without locking in `useSignedUrl`
+ * semantics. Hooks rendering live `<img>` should prefer `useFileAsset`
+ * directly — this helper is for one-shot resolution from imperative
+ * code paths (event handlers, derived selectors).
+ *
+ * Caches into the same `urlCache` keyed by `cloud-file:<id>` so a later
+ * sync resolve picks up the result.
+ */
+export async function resolveRenderableImageUrlAsync(
+  ref: RenderableImageRef,
+  options: RenderableImageUrlOptions = {},
+): Promise<RenderableImageUrlResult> {
+  try {
+    return await resolveRenderableImageUrl(ref, options);
+  } catch (err) {
+    const normalized = normalizeImageRef(ref);
+    if (!normalized.fileId) throw err;
+
+    // Asset-endpoint fallback. Prefer the master "original" variant's
+    // permanent CDN URL when available; otherwise pick whatever the
+    // server returned as `primary_url` (handles signed-inline).
+    const { data } = await getAssetForFile(normalized.fileId, {
+      signed_url_ttl: options.expiresIn ?? DEFAULT_EXPIRES_IN_SECONDS,
+    });
+    const resolved = pickAssetUrl(data);
+    if (!resolved.url) throw err;
+    const now = options.now ?? Date.now;
+    const expiresAt =
+      resolved.expiresAt ?? getAwsSignedUrlExpiry(resolved.url) ?? null;
+    return remember(cacheKeyForFile(normalized.fileId), {
+      url: resolved.url,
+      expiresAt: expiresAt ?? now() + (options.expiresIn ?? DEFAULT_EXPIRES_IN_SECONDS) * 1000,
+    });
+  }
+}
+
+/**
+ * Pick the most renderable URL from an Asset envelope. Prefers CDN
+ * (permanent) over signed-inline (TTL-bound). Returns `expiresAt: null`
+ * for CDN URLs and lets the caller compute expiry for signed URLs.
+ */
+function pickAssetUrl(asset: Asset): { url: string | null; expiresAt: number | null } {
+  const primary = asset.variants[asset.primary_key] ?? asset.variants.original ?? null;
+  if (primary?.cdn_url) return { url: primary.cdn_url, expiresAt: null };
+  if (primary?.url) return { url: primary.url, expiresAt: null };
+  if (asset.primary_url) return { url: asset.primary_url, expiresAt: null };
+  // Fallback: scan variants for any usable URL.
+  for (const variant of Object.values(asset.variants)) {
+    if (variant.cdn_url) return { url: variant.cdn_url, expiresAt: null };
+    if (variant.url) return { url: variant.url, expiresAt: null };
+  }
+  return { url: null, expiresAt: null };
 }
 
 function fetchAndCacheSignedUrl(

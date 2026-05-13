@@ -1156,3 +1156,156 @@ export function isCloudTreeFolderRow(
 ): row is CloudTreeFolderRow {
   return row.kind === "folder";
 }
+
+// ---------------------------------------------------------------------------
+// 14. Asset pipeline (POST /assets and friends) — canonical wire shapes
+// ---------------------------------------------------------------------------
+//
+// One endpoint family handles every media upload in the platform:
+//
+//   POST   /assets                          multipart — upload + render
+//   GET    /assets/{file_id}                read Asset envelope
+//   PATCH  /assets/{file_id}                visibility / share / metadata
+//   POST   /assets/{file_id}/variants       render more variants (idempotent)
+//   GET    /assets/presets                  preset registry
+//   GET    /files/{file_id}/asset           click-to-render primitive
+//
+// Every endpoint above returns the same `Asset` envelope below. The
+// preset value controls which variants come back in `variants`.
+//
+// These types are hand-authored as the canonical TS surface and will
+// be replaced by the auto-generated python-derived types when that
+// regen pipeline runs. DO NOT modify `types/python-generated/api-types.ts`
+// by hand to keep them in sync — these are the source of truth until
+// the regen ships.
+
+/**
+ * Preset name accepted by `POST /assets` and `POST /assets/{id}/variants`.
+ * Adding a new preset on the backend is a coordinated change — extend
+ * this union in lockstep.
+ */
+export type AssetPreset =
+  | "raw"
+  | "podcast"
+  | "social"
+  | "web"
+  | "email"
+  | "logo"
+  | "avatar"
+  | "favicon";
+
+/**
+ * One rendered variant inside an `Asset`. Each variant is a distinct
+ * `cld_files` row (so it shows up in the file tree and has its own
+ * permissions) but the `Asset` envelope groups them under a single
+ * `primary_key`-rooted record.
+ *
+ * URL fields:
+ *   - `url`          canonical inline-renderable URL. CDN for public,
+ *                    signed-inline for private/shared. **Use this** for
+ *                    `<img src>` / `<video src>` / `<audio src>`.
+ *   - `cdn_url`      permanent CDN URL when public + CDN configured;
+ *                    null otherwise.
+ *   - `signed_url`   AWS-signed URL with TTL, inline disposition.
+ *   - `download_url` signed URL with `Content-Disposition: attachment`
+ *                    — forces a download dialog.
+ */
+export interface AssetVariant {
+  key: string;
+  file_id: string;
+  file_path: string;
+  width: number | null;
+  height: number | null;
+  mime_type: string | null;
+  file_size: number | null;
+  url: string | null;
+  cdn_url: string | null;
+  signed_url: string | null;
+  download_url: string | null;
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * Canonical envelope returned by every `/assets/*` and
+ * `/files/{id}/asset` endpoint.
+ *
+ *   - `file_id`     master file id (the upload's "original" row).
+ *   - `primary_key` which variant the FE should render by default
+ *                   (e.g. `"cover_url"` for podcast, `"original"` for raw).
+ *   - `primary_url` shorthand for `variants[primary_key].url`.
+ *   - `variants`    always includes `"original"` plus zero or more
+ *                   preset-driven derivatives.
+ */
+export interface Asset {
+  file_id: string;
+  visibility: Visibility;
+  folder: string;
+  preset: string | null;
+  primary_key: string;
+  primary_url: string | null;
+  variants: Record<string, AssetVariant>;
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * Request body for `POST /assets/{id}/variants`. Sends additional
+ * variants for an already-uploaded file. Idempotent on `(file_id, key)`.
+ */
+export interface AddAssetVariantsRequest {
+  preset?: AssetPreset;
+  custom_variants?: ReadonlyArray<{
+    key: string;
+    suffix?: string;
+    width?: number;
+    height?: number;
+    quality?: number;
+    format?: string;
+  }>;
+  include_social_baseline?: boolean;
+  signed_url_ttl?: number;
+}
+
+/**
+ * Request body for `PATCH /assets/{id}`. Sparse — any field omitted is
+ * left unchanged. `metadata` is MERGED server-side (matches the
+ * `/files/{id}` PATCH semantics).
+ */
+export interface AssetPatchRequest {
+  visibility?: Visibility;
+  /** Comma-separated user IDs OR an explicit list. */
+  share_with?: string | ReadonlyArray<string>;
+  share_level?: PermissionLevel;
+  signed_url_ttl?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * One row in the `GET /assets/presets` response — describes a single
+ * variant a preset will render.
+ */
+export interface AssetPresetVariantDescriptor {
+  key: string;
+  width: number | null;
+  height: number | null;
+  format: string | null;
+}
+
+/**
+ * One preset row in the `GET /assets/presets` response.
+ */
+export interface AssetPresetDescriptor {
+  name: AssetPreset;
+  primary_key: string;
+  include_baseline: boolean;
+  variants: ReadonlyArray<AssetPresetVariantDescriptor>;
+}
+
+/**
+ * Response body for `GET /assets/presets`. Drives the picker UI in
+ * admin tools and lets agents enumerate every server-known preset
+ * without hard-coding the list.
+ */
+export interface PresetsRegistryResponse {
+  presets: ReadonlyArray<AssetPresetDescriptor>;
+  social_baseline: ReadonlyArray<AssetPresetVariantDescriptor>;
+}

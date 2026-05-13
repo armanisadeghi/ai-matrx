@@ -27,6 +27,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useSignedUrl } from "@/features/files/hooks/useSignedUrl";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import type { CloudFile } from "@/features/files/types";
@@ -42,6 +43,38 @@ export interface MediaThumbnailProps {
   className?: string;
   /** Override the rounded corners of the container. */
   rounded?: string;
+  /**
+   * When true (default), images consult `/files/{id}/asset` so we can
+   * render a small variant (thumbnail / tiny) when one exists — saves
+   * bandwidth vs. always serving the full-resolution master. Set false
+   * on surfaces where the asset round-trip isn't worth it (e.g. very
+   * tall lists where the master is already cached by the browser).
+   */
+  preferAssetThumbnail?: boolean;
+}
+
+/**
+ * Best-effort pick of a small variant from an Asset envelope for grid
+ * thumbnails. Walks the conventional keys in order, then falls back to
+ * `primary_url`. Returns null when nothing renderable exists — the
+ * caller should fall back to its signed-URL path.
+ */
+function pickThumbnailUrl(
+  asset: import("@/features/files/types").Asset | null,
+): string | null {
+  if (!asset) return null;
+  const v = asset.variants;
+  return (
+    v.thumbnail_url?.url ??
+    v.tiny_url?.url ??
+    v.thumbnail?.url ??
+    v.tiny?.url ??
+    v.card_url?.url ??
+    v.card?.url ??
+    asset.primary_url ??
+    v.original?.url ??
+    null
+  );
 }
 
 export function MediaThumbnail({
@@ -49,6 +82,7 @@ export function MediaThumbnail({
   iconSize = 48,
   className,
   rounded,
+  preferAssetThumbnail = true,
 }: MediaThumbnailProps) {
   const profile = getFilePreviewProfile(
     file.fileName,
@@ -65,11 +99,31 @@ export function MediaThumbnail({
   // (private/shared files, or rows from a direct DB read).
   const needsBytes = strategy === "image" || strategy === "video-poster";
   const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
-  const signedUrlEnabled = needsBytes && !cdnUrl;
+
+  // Asset-thumbnail upgrade: for IMAGE files specifically, ask the
+  // `/files/{id}/asset` endpoint for a small variant (thumbnail_url /
+  // tiny_url) when one exists. This turns the per-row download into a
+  // ~400² render instead of the full master — typically 70%+ smaller.
+  // Gated to images only (video posters benefit less and the signed
+  // URL → <video preload="metadata"> path is already cheap) AND only
+  // when we don't already have a public CDN URL (the master CDN URL
+  // is cacheable indefinitely; no win from a separate variant lookup).
+  const isImage = (file.mimeType ?? "").startsWith("image/");
+  const useAssetThumb =
+    preferAssetThumbnail && strategy === "image" && isImage && !cdnUrl;
+  const { asset } = useFileAsset(useAssetThumb ? file.id : null, {
+    signedUrlTtl: 3600,
+  });
+  const assetUrl = useAssetThumb ? pickThumbnailUrl(asset) : null;
+
+  // Final fallback: legacy signed-URL hook. Used for non-image strategies
+  // (video poster), or when the asset endpoint hasn't returned yet, or
+  // when no asset variants exist for this file.
+  const signedUrlEnabled = needsBytes && !cdnUrl && !assetUrl;
   const { url: signedUrl } = useSignedUrl(signedUrlEnabled ? file.id : null, {
     expiresIn: 3600,
   });
-  const url = cdnUrl ?? signedUrl;
+  const url = cdnUrl ?? assetUrl ?? signedUrl;
 
   // Backend-thumbnail strategy reads the metadata field directly. The Python
   // team's contract for this field is logged in for_python/REQUESTS.md — until it

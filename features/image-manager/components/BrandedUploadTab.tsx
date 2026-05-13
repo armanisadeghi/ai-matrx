@@ -4,11 +4,11 @@
  * features/image-manager/components/BrandedUploadTab.tsx
  *
  * "Branded Upload" surface: drop a single high-res image and have the
- * server generate every variant we need across the app — social cover,
- * OG card, thumbnail, tiny icon, etc. Each preset (`social`, `cover`,
- * `avatar`, `logo`, `favicon`, `square`) lays down a different variant
- * mix, all written to `Images/<folder>/<uuid>/` so they show up grouped
- * in the user's Files tree.
+ * server generate every variant we need across the app. The preset chips
+ * here mirror the canonical server presets one-for-one (raw, podcast,
+ * social, web, email, logo, avatar, favicon). Variants land under the
+ * server-chosen folder for the preset and show up grouped in the user's
+ * Files tree.
  *
  * Variants returned by `<ImageAssetUploader>` are pushed into the
  * SelectedImagesProvider as `type: "public"` `ImageSource`s so callers
@@ -32,74 +32,82 @@ import {
 import {
   ImageAssetUploader,
   type ImageUploaderResult,
-  type ImagePreset,
 } from "@/components/official/ImageAssetUploader";
+import type { AssetPreset } from "@/features/files/types";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 
 interface PresetOption {
-  id: ImagePreset;
+  id: AssetPreset;
   label: string;
   description: string;
-  /** Hint surfacing folder convention to the user. */
-  folder: string;
   icon: LucideIcon;
   iconColor: string;
 }
 
 const PRESETS: PresetOption[] = [
   {
+    id: "raw",
+    label: "Raw",
+    description: "Original bytes only — no derived variants.",
+    icon: ImageIcon,
+    iconColor: "text-zinc-500",
+  },
+  {
+    id: "podcast",
+    label: "Podcast",
+    description:
+      "3000² cover + 1400² SD + OG + thumbnail + social baseline (Apple Podcasts spec).",
+    icon: Sparkles,
+    iconColor: "text-orange-500",
+  },
+  {
     id: "social",
     label: "Social",
     description:
-      "Full kit — 1400² cover, 1200×630 OG card, 400² thumb, 128² tiny.",
-    folder: "social",
+      "1200×630 OG + 1080² square + portrait + story + YT thumb + baseline.",
     icon: Sparkles,
     iconColor: "text-fuchsia-500",
   },
   {
-    id: "cover",
-    label: "Cover",
-    description: "Single 1200×630 OG / Twitter card.",
-    folder: "covers",
+    id: "web",
+    label: "Web",
+    description:
+      "1920×1080 hero + OG + card + 180² touch-icon + 512² PWA + thumbnail + baseline.",
     icon: ImageIcon,
     iconColor: "text-sky-500",
   },
   {
-    id: "avatar",
-    label: "Avatar",
-    description: "Round-friendly 400 / 128 / 48 variants.",
-    folder: "avatars",
+    id: "email",
+    label: "Email",
+    description: "600×200 header + 200² square (no baseline).",
     icon: ImageIcon,
-    iconColor: "text-violet-500",
+    iconColor: "text-teal-500",
   },
   {
     id: "logo",
     label: "Logo",
-    description: "App / org logo at 512 / 200 / 64.",
-    folder: "logos",
+    description: "App / org logo at 512² / 200² / 64² + baseline.",
     icon: ImageIcon,
     iconColor: "text-emerald-500",
   },
   {
-    id: "favicon",
-    label: "Favicon",
-    description: "Site favicon at 192 / 64.",
-    folder: "favicons",
+    id: "avatar",
+    label: "Avatar",
+    description: "Round-friendly 400 / 256 / 128 / 64 / 32 variants.",
     icon: ImageIcon,
-    iconColor: "text-amber-500",
+    iconColor: "text-violet-500",
   },
   {
-    id: "square",
-    label: "Square",
-    description: "Single 1024² square (no extra variants).",
-    folder: "square",
+    id: "favicon",
+    label: "Favicon",
+    description: "192² android + 180² apple-touch + 32² + 16² (no baseline).",
     icon: ImageIcon,
-    iconColor: "text-rose-500",
+    iconColor: "text-amber-500",
   },
 ];
 
 export function BrandedUploadTab() {
-  const [presetId, setPresetId] = useState<ImagePreset>("social");
+  const [presetId, setPresetId] = useState<AssetPreset>("social");
   const [lastResult, setLastResult] = useState<ImageUploaderResult | null>(
     null,
   );
@@ -118,24 +126,32 @@ export function BrandedUploadTab() {
 
     if (selectionMode === "single") clearImages();
 
-    const variantUrls: Array<[label: string, url: string | null]> = [
-      ["primary", result.image_url ?? result.primary_url],
-      ["og", result.og_image_url],
-      ["thumb", result.thumbnail_url],
-      ["tiny", result.tiny_url],
-    ];
+    // Push the full variant bag (not just the legacy four) into the
+    // selection so downstream consumers can pick whichever variant they
+    // need by key. Start with the primary so it lands first in single-mode.
+    const primaryKey = result.asset.primary_key;
+    const entries = Object.entries(result.asset.variants);
+    const ordered = entries.sort(([a], [b]) => {
+      if (a === primaryKey) return -1;
+      if (b === primaryKey) return 1;
+      return 0;
+    });
 
-    for (const [label, url] of variantUrls) {
+    for (const [variantKey, variant] of ordered) {
+      const url = variant.url;
       if (!url) continue;
       addImage({
         type: "public",
         url,
-        id: `branded:${result.preset}:${label}:${url}`,
+        id: `branded:${result.preset}:${variantKey}:${url}`,
         metadata: {
-          title: `${preset.label} · ${label}`,
+          title: `${preset.label} · ${variantKey}`,
           description: `Generated by ImageAssetUploader (${result.preset})`,
-          variant: label,
+          variant: variantKey,
           preset: result.preset,
+          file_id: variant.file_id,
+          width: variant.width,
+          height: variant.height,
         },
       });
       if (selectionMode === "single") break;
@@ -191,7 +207,6 @@ export function BrandedUploadTab() {
 
       <ImageAssetUploader
         preset={preset.id}
-        folder={preset.folder}
         onComplete={handleComplete}
         label={`${preset.label} upload`}
         visibility="public"
@@ -200,9 +215,12 @@ export function BrandedUploadTab() {
 
       {lastResult ? (
         <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success">
-          Variants saved — added to your selection. Find them under{" "}
-          <span className="font-mono">Images/{preset.folder}/&lt;uuid&gt;/</span>
-          .
+          Variants saved — added to your selection.{lastResult.asset.folder ? (
+            <>
+              {" "}Find them under{" "}
+              <span className="font-mono">{lastResult.asset.folder}</span>.
+            </>
+          ) : null}
         </div>
       ) : null}
 

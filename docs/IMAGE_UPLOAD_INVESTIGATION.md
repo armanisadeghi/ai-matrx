@@ -1,5 +1,35 @@
 # Image Upload System — Investigation & Proposal
 
+> ## ✅ Resolved (2026-05-12)
+>
+> The investigation below has been actioned. The fix landed in five FE phases
+> (Phase 0 foundations → Phase 4 cleanup) plus the matching Python work:
+>
+> - **Python:** A canonical `POST /assets` endpoint now owns all preset-variant
+>   image uploads (`social`, `cover`, `avatar`, `logo`, `favicon`, `square`).
+>   It writes via the universal file handler, returns permanent CDN URLs for
+>   public uploads, and stable share-link URLs for private/shared.
+> - **FE Phase 0:** types in `features/files/types.ts`, API wrapper at
+>   `features/files/api/assets.ts`, new `useFileAsset` hook, `CloudFolders`
+>   constants.
+> - **FE Phase 1:** `components/official/ImageAssetUploader.tsx` rewritten to
+>   call `uploadAsset()` instead of the Next.js Sharp route.
+> - **FE Phase 2:** every caller of `ImageAssetUploader` migrated to the new
+>   presets + folders + result shape.
+> - **FE Phase 3:** click-to-render path upgraded (`MediaThumbnail`,
+>   `FilePreview`, `resolveRenderableImageUrlAsync`).
+> - **FE Phase 4 (this commit):** the dead Next.js+Sharp route at
+>   `app/api/images/upload/route.ts` was deleted along with its directory.
+>   `sharp` stays in `package.json` solely because
+>   `app/api/images/studio/process/route.ts` (the Image Studio batch preview)
+>   still uses it — that surface is intentionally out of scope.
+>
+> The body below is preserved verbatim as the original investigation that
+> drove the fix. Every "TO DELETE" / "should be deleted" reference inside it
+> should be read in the past tense — those deletions have happened.
+
+---
+
 **Date:** 2026-05-12
 **Scope:** Cross-repo (matrx-frontend + aidream Python backend)
 **Symptom that started this:** `AssetUploader` in `PodcastForm.tsx` is generating wrong/missing variants and returning `/share/{token}` URLs instead of permanent Cloudflare CDN URLs.

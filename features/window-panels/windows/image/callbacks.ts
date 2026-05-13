@@ -16,7 +16,7 @@
  */
 
 import { callbackManager } from "@/utils/callbackManager";
-import type { ImagePreset } from "@/app/api/images/upload/route";
+import type { AssetPreset } from "@/features/files/types";
 import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
 
 // ─── Event surface ───────────────────────────────────────────────────────────
@@ -78,8 +78,7 @@ export interface ImageUploaderWindowHandlers {
 
 export interface ImageUploaderWindowData {
     callbackGroupId?: string | null;
-    preset?: ImagePreset;
-    bucket?: string;
+    preset?: AssetPreset;
     folder?: string;
     title?: string | null;
     description?: string | null;

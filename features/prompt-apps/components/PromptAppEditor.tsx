@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { PromptAppHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { UpdatePromptAppModal } from "./UpdatePromptAppModal";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 // Lazy-load CodeBlock to avoid circular dependency with Providers
 const CodeBlock = lazy(
@@ -155,7 +156,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
       description:
         "Drop a square image — we'll generate the 192×192 and 64×64 variants.",
       currentUrl: editFaviconUrl || null,
-      folder: "prompt-apps/favicons",
+      folder: CloudFolders.PROMPT_APPS_FAVICONS,
       onUploaded: (e) => {
         setEditFaviconUrl(e.result.primary_url);
       },

@@ -3,14 +3,14 @@
 /**
  * AssetUploader (podcast-specific)
  *
- * Composes the generalized `ImageAssetUploader` (cover image + Sharp
- * variants) with a podcast-only video-upload section that posts directly
- * to the Python backend via `useBackendApi`.
+ * Composes the generalized `ImageAssetUploader` (cover image + asset
+ * variants via `POST /assets`) with a podcast-only video-upload section
+ * that posts directly to the Python backend via `useBackendApi`.
  *
  * All image handling lives in `components/official/ImageAssetUploader.tsx`
- * and `/api/images/upload` (cloud-files-backed since the Phase 11 migration)
- * so non-podcast features can share the same pipeline. Video still posts
- * directly to Python via `useBackendApi()`.
+ * and `POST /assets` (cloud-files-backed) so non-podcast features can
+ * share the same pipeline. Video still posts directly to Python via
+ * `useBackendApi()`.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,23 +21,22 @@ import {
     ImageAssetUploader,
     type ImageUploaderResult,
 } from '@/components/official/ImageAssetUploader';
+import { folderForPodcast } from '@/features/files/utils/folder-conventions';
+import type { components } from '@/types/python-generated/api-types';
 
 /**
  * Shape returned by the Python podcast-video upload endpoint
- * (`/media/podcast/upload-video`). Mirrors the legacy shape from the retired
- * `/api/podcasts/upload-assets` route so callers don't need to change.
+ * (`/media/podcast/upload-video`). Generated from the OpenAPI spec — the
+ * regenerated type now carries an optional `asset` envelope alongside the
+ * legacy URL fields.
  */
-interface UploadAssetsResponse {
-    video_url: string | null;
-    image_url: string | null;
-    og_image_url: string | null;
-    thumbnail_url: string | null;
-}
+type UploadAssetsResponse = components['schemas']['PodcastMediaUploadResponse'];
 
 export interface AssetUrls {
     image_url: string | null;
     og_image_url: string | null;
     thumbnail_url: string | null;
+    tiny_url: string | null;
     video_url: string | null;
 }
 
@@ -49,6 +48,11 @@ interface AssetUploaderProps {
     currentVideoUrl?: string | null;
     /** Whether to show the video upload section. */
     showVideoUpload?: boolean;
+    /**
+     * Optional podcast id used to scope uploads under
+     * `Audio/Podcasts/<id>/` via `folderForPodcast`.
+     */
+    podcastId?: string | null;
 }
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
@@ -61,7 +65,7 @@ interface SectionState {
 
 const ACCEPT_VIDEO = '.mp4,.mov,.webm';
 
-export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, showVideoUpload = true }: AssetUploaderProps) {
+export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, showVideoUpload = true, podcastId }: AssetUploaderProps) {
     const videoInputRef = useRef<HTMLInputElement>(null);
     const api = useBackendApi();
 
@@ -72,6 +76,7 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
         image_url: currentImageUrl ?? null,
         og_image_url: null,
         thumbnail_url: null,
+        tiny_url: null,
         video_url: currentVideoUrl ?? null,
     });
     const [videoUrl, setVideoUrl] = useState<string | null>(currentVideoUrl ?? null);
@@ -89,16 +94,24 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
     // ── Image handling (delegates to the general uploader) ───────────────
     const handleImageComplete = useCallback((result: ImageUploaderResult | null) => {
         if (result === null) {
-            const next: AssetUrls = { ...urlsRef.current, image_url: null, og_image_url: null, thumbnail_url: null };
+            const next: AssetUrls = {
+                ...urlsRef.current,
+                image_url: null,
+                og_image_url: null,
+                thumbnail_url: null,
+                tiny_url: null,
+            };
             urlsRef.current = next;
             onComplete(next);
             return;
         }
+        const variants = result.asset.variants;
         const next: AssetUrls = {
             ...urlsRef.current,
-            image_url: result.image_url,
-            og_image_url: result.og_image_url,
-            thumbnail_url: result.thumbnail_url,
+            image_url: result.asset.primary_url,
+            og_image_url: variants.og_url?.url ?? result.og_image_url,
+            thumbnail_url: variants.thumbnail_url?.url ?? result.thumbnail_url,
+            tiny_url: variants.tiny_url?.url ?? result.tiny_url,
         };
         urlsRef.current = next;
         onComplete(next);
@@ -116,10 +129,14 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
             const data = await res.json() as UploadAssetsResponse;
 
             // Python may also extract a cover frame; fold those URLs back in.
+            // When the response carries a full `asset` envelope, prefer its
+            // variant URLs (canonical) over the legacy flat fields.
+            const assetVariants = data.asset?.variants ?? {};
             const next: AssetUrls = {
-                image_url: data.image_url ?? urlsRef.current.image_url,
-                og_image_url: data.og_image_url ?? urlsRef.current.og_image_url,
-                thumbnail_url: data.thumbnail_url ?? urlsRef.current.thumbnail_url,
+                image_url: data.asset?.primary_url ?? data.image_url ?? urlsRef.current.image_url,
+                og_image_url: assetVariants.og_url?.url ?? data.og_image_url ?? urlsRef.current.og_image_url,
+                thumbnail_url: assetVariants.thumbnail_url?.url ?? data.thumbnail_url ?? urlsRef.current.thumbnail_url,
+                tiny_url: assetVariants.tiny_url?.url ?? urlsRef.current.tiny_url,
                 video_url: data.video_url ?? urlsRef.current.video_url,
             };
             urlsRef.current = next;
@@ -161,7 +178,8 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
             {/* ── Cover image (shared pipeline) ───────────────────────────── */}
             <ImageAssetUploader
                 onComplete={handleImageComplete}
-                preset="social"
+                preset="podcast"
+                folder={podcastId ? folderForPodcast(podcastId) : undefined}
                 currentUrl={currentImageUrl ?? null}
                 label="Cover Image"
                 allowUrlPaste={false}

@@ -91,6 +91,53 @@ export const CloudFolders = {
   /** Web-scrape captures (HTML snapshots, exported markdown). */
   SCRAPED_CONTENT: "Scraped Content",
 
+  // ── Shared assets / org-scoped public surfaces ─────────────────────────
+
+  /**
+   * Org-scoped shared assets — logos, hero images, anything an
+   * organization renders on a public surface. Keyed by org id at
+   * runtime (e.g. `Shared Assets/orgs/<org-id>`). Always public —
+   * the CDN URL is the rendering target.
+   */
+  SHARED_ASSETS_ORGS: "Shared Assets/orgs",
+
+  /**
+   * OG / social-preview covers for HTML pages the user publishes.
+   * Lives under Shared Assets so all org/public-surface previews
+   * share one CDN-backed bucket.
+   */
+  HTML_PAGES_OG: "Shared Assets/html-pages",
+
+  // ── App-asset subfolders ───────────────────────────────────────────────
+
+  /**
+   * Favicons rendered by prompt-app / agent-app standalone pages.
+   * Always public — favicon requests are anonymous.
+   */
+  PROMPT_APPS_FAVICONS: "App Assets/prompt-apps/favicons",
+
+  /**
+   * Per-block assets attached to agent blocks (icons, illustrations,
+   * inline media). Keyed by block id at runtime via
+   * `folderForAgentBlock(blockId)`.
+   */
+  AGENT_BLOCKS: "Agent Apps/blocks",
+
+  // ── Canvas / image-editor ──────────────────────────────────────────────
+
+  /**
+   * Cover images rendered on canvas social/share surfaces. Public so
+   * the share-card OG image is a stable CDN URL.
+   */
+  CANVAS_COVERS: "Images/Canvas/Covers",
+
+  /**
+   * Source images the user is editing in the image studio. Private —
+   * these are the user's working files, NOT public render targets.
+   * Outputs that the user explicitly publishes land elsewhere.
+   */
+  IMAGES_EDITED_SOURCES: "Images/Edited/Sources",
+
   // ── Hidden / ephemeral ─────────────────────────────────────────────────
   // All hidden roots live under ".matrx-tmp/" so the tree has a single
   // ignorable folder rather than many. Callers that use these MUST delete
@@ -137,6 +184,22 @@ export function folderForAgentApp(appId: string): string {
  */
 export function folderForPodcast(podcastId: string): string {
   return `${CloudFolders.AUDIO_PODCASTS}/${podcastId}`;
+}
+
+/**
+ * Per-org shared assets.
+ *   folderForOrg("org-abc") → "Shared Assets/orgs/org-abc"
+ */
+export function folderForOrg(orgId: string): string {
+  return `${CloudFolders.SHARED_ASSETS_ORGS}/${orgId}`;
+}
+
+/**
+ * Per-agent-block assets (icons, illustrations, attached media).
+ *   folderForAgentBlock("blk_123") → "Agent Apps/blocks/blk_123"
+ */
+export function folderForAgentBlock(blockId: string): string {
+  return `${CloudFolders.AGENT_BLOCKS}/${blockId}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +251,12 @@ export const CloudFolderDescriptions: Record<string, string> = {
   [CloudFolders.CHAT_ATTACHMENTS]: "Files shared in conversations.",
   [CloudFolders.SLACK_IMPORTS]: "Files imported from Slack.",
   [CloudFolders.SCRAPED_CONTENT]: "Captures from the web scraper.",
+  [CloudFolders.SHARED_ASSETS_ORGS]: "Organization-scoped shared assets.",
+  [CloudFolders.HTML_PAGES_OG]: "OG covers for HTML pages.",
+  [CloudFolders.PROMPT_APPS_FAVICONS]: "Favicons for prompt-app pages.",
+  [CloudFolders.AGENT_BLOCKS]: "Per-block agent app assets.",
+  [CloudFolders.CANVAS_COVERS]: "Canvas social cover images.",
+  [CloudFolders.IMAGES_EDITED_SOURCES]: "Source images for the image studio.",
   [CloudFolders.TMP]: "Internal temporary workspace (hidden).",
 };
 
@@ -211,12 +280,20 @@ const DEFAULT_VISIBILITY_RULES: ReadonlyArray<{
 }> = [
   // Most-specific rules first — longest-prefix wins.
   { prefix: "Shared Assets/feedback-images", visibility: "public" },
+  { prefix: CloudFolders.SHARED_ASSETS_ORGS, visibility: "public" },
+  { prefix: CloudFolders.HTML_PAGES_OG, visibility: "public" },
+  { prefix: CloudFolders.PROMPT_APPS_FAVICONS, visibility: "public" },
+  { prefix: CloudFolders.AGENT_BLOCKS, visibility: "public" },
+  { prefix: CloudFolders.CANVAS_COVERS, visibility: "public" },
   { prefix: CloudFolders.APP_ASSETS, visibility: "public" },
   { prefix: CloudFolders.IMAGES_AVATARS, visibility: "public" },
   { prefix: CloudFolders.AUDIO_PODCASTS, visibility: "public" },
   { prefix: CloudFolders.AGENT_APPS, visibility: "public" },
   { prefix: "Shared Assets", visibility: "public" },
 
+  // IMAGES_EDITED_SOURCES is private — these are the user's working
+  // source files for the image studio, not public render targets.
+  { prefix: CloudFolders.IMAGES_EDITED_SOURCES, visibility: "private" },
   { prefix: CloudFolders.IMAGES_GENERATED, visibility: "private" },
   { prefix: CloudFolders.CHAT_ATTACHMENTS, visibility: "private" },
   { prefix: CloudFolders.TASK_ATTACHMENTS, visibility: "private" },

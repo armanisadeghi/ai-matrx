@@ -36,6 +36,7 @@ import { CustomAppletConfig, AppletContainer } from '@/types/customAppTypes';
 import { ICON_OPTIONS, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { RecipeInfo } from "@/features/recipes/types";
 import { ImageAssetUploader } from '@/components/official/ImageAssetUploader';
+import { CloudFolders } from '@/features/files/utils/folder-conventions';
 
 interface CreateAppletTabProps {
   newApplet: Partial<CustomAppletConfig>;
@@ -304,12 +305,12 @@ export const CreateAppletTab: React.FC<CreateAppletTabProps> = ({
               Applet Image
             </Label>
             <ImageAssetUploader
-              preset="social"
+              preset="web"
               currentUrl={newApplet.imageUrl || null}
               onComplete={(result) =>
                 setNewApplet((prev) => ({ ...prev, imageUrl: result?.primary_url ?? '' }))
               }
-              folder="applets"
+              folder={`${CloudFolders.AGENT_APPS}/icons`}
               label="Image"
             />
           </div>

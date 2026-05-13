@@ -22,19 +22,24 @@ import {
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserAvatarUrl } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectUserAvatarUrl,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "sonner";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 export function ProfilePhotoTab() {
   const currentAvatar = useAppSelector(selectUserAvatarUrl);
+  const userId = useAppSelector(selectUserId);
   const [persisting, setPersisting] = useState(false);
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
   const [persistError, setPersistError] = useState<string | null>(null);
 
   const handleComplete = async (result: ImageUploaderResult | null) => {
     if (!result) return;
-    const avatarUrl = result.image_url ?? result.primary_url;
+    const avatarUrl = result.primary_url;
     if (!avatarUrl) return;
 
     setPersisting(true);
@@ -88,7 +93,11 @@ export function ProfilePhotoTab() {
 
       <ImageAssetUploader
         preset="avatar"
-        folder="profile"
+        folder={
+          userId
+            ? `${CloudFolders.IMAGES_AVATARS}/${userId}`
+            : CloudFolders.IMAGES_AVATARS
+        }
         currentUrl={savedUrl ?? currentAvatar}
         visibility="public"
         enableViewerAction

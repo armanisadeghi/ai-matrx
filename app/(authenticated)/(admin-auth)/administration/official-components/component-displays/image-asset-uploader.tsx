@@ -5,9 +5,9 @@ import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import {
   ImageAssetUploader,
-  type ImagePreset,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
+import type { AssetPreset } from "@/features/files/types";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
@@ -18,40 +18,52 @@ interface ComponentDisplayProps {
 }
 
 const PRESETS: Array<{
-  preset: ImagePreset;
+  preset: AssetPreset;
   label: string;
   description: string;
 }> = [
   {
+    preset: "raw",
+    label: "Raw",
+    description: "Original bytes only — no derived variants",
+  },
+  {
+    preset: "podcast",
+    label: "Podcast",
+    description:
+      "3000² cover + 1400² SD + OG + thumbnail + social baseline (Apple Podcasts spec)",
+  },
+  {
     preset: "social",
     label: "Social",
     description:
-      "1400² cover + 1200×630 OG + 400² thumb (podcasts, posts, articles)",
+      "1200×630 OG + 1080² square + portrait + story + YT thumb + baseline",
   },
   {
-    preset: "cover",
-    label: "Cover",
-    description: "1200×630 only (link previews, OG-only)",
+    preset: "web",
+    label: "Web",
+    description:
+      "1920×1080 hero + OG + card + 180² touch-icon + 512² PWA + thumbnail + baseline",
   },
   {
-    preset: "avatar",
-    label: "Avatar",
-    description: "400 / 128 / 48 (profile photos, user icons)",
+    preset: "email",
+    label: "Email",
+    description: "600×200 header + 200² square (no baseline)",
   },
   {
     preset: "logo",
     label: "Logo",
-    description: "512 / 200 / 64 (org logos, app icons)",
+    description: "512² / 200² / 64² (org logos, app icons) + baseline",
+  },
+  {
+    preset: "avatar",
+    label: "Avatar",
+    description: "400 / 256 / 128 / 64 / 32 (profile photos, user icons)",
   },
   {
     preset: "favicon",
     label: "Favicon",
-    description: "192 / 64 (browser tab icons, small marks)",
-  },
-  {
-    preset: "square",
-    label: "Square",
-    description: "1024² single square (gallery items, thumbnails)",
+    description: "192² android + 180² apple-touch + 32² + 16² (no baseline)",
   },
 ];
 
@@ -61,7 +73,7 @@ type PasteCaptureMode = "auto" | "off" | "cloud" | "asset";
 export default function ImageAssetUploaderDisplay({
   component,
 }: ComponentDisplayProps) {
-  const [preset, setPreset] = useState<ImagePreset>("social");
+  const [preset, setPreset] = useState<AssetPreset>("social");
   const [mode, setMode] = useState<UploaderMode>("asset");
   const [pasteCaptureMode, setPasteCaptureMode] =
     useState<PasteCaptureMode>("asset");
@@ -81,19 +93,21 @@ import { useOpenImageUploaderWindow } from '@/features/window-panels/windows/ima
 // ── Inline (embedded in a form) ──────────────────────────────────────────
 <ImageAssetUploader
   mode="asset"                      // "asset" | "cloud"
-  preset="social"                    // "social" | "cover" | "avatar" | "logo" | "favicon" | "square"
+  preset="social"                    // "raw" | "podcast" | "social" | "web" | "email" | "logo" | "avatar" | "favicon"
+  folder={CloudFolders.SHARED_ASSETS_ORGS} // pick a CloudFolders constant — never hard-code
   currentUrl={form.image_url}
-  pasteCaptureMode="asset"           // paste clipboard images into the Sharp variant pipeline
+  pasteCaptureMode="asset"           // paste clipboard images into the asset variant pipeline
   allowUrlPaste
   visibility="public"
   enableViewerAction                 // preview opens the shared image window panel
   onComplete={(result) => {
     if (!result) return clear();
+    // Canonical: read from result.asset.* — primary_url + every variant under variants.
     setForm({
       ...form,
-      image_url: result.primary_url,
-      og_image_url: result.og_image_url ?? null,
-      thumbnail_url: result.thumbnail_url ?? null,
+      image_url: result.asset.primary_url,
+      og_image_url: result.asset.variants.og_url?.url ?? null,
+      thumbnail_url: result.asset.variants.thumbnail_url?.url ?? null,
     });
   }}
 />
