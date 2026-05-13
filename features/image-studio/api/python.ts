@@ -18,7 +18,7 @@
  * error.
  */
 
-import { postJson } from "@/features/files/api/client";
+import { postJson } from "@/lib/python-client";
 
 // ---------------------------------------------------------------------------
 // Shared types

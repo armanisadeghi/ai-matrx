@@ -1,16 +1,24 @@
 /**
  * features/files/providers/CloudFilesRealtimeProvider.tsx
  *
- * Mounts the realtime subscription for the current user on mount and tears it
- * down on unmount / user change. Drop this inside an authenticated layout
- * (e.g., app/(a)/files/layout.tsx) — or globally if every authed page
- * should receive cloud-files updates.
+ * Mounts the cloud-files realtime subscription for the current authed user.
+ *
+ * **Mount this exactly once, globally, in `app/Providers.tsx`.** The five
+ * previous per-route mounts (files layout, images layout, code explorer,
+ * file-preview window, cloud-files window) were deleted in Phase 0 of the
+ * consolidation rebuild — see
+ * [docs/FILE_HANDLING_CONSOLIDATION_PLAN.md](../../../docs/FILE_HANDLING_CONSOLIDATION_PLAN.md).
+ *
+ * Reads `userId` from Redux (`selectUserId`); attaches the Realtime channel
+ * on user change and tears it down on sign-out. Callers don't need to pass
+ * `userId` — the provider is identity-driven.
  */
 
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   attachCloudFilesRealtime,
   detachCloudFilesRealtime,
@@ -18,20 +26,14 @@ import {
 import { loadUserFileTree } from "@/features/files/redux/thunks";
 
 export interface CloudFilesRealtimeProviderProps {
-  /**
-   * Current user id. When null (unauthenticated) the subscription is torn
-   * down. When non-null the middleware attaches a Realtime channel scoped to
-   * this user and hydrates the initial tree via the RPC.
-   */
-  userId: string | null;
   children?: React.ReactNode;
 }
 
 export function CloudFilesRealtimeProvider({
-  userId,
   children,
 }: CloudFilesRealtimeProviderProps) {
   const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
 
   useEffect(() => {
     if (!userId) {

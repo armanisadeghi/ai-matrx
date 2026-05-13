@@ -368,7 +368,7 @@ export function FileContextMenu({
   // file has never been processed, shows a toast with a hint.
   const handleOpenRagViewer = useCallback(async () => {
     try {
-      const { getJson } = await import("@/features/files/api/client");
+      const { getJson } = await import("@/lib/python-client");
       const { data } = await getJson<{
         document_id: string | null;
         found: boolean;

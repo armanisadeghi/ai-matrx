@@ -60,7 +60,7 @@ import {
   setCustomUrl,
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
-import { resolveBaseUrl, newRequestId } from "@/features/files/api/client";
+import { resolveBaseUrl, newRequestId } from "@/lib/python-client";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────

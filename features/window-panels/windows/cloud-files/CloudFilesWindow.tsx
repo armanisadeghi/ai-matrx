@@ -13,18 +13,14 @@
  *  - `onCollectData` persists the active tab so the window reopens to the
  *    same view.
  *
- * Also mounts <CloudFilesRealtimeProvider> locally so the realtime
- * subscription is guaranteed when the window opens from contexts outside
- * `/files/`.
+ * Cloud-files realtime is mounted globally in `app/Providers.tsx` — no
+ * per-window provider needed (Phase 0 of the consolidation rebuild).
  */
 
 "use client";
 
 import { useState } from "react";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import {
   WindowPanelShell,
   type CloudFilesWindowTab,
@@ -43,7 +39,6 @@ export default function CloudFilesWindow({
   initialTab = "browse",
 }: CloudFilesWindowProps) {
   const [activeTab, setActiveTab] = useState<CloudFilesWindowTab>(initialTab);
-  const userId = useSelector((state: RootState) => state.userAuth?.id ?? null);
 
   if (!isOpen) return null;
 
@@ -57,11 +52,9 @@ export default function CloudFilesWindow({
       overlayId="cloudFilesWindow"
       onCollectData={() => ({ activeTab })}
     >
-      <CloudFilesRealtimeProvider userId={userId}>
-        <div className="flex h-full w-full flex-col overflow-hidden bg-background">
-          <WindowPanelShell activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-      </CloudFilesRealtimeProvider>
+      <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+        <WindowPanelShell activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
     </WindowPanel>
   );
 }

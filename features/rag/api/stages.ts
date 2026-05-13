@@ -22,7 +22,7 @@ import {
   buildHeaders,
   getJson,
   resolveBaseUrl,
-} from "@/features/files/api/client";
+} from "@/lib/python-client";
 
 export type StageName = "extract" | "clean" | "chunk" | "embed" | "run_all";
 

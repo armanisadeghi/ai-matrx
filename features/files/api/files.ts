@@ -21,7 +21,7 @@ import {
   type RequestOptions,
   type ResponseMeta,
   type UploadProgressEvent,
-} from "./client";
+} from "@/lib/python-client";
 import type {
   BulkDeleteFilesRequest,
   BulkMoveFilesRequest,

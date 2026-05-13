@@ -1,6 +1,6 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { getJson } from "@/features/files/api/client";
+import { getJson } from "@/lib/python-client";
 import {
   chunksFetchError,
   chunksFetchStart,

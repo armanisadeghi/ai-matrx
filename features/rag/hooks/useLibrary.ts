@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { getJson } from "@/features/files/api/client";
+import { getJson } from "@/lib/python-client";
 import type {
   DocStatus,
   LibraryDocDetail,

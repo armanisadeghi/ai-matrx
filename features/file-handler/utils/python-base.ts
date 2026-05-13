@@ -21,7 +21,7 @@
  *   in new code.
  */
 
-import { resolveBaseUrl } from "@/features/files/api/client";
+import { resolveBaseUrl } from "@/lib/python-client";
 
 export function pythonBaseUrl(): string {
   return resolveBaseUrl();

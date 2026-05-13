@@ -29,7 +29,7 @@ import * as Folders from "@/features/files/api/folders";
 import * as Permissions from "@/features/files/api/permissions";
 import * as ShareLinks from "@/features/files/api/share-links";
 import * as Versions from "@/features/files/api/versions";
-import { newRequestId } from "@/features/files/api/client";
+import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   apiFileRecordToCloudFile,

@@ -10,7 +10,7 @@ import {
   buildHeaders,
   postJson,
   resolveBaseUrl,
-} from "@/features/files/api/client";
+} from "@/lib/python-client";
 import type {
   ExtractionStreamEvent,
   RunExtractionRequest,

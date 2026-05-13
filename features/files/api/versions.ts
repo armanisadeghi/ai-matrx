@@ -12,7 +12,7 @@ import {
   postJson,
   type RequestOptions,
   type ResponseMeta,
-} from "./client";
+} from "@/lib/python-client";
 import type { CloudFileVersionRow, FileRecordApi } from "@/features/files/types";
 
 export async function listVersions(

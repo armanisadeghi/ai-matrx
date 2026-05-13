@@ -49,7 +49,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { del, getJson, patchJson, postJson } from "@/features/files/api/client";
+import { del, getJson, patchJson, postJson } from "@/lib/python-client";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";

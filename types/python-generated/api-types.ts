@@ -6532,7 +6532,16 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Patch Asset */
+        /**
+         * Patch Asset
+         * @description Mutate an asset: visibility, share grants, metadata.
+         *
+         *     Best-effort atomic: each sub-op runs sequentially. Visibility change
+         *     cascades to every persisted variant so the asset can't end up half
+         *     public / half private. Failures of variant visibility moves are
+         *     logged but don't fail the whole call (consistent with the prior
+         *     behaviour and with the FE team's spec).
+         */
         patch: operations["patch_asset_assets__file_id__patch"];
         trace?: never;
     };
@@ -6547,6 +6556,95 @@ export interface paths {
         put?: never;
         /** Render More Variants */
         post: operations["render_more_variants_assets__file_id__variants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assets Preview
+         * @description No-persist preview rendering. Replaces Next.js Sharp route.
+         *
+         *     Accepts a master via MediaRef (``{"file_id": "..."}``) + variant
+         *     specs. Returns base64 data URLs (≤256 KB) or 5-min ephemeral
+         *     signed URLs.
+         */
+        post: operations["assets_preview_assets_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/preview/multipart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assets Preview Multipart
+         * @description Multipart variant of /assets/preview — render directly without a
+         *     prior cld_files row. Useful for Image Studio drag-and-drop preview
+         *     before commit-to-save.
+         */
+        post: operations["assets_preview_multipart_assets_preview_multipart_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/pdf-compress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assets Pdf Compress
+         * @description No-persist PDF compression. Replaces app/api/pdf/compress.
+         *
+         *     Accepts a master via MediaRef. Returns base64 data URL (≤256 KB)
+         *     or 5-min ephemeral signed URL.
+         */
+        post: operations["assets_pdf_compress_assets_pdf_compress_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/pdf-compress/multipart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assets Pdf Compress Multipart
+         * @description Multipart variant of /assets/pdf-compress.
+         */
+        post: operations["assets_pdf_compress_multipart_assets_pdf_compress_multipart_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6869,7 +6967,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Bulk Op Discriminator
+         * @description FE-team A.3 — canonical bulk endpoint.
+         *
+         *     Subsumes ``DELETE /files/bulk`` and ``POST /files/bulk/move`` via a
+         *     discriminator ``op``. Existing endpoints are kept for backward
+         *     compat; new FE callers use this one.
+         *
+         *     Returns ``{op, results: [{file_id, ok, error?}], errors[]}``.
+         *     Idempotency-key memoizes the full response.
+         */
+        post: operations["bulk_op_discriminator_files_bulk_post"];
         /** Bulk Delete Files */
         delete: operations["bulk_delete_files_files_bulk_delete"];
         options?: never;
@@ -9593,6 +9702,22 @@ export interface components {
             };
         };
         /**
+         * AssetCombinedOpResponse
+         * @description Response envelope for combined-op endpoints (FE-team A.1 / A.2).
+         *
+         *     Returned by ``POST /assets`` when ``options_json`` is set, and by
+         *     ``PATCH /files/{id}`` when union-body fields beyond simple rename/visibility
+         *     are present. The primary op (upload / patch) always lands; sub-op failures
+         *     appear in ``errors`` rather than aborting the whole request.
+         */
+        AssetCombinedOpResponse: {
+            asset: components["schemas"]["Asset"];
+            share_link?: components["schemas"]["ShareLinkInfo"] | null;
+            copy?: components["schemas"]["CopyInfo"] | null;
+            /** Errors */
+            errors?: components["schemas"]["SubOpError"][];
+        };
+        /**
          * AssetPatchRequest
          * @description Mutate an existing asset.
          *
@@ -9620,12 +9745,70 @@ export interface components {
             } | null;
         };
         /**
+         * AssetPdfCompressResponse
+         * @description Response from POST /assets/pdf-compress — no-persist compression.
+         */
+        AssetPdfCompressResponse: {
+            /** Original Size */
+            original_size: number;
+            /** Compressed Size */
+            compressed_size: number;
+            /**
+             * Reduction Ratio
+             * @description 0.0..1.0 — fraction of bytes saved
+             */
+            reduction_ratio: number;
+            /**
+             * Mime Type
+             * @default application/pdf
+             */
+            mime_type: string;
+            /** Data Url */
+            data_url?: string | null;
+            /** Signed Url */
+            signed_url?: string | null;
+        };
+        /**
+         * AssetPreviewResponse
+         * @description Response from POST /assets/preview — no-persist variant rendering.
+         */
+        AssetPreviewResponse: {
+            /** Variants */
+            variants: components["schemas"]["AssetPreviewVariant"][];
+        };
+        /**
+         * AssetPreviewVariant
+         * @description One rendered preview variant (no persistence).
+         */
+        AssetPreviewVariant: {
+            /** Key */
+            key: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Mime Type */
+            mime_type: string;
+            /** File Size */
+            file_size: number;
+            /**
+             * Data Url
+             * @description base64 data URL (small variants)
+             */
+            data_url?: string | null;
+            /**
+             * Signed Url
+             * @description Ephemeral signed URL (5-min TTL)
+             */
+            signed_url?: string | null;
+        };
+        /**
          * AssetRenderMoreRequest
          * @description Render additional variants for an existing asset.
          *
          *     Accepts either a known preset name OR a list of custom ImageVariant
-         *     dicts. Both paths run through the existing matrx-utils variants
-         *     subsystem so each rendered variant is an idempotent cld_files row.
+         *     dicts. Both paths run through the matrx-utils variants subsystem so
+         *     each rendered variant is an idempotent cld_files row.
          */
         AssetRenderMoreRequest: {
             /**
@@ -9745,6 +9928,38 @@ export interface components {
             /** Y1 */
             y1: number;
         };
+        /** Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post */
+        Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
+            /** File */
+            file: string;
+            /**
+             * Level
+             * @default 3
+             */
+            level: number;
+            /** Max Size Bytes */
+            max_size_bytes?: number | null;
+            /**
+             * Max Inline Bytes
+             * @default 262144
+             */
+            max_inline_bytes: number;
+        };
+        /** Body_assets_preview_multipart_assets_preview_multipart_post */
+        Body_assets_preview_multipart_assets_preview_multipart_post: {
+            /** File */
+            file: string;
+            /**
+             * Variants Json
+             * @description JSON-encoded list of preview variant specs
+             */
+            variants_json: string;
+            /**
+             * Max Inline Bytes
+             * @default 262144
+             */
+            max_inline_bytes: number;
+        };
         /** Body_batch_extract_utilities_pdf_batch_extract_post */
         Body_batch_extract_utilities_pdf_batch_extract_post: {
             /** Files */
@@ -9803,7 +10018,7 @@ export interface components {
             visibility: "public" | "private" | "shared";
             /**
              * Share With
-             * @description Comma-separated user IDs
+             * @description Comma-separated user IDs (legacy)
              */
             share_with?: string | null;
             /**
@@ -9832,6 +10047,11 @@ export interface components {
              * @description JSON list of ImageVariant dicts merged with the preset's variants
              */
             custom_variants_json?: string | null;
+            /**
+             * Options Json
+             * @description FE-team A.1 — bundled sub-ops. JSON: {"share":{...},"permissions":[{...}],"variants":["preset"|{...}]}. When set, the response is {asset, share_link, errors[]} instead of bare Asset.
+             */
+            options_json?: string | null;
         };
         /** Body_upload_file_files_upload_post */
         Body_upload_file_files_upload_post: {
@@ -9976,6 +10196,51 @@ export interface components {
              * @description Resources to load, in the order given. Defaults to the full Phase-1 set: courts, dockets, opinion_clusters. Each resource's dependencies must complete successfully or it'll be skipped.
              */
             resources?: string[] | null;
+        };
+        /**
+         * BulkOperationRequest
+         * @description ``POST /files/bulk`` discriminator body (FE-team A.3).
+         */
+        BulkOperationRequest: {
+            /** Ids */
+            ids: string[];
+            /**
+             * Op
+             * @enum {string}
+             */
+            op: "move" | "delete" | "restore" | "visibility" | "share";
+            /** Args */
+            args?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * BulkOperationResponse
+         * @description Response from POST /files/bulk (discriminator: move|delete|restore|visibility|share).
+         */
+        BulkOperationResponse: {
+            /** Op */
+            op: string;
+            /** Total */
+            total: number;
+            /** Succeeded */
+            succeeded: number;
+            /** Failed */
+            failed: number;
+            /** Results */
+            results: components["schemas"]["BulkOperationResult"][];
+        };
+        /**
+         * BulkOperationResult
+         * @description One row's result inside a BulkOperationResponse.
+         */
+        BulkOperationResult: {
+            /** File Id */
+            file_id: string;
+            /** Success */
+            success: boolean;
+            /** Error */
+            error?: string | null;
         };
         /** BulkResponse */
         BulkResponse: {
@@ -10927,6 +11192,31 @@ export interface components {
              * @default false
              */
             overwrite: boolean;
+        };
+        /**
+         * CopyInfo
+         * @description New-file info when a mutate or upload op also performs a copy_to.
+         *
+         *     Carries the same URL flavours as AssetVariant so the FE can navigate
+         *     directly to the new file without a second round-trip.
+         */
+        CopyInfo: {
+            /** File Id */
+            file_id: string;
+            /** File Path */
+            file_path: string;
+            /** Folder */
+            folder?: string | null;
+            /** Visibility */
+            visibility?: ("public" | "private" | "shared") | null;
+            /** Url */
+            url?: string | null;
+            /** Cdn Url */
+            cdn_url?: string | null;
+            /** Signed Url */
+            signed_url?: string | null;
+            /** Download Url */
+            download_url?: string | null;
         };
         /** CrawlPresetSaveRequest */
         CrawlPresetSaveRequest: {
@@ -12451,7 +12741,14 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
-        /** FilePatchRequest */
+        /**
+         * FilePatchRequest
+         * @description Union mutation body for PATCH /files/{id} (FE-team A.2).
+         *
+         *     Every field is optional. Sub-operations run sequentially with
+         *     best-effort atomicity; failures accumulate in ``errors[]`` on the
+         *     response envelope rather than rolling everything back.
+         */
         FilePatchRequest: {
             /** Visibility */
             visibility?: ("public" | "private" | "shared") | null;
@@ -12459,6 +12756,40 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /** Name */
+            name?: string | null;
+            /** Folder */
+            folder?: string | null;
+            /** Share */
+            share?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Share Revoke
+             * @default false
+             */
+            share_revoke: boolean;
+            /** Permissions */
+            permissions?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Permissions Revoke */
+            permissions_revoke?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Variants */
+            variants?: string[] | {
+                [key: string]: unknown;
+            }[] | null;
+            /** Restore Version */
+            restore_version?: number | null;
+            /**
+             * Restore From Trash
+             * @default false
+             */
+            restore_from_trash: boolean;
+            /** Copy To */
+            copy_to?: string | null;
         };
         /** FileRecord */
         FileRecord: {
@@ -12504,6 +12835,14 @@ export interface components {
             public_url?: string | null;
             /** Thumbnail Url */
             thumbnail_url?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Cdn Url */
+            cdn_url?: string | null;
+            /** Signed Url */
+            signed_url?: string | null;
+            /** Download Url */
+            download_url?: string | null;
         };
         /** FileUploadResponse */
         FileUploadResponse: {
@@ -14983,6 +15322,44 @@ export interface components {
          */
         PostPrepOption: "none" | "translation" | "summarization" | "expansion" | "fact_checking";
         /**
+         * PresetSummary
+         * @description One preset, as listed by GET /assets/presets.
+         */
+        PresetSummary: {
+            /** Name */
+            name: string;
+            /** Primary Key */
+            primary_key: string;
+            /** Include Baseline */
+            include_baseline: boolean;
+            /** Variants */
+            variants: components["schemas"]["PresetVariantSummary"][];
+        };
+        /**
+         * PresetVariantSummary
+         * @description One variant inside a preset, as listed by GET /assets/presets.
+         */
+        PresetVariantSummary: {
+            /** Key */
+            key: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Format */
+            format?: string | null;
+        };
+        /**
+         * PresetsResponse
+         * @description Response from GET /assets/presets — drives the FE preset picker.
+         */
+        PresetsResponse: {
+            /** Presets */
+            presets: components["schemas"]["PresetSummary"][];
+            /** Social Baseline */
+            social_baseline: components["schemas"]["PresetVariantSummary"][];
+        };
+        /**
          * PresignedUploadRequest
          * @description Issue a presigned upload URL the browser can PUT directly to S3.
          *
@@ -16483,6 +16860,20 @@ export interface components {
             /** Source Id */
             source_id: string;
         };
+        /**
+         * ShareLinkInfo
+         * @description Share-link info returned in combined-op envelopes.
+         */
+        ShareLinkInfo: {
+            /** Token */
+            token: string;
+            /** Url */
+            url: string;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+        };
         /** ShareLinkResolveResponse */
         ShareLinkResolveResponse: {
             /** Share Token */
@@ -17016,6 +17407,25 @@ export interface components {
             notes?: string[];
             /** Error */
             error?: string | null;
+        };
+        /**
+         * SubOpError
+         * @description One sub-operation failure in a combined-op response.
+         *
+         *     Combined ops (upload+share+permissions+variants, mutate, bulk) use
+         *     best-effort atomicity: the primary op always lands; sub-op failures
+         *     are collected here rather than rolling everything back.
+         */
+        SubOpError: {
+            /**
+             * Sub Op
+             * @description Which sub-operation failed: 'share' | 'permissions' | 'variants' | 'copy' | ...
+             */
+            sub_op: string;
+            /** Message */
+            message: string;
+            /** Code */
+            code?: string | null;
         };
         /**
          * SuggestRequest
@@ -17946,6 +18356,47 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
+        /**
+         * _AssetPreviewRequest
+         * @description JSON body for ``POST /assets/preview`` (MediaRef source).
+         */
+        _AssetPreviewRequest: {
+            /** Source */
+            source: {
+                [key: string]: unknown;
+            };
+            /** Variants */
+            variants: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Max Inline Bytes
+             * @default 262144
+             */
+            max_inline_bytes: number;
+        };
+        /**
+         * _PdfCompressRequest
+         * @description JSON body for ``POST /assets/pdf-compress`` (MediaRef source).
+         */
+        _PdfCompressRequest: {
+            /** Source */
+            source: {
+                [key: string]: unknown;
+            };
+            /**
+             * Level
+             * @default 3
+             */
+            level: number;
+            /** Max Size Bytes */
+            max_size_bytes?: number | null;
+            /**
+             * Max Inline Bytes
+             * @default 262144
+             */
+            max_inline_bytes: number;
+        };
         /** WarmRequest */
         aidream__api__routers__agents__WarmRequest: {
             /**
@@ -18028,6 +18479,10 @@ export interface components {
             metadata: {
                 [key: string]: unknown;
             };
+            /** Source Ref */
+            source_ref?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
@@ -29980,9 +30435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PresetsResponse"];
                 };
             };
         };
@@ -29991,6 +30444,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                "X-Idempotency-Key"?: string | null;
                 "X-Cloud-Files-Bypass"?: string | null;
             };
             path?: never;
@@ -30002,13 +30456,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description Bare Asset envelope when no options bundled; AssetCombinedOpResponse when options_json carries share / permissions / variants sub-ops, or when X-Idempotency-Key is set. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Asset"];
+                    "application/json": components["schemas"]["Asset"] | components["schemas"]["AssetCombinedOpResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30112,6 +30566,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assets_preview_assets_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["_AssetPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assets_preview_multipart_assets_preview_multipart_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_assets_preview_multipart_assets_preview_multipart_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assets_pdf_compress_assets_pdf_compress_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["_PdfCompressRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetPdfCompressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetPdfCompressResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30704,6 +31290,42 @@ export interface operations {
             };
         };
     };
+    bulk_op_discriminator_files_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Idempotency-Key"?: string | null;
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkOperationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkOperationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     bulk_delete_files_files_bulk_delete: {
         parameters: {
             query?: never;
@@ -30881,7 +31503,9 @@ export interface operations {
                 /** @description If true (default), merge into existing metadata. False = replace. */
                 metadata_merge?: boolean;
             };
-            header?: never;
+            header?: {
+                "X-Idempotency-Key"?: string | null;
+            };
             path: {
                 file_id: string;
             };
@@ -30893,13 +31517,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description FileRecord when only basic fields (visibility/metadata) are updated; AssetCombinedOpResponse when union-body sub-ops (share/permissions/variants/copy_to/restore) are present or X-Idempotency-Key is set. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileRecord"];
+                    "application/json": components["schemas"]["FileRecord"] | components["schemas"]["AssetCombinedOpResponse"];
                 };
             };
             /** @description Validation Error */

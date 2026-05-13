@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { getJson, postJson } from "@/features/files/api/client";
+import { getJson, postJson } from "@/lib/python-client";
 
 interface ApiRepo {
   repository_id: string | null;

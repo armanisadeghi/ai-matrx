@@ -95,7 +95,7 @@ function useSourceIngest({
         // the line-stream parse against the same endpoint, with the
         // correct body. Tiny duplicate but clean separation of concerns.
         const { buildHeaders, resolveBaseUrl } =
-          await import("@/features/files/api/client");
+          await import("@/lib/python-client");
         const { headers } = await buildHeaders({ signal: ac.signal }, true);
         const body: IngestRequestBody = {
           source_kind: sourceKind,

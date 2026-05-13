@@ -22,7 +22,98 @@ const windowPanelsImportRestriction = {
         {
             group: ['*supabase*storage*', '*storage*Bucket*'],
             message:
-                'Direct Supabase Storage usage is banned. Use the universal file handler from features/file-handler instead — it covers anonymous, authenticated, owned, shared, and public files in one API. See features/file-handler/FEATURE.md.',
+                'Direct Supabase Storage usage is banned. All file flows go through @/features/files (which talks to the Python backend). See docs/FILE_HANDLING_CONSOLIDATION_PLAN.md.',
+        },
+        // Phase 0 of the file-handling consolidation: external callers must
+        // import the public surface from `@/features/files` (the locked
+        // public index), never from internal subdirectories. Phase 1 will
+        // tighten further to deny the api/redux/upload subpaths entirely.
+        // See docs/FILE_HANDLING_CONSOLIDATION_PLAN.md.
+        {
+            group: ['@/features/files/api', '@/features/files/api/*'],
+            message:
+                'Do not import from features/files/api — use @/features/files (the public surface). HTTP helpers (getJson/postJson/del/patchJson/etc.) live at @/lib/python-client.',
+        },
+        // NOTE (Phase 1 will wire this in): once features/file-handler/*
+        // is folded into features/files/, add a deny pattern for
+        // `@/features/file-handler/*`. Not added now because many call sites
+        // still import handler hooks directly; the consolidation sweep in
+        // Phase 1 will migrate them and the pattern then locks the door.
+    ],
+};
+
+// File-handling consolidation — Phase 1 wiring target.
+//
+// These import paths are scheduled for deletion in PR3 (FE rebuild). They
+// are NOT wired into a rule today because most have live callers; Phase 1's
+// migration sweep migrates each call site, then this constant gets plugged
+// into `no-restricted-imports` to seal the door behind the rewrite.
+//
+// Reviewer note for the Phase 1 PR: add `...deletedFileHooksRestriction.paths`
+// to the `paths` array of the main `no-restricted-imports` rule below once
+// every call site has been migrated.
+// eslint-disable-next-line no-unused-vars
+const deletedFileHooksRestriction = {
+    paths: [
+        {
+            name: '@/features/files/hooks/useSignedUrl',
+            message:
+                'useSignedUrl is being deleted. Use useFileSrc (or useFile(...).url) from @/features/files. Plan: docs/FILE_HANDLING_CONSOLIDATION_PLAN.md',
+        },
+        {
+            name: '@/features/files/hooks/useFileAsset',
+            message:
+                'useFileAsset folds into useFile in Phase 1. Use useFile from @/features/files instead.',
+        },
+        {
+            name: '@/features/files/hooks/useFileDocument',
+            message:
+                'useFileDocument folds into useFileBlob in Phase 1. Use useFileBlob from @/features/files instead.',
+        },
+        {
+            name: '@/features/files/hooks/useGuardedFileUpload',
+            message:
+                'useGuardedFileUpload folds into useFileUpload({ guard: true }) in Phase 1. Use useFileUpload from @/features/files instead.',
+        },
+        {
+            name: '@/features/agents/hooks/useAiImageUrl',
+            message:
+                'useAiImageUrl is being deleted. Use useFileSrc({kind:"s3_path",path}) from @/features/files instead.',
+        },
+        {
+            name: '@/features/files/utils/resolveRenderableImageUrl',
+            message:
+                'resolveRenderableImageUrl is being deleted (folds into the resolver). Use useFile / useFileSrc from @/features/files.',
+        },
+        {
+            name: '@/components/ui/file-upload/useFileUploadWithStorage',
+            message:
+                'useFileUploadWithStorage is a legacy shim and is being deleted. Use useFileUpload from @/features/files instead.',
+        },
+        {
+            name: '@/components/ui/file-upload/usePasteImageUpload',
+            message:
+                'usePasteImageUpload is being deleted. Use useFileUpload + {kind:"file"} from @/features/files instead.',
+        },
+        {
+            name: '@/features/file-handler/hooks/useFileMediaBlock',
+            message:
+                'useFileMediaBlock folds into useFileAs({kind:"media_block"}) in Phase 1.',
+        },
+        {
+            name: '@/features/file-handler/hooks/useFileDownloadUrl',
+            message:
+                'useFileDownloadUrl folds into useFileSrc({mode:"download"}) in Phase 1.',
+        },
+        {
+            name: '@/features/files/upload/cloudUpload',
+            message:
+                'cloudUpload is being deleted. Use useFileUpload from @/features/files instead.',
+        },
+        {
+            name: '@/components/image/cloud/resolveCloudFileUrl',
+            message:
+                'resolveCloudFileUrl is being deleted. Use useFile / useFileSrc from @/features/files.',
         },
     ],
 };

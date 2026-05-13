@@ -16,7 +16,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { del, getJson, patchJson, postJson } from "@/features/files/api/client";
+import { del, getJson, patchJson, postJson } from "@/lib/python-client";
 import type {
   DataStore,
   DataStoreWithMemberCount,

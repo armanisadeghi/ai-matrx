@@ -18,17 +18,13 @@
  * narrow viewports the WindowPanel takes over the whole screen. The
  * Esc / close handlers route through the same `onClose` we pass.
  *
- * Realtime: mounts `<CloudFilesRealtimeProvider>` locally so the file's
- * versions / permissions / share-link state stay live even when the
- * window is opened outside the `/files` route group.
+ * Realtime: cloud-files realtime is mounted globally in `app/Providers.tsx`
+ * — no per-window provider needed (Phase 0 of the consolidation rebuild).
  */
 
 "use client";
 
-import { useSelector } from "react-redux";
-import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import { PreviewPane } from "@/features/files/components/surfaces/PreviewPane";
 
 export interface FilePreviewWindowProps {
@@ -47,8 +43,6 @@ export default function FilePreviewWindow({
   onClose,
   fileId,
 }: FilePreviewWindowProps) {
-  const userId = useSelector((state: RootState) => state.userAuth?.id ?? null);
-
   if (!isOpen || !fileId) return null;
 
   return (
@@ -61,21 +55,20 @@ export default function FilePreviewWindow({
       overlayId="filePreviewWindow"
       onCollectData={() => ({ fileId })}
     >
-      <CloudFilesRealtimeProvider userId={userId}>
-        {/*
-          The canonical PreviewPane. Passing `onClose` so the pane's own
-          X button + Esc handler close the WindowPanel instead of
-          dispatching `setActiveFileId(null)` (which would be a no-op
-          here — the WindowPanel doesn't read that field, and clearing
-          it would silently close the cloud-files PageShell preview if
-          it happens to be open in another tab/route).
-        */}
-        <PreviewPane
-          fileId={fileId}
-          onClose={onClose}
-          className="h-full w-full"
-        />
-      </CloudFilesRealtimeProvider>
+      {/*
+        The canonical PreviewPane. Passing `onClose` so the pane's own
+        X button + Esc handler close the WindowPanel instead of
+        dispatching `setActiveFileId(null)` (which would be a no-op
+        here — the WindowPanel doesn't read that field, and clearing
+        it would silently close the cloud-files PageShell preview if
+        it happens to be open in another tab/route).
+        Cloud-files realtime is mounted globally in app/Providers.tsx.
+      */}
+      <PreviewPane
+        fileId={fileId}
+        onClose={onClose}
+        className="h-full w-full"
+      />
     </WindowPanel>
   );
 }

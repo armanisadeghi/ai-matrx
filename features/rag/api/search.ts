@@ -8,7 +8,7 @@
  * stages, document) and is consumed by both the dedicated RAG search
  * page and embedded surfaces (file context menu, omnibox, embed-in-chat).
  */
-import { postJson } from "@/features/files/api/client";
+import { postJson } from "@/lib/python-client";
 
 export interface RagSearchHit {
   chunk_id: string;

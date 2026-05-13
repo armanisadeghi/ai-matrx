@@ -36,7 +36,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getJson, postJson } from "@/features/files/api/client";
+import { getJson, postJson } from "@/lib/python-client";
 import { StatusBadge } from "./StatusBadge";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
 import type { DocStatus } from "@/features/rag/types/library";

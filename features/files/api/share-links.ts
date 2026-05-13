@@ -15,7 +15,7 @@ import {
   publicGetJson,
   type RequestOptions,
   type ResponseMeta,
-} from "./client";
+} from "@/lib/python-client";
 import type {
   CloudShareLinkRow,
   CreateShareLinkRequest,

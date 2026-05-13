@@ -6,7 +6,7 @@
  * error normalisation are identical).
  */
 
-import { getJson } from "@/features/files/api/client";
+import { getJson } from "@/lib/python-client";
 import type {
   ChunkRow,
   DocumentDetail,

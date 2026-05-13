@@ -47,7 +47,7 @@ import {
   newRequestId,
   type ResponseMeta,
   type UploadProgressEvent,
-} from "@/features/files/api/client";
+} from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   registerRequest,

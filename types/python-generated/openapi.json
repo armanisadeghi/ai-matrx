@@ -17625,9 +17625,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response List Presets Assets Presets Get"
+                  "$ref": "#/components/schemas/PresetsResponse"
                 }
               }
             }
@@ -17643,6 +17641,22 @@
         "summary": "Upload Asset",
         "operationId": "upload_asset_assets_post",
         "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Idempotency-Key"
+            }
+          },
           {
             "name": "X-Cloud-Files-Bypass",
             "in": "header",
@@ -17672,11 +17686,19 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Bare Asset envelope when no options bundled; AssetCombinedOpResponse when options_json carries share / permissions / variants sub-ops, or when X-Idempotency-Key is set.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Asset"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Asset"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssetCombinedOpResponse"
+                    }
+                  ],
+                  "title": "Response Upload Asset Assets Post"
                 }
               }
             }
@@ -17752,6 +17774,7 @@
           "Assets"
         ],
         "summary": "Patch Asset",
+        "description": "Mutate an asset: visibility, share grants, metadata.\n\nBest-effort atomic: each sub-op runs sequentially. Visibility change\ncascades to every persisted variant so the asset can't end up half\npublic / half private. Failures of variant visibility moves are\nlogged but don't fail the whole call (consistent with the prior\nbehaviour and with the FE team's spec).",
         "operationId": "patch_asset_assets__file_id__patch",
         "parameters": [
           {
@@ -17833,6 +17856,174 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/preview": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Assets Preview",
+        "description": "No-persist preview rendering. Replaces Next.js Sharp route.\n\nAccepts a master via MediaRef (``{\"file_id\": \"...\"}``) + variant\nspecs. Returns base64 data URLs (≤256 KB) or 5-min ephemeral\nsigned URLs.",
+        "operationId": "assets_preview_assets_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/_AssetPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/preview/multipart": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Assets Preview Multipart",
+        "description": "Multipart variant of /assets/preview — render directly without a\nprior cld_files row. Useful for Image Studio drag-and-drop preview\nbefore commit-to-save.",
+        "operationId": "assets_preview_multipart_assets_preview_multipart_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_assets_preview_multipart_assets_preview_multipart_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/pdf-compress": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Assets Pdf Compress",
+        "description": "No-persist PDF compression. Replaces app/api/pdf/compress.\n\nAccepts a master via MediaRef. Returns base64 data URL (≤256 KB)\nor 5-min ephemeral signed URL.",
+        "operationId": "assets_pdf_compress_assets_pdf_compress_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/_PdfCompressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetPdfCompressResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/pdf-compress/multipart": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "summary": "Assets Pdf Compress Multipart",
+        "description": "Multipart variant of /assets/pdf-compress.",
+        "operationId": "assets_pdf_compress_multipart_assets_pdf_compress_multipart_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetPdfCompressResponse"
                 }
               }
             }
@@ -18850,6 +19041,80 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Bulk Op Discriminator",
+        "description": "FE-team A.3 — canonical bulk endpoint.\n\nSubsumes ``DELETE /files/bulk`` and ``POST /files/bulk/move`` via a\ndiscriminator ``op``. Existing endpoints are kept for backward\ncompat; new FE callers use this one.\n\nReturns ``{op, results: [{file_id, ok, error?}], errors[]}``.\nIdempotency-key memoizes the full response.",
+        "operationId": "bulk_op_discriminator_files_bulk_post",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkOperationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkOperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/files/bulk/move": {
@@ -19071,6 +19336,22 @@
               "title": "Metadata Merge"
             },
             "description": "If true (default), merge into existing metadata. False = replace."
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Idempotency-Key"
+            }
           }
         ],
         "requestBody": {
@@ -19085,11 +19366,19 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "FileRecord when only basic fields (visibility/metadata) are updated; AssetCombinedOpResponse when union-body sub-ops (share/permissions/variants/copy_to/restore) are present or X-Idempotency-Key is set.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FileRecord"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FileRecord"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssetCombinedOpResponse"
+                    }
+                  ],
+                  "title": "Response Update File Metadata Files  File Id  Patch"
                 }
               }
             }
@@ -27525,6 +27814,46 @@
         ],
         "title": "Asset"
       },
+      "AssetCombinedOpResponse": {
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/Asset"
+          },
+          "share_link": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShareLinkInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "copy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CopyInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/SubOpError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset"
+        ],
+        "title": "AssetCombinedOpResponse",
+        "description": "Response envelope for combined-op endpoints (FE-team A.1 / A.2).\n\nReturned by ``POST /assets`` when ``options_json`` is set, and by\n``PATCH /files/{id}`` when union-body fields beyond simple rename/visibility\nare present. The primary op (upload / patch) always lands; sub-op failures\nappear in ``errors`` rather than aborting the whole request."
+      },
       "AssetPatchRequest": {
         "properties": {
           "visibility": {
@@ -27595,6 +27924,145 @@
         "title": "AssetPatchRequest",
         "description": "Mutate an existing asset.\n\nUse to:\n  - change visibility (also moves the S3 object between buckets)\n  - grant new sharees\n  - refresh signed URLs (signed_url_ttl)"
       },
+      "AssetPdfCompressResponse": {
+        "properties": {
+          "original_size": {
+            "type": "integer",
+            "title": "Original Size"
+          },
+          "compressed_size": {
+            "type": "integer",
+            "title": "Compressed Size"
+          },
+          "reduction_ratio": {
+            "type": "number",
+            "title": "Reduction Ratio",
+            "description": "0.0..1.0 — fraction of bytes saved"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type",
+            "default": "application/pdf"
+          },
+          "data_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Url"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_size",
+          "compressed_size",
+          "reduction_ratio"
+        ],
+        "title": "AssetPdfCompressResponse",
+        "description": "Response from POST /assets/pdf-compress — no-persist compression."
+      },
+      "AssetPreviewResponse": {
+        "properties": {
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/AssetPreviewVariant"
+            },
+            "type": "array",
+            "title": "Variants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "variants"
+        ],
+        "title": "AssetPreviewResponse",
+        "description": "Response from POST /assets/preview — no-persist variant rendering."
+      },
+      "AssetPreviewVariant": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size"
+          },
+          "data_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Url",
+            "description": "base64 data URL (small variants)"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url",
+            "description": "Ephemeral signed URL (5-min TTL)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "mime_type",
+          "file_size"
+        ],
+        "title": "AssetPreviewVariant",
+        "description": "One rendered preview variant (no persistence)."
+      },
       "AssetRenderMoreRequest": {
         "properties": {
           "preset": {
@@ -27644,7 +28112,7 @@
         },
         "type": "object",
         "title": "AssetRenderMoreRequest",
-        "description": "Render additional variants for an existing asset.\n\nAccepts either a known preset name OR a list of custom ImageVariant\ndicts. Both paths run through the existing matrx-utils variants\nsubsystem so each rendered variant is an idempotent cld_files row."
+        "description": "Render additional variants for an existing asset.\n\nAccepts either a known preset name OR a list of custom ImageVariant\ndicts. Both paths run through the matrx-utils variants subsystem so\neach rendered variant is an idempotent cld_files row."
       },
       "AssetVariant": {
         "properties": {
@@ -27933,6 +28401,70 @@
         ],
         "title": "BboxInput"
       },
+      "Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "level": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Level",
+            "default": 3
+          },
+          "max_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Size Bytes"
+          },
+          "max_inline_bytes": {
+            "type": "integer",
+            "minimum": 1024,
+            "title": "Max Inline Bytes",
+            "default": 262144
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post"
+      },
+      "Body_assets_preview_multipart_assets_preview_multipart_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "variants_json": {
+            "type": "string",
+            "title": "Variants Json",
+            "description": "JSON-encoded list of preview variant specs"
+          },
+          "max_inline_bytes": {
+            "type": "integer",
+            "minimum": 1024,
+            "title": "Max Inline Bytes",
+            "default": 262144
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "variants_json"
+        ],
+        "title": "Body_assets_preview_multipart_assets_preview_multipart_post"
+      },
       "Body_batch_extract_utilities_pdf_batch_extract_post": {
         "properties": {
           "files": {
@@ -28069,7 +28601,7 @@
               }
             ],
             "title": "Share With",
-            "description": "Comma-separated user IDs"
+            "description": "Comma-separated user IDs (legacy)"
           },
           "share_level": {
             "type": "string",
@@ -28123,6 +28655,18 @@
             ],
             "title": "Custom Variants Json",
             "description": "JSON list of ImageVariant dicts merged with the preset's variants"
+          },
+          "options_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options Json",
+            "description": "FE-team A.1 — bundled sub-ops. JSON: {\"share\":{...},\"permissions\":[{...}],\"variants\":[\"preset\"|{...}]}. When set, the response is {asset, share_link, errors[]} instead of bare Asset."
           }
         },
         "type": "object",
@@ -28515,6 +29059,116 @@
         },
         "type": "object",
         "title": "BulkLoadRequest"
+      },
+      "BulkOperationRequest": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Ids"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "move",
+              "delete",
+              "restore",
+              "visibility",
+              "share"
+            ],
+            "title": "Op"
+          },
+          "args": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ids",
+          "op"
+        ],
+        "title": "BulkOperationRequest",
+        "description": "``POST /files/bulk`` discriminator body (FE-team A.3)."
+      },
+      "BulkOperationResponse": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "title": "Op"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "succeeded": {
+            "type": "integer",
+            "title": "Succeeded"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BulkOperationResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "op",
+          "total",
+          "succeeded",
+          "failed",
+          "results"
+        ],
+        "title": "BulkOperationResponse",
+        "description": "Response from POST /files/bulk (discriminator: move|delete|restore|visibility|share)."
+      },
+      "BulkOperationResult": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "success"
+        ],
+        "title": "BulkOperationResult",
+        "description": "One row's result inside a BulkOperationResponse."
       },
       "BulkResponse": {
         "properties": {
@@ -31614,6 +32268,96 @@
           "target_path"
         ],
         "title": "CopyFileRequest"
+      },
+      "CopyInfo": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "folder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "public",
+                  "private",
+                  "shared"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "cdn_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Url"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "file_path"
+        ],
+        "title": "CopyInfo",
+        "description": "New-file info when a mutate or upload op also performs a copy_to.\n\nCarries the same URL flavours as AssetVariant so the FE can navigate\ndirectly to the new file without a second round-trip."
       },
       "CrawlPresetSaveRequest": {
         "properties": {
@@ -35724,10 +36468,128 @@
               }
             ],
             "title": "Metadata"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "folder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "share_revoke": {
+            "type": "boolean",
+            "title": "Share Revoke",
+            "default": false
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissions"
+          },
+          "permissions_revoke": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissions Revoke"
+          },
+          "variants": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variants"
+          },
+          "restore_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restore Version"
+          },
+          "restore_from_trash": {
+            "type": "boolean",
+            "title": "Restore From Trash",
+            "default": false
+          },
+          "copy_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copy To"
           }
         },
         "type": "object",
-        "title": "FilePatchRequest"
+        "title": "FilePatchRequest",
+        "description": "Union mutation body for PATCH /files/{id} (FE-team A.2).\n\nEvery field is optional. Sub-operations run sequentially with\nbest-effort atomicity; failures accumulate in ``errors[]`` on the\nresponse envelope rather than rolling everything back."
       },
       "FileRecord": {
         "properties": {
@@ -35864,6 +36726,50 @@
               }
             ],
             "title": "Thumbnail Url"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "cdn_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Url"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url"
           }
         },
         "type": "object",
@@ -42898,6 +43804,110 @@
         ],
         "title": "PostPrepOption"
       },
+      "PresetSummary": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "primary_key": {
+            "type": "string",
+            "title": "Primary Key"
+          },
+          "include_baseline": {
+            "type": "boolean",
+            "title": "Include Baseline"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/PresetVariantSummary"
+            },
+            "type": "array",
+            "title": "Variants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "primary_key",
+          "include_baseline",
+          "variants"
+        ],
+        "title": "PresetSummary",
+        "description": "One preset, as listed by GET /assets/presets."
+      },
+      "PresetVariantSummary": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "PresetVariantSummary",
+        "description": "One variant inside a preset, as listed by GET /assets/presets."
+      },
+      "PresetsResponse": {
+        "properties": {
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/PresetSummary"
+            },
+            "type": "array",
+            "title": "Presets"
+          },
+          "social_baseline": {
+            "items": {
+              "$ref": "#/components/schemas/PresetVariantSummary"
+            },
+            "type": "array",
+            "title": "Social Baseline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "presets",
+          "social_baseline"
+        ],
+        "title": "PresetsResponse",
+        "description": "Response from GET /assets/presets — drives the FE preset picker."
+      },
       "PresignedUploadRequest": {
         "properties": {
           "file_path": {
@@ -46472,6 +47482,47 @@
         ],
         "title": "SearchSourceRef"
       },
+      "ShareLinkInfo": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "max_uses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Uses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "url"
+        ],
+        "title": "ShareLinkInfo",
+        "description": "Share-link info returned in combined-op envelopes."
+      },
       "ShareLinkResolveResponse": {
         "properties": {
           "share_token": {
@@ -48201,6 +49252,37 @@
           "position"
         ],
         "title": "StudioVariantOut"
+      },
+      "SubOpError": {
+        "properties": {
+          "sub_op": {
+            "type": "string",
+            "title": "Sub Op",
+            "description": "Which sub-operation failed: 'share' | 'permissions' | 'variants' | 'copy' | ..."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sub_op",
+          "message"
+        ],
+        "title": "SubOpError",
+        "description": "One sub-operation failure in a combined-op response.\n\nCombined ops (upload+share+permissions+variants, mutate, bulk) use\nbest-effort atomicity: the primary op always lands; sub-op failures\nare collected here rather than rolling everything back."
       },
       "SuggestRequest": {
         "properties": {
@@ -50983,6 +52065,71 @@
         ],
         "title": "WriteArgs"
       },
+      "_AssetPreviewRequest": {
+        "properties": {
+          "source": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Source"
+          },
+          "variants": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Variants"
+          },
+          "max_inline_bytes": {
+            "type": "integer",
+            "title": "Max Inline Bytes",
+            "default": 262144
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "variants"
+        ],
+        "title": "_AssetPreviewRequest",
+        "description": "JSON body for ``POST /assets/preview`` (MediaRef source)."
+      },
+      "_PdfCompressRequest": {
+        "properties": {
+          "source": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Source"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level",
+            "default": 3
+          },
+          "max_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Size Bytes"
+          },
+          "max_inline_bytes": {
+            "type": "integer",
+            "title": "Max Inline Bytes",
+            "default": 262144
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "_PdfCompressRequest",
+        "description": "JSON body for ``POST /assets/pdf-compress`` (MediaRef source)."
+      },
       "aidream__api__routers__agents__WarmRequest": {
         "properties": {
           "is_version": {
@@ -51192,6 +52339,18 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Metadata"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
           }
         },
         "type": "object",

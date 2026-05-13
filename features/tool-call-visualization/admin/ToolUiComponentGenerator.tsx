@@ -118,6 +118,7 @@ interface GeneratedComponent {
   keep_expanded_on_stream: boolean;
   allowed_imports: string[];
   version: string;
+  contract_version: 1 | 2;
 }
 
 type WizardStep =
@@ -236,7 +237,8 @@ function extractJsonFromResponse(
         results_label: meta.results_label || "Results",
         keep_expanded_on_stream: meta.keep_expanded_on_stream ?? false,
         allowed_imports: meta.allowed_imports ?? ["react", "lucide-react"],
-        version: meta.version ?? "1.0.0",
+        version: meta.version ?? "2.0.0",
+        contract_version: meta.contract_version === 1 ? 1 : 2,
         inline_code,
         overlay_code,
         utility_code,
@@ -260,7 +262,8 @@ function extractJsonFromResponse(
           results_label: parsed.results_label || "Results",
           keep_expanded_on_stream: parsed.keep_expanded_on_stream ?? false,
           allowed_imports: parsed.allowed_imports ?? ["react", "lucide-react"],
-          version: parsed.version ?? "1.0.0",
+          version: parsed.version ?? "2.0.0",
+          contract_version: parsed.contract_version === 1 ? 1 : 2,
           inline_code: parsed.inline_code || "",
           overlay_code: parsed.overlay_code || "",
           utility_code: parsed.utility_code || "",
@@ -285,7 +288,8 @@ function extractJsonFromResponse(
           results_label: parsed.results_label || "Results",
           keep_expanded_on_stream: parsed.keep_expanded_on_stream ?? false,
           allowed_imports: parsed.allowed_imports ?? ["react", "lucide-react"],
-          version: parsed.version ?? "1.0.0",
+          version: parsed.version ?? "2.0.0",
+          contract_version: parsed.contract_version === 1 ? 1 : 2,
           inline_code: parsed.inline_code || "",
           overlay_code: parsed.overlay_code || "",
           utility_code: parsed.utility_code || "",
@@ -843,7 +847,8 @@ export function ToolUiComponentGenerator({
             header_subtitle_code: "",
             keep_expanded_on_stream: false,
             allowed_imports: [],
-            version: "1.0.0",
+            version: "2.0.0",
+            contract_version: 2,
           },
           fullText,
         );

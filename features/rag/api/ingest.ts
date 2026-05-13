@@ -20,7 +20,7 @@ import {
   buildHeaders,
   postJson,
   resolveBaseUrl,
-} from "@/features/files/api/client";
+} from "@/lib/python-client";
 
 export interface IngestResponse {
   source_kind: string;

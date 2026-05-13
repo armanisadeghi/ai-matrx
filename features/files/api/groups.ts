@@ -15,7 +15,7 @@ import {
   postJson,
   type RequestOptions,
   type ResponseMeta,
-} from "./client";
+} from "@/lib/python-client";
 import type {
   AddGroupMemberRequest,
   CloudUserGroupMemberRow,

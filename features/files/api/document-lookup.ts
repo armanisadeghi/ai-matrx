@@ -22,7 +22,7 @@
  * which the FE explicitly invalidates by calling `clearFileDocumentCache`.
  */
 import { BackendApiError } from "@/lib/api/errors";
-import { getJson } from "@/features/files/api/client";
+import { getJson } from "@/lib/python-client";
 
 export interface FileDocumentLookup {
   /** processed_documents.id — the doc id used by `/api/document/{id}`. */

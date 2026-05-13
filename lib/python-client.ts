@@ -1,7 +1,13 @@
 /**
- * features/files/api/client.ts
+ * lib/python-client.ts
  *
- * Typed REST client for the Python FastAPI cloud-files backend.
+ * The universal typed REST client for the Python FastAPI backend.
+ *
+ * Used by every feature that talks to the Python backend over REST (files,
+ * rag, page-extraction, file-analysis, image-studio, pdf-extractor, etc.).
+ * Cloud-files originally owned this module under `features/files/api/client`;
+ * it was promoted to `lib/` so the `features/files/client/*` ring-fence can
+ * land without breaking unrelated callers.
  *
  * Key responsibilities:
  *   - Attach Supabase JWT as `Authorization: Bearer ...` on every call.
@@ -12,7 +18,7 @@
  * Why a purpose-built client here (vs reusing lib/api/backend-client.ts):
  *   - We need DELETE/PATCH — the shared BackendClient only has POST/GET/upload.
  *   - Request-ID on EVERY mutation is mandatory for our realtime dedup model.
- *   - Cloud-files is the only feature that talks to /files/* REST endpoints.
+ *   - This client uniformly threads the guest fingerprint header alongside JWT.
  *
  * If BackendClient gains DELETE/PATCH/request-id support in the future, we can
  * collapse this back into it.

@@ -4,7 +4,7 @@
  * Barrel for the REST API layer. Thunks (Phase 2) consume from here.
  */
 
-export * from "./client";
+export * from "@/lib/python-client";
 export * as Files from "./files";
 export * as Folders from "./folders";
 export * as Versions from "./versions";

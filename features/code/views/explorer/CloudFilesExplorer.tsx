@@ -22,14 +22,13 @@
  *     sandbox FileTree's single-click-to-open behaviour so users don't
  *     have to learn two different interaction models.
  *
- * Mounts `<CloudFilesRealtimeProvider>` locally so the cloud-files Redux
- * tree is hydrated and stays live even when the user opens the workspace
- * outside the `/files` route group.
+ * Cloud-files realtime is mounted globally in `app/Providers.tsx`, so this
+ * component just reads from the live Redux tree — no per-mount provider
+ * needed (Phase 0 of the file-handling consolidation).
  */
 
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import {
   setActiveFileId,
@@ -94,15 +93,13 @@ export function CloudFilesExplorer({ className }: CloudFilesExplorerProps) {
   }
 
   return (
-    <CloudFilesRealtimeProvider userId={userId}>
-      <CloudFilesExplorerBody
-        className={className}
-        onSelectFile={handleSelectFile}
-        onSelectFolder={handleSelectFolder}
-        onActivateFile={handleActivateFile}
-        onActivateFolder={handleActivateFolder}
-      />
-    </CloudFilesRealtimeProvider>
+    <CloudFilesExplorerBody
+      className={className}
+      onSelectFile={handleSelectFile}
+      onSelectFolder={handleSelectFolder}
+      onActivateFile={handleActivateFile}
+      onActivateFolder={handleActivateFolder}
+    />
   );
 }
 

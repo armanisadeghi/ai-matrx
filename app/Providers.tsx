@@ -65,6 +65,7 @@ import { ExtensionBridgeSubscriber } from "@/lib/extension-bridge/ExtensionBridg
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
 import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
+import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
@@ -122,6 +123,14 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                               <ExtensionBridgeSubscriber />
                               <GlobalTaskShortcut />
                               <CreateTaskFromSourceDialog />
+                              {/* Cloud-files realtime — mounted globally so
+                                  every authed page receives file/folder/share
+                                  link updates. Reads userId from Redux and
+                                  tears down on sign-out. Replaces five
+                                  previous per-route mounts (Phase 0 of the
+                                  file-handling consolidation). See
+                                  docs/FILE_HANDLING_CONSOLIDATION_PLAN.md. */}
+                              <CloudFilesRealtimeProvider />
                               {/* Cloud-files imperative pickers:
                                   openFilePicker() / openFolderPicker() / openSaveAs()
                                   are callable from anywhere in the app once this host

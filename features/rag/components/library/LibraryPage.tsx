@@ -66,7 +66,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { postJson } from "@/features/files/api/client";
+import { postJson } from "@/lib/python-client";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import type {
   DocStatus,

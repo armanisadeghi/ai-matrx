@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search as SearchIcon, ExternalLink } from "lucide-react";
-import { postJson } from "@/features/files/api/client";
+import { postJson } from "@/lib/python-client";
 
 interface ApiHit {
   chunk_id: string;

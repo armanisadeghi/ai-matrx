@@ -50,7 +50,7 @@ import {
   putJson,
   type RequestOptions,
   type ResponseMeta,
-} from "@/features/files/api/client";
+} from "@/lib/python-client";
 import type { components } from "@/types/python-generated/api-types";
 
 // ─── Type re-exports (named locally for callers) ────────────────────────────
