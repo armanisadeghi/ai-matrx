@@ -13,7 +13,7 @@ import {
   forceCloseFeedback,
 } from "@/actions/feedback.actions";
 import { useFileUpload } from "@/features/files";
-import { imageViewUrl } from "@/features/files/handler/utils/python-base";
+import { imageViewUrl } from "@/features/files";
 import {
   UserFeedback,
   FeedbackStatus,

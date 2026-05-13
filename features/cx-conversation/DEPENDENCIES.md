@@ -96,7 +96,7 @@ fully self-contained, these are the ones to internalize.
 | Import | Used By | Action |
 |--------|---------|--------|
 | `@/components/ui/file-upload/useClipboardPaste` | ConversationInput | **Keep** — shared UI hook |
-| `@/components/ui/file-upload/useFileUploadWithStorage` | ConversationInput | **Keep** — shared UI hook |
+| `@/features/files` → `useFileUpload` | ConversationInput | **Keep** — canonical upload hook |
 
 ### Markdown Utils
 | Import | Used By | Action |

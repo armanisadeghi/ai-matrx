@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon, Maximize2, Loader2 } from "lucide-react";
-import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import { useFileAs } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 import type { FileSource } from "@/features/files";
 

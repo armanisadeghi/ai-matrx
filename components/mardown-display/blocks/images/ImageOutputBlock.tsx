@@ -37,7 +37,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { toast } from "sonner";
-import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import { useFileAs } from "@/features/files";
 import type { FileSource } from "@/features/files";
 import * as Files from "@/features/files/api/files";
 import { useIsMobile } from "@/hooks/use-mobile";

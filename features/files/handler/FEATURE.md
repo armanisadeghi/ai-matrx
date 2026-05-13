@@ -136,8 +136,8 @@ The following call sites still build their own attachments. Each becomes a small
 | `features/cx-chat/utils/buildContentBlocksForSave.ts` | `fileHandler.toContentPart` | pending |
 | `features/rag/api/ingest.ts` (file source coercion) | `fileHandler.use(source).as({ kind: "rag_ingest_source" })` | pending |
 | `features/tasks/services/taskService.ts` legacy attachments path | `fileHandler.use({ kind: "file_id", fileId })` | pending |
-| `components/ui/file-upload/useFileUploadWithStorage.ts` | `useFileUpload` from this feature | pending |
-| `components/ui/file-upload/usePasteImageUpload.ts` | `useFileUpload` + `{ kind: "file", file }` | pending |
+| `components/ui/file-upload/useFileUploadWithStorage.ts` | `useFileUpload` from this feature | done |
+| `components/ui/file-upload/usePasteImageUpload.ts` | `useFileUpload` + `{ kind: "file", file }` | done |
 
 The active `supabase.storage` call sites must be migrated to the handler before deletion — see "Obliteration plan" below.
 

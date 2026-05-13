@@ -111,7 +111,7 @@ Project-wide utilities with stable interfaces. No action needed.
 | Import | Used By | Loading |
 |--------|---------|---------|
 | `useClipboardPaste` | ConversationInput | Eager |
-| `useFileUploadWithStorage` | ConversationInput | Eager |
+| `useFileUpload` (from `@/features/files`) | ConversationInput | Eager |
 
 ### Markdown Utils
 | Import | Used By | Loading |
