@@ -45,11 +45,11 @@ function NewItemContent() {
           createValue.mutate(
             { itemId: newItem.id, valueData },
             {
-              onSuccess: () => router.push(`/ssr/context/items/${newItem.id}`),
+              onSuccess: () => router.push(`/app-context/items/${newItem.id}`),
             },
           );
         } else {
-          router.push(`/ssr/context/items/${newItem.id}`);
+          router.push(`/app-context/items/${newItem.id}`);
         }
       },
     });

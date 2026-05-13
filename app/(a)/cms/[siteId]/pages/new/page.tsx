@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CmsPageService } from "@/features/content-manager/services/cmsService";
-import PageEditor from "@/app/(ssr)/ssr/content/components/PageEditor";
+import { CmsPageService } from "@/features/cms/services/cmsService";
+import PageEditor from "@/features/cms/components/PageEditor";
 
 export default function NewPageRoute() {
   const { siteId } = useParams() as { siteId: string };
@@ -22,7 +22,7 @@ export default function NewPageRoute() {
         ...params,
       });
       // Navigate to the new page's editor
-      router.push(`/ssr/content/${siteId}/pages/${newPage.id}`);
+      router.push(`/cms/${siteId}/pages/${newPage.id}`);
       return newPage;
     } catch (err: any) {
       setError(err.message);
@@ -33,7 +33,7 @@ export default function NewPageRoute() {
   };
 
   const handleClose = () => {
-    router.push(`/ssr/content/${siteId}`);
+    router.push(`/cms/${siteId}`);
   };
 
   // Stub handlers — create mode doesn't use save/draft/publish

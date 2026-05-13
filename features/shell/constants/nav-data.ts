@@ -242,7 +242,7 @@ export const primaryNavItems: ShellNavItem[] = [
   },
   {
     label: "Context",
-    href: "/ssr/context",
+    href: "/app-context",
     iconName: "BookOpen",
     section: "primary",
     profileMenu: true,

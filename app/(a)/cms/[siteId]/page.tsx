@@ -3,10 +3,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CmsPageService } from "@/features/content-manager/services/cmsService";
-import type { ClientPageSummary } from "@/features/content-manager/types";
+import { CmsPageService } from "@/features/cms/services/cmsService";
+import type { ClientPageSummary } from "@/features/cms/types";
 import { useSiteContext } from "./SiteLayoutClient";
-import PageListView from "../components/PageListView";
+import PageListView from "../../../../features/cms/components/PageListView";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings, Puzzle } from "lucide-react";
 
@@ -49,20 +49,20 @@ export default function SiteDashboardPage() {
       {/* ── Sub-header with site actions ─────────────────────── */}
       <div className="flex-none flex items-center justify-between px-4 sm:px-6 py-2 border-b border-border/30 bg-muted/10">
         <div className="flex items-center gap-2">
-          <Link href={`/ssr/content/${siteId}/settings`}>
+          <Link href={`/cms/${siteId}/settings`}>
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7">
               <Settings className="h-3.5 w-3.5" />
               Settings
             </Button>
           </Link>
-          <Link href={`/ssr/content/${siteId}/components`}>
+          <Link href={`/cms/${siteId}/components`}>
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7">
               <Puzzle className="h-3.5 w-3.5" />
               Components
             </Button>
           </Link>
         </div>
-        <Link href={`/ssr/content/${siteId}/pages/new`}>
+        <Link href={`/cms/${siteId}/pages/new`}>
           <Button size="sm" className="gap-1.5 text-xs">
             <Plus className="h-3.5 w-3.5" />
             New Page
@@ -76,9 +76,7 @@ export default function SiteDashboardPage() {
           pages={pages}
           isLoading={isLoading}
           error={error}
-          onOpenPage={(pageId) =>
-            router.push(`/ssr/content/${siteId}/pages/${pageId}`)
-          }
+          onOpenPage={(pageId) => router.push(`/cms/${siteId}/pages/${pageId}`)}
           onDeletePage={handleDeletePage}
           onRefresh={fetchPages}
         />

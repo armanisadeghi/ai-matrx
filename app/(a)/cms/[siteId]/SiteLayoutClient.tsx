@@ -10,8 +10,8 @@ import React, {
 import { extractErrorMessage } from "@/utils/errors";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CmsSiteService } from "@/features/content-manager/services/cmsService";
-import type { ClientSite } from "@/features/content-manager/types";
+import { CmsSiteService } from "@/features/cms/services/cmsService";
+import type { ClientSite } from "@/features/cms/types";
 import { Loader2, AlertCircle, ChevronRight, PanelTop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -38,8 +38,8 @@ function Breadcrumb({
   const pathname = usePathname();
 
   const crumbs: { label: string; href: string }[] = [
-    { label: "Content", href: "/ssr/content" },
-    { label: siteName, href: `/ssr/content/${siteId}` },
+    { label: "Content", href: "/cms" },
+    { label: siteName, href: `/cms/${siteId}` },
   ];
 
   if (pathname.includes("/pages/new")) {
@@ -135,7 +135,7 @@ export default function SiteLayoutClient({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push("/ssr/content")}
+              onClick={() => router.push("/cms")}
             >
               ← All Sites
             </Button>

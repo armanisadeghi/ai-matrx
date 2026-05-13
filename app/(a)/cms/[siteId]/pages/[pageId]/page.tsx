@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CmsPageService } from "@/features/content-manager/services/cmsService";
-import type { ClientPage } from "@/features/content-manager/types";
+import { CmsPageService } from "@/features/cms/services/cmsService";
+import type { ClientPage } from "@/features/cms/types";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PageEditor from "@/app/(ssr)/ssr/content/components/PageEditor";
+import PageEditor from "../../../../../../features/cms/components/PageEditor";
 
 export default function EditPageRoute() {
   const { siteId, pageId } = useParams() as { siteId: string; pageId: string };
@@ -94,7 +94,7 @@ export default function EditPageRoute() {
   };
 
   const handleClose = () => {
-    router.push(`/ssr/content/${siteId}`);
+    router.push(`/cms/${siteId}`);
   };
 
   if (isLoading) {

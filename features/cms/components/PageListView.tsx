@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import type { ClientPageSummary } from "@/features/content-manager/types";
+import type { ClientPageSummary } from "@/features/cms/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +76,9 @@ export default function PageListView({
   const [sortField, setSortField] = useState<SortField>("sort_order");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ClientPageSummary | null>(
+    null,
+  );
 
   // ── Derive categories from data ──────────────────────────────────────
   const categories = useMemo(() => {
@@ -183,7 +187,7 @@ export default function PageListView({
           />
           {search && (
             <button
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer active:scale-[0.85] active:transition-none"
               onClick={() => setSearch("")}
             >
               <X className="h-3.5 w-3.5" />
@@ -248,7 +252,7 @@ export default function PageListView({
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">
                     <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
                       onClick={() => toggleSort("title")}
                     >
                       Page
@@ -257,7 +261,7 @@ export default function PageListView({
                   </th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">
                     <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
                       onClick={() => toggleSort("category")}
                     >
                       Category
@@ -269,7 +273,7 @@ export default function PageListView({
                   </th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">
                     <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer active:scale-[0.92] active:transition-none"
                       onClick={() => toggleSort("updated_at")}
                     >
                       Updated
@@ -292,7 +296,7 @@ export default function PageListView({
                   return (
                     <tr
                       key={page.id}
-                      className="border-b border-border/50 last:border-0 hover:bg-muted/20 cursor-pointer transition-colors"
+                      className="border-b border-border/50 last:border-0 hover:bg-muted/20 active:bg-muted/50 cursor-pointer transition-colors select-none"
                       onClick={() => onOpenPage(page.id)}
                     >
                       <td className="px-4 py-3">
@@ -403,9 +407,7 @@ export default function PageListView({
                               className="text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm(`Delete "${page.title}"?`)) {
-                                  onDeletePage(page.id);
-                                }
+                                setDeleteTarget(page);
                               }}
                             >
                               <Trash2 className="h-3.5 w-3.5 mr-2" />
@@ -429,6 +431,28 @@ export default function PageListView({
           Showing {filtered.length} of {pages.length} pages
         </p>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Delete page"
+        description={
+          <>
+            Permanently delete <b>{deleteTarget?.title}</b>? This cannot be
+            undone.
+          </>
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTarget) {
+            onDeletePage(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }

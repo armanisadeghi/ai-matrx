@@ -59,11 +59,11 @@ function EditItemContent({ itemId }: { itemId: string }) {
             createValue.mutate(
               { itemId, valueData },
               {
-                onSuccess: () => router.push(`/ssr/context/items/${itemId}`),
+                onSuccess: () => router.push(`/app-context/items/${itemId}`),
               },
             );
           } else {
-            router.push(`/ssr/context/items/${itemId}`);
+            router.push(`/app-context/items/${itemId}`);
           }
         },
       },

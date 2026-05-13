@@ -106,7 +106,7 @@ export function ScopeManagerPage({
             }}
           />
           <Link
-            href={`/ssr/context/hierarchy?id=${organizationId}&type=organization`}
+            href={`/app-context/hierarchy?id=${organizationId}&type=organization`}
             className="flex items-center gap-2 rounded-lg border border-dashed border-border p-2 text-left hover:bg-muted/50 transition-colors"
           >
             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />

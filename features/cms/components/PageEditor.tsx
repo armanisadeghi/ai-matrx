@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import type { ClientPage } from "@/features/content-manager/types";
-import { useCmsVersions } from "@/features/content-manager/hooks/useCmsVersions";
+import type { ClientPage } from "@/features/cms/types";
+import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";

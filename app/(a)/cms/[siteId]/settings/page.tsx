@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSiteContext } from "../SiteLayoutClient";
-import { CmsSiteService } from "@/features/content-manager/services/cmsService";
+import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";

@@ -27,7 +27,7 @@ export default function HierarchyLayoutClient({
           className="h-6 text-xs gap-1 px-2"
           asChild
         >
-          <Link href="/ssr/context">
+          <Link href="/app-context">
             <ArrowLeft className="h-3 w-3" /> Context
           </Link>
         </Button>
