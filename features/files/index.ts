@@ -129,7 +129,10 @@ export {
 
 // Dialogs / context menus that consumers compose into their own surfaces.
 export { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
-export { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+export {
+  ShareLinkDialog,
+  ShareLinkDialogBody,
+} from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 export { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
 export { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 export { FolderContextMenu } from "@/features/files/components/core/FolderContextMenu/FolderContextMenu";

@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { openFolderPicker } from "@/features/files";
 import { useFileUpload, useFolderNode } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { cropFileToFile } from "../utils/crop-file";

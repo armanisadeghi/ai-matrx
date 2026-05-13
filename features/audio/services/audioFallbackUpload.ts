@@ -18,16 +18,9 @@
 
 "use client";
 
-import { getStore } from "@/lib/redux/store-singleton";
-import type { AppDispatch } from "@/lib/redux/store";
 import * as Api from "@/features/files/api";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders, fileHandler } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
-import {
-  deleteFile,
-  uploadFiles,
-  ensureFolderPath,
-} from "@/features/files/redux/thunks";
 import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
 
@@ -50,25 +43,22 @@ async function uploadWithRetry(
   blob: Blob,
   maxAttempts: number = RETRY_CONFIG.MAX_ATTEMPTS,
 ): Promise<UploadHandle> {
-  const store = getStore();
-  if (!store) throw new Error("Redux store not ready");
-
   let lastError: Error | null = null;
 
-  // Resolve the hidden staging folder once. `ensureFolderPath` is idempotent
-  // — subsequent attempts reuse the existing folder.
-  const dispatch = store.dispatch as AppDispatch;
-  let parentFolderId: string | null = null;
+  // Pre-resolve the hidden staging folder so the first upload doesn't race
+  // with folder creation. `ensureFolderPath` is idempotent — subsequent
+  // calls reuse the existing folder. We don't use the returned id directly
+  // since `fileHandler.upload` takes a path; this just primes the cache.
+  let folderPath: string | null = null;
   try {
-    parentFolderId = await dispatch(
-      ensureFolderPath({
-        folderPath: CloudFolders.TMP_TRANSCRIPTS,
-        visibility: "private",
-      }),
-    ).unwrap();
+    await fileHandler.ensureFolderPath({
+      folderPath: CloudFolders.TMP_TRANSCRIPTS,
+      visibility: "private",
+    });
+    folderPath = CloudFolders.TMP_TRANSCRIPTS;
   } catch {
     // If folder creation fails (RLS, transient network), fall back to root.
-    parentFolderId = null;
+    folderPath = null;
   }
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -78,26 +68,22 @@ async function uploadWithRetry(
         type: blob.type || "audio/webm",
       });
 
-      const { uploaded, failed } = await dispatch(
-        uploadFiles({
-          files: [file],
-          parentFolderId,
+      const normalized = await fileHandler.upload(
+        { kind: "file", file },
+        {
+          folderPath: folderPath ?? undefined,
           visibility: "private",
           metadata: {
             origin: "audio-fallback",
             blob_type: blob.type || "audio/webm",
             ephemeral: true,
           },
-          concurrency: 1,
-        }),
-      ).unwrap();
-
-      if (failed.length > 0 || uploaded.length === 0) {
-        // `failed` items are `{ name, error }` since 2026-04-24 — extract
-        // the real backend error rather than the whole object.
-        throw new Error(failed[0]?.error ?? "Upload failed");
+        },
+      );
+      if (!normalized.fileId) {
+        throw new Error("Upload returned no fileId");
       }
-      const fileId = uploaded[0];
+      const fileId = normalized.fileId;
 
       // Short-lived signed URL for the transcription service (10 min).
       const { data: url } = await Api.Files.getSignedUrl(fileId, {
@@ -193,10 +179,11 @@ export async function uploadAndTranscribeFull(
   } finally {
     if (handle) {
       try {
-        const cleanupStore = getStore();
-        if (cleanupStore) {
-          await (cleanupStore.dispatch as AppDispatch)(deleteFile({ fileId: handle.fileId, hardDelete: true })).unwrap();
-        }
+        // Cleanup the staging file. Raw API call — this is a non-React
+        // service path and the slice's deleteFile thunk isn't part of
+        // the public surface. The realtime channel will reconcile the
+        // slice state asynchronously.
+        await Api.Files.deleteFile(handle.fileId, { hardDelete: true });
       } catch {
         // Non-critical cleanup — the file will be auto-pruned by the
         // backend's retention policy if the hard-delete fails.
