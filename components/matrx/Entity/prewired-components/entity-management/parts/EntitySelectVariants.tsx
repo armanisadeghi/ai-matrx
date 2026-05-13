@@ -10,6 +10,7 @@ import {Carousel} from "@/components/ui/carousel";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {EntityKeys, EntitySelectOption} from "@/types/entityTypes";
 import { Input as BaseInput, InputProps as BaseInputProps } from "@/components/ui/input";
+import { InlineMediaRef } from "@/features/files";
 
 interface EntitySelectProps<TEntity extends EntityKeys> {
     value: TEntity | undefined;
@@ -162,7 +163,16 @@ export const EntityCarousel = <TEntity extends EntityKeys>({
                 }`}
                 onClick={() => onValueChange(val)}
             >
-                {imageUrl && <img src={imageUrl} alt={String(label)} className="w-full h-40 object-cover"/>}
+                {imageUrl && (
+                    <InlineMediaRef
+                        ref={imageUrl}
+                        alt={String(label)}
+                        size="fill"
+                        fit="cover"
+                        rounded="none"
+                        className="w-full h-40"
+                    />
+                )}
                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 text-white">
                     {String(label)}
                 </div>

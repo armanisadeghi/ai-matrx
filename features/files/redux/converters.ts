@@ -83,7 +83,7 @@ export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
     deletedAt: row.deleted_at,
     // The DB has no public_url column — it's computed server-side. For
     // direct DB reads (Supabase realtime, server-side SSR), callers
-    // should fall back to useSignedUrl(fileId) when this is null.
+    // should fall back to useFileSrc({ kind: "file_id", fileId }) when this is null.
     publicUrl: null,
     source: { kind: "real" },
   };

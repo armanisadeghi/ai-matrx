@@ -117,7 +117,7 @@ When uploading, `inheritActiveScope: true` (default) reads `selectOrganizationId
 
 ### Single global expiry wheel
 
-`intelligence/expiry-wheel.ts` keeps one timer for the entire app, sorted by next-due `expiresAt`. Replaces the per-component `setTimeout` pattern in the legacy `useSignedUrl`. Watching is opt-in: `watchExpiry(fileId, expiresAt, refresher)`.
+`intelligence/expiry-wheel.ts` keeps one timer for the entire app, sorted by next-due `expiresAt`. Centralizes signed-URL refresh so each renderer doesn't mount its own `setTimeout`. Watching is opt-in: `watchExpiry(fileId, expiresAt, refresher)`.
 
 ### CORS-aware transport
 

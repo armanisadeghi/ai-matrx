@@ -39,6 +39,7 @@ import {
 import { UserActionBar } from "./UserActionBar";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+import { InlineMediaRef } from "@/features/files";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -334,11 +335,13 @@ function ImageBlockModal({ block, onClose }: BlockModalProps) {
     <BlockModalShell block={block} onClose={onClose}>
       {url ? (
         <div className="space-y-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
+          <InlineMediaRef
+            ref={url}
             alt={block.title}
-            className="w-full rounded-lg object-contain max-h-64"
+            size="fill"
+            fit="contain"
+            rounded="lg"
+            className="w-full max-h-64"
           />
           <pre className="text-xs text-foreground/60 whitespace-pre-wrap break-all font-mono">
             {JSON.stringify(block.raw, null, 2)}

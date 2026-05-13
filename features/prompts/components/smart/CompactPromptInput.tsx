@@ -10,7 +10,7 @@ import type { Resource } from "../../types/resources";
 import ResourcePreviewSheet from "../resource-display/ResourcePreviewSheet";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { fileHandler } from "@/features/files/handler/handler";
-import type { NormalizedFile } from "@/features/files/handler/types";
+import type { NormalizedFile } from "@/features/files";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";

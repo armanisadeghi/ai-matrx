@@ -56,7 +56,7 @@ import {
   refineBlockType,
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
-import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { fileIdToMediaRef } from "@/features/files";
 import {
   selectIsExecuting,
   selectShouldShowVariables,

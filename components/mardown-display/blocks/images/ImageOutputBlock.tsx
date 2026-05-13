@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/drawer";
 import { toast } from "sonner";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
-import type { FileSource } from "@/features/files/handler/types";
+import type { FileSource } from "@/features/files";
 import * as Files from "@/features/files/api/files";
 import { useIsMobile } from "@/hooks/use-mobile";
 

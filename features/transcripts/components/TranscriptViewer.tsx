@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useFileSrc } from '@/features/files/handler/hooks/useFileSrc';
-import type { FileSource } from '@/features/files/handler/types';
+import type { FileSource } from '@/features/files';
 import { Slider } from '@/components/ui/slider';
 import {
     DropdownMenu,

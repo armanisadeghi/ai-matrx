@@ -37,7 +37,7 @@ import {
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { fileIdToMediaRef } from "@/features/files/redux/converters";
+import { fileIdToMediaRef } from "@/features/files";
 import {
   addResource,
   setResourcePreview,

@@ -243,7 +243,7 @@ export const loadUserFileTree = createAsyncThunk<
           deletedAt: f.deletedAt ?? null,
           // Tree-spine reconstruction is internal — public_url is only
           // populated when records arrive via the API. Default to null
-          // here; surfaces that need a CDN URL fetch via useSignedUrl.
+          // here; surfaces that need a CDN URL fetch via useFileSrc.
           publicUrl: null,
           source: { kind: "real" },
           _dirty: false,
@@ -272,7 +272,7 @@ export const loadUserFileTree = createAsyncThunk<
           deletedAt: f.deletedAt ?? null,
           // Tree-spine reconstruction is internal — public_url is only
           // populated when records arrive via the API. Default to null
-          // here; surfaces that need a CDN URL fetch via useSignedUrl.
+          // here; surfaces that need a CDN URL fetch via useFileSrc.
           publicUrl: null,
           source: { kind: "real" },
           _dirty: false,

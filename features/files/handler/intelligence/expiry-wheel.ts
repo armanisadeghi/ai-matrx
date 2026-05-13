@@ -1,9 +1,10 @@
 /**
  * features/files/handler/intelligence/expiry-wheel.ts
  *
- * One global timer for every signed URL in the app. Replaces the
- * per-component `setTimeout` pattern in the legacy `useSignedUrl` hook —
- * with N visible images, that pattern fires N timers; this fires one.
+ * One global timer for every signed URL in the app. Centralizes
+ * signed-URL refresh: instead of each render mounting its own
+ * `setTimeout`, the wheel fires one timer for the whole app — with
+ * N visible images, that means one timer instead of N.
  *
  * Each watched file registers its (fileId, expiresAt) pair. The wheel
  * keeps a min-heap sorted by `expiresAt` and schedules a single timer

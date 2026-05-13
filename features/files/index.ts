@@ -73,6 +73,15 @@ export { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 // ---------------------------------------------------------------------------
 export { fileHandler } from "@/features/files/handler/handler";
 
+// Synchronous lower-level primitives — exposed for the rare callsite that
+// needs them inline (e.g. slice reducers like
+// `features/agents/redux/execution-system/instance-resources/resource-source.ts`
+// where `fileHandler.resolve` is async and a `MediaRef` must be derived
+// during a synchronous redux action). Prefer `fileHandler.*` ops for
+// everything else.
+export { normalize } from "@/features/files/handler/input/normalize";
+export { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
+
 // ---------------------------------------------------------------------------
 // 3. Components — the canonical render / upload / pick surface
 // ---------------------------------------------------------------------------

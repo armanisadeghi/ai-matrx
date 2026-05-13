@@ -28,7 +28,7 @@ import {
 
 import { VoiceMicButton } from "./VoiceMicButton";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import type { NormalizedFile } from "@/features/files/handler/types";
+import type { NormalizedFile } from "@/features/files";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import {
   Popover,

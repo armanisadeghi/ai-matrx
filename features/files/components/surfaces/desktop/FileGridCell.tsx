@@ -2,7 +2,7 @@
  * features/files/components/surfaces/dropbox/FileGridCell.tsx
  *
  * One cell in the Dropbox-style grid view. Shows an image thumbnail when the
- * file is an image (via `useSignedUrl`), else a large file icon. Filename +
+ * file is an image (via `useFileSrc`), else a large file icon. Filename +
  * "EXT • size" meta line underneath, matching the Dropbox layout.
  */
 
