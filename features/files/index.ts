@@ -55,10 +55,6 @@ export {
   type UseFileAssetOptions,
   type UseFileAssetResult,
 } from "@/features/files/hooks/useFileAsset";
-export {
-  useGuardedFileUpload,
-  type UseGuardedFileUploadResult,
-} from "@/features/files/hooks/useGuardedFileUpload";
 export { useFileDocument } from "@/features/files/hooks/useFileDocument";
 export { useSharing } from "@/features/files/hooks/useSharing";
 

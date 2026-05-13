@@ -1,11 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   MultiFileUpload,
   MiniFileUpload,
 } from "@/components/ui/file-upload/file-upload";
-import { useFileUploadWithStorage } from "@/components/ui/file-upload/useFileUploadWithStorage";
+import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 import { motion, type Variants } from "motion/react";
+import {
+  getFileDetailsByUrl,
+  type EnhancedFileDetails,
+} from "@/utils/file-operations/constants";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import type { Visibility } from "@/features/files/types";
+import type { NormalizedFile } from "@/features/file-handler/types";
+import type { StorageMetadata } from "@/utils/file-operations/types";
 import { UploadedFileResult } from "./types";
 
 export type { UploadedFileResult } from "./types";
@@ -24,6 +32,88 @@ type FileUploadWithStorageProps = {
   initialFiles?: UploadedFileResult[]; // Add initialFiles prop
 };
 
+// Legacy bucket-name → cloud-files folder path mapping. Used to keep the
+// `bucket` / `path` / `saveTo` props working for the dozen-plus consumers
+// of this component while the underlying upload goes through the universal
+// handler. Mirrors what the deleted useFileUploadWithStorage shim used to do.
+function mapLegacyBucket(bucket: string): string {
+  switch (bucket) {
+    case "user-public-assets":
+      return "Shared Assets";
+    case "user-private-assets":
+      return "Private Assets";
+    case "images":
+    case "Images":
+      return CloudFolders.IMAGES;
+    case "audio":
+    case "Audio":
+      return CloudFolders.AUDIO;
+    case "audio-recordings":
+      return CloudFolders.AUDIO_RECORDINGS;
+    case "documents":
+    case "Documents":
+      return CloudFolders.DOCUMENTS;
+    case "code":
+    case "Code":
+      return CloudFolders.CODE;
+    case "userContent":
+      return "My Files";
+    case "any-file":
+      return "Uploads";
+    case "attachments":
+      return CloudFolders.CHAT_ATTACHMENTS;
+    default:
+      return bucket;
+  }
+}
+
+function composeFolderPath(bucket: string, path?: string): string {
+  const top = mapLegacyBucket(bucket).replace(/^\/+|\/+$/g, "");
+  const sub = (path ?? "").replace(/^\/+|\/+$/g, "");
+  return sub ? `${top}/${sub}` : top;
+}
+
+function classifyFileType(mimeType: string): string {
+  if (!mimeType) return "unknown";
+  const type = mimeType.toLowerCase();
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("text/") || type === "application/json") return "text";
+  if (type.startsWith("video/")) return "video";
+  if (type.startsWith("audio/")) return "audio";
+  if (type === "application/pdf") return "pdf";
+  return "other";
+}
+
+function synthesizeMetadata(file: File): StorageMetadata {
+  return {
+    eTag: "",
+    size: file.size,
+    mimetype: file.type || "application/octet-stream",
+    cacheControl: "max-age=3600",
+    lastModified: new Date(file.lastModified).toISOString(),
+    contentLength: file.size,
+  } as StorageMetadata;
+}
+
+function normalizedToLegacyResult(
+  normalized: NormalizedFile,
+  file: File,
+): UploadedFileResult {
+  const url = normalized.url ?? "";
+  const metadata = synthesizeMetadata(file);
+  const details: EnhancedFileDetails = getFileDetailsByUrl(
+    url,
+    metadata,
+    normalized.fileId,
+  );
+  return {
+    fileId: normalized.fileId,
+    url,
+    type: classifyFileType(file.type),
+    details,
+  };
+}
+
 export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
   bucket = "userContent",
   path,
@@ -35,15 +125,20 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
   maxHeight,
   initialFiles = [], // Add default empty array
 }) => {
-  // Destructure the necessary upload methods from useFileUploadWithStorage
-  const {
-    uploadFiles,
-    uploadMultipleToPublicUserAssets,
-    uploadMultipleToPrivateUserAssets,
-    isLoading,
-    lastErrorRef,
-  } = useFileUploadWithStorage(bucket, path);
+  const { upload, uploading: isLoading } = useFileUpload();
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const lastErrorRef = useRef<string | null>(null);
+
+  const folderPath = useMemo(() => {
+    if (saveTo === "public") return "Shared Assets";
+    if (saveTo === "private") return "Private Assets";
+    return composeFolderPath(bucket, path);
+  }, [saveTo, bucket, path]);
+
+  const visibility: Visibility = useMemo(() => {
+    if (saveTo) return saveTo;
+    return bucket === "user-public-assets" ? "public" : "private";
+  }, [saveTo, bucket]);
 
   useEffect(() => {
     if (onUploadStatusChange) {
@@ -52,38 +147,59 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
     }
   }, [isLoading, uploadingFiles.length, onUploadStatusChange]);
 
-  const handleFilesChange = async (files: File[]) => {
-    setUploadingFiles(files);
+  const handleFilesChange = useCallback(
+    async (files: File[]) => {
+      setUploadingFiles(files);
+      lastErrorRef.current = null;
 
-    try {
-      let results;
-      // Choose upload method based on saveTo prop
-      if (saveTo === "public") {
-        results = await uploadMultipleToPublicUserAssets(files);
-      } else if (saveTo === "private") {
-        results = await uploadMultipleToPrivateUserAssets(files);
-      } else {
-        results = await uploadFiles(files); // Fallback to default behavior
-      }
+      const results: UploadedFileResult[] = [];
+      try {
+        // The universal handler is single-file; loop for the multi-file UX
+        // this component exposes. Each call returns a NormalizedFile with
+        // the share-link-backed URL stitched on so the result shape stays
+        // identical to what existing consumers expect.
+        for (const file of files) {
+          try {
+            const normalized = await upload(
+              { kind: "file", file },
+              {
+                folderPath,
+                visibility,
+                createShareLink: true,
+                shareLinkPermissionLevel: "read",
+                metadata: {
+                  origin: "FileUploadWithStorage",
+                  legacy_bucket: bucket,
+                  requested_visibility: visibility,
+                },
+              },
+            );
+            results.push(normalizedToLegacyResult(normalized, file));
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Upload failed";
+            lastErrorRef.current = message;
+            // eslint-disable-next-line no-console
+            console.error("FileUploadWithStorage upload failed:", message);
+          }
+        }
 
-      if (results.length > 0 && onUploadComplete) {
-        onUploadComplete(results);
-      } else if (results.length === 0 && files.length > 0) {
-        // Hook caught the error and returned an empty array — surface
-        // the synchronous reason so users don't think uploads silently
-        // succeeded (the previous "console.error only" path was
-        // basically invisible).
-        const reason = lastErrorRef.current ?? "Upload failed";
+        if (results.length > 0 && onUploadComplete) {
+          onUploadComplete(results);
+        } else if (results.length === 0 && files.length > 0) {
+          const reason = lastErrorRef.current ?? "Upload failed";
+          toast.error(`Upload failed: ${reason}`);
+        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : "Upload failed";
+        // eslint-disable-next-line no-console
+        console.error("Error in handleFilesChange:", error);
         toast.error(`Upload failed: ${reason}`);
+      } finally {
+        setUploadingFiles([]);
       }
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "Upload failed";
-      console.error("🔧 Error in handleFilesChange:", error);
-      toast.error(`Upload failed: ${reason}`);
-    } finally {
-      setUploadingFiles([]);
-    }
-  };
+    },
+    [upload, folderPath, visibility, bucket, onUploadComplete],
+  );
 
   // Progress animation variants
   const progressVariants: Variants = {
