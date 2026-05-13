@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { podcastService } from "../../service";
 import type { PcShow } from "../../types";
+import { InlineMediaRef } from "@/features/files";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -216,17 +217,15 @@ export function ShowsClient() {
                 >
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      {show.image_url ? (
-                        <img
-                          src={show.image_url}
-                          alt=""
-                          className="w-8 h-8 rounded object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center shrink-0">
-                          <Mic className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
+                      <InlineMediaRef
+                        ref={show.image_url ?? null}
+                        size={{ width: 32, height: 32 }}
+                        fit="cover"
+                        rounded="md"
+                        fallbackIcon={<Mic className="h-4 w-4 text-muted-foreground" />}
+                        className="shrink-0"
+                        alt=""
+                      />
                       <div>
                         <p className="font-medium truncate max-w-[200px]">
                           {show.title}

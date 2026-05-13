@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { InlineMediaRef } from "@/features/files";
 
 interface PodcastAudioPlayerProps {
   audioUrl: string;
@@ -275,21 +276,19 @@ export function PodcastAudioPlayer({
 
       {/* Cover art or default icon */}
       <div className="flex items-center gap-4">
-        {coverImageUrl ? (
-          <img
-            src={coverImageUrl}
-            alt={title ?? "Podcast cover"}
-            className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-md"
-          />
-        ) : (
-          <div
-            className={`w-16 h-16 rounded-xl ${dark ? "bg-white/10" : "bg-primary/10"} flex items-center justify-center shrink-0`}
-          >
+        <InlineMediaRef
+          ref={coverImageUrl ?? null}
+          size={{ width: 64, height: 64 }}
+          fit="cover"
+          rounded="lg"
+          fallbackIcon={
             <Music
               className={`h-8 w-8 ${dark ? "text-white/40" : "text-primary"}`}
             />
-          </div>
-        )}
+          }
+          className={`shrink-0 shadow-md ${dark ? "bg-white/10" : "bg-primary/10"}`}
+          alt={title ?? "Podcast cover"}
+        />
         <div className="min-w-0">
           {title && (
             <p className={`font-semibold truncate leading-tight ${txt}`}>

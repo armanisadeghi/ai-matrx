@@ -38,6 +38,7 @@ export type InlineMediaRefSize =
   | "md" // 64×64
   | "lg" // 128×128
   | "xl" // 256×256
+  | "fill" // parent-controlled — image fills its container via w-full h-full
   | { width: number; height: number };
 
 export type InlineMediaRefFit = "cover" | "contain" | "fill";
@@ -76,7 +77,13 @@ export interface InlineMediaRefProps {
   className?: string;
 }
 
-const SIZE_PX: Record<Exclude<InlineMediaRefSize, { width: number; height: number }>, number> = {
+// "fill" → render with width/height "100%"; element sizes from the
+// parent. Avoid passing an explicit numeric width/height attribute in
+// that mode so flex/grid layouts behave normally.
+const SIZE_PX: Record<
+  Exclude<InlineMediaRefSize, "fill" | { width: number; height: number }>,
+  number
+> = {
   xs: 24,
   sm: 32,
   md: 64,
@@ -92,8 +99,18 @@ const ROUNDED_CLASS: Record<NonNullable<InlineMediaRefProps["rounded"]>, string>
   full: "rounded-full",
 };
 
-function resolveDimensions(size: InlineMediaRefSize): { width: number; height: number } {
+/**
+ * Resolve the prop into either an explicit width/height pair (px) or
+ * a `"fill"` sentinel that callers render as `w-full h-full`. We keep
+ * the fill case as `null` for downstream consumers so they can pick
+ * different attribute strategies (next/image needs width+height OR fill,
+ * plain <img> takes either or omits).
+ */
+function resolveDimensions(
+  size: InlineMediaRefSize,
+): { width: number; height: number } | "fill" {
   if (typeof size === "object") return size;
+  if (size === "fill") return "fill";
   const px = SIZE_PX[size];
   return { width: px, height: px };
 }
@@ -133,32 +150,32 @@ function inferElementType(
 
 function FallbackVisual({
   kind,
-  width,
-  height,
+  dimensions,
   rounded,
   border,
   className,
   icon,
 }: {
   kind: "icon" | "skeleton";
-  width: number;
-  height: number;
+  dimensions: { width: number; height: number } | "fill";
   rounded: NonNullable<InlineMediaRefProps["rounded"]>;
   border: NonNullable<InlineMediaRefProps["border"]>;
   className?: string;
   icon: React.ReactNode;
 }) {
+  const isFill = dimensions === "fill";
   const wrapperCls = cn(
     "flex items-center justify-center bg-muted/60 text-muted-foreground",
     ROUNDED_CLASS[rounded],
     border === "subtle" && "border border-border",
     kind === "skeleton" && "animate-pulse",
+    isFill && "w-full h-full",
     className,
   );
   return (
     <div
       className={wrapperCls}
-      style={{ width, height }}
+      style={isFill ? undefined : { width: dimensions.width, height: dimensions.height }}
       aria-hidden={kind === "skeleton"}
     >
       {kind === "icon" ? icon : null}
@@ -181,7 +198,8 @@ export function InlineMediaRef({
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
   const url = useFileSrc(source);
-  const { width, height } = resolveDimensions(size);
+  const dimensions = resolveDimensions(size);
+  const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
 
   const defaultIcon =
@@ -200,8 +218,7 @@ export function InlineMediaRef({
     return (
       <FallbackVisual
         kind={fallback}
-        width={width}
-        height={height}
+        dimensions={dimensions}
         rounded={rounded}
         border={border}
         className={className}
@@ -227,6 +244,7 @@ export function InlineMediaRef({
 
   const baseCls = cn(
     "block",
+    isFill && "w-full h-full",
     ROUNDED_CLASS[rounded],
     border === "subtle" && "border border-border",
     onClick && "cursor-pointer",
@@ -237,12 +255,17 @@ export function InlineMediaRef({
   const objectFitClass =
     fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-fill";
 
+  // Explicit width/height attributes for fixed-size renders; omit for fill
+  // mode so the parent's flex/grid sizing wins.
+  const sizeAttrs = isFill
+    ? {}
+    : { width: dimensions.width, height: dimensions.height };
+
   if (elementType === "video") {
     return (
       <video
         src={url}
-        width={width}
-        height={height}
+        {...sizeAttrs}
         className={cn(baseCls, objectFitClass)}
         controls
         {...interactiveProps}
@@ -264,26 +287,30 @@ export function InlineMediaRef({
   // device-pixel-ratio handling); external arbitrary URLs may not be on
   // the configured remotePatterns list, so fall back to a plain <img>.
   const isCdnUrl = url.startsWith("https://cdn.") || url.includes("/cdn/");
-  if (isCdnUrl) {
+  if (isCdnUrl && !isFill) {
     return (
       <Image
         src={url}
         alt={alt}
-        width={width}
-        height={height}
+        width={dimensions.width}
+        height={dimensions.height}
         className={cn(baseCls, objectFitClass)}
         unoptimized
         {...interactiveProps}
       />
     );
   }
+  if (isCdnUrl && isFill) {
+    // next/image with `fill` requires a positioned parent — but in
+    // "fill" mode we generally already have one (the caller controls
+    // sizing). Fall back to plain <img> to stay layout-agnostic.
+  }
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={url}
       alt={alt}
-      width={width}
-      height={height}
+      {...sizeAttrs}
       className={cn(baseCls, objectFitClass)}
       {...interactiveProps}
     />

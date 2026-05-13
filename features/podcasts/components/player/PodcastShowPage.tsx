@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import type { PcShow, PcEpisode } from "../../types";
 import { useShare } from "../../hooks/useShare";
+import { InlineMediaRef } from "@/features/files";
 
 interface PodcastShowPageProps {
   show: PcShow;
@@ -136,22 +137,15 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
                   className="group flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:border-primary/30 hover:bg-primary/5 transition-all active:scale-[0.98]"
                 >
                   <div className="relative shrink-0">
-                    {(ep.thumbnail_url ?? ep.image_url ?? coverImage) ? (
-                      <img
-                        src={(ep.thumbnail_url ?? ep.image_url ?? coverImage)!}
-                        alt={ep.title}
-                        className="w-14 h-14 rounded-xl object-cover shadow-sm"
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center">
-                        <Music className="h-6 w-6 text-muted-foreground/50" />
-                      </div>
-                    )}
+                    <InlineMediaRef
+                      ref={(ep.thumbnail_url ?? ep.image_url ?? coverImage) ?? null}
+                      size={{ width: 56, height: 56 }}
+                      fit="cover"
+                      rounded="lg"
+                      fallbackIcon={<Music className="h-6 w-6 text-muted-foreground/50" />}
+                      className="shadow-sm"
+                      alt={ep.title}
+                    />
                   </div>
 
                   <div className="min-w-0 flex-1">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Mic } from "lucide-react";
 import type { PcShow } from "@/features/podcasts/types";
+import { InlineMediaRef } from "@/features/files";
 
 export function PodcastGrid({ shows }: { shows: PcShow[] }) {
   if (shows.length === 0) {
@@ -25,6 +26,9 @@ export function PodcastGrid({ shows }: { shows: PcShow[] }) {
           <div className="relative aspect-square overflow-hidden bg-zinc-800">
             {show.image_url ? (
               <>
+                {/* Blurred backdrop — keep as plain <img> so it stays
+                    layout-agnostic and bypasses the wrapper. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={show.image_url}
                   alt=""
@@ -33,15 +37,14 @@ export function PodcastGrid({ shows }: { shows: PcShow[] }) {
                   loading="lazy"
                   decoding="async"
                 />
-                <img
-                  src={show.thumbnail_url ?? show.image_url}
+                <InlineMediaRef
+                  ref={(show.thumbnail_url ?? show.image_url) ?? null}
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback={null}
+                  className="relative z-10 transition-transform duration-300 group-hover:scale-105"
                   alt={show.title}
-                  className="relative z-10 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
                 />
               </>
             ) : (

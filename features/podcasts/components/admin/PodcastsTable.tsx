@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, RefreshCw, Search, Pencil, Trash2, Link, Mic, Music, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InlineMediaRef } from '@/features/files';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -195,13 +196,15 @@ export function PodcastsTable({
                                     >
                                         <td className="px-4 py-2.5">
                                             <div className="flex items-center gap-2">
-                                                {show.image_url ? (
-                                                    <img src={show.image_url} alt="" className="w-7 h-7 rounded object-cover shrink-0" />
-                                                ) : (
-                                                    <div className="w-7 h-7 rounded bg-muted flex items-center justify-center shrink-0">
-                                                        <Mic className="h-3.5 w-3.5 text-muted-foreground" />
-                                                    </div>
-                                                )}
+                                                <InlineMediaRef
+                                                    ref={show.image_url ?? null}
+                                                    size={{ width: 28, height: 28 }}
+                                                    fit="cover"
+                                                    rounded="md"
+                                                    fallbackIcon={<Mic className="h-3.5 w-3.5 text-muted-foreground" />}
+                                                    className="shrink-0"
+                                                    alt=""
+                                                />
                                                 <span className="font-medium truncate max-w-[180px]">{show.title}</span>
                                             </div>
                                         </td>
@@ -253,13 +256,15 @@ export function PodcastsTable({
                                 >
                                     <td className="px-4 py-2.5">
                                         <div className="flex items-center gap-2">
-                                            {ep.image_url ? (
-                                                <img src={ep.image_url} alt="" className="w-7 h-7 rounded object-cover shrink-0" />
-                                            ) : (
-                                                <div className="w-7 h-7 rounded bg-muted flex items-center justify-center shrink-0">
-                                                    <Music className="h-3.5 w-3.5 text-muted-foreground" />
-                                                </div>
-                                            )}
+                                            <InlineMediaRef
+                                                ref={ep.image_url ?? null}
+                                                size={{ width: 28, height: 28 }}
+                                                fit="cover"
+                                                rounded="md"
+                                                fallbackIcon={<Music className="h-3.5 w-3.5 text-muted-foreground" />}
+                                                className="shrink-0"
+                                                alt=""
+                                            />
                                             <div className="min-w-0">
                                                 <p className="font-medium truncate max-w-[180px]">{ep.title}</p>
                                                 <p className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">{ep.slug}</p>

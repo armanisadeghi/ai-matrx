@@ -29,6 +29,7 @@ import {
 import { ShowForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
+import { InlineMediaRef } from "@/features/files";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -150,13 +151,15 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        {show?.image_url && (
-          <img
-            src={show.image_url}
-            alt=""
-            className="w-8 h-8 rounded object-cover shrink-0"
-          />
-        )}
+        <InlineMediaRef
+          ref={show?.image_url ?? null}
+          size={{ width: 32, height: 32 }}
+          fit="cover"
+          rounded="md"
+          fallback={null}
+          className="shrink-0"
+          alt=""
+        />
         <div className="min-w-0 flex-1">
           <h1 className="font-semibold text-sm truncate">
             {isNew ? "New Show" : (show?.title ?? "Loading…")}
@@ -274,17 +277,15 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                     }
                   >
                     {/* Thumbnail */}
-                    {(ep.thumbnail_url ?? ep.image_url) ? (
-                      <img
-                        src={(ep.thumbnail_url ?? ep.image_url)!}
-                        alt=""
-                        className="w-10 h-10 rounded-lg object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Music className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
+                    <InlineMediaRef
+                      ref={(ep.thumbnail_url ?? ep.image_url) ?? null}
+                      size={{ width: 40, height: 40 }}
+                      fit="cover"
+                      rounded="lg"
+                      fallbackIcon={<Music className="h-4 w-4 text-muted-foreground" />}
+                      className="shrink-0"
+                      alt=""
+                    />
 
                     {/* Info */}
                     <div className="min-w-0 flex-1">
