@@ -1,34 +1,74 @@
 "use client";
 
 import React from "react";
-import { Table } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Table, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
-import { Card } from "@/components/ui/card";
+import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
+import { supabase } from "@/utils/supabase/client";
+import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
-/**
- * Organization Shared Tables Page
- * Route: /organizations/[slug]/tables
- */
+const SELECT_COLS = "id, table_name, description, version, updated_at";
+
+const fetchOwned = async (orgId: string) => {
+  const res = await supabase
+    .from("udt_datasets")
+    .select(SELECT_COLS)
+    .eq("organization_id", orgId)
+    .order("updated_at", { ascending: false });
+  return (res.data ?? []) as Array<Record<string, unknown>>;
+};
+
+const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
+  id: String(row.id),
+  title: (row.table_name as string | null) ?? "Untitled table",
+  subtitle: (row.description as string | null) ?? null,
+  updatedAt: (row.updated_at as string | null) ?? null,
+  tags: row.version ? [`v${row.version}`] : undefined,
+  source,
+});
+
+const getHref = (id: string) => `/data/${id}`;
+
 export default function OrgTablesPage() {
+  const params = useParams();
+  const orgIdParam = params.orgId as string;
+  const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const org = await getOrganizationBySlugOrId(orgIdParam);
+      if (!cancelled && org) setResolvedOrgId(org.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgIdParam]);
+
   return (
     <OrgResourceLayout
       resourceName="Tables"
       icon={<Table className="h-4 w-4" />}
     >
-      <Card className="p-12 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-16 h-16 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Shared Tables</h2>
-          <p className="text-muted-foreground mb-6">
-            Access and manage data tables shared with your organization
-          </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted">
-            <span className="text-sm font-medium">Coming Soon</span>
-          </div>
+      {!resolvedOrgId ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </Card>
+      ) : (
+        <OrgResourceList
+          orgId={resolvedOrgId}
+          resourceType="udt_datasets"
+          tableName="udt_datasets"
+          selectColumns={SELECT_COLS}
+          ownedQuery={fetchOwned}
+          mapRow={mapRow}
+          getHref={getHref}
+          emptyTitle="No shared tables yet"
+          emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
+          emptyIcon={<Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />}
+        />
+      )}
     </OrgResourceLayout>
   );
 }

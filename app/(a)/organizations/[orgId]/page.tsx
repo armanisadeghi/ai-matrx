@@ -53,6 +53,9 @@ export default function OrganizationOverviewPage() {
   const [tasksCount, setTasksCount] = React.useState<number | null>(null);
   const [tablesCount, setTablesCount] = React.useState<number | null>(null);
   const [filesCount, setFilesCount] = React.useState<number | null>(null);
+  const [agentAppsCount, setAgentAppsCount] = React.useState<number | null>(null);
+  const [templatesCount, setTemplatesCount] = React.useState<number | null>(null);
+  const [workflowsCount, setWorkflowsCount] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -83,10 +86,18 @@ export default function OrganizationOverviewPage() {
           notesShared,
           agentsOwned,
           agentsShared,
+          tasksOwned,
           tasksShared,
-          tasksViaProjects,
+          datasetsOwned,
           datasetsShared,
+          filesOwned,
           filesShared,
+          agentAppsOwned,
+          agentAppsShared,
+          templatesOwned,
+          templatesShared,
+          workflowsOwned,
+          workflowsShared,
         ] = await Promise.all([
           supabase
             .from("notes")
@@ -96,25 +107,49 @@ export default function OrganizationOverviewPage() {
           supabase
             .from("agx_agent")
             .select("id", { count: "exact", head: true })
-            .eq("organization_id", org.id),
+            .eq("organization_id", org.id)
+            .eq("is_archived", false),
           countOrgSharedResources(org.id, "agent"),
-          countOrgSharedResources(org.id, "task"),
           supabase
             .from("ctx_tasks")
-            .select("id, projects:project_id(organization_id)", {
-              count: "exact",
-              head: false,
-            })
-            .eq("projects.organization_id", org.id),
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
+          countOrgSharedResources(org.id, "task"),
+          supabase
+            .from("udt_datasets")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
           countOrgSharedResources(org.id, "udt_datasets"),
+          supabase
+            .from("user_files")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
           countOrgSharedResources(org.id, "user_files"),
+          supabase
+            .from("aga_apps")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
+          countOrgSharedResources(org.id, "agent_app"),
+          supabase
+            .from("content_template")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
+          countOrgSharedResources(org.id, "content_template"),
+          supabase
+            .from("workflow")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", org.id),
+          countOrgSharedResources(org.id, "workflow"),
         ]);
 
         setNotesCount((notesOwned.count ?? 0) + notesShared);
         setAgentsCount((agentsOwned.count ?? 0) + agentsShared);
-        setTasksCount((tasksViaProjects.data?.length ?? 0) + tasksShared);
-        setTablesCount(datasetsShared);
-        setFilesCount(filesShared);
+        setTasksCount((tasksOwned.count ?? 0) + tasksShared);
+        setTablesCount((datasetsOwned.count ?? 0) + datasetsShared);
+        setFilesCount((filesOwned.count ?? 0) + filesShared);
+        setAgentAppsCount((agentAppsOwned.count ?? 0) + agentAppsShared);
+        setTemplatesCount((templatesOwned.count ?? 0) + templatesShared);
+        setWorkflowsCount((workflowsOwned.count ?? 0) + workflowsShared);
       } catch (err: unknown) {
         const msg =
           err instanceof Error ? err.message : "Failed to load organization";
@@ -193,7 +228,7 @@ export default function OrganizationOverviewPage() {
       icon: <SquareFunction className="h-5 w-5" />,
       href: `/organizations/${slug}/agent-apps`,
       color: "text-rose-600 dark:text-rose-400",
-      count: null,
+      count: agentAppsCount,
     },
     {
       name: "Agent Shortcuts",
@@ -207,7 +242,7 @@ export default function OrganizationOverviewPage() {
       icon: <ClipboardType className="h-5 w-5" />,
       href: `/organizations/${slug}/templates`,
       color: "text-purple-600 dark:text-purple-400",
-      count: null,
+      count: templatesCount,
     },
     {
       name: "Notes",
@@ -249,7 +284,7 @@ export default function OrganizationOverviewPage() {
       icon: <Workflow className="h-5 w-5" />,
       href: `/organizations/${slug}/workflows`,
       color: "text-violet-600 dark:text-violet-400",
-      count: null,
+      count: workflowsCount,
     },
   ];
 
