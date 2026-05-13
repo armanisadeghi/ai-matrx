@@ -1,5 +1,5 @@
 /**
- * features/file-handler/hooks/useFileSrc.ts
+ * features/files/handler/hooks/useFileSrc.ts
  *
  * Convenience: get a URL string suitable for `<img src>`, `<video src>`,
  * `<audio src>`. The handler picks the right URL automatically — public

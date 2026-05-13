@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
-import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import {
   Dialog,
   DialogContent,

@@ -1,5 +1,5 @@
 /**
- * features/file-handler/hooks/useFileAs.ts
+ * features/files/handler/hooks/useFileAs.ts
  *
  * Resolve a source AND render it for a specific consumer in one step.
  * Returns the rendered shape directly — most components use this rather

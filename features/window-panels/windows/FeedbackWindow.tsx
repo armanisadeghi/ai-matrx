@@ -32,7 +32,7 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { submitFeedback, getUserFeedback } from "@/actions/feedback.actions";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   FileUploadWithStorage,
   type UploadedFileResult,

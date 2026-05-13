@@ -1,5 +1,5 @@
 /**
- * features/file-handler/intelligence/access.ts
+ * features/files/handler/intelligence/access.ts
  *
  * The "can this user access this file?" decision. The handler consults
  * this BEFORE deciding whether a backend failure is "expired URL, refresh"

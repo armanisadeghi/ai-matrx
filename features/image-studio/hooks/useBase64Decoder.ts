@@ -28,7 +28,7 @@ import {
   type SupportedMimeType,
 } from "../utils/decode-base64";
 import { slugifyFilename } from "../utils/slugify-filename";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 const DEFAULT_FILENAME_BASE = "decoded";

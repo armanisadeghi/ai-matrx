@@ -1,7 +1,7 @@
 "use client";
 
-import { fileHandler } from "@/features/file-handler/handler";
-import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
+import { fileHandler } from "@/features/files/handler/handler";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import type { SaveResult } from "./types";
 
 /**

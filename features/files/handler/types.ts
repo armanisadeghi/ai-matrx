@@ -1,5 +1,5 @@
 /**
- * features/file-handler/types.ts
+ * features/files/handler/types.ts
  *
  * The universal file handler. ONE shape goes in (FileSource), ONE shape
  * comes out (FileTarget). Between them, every file in the app — owned

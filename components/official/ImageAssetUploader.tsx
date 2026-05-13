@@ -40,7 +40,7 @@ import { useDropzone } from 'react-dropzone';
 import { AlertCircle, CheckCircle2, Eye, ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files/types';
-import { useFileUpload } from '@/features/file-handler/hooks/useFileUpload';
+import { useFileUpload } from '@/features/files/handler/hooks/useFileUpload';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
 import { extractErrorMessage } from '@/utils/errors';

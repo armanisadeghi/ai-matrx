@@ -7,7 +7,7 @@
  *
  * THE public surface of the file-handling system.
  *
- * Every consumer outside `features/files/**` and `features/file-handler/**`
+ * Every consumer outside `features/files/**` and `features/files/handler/**`
  * should import from here — never from internal subdirectories. The ring-
  * fence ESLint rule lands in Phase 1; until then this file is the live
  * landing pad and the migration target.
@@ -39,11 +39,11 @@
 //   useFileMutation   — rename/move/delete/restore/share/permissions/metadata
 
 // Today's closest matches, re-exported from the existing locations:
-export { useFile } from "@/features/file-handler/hooks/useFile";
-export { useFileAs } from "@/features/file-handler/hooks/useFileAs";
-export { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
-export { useFileBlob } from "@/features/file-handler/hooks/useFileBlob";
-export { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+export { useFile } from "@/features/files/handler/hooks/useFile";
+export { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+export { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+export { useFileBlob } from "@/features/files/handler/hooks/useFileBlob";
+export { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 
 // Existing data-layer hooks staying available through Phase 1. The Asset
 // hook will fold into the canonical `useFile` once the BE always returns the
@@ -67,7 +67,7 @@ export { useStorageQuota } from "@/features/files/hooks/useStorageQuota";
 // ---------------------------------------------------------------------------
 // 2. Facade — for non-React callers (services, thunks, agent prep)
 // ---------------------------------------------------------------------------
-export { fileHandler } from "@/features/file-handler/handler";
+export { fileHandler } from "@/features/files/handler/handler";
 
 // ---------------------------------------------------------------------------
 // 3. Components — the canonical render / upload / pick surface
@@ -155,8 +155,8 @@ export type {
   FileTarget,
   NormalizedFile,
   UploadOpts,
-} from "@/features/file-handler/types";
+} from "@/features/files/handler/types";
 
 // Typed errors — the canonical taxonomy currently lives in the handler
 // directory. After the Phase 1 merge it relocates to features/files/errors.ts.
-export * from "@/features/file-handler/errors";
+export * from "@/features/files/handler/errors";

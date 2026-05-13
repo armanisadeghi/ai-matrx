@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
-import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import {
   formatDuration,

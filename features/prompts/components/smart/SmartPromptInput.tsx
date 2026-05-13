@@ -31,8 +31,8 @@ import { ResourceChips } from "../resource-display/ResourceChips";
 import type { Resource } from "../../types/resources";
 import ResourcePreviewSheet from "../resource-display/ResourcePreviewSheet";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { fileHandler } from "@/features/file-handler/handler";
-import type { NormalizedFile } from "@/features/file-handler/types";
+import { fileHandler } from "@/features/files/handler/handler";
+import type { NormalizedFile } from "@/features/files/handler/types";
 import {
   selectIsDebugMode,
   showResourceDebugIndicator,

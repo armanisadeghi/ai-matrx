@@ -1,5 +1,5 @@
 /**
- * features/file-handler/utils/prefer-locator.ts
+ * features/files/handler/utils/prefer-locator.ts
  *
  * "Pick the best identifier" helpers used by every output adapter. The
  * priority order is FIXED by the Python backend's MediaRef resolution

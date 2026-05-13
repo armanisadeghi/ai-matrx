@@ -9,14 +9,14 @@
  *
  * The bucket / path / saveTo prop trio is preserved verbatim so call sites
  * keep working without edits. Internally every paste routes through
- * `useFileUpload().upload` from `@/features/file-handler`.
+ * `useFileUpload().upload` from `@/features/files/handler`.
  */
 
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import type { Visibility } from "@/features/files/types";
 

@@ -4,7 +4,7 @@ import {
   MultiFileUpload,
   MiniFileUpload,
 } from "@/components/ui/file-upload/file-upload";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { motion, type Variants } from "motion/react";
 import {
   getFileDetailsByUrl,
@@ -12,7 +12,7 @@ import {
 } from "@/utils/file-operations/constants";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import type { Visibility } from "@/features/files/types";
-import type { NormalizedFile } from "@/features/file-handler/types";
+import type { NormalizedFile } from "@/features/files/handler/types";
 import type { StorageMetadata } from "@/utils/file-operations/types";
 import { UploadedFileResult } from "./types";
 

@@ -20,8 +20,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon, Maximize2, Loader2 } from "lucide-react";
-import { useFileAs } from "@/features/file-handler/hooks/useFileAs";
-import type { FileSource } from "@/features/file-handler/types";
+import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import type { FileSource } from "@/features/files/handler/types";
 
 // Extract the cloud_files UUID from an S3 path:
 //   /{userId}/{folder}/{uuid}.{ext}

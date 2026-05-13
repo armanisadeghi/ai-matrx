@@ -31,7 +31,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
 import * as Files from "@/features/files/api/files";
-import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import type { Visibility } from "@/features/files/types";
 

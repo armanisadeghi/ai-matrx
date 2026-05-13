@@ -1,5 +1,5 @@
 /**
- * features/file-handler/intelligence/refresh.ts
+ * features/files/handler/intelligence/refresh.ts
  *
  * Re-mint a signed URL for a file we own. Wraps the cloud-files REST
  * endpoint so the resolver and the expiry wheel call the same code path.

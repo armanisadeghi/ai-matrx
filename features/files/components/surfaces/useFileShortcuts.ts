@@ -64,7 +64,7 @@ import {
   type ClipboardItem,
 } from "@/features/files/utils/clipboard";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
-import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 
 interface PendingDelete {
   kind: "single" | "batch";

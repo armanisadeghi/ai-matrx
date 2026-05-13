@@ -13,7 +13,7 @@
  * private/shared files get a freshly-minted signed URL.
  */
 
-import { fileHandler } from "@/features/file-handler/handler";
+import { fileHandler } from "@/features/files/handler/handler";
 import { selectFileById } from "@/features/files/redux/selectors";
 import type { CloudFileRecord } from "@/features/files/types";
 import type { AppStore } from "@/lib/redux/store";

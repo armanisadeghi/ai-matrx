@@ -1,5 +1,5 @@
 /**
- * features/file-handler/hooks/useFileUpload.ts
+ * features/files/handler/hooks/useFileUpload.ts
  *
  * The single React-side upload primitive.
  *

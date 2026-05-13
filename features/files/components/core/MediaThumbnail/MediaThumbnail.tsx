@@ -26,7 +26,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";

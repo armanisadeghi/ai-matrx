@@ -5,7 +5,7 @@
 // the same RLS, signed-URL refresh, and lifecycle as any other file in
 // the app. Single system, no Supabase Storage buckets.
 
-import { fileHandler } from "@/features/file-handler/handler";
+import { fileHandler } from "@/features/files/handler/handler";
 import * as Files from "@/features/files/api/files";
 import { RECORDING_LIMITS } from "../constants/recording";
 

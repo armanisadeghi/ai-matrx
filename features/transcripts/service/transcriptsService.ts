@@ -494,7 +494,7 @@ export async function getSignedUrl(
   fileId: string,
 ): Promise<string | null> {
   try {
-    const { fileHandler } = await import("@/features/file-handler/handler");
+    const { fileHandler } = await import("@/features/files/handler/handler");
     return await fileHandler.use({ kind: "file_id", fileId }).as({
       kind: "html_src",
     });

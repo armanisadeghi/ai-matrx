@@ -12,8 +12,8 @@ import {
   adminReplyUserReview,
   forceCloseFeedback,
 } from "@/actions/feedback.actions";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
-import { imageViewUrl } from "@/features/file-handler/utils/python-base";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { imageViewUrl } from "@/features/files/handler/utils/python-base";
 import {
   UserFeedback,
   FeedbackStatus,

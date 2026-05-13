@@ -1,5 +1,5 @@
 /**
- * features/file-handler/utils/classify.ts
+ * features/files/handler/utils/classify.ts
  *
  * Wrap the existing FILE_TYPES registry to produce a `FileMeta` from any
  * (filename, mime) tuple. This is the only place the handler talks to

@@ -1,5 +1,5 @@
 /**
- * features/file-handler/hooks/useFileDownloadUrl.ts
+ * features/files/handler/hooks/useFileDownloadUrl.ts
  *
  * Convenience: get { url, filename } for an `<a href download>` element.
  */

@@ -1,5 +1,5 @@
 /**
- * features/file-handler/input/normalize.ts
+ * features/files/handler/input/normalize.ts
  *
  * Pure first-pass: turn a `FileSource` into a partial `NormalizedFile`.
  * "Pure" means no I/O, no Redux. Anything that needs the network or auth

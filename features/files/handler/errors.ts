@@ -1,5 +1,5 @@
 /**
- * features/file-handler/errors.ts
+ * features/files/handler/errors.ts
  *
  * Error taxonomy for the universal file handler. Every failure inside the
  * handler maps to ONE of these classes — callers `instanceof`-check to

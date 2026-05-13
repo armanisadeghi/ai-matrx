@@ -1,5 +1,5 @@
 /**
- * features/file-handler/handler.ts
+ * features/files/handler/handler.ts
  *
  * The single public entry point. Every callsite that touches a file —
  * components, thunks, server routes, agent prep — uses one of these

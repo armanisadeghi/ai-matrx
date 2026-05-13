@@ -1,5 +1,5 @@
 /**
- * features/file-handler/intelligence/magic-bytes.ts
+ * features/files/handler/intelligence/magic-bytes.ts
  *
  * MIME sniffing from the first ~16 bytes of a file. Used when a source
  * arrives with no Content-Type and no extension (rare but happens with

@@ -1,5 +1,5 @@
 /**
- * features/file-handler/upload.ts
+ * features/files/handler/upload.ts
  *
  * The single write path. Coerces a `FileSource` into a `File`, then runs
  * it through `cloudUpload` (which dispatches optimistic Redux updates,

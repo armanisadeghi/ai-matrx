@@ -1,5 +1,5 @@
 /**
- * features/file-handler/output/target.ts
+ * features/files/handler/output/target.ts
  *
  * Render a `NormalizedFile` for a specific consumer. Each branch is the
  * ONLY place in the codebase that knows how to build that consumer's

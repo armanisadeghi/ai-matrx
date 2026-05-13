@@ -5,7 +5,7 @@
  *
  * Uses the canonical universal file-handler primitives only:
  *
- *  - **Upload** path → `useFileUpload()` from `features/file-handler`. The
+ *  - **Upload** path → `useFileUpload()` from `features/files/handler`. The
  *    raw `File` is wrapped in the `FileSource` discriminated union
  *    (`{ kind: "file", file }`) — `fileHandler` then does the rest
  *    (Python `/files/upload`, optimistic Redux updates, optional share
@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useFilePicker } from "@/features/files/components/pickers/FilePicker";
 import { toast } from "sonner";
 

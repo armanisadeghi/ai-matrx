@@ -1,5 +1,5 @@
 /**
- * features/file-handler/intelligence/expiry-wheel.ts
+ * features/files/handler/intelligence/expiry-wheel.ts
  *
  * One global timer for every signed URL in the app. Replaces the
  * per-component `setTimeout` pattern in the legacy `useSignedUrl` hook —

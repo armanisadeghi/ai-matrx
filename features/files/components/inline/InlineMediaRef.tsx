@@ -28,8 +28,8 @@ import {
   Image as ImageIcon,
   File as FileIcon,
 } from "lucide-react";
-import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
-import type { FileSource } from "@/features/file-handler/types";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import type { FileSource } from "@/features/files/handler/types";
 import type { MediaRef } from "@/features/files/types";
 
 export type InlineMediaRefSize =

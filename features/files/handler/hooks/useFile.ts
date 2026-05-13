@@ -1,5 +1,5 @@
 /**
- * features/file-handler/hooks/useFile.ts
+ * features/files/handler/hooks/useFile.ts
  *
  * Resolve a `FileSource` to a `NormalizedFile`. Re-runs when the source's
  * identity changes (its `kind` plus the relevant identifier — fileId, url,

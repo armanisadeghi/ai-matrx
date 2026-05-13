@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { extractErrorMessage } from "@/utils/errors";
 import { cropFileToFile } from "../utils/crop-file";
 import {

@@ -209,7 +209,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     if (!content && row.s3_key) {
       // S3-backed snippet — fetch via the universal handler. The s3_key
       // is a cld_files UUID for new rows.
-      const { fileHandler } = await import("@/features/file-handler/handler");
+      const { fileHandler } = await import("@/features/files/handler/handler");
       const blob = await fileHandler
         .use({ kind: "file_id", fileId: row.s3_key })
         .as({ kind: "blob" });

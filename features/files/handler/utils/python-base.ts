@@ -1,5 +1,5 @@
 /**
- * features/file-handler/utils/python-base.ts
+ * features/files/handler/utils/python-base.ts
  *
  * Resolve Python backend URLs for direct browser → Python file traffic.
  * The handler emits URLs that point at Python, never at Next.js — there

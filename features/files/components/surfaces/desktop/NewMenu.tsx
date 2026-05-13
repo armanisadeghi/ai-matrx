@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createFolder } from "@/features/files/redux/thunks";
 import { setFocusedId } from "@/features/files/redux/slice";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 
 export interface NewMenuProps {

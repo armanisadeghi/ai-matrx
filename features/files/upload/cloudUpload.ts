@@ -42,7 +42,7 @@ import {
   uploadFileWithProgress as Files_uploadFileWithProgress,
 } from "@/features/files/api/files";
 import { createFileShareLink } from "@/features/files/api/share-links";
-import { pythonShareUrl } from "@/features/file-handler/utils/python-base";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import {
   newRequestId,
   type ResponseMeta,

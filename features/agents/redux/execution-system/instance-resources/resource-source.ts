@@ -3,7 +3,7 @@
  *
  * Bridge between resource-picker output and the universal file handler.
  * Used to be ~135 lines of MIME-sniffing + locator-picking; that logic
- * now lives in `features/file-handler` so this file is just shape coercion.
+ * now lives in `features/files/handler` so this file is just shape coercion.
  *
  * Two responsibilities:
  *   1. `refineBlockType` — narrows `"document"` → image/audio/video when
@@ -17,14 +17,14 @@
  *      `preferIdentityLocator`. Non-media block types pass through.
  *
  * No fork: every shape coercion the picker → agents path needs goes
- * through `@/features/file-handler/*`.
+ * through `@/features/files/handler/*`.
  */
 
 import type { MediaRef } from "@/features/files/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
-import { preferIdentityLocator } from "@/features/file-handler/utils/prefer-locator";
-import type { FileSource, NormalizedFile } from "@/features/file-handler/types";
-import { normalize } from "@/features/file-handler/input/normalize";
+import { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
+import type { FileSource, NormalizedFile } from "@/features/files/handler/types";
+import { normalize } from "@/features/files/handler/input/normalize";
 
 const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "image",

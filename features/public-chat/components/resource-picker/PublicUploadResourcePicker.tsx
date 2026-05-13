@@ -3,8 +3,8 @@
 import React, { useState, useCallback, useRef } from "react";
 import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
-import type { NormalizedFile } from "@/features/file-handler/types";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import type { NormalizedFile } from "@/features/files/handler/types";
 import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PublicResource, PublicResourceType } from "../../types/content";

@@ -1,5 +1,5 @@
 /**
- * features/file-handler/resolver.ts
+ * features/files/handler/resolver.ts
  *
  * The intelligence layer. Takes a freshly-normalized `NormalizedFile`
  * (output of `input/normalize.ts`) and:

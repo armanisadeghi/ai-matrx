@@ -34,9 +34,9 @@ const windowPanelsImportRestriction = {
             message:
                 'Do not import from features/files/api — use @/features/files (the public surface). HTTP helpers (getJson/postJson/del/patchJson/etc.) live at @/lib/python-client.',
         },
-        // NOTE (Phase 1 will wire this in): once features/file-handler/*
+        // NOTE (Phase 1 will wire this in): once features/files/handler/*
         // is folded into features/files/, add a deny pattern for
-        // `@/features/file-handler/*`. Not added now because many call sites
+        // `@/features/files/*`. Not added now because many call sites
         // still import handler hooks directly; the consolidation sweep in
         // Phase 1 will migrate them and the pattern then locks the door.
     ],
@@ -55,47 +55,47 @@ const deletedFileHooksRestriction = {
         {
             name: '@/features/files/hooks/useSignedUrl',
             message:
-                'useSignedUrl was deleted. Use useFileSrc({kind:"file_id",fileId}) from @/features/file-handler.',
+                'useSignedUrl was deleted. Use useFileSrc({kind:"file_id",fileId}) from @/features/files.',
         },
         {
             name: '@/features/files/hooks/useGuardedFileUpload',
             message:
-                'useGuardedFileUpload was deleted. Use useFileUpload().uploadMany from @/features/file-handler.',
+                'useGuardedFileUpload was deleted. Use useFileUpload().uploadMany from @/features/files.',
         },
         {
             name: '@/features/agents/hooks/useAiImageUrl',
             message:
-                'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and use useFileSrc({kind:"file_id",fileId}) from @/features/file-handler.',
+                'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and use useFileSrc({kind:"file_id",fileId}) from @/features/files.',
         },
         {
             name: '@/components/ui/file-upload/useFileUploadWithStorage',
             message:
-                'useFileUploadWithStorage was deleted. Use useFileUpload from @/features/file-handler.',
+                'useFileUploadWithStorage was deleted. Use useFileUpload from @/features/files.',
         },
         {
             name: '@/components/ui/file-upload/usePasteImageUpload',
             message:
-                'usePasteImageUpload was deleted. Attach a paste listener and call useFileUpload().upload({kind:"file"}) from @/features/file-handler.',
+                'usePasteImageUpload was deleted. Attach a paste listener and call useFileUpload().upload({kind:"file"}) from @/features/files.',
         },
         {
-            name: '@/features/file-handler/hooks/useFileMediaBlock',
+            name: '@/features/files/handler/hooks/useFileMediaBlock',
             message:
                 'useFileMediaBlock will fold into useFileAs({kind:"media_block"}) in a follow-up.',
         },
         {
-            name: '@/features/file-handler/hooks/useFileDownloadUrl',
+            name: '@/features/files/handler/hooks/useFileDownloadUrl',
             message:
                 'useFileDownloadUrl will fold into useFileSrc({mode:"download"}) in a follow-up.',
         },
         {
             name: '@/features/files/upload/cloudUpload',
             message:
-                'cloudUpload is internal to features/file-handler. Use useFileUpload from @/features/file-handler.',
+                'cloudUpload is internal to @/features/files. Use useFileUpload from @/features/files.',
         },
     ],
 };
 
-// All file flows must funnel through features/file-handler. ESLint cannot
+// All file flows must funnel through @/features/files. ESLint cannot
 // fully prevent direct supabase.storage member access (no AST rule for that
 // without a custom plugin), but `no-restricted-syntax` catches the canonical
 // `supabase.storage.from(...)` shape and the `getPublicUrl` / `createSignedUrl`
@@ -106,7 +106,7 @@ const fileHandlerSyntaxRestrictions = [
         selector:
             "MemberExpression[object.name=/^(supabase|client|createClient)$/][property.name='storage']",
         message:
-            'Direct supabase.storage usage is banned. Use the universal file handler (features/file-handler) instead.',
+            'Direct supabase.storage usage is banned. Use the universal file handler (@/features/files) instead.',
     },
     {
         selector:
@@ -242,13 +242,11 @@ export default [
         },
     },
     {
-        files: [
-            'features/file-handler/**/*',
-            'features/files/**/*',
-        ],
+        files: ['features/files/**/*'],
         rules: {
-            // The file-handler feature owns supabase.storage internals.
-            // It still must NOT use legacy Supabase API key env vars.
+            // The files feature owns the supabase.storage / cloud-files
+            // internals. It still must NOT use legacy Supabase API key
+            // env vars.
             'no-restricted-syntax': ['error', ...legacySupabaseKeyBan],
         },
     },
