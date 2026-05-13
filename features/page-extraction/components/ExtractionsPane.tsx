@@ -91,11 +91,10 @@ export function ExtractionsPane({
           value="results"
           className="flex-1 min-h-0 mt-1 data-[state=inactive]:hidden"
         >
-          <ResultsTable
-            jobId={jobId}
-            pageNumber={activePage ?? null}
-            onJumpToPage={onJumpToPage}
-          />
+          {/* Show ALL results for the template. Filtering to the current
+              page hid every row when the user was on page 1 and findings
+              were on pages 11+. Click a row to jump instead. */}
+          <ResultsTable jobId={jobId} onJumpToPage={onJumpToPage} />
         </TabsContent>
       </Tabs>
     </div>

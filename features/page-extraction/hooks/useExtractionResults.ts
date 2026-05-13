@@ -1,29 +1,43 @@
 /**
  * features/page-extraction/hooks/useExtractionResults.ts
  *
- * Live results for a Job (defaults to its latest run). Subscribes to
- * `page_extraction_results` Realtime INSERTs so new rows appear in the
- * table mid-run without consuming the SSE stream — that's the resilience
- * pattern documented in FEATURE.md.
+ * Live results for a Job. Returns EVERY result row for the template by
+ * default — across all runs. Callers can scope to a specific run via
+ * `opts.runId` when they want "the latest extraction only."
+ *
+ * Subscribes to `page_extraction_results` Realtime INSERTs so new rows
+ * appear in the table mid-run without consuming the SSE stream. The
+ * resilience pattern lets the UI converge whether the SSE event or the
+ * Realtime event wins the race.
+ *
+ * NB: the old version filtered by `latest_run_id` and hid every row from
+ *     prior runs. With re-runs producing new run records, the user saw
+ *     only the most recent execution's results — confusing when an
+ *     earlier run had real data and the latest one returned `[]`.
+ *     Overwrite-on-overlap (delete prior results for re-extracted pages)
+ *     is a server-side concern that lives in the run pipeline, NOT in
+ *     this read hook.
  */
 
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { getLatestRunId, listResults } from "@/features/page-extraction/api/runs";
+import { listResults } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 
 export interface UseExtractionResultsOptions {
-  /** Scope to this run instead of the job's latest. */
+  /** Scope to a single run instead of every run for the Job. */
   runId?: string | null;
-  /** Filter to results that reference this 1-based page number. */
+  /** Optional: filter to results that reference this 1-based page number.
+   *  Off by default — the ExtractionsPane no longer auto-passes activePage
+   *  because that hides every row whenever the user isn't on a page that
+   *  has extractions. */
   pageNumber?: number | null;
 }
 
 export interface UseExtractionResultsResult {
   results: PageExtractionResult[];
-  runId: string | null;
   loading: boolean;
   error: string | null;
   refetch: () => void;
@@ -34,35 +48,11 @@ export function useExtractionResults(
   opts: UseExtractionResultsOptions = {},
 ): UseExtractionResultsResult {
   const [results, setResults] = useState<PageExtractionResult[]>([]);
-  const [runId, setRunId] = useState<string | null>(opts.runId ?? null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [refetchTick, setRefetchTick] = useState(0);
 
-  // Resolve which run we're showing.
-  useEffect(() => {
-    if (!jobId) {
-      setRunId(null);
-      return;
-    }
-    if (opts.runId) {
-      setRunId(opts.runId);
-      return;
-    }
-    let cancelled = false;
-    void getLatestRunId(jobId)
-      .then((id) => {
-        if (!cancelled) setRunId(id);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [jobId, opts.runId, refetchTick]);
-
-  // Load results once we know the run.
+  // Load results for the job (optionally narrowed to a specific run).
   useEffect(() => {
     if (!jobId) {
       setResults([]);
@@ -70,7 +60,7 @@ export function useExtractionResults(
     }
     let cancelled = false;
     setLoading(true);
-    void listResults({ jobId, runId })
+    void listResults({ jobId, runId: opts.runId ?? null })
       .then((rows) => {
         if (!cancelled) {
           setResults(rows);
@@ -86,17 +76,17 @@ export function useExtractionResults(
     return () => {
       cancelled = true;
     };
-  }, [jobId, runId, refetchTick]);
+  }, [jobId, opts.runId, refetchTick]);
 
-  // Realtime INSERT subscription.
+  // Realtime INSERT subscription — scope to the job (any run).
   useEffect(() => {
     if (!jobId) return;
     const supabase = createClient();
-    const filter = runId
-      ? `run_id=eq.${runId}`
+    const filter = opts.runId
+      ? `run_id=eq.${opts.runId}`
       : `job_id=eq.${jobId}`;
     const channel = supabase
-      .channel(`page-extraction-results:${jobId}:${runId ?? "all"}`)
+      .channel(`page-extraction-results:${jobId}:${opts.runId ?? "all"}`)
       .on(
         "postgres_changes",
         {
@@ -125,19 +115,19 @@ export function useExtractionResults(
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [jobId, runId]);
+  }, [jobId, opts.runId]);
 
   const filtered = useMemo(() => {
     if (!opts.pageNumber) return results;
-    return results.filter((r) =>
-      Array.isArray(r.source_pages) &&
-      r.source_pages.includes(opts.pageNumber as number),
+    return results.filter(
+      (r) =>
+        Array.isArray(r.source_pages) &&
+        r.source_pages.includes(opts.pageNumber as number),
     );
   }, [results, opts.pageNumber]);
 
   return {
     results: filtered,
-    runId,
     loading,
     error,
     refetch: () => setRefetchTick((n) => n + 1),
