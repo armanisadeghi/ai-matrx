@@ -33,8 +33,7 @@ import {
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
 import { useAppSelector } from "@/lib/redux/hooks";
-import * as Api from "@/features/files/api";
-import { useCloudTree } from "@/features/files";
+import { useCloudTree, useFileMutation } from "@/features/files";
 import {
   selectAllFilesMap,
   selectAllFoldersMap,
@@ -238,6 +237,7 @@ export function FilesResourcePicker({
   const foldersById = useAppSelector(selectAllFoldersMap);
   const rootFolderIds = useAppSelector(selectRootFolderIds);
 
+  const fileMutation = useFileMutation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -264,10 +264,9 @@ export function FilesResourcePicker({
       // Fetch a short-lived signed URL. Unlike legacy storage, every
       // cloud-files URL is signed — we don't need the "public vs private"
       // dance the old picker did.
-      const { data } = await Api.Files.getSignedUrl(file.id, {
+      const { url: fileUrl } = await fileMutation.signedUrl(file.id, {
         expiresIn: 3600,
       });
-      const fileUrl = data.url;
 
       // Reuse the legacy EnhancedFileDetails shape so downstream callers
       // (resource registry, attachment pills, etc.) read the same fields.

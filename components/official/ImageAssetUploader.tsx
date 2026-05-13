@@ -40,7 +40,7 @@ import { useDropzone } from 'react-dropzone';
 import { AlertCircle, CheckCircle2, Eye, ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Asset, AssetPreset, AssetVariant, Visibility } from '@/features/files';
-import { useFileUpload } from '@/features/files';
+import { useFileUpload, InlineMediaRef } from '@/features/files';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
 import { extractErrorMessage } from '@/utils/errors';
@@ -617,12 +617,15 @@ export function ImageAssetUploader({
 
                 {variants.image_url ? (
                     <div className="flex items-center gap-3 p-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={variants.thumbnail_url ?? variants.tiny_url ?? variants.image_url}
+                        <InlineMediaRef
+                            ref={variants.thumbnail_url ?? variants.tiny_url ?? variants.image_url}
+                            size={{ width: 56, height: 56 }}
+                            fit="cover"
+                            rounded="lg"
+                            border="subtle"
                             alt={label}
-                            className="w-14 h-14 rounded-lg object-cover border shrink-0"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            className="shrink-0"
+                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                         />
                         <div className="min-w-0 flex-1 text-sm">
                             {section.state === 'success' && (

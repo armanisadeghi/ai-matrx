@@ -6,6 +6,7 @@ import { fetchNews } from "@/actions/ai-actions/news-api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { InlineMediaRef } from "@/features/files";
 
 const CATEGORIES = [
   "general",
@@ -175,11 +176,13 @@ function NewsItem({ article }: { article: Article }) {
         {/* Thumbnail */}
         <div className="w-20 h-20 shrink-0 bg-muted rounded border border-border/50 relative overflow-hidden flex items-center justify-center">
            {showImage ? (
-             // eslint-disable-next-line @next/next/no-img-element
-             <img
-               src={article.urlToImage}
+             <InlineMediaRef
+               ref={article.urlToImage}
+               size="fill"
+               fit="cover"
+               rounded="none"
                alt={article.title}
-               className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+               className="group-hover:scale-105 transition-transform duration-300"
                onError={() => setImgError(true)}
              />
            ) : (

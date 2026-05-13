@@ -4,7 +4,6 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { DatabaseTask } from "../types";
-import * as FilesApi from "@/features/files/api";
 import { fileHandler, folderForTask } from "@/features/files";
 
 export interface CreateTaskInput {
@@ -248,7 +247,7 @@ export async function uploadTaskAttachment(
       // API (a thunk dispatch is overkill in this best-effort cleanup path;
       // realtime reconciles the slice asynchronously).
       try {
-        await FilesApi.Files.deleteFile(fileId, { hardDelete: false });
+        await fileHandler.remove(fileId, { hard: false });
       } catch {
         /* best effort */
       }
@@ -267,10 +266,9 @@ export async function uploadTaskAttachment(
  */
 export async function getAttachmentUrl(fileId: string): Promise<string> {
   try {
-    const { data } = await FilesApi.Files.getSignedUrl(fileId, {
-      expiresIn: 3600,
-    });
-    return data.url;
+    return await fileHandler
+      .use({ kind: "file_id", fileId })
+      .as({ kind: "html_src" });
   } catch (err) {
     console.error("Error resolving cloud-files signed URL:", err);
     return "";

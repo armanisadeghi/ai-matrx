@@ -37,7 +37,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders, InlineMediaRef } from "@/features/files";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -592,13 +592,15 @@ export function BlockRow({
 
       {showThumbnail && (
         <div className="pl-5 pt-1 pb-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imgUrl}
+          <InlineMediaRef
+            ref={imgUrl}
+            size={{ width: 0, height: 0 }}
+            fit="cover"
+            rounded="none"
             alt="Attached image"
-            className="h-16 w-auto max-w-[150px] rounded border border-border object-cover"
+            className="h-16 w-auto max-w-[150px] rounded border border-border"
             onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
+              (e.currentTarget as HTMLElement).style.display = "none";
             }}
           />
         </div>

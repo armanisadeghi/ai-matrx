@@ -18,7 +18,6 @@
 
 "use client";
 
-import * as Api from "@/features/files/api";
 import { CloudFolders, fileHandler } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
@@ -86,11 +85,11 @@ async function uploadWithRetry(
       const fileId = normalized.fileId;
 
       // Short-lived signed URL for the transcription service (10 min).
-      const { data: url } = await Api.Files.getSignedUrl(fileId, {
-        expiresIn: 600,
-      });
+      const signedUrl = await fileHandler
+        .use({ kind: "file_id", fileId })
+        .as({ kind: "html_src" });
 
-      return { fileId, signedUrl: url.url };
+      return { fileId, signedUrl };
     } catch (err) {
       lastError =
         err instanceof Error ? err : new Error(extractErrorMessage(err));
@@ -183,7 +182,7 @@ export async function uploadAndTranscribeFull(
         // service path and the slice's deleteFile thunk isn't part of
         // the public surface. The realtime channel will reconcile the
         // slice state asynchronously.
-        await Api.Files.deleteFile(handle.fileId, { hardDelete: true });
+        await fileHandler.remove(handle.fileId, { hard: true });
       } catch {
         // Non-critical cleanup — the file will be auto-pruned by the
         // backend's retention policy if the hard-delete fails.
