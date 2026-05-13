@@ -39,11 +39,22 @@ import {
     useFileUpload, InlineMediaRef,
     openFilePicker, getAssetForFile, addAssetVariants,
 } from '@/features/files';
-import { useAppDispatch } from '@/lib/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { openOverlay } from '@/lib/redux/slices/overlaySlice';
 import { extractErrorMessage } from '@/utils/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    generateImage,
+    type ImageResult,
+} from '@/features/image-studio/api/python';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -501,6 +512,164 @@ function UrlTabContent({ preset, folder, visibility, onResult, onError }: UrlTab
     );
 }
 
+// ── Generate tab content ──────────────────────────────────────────────────────
+
+type GenSize = 'square' | 'portrait' | 'landscape' | 'wide' | 'tall';
+
+interface GenerateTabContentProps {
+    preset: AssetPreset;
+    onResult: (result: ImageUploaderResult) => void;
+    onError?: (msg: string) => void;
+}
+
+function GenerateTabContent({ preset, onResult, onError }: GenerateTabContentProps) {
+    const genPrefs = useAppSelector((s) => s.userPreferences.imageGeneration);
+    const [prompt, setPrompt] = useState('');
+    const [size, setSize] = useState<GenSize>('square');
+    const [style, setStyle] = useState(genPrefs?.style ?? '');
+    const [genState, setGenState] = useState<'idle' | 'generating' | 'picking' | 'attaching' | 'error'>('idle');
+    const [results, setResults] = useState<ImageResult[]>([]);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    const handleGenerate = useCallback(async () => {
+        const trimmed = prompt.trim();
+        if (!trimmed) return;
+        setGenState('generating');
+        setErrorMsg(null);
+        setResults([]);
+        try {
+            const res = await generateImage({
+                prompt: trimmed,
+                size,
+                style: style.trim() || undefined,
+                count: 2,
+            });
+            setResults(res.files);
+            setGenState('picking');
+        } catch (err) {
+            const raw = extractErrorMessage(err);
+            const isNotImpl = /404|not.*found|not.*implement/i.test(raw);
+            const msg = isNotImpl
+                ? 'Image generation is coming soon — the pipeline is not yet live.'
+                : raw;
+            setErrorMsg(msg);
+            setGenState('error');
+            if (!isNotImpl) onError?.(msg);
+        }
+    }, [prompt, size, style, onError]);
+
+    const handlePick = useCallback(async (result: ImageResult) => {
+        setGenState('attaching');
+        setErrorMsg(null);
+        try {
+            await getAssetForFile(result.cloud_file_id);
+            const { data: ensured } = await addAssetVariants(result.cloud_file_id, { preset });
+            onResult(assetToUploaderResult(ensured));
+            setResults([]);
+            setPrompt('');
+            setGenState('idle');
+        } catch (err) {
+            const msg = extractErrorMessage(err);
+            setErrorMsg(msg);
+            setGenState('error');
+            onError?.(msg);
+        }
+    }, [preset, onResult, onError]);
+
+    const busy = genState === 'generating' || genState === 'attaching';
+
+    return (
+        <div className="flex flex-col gap-2 py-1">
+            <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void handleGenerate(); } }}
+                placeholder="Describe the image you want to generate…"
+                rows={3}
+                disabled={busy}
+                className="resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:opacity-60 focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ fontSize: '16px' }}
+            />
+
+            <div className="flex gap-2">
+                <Select value={size} onValueChange={(v) => setSize(v as GenSize)}>
+                    <SelectTrigger className="h-8 text-xs flex-1" disabled={busy}>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="square">Square</SelectItem>
+                        <SelectItem value="portrait">Portrait</SelectItem>
+                        <SelectItem value="landscape">Landscape</SelectItem>
+                        <SelectItem value="wide">Wide (16:9)</SelectItem>
+                        <SelectItem value="tall">Tall (9:16)</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                <Input
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value)}
+                    placeholder="Style (optional)"
+                    disabled={busy}
+                    className="flex-[2] h-8 text-xs"
+                    style={{ fontSize: '16px' }}
+                />
+            </div>
+
+            <Button
+                type="button"
+                size="sm"
+                onClick={() => void handleGenerate()}
+                disabled={!prompt.trim() || busy}
+                className="h-8 text-xs w-full"
+            >
+                {genState === 'generating' ? (
+                    <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Generating…</>
+                ) : (
+                    <><Sparkles className="h-3.5 w-3.5 mr-1.5" />Generate</>
+                )}
+            </Button>
+
+            {results.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-muted-foreground">
+                        {genState === 'attaching' ? 'Attaching preset variants…' : 'Pick an image to use'}
+                    </p>
+                    <div className={cn('grid gap-2', results.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+                        {results.map((r) => (
+                            <button
+                                key={r.cloud_file_id}
+                                type="button"
+                                onClick={() => void handlePick(r)}
+                                disabled={genState === 'attaching'}
+                                className="relative rounded-lg overflow-hidden border-2 border-border hover:border-primary/60 transition-colors aspect-square bg-muted disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <InlineMediaRef
+                                    ref={r.cloud_file_id ?? r.public_url}
+                                    size="fill"
+                                    fit="cover"
+                                    rounded="none"
+                                    alt="Generated image"
+                                />
+                                {genState === 'attaching' && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {genState === 'error' && errorMsg && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
+                </p>
+            )}
+        </div>
+    );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function ImageAssetUploader({
@@ -756,13 +925,11 @@ export function ImageAssetUploader({
                             <UrlTabContent preset={preset} folder={folder} visibility={visibility} onResult={handleTabResult} onError={onError} />
                         )}
                         {activeTab === 'generate' && enableGenerate && (
-                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                                <Sparkles className="h-8 w-8 text-muted-foreground/50" />
-                                <p className="text-sm font-medium text-foreground">Generate with AI</p>
-                                <p className="text-xs text-muted-foreground max-w-[220px]">
-                                    AI image generation is available — connect a pipeline from the Generate tab in the Image Manager.
-                                </p>
-                            </div>
+                            <GenerateTabContent
+                                preset={preset}
+                                onResult={handleTabResult}
+                                onError={onError}
+                            />
                         )}
                     </>
                 )}
