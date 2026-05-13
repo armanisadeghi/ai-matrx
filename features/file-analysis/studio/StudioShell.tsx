@@ -20,8 +20,7 @@ import { AnnotatablePdfCanvas } from "@/features/file-analysis/components/Annota
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectFileById } from "@/features/files/redux/selectors";
+import { useFile } from "@/features/files";
 import { ThumbnailStrip } from "./ThumbnailStrip";
 import { InspectorRail, type StudioInspectorTab } from "./InspectorRail";
 import type { PdfRegion } from "@/features/files/components/core/PdfAnnotationLayer";
@@ -35,7 +34,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const file = useAppSelector((s) => selectFileById(s, fileId));
+  const { file } = useFile({ kind: "file_id", fileId });
   const { annotations, create: createAnnotation } = useAnnotations(fileId);
   const { pages } = usePages(fileId);
   useFileAnalysis(fileId); // warm the cache for the inspector panels
@@ -154,7 +153,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
           <ArrowLeft className="h-3 w-3 mr-1" /> Back to file
         </Button>
         <h1 className="truncate text-sm font-semibold">
-          {file?.fileName ?? "Document"}{" "}
+          {file?.meta.fileName ?? "Document"}{" "}
           <span className="text-muted-foreground">— Analysis Studio</span>
         </h1>
         {annotationPages.length ? (
