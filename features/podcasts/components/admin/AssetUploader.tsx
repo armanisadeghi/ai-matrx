@@ -18,9 +18,9 @@ import { AlertCircle, CheckCircle2, Loader2, Trash2, Video } from 'lucide-react'
 import { useBackendApi } from '@/hooks/useBackendApi';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import {
-    UniversalImageSourcePicker,
-} from '@/components/official/UniversalImageSourcePicker';
-import type { ImageUploaderResult } from '@/components/official/ImageAssetUploader';
+    ImageAssetUploader,
+    type ImageUploaderResult,
+} from '@/components/official/ImageAssetUploader';
 import { folderForPodcast } from '@/features/files';
 import type { components } from '@/types/python-generated/api-types';
 
@@ -176,12 +176,13 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
         <div className="flex flex-col gap-4">
 
             {/* ── Cover image (all 4 sources: upload / library / URL / generate) */}
-            <UniversalImageSourcePicker
+            <ImageAssetUploader
                 onComplete={handleImageComplete}
                 preset="podcast"
                 folder={podcastId ? folderForPodcast(podcastId) : undefined}
                 currentUrl={currentImageUrl ?? null}
                 label="Cover Image"
+                showSourceTabs={true}
                 defaultTab="upload"
             />
 

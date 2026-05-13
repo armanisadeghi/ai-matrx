@@ -69,7 +69,7 @@ export {
 } from "@/features/files/hooks/useFileAsset";
 
 // Asset API — direct access for components that need fine-grained control
-// (e.g. UniversalImageSourcePicker: pick from library → ensure preset variants).
+// (e.g. ImageAssetUploader library tab: pick from library → ensure preset variants).
 // Import from here, never from @/features/files/api/* directly.
 export {
   getAssetForFile,
