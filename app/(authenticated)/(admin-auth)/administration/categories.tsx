@@ -459,6 +459,13 @@ export const adminCategories = [
         icon: <IconDatabase />,
         link: "/administration/local-storage",
       },
+      {
+        title: "Blob Cache Observability",
+        description:
+          "3-tier byte cache health (memory / IndexedDB / Service Worker), eviction controls, and stale-bytes incident wipe.",
+        icon: <IconCloud />,
+        link: "/administration/blob-cache",
+      },
     ],
   },
   {
