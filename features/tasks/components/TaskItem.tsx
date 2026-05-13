@@ -16,12 +16,15 @@ import {
 import TaskDetails from './TaskDetails';
 import EditableTaskTitle from './EditableTaskTitle';
 import { ScopeTagsDisplay } from '@/features/agent-context/components/ScopeTagsDisplay';
+import { ShareButton } from '@/features/sharing';
+import { selectUserId } from '@/lib/redux/selectors/userSelectors';
 
 export default function TaskItem({ task, depth = 0 }: { task: any; depth?: number }) {
   const dispatch = useAppDispatch();
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const expandedTasks = useAppSelector(selectExpandedTasks);
   const operatingTaskId = useAppSelector(selectOperatingTaskId);
+  const currentUserId = useAppSelector(selectUserId);
 
   const isOperating = operatingTaskId === task.id;
 
@@ -130,6 +133,17 @@ export default function TaskItem({ task, depth = 0 }: { task: any; depth?: numbe
           
           {/* Action buttons */}
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <div onClick={(e) => e.stopPropagation()}>
+              <ShareButton
+                resourceType="task"
+                resourceId={task.id}
+                resourceName={task.title || 'Task'}
+                isOwner={Boolean(currentUserId && task.userId === currentUserId)}
+                variant="ghost"
+                size="icon"
+                showStatus={false}
+              />
+            </div>
             <button
               onClick={(e) => {
                 e.stopPropagation();

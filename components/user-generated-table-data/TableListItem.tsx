@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { ShareButton } from '@/features/sharing';
 
 interface TableListItemProps {
   id: string;
@@ -144,7 +145,18 @@ export function TableListItem({
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex-shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        {isOwned && (
+          <ShareButton
+            resourceType="udt_datasets"
+            resourceId={id}
+            resourceName={table_name}
+            isOwner={true}
+            variant="ghost"
+            size="icon"
+            showStatus={false}
+          />
+        )}
         {isOwned ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

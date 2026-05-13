@@ -4,6 +4,9 @@ import { ContentTemplateDB } from "@/features/content-templates/types/content-te
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Globe, Lock } from "lucide-react";
+import { ShareButton } from "@/features/sharing";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface TemplateCardProps {
     template: ContentTemplateDB;
@@ -19,6 +22,8 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export function TemplateCard({ template, onClick, isDisabled }: TemplateCardProps) {
+    const currentUserId = useAppSelector(selectUserId);
+    const isOwner = Boolean(currentUserId && template.user_id === currentUserId);
     return (
         <Card
             onClick={() => !isDisabled && onClick(template)}
@@ -33,6 +38,22 @@ export function TemplateCard({ template, onClick, isDisabled }: TemplateCardProp
                 <div className="flex-shrink-0 w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center mt-0.5">
                     <FileText className="w-3.5 h-3.5 text-primary" />
                 </div>
+                {isOwner && (
+                    <div
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <ShareButton
+                            resourceType="content_template"
+                            resourceId={template.id}
+                            resourceName={template.label ?? "Template"}
+                            isOwner={true}
+                            variant="ghost"
+                            size="icon"
+                            showStatus={false}
+                        />
+                    </div>
+                )}
                 <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold leading-tight truncate transition-colors duration-200 ${!isDisabled && "group-hover:text-primary"}`}>
                         {template.label || "Untitled"}

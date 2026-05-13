@@ -32,6 +32,9 @@ import IconButton from "@/components/official/IconButton";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AgentAppCardModel } from "@/features/agent-apps/redux/agent-app-consumers/selectors";
+import { ShareButton } from "@/features/sharing";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface AgentAppCardProps {
   app: AgentAppCardModel;
@@ -77,6 +80,8 @@ export function AgentAppCard({
 }: AgentAppCardProps) {
   const isDisabled = isDuplicating || isDeleting || isNavigating;
   const isArchived = app.status === "archived";
+  const currentUserId = useAppSelector(selectUserId);
+  const isOwner = Boolean(currentUserId && app.user_id === currentUserId);
   const manageHref = `/agent-apps/${app.id}`;
   const codeHref = `/agent-apps/${app.id}/code`;
   const versionsHref = `/agent-apps/${app.id}/versions`;
@@ -276,6 +281,17 @@ export function AgentAppCard({
             onClick={() => onCopyUrl(app)}
             disabled={isDisabled}
           />
+          {isOwner && (
+            <ShareButton
+              resourceType="agent_app"
+              resourceId={app.id}
+              resourceName={app.name}
+              isOwner={true}
+              variant="ghost"
+              size="icon"
+              showStatus={false}
+            />
+          )}
           <IconButton
             icon={isDeleting ? Loader2 : Trash2}
             tooltip={isDeleting ? "Deleting…" : "Delete"}
