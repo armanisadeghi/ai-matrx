@@ -1,596 +1,742 @@
-# File Handling Consolidation Plan
+# File Handling Consolidation Plan — v2 (integrated)
 
-**Status:** proposed — for review
+**Status:** proposed — integrated with backend team's `prancy-meandering-canyon` plan
 **Date:** 2026-05-13
 **Branch:** `docs/file-handling-consolidation-plan`
-**Owner:** files / file-handler refactor
-
-> Single-system, single-direction. Every file (image, PDF, audio, video, document) flows through one pipeline with one cache stack, one API client, and one set of hooks. Anything else gets deleted.
-
----
-
-## TL;DR
-
-- Two feature dirs (`features/file-handler/` + `features/files/`, **203 files combined**) collapse into **one** `features/files/` directory.
-- Public surface is **5 hooks + 1 facade + 3 components**. Nothing else.
-- Read pipeline gets a **4-tier cache** (Redux → in-memory blob LRU → IndexedDB → network). Large PDFs / video / audio bytes opt-in to IndexedDB persistence with ETag validation, 2 GB cap, cleared on sign-out.
-- Python API collapses from **46 endpoints / 52 client functions** to **~10 endpoints / 7 client functions**, organized around "give me everything I need in one call."
-- No Next.js hops. Browser ↔ Python ↔ S3 only. Two legacy Next routes survive (PDF compress, image-studio process) only because they do CPU work, never byte storage.
-- **6+ L0 bypasses** still exist today (`useAiImageUrl`, `taskService`, RAG library/data-stores upload, `useSignedUrl`, `ImageAssetUploader` dual-path, audio fallback signed-URL). Phase 1 deletes them.
+**Owner:** files / file-handler rebuild
+**Posture:** rip-and-replace, no shims, no aliases, no deprecations. One system everywhere.
 
 ---
 
-## Part 1 — Current state inventory
+## What changed in v2
 
-### 1.1 The two directories
+The backend team produced a comprehensive one-pass rebuild plan (`prancy-meandering-canyon.md`). It overlaps heavily with v1 of this doc and in several places **is stronger** than v1. v2:
 
-| Dir | Files | Role today |
+1. **Adopts the backend plan's FE architecture wholesale** where it matches or exceeds v1: `MediaRef` as the universal reference, `Asset` envelope as both wire format AND Redux state model (`assetsByMasterId`), `<InlineMediaRef>` as the cross-cutting render component, single `<CloudFilesRealtimeProvider>` mount, OpenAPI type-gen CI gate, single `upload()` primitive with automatic transport selection (buffered / presigned / TUS), unified `VariantsService` covering image presets + vision encoders, ESLint ban on raw MediaRef literals.
+2. **Adds the universal Service Worker + IndexedDB streaming cache** from `universal-file-streaming-cache_bffef1ed.plan.md` — the single biggest thing the backend plan is missing. Transparent 3-tier byte cache (memory LRU → IndexedDB → network), PDF.js Range progressive rendering, cross-tab coordination, identity-scoped, feature-flagged. Even L0 `<img src>` and `<video src>` legacy callers get caching for free.
+3. **Holds the line on combined-operations API** — v1's call to bundle `upload + share + permissions + variants` in one POST, and `rename + move + visibility + metadata + share + perms` in one PATCH, is **not** in the backend plan and needs to be pushed back. Flagged in §5.
+4. **Bakes in the mandatory social baseline** from `IMAGE_UPLOAD_INVESTIGATION.md` and the standard preset dimensions from `online-content-asset-checklist.md`.
+5. **Holds every "RIP IT OUT" decision.** No back-compat shims. No 308s. No alias hooks. No "deprecated for one release." 285+ callsites migrate explicitly. Sharp leaves the repo. Two Next.js routes (`pdf/compress`, `images/studio/process`) get rewritten as Python endpoints (`POST /assets/preview`, `POST /assets/pdf-compress`) and the Next routes deleted — Image Studio doesn't get an exemption.
+
+---
+
+## Part 0 — TL;DR
+
+- **One directory.** `features/file-handler/` folds into `features/files/`. `features/file-handler/` ceases to exist.
+- **One reference type.** `MediaRef = { file_id?, url?, file_uri? }` everywhere. Manual literals are ESLint-banned outside `converters.ts`.
+- **One state model.** Redux `cloudFiles.assetsByMasterId: Record<string, Asset>`. Realtime middleware updates parent on variant row updates.
+- **One Python facade.** `FileService.from_env()` in `matrx-utils`. aidream becomes a thin injection layer (auth + tier + Cloudflare purge + Sentry).
+- **One upload primitive.** `upload(source, target, options)` — auto-selects buffered (<5 MB), presigned (5–100 MB), or TUS (≥100 MB). Existing 5 paths (`cloudUpload`, `uploadAsset`, `useFileUpload`, `useGuardedFileUpload`, `useFileUploadWithStorage`) all collapse.
+- **One read hook.** `useFile(ref, opts)` returns `{ asset, url, isLoading, error, refresh }`. Reads `assetsByMasterId` first. Auto-refreshes via the global expiry-wheel.
+- **One inline render component.** `<InlineMediaRef ref={mediaRef} size="..."/>` everywhere `<img src={...}>` used to live.
+- **One byte cache.** Service Worker + IndexedDB (2 GB cap) + in-memory LRU (250 MB). Transparent across `<img>`, `<video>`, `<audio>`, downloads, hooks. PDF.js renders page 1 of an 80 MB PDF in <1 s.
+- **One realtime mount.** `<CloudFilesRealtimeProvider>` once in `app/Providers.tsx`. Four current mounts deleted.
+- **One type-gen pipeline.** Asset / MediaRef / every request+response type regenerated from BE OpenAPI via `openapi-typescript`. `pnpm gen:types && git diff --exit-code` CI gate. Hand-authored Asset types deleted.
+- **No Next.js routes for files.** Browser ↔ Python ↔ S3 only. `app/api/images/upload`, `app/api/images/studio/process`, `app/api/pdf/compress`, `app/api/images/proxy` all deleted. `sharp` removed from `package.json`.
+
+**File-count target:** combined 203 (file-handler 22 + files 181) + scattered FE call sites → **one directory, ~80 files, 285+ migrations**.
+
+---
+
+## Part 1 — What the backend team's plan gives us (accept as-is)
+
+The backend plan covers and in several places exceeds the v1 of this doc. We adopt:
+
+| # | Backend item | Why it's right (or better than v1) |
 |---|---|---|
-| `features/file-handler/` | 22 | New universal facade. `fileHandler.use(source).as(target)` + 7 hooks. Scaffolded 2026-05-07. **Partially adopted.** |
-| `features/files/` | 181 | Cloud-files data layer. 52 API fns, Redux slice, realtime, 11 specialized previewers, upload guard, virtual sources, surfaces. **Source of truth.** |
+| 1 | **`matrx-utils` owns 100% of file-handling logic; aidream is the integration layer.** Standalone-project litmus test: one-line bootstrap installs a complete file system. | Bigger than the v1 ask. Makes the system portable. We benefit because aidream's specifics (Cloudflare purge, quota tiers, fingerprint guests) become injected callbacks, not core code. |
+| 2 | **`FileService` Python facade** with namespaced sub-APIs (`.versions`, `.permissions`, `.share_link`, `.groups`, `.folders`, `.presigned`, `.tus`). | Single chokepoint we asked for. Matches v1's intent and goes further by organising auxiliary domains under it. |
+| 3 | **`UploadPipeline` primitive** — size → quota → sniff → write → fanout, with `FanoutConfig` override per call. | Replaces all five upload paths. Sharper than v1's "POST /v2/files takes options blob." |
+| 4 | **`MediaRef` as universal reference, server-side too.** When source is a MediaRef with a `file_id`, server reads bytes itself — FE never re-uploads. Enables `POST /assets/from-reference`. | New idea, big win. v1 didn't have this. Means attaching an existing file to a new conversation/agent input is a *reference*, not a re-upload. |
+| 5 | **`Asset` envelope as wire format AND FE state model.** Redux `assetsByMasterId`. Realtime updates parent on variant row insert/update. | This was implicit in v1; backend made it explicit and named the cache. Adopt. |
+| 6 | **Unified `VariantsService`** — image presets (`podcast`/`social`/`web`/`email`/`logo`/`avatar`/`favicon`) AND vision encoders (`anthropic_opus_hires`, `gemini3_high`, …) registered as families through one API. `media.py` deleted. | v1 didn't address vision. Adopt — it kills another forked image pipeline. |
+| 7 | **TUS as a service** in matrx-utils. FastAPI router factory + 120-line aidream wrapper. | Cleaner than v1's "promote TUS to v2". Adopt. |
+| 8 | **Packaged SQL migrations** (`004_lineage_thumbnail_webhooks.sql`, `005_tus_analysis_redaction_realtime.sql`, `006_canonical_storage_uri.sql`, `007_drop_legacy_storage_uri.sql`). | Standalone-deployable. v1 didn't address. Adopt. |
+| 9 | **`canonical_storage_uri` rekey landed in one PR** — backfill runs between `006` and `007` in the same release. | Half-finished rekey gets finished. v1 didn't address. Adopt. |
+| 10 | **No back-compat, no 308 redirects.** Old `/media/*` 404s. FE+BE land together. | Matches v1. Confirm. |
+| 11 | **Sharp deleted entirely.** `POST /assets/preview` returns base64 or ephemeral signed URLs. `sharp` removed from `package.json`. `app/api/images/studio/process/route.ts` deleted. | v1 left Image Studio out. Backend plan is stronger. **Adopt and extend**: also delete `app/api/pdf/compress` once Python exposes equivalent. |
+| 12 | **`features/file-handler/` merges INTO `features/files/`.** `fileHandler.use(...).as(...)` builder deleted; direct hook + component imports replace it. | Matches v1. |
+| 13 | **Single `useFile(ref, opts)` hook.** Replaces `useSignedUrl`, `useFileAsset`, `useAiImageUrl`, `useFileSrc`. Reads `assetsByMasterId` first; falls back to fetch. Uses global expiry-wheel for auto-refresh. | Matches v1 and is more concrete. |
+| 14 | **Single `upload(source, target, options)` primitive** with automatic transport selection. `cloudUpload`, `uploadAsset`, `useFileUpload`, `useGuardedFileUpload`, `useFileUploadWithStorage` all collapse. | More concrete than v1 — handles the size→transport decision internally. |
+| 15 | **`<InlineMediaRef ref size fit fallback onClick onDownload/>`** component. Replaces every ad-hoc `<img src={file.publicUrl ?? ...}>`. | New idea. Bigger leverage than `<FilePreview>` alone. v1 missed this. Adopt and treat as one of the THREE canonical components alongside `<FilePreview>` and `<FileUploadDropzone>`. |
+| 16 | **OpenAPI type generation pipeline.** `Asset`, `AssetVariant`, `AssetPreset`, `MediaRef`, every request/response regenerated. `pnpm gen:types && git diff --exit-code` CI gate. Hand-authored Asset types deleted. | New idea, eliminates drift. Adopt. |
+| 17 | **Single `<CloudFilesRealtimeProvider>` mount in `app/Providers.tsx`.** Four per-route mounts deleted. | New. v1 didn't catch this. Adopt. |
+| 18 | **ESLint ban on manual MediaRef literals** outside `features/files/redux/converters.ts`. The four builders (`cloudFileToMediaRef`, `fileIdToMediaRef`, `urlToMediaRef`, `fileUriToMediaRef`) become the only sanctioned construction path. | Adopt — same posture as `supabase.storage` ban. |
+| 19 | **Internal FE splits bundled in the same PR.** `FilePreview.tsx` 404-line switch → registry pattern. `FileTable.tsx` 851 lines → TanStack Table. `PageShell.tsx` 920 lines → per-section components. `thunks.ts` 1790 lines → split by domain. `types.ts` 1300 lines → `domain.ts/api.ts/ui.ts`. | New. v1 didn't address. Adopt — same PR. |
+| 20 | **285+ explicit `useFileSrc` callsite migrations to `useFile(ref, { target: "render" }).url`.** No alias. | Adopt. |
+| 21 | **Critical bug fixed: non-atomic `increment_share_link_use` → `cld_consume_share_link(TEXT)` RPC** ([db.py:568](packages/matrx-utils/matrx_utils/file_handling/cloud_sync/db.py#L568)). | Bundled. Adopt. |
+| 22 | **Out of scope (defer):** antivirus, GDPR cascade delete, audit downloads, S3 lifecycle, trash auto-purge, FE Sentry, cross-repo correlation IDs, `cld_user_groups` audit, per-org tenancy. | Same out-of-scope as v1. Confirm. |
 
-The boundary is fuzzy by design (handler is supposed to be a thin facade), but in practice every consumer must learn which dir to import from. **Decision: collapse into `features/files/`** (handler folds in as an internal layer).
+We accept all 22 items above and integrate them into the final plan in Part 6.
 
-### 1.2 By abstraction level — read paths
+---
 
-**L0 — direct fetchers (must shrink to 0 outside the resolver):**
+## Part 2 — Where the backend plan goes BEYOND what we asked
 
-| Path | What it does | Status |
-|---|---|---|
-| [features/file-handler/intelligence/refresh.ts](features/file-handler/intelligence/refresh.ts) | Re-mints signed URLs | ✅ keep (internal) |
-| [features/file-handler/resolver.ts](features/file-handler/resolver.ts) | The one resolver | ✅ keep (internal) |
-| [features/files/utils/resolveRenderableImageUrl.ts](features/files/utils/resolveRenderableImageUrl.ts) | Cached signed-URL helper | 🗑 fold into resolver |
-| [features/files/hooks/useSignedUrl.ts](features/files/hooks/useSignedUrl.ts) | Legacy expiry-aware URL hook | 🗑 delete (→ `useFileSrc`) |
-| [features/files/redux/thunks.ts](features/files/redux/thunks.ts) `getSignedUrl` callers | Thunk-level URL resolution | 🗑 reroute through resolver |
-| [features/agents/hooks/useAiImageUrl.ts](features/agents/hooks/useAiImageUrl.ts) | UUID-from-path → signed URL for agent icon | 🗑 delete (→ `useFileSrc({kind:"s3_path",path})`) |
-| [features/audio/services/audioFallbackUpload.ts](features/audio/services/audioFallbackUpload.ts) | Audio fallback signed-URL fetch | 🗑 reroute |
-| [features/tasks/services/taskService.ts](features/tasks/services/taskService.ts) | Task attachment URL fetch | 🗑 reroute |
-| [features/resource-manager/resource-picker/FilesResourcePicker.tsx](features/resource-manager/resource-picker/FilesResourcePicker.tsx) | Picker-time signed URL | 🗑 wrap in hook |
+Things in `prancy-meandering-canyon` that strengthen the result above what v1 had:
 
-**L1 — hooks (the canonical layer):**
+1. **Standalone-project litmus test** — a fresh Python project should boot with `FileService.from_env()` + four router factories and have full functionality. This is the cleanest possible test of "matrx-utils owns the logic." Massive win for portability.
+2. **`POST /assets/from-reference`** — agent attaches an existing file to a new conversation by sending only `MediaRef { file_id }`. Server reads bytes itself. Cuts re-upload bandwidth + latency to zero.
+3. **`VariantsService` family registration** — image vs vision encoders unified, plugin-style. Lets us add new encoder families (e.g., a "tts-prompt-art" family) without touching the upload pipeline.
+4. **TUS state machine extracted as a reusable service** — the 1067-line `aidream/api/routers/files_tus.py` splits 3 ways. The matrx-utils piece becomes reusable by any host.
+5. **Packaged SQL is the only schema source** — no more matrx-utils-divergence-from-aidream-applied. The standalone-deployable test enforces this.
+6. **`canonical_storage_uri` rekey landed in one PR with `006` write + backfill + `007` drop** — eliminates the months-long half-finished rekey state. Every read stops paying the fallback cost.
+7. **Internal FE splits bundled** (FilePreview registry, TanStack FileTable, PageShell per-section, thunks/types split) — turn one rebuild into a clean codebase, not a rebuild on top of legacy structure.
+8. **`Asset` envelope is the FE state model** — `useFile(ref)` reads Redux cache first, so subsequent renders are zero-network. Implicit in v1, named and wired here.
+9. **`<InlineMediaRef>` as the universal inline render component** — eliminates every ad-hoc `<img src>` pattern. Bigger lever than `<FilePreview>` alone.
+10. **Audit-bridge injection** — `configure_audit_logger` lets a host plug in Sentry breadcrumbs + `cld_events` outbox without matrx-utils knowing about Sentry. Clean abstraction.
 
-| Hook | File | Verdict |
-|---|---|---|
-| `useFile` | file-handler/hooks/useFile.ts | ✅ keep (returns `NormalizedFile`) |
-| `useFileSrc` | file-handler/hooks/useFileSrc.ts | ✅ keep (URL for `<img>/<video>/<audio>`) |
-| `useFileBlob` | file-handler/hooks/useFileBlob.ts | ✅ keep (bytes — wire IDB cache here) |
-| `useFileDownloadUrl` | file-handler/hooks/useFileDownloadUrl.ts | 🔀 fold into `useFileSrc` (`{ kind:"download" }`) |
-| `useFileMediaBlock` | file-handler/hooks/useFileMediaBlock.ts | 🔀 fold into `useFileAs` |
-| `useFileAs` | file-handler/hooks/useFileAs.ts | ✅ keep (generic target) |
-| `useFileUpload` (handler) | file-handler/hooks/useFileUpload.ts | ✅ keep |
-| `useFileAsset` | files/hooks/useFileAsset.ts | 🗑 delete (→ `useFile` returns Asset envelope) |
-| `useFileBlob` (files) | files/hooks/useFileBlob.ts | 🗑 delete (dup of handler hook) |
-| `useFileDocument` | files/hooks/useFileDocument.ts | 🔀 fold into `useFileBlob` |
-| `useSignedUrl` | files/hooks/useSignedUrl.ts | 🗑 delete |
-| `useGuardedFileUpload` | files/hooks/useGuardedFileUpload.ts | 🔀 fold into `useFileUpload` (guard is opt-out) |
-| `useFileUploadWithStorage` | components/ui/file-upload/useFileUploadWithStorage.ts | 🗑 delete |
-| `usePasteImageUpload` | components/ui/file-upload/usePasteImageUpload.ts | 🗑 delete (→ `useFileUpload` + `{kind:"file"}`) |
+We adopt all of these.
 
-**L2 — components (consume L1 only):**
+---
 
-| Cluster | Count | Status |
-|---|---|---|
-| `features/files/components/core/FilePreview/*` (PDF/Audio/Image/Video/Code/Text/Data/Svg/Generic previewers) | 11 | ✅ keep; ensure each imports `useFileBlob`/`useFileSrc` only |
-| `features/files/components/core/MediaThumbnail/` | 1 | ✅ keep |
-| `components/image/cloud/*`, `components/image/shared/*` | ~8 | 🔀 audit; many can be deleted in favor of `<FilePreview>` |
-| `features/image-manager/components/*` | ~5 | ✅ keep, ensure no direct fetches |
-| `features/rag/components/documents/*`, `features/rag/components/library/*` | ~6 | ✅ keep (composes `<FilePreview>`) |
-| `features/pdf-extractor/**` | ~7 | ✅ keep |
-| `features/file-analysis/**`, `features/code/editor/BinaryFile*.tsx` | ~5 | ✅ keep |
-| `features/whatsapp-clone/**`, agent message displays, chat input previews | ~10 | ✅ keep |
+## Part 3 — Where the backend plan FALLS SHORT (gaps for the backend team)
 
-### 1.3 By abstraction level — write paths
+These are items in v1 (this doc) or in the auxiliary drafts (`IMAGE_UPLOAD_INVESTIGATION.md`, `online-content-asset-checklist.md`, `universal-file-streaming-cache_bffef1ed.plan.md`) that are not in the backend plan and would weaken the system if left out.
 
-**L0 — direct write calls:**
+**Send this list to the backend team. Each one needs an answer before the integrated plan freezes.**
 
-| Function | File | Endpoint | Verdict |
+### Gap 1 — Combined-operation endpoints (call-graph reduction)
+
+The backend plan keeps every operation as its own endpoint. We asked for endpoints that bundle operations called together. Concretely, we want:
+
+- **`POST /assets` (or `/files`) accepts an `options` body that bundles:**
+  - `share: { permission_level, expires_at?, max_uses? }` → server creates the share link and returns it in the same response.
+  - `permissions: [{ grantee_id, grantee_type, permission_level, expires_at? }]` → server grants them.
+  - `variants: ["thumbnail_256", "social_card", ...]` → server renders variants.
+  - All combined into one transaction. Failure of any sub-op rolls back the whole call.
+
+- **`PATCH /files/{id}` accepts the union:**
+  - `{ name?, folder?, visibility?, metadata?, share?, share_revoke?, permissions?, permissions_revoke?, variants?, restore_version?, restore_from_trash?, copy_to? }`
+  - Atomic. Returns new envelope.
+
+- **`POST /files/bulk` with a discriminator:**
+  - `{ ids[], op: "move" | "delete" | "restore" | "visibility" | "share", ...args }`. Returns per-item status envelope.
+
+**Why this matters:** today the FE makes 2 calls for upload+share, 4 for upload+share+2-grants, 2 for rename+move, 3 for get-metadata+get-signed-URL+get-thumbnail. Bundling them moves the round-trip cost to zero for the user-perceived case.
+
+### Gap 2 — Mandatory social baseline on every public-asset preset
+
+From `IMAGE_UPLOAD_INVESTIGATION.md` (resolved 2026-05-12, but the principle needs to carry forward):
+
+Every public-asset upload (`visibility="public"`, image MIME) must always include the **social baseline** variants on top of whatever the preset defines:
+
+- `og_image_url` — 1200×630 (1.91:1), JPEG, ≤500 KB — for Facebook/LinkedIn/Slack/iMessage previews
+- `thumbnail_url` — 400×400, square, JPEG/WebP — for UI cards
+- `tiny_url` — 128×128, JPEG — for compact lists and email headers
+
+Confirm `VariantsService` merges `SOCIAL_BASELINE` into every preset render unconditionally for `visibility=public`. There is no opt-out. The baseline overhead is <50 KB per upload and the resulting "OG image is always present" invariant kills a whole bug class.
+
+### Gap 3 — Preset dimension confirmation against the content checklist
+
+`online-content-asset-checklist.md` enumerates the dimensions/formats we publish against. Confirm the matrx-utils `VariantsService` family `image` covers all of these (one per asset purpose):
+
+| Purpose | Variant key | Dimensions | Format |
 |---|---|---|---|
-| `uploadFile`, `uploadFileWithProgress` | features/files/api/files.ts | POST `/files/upload` | 🔀 fold into v2 `POST /v2/files` |
-| `uploadAsset`, `uploadAssetWithProgress` | features/files/api/assets.ts | POST `/assets` | 🔀 fold into v2 |
-| `patchFile`, `patchFileReplaceMetadata` | features/files/api/files.ts | PATCH `/files/{id}` | 🔀 fold into v2 `PATCH /v2/files/{id}` |
-| `renameFile` | files.ts | POST `/files/{id}/rename` | 🔀 fold into PATCH |
-| `copyFile` | files.ts | POST `/files/{id}/copy` | 🔀 fold into PATCH |
-| `restoreFile` | files.ts | POST `/files/{id}/restore` | 🔀 fold into PATCH |
-| `deleteFile` | files.ts | DELETE `/files/{id}` | ✅ keep |
-| `bulkDeleteFiles`, `bulkMoveFiles` | files.ts | `/files/bulk*` | 🔀 fold into `POST /v2/files/bulk` |
-| `createFileShareLink`, `createFolderShareLink`, `deactivateShareLink` | share-links.ts | `/files/.../share-links` | 🔀 share is a field on PATCH/POST |
-| `grantFilePermission`, `revokeFilePermission` (×2 for folders) | permissions.ts | `/files/.../permissions` | 🔀 permissions are a field on PATCH |
-| `patchAsset`, `addAssetVariants` | assets.ts | `/assets/{id}*` | 🔀 fold |
-| `createFolder`, `patchFolder`, `deleteFolder`, `bulkMoveFolders` | folders.ts | `/folders*` | 🔀 fold (folder is a file with mime `folder`) |
-| RAG `LibraryPage` direct `uploadFile()` | features/rag/components/library/LibraryPage.tsx:56 | POST `/files/upload` | 🗑 reroute through `useFileUpload` |
-| RAG `DataStoresPage` direct `uploadFile()` | features/rag/components/data-stores/DataStoresPage.tsx:59 | POST `/files/upload` | 🗑 reroute |
-| `ImageAssetUploader` dual-path | components/official/ImageAssetUploader.tsx:44+48 | both `/assets` and `/files/upload` | 🗑 unify on `useFileUpload({variants:[...]})` |
-| `ImageUploadField` | components/ui/file-upload/ImageUploadField.tsx | POST `/assets` | 🗑 reroute |
-| `save-edited-image` | features/image-studio/modes/shared/save-edited-image.ts | PATCH `/assets/{id}` | 🗑 reroute through `useFileMutation` |
+| Source master | `master` | original | original |
+| Hero / featured | `hero` | 1920×1080 (16:9) | WebP + JPEG fallback |
+| OG card | `og_image_url` | 1200×630 | JPEG |
+| Twitter card | `twitter_card` | 1200×675 (16:9) | JPEG |
+| Podcast artwork — Apple hi-res | `cover_url` | 3000×3000 | JPEG |
+| Podcast artwork — legacy SD | `cover_sd_url` | 1400×1400 | JPEG |
+| Video thumb | `video_thumb` | 1280×720 (16:9) | JPEG |
+| In-content / inline | `inline` | ≤1200 wide | WebP + JPEG fallback |
+| Mobile responsive | `mobile` | 800×450 | WebP |
+| Square thumbnail | `thumbnail_url` | 400×400 | JPEG/WebP |
+| Tiny icon | `tiny_url` | 128×128 | JPEG |
+| Logo — large | `logo_lg` | 512×512 | PNG transparent |
+| Logo — medium | `logo_md` | 200×200 | PNG transparent |
+| Logo — small | `logo_sm` | 64×64 | PNG transparent |
+| Avatar | `avatar_xl/lg/md/sm/xs` | 400/256/128/64/32 square | JPEG/WebP |
+| Favicon | `favicon_512/192/180_apple/32/16` | per ICO+PNG set | PNG |
+| Logo vector | `logo_svg` | original | SVG passthrough |
+| Email header | `email_header` | 600×200 | JPEG |
+| Email square | `email_square` | 200×200 | JPEG |
 
-**L1 — write hooks:**
+Confirm presets `podcast` / `social` / `web` / `email` / `logo` / `avatar` / `favicon` map onto these variant keys. If any are missing, add them.
 
-| Hook | Status |
-|---|---|
-| `useFileUpload` (handler) | ✅ keep — sole write entry |
-| `useGuardedFileUpload` (files) | 🔀 guard logic merges in; `useFileUpload({ guard: true })` |
-| `useFileUploadWithStorage`, `usePasteImageUpload` | 🗑 delete |
-| `uploadFiles` thunk | 🔀 keep as thunk underneath `useFileUpload` for non-React callers |
+### Gap 4 — Public-CDN-URL guarantee for `visibility="public"`
 
-**L2 — write components:**
+`IMAGE_UPLOAD_INVESTIGATION.md` bug 2: `_store_image_variants` in `podcast_media.py` re-signed public uploads with `get_url_async(expires_in=7d)`, producing 1-week S3 signed URLs that died in 7 days *despite* `visibility="public"`. The FE persisted them into `podcasts.image_url`.
 
-| Component | Status |
-|---|---|
-| `<FileUploadDropzone>` | ✅ keep (composes `useFileUpload`) |
-| `<ImageAssetUploader>` | ✅ keep, single internal path |
-| `<RenameDialog>`, `<ShareLinkDialog>`, `<PermissionsDialog>`, `<FileContextMenu>`, `<BulkActionsBar>` | ✅ keep; all dispatch through `useFileMutation` |
+**Required of `UrlMinter.build_urls()`:**
 
-### 1.4 Python API surface today
+- For `visibility="public"`, **always** return the permanent Cloudflare CDN URL (`https://cdn.matrxserver.com/...?v=<checksum[:8]>`). Never re-sign. Never return an S3 signed URL for a public file.
+- The returned envelope's `urls.src` must be the CDN URL (with cache-buster) for public, the signed S3 URL for private/shared.
+- `urls.download` always points at the Python `/files/{id}/download` endpoint (sets `Content-Disposition: attachment`).
 
-**46 endpoints across 7 namespaces**, called by **52 FE client functions** in `features/files/api/*`:
+Confirm UrlMinter enforces this invariant.
 
-| Namespace | Endpoints | Notes |
-|---|---|---|
-| `/files/*` | 19 | Core CRUD, upload, download, signed URL, asset envelope, rename/copy/restore, bulk, usage, trash, search |
-| `/folders/*` | 5 | Folder CRUD + bulk |
-| `/files/{id}/versions/*` | 4 | History + restore |
-| `/files/{id}/permissions/*`, `/folders/{id}/permissions/*` | 6 | ACL |
-| `/files/groups/*` | 5 | User groups |
-| `/files/{id}/share-links/*`, `/share/*` | 7 | Share links (authed + public) |
-| `/assets/*` | 5 | Image asset variants |
-| Special | 1 | `/files/migrate-guest-to-user` |
+### Gap 5 — `ETag` + `Content-Range` + 206 on `/files/{id}/download`
 
-**Patterns commonly called together (today, requiring 2+ round-trips):**
+For the Service Worker streaming cache (Part 4 below) and PDF.js Range progressive rendering to work, the download endpoint must:
 
-- Upload → create share link → toast the link
-- Upload → render asset variants → patch metadata with `alt_text`
-- Rename → bulk move (same parent change)
-- Get metadata → get signed URL → download bytes
-- Patch visibility → invalidate blob cache (the FE has to do this manually)
-- Restore version → invalidate blob cache
-- Grant permission + create share link (often paired)
+- Set `ETag: "<checksum>"` on every response. (Already shipped per [streaming plan §existing-pieces](universal-file-streaming-cache_bffef1ed.plan.md), confirm it's preserved through the rebuild.)
+- Honor `Range:` request headers and respond `206 Partial Content` with `Content-Range: bytes ${start}-${end}/${total}` and `Accept-Ranges: bytes`.
+- 256 KiB chunk size or smaller for Range responses.
+- For `visibility="public"` files, the endpoint may redirect (`302`) to the CDN URL — Range is preserved by Cloudflare.
 
-### 1.5 Caching today
+Confirm.
 
-| Tier | Where | Coverage |
-|---|---|---|
-| Metadata | Redux `cloudFiles.filesById` | ✅ full |
-| Signed URLs | `expiry-wheel` + `resolveRenderableImageUrl.ts` | ✅ images, partial coverage elsewhere |
-| Bytes (in-memory) | `features/files/hooks/blob-cache.ts` — 250 MB LRU | ✅ session-scoped |
-| Bytes (persistent) | **none** | 🗑 missing — biggest user-facing gap |
-| Public URLs (CDN) | nothing client-side; relies on Vercel CDN | partial |
+### Gap 6 — `X-Request-Id` echoed in realtime payloads
 
-A 100 MB PDF is re-fetched on every page reload. That's the headline gap.
+The realtime dedup ledger relies on receiving `request_id` back in the realtime UPDATE payload metadata. Without it, the FE falls back to a 2-second timestamp-fuzzy match. Confirm `X-Request-Id` from the HTTP write is propagated through to the realtime row's `metadata.request_id`.
 
-### 1.6 Next.js server-side file routes
+(This is in the backend plan §2.3 — "request_id realtime dedup" — but only as a passing mention. Confirm it survives the rebuild.)
 
-| Route | Status | Verdict |
-|---|---|---|
-| `/api/pdf/compress` | live | ✅ keep — CPU work, never touches storage |
-| `/api/images/studio/process` | live | ✅ keep — same reason |
-| `/api/images/upload`, `/api/images/proxy`, `/api/files/download`, `/api/admin/feedback/images`, `/api/share/[token]/file`, `/api/code-files/upload`, `/api/code-files/download` | deleted 2026-05-07/12 | ✅ stays deleted |
+### Gap 7 — Idempotency for combined operations
 
-Doctrine: **no Next.js hops for file bytes.** Browser ↔ Python ↔ S3 only.
+`POST /assets` (with `options.share / permissions / variants`) must be idempotent on `X-Idempotency-Key`. A retry with the same key returns the same envelope (same `file_id`, same share `token`, same permissions, same variants). No duplicates.
+
+Confirm `UploadPipeline` step 4 ("Idempotency check") covers the whole combined operation, not just the bytes write.
+
+### Gap 8 — SVG as a first-class asset type
+
+For logo uploads, the checklist says "SVG primary, PNG fallback at ≥500 px." We need:
+
+- `POST /assets` with `preset="logo"` and an SVG file uploaded → master persists as SVG, `variants_service` renders the raster fallback set (`logo_lg/md/sm`, `favicon_*`) by rasterizing the SVG.
+- `GET /assets/{id}` returns both the SVG URL (`urls.svg`) and the raster variants.
+
+Confirm SVG handling in the image family or add it.
+
+### Gap 9 — `POST /assets/preview` for Sharp deletion
+
+The backend plan mentions this but doesn't spec the contract. Required:
+
+- `POST /assets/preview` accepts a master (upload OR `MediaRef`) + `variants: [{ width, height, format, quality, fit }]` and returns ephemeral results without persisting.
+- Returns one of: base64 data URLs (default, for small previews) or ephemeral signed URLs (when bytes > 256 KB).
+- 5-minute TTL on ephemeral URLs.
+- This unblocks deleting `app/api/images/studio/process/route.ts` and removing `sharp` from `package.json`.
+
+### Gap 10 — Server-side PDF compress (deletes `app/api/pdf/compress`)
+
+Equivalent ask for PDF: `POST /assets/pdf-compress` taking a PDF master + compression options, returning either bytes (small) or an ephemeral signed URL. Lets us delete the last Node-side PDF route. (Backend plan doesn't address.)
+
+### Gap 11 — Mid-stream MediaRef events
+
+The handler doc lists "mid-stream agent file references" as a flow. Confirm the stream-event normalization path (today in `features/file-handler/handler.ts`'s `toMediaBlock`/`toContentPart`) survives the rebuild — i.e. when the agent runtime emits a `MediaRef` mid-stream, the FE resolver hydrates it through the same `useFile` path. No new code path.
+
+### Gap 12 — Webhooks / SSE for storage events beyond Supabase Realtime
+
+`features/files/for_python/REQUESTS.md` item 10. The backend plan has `webhook_dispatcher` in matrx-utils but doesn't expose it to host applications as a subscription surface. For the Service Worker cache invalidation to be authoritative on cross-device changes, we need an event channel beyond Supabase Realtime (which only reliably fires for tables we subscribe to).
+
+Required: a `cld_events` outbox + dispatcher that fires HTTP webhooks (or sends to a queue) on every meaningful state change (`file.uploaded`, `file.deleted`, `file.version_bumped`, `file.visibility_changed`, `share_link.created`, `share_link.revoked`). FE can subscribe via the existing Supabase Realtime layer.
+
+### Gap 13 — `cld_files.checksum` on every row, always populated
+
+Service Worker cache keys include `checksum`. Confirm the upload pipeline always computes + persists `checksum` (SHA-256) at write time and that it surfaces in the Asset envelope.
+
+### Gap 14 — `Content-Length` on every byte response
+
+Per-MIME size policies in the SW depend on `Content-Length`. Confirm Python sets it on every full and 206 partial response.
+
+### Gap 15 — Realtime publication on `processed_documents` + `cld_share_links` + `cld_file_permissions`
+
+For the FE to drop signed URLs immediately on visibility change, share revoke, or permission revoke without polling, every relevant table needs realtime publication. Already shipped per Bundle B but worth confirming through the rebuild.
 
 ---
 
-## Part 2 — Target architecture
+## Part 4 — FE-only additions from auxiliary drafts (not in backend plan)
 
-### 2.1 The 5 hooks + 1 facade + 3 components
+These are FE engineering items the backend plan can't address. They are part of the integrated plan in Part 6.
 
-Everything in the app uses one of these. Nothing else exists.
+### 4A — Universal Service Worker + IndexedDB streaming cache
 
-#### Hooks (React surface)
+The single biggest thing missing from the backend plan. Sourced from [universal-file-streaming-cache_bffef1ed.plan.md](file:///Users/armanisadeghi/.cursor/plans/universal-file-streaming-cache_bffef1ed.plan.md).
 
-```ts
-// 1. metadata + capabilities + all URLs in one envelope
-const { file, status, error } = useFile(source);
-//   file: NormalizedFile { fileId, urls: { src, download, thumbnail, variants }, meta, capabilities, scope }
+**Architecture:**
 
-// 2. URL string for <img>/<video>/<audio>/<a href>
-const src = useFileSrc(source);                    // signed URL or CDN URL, auto-refreshed
-const dl  = useFileSrc(source, { mode: "download" });
-
-// 3. Bytes — with the 4-tier cache
-const { blob, status, progress } = useFileBlob(source);
-//   tier 1: Redux metadata    tier 2: in-mem LRU
-//   tier 3: IndexedDB         tier 4: network (Python /v2/files/{id}/bytes, range-supported)
-
-// 4. Upload (single file or many) — handles dedup, scope, share, variants, guard
-const { upload, uploading, progress } = useFileUpload();
-await upload(source, {
-  folder: "Reports/Q1",
-  visibility: "public",
-  share: { permission_level: "read", expires_at: "..." },   // optional — bundled into one round-trip
-  variants: ["thumbnail_256", "social_card"],               // optional — image preset variants
-  guard: true,                                              // dedup pre-flight (default true)
-});
-
-// 5. Mutate — rename, move, delete, restore, share, permissions, metadata
-const m = useFileMutation(fileId);
-await m.patch({ name?, folder?, visibility?, metadata?, share?, permissions? });   // one call, optimistic + rollback
-await m.delete({ hard?: boolean });
-await m.restore();
-await m.bulk({ ids, op: "move"|"delete"|"restore"|"visibility", ...args });
+```
+Consumer (img / video / audio / react-pdf / useFileBlob / Save-As / RAG ingest)
+    ↓
+Hook layer (useFileBlob / useFile)
+    ↓
+L1: in-memory LRU (250 MB, session-scoped) ─── [existing, refactored]
+    ↓ miss
+Service Worker fetch handler (intercepts ALL file URL patterns)
+    ↓
+L2: IndexedDB (Dexie matrx-blob-cache, 2 GB cap, identity-scoped) ─── [NEW]
+    ↓ miss
+Network: Python /files/{id}/download (Range-supported, 206 chunks) | CDN | share-link
+    ↓
+populate L2 → warm L1 → broadcast invalidation via BroadcastChannel matrx-sync
 ```
 
-#### Facade (non-React callers — services, thunks, agent prep)
+**Why a Service Worker:** transparently intercepts every `<img src>`, `<video src>`, `<audio src>`, `fetch()`, and `<a download>` request without consumers needing to call a hook. Means legacy callers benefit immediately; gradual migration to typed hooks happens in parallel.
+
+**Cache keys:**
+
+| URL pattern | Key |
+|---|---|
+| `${BACKEND}/files/{id}/download` (no `?version=`) | `${userId}:${fileId}:current:${checksum}` |
+| `${BACKEND}/files/{id}/download?version=N` | `${userId}:${fileId}:${N}:${checksum}` |
+| `${BACKEND}/share/{token}/download` | `${userId}:url:${sha256(url)}` |
+| CDN URL ending in `?v=<checksum>` | `${userId}:${fileId}:current:${checksum}` (checksum extracted from query) |
+| Signed S3 URL with `X-Amz-Signature` | **bypass** (would create stale-URL bugs) |
+
+**IndexedDB schema** (`features/files/cache/idb-store.ts`, Dexie):
+
+```ts
+{ key, userId, fileId, version, checksum, mimeType, bytes, blob, etag, fetchedAt, lastAccessedAt, source }
+```
+
+Stamped with `userId`. Cleared on sign-out via `clearForUser(userId)`. Budget 2 GB, LRU eviction with size-aware preference (oldest entries >2 MB go first). `QuotaExceededError` → evict to 70% of budget, retry once, fall back to network if still failing. localStorage fallback when IDB is unavailable (private browsing / iOS Safari) — cache no-ops, app uses network.
+
+**Per-MIME size policy** (configurable in admin settings):
+
+| MIME prefix | Cache | Max per entry |
+|---|---|---|
+| `image/*` | yes | 50 MB |
+| `audio/*` | yes | 100 MB |
+| `video/*` | yes (if ≤50 MB) | 50 MB |
+| `application/pdf` | yes | 250 MB |
+| `application/zip` / `tar` / `gzip` | yes | 500 MB |
+| `text/*`, `application/json/xml` | yes | 10 MB |
+| anything else with `Content-Length ≤ 25 MB` | yes | 25 MB |
+| else | no | — |
+
+**PDF.js progressive Range rendering:**
+
+`features/files/components/core/FilePreview/previewers/PdfDocumentRenderer.tsx` accepts `source: { kind: 'remote', url, httpHeaders }` and passes it directly to `<Document file={{ url, httpHeaders, withCredentials: false, rangeChunkSize: 65536 }} />`. PDF.js auto-uses Range requests when the server advertises `Accept-Ranges: bytes`. First page of an 80 MB PDF renders in 300–800 ms; the SW stitches the full document into IDB via a deduplicated background fetch so the second visit is instant.
+
+Move worker source to local `/public/pdfjs-worker.min.mjs` (pinned at build time, post-install copy from `node_modules/pdfjs-dist/build/`). Eliminates third-party runtime dependency and SW-vs-cross-origin-worker edge cases.
+
+**Cross-tab coordination:** cache mutations broadcast `{ kind: 'blob-cache:invalidate', key }` over the existing `matrx-sync` BroadcastChannel ([lib/sync/channel.ts](../lib/sync/channel.ts)). Each tab's L1 drops the entry. SW is one-per-origin so the SW cache is naturally shared.
+
+**Postmessage protocol** (page ↔ SW):
+
+- Page → SW: `register-url-mapping`, `invalidate`, `clear-user`, `set-budget`
+- SW → page: `cache-stat-update`, `request-auth-header` (for background full-document stitch)
+
+**Auth header handling:** SW does NOT store or fabricate `Authorization`. The page's `fetch()` sets it; the SW preserves it on revalidation by reading `event.request.headers`. For background stitch fetches initiated by the SW itself, the SW asks active clients via `postMessage({ kind: 'request-auth-header' })` to forward a fresh header. 2-second timeout → skip background fetch (user-facing request already completed; cache stays cold).
+
+**Identity scoping + sign-out:** every entry stamped with `userId`. Sign-out triggers `clearForUser(userId)`. Cross-user contamination is structurally impossible.
+
+**Dev-mode guards:** SW registration disabled in dev by default (`NODE_ENV !== 'production'`) to avoid HMR interference. Opt-in via `localStorage.matrx_dev_sw=1`. Always excludes `/_next/`, `/__webpack_hmr`, `/api/`, `/api/auth/*`.
+
+**Admin observability:** new route `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx` gated by `selectIsSuperAdmin`:
+
+- L1 memory: entry count, total bytes, top 20 by size, hit/miss counters
+- L2 IDB: same + persisted across reloads, "evict now" + "clear all" buttons
+- SW status: registered version, last activated, intercept counters per URL family
+- Live BroadcastChannel inspector
+- "Disable SW for this session" toggle
+- Per-MIME byte budget + video threshold settings
+
+SW adds `X-Matrx-Cache: hit|miss` response header (dev-only) so the Network panel shows which fetches were cached.
+
+**Feature flag + rollout:** `state.preferences.blobCache.enabled` (default `true` after rollout). Phases lift step-wise from foundation → IDB-only → SW-for-downloads-only → PDF.js Range → image/video/audio → cross-tab hardening → RAG/downloads → observability → default-on. Each phase independently revertible.
+
+### 4B — Hook-layer integration
+
+`features/files/hooks/blob-cache.ts` — `getCached(fileId)` consults memory first, then IDB. `setCached(fileId, blob, url)` writes both tiers. `invalidate(fileId)` clears both + broadcasts.
+
+`features/files/hooks/useFileBlob.ts` — signature unchanged. Internally: IDB read precedes network fetch when no memory hit. SSR-safe (no IDB access during hydration).
+
+`features/file-handler/hooks/useFileBlob.ts` — close the gap: delegate to `features/files/hooks/useFileBlob.ts` whenever `normalized.fileId` is set. After the directory merge, only one `useFileBlob` exists.
+
+### 4C — Existing primitives that survive the rebuild
+
+Do NOT rebuild these — they already work. They migrate into the new directory structure:
+
+- `expiry-wheel` ([features/file-handler/intelligence/expiry-wheel.ts](features/file-handler/intelligence/expiry-wheel.ts)) → `features/files/cache/expiry-wheel.ts`
+- `magic-bytes` sniffing → `features/files/utils/magic-bytes.ts`
+- `MediaRef` builders in `features/files/redux/converters.ts` (4 functions: `cloudFileToMediaRef`, `fileIdToMediaRef`, `urlToMediaRef`, `fileUriToMediaRef`) — kept; become the only sanctioned MediaRef construction path (ESLint enforced).
+- Folder conventions in `features/files/utils/folder-conventions.ts` — kept.
+- Redux slice optimistic-update + dirty-tracking + request-ledger dedup — kept; `assetsByMasterId` is an additive change.
+
+---
+
+## Part 5 — Gap list to send to the backend team
+
+Single email-ready list. Each item is a yes/no/spec-it answer needed before the integrated plan freezes.
+
+1. **Combined-operation endpoints.** Can `POST /assets` accept `{ share, permissions, variants }` and `PATCH /files/{id}` accept the full mutation union? Bundled atomic transactions, idempotent on `X-Idempotency-Key`. → **§3 Gap 1**
+2. **Mandatory social baseline.** Confirm `VariantsService` always merges `og_image_url + thumbnail_url + tiny_url` into every public image-asset preset. No opt-out. → **§3 Gap 2**
+3. **Preset variant set.** Confirm the variants in the table at **§3 Gap 3** are all present across `podcast/social/web/email/logo/avatar/favicon` presets. Add any missing.
+4. **CDN URL guarantee.** `UrlMinter.build_urls()` always returns the permanent Cloudflare CDN URL for `visibility="public"`. Never re-sign. → **§3 Gap 4**
+5. **`ETag` + 206 Range on `/files/{id}/download`.** Confirm. Required for Service Worker cache + PDF.js Range rendering. → **§3 Gap 5**
+6. **`X-Request-Id` echo in realtime payloads.** Confirm `metadata.request_id` populated. → **§3 Gap 6**
+7. **Idempotency covers combined operations.** Retry with same `X-Idempotency-Key` returns identical envelope (same file, same share token, same permissions). → **§3 Gap 7**
+8. **SVG first-class.** `preset="logo"` accepts SVG master, renders raster fallbacks. → **§3 Gap 8**
+9. **`POST /assets/preview`** spec confirmed (base64 or ephemeral signed URLs, 5-min TTL). Unblocks Sharp deletion. → **§3 Gap 9**
+10. **`POST /assets/pdf-compress`** equivalent for PDF compress. Unblocks deleting `app/api/pdf/compress`. → **§3 Gap 10**
+11. **Mid-stream MediaRef events** — confirm stream-event resolver path survives. → **§3 Gap 11**
+12. **Webhooks/SSE outbox** (`cld_events`) — confirm dispatcher fires events for `file.*`, `share_link.*`, `permission.*`. → **§3 Gap 12**
+13. **`cld_files.checksum` always populated** at upload time + exposed in Asset envelope. → **§3 Gap 13**
+14. **`Content-Length` on every byte response** (full and 206 partial). → **§3 Gap 14**
+15. **Realtime publication** confirmed on `processed_documents`, `cld_share_links`, `cld_file_permissions`. → **§3 Gap 15**
+
+---
+
+## Part 6 — The integrated plan
+
+This is the final architecture. Backend plan (Part 1) + our additions (Part 4) + gap resolutions (Part 3/5) all combined.
+
+### 6.1 Public FE surface — 5 hooks + 1 facade + 3 components
+
+Everything else outside `features/files/` uses only these.
+
+#### Hooks
+
+```ts
+// 1. metadata + capabilities + all URLs — reads assetsByMasterId first
+const { asset, url, isLoading, error, refresh } = useFile(ref, {
+  variantKey?,      // "primary" (default) | "thumbnail_url" | "cover_url" | "og_image_url" | ...
+  signedUrlTtl?,
+  target?,          // "render" | "download"
+  enabled?,
+});
+
+// 2. URL string for inline render attrs (thin wrapper over useFile)
+const src = useFileSrc(ref, options?);   // returns string | null
+
+// 3. Bytes — with the 3-tier cache (mem LRU → IDB → SW → network)
+const { blob, status, progress, error } = useFileBlob(ref);
+
+// 4. Upload — single entry, auto transport selection
+const { upload, uploading, progress } = useFileUpload();
+await upload(
+  source,                               // File | Blob | MediaRef
+  {
+    kind: "file" | "asset",
+    folder: "Reports/Q1",               // path-style; auto-creates parents
+    visibility: "public" | "private" | "shared",
+    preset?: "podcast"|"social"|"web"|"email"|"logo"|"avatar"|"favicon"|"vision"|"raw",
+    shareWith?: ["user1@..."],          // bundled grants
+    signedUrlTtl?,
+    metadata?,
+  },
+  { onProgress?, signal?, idempotencyKey?, guard?: true }
+);
+// Transport selection (internal):
+//   < 5 MB     → buffered POST
+//   5–100 MB   → presigned PUT
+//   ≥ 100 MB   → TUS resumable
+
+// 5. Mutate — rename / move / delete / restore / share / permissions / metadata
+const m = useFileMutation(fileId);
+await m.patch({ name?, folder?, visibility?, metadata?, share?, permissions?, variants? });
+await m.delete({ hard? });
+await m.restore();
+await m.bulk({ ids, op: "move"|"delete"|"restore"|"visibility"|"share", ...args });
+```
+
+#### Facade — for non-React callers (thunks, services, agent prep)
 
 ```ts
 import { fileHandler } from "@/features/files";
 
-await fileHandler.use(source).as({ kind: "media_block" });
 await fileHandler.upload(source, opts);
 await fileHandler.mutate(fileId).patch({ ... });
-await fileHandler.resolve(source);          // raw NormalizedFile
-await fileHandler.refresh(file);            // force signed-URL remint
+await fileHandler.resolve(ref);                       // raw NormalizedFile
+await fileHandler.refresh(file);                      // force signed-URL remint
 ```
 
-#### Components (UI surface)
+The legacy `fileHandler.use(source).as(target)` builder is **deleted**.
+
+#### Components
 
 ```tsx
-<FilePreview source={...} />              // dispatches to PDF / Image / Audio / Video / Code / Text / Data / SVG / Generic
-<FileUploadDropzone onUploaded={...} />   // drag + paste + picker; composes useFileUpload
-<FilePicker open onPick={...} />          // pick existing files; emits FileSource
+<InlineMediaRef ref={mediaRef} size="sm|md|lg|{w,h}" fit="cover|contain"
+                fallback="icon|skeleton|null" onClick onDownload />
+<FilePreview source={ref} />                          // PDF/Image/Audio/Video/Code/Text/Data/SVG/Generic
+<FileUploadDropzone onUploaded={...} preset={...} folder={...} />
 ```
 
-Everything else (`<FileTree>`, `<FileList>`, `<FileActions>`, `<ShareLinkDialog>`, etc.) lives in `features/files/components/` and is internal to the files surface — *not* part of the public-everywhere API. Outside features import the three above and nothing else.
+Everything else lives in `features/files/components/` and is internal (ESLint-fenced).
 
-### 2.2 Directory layout (after collapse)
+### 6.2 Directory layout after collapse
 
 ```
 features/files/
-├── README.md                ← was FEATURE.md (merged)
-├── PLAN.md                  ← this doc, after merge
-├── index.ts                 ← public exports: 5 hooks, fileHandler, 3 components, types
-├── types.ts                 ← single types source
+├── README.md                    ← merged FEATURE.md + handler FEATURE.md
+├── PLAN.md                      ← this doc
+├── index.ts                     ← public exports only: 5 hooks, facade, 3 components, types
+├── handler.ts                   ← the fileHandler facade
+│
+├── types/                       ← split from monolithic types.ts
+│   ├── domain.ts                ← CloudFile, CloudFolder, Asset, AssetVariant, MediaRef
+│   ├── api.ts                   ← regenerated from OpenAPI; CI-gated
+│   └── ui.ts                    ← UI state types
 ├── errors.ts
 │
-├── client/                  ← v2 HTTP client (replaces api/*)
-│   ├── client.ts            ← auth, request-id, error mapping
-│   ├── requests.ts          ← ~7 typed v2 endpoint wrappers
-│   └── tus.ts               ← resumable for >100 MB
+├── client/                      ← HTTP client (was api/*)
+│   ├── client.ts                ← auth, request-id, idempotency-key, error mapping
+│   ├── requests.ts              ← typed endpoint wrappers (kept 1-for-1 with BE surface)
+│   └── tus.ts                   ← TUS client
 │
-├── state/                   ← Redux (was redux/*)
-│   ├── slice.ts
-│   ├── selectors.ts
-│   ├── thunks.ts
-│   ├── realtime.ts
+├── state/                       ← Redux (was redux/*)
+│   ├── slice.ts                 ← + assetsByMasterId
+│   ├── selectors.ts             ← + selectAssetByMasterId, selectVariantUrl
+│   ├── thunks/                  ← split by domain
+│   │   ├── files.ts
+│   │   ├── folders.ts
+│   │   ├── permissions.ts
+│   │   ├── bulk.ts
+│   │   └── upload.ts
+│   ├── realtime.ts              ← cross-table updates incl. variant→parent
 │   ├── request-ledger.ts
-│   └── converters.ts
+│   └── converters.ts            ← MediaRef builders — ESLint-fenced
 │
-├── cache/                   ← NEW — 4-tier cache stack
-│   ├── blob-lru.ts          ← in-memory (refactored from hooks/blob-cache.ts)
-│   ├── idb-store.ts         ← NEW — IndexedDB persistence
-│   ├── cache-policy.ts      ← what gets cached, when, how big
-│   └── invalidate.ts        ← cross-tier invalidation
+├── cache/                       ← NEW — 3-tier byte cache
+│   ├── blob-lru.ts              ← in-memory LRU (was hooks/blob-cache.ts)
+│   ├── idb-store.ts             ← Dexie matrx-blob-cache DB
+│   ├── policy.ts                ← per-MIME size policy
+│   ├── invalidate.ts            ← cross-tier + cross-tab invalidation
+│   ├── expiry-wheel.ts          ← (moved from file-handler/intelligence/)
+│   ├── service-worker/          ← SW build pipeline
+│   │   ├── src/sw.ts            ← TS source
+│   │   └── build-sw.ts          ← compiles to /public/blob-sw.js
+│   └── register-service-worker.ts ← registered from app/DeferredSingletons.tsx
 │
-├── resolver/                ← was file-handler/{resolver,intelligence,input,output}
-│   ├── normalize.ts         ← FileSource → partial NormalizedFile
-│   ├── resolve.ts           ← + hydration, access decision, URL minting
+├── resolver/                    ← was file-handler/{resolver, intelligence, input, output}
+│   ├── normalize.ts             ← FileSource | MediaRef → NormalizedFile
+│   ├── resolve.ts               ← + hydration, access decision, URL minting
 │   ├── access.ts
-│   ├── expiry-wheel.ts
 │   ├── refresh.ts
-│   ├── magic-bytes.ts
+│   ├── magic-bytes.ts           ← (moved)
 │   ├── classify.ts
 │   ├── prefer-locator.ts
-│   └── target.ts            ← NormalizedFile → render output
+│   └── target.ts                ← NormalizedFile → render output
 │
-├── upload/                  ← was file-handler/upload + files/upload
-│   ├── upload.ts
-│   ├── upload-guard.tsx     ← dedup pre-flight dialog
+├── upload/                      ← single upload primitive
+│   ├── upload.ts                ← auto transport selection (buffered/presigned/TUS)
+│   ├── upload-guard.tsx         ← dedup pre-flight dialog
 │   ├── duplicate-detect.ts
 │   └── checksum.ts
 │
-├── hooks/                   ← THE 5
+├── hooks/                       ← THE 5
 │   ├── useFile.ts
 │   ├── useFileSrc.ts
 │   ├── useFileBlob.ts
 │   ├── useFileUpload.ts
 │   └── useFileMutation.ts
 │
-├── handler.ts               ← the fileHandler facade
+├── components/                  ← internal to features/files
+│   ├── core/                    ← FilePreview (registry), FileTree, FileList (TanStack),
+│   │                              FileIcon, FileMeta, FileActions, FileContextMenu,
+│   │                              RenameDialog, ShareLinkDialog, PermissionsDialog,
+│   │                              MediaThumbnail, FileUploadDropzone, DuplicateUploadDialog,
+│   │                              FileBreadcrumbs
+│   ├── surfaces/                ← PageShell (per-section), WindowPanelShell, MobileStack,
+│   │                              EmbeddedShell, DialogShell, DrawerShell, PreviewPane
+│   ├── inline/
+│   │   └── InlineMediaRef.tsx   ← the universal inline render component
+│   └── pickers/                 ← FilePicker, FolderPicker, SaveAsDialog
 │
-├── components/              ← internal to features/files
-│   ├── core/                ← FilePreview, FileTree, FileList, FileIcon, FileMeta,
-│   │                          FileActions, FileContextMenu, RenameDialog,
-│   │                          ShareLinkDialog, PermissionsDialog, MediaThumbnail,
-│   │                          FileUploadDropzone, DuplicateUploadDialog, FileBreadcrumbs
-│   ├── surfaces/            ← PageShell, WindowPanelShell, MobileStack,
-│   │                          EmbeddedShell, DialogShell, DrawerShell, PreviewPane
-│   └── pickers/             ← FilePicker, FolderPicker, SaveAsDialog
-│
-├── providers/               ← CloudFilesRealtimeProvider, UploadGuardHost
-├── virtual-sources/         ← untouched (notes, code, aga-apps, etc. adapters)
-├── utils/                   ← format, mime, path, icon-map, file-types, preview-capabilities, url-state
+├── providers/                   ← CloudFilesRealtimeProvider (mounted once globally), UploadGuardHost
+├── virtual-sources/             ← untouched
+├── utils/                       ← format, mime, path, icon-map, file-types, preview-capabilities, url-state
 └── for_python/, from_python/    ← contracts (kept verbatim)
 ```
 
-**Imports outside `features/files/` are restricted by ESLint** to the public surface listed in `index.ts`. Internal-only components are unimportable from outside.
+**File count target:** 203 (current) → ~80 (60% reduction).
 
-**File count target:** 203 → ~80 (60% reduction). Most of the drop is API client (52 → ~7), legacy hooks (14 → 5), and duplicate previewer/thumbnail components.
+### 6.3 What gets DELETED (no shims, no aliases)
 
-### 2.3 Read pipeline (with 4-tier cache)
+**FE deletions:**
 
-```
-                     ┌──────────────────────────────────────────────────────────────┐
-useFileSrc           │                                                              │
-useFile      ─────►  │ resolve(FileSource → NormalizedFile)                         │
-useFileBlob          │   ├── normalize() — 16 input shapes → partial NormalizedFile │
-                     │   ├── hydrate()   — read Redux; fetch metadata if missing    │
-                     │   ├── decide()    — access level + visibility + capabilities │
-                     │   └── mint()      — signed URL or CDN URL, registered with   │
-                     │                     expiry-wheel for auto-refresh            │
-                     └──────────────────────────┬───────────────────────────────────┘
-                                                │
-                                                ▼  (bytes path)
-                              ┌────────────────────────────────────┐
-                              │  tier 1: Redux filesById (metadata only)
-                              │  tier 2: in-memory blob LRU (250 MB session)
-                              │  tier 3: IndexedDB (≥1 MB, opt-in mime, 2 GB cap)
-                              │  tier 4: network — GET /v2/files/{id}/bytes (range)
-                              │           OR direct CDN (public files)
-                              └────────────────────────────────────┘
-```
-
-**IndexedDB policy (`cache/cache-policy.ts`):**
-
-| Rule | Value |
-|---|---|
-| Eligible mime types | `application/pdf`, `video/*`, `audio/*`, `application/*spreadsheet*`, `*.docx` |
-| Size floor | ≥1 MB (smaller files stay in-memory only) |
-| Size cap (per origin) | 2 GB (LRU eviction) |
-| TTL | indefinite while logged in; full clear on sign-out |
-| Validator | `cld_files.version_number` + `checksum`. Realtime row update bumps version → IDB entry is invalidated by middleware. |
-| Eviction | LRU by `lastAccessed`; on quota error, drop the largest stale entries first. |
-| Encryption | none for v1 (browser already isolates by origin). Revisit if we ever cache shared/cross-user files. |
-
-**Invalidation triggers:**
-- Realtime `cld_files` UPDATE where `version_number` changed → drop bytes (all tiers) for that fileId.
-- `useFileMutation.delete()` → drop on success.
-- `useFileMutation.patch({ visibility })` → drop signed URL only (bytes stay valid).
-- Sign-out → `cache.clearAll()`.
-
-### 2.4 Write pipeline
-
-```
-useFileUpload.upload(source, opts)
-  │
-  ├─ guard? → dedup scan (SHA-256 batch vs Redux filesById) → DuplicateUploadDialog
-  │
-  ├─ coerce source → File (handles paste, base64, url, blob, etc.)
-  ├─ stamp metadata.scope from Redux appContext (org/project/task)
-  ├─ ────────────────────────────────────────────────────────────────
-  │   ONE round-trip to Python:
-  │     POST /v2/files
-  │     body: multipart { file, options }
-  │     options: {
-  │       folder_path?, visibility?, scope?, share?, variants?,
-  │       idempotency_key, request_id
-  │     }
-  │     returns: Asset envelope { file, urls, share?, variants? }
-  │ ────────────────────────────────────────────────────────────────
-  ├─ optimistic Redux upsert via thunk + request ledger
-  ├─ populate in-mem LRU with the bytes we just uploaded (no need to re-fetch)
-  └─ return NormalizedFile
-
-useFileMutation(id).patch({...})
-  │
-  ├─ snapshot current Redux record (for rollback)
-  ├─ dispatch optimistic update
-  ├─ ONE round-trip: PATCH /v2/files/{id} (rename + move + visibility + metadata + share + permissions all in one body)
-  ├─ on success: markFileSaved, drop ledger entry, invalidate-as-needed
-  └─ on error: rollback from snapshot
-```
-
-### 2.5 What gets deleted
-
-**Hooks (10 files):**
+- `features/file-handler/` — entire directory (merged into `features/files/`)
 - `features/files/hooks/useSignedUrl.ts`
-- `features/files/hooks/useFileAsset.ts`
-- `features/files/hooks/useFileBlob.ts` *(duplicate)*
-- `features/files/hooks/useFileDocument.ts`
-- `features/files/hooks/useGuardedFileUpload.ts` *(folded in)*
-- `features/files/utils/resolveRenderableImageUrl.ts`
-- `features/file-handler/hooks/useFileDownloadUrl.ts`
-- `features/file-handler/hooks/useFileMediaBlock.ts`
-- `components/ui/file-upload/useFileUploadWithStorage.ts`
+- `features/files/hooks/useFileAsset.ts` (replaced by `useFile`)
+- `features/files/hooks/useFileDocument.ts` (folded into `useFileBlob`)
+- `features/agents/hooks/useAiImageUrl.ts` (252 lines)
+- `features/audio/services/audioFallbackUpload.ts` direct signed-URL fetches
+- `features/tasks/services/taskService.ts` legacy attachments
+- `features/resource-manager/resource-picker/FilesResourcePicker.tsx` direct fetch
+- `features/files/utils/resolveRenderableImageUrl.ts` (folded into resolver)
+- `features/files/upload/cloudUpload.ts` (replaced by `upload()`)
+- `features/files/api/server-client.ts` (320 lines, no callers after Sharp deletion)
+- `features/files/redux/rag-thunks.ts` (162 lines, moves to `features/rag/`)
+- `components/image/cloud/resolveCloudFileUrl.ts`
+- `components/ui/file-upload/useFileUploadWithStorage.ts` (legacy shim, 16 callers migrate)
 - `components/ui/file-upload/usePasteImageUpload.ts`
+- `components/ui/file-upload/ImageUploadField.tsx` direct `uploadAsset` calls
+- 3 of 4 `features/image-manager/components/*Tab.tsx` (use `<EmbeddedShell>` + kind filter)
+- Hand-authored Asset types in `features/files/types.ts:1187-1311`
+- Direct `Files.uploadFile()` calls in `features/rag/components/library/LibraryPage.tsx`, `features/rag/components/data-stores/DataStoresPage.tsx`
+- `ImageAssetUploader.tsx` dual upload path — unified to `useFileUpload({ preset, variants })`
+- 4 of 4 current per-route `<CloudFilesRealtimeProvider>` mounts (now in `app/Providers.tsx`)
 
-**API client (45+ functions):** all of `features/files/api/{assets,share-links,permissions,versions,folders,groups}.ts` collapse into `features/files/client/requests.ts` (~7 functions).
+**Next.js API routes deleted:**
 
-**Other bypassers (3+ files):**
-- `features/agents/hooks/useAiImageUrl.ts`
-- Direct `Files.uploadFile()` calls in `LibraryPage`, `DataStoresPage`
-- Direct signed-URL fetches in `taskService.ts`, `audioFallbackUpload.ts`, `FilesResourcePicker.tsx`
+- `app/api/images/upload/route.ts` (already deleted 2026-05-12)
+- `app/api/images/proxy/route.ts` (already deleted)
+- `app/api/files/download/route.ts` (already deleted)
+- `app/api/images/studio/process/route.ts` ← **NEW DELETION** — replaced by `POST /assets/preview`
+- `app/api/pdf/compress/route.ts` ← **NEW DELETION** — replaced by `POST /assets/pdf-compress`
 
-**Doc rename:** `features/file-handler/FEATURE.md` and `features/files/FEATURE.md` merge into `features/files/README.md`.
+**npm deps removed:**
+
+- `sharp` from `package.json` ← **NEW** (was kept only for Image Studio process route)
+
+**Migration sweep:**
+
+- 285+ `useFileSrc(...)` callsites → `useFile(ref, { target: "render" }).url`
+- Hundreds of `<img src={file.publicUrl ?? ...}>` patterns → `<InlineMediaRef ref={mediaRef}>`
+
+### 6.4 ESLint enforcement (Phase 0 — locks the chokepoint)
+
+```
+no-restricted-imports:
+  - features/file-handler/*           (whole directory will not exist post-merge)
+  - features/files/api/*              (use generated client only)
+  - features/files/state/*            (use thunks + hooks)
+  - features/files/client/*           (internal)
+  - features/files/resolver/*         (internal)
+  - features/files/cache/*            (internal)
+
+no-restricted-syntax:
+  - supabase.storage.from(...)        (banned globally)
+  - getPublicUrl                      (banned globally)
+  - fetch('/files/...'), fetch('/assets/...'), fetch('/share/...'), fetch('/api/files/...'), fetch('/api/share/...')
+  - Manual ImageBlock/AudioBlock/VideoBlock/DocumentBlock literals outside features/files/
+  - Manual MediaRef object literals outside features/files/state/converters.ts
+  - new Redux slices keyed by "files"|"file"|"cloud" (extend cloudFiles)
+  - new app/api/(images|files|share|pdf)/* routes
+```
+
+### 6.5 Type generation pipeline
+
+- BE OpenAPI → `pnpm gen:types` → `types/python-generated/api-types.ts`
+- Asset, AssetVariant, AssetPreset, MediaRef, every request/response — all regenerated
+- CI gate: `pnpm gen:types && git diff --exit-code` — fails on drift
+- Hand-authored Asset types in `features/files/types.ts:1187-1311` deleted in the same PR
+
+### 6.6 Realtime — one provider, one slice
+
+- `<CloudFilesRealtimeProvider>` mounted ONCE in `app/Providers.tsx`, gated on `userId`
+- Delete the 4 per-route mounts (files layout, images layout, code explorer, files window)
+- Slice changes: `cloud_files` UPDATE on variant row → middleware looks up `metadata.derived_from` and patches `assetsByMasterId[parent].variants[metadata.variant_key]`
+- Request ledger dedups echoes via `metadata.request_id`
 
 ---
 
-## Part 3 — Ideal Python API surface
+## Part 7 — Roadmap (integrated, three PRs back-to-back)
 
-**Goal: 46 endpoints → ~10. Combine operations that are always called together. Make the FE talk to Python in one round-trip per user intent.**
+Aligned with the backend plan's PR structure. FE PR depends on BE PRs landing.
 
-### 3.1 The 10 endpoints
+### PR 1 — `matrx-utils` v1.1.0 (backend team, ~2 weeks)
 
-| # | Endpoint | Replaces | Purpose |
-|---|---|---|---|
-| 1 | `GET /v2/files/{id}` | `/files/{id}`, `/files/{id}/url`, `/files/{id}/asset`, `/assets/{id}` | Full Asset envelope: row + thumbnail URL + variant URLs + signed download URL + share state + permissions summary + scope. One call, everything the UI needs. |
-| 2 | `GET /v2/files/{id}/bytes` | `/files/{id}/download`, `/files/{id}/versions/{n}/download` | Bytes. Supports `Range:`, `?version=`, `?download=1` (Content-Disposition). |
-| 3 | `GET /v2/files` | `/files`, `/files/tree`, `/files/folders`, `/files/trash`, `/files/search`, `/files/groups`, `/files/{id}/versions`, `/files/{id}/permissions`, `/files/{id}/share-links` | Universal list with `?tree=1`, `?folder=`, `?trash=1`, `?q=`, `?versions_of=`, `?permissions_of=`, `?share_links_of=`. Authed reads still prefer supabase-js RPC; this is the canonical fallback + the path for non-RLS-able resources. |
-| 4 | `POST /v2/files` | `/files/upload`, `/assets`, `/folders`, `/files/{id}/share-links`, `/files/{id}/permissions`, `/assets/{id}/variants` | **The big one.** Multipart upload + `options` JSON. `options` can include `folder_path` (auto-creates parents), `visibility`, `scope`, `share`, `permissions`, `variants`. Returns full envelope including all bundled side-effects (new share link, granted perms, rendered variants). |
-| 5 | `PATCH /v2/files/{id}` | `/files/{id}/rename`, `/files/{id}/copy`, `/files/{id}/restore`, `PATCH /files/{id}`, `PATCH /assets/{id}`, `POST /files/{id}/versions/{n}/restore`, `POST /files/{id}/share-links`, `POST /files/{id}/permissions`, `DELETE /files/share-links/{token}`, `DELETE /files/{id}/permissions/{user}` | Universal mutation. Body: `{ name?, folder?, visibility?, metadata?, restore_version?, restore_from_trash?, copy_to?, share?, share_revoke?, permissions?, permissions_revoke?, variants? }`. Optimistic+rollback friendly. Returns new envelope. |
-| 6 | `DELETE /v2/files/{id}` | `/files/{id}`, `/folders/{id}` | Soft delete (default) or hard via `?hard=1`. Folders are files with mime `folder` — same endpoint. |
-| 7 | `POST /v2/files/bulk` | `/files/bulk`, `/files/bulk/move`, `/folders/bulk/move` | Bulk operations. Body: `{ ids[], op: "move"\|"delete"\|"restore"\|"visibility"\|"share", ...args }`. Returns per-item status envelope. |
-| 8 | `POST /v2/files/tus` | (new) | Resumable upload (TUS Core 1.0.0). Required for files >100 MB. Python already shipped a draft at `/files/upload/tus` per UPDATES.md — promote to v2. |
-| 9 | `GET /v2/share/{token}` | `/share/{token}`, `/share/{token}/download` | Resolve. Returns metadata; `?download=1` streams bytes (atomic max_uses decrement). |
-| 10 | `GET /v2/me/files` | `/files/usage`, `/files/groups` | User-scoped meta: quota + tier + groups + recent activity. |
+Backend plan §4.1, plus the gap items from Part 5:
 
-### 3.2 Combined operations (call-graph proof)
-
-| FE intent | Today | After |
+| # | Step | Source |
 |---|---|---|
-| Upload + share link | 2 calls | 1 call (`POST /v2/files` with `options.share`) |
-| Upload + 3 image variants | 2 calls | 1 call (`options.variants`) |
-| Upload + grant 2 users + public link | 4 calls | 1 call |
-| Rename + move | 2 calls | 1 call (`PATCH` with `name` + `folder`) |
-| Change visibility + invalidate FE blob cache | 1 call + manual FE work | 1 call; backend response carries new URL; FE realtime middleware auto-invalidates |
-| Get metadata + signed URL + thumbnail | 3 calls | 1 call (`GET /v2/files/{id}` returns all URLs) |
-| Restore version + drop blob cache | 1 call + manual FE work | 1 call; realtime version bump triggers FE cache eviction |
-| Resolve share + download | 2 calls | 1 call (`GET /v2/share/{token}?download=1`) |
-| List folder + load thumbnails | N+1 (one per child) | 1 call (`GET /v2/files?folder=...` returns thumbnail URLs in row data) |
+| 1–11 | Backend §4.1 1–11 | backend |
+| 12 | Combined-operation endpoints (`POST /assets` with `options.share / permissions / variants`; `PATCH /files/{id}` union; `POST /files/bulk` discriminator) | **§5 gap 1** |
+| 13 | Mandatory social baseline merge in `VariantsService` for public images | **§5 gap 2** |
+| 14 | Confirmed preset variant set per checklist | **§5 gap 3** |
+| 15 | `UrlMinter` always returns CDN URL for `visibility="public"` | **§5 gap 4** |
+| 16 | `ETag` + 206 Range on `/files/{id}/download` | **§5 gap 5** |
+| 17 | `X-Request-Id` echo in realtime metadata | **§5 gap 6** |
+| 18 | Idempotency covers combined operations | **§5 gap 7** |
+| 19 | SVG first-class in `preset="logo"` | **§5 gap 8** |
+| 20 | `POST /assets/preview` spec | **§5 gap 9** |
+| 21 | `POST /assets/pdf-compress` spec | **§5 gap 10** |
+| 22 | `cld_events` outbox + webhook dispatcher exposed | **§5 gap 12** |
+| 23 | `cld_files.checksum` always populated + exposed in envelope | **§5 gap 13** |
+| 24 | `Content-Length` on every response | **§5 gap 14** |
+| 25 | Realtime publication on `processed_documents`, `cld_share_links`, `cld_file_permissions` | **§5 gap 15** |
 
-### 3.3 Public vs private URL automation
+### PR 2 — `aidream` slim (backend team, ~1 week)
 
-**Today:** every file render asks Python for a signed URL, even public files; CDN is partial; the FE has to know when to skip signing.
+Backend plan §4.2 unchanged. Drop the inline event-dispatcher startup block; rewrite three routers (~670 lines total); delete `media.py` + `podcast_media.py`; slim `common/cloud_files.py` to 5 lines; bump matrx-utils to v1.1.0.
 
-**After:**
+### PR 3 — Frontend rebuild (this team, ~2-3 weeks)
 
-- `GET /v2/files/{id}` response always carries the canonical URL the client should use:
-  - `visibility = "public"` → permanent CDN URL (Python wires public files to a Vercel CDN bucket; backend request open in REQUESTS.md item 5)
-  - `visibility = "private"` or `"shared"` → 7-day signed S3 URL, with `expires_at` so the FE can register with `expiry-wheel`
-  - share-link view → bytes route via `/v2/share/{token}?download=1` (no signed-URL leak)
-- `urls` block in the envelope:
-  ```json
-  "urls": {
-    "src":       "https://cdn.aimatrx.com/...",      // for <img/video/audio> src
-    "download":  "https://server.../v2/files/.../bytes?download=1",
-    "thumbnail": "https://cdn.aimatrx.com/thumbs/...",
-    "variants":  { "social_card": "...", "thumbnail_256": "..." }
-  }
-  ```
-- FE never has to decide which URL to use — the resolver picks `urls.src` for render, `urls.download` for `<a download>`, etc.
+Combines backend plan §4.3 + Part 4 (SW + IDB streaming cache). Hard cut, one PR.
 
-### 3.4 Required arguments per endpoint
-
-All requests carry:
-- `Authorization: Bearer ${jwt}` (or anon JWT for guest users)
-- `X-Request-Id: ${uuid}` — required; echoed in realtime payloads for dedup
-- `X-Idempotency-Key: ${uuid}` — required on `POST /v2/files` (re-uploads of the same file dedup)
-
-`POST /v2/files` body (multipart):
-- `file` — bytes (required unless `?ref=` to copy from existing)
-- `options` — JSON blob:
-  ```ts
-  {
-    folder_path?: string;         // "Reports/Q1" — auto-creates intermediates
-    visibility?: "private" | "shared" | "public";
-    scope?: { organization_id?: string; project_id?: string; task_id?: string };
-    share?: { permission_level: "read" | "write"; expires_at?: ISO8601; max_uses?: number };
-    permissions?: Array<{ grantee_id: string; grantee_type: "user"|"group"; permission_level: "read"|"write"|"admin"; expires_at?: ISO8601 }>;
-    variants?: Array<string>;     // preset keys: "thumbnail_256", "social_card", ...
-    metadata?: Record<string, unknown>;
-    name_override?: string;
-    overwrite_existing?: boolean;
-  }
-  ```
-
-`PATCH /v2/files/{id}` body:
-- Any subset of the same fields. Server applies atomically; failure of any sub-op rolls back the whole call.
-
-### 3.5 Backend asks for the Python team
-
-These are required for this plan; most are already requested in `features/files/for_python/REQUESTS.md`:
-
-1. **Promote `/v2` endpoints alongside `/v1`** — running side-by-side during migration. (new)
-2. **Bundled `options` blob on `POST /v2/files`** — accepts share, permissions, variants in one call. (new — extends current REQUESTS items 14, 7)
-3. **Permanent CDN URLs for `visibility=public`** — REQUESTS item 5.
-4. **Full Asset envelope on `GET /v2/files/{id}`** — already shipped via `/files/{id}/asset` per Bundle D; needs to become the default. (extends Bundle D)
-5. **`X-Request-Id` echo in realtime** — REQUESTS item 9 (already shipped Bundle B).
-6. **Tree privacy fix** — REQUESTS item 0a (shipped Bundle A).
-7. **Range download on `/v2/files/{id}/bytes`** — shipped Bundle D; needs promotion to v2.
-8. **TUS at `/v2/files/tus`** — already at `/files/upload/tus` (Bundle E2); promote.
-9. **Universal `PATCH /v2/files/{id}`** — combined mutation in a single transaction. (new)
-10. **Bulk endpoint with mixed ops** — `POST /v2/files/bulk` taking `op` discriminator. (new)
-11. **Webhooks/SSE for storage events** — REQUESTS item 10 (optional, helps with cache invalidation when realtime is too noisy).
+| # | Step |
+|---|---|
+| 1 | ESLint chokepoint (Phase 0) — locks new bypasses; ships standalone |
+| 2 | Regenerate `types/python-generated/api-types.ts`; delete hand-authored Asset types |
+| 3 | Merge `features/file-handler/` INTO `features/files/` (move expiry-wheel, magic-bytes, NormalizedFile, FileSource, FileTarget) |
+| 4 | Add `assetsByMasterId` to Redux state; selectors `selectAssetByMasterId`, `selectVariantUrl` |
+| 5 | Build `useFile` hook reading Redux first, expiry-wheel for refresh |
+| 6 | Build single `upload()` primitive with auto transport selection (buffered/presigned/TUS) |
+| 7 | Build `<InlineMediaRef>` component |
+| 8 | Migrate 285+ `useFileSrc` callsites to `useFile(ref, { target: "render" }).url` — explicit, no alias |
+| 9 | Migrate `MediaThumbnail` + `FilePreview` to Redux-first via `useFile` |
+| 10 | Sweep agent/chat/podcast/org-logo/canvas/html-pages callsites to `<InlineMediaRef>` |
+| 11 | Build `features/files/cache/idb-store.ts` (Dexie matrx-blob-cache) |
+| 12 | Extend `useFileBlob` and the handler `useFileBlob` to consult IDB before network |
+| 13 | Build Service Worker (`features/files/cache/service-worker/src/sw.ts` + build pipeline → `/public/blob-sw.js`) |
+| 14 | Register SW from `app/DeferredSingletons.tsx`, behind `state.preferences.blobCache.enabled` flag |
+| 15 | Switch PDF.js renderer to `{ kind: 'remote', url, httpHeaders }`; local worker copy in `/public` |
+| 16 | Extend SW to intercept image/video/audio/CDN/share-link URL patterns |
+| 17 | Wire cross-tab BroadcastChannel cache invalidation |
+| 18 | Migrate Image Studio to `POST /assets/preview`; delete `app/api/images/studio/process/route.ts`; drop `sharp` from package.json |
+| 19 | Migrate PDF compress to `POST /assets/pdf-compress`; delete `app/api/pdf/compress/route.ts` |
+| 20 | Mount `<CloudFilesRealtimeProvider>` once in `app/Providers.tsx`; delete 4 per-route mounts |
+| 21 | ESLint rule banning manual MediaRef literals outside converters |
+| 22 | Internal splits: `FilePreview` registry, `FileTable` → TanStack, `PageShell` per-section, thunks.ts split by domain, types.ts split |
+| 23 | Build admin observability route `app/(authenticated)/(admin-auth)/administration/blob-cache/page.tsx` |
+| 24 | Add `X-Matrx-Cache` debug header (dev-only) |
+| 25 | Delete: `useSignedUrl`, `useFileAsset`, `useAiImageUrl`, `useFileSrc` source, `resolveCloudFileUrl.ts`, `useFileUploadWithStorage.ts`, `server-client.ts`, `cloudUpload.ts`, hand-authored Asset types, duplicate image-manager `*Tab.tsx`, RAG `LibraryPage`/`DataStoresPage` direct uploads |
+| 26 | `pnpm test`, `pnpm tsc --noEmit`, `pnpm lint` — all green |
+| 27 | End-to-end verification (Part 8 below) |
 
 ---
 
-## Part 4 — Roadmap
+## Part 8 — Verification matrix
 
-Five phases. Each phase ships behind nothing — the changes are non-breaking until phase 4 (delete).
+After PR 3 lands, run the FE dev server and click through:
 
-### Phase 0 — Lock the chokepoint (1 day)
-
-**Goal:** make it impossible to add new bypasses while the migration is in flight.
-
-- Tighten ESLint:
-  - ban imports of `useSignedUrl`, `useFileAsset`, `useFileDocument`, `useFileUploadWithStorage`, `usePasteImageUpload`, `useAiImageUrl` outside `features/files/`
-  - ban direct calls to `features/files/api/*.ts` outside `features/files/client/`
-  - keep existing ban on `supabase.storage.*` and direct `MediaBlock` construction
-- Add a `features/files/index.ts` with **only** the 5 hooks + facade + 3 components exported. Mark everything else internal.
-
-**Deliverable:** PR that blocks new bypasses but changes no runtime behavior.
-
-### Phase 1 — Migrate bypasses (2-3 days)
-
-Order by call-site count, smallest to largest so we get fast wins:
-
-1. `features/agents/hooks/useAiImageUrl.ts` — 1 caller. Replace with `useFileSrc({kind:"s3_path",path})`. Delete the hook.
-2. `features/audio/services/audioFallbackUpload.ts` — reroute through `fileHandler`.
-3. `features/tasks/services/taskService.ts` — reroute. Delete legacy attachments shim.
-4. `features/resource-manager/resource-picker/FilesResourcePicker.tsx` — wrap in `useFile`.
-5. `features/rag/components/library/LibraryPage.tsx:56` and `data-stores/DataStoresPage.tsx:59` — replace `uploadFile()` with `useFileUpload`.
-6. `components/official/ImageAssetUploader.tsx` — unify on `useFileUpload({ variants })`.
-7. `components/ui/file-upload/ImageUploadField.tsx` — reroute.
-8. `features/image-studio/modes/shared/save-edited-image.ts` — reroute via `useFileMutation`.
-9. Delete `useSignedUrl`, `useFileAsset`, `useFileDocument`, `useFileUploadWithStorage`, `usePasteImageUpload`, `resolveRenderableImageUrl.ts`. Each deletion lands in its own PR with a `git grep` proof of zero references.
-
-**Deliverable:** every L0 read/write call goes through `fileHandler` or one of the 5 hooks. ESLint passes with no exceptions.
-
-### Phase 2 — IndexedDB persistence (2 days)
-
-- Add `features/files/cache/idb-store.ts` — `idb-keyval` or a thin custom wrapper around the IDB API. Schema: `{ fileId, version, mimeType, bytes (Blob), size, lastAccessed }`.
-- Add `features/files/cache/cache-policy.ts` — encodes the rules from §2.3.
-- Wire `useFileBlob` to try Redux → in-mem LRU → IDB → network in order.
-- Wire realtime middleware to drop IDB entries when `version_number` changes (`features/files/state/realtime.ts`).
-- Wire `signOut` action to call `cache.clearAll()`.
-- Add a tiny IDB usage indicator in the file-manager UI for QA (debug-only).
-
-**Deliverable:** opening the same 100 MB PDF twice = one network fetch. Verified in DevTools → Network → second load shows `(disk cache)` / size 0.
-
-### Phase 3 — v2 Python API adoption (depends on backend)
-
-Coordinated with the Python team via `for_python/REQUESTS.md`. As each v2 endpoint lands:
-
-1. Add the wrapper to `features/files/client/requests.ts`.
-2. Switch the resolver + upload + mutation pipelines to call v2.
-3. Delete the v1 wrapper. Delete the now-unused namespaced client files (`assets.ts`, `share-links.ts`, etc.) one at a time.
-
-Order of adoption (lowest risk first):
-- `GET /v2/files/{id}` (additive)
-- `GET /v2/files/{id}/bytes` (range support unblocks video scrubbing)
-- `POST /v2/files` with `options` (kills the upload+share double-call)
-- `PATCH /v2/files/{id}` (kills rename+move double-call)
-- `POST /v2/files/bulk`
-- `GET /v2/share/{token}`
-- TUS
-
-**Deliverable:** 46 endpoints → ~10. FE client: 52 functions → ~7.
-
-### Phase 4 — Collapse directories (1 day)
-
-- `git mv features/file-handler/* features/files/<target>/`
-- Update every import in the repo (codemod via `eslint --fix` with a custom rule, or `jscodeshift`).
-- Merge `features/file-handler/FEATURE.md` + `features/files/FEATURE.md` → `features/files/README.md`.
-- Delete `features/file-handler/`.
-- Update CLAUDE.md references.
-
-**Deliverable:** one directory, one doc, one mental model.
-
-### Phase 5 — Decommission (ongoing)
-
-- Delete `app/api/pdf/compress` and `app/api/images/studio/process` if/when the Python team moves these to backend services. Until then, keep — they don't touch storage.
-- Delete `components/ui/file-upload/*` shim (the remaining wrappers after Phase 1).
-- Audit `components/image/cloud/*` and `components/image/shared/*` — most should be deletable once consumers use `<FilePreview>` directly.
+| # | Surface | Pass criteria |
+|---|---|---|
+| 1 | Upload podcast cover via `<ImageAssetUploader preset="podcast">` | Response carries 3000² cover + 1400² SD + 1200×630 OG + 400² thumbnail + 128² tiny. URLs are permanent CDN, no `?X-Amz-Signature=`. |
+| 2 | View file in gallery | `<InlineMediaRef>` renders the thumbnail variant inline (not the master). |
+| 3 | Change visibility public→private | CDN URL flips to signed; variant URLs propagate; SW cache invalidates on realtime event. |
+| 4 | Click Download | `Content-Disposition: attachment` forces a save; served from IDB if cached. |
+| 5 | Upload 500 MB video | TUS auto-selected, resumable on connection drop. |
+| 6 | Render more variants on existing asset | Idempotent (no duplicate variant rows). |
+| 7 | Two-tab open, upload from tab A | Tab B receives realtime event (file appears); tab A does NOT double-process (no flicker). |
+| 8 | Open 80 MB PDF | First page renders in <1 s. Full document fills IDB cache in background. |
+| 9 | Reload, re-open same PDF | First page instant (<200 ms). Network panel shows `X-Matrx-Cache: hit`. |
+| 10 | Sign out, sign back in as a different user | Previous user's cache cleared from IDB. New user starts with empty cache. |
+| 11 | Upload a logo SVG with `preset="logo"` | Master persists as SVG; raster fallbacks rendered. Asset envelope returns both `urls.svg` and `urls.variants.logo_lg/md/sm`. |
+| 12 | Attach existing file to new chat (MediaRef-only) | Server reads bytes; FE makes one POST with `MediaRef { file_id }`, no bytes re-uploaded. |
+| 13 | Run `pnpm gen:types && git diff --exit-code` | Exit 0. |
+| 14 | Run `pnpm lint` | No `useFileSrc` / `useSignedUrl` / `useFileAsset` / manual MediaRef literals / `supabase.storage` / banned fetch patterns. |
+| 15 | Admin `/administration/blob-cache` | Shows live L1/L2 stats, hit/miss counters, SW status, BroadcastChannel inspector. |
 
 ---
 
-## Part 5 — Open questions
+## Part 9 — Out of scope (explicit, defer to follow-ups)
 
-Resolve before Phase 1 starts:
+Per the backend plan §5, plus a few FE additions:
 
-1. **Backwards-compat shims during Phase 1?** Default: no — every deletion is a hard cut behind one PR. Confirm.
-2. **Anonymous users in the v2 envelope** — does `GET /v2/files/{id}` return the same shape for anon JWTs, or a restricted projection? Recommendation: same shape, RLS filters fields.
-3. **Should `<FilePreview>` accept a `FileSource` directly, or always a `fileId`?** Recommendation: `FileSource` — matches the resolver everywhere else.
-4. **IDB encryption for shared/cross-org files** — defer to v2 of caching; v1 trusts origin isolation.
-5. **What happens to `features/file-handler/handler.ts` `toMediaBlock`/`toContentPart`/`toMediaRef` convenience methods?** Recommendation: keep on the facade; they're zero-cost and used by streaming + agent prep.
+**Backend:**
+- Antivirus / clamav on upload
+- GDPR cascade delete
+- Audit download log (`cld_download_events`)
+- S3 lifecycle policies (cold-tier, orphan cleanup)
+- Trash auto-purge
+- Backup verification + DR rehearsals
+- Cross-repo correlation IDs (FE→BE→S3 `X-Request-Id` propagation)
+- `cld_user_groups` audit
+- Per-org tenancy (`cld_files.parent_org_id`)
+
+**Frontend:**
+- FE Sentry / instrumentation
+- OPFS or Cache API tiers (IDB + SW + memory covers every requirement)
+- Compression / transcoding (stays server-side)
+- Replacing `audioSafetyStore`, `payloadSafetyStore`, `redact session-keys` raw IDB stores (different concerns)
+- Consolidating the three signed-URL refresh systems into one (already happens via expiry-wheel, but verify)
+- Service-side conditional GET (`If-None-Match` → 304) — we work around with `checksum`
+
+---
+
+## Part 10 — Approval checklist before kickoff
+
+- [ ] Backend team confirms Part 5 gaps 1–15 (yes / no / spec)
+- [ ] Plan reviewed and agreed end-to-end
+- [ ] CLAUDE.md updated to point at this doc as the live plan
+- [ ] Phase 0 PR opened (ESLint chokepoint) — lands first, blocks new bypasses immediately
+- [ ] PR1 (matrx-utils v1.1.0) merged in backend team
+- [ ] PR2 (aidream slim) merged in backend team
+- [ ] PR3 (FE rebuild) opened and merged here
 
 ---
 
@@ -606,42 +752,42 @@ import { useFile, useFileSrc, useFileBlob, useFileUpload, useFileMutation } from
 import { fileHandler } from "@/features/files";
 
 // components
-import { FilePreview, FileUploadDropzone, FilePicker } from "@/features/files";
+import { InlineMediaRef, FilePreview, FileUploadDropzone, FilePicker } from "@/features/files";
 
 // types
-import type { FileSource, FileTarget, NormalizedFile, UploadOpts } from "@/features/files";
+import type { MediaRef, Asset, AssetVariant, AssetPreset, FileSource, NormalizedFile } from "@/features/files";
+
+// MediaRef builders
+import { cloudFileToMediaRef, fileIdToMediaRef, urlToMediaRef, fileUriToMediaRef } from "@/features/files";
 ```
 
 ### Forbidden everywhere outside `features/files/`
 
-- `supabase.storage.*`
-- Direct `fetch` of `/files/`, `/assets/`, `/share/`, `/api/files/`, `/api/share/`
+- `supabase.storage.*`, `getPublicUrl`
+- Direct `fetch` of `/files/`, `/assets/`, `/share/`, `/api/files/`, `/api/share/`, `/api/images/`, `/api/pdf/`
 - Imports from `features/files/api/*`, `features/files/state/*`, `features/files/client/*`, `features/files/resolver/*`, `features/files/cache/*`
 - Manual `<img src="...signed-url...">` construction
 - Hand-built `ImageBlock | AudioBlock | VideoBlock | DocumentBlock` literals
+- Manual `MediaRef` literals (use the four builders)
 - New Redux slices for files (extend `cloudFiles`)
-- New file-related Next.js API routes (browser ↔ Python only)
+- New `app/api/{images,files,share,pdf}/*` routes
+- `import sharp` (npm dep is removed)
 
-### File-count budget
+### File-count budget — combined
 
 | Layer | Files today | Target | Notes |
 |---|---|---|---|
-| Hooks (handler + files) | 14 | 5 | the canonical surface |
-| API client | ~12 files / 52 fns | 2 files / ~7 fns | v2 endpoints |
-| Redux state | 8 | 6 | small tighten |
-| Resolver + intelligence | 8 | 8 | unchanged (just relocates) |
-| Cache | 1 | 4 | NEW: IDB + policy |
+| Hooks (handler + files) | 14 | 5 | useFile / useFileSrc / useFileBlob / useFileUpload / useFileMutation |
+| API client | ~12 / 52 fns | 2 / ~7 fns | regenerated from OpenAPI |
+| Redux state | 8 | 6 (5 thunk files + slice + selectors + realtime + ledger + converters) | thunks split by domain |
+| Resolver | 8 | 8 | unchanged (relocated) |
+| Cache (with SW + IDB) | 1 | 7 | NEW: IDB + policy + SW build + register + invalidate + expiry-wheel + blob-lru |
 | Upload | 5 | 4 | merged guards |
-| Components | ~80 | ~50 | dedup image/* + previewer cleanup |
+| Components | ~80 | ~50 | dedup image/* + previewer registry + InlineMediaRef |
 | Virtual sources | 7 | 7 | unchanged |
-| Providers/utils/types/errors/docs | ~15 | ~12 | small tighten |
-| **Total** | **~150–200** | **~80** | one directory |
+| Providers / utils / types / errors / docs | ~15 | ~12 | small tighten |
+| **Total** | **~150–200 (combined)** | **~80** | one directory |
 
 ---
 
-**Approval checklist before kickoff:**
-
-- [ ] Plan reviewed & agreed
-- [ ] Python team confirms `/v2` namespace + bundled `options` on upload
-- [ ] CLAUDE.md updated to point at this doc as the live plan
-- [ ] Phase 0 PR opened (ESLint lock + public index.ts)
+**Closing line:** the backend plan and v1 of this doc converge on the same answer: one chokepoint, one envelope, one upload primitive, one hook, one inline component, no shims. v2 adds the byte-cache layer the backend can't address from its side, and pushes back on the API-bundling we need for the round-trip count to actually drop. Approve the Part 5 gap list, freeze, ship in three PRs.
