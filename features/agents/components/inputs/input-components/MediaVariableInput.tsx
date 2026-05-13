@@ -216,9 +216,6 @@ export function MediaVariableInput({
               rounded="none"
               alt={variableName}
               className="rounded border border-border shrink-0"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.visibility = "hidden";
-              }}
             />
           ) : (
             <div className="h-10 w-10 rounded bg-background flex items-center justify-center shrink-0 border border-border">

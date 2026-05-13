@@ -262,9 +262,6 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                                                 rounded="none"
                                                 alt=""
                                                 className="w-4 h-4 rounded"
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLElement).style.display = "none";
-                                                }}
                                             />
                                         ) : (
                                             <Globe className="w-3 h-3 text-gray-400" />
@@ -383,9 +380,6 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                                                         rounded="none"
                                                         alt={video.title}
                                                         className="w-full aspect-video"
-                                                        onError={(e) => {
-                                                            (e.currentTarget as HTMLElement).parentElement!.style.display = "none";
-                                                        }}
                                                     />
                                                     {video.video?.duration && (
                                                         <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-1.5 py-0.5 rounded">
@@ -478,9 +472,6 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
                                                 rounded="none"
                                                 alt=""
                                                 className="w-5 h-5 rounded"
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLElement).style.display = "none";
-                                                }}
                                             />
                                         ) : (
                                             <Globe className="w-4 h-4 text-gray-400 dark:text-gray-500" />

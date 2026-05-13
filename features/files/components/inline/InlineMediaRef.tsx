@@ -19,14 +19,19 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
+  Check,
+  Copy,
+  File as FileIcon,
   FileAudio,
   FileVideo,
   Image as ImageIcon,
-  File as FileIcon,
+  ImageOff,
+  VideoOff,
+  VolumeX,
 } from "lucide-react";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import type { FileSource } from "@/features/files/handler/types";
@@ -59,10 +64,38 @@ export interface InlineMediaRefProps {
   size?: InlineMediaRefSize;
   /** CSS object-fit. Default `"cover"`. */
   fit?: InlineMediaRefFit;
-  /** When the source can't render: lucide icon, skeleton, or nothing. Default `"icon"`. */
+  /**
+   * Rendered when the `ref` can't be resolved to a URL at all (no remote
+   * fetch attempted). Default `"icon"`.
+   *
+   *   - `"icon"`     — neutral lucide icon in a muted tile
+   *   - `"skeleton"` — pulsing muted tile (loading-shaped)
+   *   - `null`       — render nothing (caller is responsible for layout)
+   */
   fallback?: "icon" | "skeleton" | null;
   /** Override the lucide icon shown in `fallback="icon"`. */
   fallbackIcon?: React.ReactNode;
+  /**
+   * Rendered when the URL *was* resolved but the media element failed to
+   * load (network 404, broken bytes, expired signature, CORS, etc.).
+   * Default `"info"` — best practice during beta: show what we know
+   * (URL, alt, element type) so the failure is debuggable in-place
+   * rather than disappearing the element. Use `null` to render nothing
+   * if your parent UI explicitly handles the failure case.
+   *
+   *   - `"info"`     — pretty destructive-tinted panel with URL + copy
+   *                    button + alt text. Compacts to icon-only below
+   *                    ~80px on the shorter axis. Default.
+   *   - `"icon"`     — same neutral lucide icon as the `fallback` prop
+   *   - `"skeleton"` — pulsing muted tile
+   *   - `null`       — render nothing
+   *
+   * Independent of the user-supplied `onError` callback, which still
+   * fires before this renders (so existing hide-on-error parents keep
+   * working). If you want the broken element to disappear entirely,
+   * pass `errorFallback={null}` instead of hiding via `onError`.
+   */
+  errorFallback?: "info" | "icon" | "skeleton" | null;
   /** Alt text for `<img>`. Defaults to "" (decorative). */
   alt?: string;
   /** Force the media element type. Default: infer from `mime_type` (falls back to `<img>`). */
@@ -231,12 +264,253 @@ function FallbackVisual({
   );
 }
 
+/**
+ * Best-effort URL prettifier — splits a URL into "host" / "path" pieces
+ * for display. Falls back to a raw truncation for non-URL strings (data
+ * URIs, blob: URIs, etc).
+ */
+function prettifyUrl(url: string): { host: string | null; tail: string } {
+  try {
+    const u = new URL(url);
+    const tail = `${u.pathname}${u.search}`;
+    return { host: u.host, tail: tail === "/" ? "" : tail };
+  } catch {
+    return { host: null, tail: url };
+  }
+}
+
+function InformativeErrorFallback({
+  url,
+  alt,
+  elementType,
+  mediaRef,
+  dimensions,
+  rounded,
+  className,
+}: {
+  url: string;
+  alt: string;
+  elementType: "img" | "video" | "audio";
+  mediaRef: InlineMediaRefProps["ref"];
+  dimensions: { width: number; height: number } | "fill";
+  rounded: NonNullable<InlineMediaRefProps["rounded"]>;
+  className?: string;
+}) {
+  const shortAxis =
+    dimensions === "fill"
+      ? Number.POSITIVE_INFINITY
+      : Math.min(dimensions.width, dimensions.height);
+
+  // Below ~64px on the short axis there's no room for text — show a
+  // tinted error tile with just the icon and tooltip the URL so the
+  // user can still inspect it. (`isCompact` implies `dimensions !==
+  // "fill"` since "fill" maps to +Infinity, but TS can't see that.)
+  const isCompact = dimensions !== "fill" && shortAxis < 64;
+  // Between 64 and 140px we have room for one line; above we get the
+  // full info panel with URL + copy button + alt.
+  const isMidsize = shortAxis < 140;
+
+  const fileId =
+    mediaRef && typeof mediaRef === "object" && "file_id" in mediaRef
+      ? mediaRef.file_id
+      : null;
+
+  const FailIcon =
+    elementType === "video"
+      ? VideoOff
+      : elementType === "audio"
+        ? VolumeX
+        : ImageOff;
+
+  const tooltip = [
+    `Failed to load ${elementType}`,
+    alt && `alt: ${alt}`,
+    `url: ${url}`,
+    fileId && `file_id: ${fileId}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  // Compact tile — icon only, dashed destructive border, full tooltip
+  // (and same dimensions as the original so layouts don't shift).
+  // TS narrows `dimensions` here via the `isCompact` definition.
+  if (isCompact) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center bg-destructive/5 text-destructive border border-destructive/40 border-dashed",
+          ROUNDED_CLASS[rounded],
+          className,
+        )}
+        style={{ width: dimensions.width, height: dimensions.height }}
+        role="img"
+        aria-label={`Failed to load ${elementType}${alt ? `: ${alt}` : ""}`}
+        title={tooltip}
+      >
+        <FailIcon className="h-1/2 w-1/2 max-h-5 max-w-5" />
+      </div>
+    );
+  }
+
+  return (
+    <InformativeErrorPanel
+      url={url}
+      alt={alt}
+      elementType={elementType}
+      fileId={fileId}
+      dimensions={dimensions}
+      rounded={rounded}
+      className={className}
+      compact={isMidsize}
+      icon={<FailIcon className="h-3.5 w-3.5 shrink-0" />}
+      tooltip={tooltip}
+    />
+  );
+}
+
+function InformativeErrorPanel({
+  url,
+  alt,
+  elementType,
+  fileId,
+  dimensions,
+  rounded,
+  className,
+  compact,
+  icon,
+  tooltip,
+}: {
+  url: string;
+  alt: string;
+  elementType: "img" | "video" | "audio";
+  fileId: string | null;
+  dimensions: { width: number; height: number } | "fill";
+  rounded: NonNullable<InlineMediaRefProps["rounded"]>;
+  className?: string;
+  compact: boolean;
+  icon: React.ReactNode;
+  tooltip: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const isFill = dimensions === "fill";
+  const { host, tail } = prettifyUrl(url);
+
+  const handleCopy = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      event.preventDefault();
+      navigator.clipboard
+        ?.writeText(url)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        })
+        .catch(() => {
+          // Clipboard API can fail in non-HTTPS / permission-denied
+          // contexts. Tooltip + selectable text below already give the
+          // user the URL, so this is non-fatal.
+        });
+    },
+    [url],
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col bg-destructive/5 text-foreground border border-destructive/40 border-dashed overflow-hidden",
+        ROUNDED_CLASS[rounded],
+        compact ? "p-1.5 gap-0.5" : "p-2 gap-1",
+        isFill ? "w-full h-full" : "",
+        className,
+      )}
+      style={
+        isFill
+          ? undefined
+          : { width: dimensions.width, height: dimensions.height }
+      }
+      role="img"
+      aria-label={`Failed to load ${elementType}${alt ? `: ${alt}` : ""}`}
+      title={tooltip}
+    >
+      {/* Headline row */}
+      <div
+        className={cn(
+          "flex items-center gap-1.5 text-destructive font-medium leading-tight",
+          compact ? "text-[10px]" : "text-xs",
+        )}
+      >
+        {icon}
+        <span className="truncate">
+          {elementType === "img"
+            ? "Image failed to load"
+            : elementType === "video"
+              ? "Video failed to load"
+              : "Audio failed to load"}
+        </span>
+      </div>
+
+      {/* Alt text (when supplied and there's vertical room) */}
+      {alt && !compact && (
+        <div
+          className="text-[11px] text-muted-foreground italic line-clamp-1"
+          title={alt}
+        >
+          {alt}
+        </div>
+      )}
+
+      {/* URL + copy button — fills remaining vertical space */}
+      <div
+        className={cn(
+          "flex items-end gap-1 mt-auto min-w-0",
+          compact ? "text-[9px]" : "text-[10px]",
+        )}
+      >
+        <div className="font-mono text-muted-foreground truncate flex-1 min-w-0">
+          {host ? (
+            <>
+              <span className="text-foreground/80">{host}</span>
+              {tail && <span className="opacity-70">{tail}</span>}
+            </>
+          ) : (
+            <span>{tail}</span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={cn(
+            "shrink-0 p-0.5 rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors focus:outline-none focus:ring-1 focus:ring-destructive/40",
+            copied && "text-emerald-600 dark:text-emerald-500",
+          )}
+          aria-label={copied ? "URL copied" : "Copy URL"}
+          title={copied ? "URL copied" : "Copy URL"}
+        >
+          {copied ? (
+            <Check className="h-3 w-3" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
+        </button>
+      </div>
+
+      {/* file_id badge — only when room and we have one */}
+      {fileId && !compact && (
+        <div className="text-[9px] font-mono text-muted-foreground/70 truncate">
+          {fileId}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InlineMediaRef({
   ref,
   size = "md",
   fit = "cover",
   fallback = "icon",
   fallbackIcon,
+  errorFallback = "info",
   alt = "",
   as,
   rounded = "md",
@@ -254,6 +528,25 @@ export function InlineMediaRef({
   const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
 
+  // Track whether the resolved URL failed to load. Reset whenever the
+  // URL changes — a different attempt deserves a fresh chance.
+  const [hasLoadError, setHasLoadError] = useState(false);
+  useEffect(() => {
+    setHasLoadError(false);
+  }, [url]);
+
+  const handleLoadError = useCallback(
+    (
+      event: React.SyntheticEvent<
+        HTMLImageElement | HTMLVideoElement | HTMLAudioElement
+      >,
+    ) => {
+      setHasLoadError(true);
+      onError?.(event);
+    },
+    [onError],
+  );
+
   const defaultIcon =
     elementType === "video" ? (
       <FileVideo className="h-1/2 w-1/2" />
@@ -270,6 +563,36 @@ export function InlineMediaRef({
     return (
       <FallbackVisual
         kind={fallback}
+        dimensions={dimensions}
+        rounded={rounded}
+        border={border}
+        className={className}
+        icon={fallbackIcon ?? defaultIcon}
+      />
+    );
+  }
+
+  // URL resolved but the remote fetch failed — render the informative
+  // (or caller-overridden) error fallback. Keeps the original dimensions
+  // so layouts don't jump.
+  if (hasLoadError) {
+    if (errorFallback === null) return null;
+    if (errorFallback === "info") {
+      return (
+        <InformativeErrorFallback
+          url={url}
+          alt={alt}
+          elementType={elementType}
+          mediaRef={ref}
+          dimensions={dimensions}
+          rounded={rounded}
+          className={className}
+        />
+      );
+    }
+    return (
+      <FallbackVisual
+        kind={errorFallback}
         dimensions={dimensions}
         rounded={rounded}
         border={border}
@@ -327,7 +650,7 @@ export function InlineMediaRef({
           onLoad as React.ReactEventHandler<HTMLVideoElement> | undefined
         }
         onError={
-          onError as React.ReactEventHandler<HTMLVideoElement> | undefined
+          handleLoadError as React.ReactEventHandler<HTMLVideoElement>
         }
         crossOrigin={crossOrigin}
         {...interactiveProps}
@@ -347,7 +670,7 @@ export function InlineMediaRef({
           onLoad as React.ReactEventHandler<HTMLAudioElement> | undefined
         }
         onError={
-          onError as React.ReactEventHandler<HTMLAudioElement> | undefined
+          handleLoadError as React.ReactEventHandler<HTMLAudioElement>
         }
         crossOrigin={crossOrigin}
         {...interactiveProps}
@@ -355,14 +678,11 @@ export function InlineMediaRef({
     );
   }
 
-  // Bail to plain <img> when the caller needs any escape hatch
-  // (onError / onLoad / element ref / crossOrigin). next/image accepts
-  // its own onLoad/onError but wraps the DOM node, mangles the event
-  // target, and refuses crossOrigin — none of which is useful for the
-  // canvas-overlay / fade-in / "hide-on-404" cases that drive these
-  // props.
-  const needsPlainImg =
-    !!onError || !!onLoad || !!mediaElementRef || !!crossOrigin;
+  // Bail to plain <img> when the caller needs an event-target escape
+  // hatch (onLoad / element ref / crossOrigin). The internal error
+  // handler also works on next/image, so onError alone no longer
+  // forces the plain-img branch.
+  const needsPlainImg = !!onLoad || !!mediaElementRef || !!crossOrigin;
 
   // Use next/image for cld_files-hosted CDN URLs (better lazy-loading +
   // device-pixel-ratio handling); external arbitrary URLs may not be on
@@ -377,6 +697,9 @@ export function InlineMediaRef({
         height={dimensions.height}
         className={cn(baseCls, objectFitClass)}
         unoptimized
+        onError={
+          handleLoadError as React.ReactEventHandler<HTMLImageElement>
+        }
         {...interactiveProps}
       />
     );
@@ -395,9 +718,7 @@ export function InlineMediaRef({
       {...sizeAttrs}
       className={cn(baseCls, objectFitClass)}
       onLoad={onLoad as React.ReactEventHandler<HTMLImageElement> | undefined}
-      onError={
-        onError as React.ReactEventHandler<HTMLImageElement> | undefined
-      }
+      onError={handleLoadError}
       crossOrigin={crossOrigin}
       {...interactiveProps}
     />
