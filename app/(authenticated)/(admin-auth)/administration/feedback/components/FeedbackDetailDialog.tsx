@@ -12,7 +12,7 @@ import {
   adminReplyUserReview,
   forceCloseFeedback,
 } from "@/actions/feedback.actions";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { imageViewUrl } from "@/features/files/handler/utils/python-base";
 import {
   UserFeedback,

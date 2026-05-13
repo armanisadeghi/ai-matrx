@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { cn } from "@/lib/utils";
 

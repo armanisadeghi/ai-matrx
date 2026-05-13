@@ -2,7 +2,6 @@
 
 import { useCallback } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { getFileFromState } from "@/features/files/redux/selectors";
 import { openTab, setActiveTab } from "../redux/tabsSlice";
 
 /**
@@ -56,7 +55,12 @@ export function useOpenCloudFile() {
         return;
       }
 
-      const record = getFileFromState(state, cloudFileId);
+      // Imperative best-effort lookup against the cloudFiles slice. The
+      // useFile hook isn't available in this imperative callback path;
+      // the previewer (CloudFilePreviewer) re-reads the record through
+      // the public hooks once mounted, so this is just for the initial
+      // tab title.
+      const record = state.cloudFiles?.filesById?.[cloudFileId];
       const name = record?.fileName ?? "Untitled file";
       const mime = record?.mimeType ?? undefined;
 

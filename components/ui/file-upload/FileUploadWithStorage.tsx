@@ -4,7 +4,7 @@ import {
   MultiFileUpload,
   MiniFileUpload,
 } from "@/components/ui/file-upload/file-upload";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import { motion, type Variants } from "motion/react";
 import {
   getFileDetailsByUrl,

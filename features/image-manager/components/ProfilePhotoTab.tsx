@@ -29,6 +29,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { InlineMediaRef } from "@/features/files";
 
 export function ProfilePhotoTab() {
   const currentAvatar = useAppSelector(selectUserAvatarUrl);
@@ -69,11 +70,12 @@ export function ProfilePhotoTab() {
       <header className="flex items-center gap-3 rounded-lg border border-border bg-card/40 p-3">
         <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
           {currentAvatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={currentAvatar}
+            <InlineMediaRef
+              ref={currentAvatar}
               alt="Current avatar"
-              className="h-full w-full object-cover"
+              size="fill"
+              fit="cover"
+              rounded="full"
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-muted-foreground">

@@ -14,10 +14,26 @@
  */
 
 import { fileHandler } from "@/features/files/handler/handler";
-import { selectFileById } from "@/features/files/redux/selectors";
 import type { CloudFileRecord } from "@/features/files/types";
 import type { AppStore } from "@/lib/redux/store";
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
+
+/**
+ * Imperative file lookup against the cloudFiles slice. This module is
+ * non-React (it operates against an `AppStore`), so the React-side
+ * `useFile` hook isn't available — and the file is just used as an
+ * existence check before we hand the id off to `fileHandler`. Reading
+ * the slice's `filesById` map directly is acceptable here because the
+ * handler is the authoritative resolver; this lookup only short-circuits
+ * the "file isn't in cache yet" error path.
+ */
+function getCloudFile(
+  store: AppStore,
+  fileId: string,
+): CloudFileRecord | undefined {
+  const state = store.getState();
+  return state.cloudFiles?.filesById?.[fileId];
+}
 
 export interface ResolvedCloudUrl {
   url: string;
@@ -54,7 +70,7 @@ export async function resolveCloudFileUrl(
   store: AppStore,
   fileId: string,
 ): Promise<ResolvedCloudUrl> {
-  const file = selectFileById(store.getState(), fileId);
+  const file = getCloudFile(store, fileId);
   if (!file) {
     throw new Error(`Cloud file not found in store: ${fileId}`);
   }
@@ -101,7 +117,7 @@ export async function resolveCloudFileToImageSource(
   store: AppStore,
   fileId: string,
 ): Promise<ImageSource> {
-  const file = selectFileById(store.getState(), fileId);
+  const file = getCloudFile(store, fileId);
   if (!file) {
     throw new Error(`Cloud file not found in store: ${fileId}`);
   }

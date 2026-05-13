@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 import { VoiceMicButton } from "./VoiceMicButton";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@/features/files";
 import type { NormalizedFile } from "@/features/files";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import {
