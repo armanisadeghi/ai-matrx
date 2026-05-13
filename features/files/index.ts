@@ -48,6 +48,17 @@ export { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 export { useFileBlob } from "@/features/files/hooks/useFileBlob";
 export { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 
+// Mutation surface — stable, id-agnostic callbacks for rename / move /
+// delete / metadata / visibility / signed-URL fetch. Use in tables and
+// grids that iterate over many file/folder ids (where useFileActions
+// would violate the rules of hooks).
+export {
+  useFileMutation,
+  useFolderMutation,
+  type FileMutations,
+  type FolderMutations,
+} from "@/features/files/hooks/useFileMutation";
+
 // Existing data-layer hooks staying available through Phase 1. The Asset
 // hook will fold into the canonical `useFile` once the BE always returns the
 // envelope; the guarded upload will fold into `useFileUpload({ guard: true })`.

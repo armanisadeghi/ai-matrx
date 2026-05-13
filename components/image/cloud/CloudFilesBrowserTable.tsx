@@ -31,26 +31,22 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import {
-  deleteFile as deleteFileThunk,
-  deleteFolder as deleteFolderThunk,
-  getSignedUrl as getSignedUrlThunk,
-  moveFile as moveFileThunk,
-  updateFileMetadata,
-  updateFolder as updateFolderThunk,
-} from "@/features/files/redux/thunks";
-import { openFolderPicker } from "@/features/files";
-import { FileIcon } from "@/features/files";
-import { MediaThumbnail } from "@/features/files";
-import {
+  openFolderPicker,
+  FileIcon,
+  MediaThumbnail,
   ShareLinkDialog,
   ShareLinkDialogBody,
+  useFileActions,
+  useFolderActions,
+  useFileMutation,
+  useFolderMutation,
+  formatFileSize,
+  formatRelativeTime,
+  isImageMime,
+  isVideoMime,
+  resolveMime,
 } from "@/features/files";
-import { useFileActions } from "@/features/files";
-import { useFolderActions } from "@/features/files";
-import { formatFileSize, formatRelativeTime } from "@/features/files";
-import { isImageMime, isVideoMime, resolveMime } from "@/features/files";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   CloudFileRecord,
@@ -93,7 +89,8 @@ export function CloudFilesBrowserTable({
   onOpenFolder,
   onActivateFile,
 }: CloudFilesBrowserTableProps) {
-  const dispatch = useAppDispatch();
+  const fileMut = useFileMutation();
+  const folderMut = useFolderMutation();
   const isMobile = useIsMobile();
   const rows = useMemo(
     () => buildCloudFilesBrowserRows({ folders, files }),
@@ -133,11 +130,7 @@ export function CloudFilesBrowserTable({
     setBusyKind("download");
     try {
       await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
-        const result = await dispatch(
-          getSignedUrlThunk({ fileId: file.id, expiresIn: 3600 }),
-        );
-        const url = (result as { payload?: { url?: string } } | undefined)
-          ?.payload?.url;
+        const { url } = await fileMut.signedUrl(file.id, { expiresIn: 3600 });
         if (!url) return;
         const a = document.createElement("a");
         a.href = url;
@@ -150,7 +143,7 @@ export function CloudFilesBrowserTable({
     } finally {
       setBusyKind(null);
     }
-  }, [busyKind, dispatch, selectedFiles]);
+  }, [busyKind, fileMut, selectedFiles]);
 
   const handleMove = useCallback(async () => {
     if (selectedIds.length === 0 || busyKind) return;
@@ -162,15 +155,11 @@ export function CloudFilesBrowserTable({
     setBusyKind("move");
     try {
       await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
-        await dispatch(
-          moveFileThunk({ fileId: file.id, newParentFolderId: target }),
-        ).unwrap();
+        await fileMut.move(file.id, target);
       });
       await runWithConcurrency(selectedFolders, MAX_PARALLEL, async (folder) => {
         if (folder.id === target) return;
-        await dispatch(
-          updateFolderThunk({ folderId: folder.id, patch: { parentId: target } }),
-        ).unwrap();
+        await folderMut.move(folder.id, target);
       });
       clearSelection();
     } finally {
@@ -179,7 +168,8 @@ export function CloudFilesBrowserTable({
   }, [
     busyKind,
     clearSelection,
-    dispatch,
+    fileMut,
+    folderMut,
     selectedFiles,
     selectedFolders,
     selectedIds.length,
@@ -191,21 +181,17 @@ export function CloudFilesBrowserTable({
       setBusyKind("visibility");
       try {
         await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
-          await dispatch(
-            updateFileMetadata({ fileId: file.id, patch: { visibility } }),
-          ).unwrap();
+          await fileMut.setVisibility(file.id, visibility);
         });
         await runWithConcurrency(selectedFolders, MAX_PARALLEL, async (folder) => {
-          await dispatch(
-            updateFolderThunk({ folderId: folder.id, patch: { visibility } }),
-          ).unwrap();
+          await folderMut.setVisibility(folder.id, visibility);
         });
         toast.success(`Visibility set to ${visibility}`);
       } finally {
         setBusyKind(null);
       }
     },
-    [busyKind, dispatch, selectedFiles, selectedFolders, selectedIds.length],
+    [busyKind, fileMut, folderMut, selectedFiles, selectedFolders, selectedIds.length],
   );
 
   const handleDelete = useCallback(async () => {
@@ -213,10 +199,10 @@ export function CloudFilesBrowserTable({
     setBusyKind("delete");
     try {
       await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
-        await dispatch(deleteFileThunk({ fileId: file.id })).unwrap();
+        await fileMut.remove(file.id);
       });
       await runWithConcurrency(selectedFolders, MAX_PARALLEL, async (folder) => {
-        await dispatch(deleteFolderThunk({ folderId: folder.id })).unwrap();
+        await folderMut.remove(folder.id);
       });
       clearSelection();
       setConfirmDelete(false);
@@ -226,7 +212,8 @@ export function CloudFilesBrowserTable({
   }, [
     busyKind,
     clearSelection,
-    dispatch,
+    fileMut,
+    folderMut,
     selectedFiles,
     selectedFolders,
     selectedIds.length,

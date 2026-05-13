@@ -384,16 +384,16 @@ export default [
             'no-restricted-imports': 'off',
         },
     },
-    // Tier-4 ring-fence — these 9 files still import from
+    // Tier-4 ring-fence — these files still import from
     // @/features/files/redux/* because their migrations need new public-
     // surface primitives that aren't shipped yet:
     //
-    //   - image-cloud cluster (CloudFilesBrowserTable, CloudFilesTab,
-    //     CloudImagesTab, CloudUploadTab, FilesResourcePicker) dispatches
-    //     a handful of mutation thunks from event handlers with dynamic
-    //     ids — needs the Phase-1 `useFileMutation` family (rename /
-    //     move / delete / metadata / share / signed-url) before per-row
-    //     callsites can be lifted out cleanly.
+    //   - image-cloud read surfaces (CloudFilesTab, CloudImagesTab,
+    //     CloudUploadTab, FilesResourcePicker) consume `selectAllFilesMap`
+    //     / `selectAllFilesArray` or dispatch `loadUserFileTree` /
+    //     `ensureFolderPath` thunks. The mutation surfaces
+    //     (CloudFilesBrowserTable) moved off this override in `phase 1.x`
+    //     once `useFileMutation` / `useFolderMutation` shipped.
     //   - useImageStudio dispatches the bulk `uploadFiles` thunk with
     //     concurrency + per-file metadata — needs a public bulk-upload
     //     primitive.
@@ -408,7 +408,6 @@ export default [
     // import from features/files/redux fails the build.
     {
         files: [
-            'components/image/cloud/CloudFilesBrowserTable.tsx',
             'components/image/cloud/CloudFilesTab.tsx',
             'components/image/cloud/CloudImagesTab.tsx',
             'components/image/cloud/CloudUploadTab.tsx',
