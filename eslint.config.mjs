@@ -90,6 +90,59 @@ const windowPanelsImportRestriction = {
             message:
                 'features/files/services is internal. Use the public hooks from @/features/files.',
         },
+        // Tier 4 of the file-handling ring-fence: the slice / selectors /
+        // thunks / converters / realtime middleware. Store wiring
+        // (cloudFilesReducer, cloudFilesRealtimeMiddleware) is re-exported
+        // on the public index so even lib/redux/{store,entity-store,
+        // rootReducer}.ts goes through @/features/files. Bulk-mutation
+        // callsites in the image-cloud cluster + the bulk-selector
+        // consumers (RAG hits, WhatsApp media, picker pages) are tracked
+        // for a follow-up sweep — they need new public hooks (a
+        // useFileMutation family + a paginated all-files view) before
+        // their imports can be cleanly migrated.
+        {
+            group: [
+                '@/features/files/redux',
+                '@/features/files/redux/*',
+            ],
+            message:
+                'Do not import slice/selectors/thunks/converters directly. Use the public hooks (useFile, useFileNode, useFolderNode, useCloudTree, useFolderContents) and converters (fileIdToMediaRef, cloudFileToMediaRef, urlToMediaRef, fileUriToMediaRef) re-exported from @/features/files. Store wiring (cloudFilesReducer, cloudFilesRealtimeMiddleware) and the narrow explorer-state contract (setActiveFileId, setActiveFolderId, selectTreeStatus) are public named exports.',
+        },
+        // Tier 3 of the file-handling ring-fence (per
+        // docs/SWEEP_INTERNAL_IMPORTS.md): the four largest internal
+        // subdirs. External callers must import from `@/features/files`.
+        // app/(a)/files/** is allowlisted below for the co-located route
+        // shell (PageShell) and the server-only utils (server-cookies,
+        // server-search-params).
+        {
+            group: [
+                '@/features/files/handler',
+                '@/features/files/handler/*',
+            ],
+            message:
+                'Do not import handler internals — use the public surface (@/features/files) which re-exports fileHandler, useFile, useFileAs, useFileSrc, useFileBlob, useFileUpload, normalize, preferIdentityLocator, and all handler types.',
+        },
+        {
+            group: [
+                '@/features/files/components',
+                '@/features/files/components/*',
+            ],
+            message:
+                'Do not import component internals — use the public surface (@/features/files) which re-exports the canonical render / picker / dialog set (FilePreview, MediaThumbnail, FileTree, FileResourceChip, PreviewPane, WindowPanelShell, PdfAnnotationLayer, useFileActions, useFolderActions, CloudFilesPickerHost, openFilePicker, openFolderPicker, etc.). If your component is missing from the index, promote it instead of importing internally.',
+        },
+        {
+            group: ['@/features/files/types'],
+            message:
+                'Import types from @/features/files (the public surface re-exports the entire type module via `export type *`).',
+        },
+        {
+            group: [
+                '@/features/files/utils',
+                '@/features/files/utils/*',
+            ],
+            message:
+                'Do not import from features/files/utils — use the equivalent re-exports from @/features/files (CloudFolders, folderFor*, formatFileSize, isImageMime, getFilePreviewProfile, etc.). app/(a)/files/** is allowlisted for the server-only helpers (server-cookies, server-search-params).',
+        },
     ],
 };
 
@@ -313,6 +366,57 @@ export default [
             'features/window-panels/UnifiedOverlayController.tsx',
             'features/window-panels/OverlaySurface.tsx',
             'components/overlays/OverlayController.tsx',
+        ],
+        rules: {
+            'no-restricted-imports': 'off',
+        },
+    },
+    {
+        // The /files route shells legitimately co-locate with the Files
+        // feature: they own the PageShell composition for `/files/*` and
+        // need the server-only utils (server-cookies, server-search-params)
+        // for SSR cookie + URL state parsing. The Tier-3 ring-fence does
+        // not apply to them. Every other path swap (`@/features/files/**`
+        // → `@/features/files`) is still in force for the rest of the
+        // codebase. See docs/SWEEP_INTERNAL_IMPORTS.md.
+        files: ['app/(a)/files/**/*'],
+        rules: {
+            'no-restricted-imports': 'off',
+        },
+    },
+    // Tier-4 ring-fence — these 9 files still import from
+    // @/features/files/redux/* because their migrations need new public-
+    // surface primitives that aren't shipped yet:
+    //
+    //   - image-cloud cluster (CloudFilesBrowserTable, CloudFilesTab,
+    //     CloudImagesTab, CloudUploadTab, FilesResourcePicker) dispatches
+    //     a handful of mutation thunks from event handlers with dynamic
+    //     ids — needs the Phase-1 `useFileMutation` family (rename /
+    //     move / delete / metadata / share / signed-url) before per-row
+    //     callsites can be lifted out cleanly.
+    //   - useImageStudio dispatches the bulk `uploadFiles` thunk with
+    //     concurrency + per-file metadata — needs a public bulk-upload
+    //     primitive.
+    //   - RagSearchHits / CldFilePicker / useWhatsAppMedia consume
+    //     `selectAllFilesMap` / `selectAllFilesArray` to iterate every
+    //     cached file — each is a legitimate architectural smell (each
+    //     re-renders on every files-map change) and needs a paginated
+    //     all-files / mime-filtered view hook rather than a bulk-read
+    //     escape hatch on the public index.
+    //
+    // The override is scoped exactly to these files so any NEW external
+    // import from features/files/redux fails the build.
+    {
+        files: [
+            'components/image/cloud/CloudFilesBrowserTable.tsx',
+            'components/image/cloud/CloudFilesTab.tsx',
+            'components/image/cloud/CloudImagesTab.tsx',
+            'components/image/cloud/CloudUploadTab.tsx',
+            'features/image-studio/hooks/useImageStudio.ts',
+            'features/rag/components/data-stores/CldFilePicker.tsx',
+            'features/rag/components/search/RagSearchHits.tsx',
+            'features/resource-manager/resource-picker/FilesResourcePicker.tsx',
+            'features/whatsapp-clone/hooks/useWhatsAppMedia.ts',
         ],
         rules: {
             'no-restricted-imports': 'off',
