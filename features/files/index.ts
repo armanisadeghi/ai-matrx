@@ -43,8 +43,6 @@ export { useFile } from "@/features/file-handler/hooks/useFile";
 export { useFileAs } from "@/features/file-handler/hooks/useFileAs";
 export { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
 export { useFileBlob } from "@/features/file-handler/hooks/useFileBlob";
-export { useFileDownloadUrl } from "@/features/file-handler/hooks/useFileDownloadUrl";
-export { useFileMediaBlock } from "@/features/file-handler/hooks/useFileMediaBlock";
 export { useFileUpload } from "@/features/file-handler/hooks/useFileUpload";
 
 // Existing data-layer hooks staying available through Phase 1. The Asset

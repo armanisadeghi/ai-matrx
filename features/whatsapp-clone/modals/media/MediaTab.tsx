@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
-import { useSignedUrl } from "@/features/files/hooks/useSignedUrl";
+import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import {
   formatDuration,
@@ -170,9 +170,8 @@ function MediaTile({ item }: { item: WAMediaItem }) {
 
   const inlineUrl = item.thumbnailUrl || item.url;
   const needsSigned = isVisible && !inlineUrl && !!item.cloudFileId;
-  const { url: signedUrl } = useSignedUrl(
-    needsSigned ? item.cloudFileId! : null,
-    { expiresIn: 3600 },
+  const signedUrl = useFileSrc(
+    needsSigned ? { kind: "file_id", fileId: item.cloudFileId! } : null,
   );
   const renderUrl = inlineUrl || signedUrl || "";
 

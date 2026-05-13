@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { useSignedUrl } from "@/features/files/hooks/useSignedUrl";
+import { useFileAs } from "@/features/file-handler/hooks/useFileAs";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
@@ -167,10 +167,11 @@ export function FilePreview({
     useAssetForPreview ? fileId : null,
     { signedUrlTtl: urlExpiresIn },
   );
-  const { url: signedUrl, loading: signedLoading } = useSignedUrl(
-    useAssetForPreview ? null : fileId,
-    { expiresIn: urlExpiresIn },
+  const { result: signedUrl, status: signedStatus } = useFileAs(
+    !useAssetForPreview && fileId ? { kind: "file_id", fileId } : null,
+    { kind: "html_src" },
   );
+  const signedLoading = signedStatus === "resolving";
   // Prefer a larger variant (hero / cover) when present, else the canonical
   // `primary_url`, else the original variant. Asset endpoint guarantees at
   // least `original`, so the third arm is a safety net.

@@ -26,7 +26,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useSignedUrl } from "@/features/files/hooks/useSignedUrl";
+import { useFileSrc } from "@/features/file-handler/hooks/useFileSrc";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
@@ -116,13 +116,14 @@ export function MediaThumbnail({
   });
   const assetUrl = useAssetThumb ? pickThumbnailUrl(asset) : null;
 
-  // Final fallback: legacy signed-URL hook. Used for non-image strategies
-  // (video poster), or when the asset endpoint hasn't returned yet, or
-  // when no asset variants exist for this file.
+  // Final fallback: universal handler's signed-URL resolution via the
+  // expiry-wheel. Used for non-image strategies (video poster), or when
+  // the asset endpoint hasn't returned yet, or when no asset variants
+  // exist for this file.
   const signedUrlEnabled = needsBytes && !cdnUrl && !assetUrl;
-  const { url: signedUrl } = useSignedUrl(signedUrlEnabled ? file.id : null, {
-    expiresIn: 3600,
-  });
+  const signedUrl = useFileSrc(
+    signedUrlEnabled ? { kind: "file_id", fileId: file.id } : null,
+  );
   const url = cdnUrl ?? assetUrl ?? signedUrl;
 
   // Backend-thumbnail strategy reads the metadata field directly. The Python

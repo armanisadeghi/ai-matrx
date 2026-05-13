@@ -42,78 +42,60 @@ const windowPanelsImportRestriction = {
     ],
 };
 
-// File-handling consolidation — Phase 1 wiring target.
+// File-handling consolidation — paths permanently banned for new imports.
+// Each entry below is either a deleted hook (so any new import would fail
+// to compile) or a soon-to-be-deleted shim being kept alive only while
+// its remaining internal callers are migrated.
 //
-// These import paths are scheduled for deletion in PR3 (FE rebuild). They
-// are NOT wired into a rule today because most have live callers; Phase 1's
-// migration sweep migrates each call site, then this constant gets plugged
-// into `no-restricted-imports` to seal the door behind the rewrite.
-//
-// Reviewer note for the Phase 1 PR: add `...deletedFileHooksRestriction.paths`
-// to the `paths` array of the main `no-restricted-imports` rule below once
-// every call site has been migrated.
-// eslint-disable-next-line no-unused-vars
+// useFileAsset (Asset envelope hook) and useFileDocument (RAG metadata
+// lookup) are NOT in this list — they are canonical single-purpose hooks
+// kept across the rebuild.
 const deletedFileHooksRestriction = {
     paths: [
         {
             name: '@/features/files/hooks/useSignedUrl',
             message:
-                'useSignedUrl is being deleted. Use useFileSrc (or useFile(...).url) from @/features/files. Plan: docs/FILE_HANDLING_CONSOLIDATION_PLAN.md',
-        },
-        {
-            name: '@/features/files/hooks/useFileAsset',
-            message:
-                'useFileAsset folds into useFile in Phase 1. Use useFile from @/features/files instead.',
-        },
-        {
-            name: '@/features/files/hooks/useFileDocument',
-            message:
-                'useFileDocument folds into useFileBlob in Phase 1. Use useFileBlob from @/features/files instead.',
+                'useSignedUrl was deleted. Use useFileSrc({kind:"file_id",fileId}) from @/features/file-handler.',
         },
         {
             name: '@/features/files/hooks/useGuardedFileUpload',
             message:
-                'useGuardedFileUpload folds into useFileUpload({ guard: true }) in Phase 1. Use useFileUpload from @/features/files instead.',
+                'useGuardedFileUpload was deleted. Use useFileUpload().uploadMany from @/features/file-handler.',
         },
         {
             name: '@/features/agents/hooks/useAiImageUrl',
             message:
-                'useAiImageUrl is being deleted. Use useFileSrc({kind:"s3_path",path}) from @/features/files instead.',
-        },
-        {
-            name: '@/features/files/utils/resolveRenderableImageUrl',
-            message:
-                'resolveRenderableImageUrl is being deleted (folds into the resolver). Use useFile / useFileSrc from @/features/files.',
+                'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and use useFileSrc({kind:"file_id",fileId}) from @/features/file-handler.',
         },
         {
             name: '@/components/ui/file-upload/useFileUploadWithStorage',
             message:
-                'useFileUploadWithStorage is a legacy shim and is being deleted. Use useFileUpload from @/features/files instead.',
+                'useFileUploadWithStorage was deleted. Use useFileUpload from @/features/file-handler.',
         },
         {
             name: '@/components/ui/file-upload/usePasteImageUpload',
             message:
-                'usePasteImageUpload is being deleted. Use useFileUpload + {kind:"file"} from @/features/files instead.',
+                'usePasteImageUpload was deleted. Attach a paste listener and call useFileUpload().upload({kind:"file"}) from @/features/file-handler.',
         },
         {
             name: '@/features/file-handler/hooks/useFileMediaBlock',
             message:
-                'useFileMediaBlock folds into useFileAs({kind:"media_block"}) in Phase 1.',
+                'useFileMediaBlock will fold into useFileAs({kind:"media_block"}) in a follow-up.',
         },
         {
             name: '@/features/file-handler/hooks/useFileDownloadUrl',
             message:
-                'useFileDownloadUrl folds into useFileSrc({mode:"download"}) in Phase 1.',
+                'useFileDownloadUrl will fold into useFileSrc({mode:"download"}) in a follow-up.',
         },
         {
             name: '@/features/files/upload/cloudUpload',
             message:
-                'cloudUpload is being deleted. Use useFileUpload from @/features/files instead.',
+                'cloudUpload is internal to features/file-handler. Use useFileUpload from @/features/file-handler.',
         },
         {
             name: '@/components/image/cloud/resolveCloudFileUrl',
             message:
-                'resolveCloudFileUrl is being deleted. Use useFile / useFileSrc from @/features/files.',
+                'resolveCloudFileUrl is scheduled for deletion. Use useFile / useFileSrc from @/features/file-handler.',
         },
     ],
 };
@@ -200,7 +182,13 @@ export default [
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',
             'import/no-anonymous-default-export': 'off',
-            'no-restricted-imports': ['error', windowPanelsImportRestriction],
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: windowPanelsImportRestriction.patterns,
+                    paths: deletedFileHooksRestriction.paths,
+                },
+            ],
             // Browser dialogs are banned — see CLAUDE.md "Browser dialogs are BANNED".
             // Use <ConfirmDialog /> from @/components/ui/confirm-dialog,
             // or toast.success/error from sonner, or a proper <Dialog />.
