@@ -8,7 +8,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { cn } from "@/styles/themes/utils";
 import { PencilIcon } from "lucide-react";
-import { useState, useMemo, createContext, useContext, useRef } from "react";
+import { useState, useMemo } from "react";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -276,8 +276,8 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
     // Ensure proper line breaks after bold text that should start a new line
     // This handles cases like "**Meta Title:**\n[content]" to ensure proper paragraph separation
-    // BUT exclude cases where bold text is immediately followed by a list item
-    processed = processed.replace(/(\*\*[^*]+\*\*)\n([^\n*\-])/g, "$1\n\n$2");
+    // BUT exclude cases where bold text is immediately followed by a list item (including indented ones)
+    processed = processed.replace(/(\*\*[^*]+\*\*)\n([^\n*\-\s])/g, "$1\n\n$2");
 
     // Ensure proper line breaks before and after italic text that spans multiple lines
     // This handles cases where italic text should be on its own line
@@ -319,10 +319,12 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
       "$1$2\n\n$3",
     );
 
-    // Convert every blank line into an &nbsp; paragraph so all empty lines render
+    // Convert intentional blank lines into &nbsp; paragraphs so they render
     // at the same height as a normal line of text, capped at 2 visible blank lines.
+    // A standard paragraph break is \n\n (2 chars) — that needs 0 spacers.
+    // Only \n\n\n+ (extra blank lines beyond the paragraph break) add spacers.
     processed = processed.replace(/\n{2,}/g, (match) => {
-      const blankLines = Math.min(match.length - 1, 2);
+      const blankLines = Math.min(match.length - 2, 2);
       return "\n\n" + "&nbsp;\n\n".repeat(blankLines);
     });
 
@@ -550,7 +552,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
         return (
           <h1
-            className={`text-2xl text-blue-500 font-bold pt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
+            className={`text-xl text-blue-500 font-bold mt-4 mb-2 font-heading ${getDirectionClasses(headingDirection)}`}
             dir={headingDirection}
             {...props}
           >
@@ -569,7 +571,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
         return (
           <h2
-            className={`text-xl text-blue-500 font-medium pt-1 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
+            className={`text-lg text-blue-500 font-semibold mt-3 mb-1.5 font-heading ${getDirectionClasses(headingDirection)}`}
             dir={headingDirection}
             {...props}
           >
@@ -588,7 +590,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
         return (
           <h3
-            className={`text-lg pt-2 text-blue-500 font-medium pt-1 mb-2 font-heading ${getDirectionClasses(headingDirection)}`}
+            className={`text-base text-blue-500 font-semibold mt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
             dir={headingDirection}
             {...props}
           >
@@ -607,7 +609,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
         return (
           <h4
-            className={`text-lg pt-2 text-blue-500 font-medium mb-1 mt-3 font-heading ${getDirectionClasses(headingDirection)}`}
+            className={`text-sm text-blue-400 font-semibold mt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
             dir={headingDirection}
             {...props}
           >
