@@ -1,5 +1,25 @@
 "use client";
 
+/**
+ * UnifiedAgentContextMenu — Scenario Matrix
+ *
+ * Five live panels, each pinning a different combination of:
+ *   - addedContexts / excludedContexts
+ *   - placementMode ("show" | "hide" | "disable" per placement)
+ *   - isEditable vs read-only
+ *   - contextData shape (content, context, custom keys)
+ *
+ * Use this page to verify behavioral deltas at a glance:
+ *   1. Correct shortcuts show up given a context filter configuration
+ *   2. Hidden placements really disappear, disabled ones are greyed out
+ *   3. A launched shortcut receives the expected applicationScope
+ *      (selection, text_before, text_after, content, context, custom keys)
+ *
+ * If shortcuts don't show up the way you expect, jump to the Diagnostic
+ * Lab at /ssr/context-menu/lab — that page exposes the raw view output,
+ * Redux state, hook output, and a forced refresh of the unified menu.
+ */
+
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 
@@ -7,30 +27,14 @@ import dynamic from "next/dynamic";
 // only when this page actually needs them.
 const UnifiedAgentContextMenu = dynamic(
   () =>
-    import("@/features/context-menu-v2").then((mod) => ({
-      default: mod.UnifiedAgentContextMenu,
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
     })),
   { ssr: false },
 );
 
-// Five-panel smoke test for the context-menu-v2 surface.
-// Each panel exercises a different combination of:
-//   - addedContexts / excludedContexts
-//   - placementMode ("show" | "hide" | "disable" per placement)
-//   - isEditable vs read-only
-//   - contextData shape (content, context, custom keys)
-//
-// Use this page to verify:
-//   1. Correct shortcuts show up given a context filter configuration
-//   2. Hidden placements really disappear, disabled ones are greyed out
-//   3. A launched shortcut receives the expected applicationScope
-//      (selection, text_before, text_after, content, context, custom keys)
-//
-// Open the dev-tools console — fetchUnifiedMenu logs a placement summary
-// when the menu first mounts.
-
-export default function ContextMenuV2DemoPage() {
-  // ── Panel 1: Editable code editor — code-editor + general contexts ─────────
+export default function ContextMenuScenariosPage() {
+  // ── Panel 1: Editable code editor — code-editor + general contexts ──────
   const codeRef = useRef<HTMLTextAreaElement | null>(null);
   const [codeValue, setCodeValue] = useState(
     `// Panel 1 — editable code editor\n// Right-click to see code-editor + general shortcuts.\n// Select any text first to enable selection-based shortcuts.\nfunction greet(name) {\n  return "Hello, " + name;\n}\n`,
@@ -44,18 +48,18 @@ export default function ContextMenuV2DemoPage() {
     setCodeHistoryIndex(trimmed.length - 1);
   };
 
-  // ── Panel 2: Editable content editor — content-editor + general ───────────
+  // ── Panel 2: Editable content editor — content-editor + general ─────────
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const [contentValue, setContentValue] = useState(
     `Panel 2 — editable content editor.\nThis panel exposes content-editor + general shortcuts.\nNotice Content Blocks remain visible because we're editable.`,
   );
 
-  // ── Panel 3: Read-only block — hides content-block + quick-action ─────────
+  // ── Panel 3: Read-only block — hides content-block + quick-action ───────
   const [readonlyValue] = useState(
     `Panel 3 — read-only block.\nContent Blocks and Quick Actions are HIDDEN here.\nOnly the AI-action submenus for general + content-editor remain.`,
   );
 
-  // ── Panel 4: Restrictive filter — code-editor ONLY (no general) ──────────
+  // ── Panel 4: Restrictive filter — code-editor ONLY (no general) ─────────
   const [restrictiveRef, setRestrictiveRef] =
     useState<HTMLTextAreaElement | null>(null);
   const [restrictiveValue, setRestrictiveValue] = useState(
@@ -69,24 +73,21 @@ export default function ContextMenuV2DemoPage() {
   const showcaseRef = useRef<HTMLTextAreaElement | null>(null);
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-      <div className="border-b border-border px-4 py-2">
-        <h1 className="text-lg font-semibold">
-          UnifiedAgentContextMenu — 5-Panel Smoke Test
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Right-click in any panel. Each exercises a different combination of
-          contexts and placement modes. Check the dev console for fetch logs.
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="border-b border-border bg-card/50 px-3 py-1.5 flex-shrink-0">
+        <p className="text-[11px] text-muted-foreground">
+          Right-click in any panel. Each panel pins a different combination of
+          contexts and placement modes. Watch the dev console for fetch logs.
         </p>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="flex-1 overflow-auto p-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {/* ── 1 ── Editable code editor */}
         <section className="flex flex-col gap-2">
           <header>
             <h2 className="text-sm font-semibold">1. Code editor (editable)</h2>
             <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>['code-editor']</code>
+              addedContexts: <code>{`['code-editor']`}</code>
               <br />
               excludedContexts: none
               <br />
@@ -151,9 +152,11 @@ export default function ContextMenuV2DemoPage() {
         {/* ── 2 ── Editable content editor */}
         <section className="flex flex-col gap-2">
           <header>
-            <h2 className="text-sm font-semibold">2. Content editor (editable)</h2>
+            <h2 className="text-sm font-semibold">
+              2. Content editor (editable)
+            </h2>
             <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>['content-editor']</code>
+              addedContexts: <code>{`['content-editor']`}</code>
               <br />
               excludedContexts: none
               <br />
@@ -183,17 +186,15 @@ export default function ContextMenuV2DemoPage() {
           </UnifiedAgentContextMenu>
         </section>
 
-        {/* ── 3 ── Read-only block — hide content-block + quick-action */}
+        {/* ── 3 ── Read-only block */}
         <section className="flex flex-col gap-2">
           <header>
             <h2 className="text-sm font-semibold">3. Read-only paragraph</h2>
             <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>['content-editor']</code>
+              addedContexts: <code>{`['content-editor']`}</code>
               <br />
               placements:{" "}
-              <code>
-                {"{ content-block: 'hide', quick-action: 'hide' }"}
-              </code>
+              <code>{`{ content-block: 'hide', quick-action: 'hide' }`}</code>
             </p>
           </header>
           <UnifiedAgentContextMenu
@@ -219,13 +220,15 @@ export default function ContextMenuV2DemoPage() {
         {/* ── 4 ── Restrictive — code-editor ONLY (general excluded) */}
         <section className="flex flex-col gap-2">
           <header>
-            <h2 className="text-sm font-semibold">4. Restrictive (code only)</h2>
+            <h2 className="text-sm font-semibold">
+              4. Restrictive (code only)
+            </h2>
             <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>['code-editor']</code>
+              addedContexts: <code>{`['code-editor']`}</code>
               <br />
-              excludedContexts: <code>['general']</code>
+              excludedContexts: <code>{`['general']`}</code>
               <br />
-              Only shortcuts explicitly tagged 'code-editor' appear.
+              Only shortcuts explicitly tagged &apos;code-editor&apos; appear.
             </p>
           </header>
           <UnifiedAgentContextMenu
@@ -258,11 +261,7 @@ export default function ContextMenuV2DemoPage() {
             <h2 className="text-sm font-semibold">5. Disable showcase</h2>
             <p className="text-[11px] text-muted-foreground">
               placements:{" "}
-              <code>
-                {
-                  "{ content-block: 'disable', organization-tool: 'disable' }"
-                }
-              </code>
+              <code>{`{ content-block: 'disable', organization-tool: 'disable' }`}</code>
               <br />
               Both submenus render but are greyed out.
             </p>
@@ -292,26 +291,15 @@ export default function ContextMenuV2DemoPage() {
           </UnifiedAgentContextMenu>
         </section>
 
-        {/* ── 6 ── Diagnostic link */}
+        {/* ── 6 ── Expected behavior cheatsheet */}
         <section className="flex flex-col gap-2">
           <header>
-            <h2 className="text-sm font-semibold">Diagnostic</h2>
+            <h2 className="text-sm font-semibold">Expected behavior</h2>
             <p className="text-[11px] text-muted-foreground">
-              If shortcuts don't show up the way you expect, open
-              <br />
-              <a
-                href="/demos/context-menu-v2/debug"
-                className="underline text-primary"
-              >
-                /demos/context-menu-v2/debug
-              </a>{" "}
-              to see the raw view output and Redux state.
+              Use this as a quick visual diff against what you actually see.
             </p>
           </header>
           <div className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-muted/30 p-3 text-[11px] text-muted-foreground leading-relaxed">
-            <p className="font-semibold text-foreground mb-2">
-              Expected behavior per panel (with current seed data)
-            </p>
             <ol className="list-decimal ml-4 space-y-2">
               <li>
                 Code editor — shows shortcuts tagged code-editor OR general.
@@ -324,8 +312,8 @@ export default function ContextMenuV2DemoPage() {
                 Read-only — hides Content Blocks and Quick Actions submenus.
               </li>
               <li>
-                Restrictive — ONLY shows shortcuts tagged code-editor
-                (generic 'general' ones are filtered out).
+                Restrictive — ONLY shows shortcuts tagged code-editor (generic
+                &apos;general&apos; ones are filtered out).
               </li>
               <li>
                 Disable showcase — Content Blocks and Organization Tools

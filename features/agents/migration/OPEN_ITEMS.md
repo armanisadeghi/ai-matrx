@@ -24,8 +24,8 @@ Last updated: 2026-04-21
 
 ## 🧪 Outstanding smoke tests
 
-- [ ] `/demos/context-menu-v2` — 5-panel exercise per the demo's "Expected behavior per panel" list
-- [ ] Launch `Quick Code Explanation` shortcut (id `863b28c4-bb94-400f-8e23-b6cf50486537`) from the demo page; verify variables + context_slots + pre-execution gate + bypass timer all fire correctly
+- [ ] `/ssr/context-menu/scenarios` — 5-panel exercise per the scenario page's "Expected behavior" list
+- [ ] Launch `Quick Code Explanation` shortcut (id `863b28c4-bb94-400f-8e23-b6cf50486537`) from `/ssr/context-menu/lab`; verify variables + context_slots + pre-execution gate + bypass timer all fire correctly
 - [ ] `/chat` — own/system agent picker, history, deep-link resume
 - [ ] `/administration/system-agents` — admin CRUD end-to-end (renamed from `agent-shortcuts` on 2026-04-22)
 - [ ] `/agents/shortcuts` — user CRUD end-to-end

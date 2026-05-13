@@ -268,7 +268,7 @@ Files:
 ### Step 6 — Logic sweep + smoke tests
 
 - Verify `Quick Code Explanation` shortcut (user's test fixture) executes correctly end-to-end — all 5 variables resolved, context passed, gate with custom message + 3s bypass, modal-compact display, no chat
-- Re-run the 5-panel demo at `/demos/context-menu-v2`
+- Re-run the 5-panel scenario matrix at `/ssr/context-menu/scenarios`
 - Update `INVENTORY.md` with the new column set
 - Close out this phase doc with a Change Log entry
 

@@ -28,7 +28,9 @@ export async function GET() {
       contentBlocksSample,
       viewRows,
     ] = await Promise.all([
-      client.from("shortcut_categories").select("*", { count: "exact", head: true }),
+      client
+        .from("shortcut_categories")
+        .select("*", { count: "exact", head: true }),
       client.from("agx_shortcut").select("*", { count: "exact", head: true }),
       client.from("content_blocks").select("*", { count: "exact", head: true }),
       client.from("agx_agent").select("*", { count: "exact", head: true }),
@@ -65,12 +67,15 @@ export async function GET() {
         agx_agent: agxAgentCount.count ?? 0,
       },
       samples: {
-        shortcut_categories:
-          categoriesSample.data ?? { error: categoriesSample.error?.message },
-        agx_shortcut:
-          shortcutsSample.data ?? { error: shortcutsSample.error?.message },
-        content_blocks:
-          contentBlocksSample.data ?? { error: contentBlocksSample.error?.message },
+        shortcut_categories: categoriesSample.data ?? {
+          error: categoriesSample.error?.message,
+        },
+        agx_shortcut: shortcutsSample.data ?? {
+          error: shortcutsSample.error?.message,
+        },
+        content_blocks: contentBlocksSample.data ?? {
+          error: contentBlocksSample.error?.message,
+        },
       },
       view: {
         row_count: Array.isArray(viewRows.data) ? viewRows.data.length : 0,
@@ -86,7 +91,7 @@ export async function GET() {
         }
         if ((shortcutsCount.count ?? 0) === 0) {
           notes.push(
-            "agx_shortcut is EMPTY — every AI-action submenu will be disabled (no items). This is the root cause of 'disabled submenus' in /demos/context-menu-v2. Seed shortcuts via /administration/system-agents/shortcuts or create them programmatically.",
+            "agx_shortcut is EMPTY — every AI-action submenu will be disabled (no items). This is the root cause of 'disabled submenus' in /ssr/context-menu. Seed shortcuts via /administration/system-agents/shortcuts or create them programmatically.",
           );
         }
         if ((contentBlocksCount.count ?? 0) === 0) {
@@ -109,7 +114,9 @@ export async function GET() {
           );
         }
         if (notes.length === 0) {
-          notes.push("Data looks healthy. If menu still renders disabled, check RLS visibility for this user.");
+          notes.push(
+            "Data looks healthy. If menu still renders disabled, check RLS visibility for this user.",
+          );
         }
         return notes;
       })(),

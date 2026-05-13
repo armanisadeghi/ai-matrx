@@ -1101,8 +1101,8 @@ function extractScopeFromUnifiedItem(item: UnifiedMenuScopeFields): {
 // fetchUnifiedMenu — single-flight, scope-keyed.
 //
 // Several mounts of UnifiedAgentContextMenu may render on the same page
-// (the /demos/context-menu-v2 page has five). They each call this thunk on
-// mount. That used to produce N parallel HTTP requests because:
+// (the /ssr/context-menu/scenarios page has five). They each call this
+// thunk on mount. That used to produce N parallel HTTP requests because:
 //   (1) Redux's `status === "loading"` doesn't dedup between the moment the
 //       first dispatch fires and the moment the in-flight flag is committed
 //       (both mounts see status=idle and fire).
