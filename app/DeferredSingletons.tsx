@@ -185,6 +185,30 @@ export default function DeferredSingletons() {
     dispatch(fetchFullContext() as any);
   });
 
+  // Register the blob-cache Service Worker — Layer 2½ of the 3-tier byte
+  // cache. Intercepts cloud-files byte URLs (and registered CDN /
+  // share-link URLs) and serves them from IndexedDB. Disabled by default
+  // in dev (set localStorage.matrx_dev_sw=1 to opt-in for local testing).
+  // See features/files/cache/service-worker/src/sw.ts for the SW body.
+  useIdleTask("register-blob-cache-sw", 5, async () => {
+    if (!user?.id) return;
+    const [{ registerBlobCacheServiceWorker }, { resolveBaseUrl }] =
+      await Promise.all([
+        import("@/features/files/cache/register-service-worker"),
+        import("@/lib/python-client"),
+      ]);
+    try {
+      const backendUrl = resolveBaseUrl();
+      void registerBlobCacheServiceWorker({
+        backendUrl,
+        userId: user.id,
+      });
+    } catch {
+      // No backend URL configured (rare boot order) — skip silently;
+      // the cache still works in-memory + IDB tiers.
+    }
+  });
+
   const ready = useIdleReady();
 
   if (!ready) return null;

@@ -45,6 +45,10 @@ import {
   type BlobCacheEntry as IdbBlobCacheEntry,
 } from "@/features/files/cache/idb-store";
 import { shouldPersistInIdb } from "@/features/files/cache/policy";
+import {
+  postBlobCacheClearUser,
+  postBlobCacheInvalidate,
+} from "@/features/files/cache/register-service-worker";
 
 let identityUserId: string | null = null;
 
@@ -224,10 +228,13 @@ export function invalidate(fileId: string): void {
     totalBytes -= entry.bytes;
     cache.delete(fileId);
   }
-  // Fire-and-forget: clear every version of this file in IDB.
+  // Fire-and-forget: clear every version of this file in IDB AND tell
+  // the Service Worker (if registered) to drop its mirror copy of the
+  // same fileId. Three tiers, one invalidate() call.
   if (identityUserId) {
     void deleteEntriesForFile(identityUserId, fileId);
   }
+  void postBlobCacheInvalidate(fileId);
 }
 
 /**
@@ -243,6 +250,7 @@ export function invalidateAll(userId?: string): void {
   totalBytes = 0;
   if (userId) {
     void clearForUser(userId);
+    void postBlobCacheClearUser(userId);
   }
 }
 
