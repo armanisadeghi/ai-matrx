@@ -26,7 +26,7 @@
  *   (see ImageAssetUploader for the full list)
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
     AlertCircle,
@@ -115,6 +115,27 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
     const [url, setUrl] = useState('');
     const [fetching, setFetching] = useState(false);
     const [libraryBusy, setLibraryBusy] = useState(false);
+    const [pasteFlash, setPasteFlash] = useState(false);
+
+    useEffect(() => {
+        if (disabled || typeof window === 'undefined') return;
+        const handler = (e: ClipboardEvent) => {
+            if (!e.clipboardData?.items) return;
+            for (const item of Array.from(e.clipboardData.items)) {
+                if (!item.type.startsWith('image/')) continue;
+                const blob = item.getAsFile();
+                if (!blob) continue;
+                e.preventDefault();
+                setPasteFlash(true);
+                setTimeout(() => setPasteFlash(false), 400);
+                const ext = blob.type.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png';
+                onFile(new File([blob], `pasted-${Date.now()}.${ext}`, { type: blob.type }));
+                return;
+            }
+        };
+        window.addEventListener('paste', handler);
+        return () => window.removeEventListener('paste', handler);
+    }, [disabled, onFile]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.avif'] },
@@ -167,7 +188,7 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
                 {...getRootProps()}
                 className={cn(
                     'flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed transition-colors cursor-pointer',
-                    isDragActive
+                    isDragActive || pasteFlash
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50 hover:bg-muted/30',
                     (disabled || fetching || libraryBusy) && 'opacity-60 pointer-events-none',
@@ -179,7 +200,9 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
                     <p className="text-sm font-medium text-foreground">
                         {isDragActive ? 'Drop to select' : 'Drop an image or click to upload'}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG, WebP, GIF, HEIC</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        JPG, PNG, WebP, GIF, HEIC · Paste with Ctrl/⌘V
+                    </p>
                 </div>
             </div>
 
