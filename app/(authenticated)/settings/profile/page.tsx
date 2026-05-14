@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { User, Check, Clock, Upload } from "lucide-react";
+import { setUserMetadata } from "@/lib/redux/slices/userProfileSlice";
+import { User, Check, Clock } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,6 +18,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { FaGoogle, FaGithub } from "react-icons/fa";
+import { toast } from "sonner";
+import { ImageCropUploader } from "@/components/official/ImageCropUploader";
+import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
 
 // Map of provider names to their icons and colors
 const providerStyles: Record<
@@ -48,7 +52,28 @@ const defaultProviderStyle = {
 
 export default function ProfilePage() {
   const user = useAppSelector(selectUser);
+  const dispatch = useAppDispatch();
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPhoto, setIsChangingPhoto] = useState(false);
+
+  const currentPhotoUrl = user.userMetadata.avatarUrl ?? user.userMetadata.picture ?? null;
+
+  const handlePhotoComplete = async (result: ImageUploaderResult | null) => {
+    const url = result?.primary_url ?? null;
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_url: url, picture: url }),
+      });
+      if (!res.ok) throw new Error("Failed to save photo");
+      dispatch(setUserMetadata({ avatarUrl: url, picture: url }));
+      toast.success(url ? "Profile photo updated" : "Profile photo removed");
+      setIsChangingPhoto(false);
+    } catch {
+      toast.error("Could not save profile photo — please try again");
+    }
+  };
 
   // Helper function to get provider style
   const getProviderStyle = (provider: string) => {
@@ -61,26 +86,51 @@ export default function ProfilePage() {
       <Card className="mb-4 md:mb-6">
         <CardContent className="pt-4 md:pt-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
-            <div className="relative group mx-auto md:mx-0">
-              <div className="relative h-20 w-20 md:h-24 md:w-24 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-600">
-                {user.userMetadata.picture ? (
+            <div className="flex flex-col items-center gap-2 mx-auto md:mx-0">
+              <button
+                type="button"
+                onClick={() => setIsChangingPhoto((v) => !v)}
+                className="relative group h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-600 bg-gray-200 dark:bg-zinc-700 flex items-center justify-center shrink-0"
+                title="Change profile photo"
+              >
+                {currentPhotoUrl ? (
                   <Image
-                    src={user.userMetadata.picture}
+                    src={currentPhotoUrl}
                     alt="Profile"
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 80px, 96px"
                   />
                 ) : (
-                  <User
-                    size={40}
-                    className="text-gray-400 dark:text-gray-500"
-                  />
+                  <User size={40} className="text-gray-400 dark:text-gray-500" />
                 )}
-              </div>
-              <button className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Upload size={20} className="text-white" />
+                <span className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] font-medium text-white leading-tight text-center px-1">
+                    {isChangingPhoto ? "Cancel" : "Change"}
+                  </span>
+                </span>
               </button>
+
+              {isChangingPhoto && (
+                <div className="w-full max-w-xs mt-1">
+                  <ImageCropUploader
+                    preset="avatar"
+                    currentUrl={currentPhotoUrl}
+                    label="Profile photo"
+                    defaultAspect={1}
+                    visibility="public"
+                    onComplete={(result) => void handlePhotoComplete(result)}
+                    onError={(msg) => toast.error(msg)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsChangingPhoto(false)}
+                    className="mt-1 text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
