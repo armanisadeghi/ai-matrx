@@ -355,7 +355,7 @@ function ApplyTemplateDialog({
     if (step === "confirm") {
       setLoadingKeys(true);
       contextService
-        .fetchExistingKeys(selectedScope.scopeType, selectedScope.scopeId)
+        .fetchExistingKeys(selectedScope.scopeTypeId)
         .then((keys) => setExistingKeys(keys))
         .finally(() => setLoadingKeys(false));
     }

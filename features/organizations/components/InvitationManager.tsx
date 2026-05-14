@@ -251,7 +251,7 @@ export function InvitationManager({
                     />
                   </div>
                 )}
-                <ScrollArea className="max-h-36 rounded-md border bg-background">
+                <ScrollArea className="h-36 rounded-md border bg-background">
                   <div className="p-1">
                     {filteredConnections.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-2 text-center">
