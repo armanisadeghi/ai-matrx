@@ -146,4 +146,26 @@ export const defaultUserPreferences: UserPreferences = {
   transcription: {
     customCleanerAgents: [],
   },
+  agentConnections: {
+    notifyOnConnect: true,
+    autoReconnect: true,
+    confirmDestructive: true,
+    defaultScope: "user",
+    densityMode: "comfortable",
+    sidebarStyle: "icons",
+    autoSaveDelayMs: 1000,
+    maxConcurrentAgents: 10,
+    workspaceName: "Agent Connections",
+    welcomeMessage: "Welcome to Agent Connections",
+    accentColor: "#000000",
+    enabledRegistries: [],
+    quickToggleShortcut: {
+      key: "ctrl+k",
+      display: "Quick Toggle",
+      ctrl: true,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+  },
 };

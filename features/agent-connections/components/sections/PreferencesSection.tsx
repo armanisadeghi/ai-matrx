@@ -115,7 +115,8 @@ export function PreferencesSection() {
     );
 
   return (
-    <div className="max-w-3xl mx-auto py-6">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 overflow-y-auto scrollbar-thin pt-3">
       <SettingsSubHeader
         title="Preferences"
         description="Personal preferences for how Agent Connections behaves across your workspaces."
@@ -257,6 +258,7 @@ export function PreferencesSection() {
           last
         />
       </SettingsSection>
+      </div>
     </div>
   );
 }

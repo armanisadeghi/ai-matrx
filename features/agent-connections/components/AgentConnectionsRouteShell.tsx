@@ -61,7 +61,7 @@ export function AgentConnectionsRouteShell({
           </RegisteredPanel>
           <Handle hideWhenCollapsed={["sidebar"]} />
           <Panel id="main" minSize="40%">
-            <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
               {children}
             </div>
           </Panel>

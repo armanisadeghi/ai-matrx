@@ -42,7 +42,9 @@ export interface OrgResourceListProps {
   resourceType: ResourceType;
   tableName: string;
   selectColumns: string;
-  ownedQuery: ((orgId: string) => Promise<Array<Record<string, unknown>>>) | null;
+  ownedQuery:
+    | ((orgId: string) => Promise<Array<Record<string, unknown>>>)
+    | null;
   mapRow: (
     row: Record<string, unknown>,
     source: "owned" | "shared",
@@ -78,9 +80,7 @@ export function OrgResourceList({
         setError(null);
 
         const ownedRows = ownedQuery ? await ownedQuery(orgId) : [];
-        const ownedIds = new Set(
-          ownedRows.map((r) => String(r.id ?? "")),
-        );
+        const ownedIds = new Set(ownedRows.map((r) => String(r.id ?? "")));
 
         const sharedRefs = await listOrgSharedResources(orgId, resourceType);
         const sharedIds = sharedRefs
@@ -90,10 +90,11 @@ export function OrgResourceList({
         let sharedRows: Array<Record<string, unknown>> = [];
         if (sharedIds.length > 0) {
           const res = await supabase
-            .from(tableName)
+            .from(tableName as never)
             .select(selectColumns)
             .in("id", sharedIds);
-          sharedRows = (res.data ?? []) as Array<Record<string, unknown>>;
+          sharedRows =
+            (res.data as unknown as Array<Record<string, unknown>>) ?? [];
         }
 
         if (cancelled) return;

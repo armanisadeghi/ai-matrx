@@ -45,12 +45,13 @@ export function OverviewSection() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-6 max-w-5xl mx-auto w-full">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3 flex flex-col gap-4">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-foreground">
+        <h1 className="text-lg font-semibold text-foreground">
           Agent Connections
         </h1>
-        <p className="text-sm text-muted-foreground max-w-3xl">
+        <p className="text-sm text-muted-foreground">
           Tailor how agents work in your projects. Configure workspace
           customizations for the entire team, or create personal ones that
           follow you across projects.
@@ -59,7 +60,7 @@ export function OverviewSection() {
 
       <section
         className={cn(
-          "rounded-xl border border-border bg-muted/20 p-5 flex flex-col gap-3",
+          "rounded-lg border border-border bg-muted/20 p-4 flex flex-col gap-2.5",
         )}
       >
         <div className="flex items-center gap-2">
@@ -100,7 +101,7 @@ export function OverviewSection() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
         {OVERVIEW_CARDS.map((card) => {
           const Icon = card.icon;
           const actionLabel = card.action === "new" ? "New..." : "Browse...";
@@ -111,8 +112,8 @@ export function OverviewSection() {
               type="button"
               onClick={() => navigate(card.value)}
               className={cn(
-                "group flex flex-col gap-3 rounded-xl border border-border",
-                "bg-background p-5 text-left transition-colors",
+                "group flex flex-col gap-2.5 rounded-lg border border-border",
+                "bg-background p-4 text-left transition-colors",
                 "hover:bg-muted/40 hover:border-border/80",
               )}
             >
@@ -141,6 +142,7 @@ export function OverviewSection() {
           );
         })}
       </section>
+      </div>
     </div>
   );
 }

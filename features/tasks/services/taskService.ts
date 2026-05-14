@@ -284,7 +284,7 @@ export async function deleteTaskAttachment(
     // the slice; this avoids needing to wire a thunk dispatch through the
     // store singleton in service code.
     try {
-      await FilesApi.Files.deleteFile(fileId, { hardDelete: false });
+      await fileHandler.remove(fileId, { hard: false });
     } catch (err) {
       console.error("cloud-files delete failed:", err);
     }
