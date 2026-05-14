@@ -46,7 +46,6 @@ import {
     InlineMediaRef,
     openFilePicker,
     getAssetForFile,
-    addAssetVariants,
 } from '@/features/files';
 import { extractErrorMessage } from '@/utils/errors';
 import { Button } from '@/components/ui/button';
@@ -380,13 +379,21 @@ export function ImageCropUploader({
     const handleCropConfirm = useCallback(async (cropped: File) => {
         setStage('uploading');
         try {
+            // upload() with preset routes through POST /assets which already
+            // generates all preset variants server-side — addAssetVariants is
+            // a redundant round-trip and its response can have primary_url:null
+            // if the backend processes variants async, which would clear the photo.
             const normalized = await upload(
                 { kind: 'file', file: cropped },
                 { preset, folderPath: folder, visibility },
             );
             if (!normalized.asset) throw new Error('No asset returned');
-            const { data: ensured } = await addAssetVariants(normalized.asset.file_id, { preset });
-            onComplete?.(assetToResult(ensured));
+            const result = assetToResult(normalized.asset);
+            onComplete?.({
+                ...result,
+                primary_url: result.primary_url ?? normalized.url ?? null,
+                image_url: result.image_url ?? normalized.url ?? null,
+            });
             setPendingFile(null);
             setStage('pick');
             setShowPicker(false);
