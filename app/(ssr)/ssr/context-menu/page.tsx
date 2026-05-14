@@ -197,9 +197,7 @@ export default function ContextMenuHubPage() {
           <ul className="text-[12px] text-muted-foreground space-y-1 list-disc ml-5">
             <li>
               Personal shortcuts:{" "}
-              <PageLink href="/agents/shortcuts/shortcuts">
-                /agents/shortcuts/shortcuts
-              </PageLink>
+              <PageLink href="/agents/shortcuts">/agents/shortcuts</PageLink>
             </li>
             <li>
               Organization shortcuts:{" "}

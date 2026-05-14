@@ -263,19 +263,21 @@ export async function getOrganization(
 export async function getOrganizationBySlug(
   slug: string,
 ): Promise<Organization | null> {
-  try {
-    const { data, error } = await supabase
-      .from("organizations")
-      .select("*")
-      .eq("slug", slug)
-      .single();
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
 
-    if (error) throw pgErrorToError(error);
-    return transformOrganizationFromDb(data);
-  } catch (error) {
-    console.error("Error fetching organization by slug:", error);
+  if (error) {
+    console.error(
+      "Error fetching organization by slug:",
+      pgErrorToError(error),
+    );
     return null;
   }
+  if (!data) return null;
+  return transformOrganizationFromDb(data);
 }
 
 const UUID_REGEX =

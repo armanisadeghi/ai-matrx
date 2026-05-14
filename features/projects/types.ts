@@ -90,6 +90,21 @@ export interface InviteProjectMemberOptions {
 }
 
 // ============================================================================
+// Project References
+// ============================================================================
+
+export interface ProjectReference {
+  schemaName: string;
+  tableName: string;
+  columnName: string;
+  rowCount: number;
+}
+
+export interface ProjectReferenceDetailed extends ProjectReference {
+  sampleIds: string[] | null;
+}
+
+// ============================================================================
 // Result Types
 // ============================================================================
 

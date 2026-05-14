@@ -25,6 +25,7 @@ import {
   ProjectInvitation,
   ProjectInvitationWithProject,
   ProjectRole,
+  ProjectReference,
   CreateProjectOptions,
   UpdateProjectOptions,
   InviteProjectMemberOptions,
@@ -46,6 +47,7 @@ import {
   getUserProjectInvitations,
   acceptProjectInvitation,
   isProjectSlugAvailable,
+  getProjectReferences,
 } from "./service";
 
 // ============================================================================
@@ -566,6 +568,47 @@ export function useUserProjectInvitations() {
   );
 
   return { invitations, loading, error, accept, refresh: fetchInvitations };
+}
+
+// ============================================================================
+// Utility Hooks
+// ============================================================================
+
+// ============================================================================
+// Project References Hook
+// ============================================================================
+
+export function useProjectReferences(projectId: string | undefined) {
+  const [references, setReferences] = useState<ProjectReference[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchReferences = useCallback(async () => {
+    if (!projectId) {
+      setReferences([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getProjectReferences(projectId);
+      setReferences(data);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch project references";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchReferences();
+  }, [fetchReferences]);
+
+  return { references, loading, error, refresh: fetchReferences };
 }
 
 // ============================================================================

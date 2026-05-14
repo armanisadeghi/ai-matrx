@@ -38,7 +38,10 @@ export function OrgSidebar() {
   const personalOrg = organizations.find((org) => org.isPersonal);
   const teamOrgs = organizations.filter((org) => !org.isPersonal);
 
-  // activeOrgId may be a slug or UUID; OrgNavItem always uses org.id for href
+  // activeOrgId may be a slug or UUID — match against both
+  const isOrgActive = (org: OrganizationWithRole) =>
+    org.id === activeOrgId || (org.slug != null && org.slug === activeOrgId);
+
   const settingsBase = `/organizations/${activeOrgId}/settings`;
   const isSettingsActive = pathname === settingsBase;
 
@@ -49,10 +52,7 @@ export function OrgSidebar() {
           <div className="px-2 mb-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
             Personal
           </div>
-          <OrgNavItem
-            org={personalOrg}
-            isActive={personalOrg.id === activeOrgId}
-          />
+          <OrgNavItem org={personalOrg} isActive={isOrgActive(personalOrg)} />
         </div>
       )}
 
@@ -63,11 +63,7 @@ export function OrgSidebar() {
           </div>
           <div className="space-y-0.5">
             {teamOrgs.map((org) => (
-              <OrgNavItem
-                key={org.id}
-                org={org}
-                isActive={org.id === activeOrgId}
-              />
+              <OrgNavItem key={org.id} org={org} isActive={isOrgActive(org)} />
             ))}
           </div>
         </div>

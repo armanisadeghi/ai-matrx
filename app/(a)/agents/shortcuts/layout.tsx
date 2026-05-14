@@ -1,12 +1,10 @@
 import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { AgentShortcutsLayoutClient } from "./AgentShortcutsLayoutClient";
 
 export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Shortcuts",
   title: "Agents",
-  description:
-    "Manage your personal agent shortcuts, categories, and content blocks",
+  description: "Manage your personal agent shortcuts",
   letter: "MS",
 });
 
@@ -15,5 +13,5 @@ export default function UserAgentShortcutsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AgentShortcutsLayoutClient>{children}</AgentShortcutsLayoutClient>;
+  return <>{children}</>;
 }

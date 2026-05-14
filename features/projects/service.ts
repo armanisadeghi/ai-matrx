@@ -29,6 +29,8 @@ import {
   ProjectResult,
   ProjectInvitationResult,
   OperationResult,
+  ProjectReference,
+  ProjectReferenceDetailed,
   validateProjectName,
   validateProjectSlug,
   validateEmail,
@@ -801,6 +803,63 @@ export async function getUserProjectInvitations(): Promise<
 
 // ============================================================================
 // Helper Functions
+// ============================================================================
+
+// ============================================================================
+// Project References
+// ============================================================================
+
+interface RawProjectReference {
+  schema_name: string;
+  table_name: string;
+  column_name: string;
+  row_count: number;
+}
+
+interface RawProjectReferenceDetailed extends RawProjectReference {
+  sample_ids: string[] | null;
+}
+
+export async function getProjectReferences(
+  projectId: string,
+): Promise<ProjectReference[]> {
+  const { data, error } = await supabase.rpc("get_project_references", {
+    p_project_id: projectId,
+  });
+  if (error) throw pgErrorToError(error);
+  if (!data) return [];
+  return (data as RawProjectReference[]).map((row) => ({
+    schemaName: row.schema_name,
+    tableName: row.table_name,
+    columnName: row.column_name,
+    rowCount: Number(row.row_count),
+  }));
+}
+
+export async function getProjectReferencesDetailed(
+  projectId: string,
+  sampleLimit = 5,
+): Promise<ProjectReferenceDetailed[]> {
+  const { data, error } = await supabase.rpc(
+    "get_project_references_detailed",
+    {
+      p_project_id: projectId,
+      p_sample_limit: sampleLimit,
+    },
+  );
+  if (error) throw pgErrorToError(error);
+  if (!data) return [];
+  return (data as RawProjectReferenceDetailed[]).map((row) => ({
+    schemaName: row.schema_name,
+    tableName: row.table_name,
+    columnName: row.column_name,
+    rowCount: Number(row.row_count),
+    sampleIds: row.sample_ids ?? null,
+  }));
+}
+
+// ============================================================================
+// Internal Helpers
 // ============================================================================
 
 function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {

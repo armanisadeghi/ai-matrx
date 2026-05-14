@@ -81,6 +81,13 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/agents/templates",
         iconName: "LayoutTemplate",
       },
+      { label: "Shortcuts", href: "/agents/shortcuts", iconName: "Zap" },
+      { label: "Categories", href: "/agents/categories", iconName: "Folder" },
+      {
+        label: "Content Blocks",
+        href: "/agents/content-blocks",
+        iconName: "FileText",
+      },
       { label: "New Agent", href: "/agents/new", iconName: "Plus" },
     ],
   },
