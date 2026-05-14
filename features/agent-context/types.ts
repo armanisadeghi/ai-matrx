@@ -1,5 +1,7 @@
 // Context Management — Type Definitions
-// Source of truth: Supabase schema for context_items, context_item_values, context_templates, context_access_log
+// Source of truth: Supabase schema for ctx_context_items, ctx_context_item_values, ctx_templates, ctx_context_access_log
+
+import type { Database } from "@/types/database.types";
 
 export type ContextItemStatus =
   | "idea"
@@ -57,105 +59,33 @@ export type ContextScope = {
   name: string;
 };
 
-export type ContextItemManifest = {
-  id: string;
-  key: string;
-  display_name: string;
-  description: string;
-  category: string | null;
-  status: ContextItemStatus;
-  value_type: ContextValueType;
-  fetch_hint: ContextFetchHint;
-  sensitivity: ContextSensitivity;
-  tags: string[];
-  user_id: string | null;
-  organization_id: string | null;
-  project_id: string | null;
-  task_id: string | null;
-  depends_on: string[];
-  char_count: number | null;
-  data_point_count: number | null;
-  has_nested_objects: boolean;
-  json_keys?: string[];
-  value_source_type: ContextSourceType | null;
-  value_last_updated: string | null;
-  last_verified_at: string | null;
-  next_review_at: string | null;
-  is_overdue_review: boolean;
-};
+// DB Row is canonical — ContextItem = full ctx_context_items row + optional join fields
+export type ContextItem =
+  Database["public"]["Tables"]["ctx_context_items"]["Row"] & {
+    // From current ctx_context_item_values row (when manifest merge runs)
+    current_text_value?: string | null;
+    value_last_updated?: string | null;
+    char_count?: number | null;
+    data_point_count?: number | null;
+    has_nested_objects?: boolean;
+    json_keys?: string[];
+  };
 
-export type ContextItem = ContextItemManifest & {
-  status_note: string | null;
-  status_updated_at: string;
-  status_updated_by: string | null;
-  current_value_id: string | null;
-  source_type: ContextSourceType;
-  review_interval_days: number | null;
-  template_item_key: string | null;
-  is_active: boolean;
-  owner_user_id: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
+// Manifest is the same shape; kept as alias for semantic clarity
+export type ContextItemManifest = ContextItem;
 
-export type ContextItemValue = {
-  id: string;
-  context_item_id: string;
-  version: number;
-  is_current: boolean;
-  value_text: string | null;
-  value_number: number | null;
-  value_boolean: boolean | null;
-  value_json: Record<string, unknown> | unknown[] | null;
-  value_document_url: string | null;
-  value_document_size_bytes: number | null;
-  value_reference_id: string | null;
-  value_reference_type: string | null;
-  char_count: number;
-  data_point_count: number | null;
-  has_nested_objects: boolean;
-  source_type: ContextSourceType;
-  authored_by: string | null;
-  change_summary: string | null;
-  created_at: string;
-};
+export type ContextItemValue =
+  Database["public"]["Tables"]["ctx_context_item_values"]["Row"];
 
-export type ContextTemplate = {
-  id: string;
-  template_name: string;
-  template_label: string;
-  industry_category: string;
-  display_order: number;
-  item_key: string;
-  item_display_name: string;
-  item_description: string;
-  default_scope_level: ContextScopeLevel;
-  default_value_type: ContextValueType;
-  default_fetch_hint: ContextFetchHint;
-  default_sensitivity: ContextSensitivity;
-  suggested_review_interval_days: number | null;
-  fill_guidance: string | null;
-  example_value: unknown | null;
-  is_required: boolean;
-  applies_to_text: string | null;
-};
+export type ContextTemplate =
+  Database["public"]["Tables"]["ctx_templates"]["Row"];
 
-export type ContextAccessLogEntry = {
-  id: string;
-  context_item_id: string;
-  value_id: string | null;
-  value_version: number | null;
-  user_id: string | null;
-  agent_id: string | null;
-  request_id: string | null;
-  app_source: string | null;
-  char_count_served: number | null;
-  fetch_reason: string | null;
-  was_useful: boolean | null;
-  latency_ms: number | null;
-  accessed_at: string;
-};
+// Template context item (items defined within a template)
+export type ContextTemplateItem =
+  Database["public"]["Tables"]["ctx_template_context_items"]["Row"];
+
+export type ContextAccessLogEntry =
+  Database["public"]["Tables"]["ctx_context_access_log"]["Row"];
 
 export type ContextAccessSummary = {
   context_item_id: string;
@@ -177,10 +107,10 @@ export type ContextItemFormData = {
   fetch_hint: ContextFetchHint;
   sensitivity: ContextSensitivity;
   source_type: ContextSourceType;
+  scope_type_id: string;
   review_interval_days: number | null;
   last_verified_at: string | null;
   depends_on: string[];
-  owner_user_id: string | null;
 };
 
 export type ContextValueFormData = {

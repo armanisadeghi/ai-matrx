@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** 2026-04-25
+**Last updated:** 2026-05-13
 
 ---
 
@@ -30,6 +30,9 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `useSettingPersistence(path)` — returns `"synced" | "local-only" | "session"` for surfacing badges.
 - `useSettingsSearch(query, { isAdmin })` — ranked hits (label > keyword > description).
 - `usePreferencesModal()` — Phase 8 shim, same API as the deleted legacy hook but dispatches into overlaySlice.
+- `useSettingsPresentation()` — returns `{ presentation: "route" | "window" | "drawer", closeShell?, setActiveTabId? }`. Defaults to `"route"` outside a provider, so route pages "just work."
+- `useSettingsNavigate()` — returns `(href, event?, options?)`. Smart navigation that closes the shell first when called from inside the window/drawer; in route mode it's a plain `router.push`. Cmd/Ctrl/Shift/middle-click always opens a new tab and leaves the shell open.
+- `useSettingsTabNavigate()` — switches the active settings tab in-place inside the shell; falls back to `/settings/preferences?tab=…` (or a custom href) on a route.
 
 **Public API** — `@/features/settings`
 - `SettingsShell`, `SettingsShellOverlay`, `SettingsTabHost`
@@ -37,6 +40,11 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `settingsRegistry`, `getVisibleTabs`, `getTabTree`, `getTabTreeNodes`, `findTab`
 - `parseSettingsPath`, `getSliceBinding`, `sliceBindings`
 - Types: `SettingsPath`, `SettingsPersistence`, `SettingsTabDef`, `ResolvedSettingsTab`, `SettingsSearchHit`, `SliceBinding`
+
+**Presentation-aware nav** — `@/features/settings/components/SettingsPresentationContext` (imported directly; not re-exported through the barrel because barrels are being eliminated)
+- `SettingsPresentationProvider` (provider)
+- `useSettingsPresentation`, `useSettingsNavigate`, `useSettingsTabNavigate`
+- Types: `SettingsPresentation`, `SettingsPresentationContextValue`, `SettingsNavigateOptions`
 
 **Primitives** — `@/components/official/settings`
 - Form: `SettingsSwitch`, `SettingsSelect`, `SettingsSlider`, `SettingsNumberInput`, `SettingsTextInput`, `SettingsTextarea`, `SettingsRadioGroup`, `SettingsCheckbox`, `SettingsSegmented`, `SettingsColorPicker`, `SettingsMultiSelect`, `SettingsButton`, `SettingsLink`, `SettingsKeybinding`, `SettingsModelPicker`
@@ -121,6 +129,7 @@ Path:
 - **Tabs never import Redux.** They can call `useSelector` only for *read-only derived state that isn't a preference* (e.g. in `WindowsTab` where open-window counts come directly from `windowManager.windows`). For anything writable, `useSetting` is the only path.
 - **Tabs never import shadcn.** All form controls come from `@/components/official/settings`. The one documented exception is `AiModelsTab`, which lazy-wraps the legacy `AiModelsPreferences` until a `SettingsModelList` primitive exists.
 - **`useSetting` throws at init when the slice isn't bound.** Treat that as a "fix your slice binding" signal, not a caller bug. Add to `slice-bindings.ts`.
+- **Any in-shell component that pushes a route MUST go through `useSettingsNavigate()` (or `useSettingsTabNavigate()` for tab switches).** Calling `router.push("/somewhere")` directly inside a tab silently dismisses the settings window and yanks the user out of the surface — the shell isn't aware the route changed, the overlay just blinks out and the new page renders bare. Cmd/Ctrl/middle-click "open in new tab" must keep working; the hook handles it. `SettingsLink`, `OrganizationCard`, and `UserContentTemplateManager` are the reference consumers. The Boy-scout rule applies: if you encounter a stray `router.push` inside a settings-mounted component while working in a file, route it through the hook in the same change.
 - **Writing through `useSetting` for `windowManager` requires an action-only key.** `toggleHidden`, `restoreAll` — no `read` roundtrip. For the full `minimizeAll(payload)` write you need viewport dims, so call `useAppDispatch()` directly with `minimizeAll(...)` (see `WindowsTab`).
 - **`persistence: "local-only"` and `persistence: "session"` are flags, not final states.** They document which slices still need a sync policy.
 - **The legacy `userPreferences` modal overlay id still resolves to the new shell.** Kept so nothing downstream has to change. Remove the modal registry entry once every caller has migrated to `userPreferencesWindow`.
@@ -162,6 +171,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-05-13` — **Presentation-aware navigation.** Added `SettingsPresentationContext` + `useSettingsPresentation` + `useSettingsNavigate` + `useSettingsTabNavigate` in `features/settings/components/SettingsPresentationContext.tsx`. `SettingsShell` now wraps its tree with `<SettingsPresentationProvider presentation="window"|"drawer">` so descendants can do the right thing instead of unconditionally `router.push`-ing and silently dismissing the shell. Reference consumers updated: `components/official/settings/primitives/SettingsLink` (internal hrefs route through the hook; external links and Cmd/Ctrl/middle-click "open in new tab" still work), `features/organizations/components/OrganizationCard` (was the worst offender — every card click pushed straight to `/organizations/{id}/settings` and dismissed the window), `features/content-templates/components/UserContentTemplateManager` (four `router.push` calls to `/settings/content-templates/…`). New invariant added in this doc.
 - `2026-04-25` — Internal imports no longer use `features/settings/index.ts`; consumers use `hooks/useSetting`, `hooks/useSettingsSearch`, `registry`, `components/SettingsShell`, etc. Barrel file kept for now.
 - `2026-04-23` — Phase 1–9 initial migration shipped.
   - 20 primitives + 3 tree components under `@/components/official/settings`.

@@ -9,6 +9,18 @@ import type {
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 
+/**
+ * Surface name for this feature in the Surface Values system. Matches the
+ * `matrx-user/content-extractor` row in `public.ui_surface` and the
+ * `contentExtractorManifest` in
+ * `features/tool-registry/surfaces/manifests/content-extractor.manifest.ts`.
+ *
+ * Used by the variable-mapping editor to pull the canonical list of values
+ * an agent can be wired to. Also handed to `launchAgentExecution` as
+ * `runtime.surfaceName` so `agx_agent_surface` bindings can apply.
+ */
+export const CONTENT_EXTRACTOR_SURFACE_NAME = "matrx-user/content-extractor";
+
 /** Hard cap — above this we won't even let the user try.
  *  Above ~50 pages per call the medical/legal use case shows quality drops
  *  and per-page provenance starts dissolving. */
@@ -21,8 +33,7 @@ export const MIN_CHUNK_SIZE = 1;
 export const MAX_CONCURRENT_CAP = 20;
 
 /** Marker placed between pages inside a chunk's selection text. */
-export const PAGE_MARKER = (pageNumber: number) =>
-  `--- Page ${pageNumber} ---`;
+export const PAGE_MARKER = (pageNumber: number) => `--- Page ${pageNumber} ---`;
 
 /** Realtime channel name per file. */
 export const realtimeChannelName = (fileId: string) =>

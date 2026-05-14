@@ -23,7 +23,9 @@ import {
   Layers,
   MousePointerClick,
   Repeat,
+  Plus,
 } from "lucide-react";
+import Link from "next/link";
 import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
 import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -33,6 +35,7 @@ import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
+import { createPdfWidgetsScope } from "@/features/tool-registry/surfaces/manifests/pdf-widgets.manifest";
 
 export type SectionKey =
   | "widgets"
@@ -148,8 +151,8 @@ export function PdfStudioInspector({
               />
             ) : (
               <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-snug">
-                Chunked extractions need a <code>cld_file</code> source.
-                This document doesn&apos;t have one linked.
+                Chunked extractions need a <code>cld_file</code> source. This
+                document doesn&apos;t have one linked.
               </p>
             )}
           </div>
@@ -257,55 +260,78 @@ function AiActionsPanel({
     return usingClean ? p.cleanedText || p.rawText : p.rawText;
   }
 
-  function getScopedText(): string {
-    if (scope === "full" || !pages.length) return fullText;
+  // Build text for each scope independently. Agents wired to specific
+  // scope variables (full_document_text / current_page_text /
+  // page_range_text / selected_text) always get their slice regardless
+  // of the picker — the picker only drives `active_scope_text` and the
+  // legacy `selection` alias.
+  const currentPageText = (() => {
+    if (activePage == null) return "";
+    const p = pages.find((r) => r.pageNumber === activePage);
+    return p ? getPageText(p) : "";
+  })();
 
+  const pageRangeText = (() => {
+    if (!rangeInput.trim()) return "";
+    try {
+      const nums = new Set(parsePagesInput(rangeInput));
+      return pages
+        .filter((p) => nums.has(p.pageNumber))
+        .map(getPageText)
+        .filter(Boolean)
+        .join("\n\n---\n\n");
+    } catch {
+      return "";
+    }
+  })();
+
+  const pageRangePages = (() => {
+    if (!rangeInput.trim()) return "";
+    try {
+      const nums = parsePagesInput(rangeInput).sort((a, b) => a - b);
+      if (nums.length === 0) return "";
+      if (nums.length === 1) return String(nums[0]);
+      return `${nums[0]}-${nums[nums.length - 1]}`;
+    } catch {
+      return "";
+    }
+  })();
+
+  function getActiveScopeText(): string {
+    if (scope === "full" || !pages.length) return fullText;
     if (scope === "current") {
-      if (activePage == null) {
+      if (!currentPageText) {
         toast.warning("No active page — sending full document");
         return fullText;
       }
-      const p = pages.find((r) => r.pageNumber === activePage);
-      return p ? getPageText(p) : fullText;
+      return currentPageText;
     }
-
     if (scope === "range") {
       if (!rangeInput.trim()) {
         toast.warning("Enter a page range first");
         return fullText;
       }
-      try {
-        const nums = new Set(parsePagesInput(rangeInput));
-        const joined = pages
-          .filter((p) => nums.has(p.pageNumber))
-          .map(getPageText)
-          .filter(Boolean)
-          .join("\n\n---\n\n");
-        return joined || fullText;
-      } catch {
+      if (!pageRangeText) {
         toast.warning("Invalid page range — sending full document");
         return fullText;
       }
+      return pageRangeText;
     }
-
     if (scope === "selection") {
-      const sel = window.getSelection()?.toString().trim();
+      const sel = window.getSelection()?.toString().trim() ?? "";
       if (!sel) {
         toast.warning("No text selected — sending full document");
         return fullText;
       }
       return sel;
     }
-
     return fullText;
   }
 
   const scopedPreviewLen = (() => {
     if (scope === "full") return fullText.length;
-    if (scope === "current" && activePage != null) {
-      const p = pages.find((r) => r.pageNumber === activePage);
-      return p ? getPageText(p).length : fullText.length;
-    }
+    if (scope === "current" && currentPageText) return currentPageText.length;
+    if (scope === "range" && pageRangeText) return pageRangeText.length;
     return null;
   })();
 
@@ -314,15 +340,65 @@ function AiActionsPanel({
       toast.error("Nothing to send to the agent yet");
       return;
     }
-    const selection = getScopedText();
-    const content = scope !== "full" ? fullText : undefined;
+
+    // Grab the live browser selection at click time. We always emit it
+    // as `selected_text` regardless of which scope is picked so agents
+    // wired specifically to browser selection always get a chance.
+    const browserSelection = window.getSelection()?.toString().trim() ?? "";
+
+    // Resolve the picker-driven value (the "active scope" the user
+    // chose). May fall back to fullText with a warning toast when
+    // their pick has no content (e.g. picked "Selected text" but
+    // nothing's highlighted).
+    const activeScopeText = getActiveScopeText();
+
+    // Compute a human-friendly page range string for whichever scope
+    // the user picked. Empty for "selection" (no page anchor).
+    const pageNumbers = (() => {
+      if (scope === "full") {
+        if (pages.length === 0) return "";
+        if (pages.length === 1) return String(pages[0].pageNumber);
+        return `${pages[0].pageNumber}-${pages[pages.length - 1].pageNumber}`;
+      }
+      if (scope === "current" && activePage != null) return String(activePage);
+      if (scope === "range") return pageRangePages;
+      return "";
+    })();
+
+    const fileId =
+      doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : "";
+
+    const applicationScope = createPdfWidgetsScope({
+      // Explicit scope-text variables — independent of the picker so an
+      // agent author can wire to a specific source.
+      full_document_text: fullText,
+      current_page_text: currentPageText,
+      page_range_text: pageRangeText,
+      selected_text: browserSelection,
+      // Picker-driven mirror — "follow the user's choice".
+      active_scope_text: activeScopeText,
+      // Document metadata.
+      filename: doc.name,
+      file_id: fileId,
+      processed_document_id: doc.id,
+      total_pages: pages.length || doc.totalPages || 0,
+      // Runtime state.
+      current_page: activePage ?? 0,
+      page_numbers: pageNumbers || undefined,
+      scope_kind: scope,
+      using_clean_text: usingClean,
+      // Back-compat aliases so the existing two shortcuts (Analyze
+      // Document, WC Extractor) — which wire to `selection` / `content`
+      // — keep working without touching their mappings.
+      selection: activeScopeText,
+      content: fullText,
+    });
+
     try {
       await trigger(shortcutId, {
-        scope: {
-          selection,
-          ...(content ? { content } : {}),
-        },
+        scope: applicationScope,
         sourceFeature: "programmatic",
+        runtime: { surfaceName: "matrx-user/pdf-widgets" },
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not run agent");
@@ -398,13 +474,6 @@ function AiActionsPanel({
             Highlight text in either content pane, then click Run.
           </p>
         )}
-
-        {scope !== "full" && (
-          <p className="text-[10px] text-muted-foreground/70 leading-snug">
-            Scoped text → <code>selection</code>. Full doc stays in{" "}
-            <code>content</code>.
-          </p>
-        )}
       </div>
 
       {!hasContent && (
@@ -413,8 +482,12 @@ function AiActionsPanel({
         </p>
       )}
 
-      {/* Widget list — single-shot scopes use the shortcut registry.
-          Chunked runs now live in their own inspector tab. */}
+      {/* Widget list — single-shot agents wired to the
+          `matrx-user/pdf-widgets` surface. Each run sends the full
+          surface payload (every scope-text variable + metadata), so
+          agents wired to `full_document_text`, `current_page_text`,
+          `page_range_text`, `selected_text`, or `active_scope_text`
+          all work side-by-side. */}
       {hasContent && (
         <div className="space-y-1.5">
           {PDF_SHORTCUTS.map((s) => (
@@ -440,9 +513,16 @@ function AiActionsPanel({
               </Button>
             </div>
           ))}
+
+          <Link
+            href="/agents/shortcuts/shortcuts"
+            className="flex items-center justify-center gap-1 px-2.5 py-2 bg-muted/30 border border-dashed border-border rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            <span>Attach one of your agents</span>
+          </Link>
         </div>
       )}
-
     </div>
   );
 }

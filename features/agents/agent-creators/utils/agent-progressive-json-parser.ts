@@ -54,28 +54,108 @@ export interface PartialAgentData {
 
 // ── Entry points ───────────────────────────────────────────────────────────
 
-/** Pulls the first ```json … ``` block (closing fence optional) out of
- *  streamed markdown. Returns null when no start fence is present yet. */
-export function extractAgentJsonBlock(text: string): string | null {
-  const match = text.match(/```json\s*\n([\s\S]*?)(?:```|$)/);
-  return match ? match[1].trim() : null;
+/**
+ * Locates the agent JSON object inside a streamed text blob and returns
+ * a `{ start, end, body }` span. Handles three formats the generator has
+ * shipped at various points:
+ *
+ *   1. Fenced with a language tag:   ```json\n{...}\n```
+ *   2. Fenced without a language:    ```\n{...}\n```
+ *   3. Raw — no fences at all:        {...}
+ *
+ * The newer agent-generator model emits format (3), so this scanner has
+ * to stand in for the regexes that used to do the work. The returned
+ * span describes the *full* slice in the original text — fences
+ * included if present — so callers can split before/after cleanly.
+ *
+ * `end` is exclusive and may equal `text.length` mid-stream (the body
+ * has not closed yet); `body` is always trimmed and never includes
+ * fence markers.
+ */
+export interface AgentJsonBlockSpan {
+  /** Inclusive start index of the block in `text` (fence start when fenced). */
+  start: number;
+  /** Exclusive end index — either after the closing fence, after the closing
+   *  brace, or `text.length` if the body is still streaming. */
+  end: number;
+  /** The JSON body, fence-stripped and trimmed. */
+  body: string;
+  /** True when the body's braces balanced — i.e. the object closed. */
+  isClosed: boolean;
 }
 
-/** Returns what comes before / after the ```json … ``` block so the
- *  surrounding markdown can render around the structured card. */
+export function findAgentJsonBlockSpan(
+  text: string,
+): AgentJsonBlockSpan | null {
+  if (!text) return null;
+
+  // ── Format 1 + 2: fenced ──────────────────────────────────────────────
+  // Try ```json first, then plain ``` with a JSON-looking body.
+  const fenceMatch =
+    /```json\s*\n/.exec(text) ?? /```\s*\n(?=\s*[\{\[])/.exec(text);
+  if (fenceMatch) {
+    const bodyStart = fenceMatch.index + fenceMatch[0].length;
+    const closeIdx = text.indexOf("```", bodyStart);
+    if (closeIdx === -1) {
+      // Open fence, no close yet — body is everything we have so far.
+      return {
+        start: fenceMatch.index,
+        end: text.length,
+        body: text.slice(bodyStart).trim(),
+        isClosed: false,
+      };
+    }
+    return {
+      start: fenceMatch.index,
+      end: closeIdx + 3,
+      body: text.slice(bodyStart, closeIdx).trim(),
+      isClosed: true,
+    };
+  }
+
+  // ── Format 3: raw — scan for the first top-level `{` that opens a
+  // plausible JSON object (a `{` followed eventually by `"`) and walk
+  // to its matching `}` honoring string escapes.
+  const rawStart = findRawJsonObjectStart(text);
+  if (rawStart === -1) return null;
+  const rawEnd = findRawJsonObjectEnd(text, rawStart);
+  if (rawEnd === -1) {
+    return {
+      start: rawStart,
+      end: text.length,
+      body: text.slice(rawStart).trim(),
+      isClosed: false,
+    };
+  }
+  return {
+    start: rawStart,
+    end: rawEnd + 1,
+    body: text.slice(rawStart, rawEnd + 1).trim(),
+    isClosed: true,
+  };
+}
+
+/** Pulls the JSON body out of streamed markdown. Returns the trimmed
+ *  body string for both fenced and raw formats, or null when no
+ *  plausible JSON object has been seen yet. */
+export function extractAgentJsonBlock(text: string): string | null {
+  const span = findAgentJsonBlockSpan(text);
+  return span ? span.body : null;
+}
+
+/** Returns the markdown before / after the JSON block so the surrounding
+ *  prose can render around the structured card. Works for fenced and
+ *  raw JSON identically. */
 export function splitAroundAgentJsonBlock(text: string): {
   before: string;
   after: string;
 } {
-  const complete = text.match(/([\s\S]*?)```json[\s\S]*?```([\s\S]*)/);
-  if (complete) {
-    return { before: complete[1].trim(), after: complete[2].trim() };
-  }
-  const incomplete = text.match(/([\s\S]*?)```json/);
-  if (incomplete) {
-    return { before: incomplete[1].trim(), after: "" };
-  }
-  return { before: text.trim(), after: "" };
+  const span = findAgentJsonBlockSpan(text);
+  if (!span) return { before: text.trim(), after: "" };
+  return {
+    before: text.slice(0, span.start).trim(),
+    after: span.isClosed ? text.slice(span.end).trim() : "",
+  };
 }
 
 export function parsePartialAgentJson(text: string): PartialAgentData {
@@ -127,10 +207,8 @@ function normalizeAgentJson(
     typeof raw.description === "string" ? raw.description : undefined;
   const agent_type =
     typeof raw.agent_type === "string" ? raw.agent_type : undefined;
-  const model_id =
-    typeof raw.model_id === "string" ? raw.model_id : undefined;
-  const category =
-    typeof raw.category === "string" ? raw.category : undefined;
+  const model_id = typeof raw.model_id === "string" ? raw.model_id : undefined;
+  const category = typeof raw.category === "string" ? raw.category : undefined;
 
   const messages = flattenMessages(raw.messages);
   const variable_definitions = normalizeVariableDefinitions(
@@ -185,7 +263,10 @@ function flattenMessages(
     if (!item || typeof item !== "object") continue;
     const role = (item as { role?: unknown }).role;
     if (typeof role !== "string") continue;
-    out.push({ role, content: flattenContent((item as { content?: unknown }).content) });
+    out.push({
+      role,
+      content: flattenContent((item as { content?: unknown }).content),
+    });
   }
   return out.length > 0 ? out : undefined;
 }
@@ -222,8 +303,7 @@ function normalizeVariableDefinitions(
     if (typeof r.name !== "string") continue;
     out.push({
       name: r.name,
-      defaultValue:
-        r.defaultValue ?? r.default_value ?? r.default ?? undefined,
+      defaultValue: r.defaultValue ?? r.default_value ?? r.default ?? undefined,
       helpText:
         typeof r.helpText === "string"
           ? r.helpText
@@ -512,4 +592,58 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 function escapeKey(key: string): string {
   return key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Find the index of the first `{` that plausibly starts a JSON object.
+ *
+ * We're scanning streamed text that may contain prose, `<reasoning>`-style
+ * tags, or other braces (e.g. `${...}` in markdown). To avoid false
+ * positives we require the `{` to be followed (after whitespace) by either
+ * a `"` (a string key) or a `}` (an empty object). That rules out random
+ * braces in surrounding prose while still firing on the first character
+ * of a streaming agent JSON object.
+ */
+function findRawJsonObjectStart(text: string): number {
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{") continue;
+    let j = i + 1;
+    while (j < text.length && /\s/.test(text[j])) j++;
+    if (j >= text.length) {
+      // `{` at the streaming tail — accept it; the body will arrive shortly.
+      return i;
+    }
+    if (text[j] === '"' || text[j] === "}") return i;
+  }
+  return -1;
+}
+
+/** Walk from an opening `{` to its balanced `}`. Returns -1 if the object
+ *  is still open (mid-stream). */
+function findRawJsonObjectEnd(text: string, openIdx: number): number {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = openIdx; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
 }

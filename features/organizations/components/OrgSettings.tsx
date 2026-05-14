@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Settings, Users, Mail, AlertTriangle, Send } from "lucide-react";
+import {
+  Settings,
+  Users,
+  Mail,
+  AlertTriangle,
+  Send,
+  FolderTree,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Organization, OrgRole } from "../types";
 import { GeneralSettings } from "./GeneralSettings";
@@ -9,6 +16,7 @@ import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { OrgEmailTab } from "./OrgEmailTab";
+import { ScopesGrid } from "@/features/scope-system/components/ScopesGrid";
 
 interface OrgSettingsProps {
   organization: Organization;
@@ -71,6 +79,16 @@ export function OrgSettings({
 
           {canManageSettings && (
             <TabsTrigger
+              value="scopes"
+              className={orgSettingsTabTriggerClass}
+            >
+              <FolderTree className="h-3.5 w-3.5 shrink-0" />
+              Scopes
+            </TabsTrigger>
+          )}
+
+          {canManageSettings && (
+            <TabsTrigger
               value="invitations"
               className={orgSettingsTabTriggerClass}
             >
@@ -115,6 +133,16 @@ export function OrgSettings({
               userRole={userRole}
               isOwner={isOwner}
               isPersonal={displayOrganization.isPersonal}
+            />
+          </TabsContent>
+        )}
+
+        {/* Scopes Tab */}
+        {canManageSettings && (
+          <TabsContent value="scopes">
+            <ScopesGrid
+              orgId={displayOrganization.id}
+              orgSlugOrId={displayOrganization.slug ?? displayOrganization.id}
             />
           </TabsContent>
         )}

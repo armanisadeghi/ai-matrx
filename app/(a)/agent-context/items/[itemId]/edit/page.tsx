@@ -76,6 +76,7 @@ function EditItemContent({ itemId }: { itemId: string }) {
       <ContextItemForm
         item={item}
         value={value}
+        defaultScopeTypeId={scope.scopeTypeId ?? null}
         onSave={handleSave}
         isPending={updateItem.isPending || createValue.isPending}
       />

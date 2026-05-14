@@ -3,8 +3,10 @@
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
-const ProfilePage = lazy(
-  () => import("@/app/(authenticated)/settings/profile/page"),
+// Lazy-load the actual form so the rest of the settings shell isn't
+// blocked by the avatar uploader's heavy dependency graph.
+const UserProfilePage = lazy(
+  () => import("@/features/user-profile/components/UserProfilePage"),
 );
 
 export default function ProfileTab() {
@@ -16,7 +18,7 @@ export default function ProfileTab() {
         </div>
       }
     >
-      <ProfilePage />
+      <UserProfilePage embedded />
     </Suspense>
   );
 }

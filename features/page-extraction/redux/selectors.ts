@@ -15,8 +15,11 @@ import { emptyDraft } from "@/features/page-extraction/redux/pageExtractionSlice
 
 // Slice key is hardcoded to match the rootReducer mount point.
 const root = (s: RootState) =>
-  (s as RootState & { pageExtraction?: import("./pageExtractionSlice").PageExtractionState })
-    .pageExtraction;
+  (
+    s as RootState & {
+      pageExtraction?: import("./pageExtractionSlice").PageExtractionState;
+    }
+  ).pageExtraction;
 
 export const selectActiveRunByJob = (
   state: RootState,
@@ -34,6 +37,38 @@ export const selectSelectedJobForFile = (
   return root(state)?.selectedJobByFile[fileId] ?? null;
 };
 
+/**
+ * The job whose **data** is being viewed in the main extractions pane.
+ * Falls back to `selectedJobByFile` when the user hasn't explicitly
+ * picked a different one in the JobPicker — so by default, the data
+ * view follows the sidebar.
+ *
+ * Use this for the main pane (JobPicker, RunProgressBar, ResultsTable,
+ * ChunksTab activeRun overlay). Use `selectSelectedJobForFile` for the
+ * right inspector (ChunkingConfigForm, SavedJobsList highlight).
+ */
+export const selectViewedJobForFile = (
+  state: RootState,
+  fileId: string | null | undefined,
+): string | null => {
+  if (!fileId) return null;
+  const r = root(state);
+  return r?.viewedJobByFile[fileId] ?? r?.selectedJobByFile[fileId] ?? null;
+};
+
+/**
+ * True when the ChunkingConfigForm should be rendered as the full editor
+ * for this file. False means: render the read-only display (when a job is
+ * selected) or the empty-list state (when nothing is selected).
+ */
+export const selectIsEditingForFile = (
+  state: RootState,
+  fileId: string | null | undefined,
+): boolean => {
+  if (!fileId) return false;
+  return root(state)?.editingByFile[fileId] === true;
+};
+
 const selectPageRunsRecord = (
   state: RootState,
   jobId: string | null | undefined,
@@ -43,15 +78,12 @@ const selectPageRunsRecord = (
 };
 
 export const makeSelectOrderedPageRuns = () =>
-  createSelector(
-    [selectPageRunsRecord],
-    (recordOrNull) => {
-      if (!recordOrNull) return [] as ActivePageRun[];
-      return Object.values(recordOrNull).sort(
-        (a, b) => a.chunkIndex - b.chunkIndex,
-      );
-    },
-  );
+  createSelector([selectPageRunsRecord], (recordOrNull) => {
+    if (!recordOrNull) return [] as ActivePageRun[];
+    return Object.values(recordOrNull).sort(
+      (a, b) => a.chunkIndex - b.chunkIndex,
+    );
+  });
 
 export interface RunProgressView {
   status: ActiveJobRun["status"] | "idle";

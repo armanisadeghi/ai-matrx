@@ -22,7 +22,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
 import { ChunkCard } from "@/features/page-extraction/components/ChunkCard";
 import { selectActiveRunByJob } from "@/features/page-extraction/redux/selectors";
-import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 
 export interface ChunksTabProps {
   fileId: string;
@@ -35,25 +36,48 @@ export function ChunksTab({
   processedDocumentId,
   onJumpToPage,
 }: ChunksTabProps) {
+  // Chunks are inherently per-template (each Job has its own
+  // page-range + chunk-size + overlap). The "All extractions" view in
+  // the main pane is aggregate-only; there's no sensible chunk
+  // preview for it. Show a hint instead of trying to render something
+  // ambiguous.
+  const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
+  const inAllView = isAllJobsView(viewedJobId);
+
   const { chunks, stats, loading, error } = useChunkPreview({
     fileId,
     processedDocumentId,
   });
 
-  // If a run is active for this file's currently-selected Job, overlay
-  // per-chunk status from the active-runs slice.
-  const selectedJobId = useAppSelector((s) =>
-    selectSelectedJobForFile(s, fileId),
-  );
+  // Overlay per-chunk status for the run associated with whichever Job
+  // is currently being viewed in this pane (`viewedJobByFile`, falling
+  // back to the sidebar's selection). Using the viewed-Job lets the
+  // user watch progress of a different template's run without forcing
+  // the sidebar to follow. In All-view, viewedJobId is the sentinel
+  // (not a real job id) so selectActiveRunByJob returns null — the
+  // overlay quietly stays off.
   const activeRun = useAppSelector((s) =>
-    selectActiveRunByJob(s, selectedJobId),
+    selectActiveRunByJob(s, inAllView ? null : viewedJobId),
   );
   const pageRunByChunkIndex = useMemo(() => {
-    if (!activeRun) return new Map<number, NonNullable<typeof activeRun["pageRuns"]>[string]>();
+    if (!activeRun)
+      return new Map<
+        number,
+        NonNullable<(typeof activeRun)["pageRuns"]>[string]
+      >();
     return new Map(
       Object.values(activeRun.pageRuns).map((pr) => [pr.chunkIndex, pr]),
     );
   }, [activeRun]);
+
+  if (inAllView) {
+    return (
+      <div className="p-4 text-[11px] text-muted-foreground leading-snug">
+        Chunks are configured per template. Pick a specific template from the
+        View dropdown to see how its pages were chunked.
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -72,8 +96,8 @@ export function ChunksTab({
   if (chunks.length === 0) {
     return (
       <div className="p-4 text-[11px] text-muted-foreground leading-snug">
-        No chunks yet. Configure pages, chunk size, and source variations
-        in the inspector. Chunks will appear here live as you type.
+        No chunks yet. Configure pages, chunk size, and source variations in the
+        inspector. Chunks will appear here live as you type.
       </div>
     );
   }
@@ -101,7 +125,8 @@ export function ChunksTab({
           </span>
           {stats.emptyChunks > 0 && (
             <>
-              {" "}· {" "}
+              {" "}
+              ·{" "}
               <span className="text-amber-700 dark:text-amber-400">
                 {stats.emptyChunks} empty
               </span>

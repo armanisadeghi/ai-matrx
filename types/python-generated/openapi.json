@@ -681,7 +681,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListToolsResponse"
+                }
               }
             }
           }
@@ -711,7 +713,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListToolsByAppResponse"
+                }
               }
             }
           },
@@ -740,7 +744,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListToolsByAppResponse"
+                }
               }
             }
           }
@@ -759,7 +765,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListToolsByAppResponse"
+                }
               }
             }
           }
@@ -789,7 +797,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/GetToolResponse"
+                }
               }
             }
           },
@@ -10554,6 +10564,47 @@
         }
       }
     },
+    "/page-extraction/runs/{run_id}/index": {
+      "post": {
+        "tags": [
+          "Page Extraction"
+        ],
+        "summary": "Index Run Into Rag",
+        "description": "Materialize a completed extraction run's results into RAG as\nagent-derivative chunks. Idempotent (safe to call multiple times —\nreuses the derivative row and rewrites the chunks).\n\nThis is the manual counterpart to the auto-hook in ``_finalize_run``.\nUse it to:\n  * Retry indexing for runs that failed during auto-indexing\n  * Backfill runs that completed before the auto-hook was enabled\n  * Force a re-index after tuning the embedding model\n\nOwnership: caller must own the parent job. The check happens before\nwe kick off any embedding work so a misbehaving FE can't trigger a\npaid run on someone else's data.",
+        "operationId": "index_run_into_rag_page_extraction_runs__run_id__index_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legal/search": {
       "post": {
         "tags": [
@@ -11945,9 +11996,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response List Datasets Datasets Get"
+                  "$ref": "#/components/schemas/ListDatasetsResponse"
                 }
               }
             }
@@ -11978,9 +12027,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Create Dataset Datasets Post"
+                  "$ref": "#/components/schemas/DatasetDetail"
                 }
               }
             }
@@ -12023,9 +12070,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Dataset Datasets  Dataset Id  Get"
+                  "$ref": "#/components/schemas/DatasetDetail"
                 }
               }
             }
@@ -12068,9 +12113,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Fields Datasets  Dataset Id  Fields Get"
+                  "$ref": "#/components/schemas/ListFieldsResponse"
                 }
               }
             }
@@ -12122,9 +12165,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Add Field Datasets  Dataset Id  Fields Post"
+                  "$ref": "#/components/schemas/AddFieldResponse"
                 }
               }
             }
@@ -12240,9 +12281,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Rows Datasets  Dataset Id  Rows Get"
+                  "$ref": "#/components/schemas/ListRowsResponse"
                 }
               }
             }
@@ -12307,9 +12346,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Add Rows Datasets  Dataset Id  Rows Post"
+                  "$ref": "#/components/schemas/AddRowsResponse"
                 }
               }
             }
@@ -12361,9 +12398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Row Datasets  Dataset Id  Rows  Row Id  Get"
+                  "$ref": "#/components/schemas/DatasetRow"
                 }
               }
             }
@@ -12436,9 +12471,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Row Datasets  Dataset Id  Rows  Row Id  Patch"
+                  "$ref": "#/components/schemas/UpdateRowResponse"
                 }
               }
             }
@@ -12516,9 +12549,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Project Fields Datasets  Dataset Id  Projection Get"
+                  "$ref": "#/components/schemas/ProjectionResponse"
                 }
               }
             }
@@ -12583,9 +12614,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Distinct Values Datasets  Dataset Id  Fields  Field Name  Distinct Get"
+                  "$ref": "#/components/schemas/DistinctValuesResponse"
                 }
               }
             }
@@ -12639,9 +12668,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Filter Rows Datasets  Dataset Id  Filter Post"
+                  "$ref": "#/components/schemas/FilterRowsResponse"
                 }
               }
             }
@@ -12685,9 +12712,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Field Types Datasets  Dataset Id  Schema Types Get"
+                  "$ref": "#/components/schemas/SchemaTypesResponse"
                 }
               }
             }
@@ -12762,9 +12787,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Picklists Picklists Get"
+                  "$ref": "#/components/schemas/ListPicklistsResponse"
                 }
               }
             }
@@ -12805,9 +12828,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Picklist Picklists Post"
+                  "$ref": "#/components/schemas/PicklistDetail"
                 }
               }
             }
@@ -12862,9 +12883,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Picklist Picklists  List Id  Get"
+                  "$ref": "#/components/schemas/PicklistDetail"
                 }
               }
             }
@@ -12915,9 +12934,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Picklist Picklists  List Id  Patch"
+                  "$ref": "#/components/schemas/PicklistDetail"
                 }
               }
             }
@@ -13004,8 +13021,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ListItemsResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ListGroupedItemsResponse"
+                    }
+                  ],
                   "title": "Response List Items Picklists  List Id  Items Get"
                 }
               }
@@ -13069,9 +13092,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Add Items Picklists  List Id  Items Post"
+                  "$ref": "#/components/schemas/AddItemsResponse"
                 }
               }
             }
@@ -13158,9 +13179,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Item Picklists  List Id  Items  Item Id  Get"
+                  "$ref": "#/components/schemas/PicklistItem"
                 }
               }
             }
@@ -13220,9 +13239,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Item Picklists  List Id  Items  Item Id  Patch"
+                  "$ref": "#/components/schemas/PicklistItem"
                 }
               }
             }
@@ -16791,9 +16808,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Trigger Triggers Post"
+                  "$ref": "#/components/schemas/TriggerRecord"
                 }
               }
             }
@@ -16885,8 +16900,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/TriggerRecord"
                   },
                   "title": "Response List Triggers Triggers Get"
                 }
@@ -16930,9 +16944,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Trigger Triggers  Trigger Id  Get"
+                  "$ref": "#/components/schemas/TriggerRecord"
                 }
               }
             }
@@ -16982,11 +16994,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Update Trigger Triggers  Trigger Id  Patch"
+                  "$ref": "#/components/schemas/UpdateTriggerActiveResponse"
                 }
               }
             }
@@ -17026,11 +17034,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Delete Trigger Triggers  Trigger Id  Delete"
+                  "$ref": "#/components/schemas/DeleteTriggerResponse"
                 }
               }
             }
@@ -17194,7 +17198,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListConversationsResponse"
+                }
               }
             }
           }
@@ -17224,7 +17230,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/GetConversationResponse"
+                }
               }
             }
           },
@@ -17264,7 +17272,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListRequestsResponse"
+                }
               }
             }
           },
@@ -17305,7 +17315,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidateCacheResponse"
+                }
               }
             }
           },
@@ -17365,7 +17377,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateMessageResponse"
+                }
               }
             }
           },
@@ -17413,7 +17427,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteMessageResponse"
+                }
               }
             }
           },
@@ -17454,7 +17470,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteAllMessagesResponse"
+                }
               }
             }
           },
@@ -17512,7 +17530,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ForkConversationResponse"
+                }
               }
             }
           },
@@ -17969,7 +17989,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/_PdfCompressRequest"
+                "$ref": "#/components/schemas/AssetPdfCompressRequest"
               }
             }
           },
@@ -20028,8 +20048,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/PermissionRecord"
                   },
                   "title": "Response List File Permissions Files  File Id  Permissions Get"
                 }
@@ -20081,9 +20100,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Grant File Permission Files  File Id  Permissions Post"
+                  "$ref": "#/components/schemas/PermissionRecord"
                 }
               }
             }
@@ -20192,8 +20209,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/PermissionRecord"
                   },
                   "title": "Response List Folder Permissions Folders  Folder Id  Permissions Get"
                 }
@@ -20245,9 +20261,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Grant Folder Permission Folders  Folder Id  Permissions Post"
+                  "$ref": "#/components/schemas/PermissionRecord"
                 }
               }
             }
@@ -20356,8 +20370,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/ShareLinkRecord"
                   },
                   "title": "Response List File Share Links Files  File Id  Share Links Get"
                 }
@@ -20409,9 +20422,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create File Share Link Files  File Id  Share Links Post"
+                  "$ref": "#/components/schemas/ShareLinkRecord"
                 }
               }
             }
@@ -20455,8 +20466,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/ShareLinkRecord"
                   },
                   "title": "Response List Folder Share Links Folders  Folder Id  Share Links Get"
                 }
@@ -20508,9 +20518,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Folder Share Link Folders  Folder Id  Share Links Post"
+                  "$ref": "#/components/schemas/ShareLinkRecord"
                 }
               }
             }
@@ -22128,9 +22136,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Files Cloud Files List Get"
+                  "$ref": "#/components/schemas/BridgeListResponse"
                 }
               }
             }
@@ -22279,9 +22285,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Put File Cloud Files Put Put"
+                  "$ref": "#/components/schemas/BridgePutResponse"
                 }
               }
             }
@@ -22415,9 +22419,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Quota Cloud Files Quota Get"
+                  "$ref": "#/components/schemas/BridgeQuotaResponse"
                 }
               }
             }
@@ -22506,9 +22508,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Changes Cloud Files Changes Get"
+                  "$ref": "#/components/schemas/BridgeChangesResponse"
                 }
               }
             }
@@ -22539,9 +22539,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Integrations Aidream Cloud Files Integrations Aidream Get"
+                  "$ref": "#/components/schemas/BridgeIntegrationResponse"
                 }
               }
             }
@@ -22600,7 +22598,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListExamplesResponse"
+                }
               }
             }
           }
@@ -22669,7 +22669,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
               }
             }
           },
@@ -22717,7 +22719,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
               }
             }
           },
@@ -22755,7 +22759,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteExampleResponse"
+                }
               }
             }
           },
@@ -22809,7 +22815,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SearchExamplesResponse"
+                }
               }
             }
           },
@@ -23399,8 +23407,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/IssueClassRecord"
                   },
                   "type": "array",
                   "title": "Response List Issue Classes Admin Ops Issue Classes Get"
@@ -23436,9 +23443,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Issue Class Admin Ops Issue Classes  Class Id  Get"
+                  "$ref": "#/components/schemas/IssueClassRecord"
                 }
               }
             }
@@ -23489,9 +23494,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Issue Class Admin Ops Issue Classes  Class Id  Patch"
+                  "$ref": "#/components/schemas/IssueClassRecord"
                 }
               }
             }
@@ -23556,8 +23559,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/IssueEventRecord"
                   },
                   "title": "Response List Events For Class Admin Ops Issue Classes  Class Id  Events Get"
                 }
@@ -23647,8 +23649,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/IssueEventRecord"
                   },
                   "title": "Response List Recent Events Admin Ops Events Recent Get"
                 }
@@ -23682,9 +23683,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Ops Summary Admin Ops Summary Get"
+                  "$ref": "#/components/schemas/OpsSummaryResponse"
                 }
               }
             }
@@ -23717,9 +23716,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Issue Class Stats Admin Ops Issue Classes  Class Id  Stats Get"
+                  "$ref": "#/components/schemas/IssueClassStatsResponse"
                 }
               }
             }
@@ -24736,9 +24733,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Get My Preferences Me Analysis Preferences Get"
+                  "$ref": "#/components/schemas/UserAnalysisPreferencesResponse"
                 }
               }
             }
@@ -24767,11 +24762,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Put My Preferences Me Analysis Preferences Put"
+                  "$ref": "#/components/schemas/PreferencesWriteResponse"
                 }
               }
             }
@@ -24803,8 +24794,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/AnalysisRecipeRecord"
                   },
                   "type": "array",
                   "title": "Response List Recipes Analysis Recipes Get"
@@ -24836,9 +24826,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Create Recipe Analysis Recipes Post"
+                  "$ref": "#/components/schemas/CreateRecipeResponse"
                 }
               }
             }
@@ -24890,11 +24878,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Update Recipe Analysis Recipes  Recipe Id  Put"
+                  "$ref": "#/components/schemas/PreferencesWriteResponse"
                 }
               }
             }
@@ -26351,6 +26335,45 @@
         ],
         "title": "ActivePageIdsResponse"
       },
+      "AddFieldResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "field_name": {
+            "type": "string",
+            "title": "Field Name"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "data_type": {
+            "type": "string",
+            "title": "Data Type"
+          },
+          "field_order": {
+            "type": "integer",
+            "title": "Field Order"
+          },
+          "is_required": {
+            "type": "boolean",
+            "title": "Is Required"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "field_name",
+          "display_name",
+          "data_type",
+          "field_order",
+          "is_required"
+        ],
+        "title": "AddFieldResponse"
+      },
       "AddGroupMemberRequest": {
         "properties": {
           "user_id": {
@@ -26373,6 +26396,27 @@
         ],
         "title": "AddGroupMemberRequest"
       },
+      "AddItemsResponse": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Item Ids"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_ids",
+          "count"
+        ],
+        "title": "AddItemsResponse"
+      },
       "AddLinksToScope": {
         "properties": {
           "urls": {
@@ -26388,6 +26432,27 @@
           "urls"
         ],
         "title": "AddLinksToScope"
+      },
+      "AddRowsResponse": {
+        "properties": {
+          "row_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Row Ids"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_ids",
+          "count"
+        ],
+        "title": "AddRowsResponse"
       },
       "AddSourceRequest": {
         "properties": {
@@ -27044,8 +27109,7 @@
           },
           "custom_tools": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/LegacyCustomTool"
             },
             "type": "array",
             "title": "Custom Tools",
@@ -27425,6 +27489,162 @@
         ],
         "title": "AnalysisRecipeBody"
       },
+      "AnalysisRecipeRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "match_rules": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detector_overrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pattern_overrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_tiers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "redaction_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redaction Mode"
+          },
+          "substitute_formats": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substitute Formats"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "AnalysisRecipeRecord"
+      },
       "AnalyzeBulkRequest": {
         "properties": {
           "source_ids": {
@@ -27745,7 +27965,9 @@
           "normalized_value": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -28264,6 +28486,40 @@
         "title": "AssetPatchRequest",
         "description": "Mutate an existing asset.\n\nUse to:\n  - change visibility (also moves the S3 object between buckets)\n  - grant new sharees\n  - refresh signed URLs (signed_url_ttl)"
       },
+      "AssetPdfCompressRequest": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/PreviewSource"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level",
+            "default": 3
+          },
+          "max_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Size Bytes"
+          },
+          "max_inline_bytes": {
+            "type": "integer",
+            "title": "Max Inline Bytes",
+            "default": 262144
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "AssetPdfCompressRequest",
+        "description": "JSON body for ``POST /assets/pdf-compress``.\n\nThe ``source`` field is a ``PreviewSource`` — same MediaRef-shaped dict\n(``file_id`` / ``url`` / ``file_uri``) used by the preview endpoint, so\nevery no-persist asset operation accepts the same shape on the wire."
+      },
       "AssetPdfCompressResponse": {
         "properties": {
           "original_size": {
@@ -28728,7 +28984,9 @@
             "title": "Query Hash"
           },
           "pipeline_config": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Pipeline Config"
           },
@@ -29271,6 +29529,316 @@
         ],
         "title": "Body_upload_vision_master_media_upload_post"
       },
+      "BridgeChangesResponse": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeFileEntry"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "next_cursor": {
+            "type": "string",
+            "title": "Next Cursor"
+          },
+          "deletions_supported": {
+            "type": "boolean",
+            "title": "Deletions Supported",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "files",
+          "next_cursor"
+        ],
+        "title": "BridgeChangesResponse"
+      },
+      "BridgeFileEntry": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version",
+            "default": 1
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "BridgeFileEntry",
+        "description": "Sandbox-facing projection of a ``cld_files`` row."
+      },
+      "BridgeIntegrationAuth": {
+        "properties": {
+          "scheme": {
+            "type": "string",
+            "title": "Scheme"
+          },
+          "headers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Headers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheme",
+          "headers"
+        ],
+        "title": "BridgeIntegrationAuth"
+      },
+      "BridgeIntegrationFeatures": {
+        "properties": {
+          "put_dedup_by_checksum": {
+            "type": "boolean",
+            "title": "Put Dedup By Checksum"
+          },
+          "path_normalization": {
+            "type": "boolean",
+            "title": "Path Normalization"
+          },
+          "polling_changes_endpoint": {
+            "type": "boolean",
+            "title": "Polling Changes Endpoint"
+          },
+          "realtime_changes_publication": {
+            "type": "boolean",
+            "title": "Realtime Changes Publication"
+          }
+        },
+        "type": "object",
+        "required": [
+          "put_dedup_by_checksum",
+          "path_normalization",
+          "polling_changes_endpoint",
+          "realtime_changes_publication"
+        ],
+        "title": "BridgeIntegrationFeatures"
+      },
+      "BridgeIntegrationLimits": {
+        "properties": {
+          "max_upload_bytes": {
+            "type": "integer",
+            "title": "Max Upload Bytes"
+          },
+          "quota_bytes": {
+            "type": "integer",
+            "title": "Quota Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "max_upload_bytes",
+          "quota_bytes"
+        ],
+        "title": "BridgeIntegrationLimits"
+      },
+      "BridgeIntegrationResponse": {
+        "properties": {
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "endpoints": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Endpoints"
+          },
+          "features": {
+            "$ref": "#/components/schemas/BridgeIntegrationFeatures"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/BridgeIntegrationLimits"
+          },
+          "auth": {
+            "$ref": "#/components/schemas/BridgeIntegrationAuth"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "service",
+          "configured",
+          "endpoints",
+          "features",
+          "limits",
+          "auth"
+        ],
+        "title": "BridgeIntegrationResponse"
+      },
+      "BridgeListResponse": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeFileEntry"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "BridgeListResponse"
+      },
+      "BridgePutResponse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "deduped": {
+            "type": "boolean",
+            "title": "Deduped",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_path",
+          "version",
+          "size_bytes"
+        ],
+        "title": "BridgePutResponse"
+      },
+      "BridgeQuotaResponse": {
+        "properties": {
+          "used_bytes": {
+            "type": "integer",
+            "title": "Used Bytes"
+          },
+          "quota_bytes": {
+            "type": "integer",
+            "title": "Quota Bytes"
+          },
+          "files_count": {
+            "type": "integer",
+            "title": "Files Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "used_bytes",
+          "quota_bytes",
+          "files_count"
+        ],
+        "title": "BridgeQuotaResponse"
+      },
       "BulkCandidateAction": {
         "properties": {
           "result_id": {
@@ -29358,7 +29926,9 @@
           },
           "errors": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -29828,6 +30398,88 @@
         ],
         "title": "ChannelSpec",
         "description": "Declarative spec for a channel in a workflow definition.\n\nChannels hold JSON-serializable values only. Pydantic models are dumped at\nwrite time via .model_dump(mode='json'). This rule is enforced in the\nchannel manager and makes checkpoints round-trip losslessly."
+      },
+      "ChatMessageInput": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "user",
+                  "assistant",
+                  "tool",
+                  "developer"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatToolCallInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ChatMessageInput",
+        "description": "One LLM message on the request wire.\n\nAccepts the historic ``dict[str, Any]`` shape unchanged. The FE-visible\nschema tightens; runtime validation does not."
       },
       "ChatRequest": {
         "properties": {
@@ -30497,8 +31149,7 @@
           },
           "custom_tools": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/LegacyCustomTool"
             },
             "type": "array",
             "title": "Custom Tools",
@@ -30605,8 +31256,7 @@
           },
           "messages": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/ChatMessageInput"
             },
             "type": "array",
             "title": "Messages"
@@ -30891,6 +31541,81 @@
         ],
         "title": "ChatRequest"
       },
+      "ChatToolCallInput": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "function": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Function"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ChatToolCallInput",
+        "description": "One tool-call entry inside an assistant message.\n\nDifferent providers carry slightly different keys (OpenAI uses\n``function.name`` + ``function.arguments``; Anthropic uses ``name`` +\n``input``). All keys are optional so either shape validates."
+      },
       "ChunkDetail": {
         "properties": {
           "chunk_id": {
@@ -31098,7 +31823,9 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
                   "type": "object"
                 },
                 "type": "array"
@@ -31778,7 +32505,14 @@
             "title": "Tool Name"
           },
           "output": {
-            "title": "Output"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "is_error": {
             "type": "boolean",
@@ -32682,8 +33416,7 @@
           },
           "custom_tools": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/LegacyCustomTool"
             },
             "type": "array",
             "title": "Custom Tools",
@@ -32771,6 +33504,47 @@
           "user_input"
         ],
         "title": "ConversationContinueRequest"
+      },
+      "ConversationRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ConversationRecord",
+        "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible."
       },
       "CopyFileRequest": {
         "properties": {
@@ -33156,6 +33930,19 @@
           "name"
         ],
         "title": "CreateGroupRequest"
+      },
+      "CreateRecipeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "CreateRecipeResponse"
       },
       "CreateShareLinkRequest": {
         "properties": {
@@ -33820,7 +34607,9 @@
             "title": "Kind"
           },
           "settings": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Settings"
           },
@@ -34160,6 +34949,247 @@
         ],
         "title": "DatasetCreate"
       },
+      "DatasetDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "authenticated_read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticated Read"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count",
+            "default": 0
+          },
+          "field_count": {
+            "type": "integer",
+            "title": "Field Count",
+            "default": 0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldRecord"
+            },
+            "type": "array",
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "DatasetDetail"
+      },
+      "DatasetRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "DatasetRow",
+        "description": "A single row from a user dataset.\n\nThe columns are user-defined per-dataset, so we expose the canonical\nframing keys (``id`` / ``created_at`` / ``updated_at``) and let the\nrest flow through via ``extra=\"allow\"``."
+      },
+      "DatasetSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "authenticated_read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticated Read"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count",
+            "default": 0
+          },
+          "field_count": {
+            "type": "integer",
+            "title": "Field Count",
+            "default": 0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "DatasetSummary",
+        "description": "The metadata-only projection of a dataset row.\n\nExtra keys are tolerated because the user_data SQL projections can add\ncolumns (counts, flags) without bumping this wire shape."
+      },
       "DedupResponse": {
         "properties": {
           "outcome": {
@@ -34302,6 +35332,65 @@
         "title": "Definition",
         "description": "The canonical workflow definition — ReactFlow-compatible, user-authored.\n\nThis shape matches what the XYFlow canvas posts directly. The backend\nvalidates it with Pydantic but NEVER rewrites the user's JSON. Compilation\nproduces a separate CompiledGraph; the Definition remains the source of\ntruth for the UI."
       },
+      "DeleteAllMessagesResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "conversation_id",
+          "count"
+        ],
+        "title": "DeleteAllMessagesResponse"
+      },
+      "DeleteExampleResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "id"
+        ],
+        "title": "DeleteExampleResponse"
+      },
+      "DeleteMessageResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "message_id"
+        ],
+        "title": "DeleteMessageResponse"
+      },
       "DeletePagesRequest": {
         "properties": {
           "output_mode": {
@@ -34443,6 +35532,19 @@
           "embeddings_deleted"
         ],
         "title": "DeleteResult"
+      },
+      "DeleteTriggerResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "DeleteTriggerResponse"
       },
       "DerivativeRequest": {
         "properties": {
@@ -34719,6 +35821,32 @@
           "deleted"
         ],
         "title": "DiscardResponse"
+      },
+      "DistinctValuesResponse": {
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "title": "Field Name"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array",
+            "title": "Values"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_name",
+          "values",
+          "count"
+        ],
+        "title": "DistinctValuesResponse"
       },
       "DocumentDetail": {
         "properties": {
@@ -35330,7 +36458,9 @@
           "normalized_value": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -36518,7 +37648,14 @@
             "default": false
           },
           "default_value": {
-            "title": "Default Value"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "validation_rules": {
             "anyOf": [
@@ -36591,7 +37728,14 @@
             "default": false
           },
           "default_value": {
-            "title": "Default Value"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "validation_rules": {
             "anyOf": [
@@ -36611,6 +37755,95 @@
           "display_name"
         ],
         "title": "FieldDefinition"
+      },
+      "FieldRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "field_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Name"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "data_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Type"
+          },
+          "field_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Order"
+          },
+          "is_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Required"
+          },
+          "default_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validation_rules": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "FieldRecord"
       },
       "FileAnalysisHead": {
         "properties": {
@@ -36994,7 +38227,9 @@
             "title": "Derivation Kind"
           },
           "derivation_metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Derivation Metadata"
           },
@@ -37140,7 +38375,9 @@
             "title": "Thumbnail Url"
           },
           "metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Metadata",
             "default": {}
@@ -37212,7 +38449,9 @@
             "title": "Override Kind"
           },
           "override_value": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Override Value"
           },
@@ -37500,7 +38739,9 @@
             "title": "Parent Folder Id"
           },
           "metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Metadata"
           },
@@ -37723,6 +38964,37 @@
           "filters"
         ],
         "title": "FilterRequest"
+      },
+      "FilterRowsResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows",
+          "count",
+          "limit",
+          "offset"
+        ],
+        "title": "FilterRowsResponse"
       },
       "FinalizeUploadRequest": {
         "properties": {
@@ -38143,6 +39415,40 @@
         ],
         "title": "ForceDisableResponse"
       },
+      "ForkConversationResponse": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "forked_from_id": {
+            "type": "string",
+            "title": "Forked From Id"
+          },
+          "forked_at_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forked At Position"
+          },
+          "message_count": {
+            "type": "integer",
+            "title": "Message Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "forked_from_id",
+          "message_count"
+        ],
+        "title": "ForkConversationResponse"
+      },
       "ForkRequest": {
         "properties": {
           "up_to_position": {
@@ -38171,6 +39477,62 @@
         "type": "object",
         "title": "ForkRequest",
         "description": "Payload for forking a conversation.\n\n``up_to_position`` — when set, only messages with ``position`` less\nthan or equal to this value are copied to the fork. Callers use this\nto branch mid-conversation. ``None`` copies every message.\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
+      },
+      "GetConversationResponse": {
+        "properties": {
+          "conversation": {
+            "$ref": "#/components/schemas/ConversationRecord"
+          },
+          "related": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Related"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "conversation",
+          "related"
+        ],
+        "title": "GetConversationResponse"
+      },
+      "GetToolResponse": {
+        "properties": {
+          "tool": {
+            "$ref": "#/components/schemas/ToolRecord"
+          },
+          "related": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Related"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "tool",
+          "related"
+        ],
+        "title": "GetToolResponse"
       },
       "GrantPermissionRequest": {
         "properties": {
@@ -39264,6 +40626,217 @@
         ],
         "title": "IntersectingImageOut"
       },
+      "InvalidateCacheResponse": {
+        "properties": {
+          "cleared": {
+            "type": "boolean",
+            "title": "Cleared"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cleared",
+          "conversation_id"
+        ],
+        "title": "InvalidateCacheResponse"
+      },
+      "IssueClassEmbed": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "default": ""
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": ""
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "default": ""
+          },
+          "disposition": {
+            "type": "string",
+            "title": "Disposition",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "IssueClassEmbed"
+      },
+      "IssueClassRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "disposition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposition"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "alert_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Threshold"
+          },
+          "alert_window_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Window Minutes"
+          },
+          "resolution_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Notes"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "IssueClassRecord",
+        "description": "``ops_issue_class`` row as projected by ``to_dict()``.\n\nORM ``to_dict`` projections include nullable columns and audit fields\nthat evolve with the schema, so ``extra=\"allow\"`` keeps the wire\nbackward-compatible without per-field churn."
+      },
+      "IssueClassStatsResponse": {
+        "properties": {
+          "total_events": {
+            "type": "integer",
+            "title": "Total Events"
+          },
+          "recovered_events": {
+            "type": "integer",
+            "title": "Recovered Events"
+          },
+          "unrecovered_events": {
+            "type": "integer",
+            "title": "Unrecovered Events"
+          },
+          "recovery_rate": {
+            "type": "number",
+            "title": "Recovery Rate"
+          },
+          "events_24h": {
+            "type": "integer",
+            "title": "Events 24H"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_events",
+          "recovered_events",
+          "unrecovered_events",
+          "recovery_rate",
+          "events_24h"
+        ],
+        "title": "IssueClassStatsResponse"
+      },
       "IssueClassUpdate": {
         "properties": {
           "disposition": {
@@ -39346,6 +40919,78 @@
         },
         "type": "object",
         "title": "IssueClassUpdate"
+      },
+      "IssueEventRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "issue_class_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Class Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "was_recovered": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Was Recovered"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ops_issue_class": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IssueClassEmbed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "IssueEventRecord",
+        "description": "``ops_issue_event`` row + optional ``ops_issue_class`` embed."
       },
       "Item": {
         "properties": {
@@ -39504,6 +41149,7 @@
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
       },
+      "JsonValue": {},
       "KeyFindingEntry": {
         "properties": {
           "label_category": {
@@ -40494,6 +42140,73 @@
           "pages"
         ],
         "title": "LayoutClassificationReport"
+      },
+      "LegacyCustomTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "input_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LegacyCustomToolInputSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inputSchema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LegacyCustomToolInputSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "LegacyCustomTool",
+        "description": "Deprecated request-side custom-tool spec.\n\nNew code should send ``tools: [{\"kind\": \"inline\", ...}]`` (``ToolSpec``)\ninstead. The router translates this shape to ``InlineToolSpec`` via\n``apply_unified_tools``."
+      },
+      "LegacyCustomToolInputSchema": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "object"
+          },
+          "properties": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Properties"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "LegacyCustomToolInputSchema",
+        "description": "JSON Schema fragment describing a legacy custom tool's input.\n\nMirrors ``matrx_ai.tools.models.CustomToolInputSchema`` on the wire while\nstaying permissive — historical payloads sometimes include\n``additionalProperties``, ``description``, or other JSON Schema keywords\nthat this model lets through unchanged."
       },
       "LegalSearchRequest": {
         "properties": {
@@ -41829,6 +43542,255 @@
         ],
         "title": "LineageTree"
       },
+      "ListConversationsResponse": {
+        "properties": {
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationRecord"
+            },
+            "type": "array",
+            "title": "Conversations"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversations",
+          "count"
+        ],
+        "title": "ListConversationsResponse"
+      },
+      "ListDatasetsResponse": {
+        "properties": {
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetSummary"
+            },
+            "type": "array",
+            "title": "Datasets"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "datasets",
+          "count"
+        ],
+        "title": "ListDatasetsResponse"
+      },
+      "ListExamplesResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "ListExamplesResponse"
+      },
+      "ListFieldsResponse": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldRecord"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fields",
+          "count"
+        ],
+        "title": "ListFieldsResponse"
+      },
+      "ListGroupedItemsResponse": {
+        "properties": {
+          "grouped_items": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Grouped Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grouped_items",
+          "count"
+        ],
+        "title": "ListGroupedItemsResponse"
+      },
+      "ListItemsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PicklistItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count"
+        ],
+        "title": "ListItemsResponse"
+      },
+      "ListPicklistsResponse": {
+        "properties": {
+          "picklists": {
+            "items": {
+              "$ref": "#/components/schemas/PicklistSummary"
+            },
+            "type": "array",
+            "title": "Picklists"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "picklists",
+          "count"
+        ],
+        "title": "ListPicklistsResponse"
+      },
+      "ListRequestsResponse": {
+        "properties": {
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/RequestRecord"
+            },
+            "type": "array",
+            "title": "Requests"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requests",
+          "count"
+        ],
+        "title": "ListRequestsResponse"
+      },
+      "ListRowsResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows",
+          "count",
+          "limit",
+          "offset"
+        ],
+        "title": "ListRowsResponse"
+      },
+      "ListToolsByAppResponse": {
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolRecord"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "source_app": {
+            "type": "string",
+            "title": "Source App"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tools",
+          "count",
+          "source_app"
+        ],
+        "title": "ListToolsByAppResponse"
+      },
+      "ListToolsResponse": {
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolRecord"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tools",
+          "count"
+        ],
+        "title": "ListToolsResponse"
+      },
       "ManifestFact": {
         "properties": {
           "label": {
@@ -42195,6 +44157,32 @@
         "type": "object",
         "title": "MediaUpdate"
       },
+      "MemoryCostByEventType": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "cost": {
+            "type": "number",
+            "title": "Cost",
+            "default": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "default": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "MemoryCostByEventType"
+      },
       "MemoryCostSummary": {
         "properties": {
           "conversation_id": {
@@ -42219,8 +44207,7 @@
           },
           "by_event_type": {
             "additionalProperties": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/MemoryCostByEventType"
             },
             "type": "object",
             "title": "By Event Type"
@@ -42567,6 +44554,54 @@
         "title": "OccupationalCodesResponse",
         "description": "Wrapper around the bundled California job-codes config.\n\nThe shape of `codes` is:\n    Record<JobCode, Record<JobTitle, IndustryCategory>>\ne.g. `{\"230\": {\"Carpenter\": \"Construction\", ...}, ...}`"
       },
+      "OpsSummaryResponse": {
+        "properties": {
+          "total_issue_classes": {
+            "type": "integer",
+            "title": "Total Issue Classes"
+          },
+          "active_issue_classes": {
+            "type": "integer",
+            "title": "Active Issue Classes"
+          },
+          "suppressed_issue_classes": {
+            "type": "integer",
+            "title": "Suppressed Issue Classes"
+          },
+          "total_events": {
+            "type": "integer",
+            "title": "Total Events"
+          },
+          "unrecovered_events": {
+            "type": "integer",
+            "title": "Unrecovered Events"
+          },
+          "recovered_events": {
+            "type": "integer",
+            "title": "Recovered Events"
+          },
+          "events_24h": {
+            "type": "integer",
+            "title": "Events 24H"
+          },
+          "unrecovered_24h": {
+            "type": "integer",
+            "title": "Unrecovered 24H"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_issue_classes",
+          "active_issue_classes",
+          "suppressed_issue_classes",
+          "total_events",
+          "unrecovered_events",
+          "recovered_events",
+          "events_24h",
+          "unrecovered_24h"
+        ],
+        "title": "OpsSummaryResponse"
+      },
       "OverlayBboxIn": {
         "properties": {
           "x0": {
@@ -42824,7 +44859,9 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
                   "type": "object"
                 },
                 "type": "array"
@@ -42839,7 +44876,9 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
                   "type": "object"
                 },
                 "type": "array"
@@ -44074,7 +46113,9 @@
             "title": "Tool Name"
           },
           "arguments": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Arguments",
             "default": {}
@@ -44115,6 +46156,91 @@
           "tool_name"
         ],
         "title": "PendingCallSummary"
+      },
+      "PermissionRecord": {
+        "properties": {
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "resource_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Type"
+          },
+          "grantee_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grantee Id"
+          },
+          "grantee_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grantee Type"
+          },
+          "permission_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permission Level"
+          },
+          "granted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Granted By"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PermissionRecord",
+        "description": "A single permission grant row (``cld_permissions``).\n\nThe PermissionsManager DB layer returns raw row dicts; extra keys are\ntolerated so timestamps / audit fields can appear without a model bump."
       },
       "PicklistCreate": {
         "properties": {
@@ -44198,6 +46324,193 @@
           "name"
         ],
         "title": "PicklistCreate"
+      },
+      "PicklistDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "authenticated_read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticated Read"
+          },
+          "public_read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Read"
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count",
+            "default": 0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PicklistItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "grouped_items": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grouped Items"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "PicklistDetail"
+      },
+      "PicklistItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "help_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Help Text"
+          },
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name"
+          },
+          "icon_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Name"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "PicklistItem"
       },
       "PicklistItemInput": {
         "properties": {
@@ -44365,6 +46678,100 @@
         },
         "type": "object",
         "title": "PicklistItemUpdate"
+      },
+      "PicklistSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "authenticated_read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticated Read"
+          },
+          "public_read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Read"
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count",
+            "default": 0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "PicklistSummary"
       },
       "PicklistUpdate": {
         "properties": {
@@ -44638,6 +47045,19 @@
           "fact_checking"
         ],
         "title": "PostPrepOption"
+      },
+      "PreferencesWriteResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "PreferencesWriteResponse"
       },
       "PresetSummary": {
         "properties": {
@@ -45012,7 +47432,9 @@
           },
           "blocks": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -45050,6 +47472,39 @@
           "variants"
         ],
         "title": "ProcessResponse"
+      },
+      "ProjectionResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows",
+          "count",
+          "fields"
+        ],
+        "title": "ProjectionResponse",
+        "description": "Projection result — each row is a free-form subset of the requested fields."
       },
       "PromptStartRequest": {
         "properties": {
@@ -45241,8 +47696,7 @@
           },
           "custom_tools": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/LegacyCustomTool"
             },
             "type": "array",
             "title": "Custom Tools",
@@ -46046,7 +48500,9 @@
           },
           "tables": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -46865,6 +49321,35 @@
         ],
         "title": "RepositorySummary"
       },
+      "RequestRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "RequestRecord"
+      },
       "ResearchTopicSummary": {
         "properties": {
           "id": {
@@ -47082,8 +49567,7 @@
           },
           "custom_tools": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/LegacyCustomTool"
             },
             "type": "array",
             "title": "Custom Tools",
@@ -47912,6 +50396,28 @@
         ],
         "title": "ScheduleSaveRequest"
       },
+      "SchemaTypesResponse": {
+        "properties": {
+          "types": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Types"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "types",
+          "count"
+        ],
+        "title": "SchemaTypesResponse",
+        "description": "Map of ``field_name -> data_type``."
+      },
       "ScrubRequest": {
         "properties": {
           "output_mode": {
@@ -48245,6 +50751,37 @@
           "y1"
         ],
         "title": "SearchBboxOut"
+      },
+      "SearchExamplesResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "total",
+          "limit",
+          "results"
+        ],
+        "title": "SearchExamplesResponse"
       },
       "SearchFilesResponse": {
         "properties": {
@@ -48582,6 +51119,102 @@
         ],
         "title": "ShareLinkInfo",
         "description": "Share-link info returned in combined-op envelopes."
+      },
+      "ShareLinkRecord": {
+        "properties": {
+          "share_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Token"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "resource_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Type"
+          },
+          "permission_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permission Level"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "max_uses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Uses"
+          },
+          "use_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Count"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ShareLinkRecord",
+        "description": "A single share-link row (``cld_share_links``)."
       },
       "ShareLinkResolveResponse": {
         "properties": {
@@ -49805,7 +52438,9 @@
             "title": "Rate Limit Downloads Per Min"
           },
           "features": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Features"
           }
@@ -50655,6 +53290,58 @@
         ],
         "title": "TemplateCreate"
       },
+      "ToolRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ToolRecord",
+        "description": "Tool definition row as returned by ``ToolDef.to_dict()``.\n\nTool rows carry provider-specific JSON-Schema fragments\n(``input_schema``, ``output_schema``) and free-form metadata, so most\nfields are typed as ``JsonValue``. Extra keys are tolerated because\nthe generated manager's ``to_dict`` can evolve independently."
+      },
       "ToolResultsRequest": {
         "properties": {
           "results": {
@@ -51080,20 +53767,232 @@
         "type": "object",
         "title": "TopicUpdate"
       },
+      "TrashFileEntry": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "parent_folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Folder Id"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "TrashFileEntry",
+        "description": "Soft-deleted file as projected by the ``cld_list_trash`` RPC.\n\nThe RPC returns ``cld_files`` rows with their canonical column set;\nextra keys are tolerated because new columns can land before this\nmodel is bumped."
+      },
+      "TrashFolderEntry": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "folder_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Path"
+          },
+          "folder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Name"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "TrashFolderEntry",
+        "description": "Soft-deleted folder as projected by the ``cld_list_trash`` RPC."
+      },
       "TrashListResponse": {
         "properties": {
           "files": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/TrashFileEntry"
             },
             "type": "array",
             "title": "Files"
           },
           "folders": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/TrashFolderEntry"
             },
             "type": "array",
             "title": "Folders"
@@ -51105,6 +54004,215 @@
           "folders"
         ],
         "title": "TrashListResponse"
+      },
+      "TriggerRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "definition_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Id"
+          },
+          "definition_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Version Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "cron_expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cron Expression"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "max_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Steps"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "TriggerRecord",
+        "description": "Trigger row as returned by ``TriggerStore``'s Pydantic model.\n\nThe TriggerStore returns a typed Pydantic model that we previously\n``model_dump(mode=\"json\")``-ed into a free dict. Here we keep the\nwire surface backward-compatible by accepting any extra keys the\nupstream model adds; the explicit subset documents the contract."
+      },
+      "UpdateMessageResponse": {
+        "properties": {
+          "updated": {
+            "type": "boolean",
+            "title": "Updated"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updated",
+          "message_id",
+          "fields"
+        ],
+        "title": "UpdateMessageResponse"
+      },
+      "UpdateRowResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "data": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "data"
+        ],
+        "title": "UpdateRowResponse"
       },
       "UpdateTriggerActiveRequest": {
         "properties": {
@@ -51118,6 +54226,19 @@
           "is_active"
         ],
         "title": "UpdateTriggerActiveRequest"
+      },
+      "UpdateTriggerActiveResponse": {
+        "properties": {
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_active"
+        ],
+        "title": "UpdateTriggerActiveResponse"
       },
       "UserAnalysisPreferences": {
         "properties": {
@@ -51207,6 +54328,69 @@
         },
         "type": "object",
         "title": "UserAnalysisPreferences"
+      },
+      "UserAnalysisPreferencesResponse": {
+        "properties": {
+          "per_detector_enabled": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object",
+            "title": "Per Detector Enabled",
+            "default": {}
+          },
+          "default_tier_per_detector": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Default Tier Per Detector",
+            "default": {}
+          },
+          "custom_patterns": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array",
+            "title": "Custom Patterns",
+            "default": []
+          },
+          "default_redaction_mode": {
+            "type": "string",
+            "title": "Default Redaction Mode",
+            "default": "reversible"
+          },
+          "per_file_type_overrides": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Per File Type Overrides",
+            "default": {}
+          },
+          "substitute_formats": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Substitute Formats",
+            "default": {}
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "UserAnalysisPreferencesResponse",
+        "description": "Round-tripped user preferences row.\n\nThe detector / pattern / override sub-fields are user-defined\nJSONB payloads that the detector pipeline interprets, so they ride\nthrough as ``JsonValue`` rather than typed Pydantic models."
       },
       "UserDataStoreCreate": {
         "properties": {
@@ -51314,7 +54498,9 @@
             "title": "Is Active"
           },
           "settings": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Settings"
           },
@@ -52518,7 +55704,9 @@
           "metadata": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -53124,42 +56312,6 @@
           "content"
         ],
         "title": "WriteArgs"
-      },
-      "_PdfCompressRequest": {
-        "properties": {
-          "source": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Source"
-          },
-          "level": {
-            "type": "integer",
-            "title": "Level",
-            "default": 3
-          },
-          "max_size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Size Bytes"
-          },
-          "max_inline_bytes": {
-            "type": "integer",
-            "title": "Max Inline Bytes",
-            "default": 262144
-          }
-        },
-        "type": "object",
-        "required": [
-          "source"
-        ],
-        "title": "_PdfCompressRequest",
-        "description": "JSON body for ``POST /assets/pdf-compress`` (MediaRef source)."
       },
       "aidream__api__routers__agents__WarmRequest": {
         "properties": {

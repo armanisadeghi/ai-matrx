@@ -1,7 +1,15 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { Loader2, Boxes, AlertCircle, RefreshCw } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Loader2,
+  Boxes,
+  AlertCircle,
+  RefreshCw,
+  Copy,
+  Check,
+  EyeOff,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +69,15 @@ export function PdfStudioChunksPane({
     }
   };
 
+  const buildCopyText = useCallback(
+    () =>
+      rows
+        .map((r) => r.content_text ?? "")
+        .filter(Boolean)
+        .join("\n\n---\n\n"),
+    [rows],
+  );
+
   return (
     <div className="flex flex-col min-h-0 flex-1 border-r last:border-r-0 border-border">
       <PaneHeader
@@ -69,6 +86,7 @@ export function PdfStudioChunksPane({
         rowCount={rows.length}
         status={status}
         onClose={onClose}
+        onCopyAll={rows.length > 0 ? buildCopyText : undefined}
       />
       <div className="flex-1 min-h-0">
         {status === "loading" && rows.length === 0 ? (
@@ -95,37 +113,87 @@ function PaneHeader({
   total,
   status,
   onClose,
+  onCopyAll,
 }: {
   activePage: number | null;
   rowCount: number;
   total: number;
   status: string;
   onClose?: () => void;
+  onCopyAll?: () => string;
 }) {
+  const hasActions = !!(onCopyAll || onClose);
   return (
-    <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card/40">
-      <Boxes className="w-3.5 h-3.5 text-muted-foreground" />
-      <span className="text-[11px] font-semibold text-foreground">Chunks</span>
+    <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
+      <Boxes className="w-3 h-3 text-primary" />
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
+        Chunks
+      </span>
       {activePage != null && (
         <span className="text-[10px] text-muted-foreground">
-          for p.{activePage}
+          · p.{activePage}
           {total > 0 && ` · ${rowCount}${total > rowCount ? `/${total}` : ""}`}
         </span>
       )}
       {status === "loading" && (
-        <Loader2 className="w-3 h-3 text-muted-foreground/70 animate-spin" />
+        <Loader2 className="w-3 h-3 text-muted-foreground/70 animate-spin ml-1" />
       )}
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="ml-auto h-5 w-5 rounded text-muted-foreground hover:text-foreground hover:bg-accent flex items-center justify-center"
-          title="Hide pane"
-        >
-          <span className="text-xs leading-none">×</span>
-        </button>
+      {hasActions && (
+        <div className="ml-auto flex items-center gap-0.5">
+          {onCopyAll && (
+            <CopyButton getText={onCopyAll} label="Copy all chunks" />
+          )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+              title="Hide pane"
+            >
+              <EyeOff className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       )}
     </div>
+  );
+}
+
+function CopyButton({
+  getText,
+  label,
+}: {
+  getText: () => string;
+  label: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const handleClick = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(getText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch {
+        // ignore clipboard permission denials
+      }
+    },
+    [getText],
+  );
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      title={label}
+      aria-label={label}
+      className={
+        copied
+          ? "p-0.5 rounded transition-colors text-emerald-500"
+          : "p-0.5 rounded transition-colors text-muted-foreground/60 hover:text-foreground hover:bg-accent"
+      }
+    >
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+    </button>
   );
 }
 
@@ -160,7 +228,12 @@ function ErrorState({
           {error}
         </p>
       )}
-      <Button size="sm" variant="outline" onClick={onRetry} className="h-7 text-[10px]">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onRetry}
+        className="h-7 text-[10px]"
+      >
         <RefreshCw className="w-3 h-3 mr-1" />
         Retry
       </Button>

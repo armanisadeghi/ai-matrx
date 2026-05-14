@@ -10,24 +10,22 @@ import {
   User as UserIcon,
   Loader2,
   Settings,
-  Tags,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useUserOrganizations, useUserRole } from "../hooks";
+import { useUserOrganizations } from "../hooks";
 import type { OrganizationWithRole } from "../types";
 import { InlineMediaRef } from "@/features/files";
 
 /**
  * Compact organization sidebar for org settings layout
  * Shows all user's organizations with the active one highlighted,
- * plus sub-navigation links for the active org (Settings, Scopes).
+ * plus sub-navigation links for the active org (Settings).
  */
 export function OrgSidebar() {
   const params = useParams();
   const pathname = usePathname();
   const activeOrgId = (params.orgId ?? params.id) as string;
   const { organizations, loading } = useUserOrganizations();
-  const { isAdmin, isOwner } = useUserRole(activeOrgId);
 
   if (loading) {
     return (
@@ -43,7 +41,6 @@ export function OrgSidebar() {
   // activeOrgId may be a slug or UUID; OrgNavItem always uses org.id for href
   const settingsBase = `/organizations/${activeOrgId}/settings`;
   const isSettingsActive = pathname === settingsBase;
-  const isScopesActive = pathname === `${settingsBase}/scopes`;
 
   return (
     <nav className="space-y-4">
@@ -95,21 +92,6 @@ export function OrgSidebar() {
               <Settings className="h-3.5 w-3.5 flex-shrink-0" />
               <span>General</span>
             </Link>
-            {(isAdmin || isOwner) && (
-              <Link
-                href={`${settingsBase}/scopes`}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-sm",
-                  "hover:bg-muted",
-                  isScopesActive
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Tags className="h-3.5 w-3.5 flex-shrink-0" />
-                <span>Scopes</span>
-              </Link>
-            )}
           </div>
         </div>
       )}

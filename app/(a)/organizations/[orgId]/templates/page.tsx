@@ -1,34 +1,74 @@
 "use client";
 
 import React from "react";
-import { ClipboardType } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ClipboardType, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
-import { Card } from "@/components/ui/card";
+import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
+import { supabase } from "@/utils/supabase/client";
+import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
-/**
- * Organization Shared Content Templates Page
- * Route: /organizations/[slug]/templates
- */
+const SELECT_COLS = "id, label, role, updated_at, tags";
+
+const fetchOwned = async (orgId: string) => {
+  const res = await supabase
+    .from("content_template")
+    .select(SELECT_COLS)
+    .eq("organization_id", orgId)
+    .order("updated_at", { ascending: false });
+  return (res.data ?? []) as Array<Record<string, unknown>>;
+};
+
+const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
+  id: String(row.id),
+  title: (row.label as string | null) ?? "Untitled",
+  subtitle: row.role ? `Role: ${String(row.role)}` : null,
+  updatedAt: (row.updated_at as string | null) ?? null,
+  tags: Array.isArray(row.tags) ? (row.tags as string[]) : undefined,
+  source,
+});
+
+const getHref = (id: string) => `/settings/content-templates/${id}`;
+
 export default function OrgTemplatesPage() {
+  const params = useParams();
+  const orgIdParam = params.orgId as string;
+  const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const org = await getOrganizationBySlugOrId(orgIdParam);
+      if (!cancelled && org) setResolvedOrgId(org.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgIdParam]);
+
   return (
     <OrgResourceLayout
       resourceName="Content Templates"
       icon={<ClipboardType className="h-4 w-4" />}
     >
-      <Card className="p-12 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ClipboardType className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Content Templates</h2>
-          <p className="text-muted-foreground mb-6">
-            Browse and use content templates shared with your organization
-          </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted">
-            <span className="text-sm font-medium">Coming Soon</span>
-          </div>
+      {!resolvedOrgId ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </Card>
+      ) : (
+        <OrgResourceList
+          orgId={resolvedOrgId}
+          resourceType="content_template"
+          tableName="content_template"
+          selectColumns={SELECT_COLS}
+          ownedQuery={fetchOwned}
+          mapRow={mapRow}
+          getHref={getHref}
+          emptyTitle="No shared content templates yet"
+          emptyDescription="Content templates you create under this organization will appear here, along with templates other members share."
+          emptyIcon={<ClipboardType className="h-8 w-8 text-purple-600 dark:text-purple-400" />}
+        />
+      )}
     </OrgResourceLayout>
   );
 }

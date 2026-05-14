@@ -20,6 +20,7 @@ import { useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  isAllJobsView,
   pageRunCompleted,
   pageRunFailed,
   pageRunStarted,
@@ -47,12 +48,20 @@ export function usePageRunsRealtime(opts: {
   jobId: string | null;
 }): void {
   const { fileId, jobId } = opts;
+  // In the All-view the jobId is the sentinel — there's no single
+  // job-run to mirror. The cross-template results table subscribes
+  // directly to `page_extraction_results` by file_id, so dropping
+  // this subscription here doesn't lose any live updates.
+  const isAll = isAllJobsView(jobId);
+  const effectiveJobId = isAll ? null : jobId;
   const dispatch = useAppDispatch();
-  const activeRun = useAppSelector((s) => selectActiveRunByJob(s, jobId));
+  const activeRun = useAppSelector((s) =>
+    selectActiveRunByJob(s, effectiveJobId),
+  );
   const activeRunId = activeRun?.runId ?? null;
 
   useEffect(() => {
-    if (!fileId || !jobId || !activeRunId) return;
+    if (!fileId || !effectiveJobId || !activeRunId) return;
     const supabase = createClient();
     const channel = supabase
       .channel(`page-runs-rt:${activeRunId}`)
@@ -73,7 +82,7 @@ export function usePageRunsRealtime(opts: {
           if (payload.eventType === "INSERT" || row.status === "running") {
             dispatch(
               pageRunStarted({
-                jobId,
+                jobId: effectiveJobId,
                 pageRunId: row.id,
                 chunkIndex: row.chunk_index,
                 pageNumbers: row.page_numbers,
@@ -84,7 +93,7 @@ export function usePageRunsRealtime(opts: {
           if (row.status === "completed") {
             dispatch(
               pageRunCompleted({
-                jobId,
+                jobId: effectiveJobId,
                 pageRunId: row.id,
                 chunkIndex: row.chunk_index,
                 pageNumbers: row.page_numbers,
@@ -101,7 +110,7 @@ export function usePageRunsRealtime(opts: {
           if (row.status === "failed") {
             dispatch(
               pageRunFailed({
-                jobId,
+                jobId: effectiveJobId,
                 pageRunId: row.id,
                 chunkIndex: row.chunk_index,
                 pageNumbers: row.page_numbers,
@@ -116,5 +125,5 @@ export function usePageRunsRealtime(opts: {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [fileId, jobId, activeRunId, dispatch]);
+  }, [fileId, effectiveJobId, activeRunId, dispatch]);
 }

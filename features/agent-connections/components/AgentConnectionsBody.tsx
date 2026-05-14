@@ -16,6 +16,7 @@ import { HooksSection } from "./sections/HooksSection";
 import { McpServersSection } from "./sections/McpServersSection";
 import { PluginsSection } from "./sections/PluginsSection";
 import { RegistriesSection } from "./sections/RegistriesSection";
+import { PreferencesSection } from "./sections/PreferencesSection";
 
 export function AgentConnectionsBody() {
   const section = useAppSelector(selectActiveSection);
@@ -46,6 +47,8 @@ export function AgentConnectionsBody() {
       return <PluginsSection />;
     case "registries":
       return <RegistriesSection />;
+    case "preferences":
+      return <PreferencesSection />;
     default:
       return null;
   }

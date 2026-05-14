@@ -4082,6 +4082,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/page-extraction/runs/{run_id}/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Index Run Into Rag
+         * @description Materialize a completed extraction run's results into RAG as
+         *     agent-derivative chunks. Idempotent (safe to call multiple times —
+         *     reuses the derivative row and rewrites the chunks).
+         *
+         *     This is the manual counterpart to the auto-hook in ``_finalize_run``.
+         *     Use it to:
+         *       * Retry indexing for runs that failed during auto-indexing
+         *       * Backfill runs that completed before the auto-hook was enabled
+         *       * Force a re-index after tuning the embedding model
+         *
+         *     Ownership: caller must own the parent job. The check happens before
+         *     we kick off any embedding work so a misbehaving FE can't trigger a
+         *     paid run on someone else's data.
+         */
+        post: operations["index_run_into_rag_page_extraction_runs__run_id__index_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/legal/search": {
         parameters: {
             query?: never;
@@ -9157,6 +9189,23 @@ export interface components {
             /** Page Ids */
             page_ids: string[];
         };
+        /** AddFieldResponse */
+        AddFieldResponse: {
+            /** Id */
+            id: string;
+            /** Field Name */
+            field_name: string;
+            /** Display Name */
+            display_name: string;
+            /** Data Type */
+            data_type: string;
+            /** Field Order */
+            field_order: number;
+            /** Is Required */
+            is_required: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /** AddGroupMemberRequest */
         AddGroupMemberRequest: {
             /** User Id */
@@ -9168,10 +9217,24 @@ export interface components {
              */
             role: "member" | "admin";
         };
+        /** AddItemsResponse */
+        AddItemsResponse: {
+            /** Item Ids */
+            item_ids: string[];
+            /** Count */
+            count: number;
+        };
         /** AddLinksToScope */
         AddLinksToScope: {
             /** Urls */
             urls: string[];
+        };
+        /** AddRowsResponse */
+        AddRowsResponse: {
+            /** Row Ids */
+            row_ids: string[];
+            /** Count */
+            count: number;
         };
         /**
          * AddSourceRequest
@@ -9394,9 +9457,7 @@ export interface components {
              * Custom Tools
              * @default []
              */
-            custom_tools: {
-                [key: string]: unknown;
-            }[];
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
             ide_state?: components["schemas"]["IdeState"] | null;
             sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
@@ -9582,6 +9643,37 @@ export interface components {
              */
             is_active: boolean;
         };
+        /** AnalysisRecipeRecord */
+        AnalysisRecipeRecord: {
+            /** Id */
+            id: string;
+            /** Owner User Id */
+            owner_user_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            match_rules?: components["schemas"]["JsonValue"] | null;
+            detector_overrides?: components["schemas"]["JsonValue"] | null;
+            pattern_overrides?: components["schemas"]["JsonValue"] | null;
+            default_tiers?: components["schemas"]["JsonValue"] | null;
+            /** Redaction Mode */
+            redaction_mode?: string | null;
+            /** Substitute Formats */
+            substitute_formats?: {
+                [key: string]: string;
+            } | null;
+            /** Priority */
+            priority?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** AnalyzeBulkRequest */
         AnalyzeBulkRequest: {
             /** Source Ids */
@@ -9707,7 +9799,7 @@ export interface components {
             extracted_text_source: string;
             /** Normalized Value */
             normalized_value?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Source */
             source: string;
@@ -9872,6 +9964,29 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * AssetPdfCompressRequest
+         * @description JSON body for ``POST /assets/pdf-compress``.
+         *
+         *     The ``source`` field is a ``PreviewSource`` — same MediaRef-shaped dict
+         *     (``file_id`` / ``url`` / ``file_uri``) used by the preview endpoint, so
+         *     every no-persist asset operation accepts the same shape on the wire.
+         */
+        AssetPdfCompressRequest: {
+            source: components["schemas"]["PreviewSource"];
+            /**
+             * Level
+             * @default 3
+             */
+            level: number;
+            /** Max Size Bytes */
+            max_size_bytes?: number | null;
+            /**
+             * Max Inline Bytes
+             * @default 262144
+             */
+            max_inline_bytes: number;
         };
         /**
          * AssetPdfCompressResponse
@@ -10062,7 +10177,7 @@ export interface components {
             query_hash: string;
             /** Pipeline Config */
             pipeline_config: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Returned Chunk Ids */
             returned_chunk_ids: string[];
@@ -10292,6 +10407,117 @@ export interface components {
              */
             folder: string;
         };
+        /** BridgeChangesResponse */
+        BridgeChangesResponse: {
+            /** Files */
+            files: components["schemas"]["BridgeFileEntry"][];
+            /** Next Cursor */
+            next_cursor: string;
+            /**
+             * Deletions Supported
+             * @default false
+             */
+            deletions_supported: boolean;
+        };
+        /**
+         * BridgeFileEntry
+         * @description Sandbox-facing projection of a ``cld_files`` row.
+         */
+        BridgeFileEntry: {
+            /** Id */
+            id?: string | null;
+            /** File Path */
+            file_path?: string | null;
+            /** File Size */
+            file_size?: number | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /**
+             * Current Version
+             * @default 1
+             */
+            current_version: number;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Checksum */
+            checksum?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** BridgeIntegrationAuth */
+        BridgeIntegrationAuth: {
+            /** Scheme */
+            scheme: string;
+            /** Headers */
+            headers: string[];
+        };
+        /** BridgeIntegrationFeatures */
+        BridgeIntegrationFeatures: {
+            /** Put Dedup By Checksum */
+            put_dedup_by_checksum: boolean;
+            /** Path Normalization */
+            path_normalization: boolean;
+            /** Polling Changes Endpoint */
+            polling_changes_endpoint: boolean;
+            /** Realtime Changes Publication */
+            realtime_changes_publication: boolean;
+        };
+        /** BridgeIntegrationLimits */
+        BridgeIntegrationLimits: {
+            /** Max Upload Bytes */
+            max_upload_bytes: number;
+            /** Quota Bytes */
+            quota_bytes: number;
+        };
+        /** BridgeIntegrationResponse */
+        BridgeIntegrationResponse: {
+            /** Service */
+            service: string;
+            /** Configured */
+            configured: boolean;
+            /** Version */
+            version?: string | null;
+            /** Endpoints */
+            endpoints: {
+                [key: string]: string;
+            };
+            features: components["schemas"]["BridgeIntegrationFeatures"];
+            limits: components["schemas"]["BridgeIntegrationLimits"];
+            auth: components["schemas"]["BridgeIntegrationAuth"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** BridgeListResponse */
+        BridgeListResponse: {
+            /** Files */
+            files: components["schemas"]["BridgeFileEntry"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** BridgePutResponse */
+        BridgePutResponse: {
+            /** Id */
+            id?: string | null;
+            /** File Path */
+            file_path: string;
+            /** Version */
+            version: number;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Deduped
+             * @default false
+             */
+            deduped: boolean;
+        };
+        /** BridgeQuotaResponse */
+        BridgeQuotaResponse: {
+            /** Used Bytes */
+            used_bytes: number;
+            /** Quota Bytes */
+            quota_bytes: number;
+            /** Files Count */
+            files_count: number;
+        };
         /** BulkCandidateAction */
         BulkCandidateAction: {
             /** Result Id */
@@ -10326,7 +10552,7 @@ export interface components {
              * @default []
              */
             errors: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
         };
         /** BulkDeleteRequest */
@@ -10533,6 +10759,27 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /**
+         * ChatMessageInput
+         * @description One LLM message on the request wire.
+         *
+         *     Accepts the historic ``dict[str, Any]`` shape unchanged. The FE-visible
+         *     schema tightens; runtime validation does not.
+         */
+        ChatMessageInput: {
+            /** Role */
+            role: ("system" | "user" | "assistant" | "tool" | "developer") | string;
+            /** Content */
+            content?: string | components["schemas"]["JsonValue"][] | null;
+            /** Name */
+            name?: string | null;
+            /** Tool Call Id */
+            tool_call_id?: string | null;
+            /** Tool Calls */
+            tool_calls?: components["schemas"]["ChatToolCallInput"][] | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ChatRequest */
         ChatRequest: {
             /** Model */
@@ -10661,9 +10908,7 @@ export interface components {
              * Custom Tools
              * @default []
              */
-            custom_tools: {
-                [key: string]: unknown;
-            }[];
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
             /** Mcp Servers */
             mcp_servers?: string[] | null;
             /** Compaction Settings */
@@ -10687,9 +10932,7 @@ export interface components {
             /** Ai Model Id */
             ai_model_id: string;
             /** Messages */
-            messages: {
-                [key: string]: unknown;
-            }[];
+            messages: components["schemas"]["ChatMessageInput"][];
             /** Conversation Id */
             conversation_id?: string | null;
             /** Is New */
@@ -10787,6 +11030,30 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * ChatToolCallInput
+         * @description One tool-call entry inside an assistant message.
+         *
+         *     Different providers carry slightly different keys (OpenAI uses
+         *     ``function.name`` + ``function.arguments``; Anthropic uses ``name`` +
+         *     ``input``). All keys are optional so either shape validates.
+         */
+        ChatToolCallInput: {
+            /** Id */
+            id?: string | null;
+            /** Type */
+            type?: string | null;
+            /** Function */
+            function?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Name */
+            name?: string | null;
+            input?: components["schemas"]["JsonValue"] | null;
+            arguments?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ChunkDetail */
         ChunkDetail: {
             /** Chunk Id */
@@ -10836,7 +11103,7 @@ export interface components {
             page_numbers?: number[] | null;
             /** Page Spans */
             page_spans?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
             /** Content Text */
             content_text: string;
@@ -11055,8 +11322,7 @@ export interface components {
             call_id: string;
             /** Tool Name */
             tool_name: string;
-            /** Output */
-            output?: unknown;
+            output?: components["schemas"]["JsonValue"] | null;
             /**
              * Is Error
              * @default false
@@ -11352,9 +11618,7 @@ export interface components {
              * Custom Tools
              * @default []
              */
-            custom_tools: {
-                [key: string]: unknown;
-            }[];
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
             ide_state?: components["schemas"]["IdeState"] | null;
             /**
              * Context
@@ -11393,6 +11657,23 @@ export interface components {
              */
             memory_scope: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
+        };
+        /**
+         * ConversationRecord
+         * @description Conversation row as returned by ``CxConversation.to_dict()``.
+         *
+         *     ORM ``to_dict`` projections evolve with the schema (status / metadata /
+         *     flags), so ``extra="allow"`` keeps the wire shape backward-compatible.
+         */
+        ConversationRecord: {
+            /** Id */
+            id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Title */
+            title?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** CopyFileRequest */
         CopyFileRequest: {
@@ -11569,6 +11850,11 @@ export interface components {
         CreateGroupRequest: {
             /** Name */
             name: string;
+        };
+        /** CreateRecipeResponse */
+        CreateRecipeResponse: {
+            /** Id */
+            id: string;
         };
         /** CreateShareLinkRequest */
         CreateShareLinkRequest: {
@@ -11811,7 +12097,7 @@ export interface components {
             kind: string;
             /** Settings */
             settings: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Is Active */
             is_active: boolean;
@@ -11917,6 +12203,88 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
         };
+        /** DatasetDetail */
+        DatasetDetail: {
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Version */
+            version?: number | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Authenticated Read */
+            authenticated_read?: boolean | null;
+            /**
+             * Row Count
+             * @default 0
+             */
+            row_count: number;
+            /**
+             * Field Count
+             * @default 0
+             */
+            field_count: number;
+            created_at?: components["schemas"]["JsonValue"] | null;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Fields */
+            fields?: components["schemas"]["FieldRecord"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DatasetRow
+         * @description A single row from a user dataset.
+         *
+         *     The columns are user-defined per-dataset, so we expose the canonical
+         *     framing keys (``id`` / ``created_at`` / ``updated_at``) and let the
+         *     rest flow through via ``extra="allow"``.
+         */
+        DatasetRow: {
+            /** Id */
+            id: string;
+            created_at?: components["schemas"]["JsonValue"] | null;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DatasetSummary
+         * @description The metadata-only projection of a dataset row.
+         *
+         *     Extra keys are tolerated because the user_data SQL projections can add
+         *     columns (counts, flags) without bumping this wire shape.
+         */
+        DatasetSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Version */
+            version?: number | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Authenticated Read */
+            authenticated_read?: boolean | null;
+            /**
+             * Row Count
+             * @default 0
+             */
+            row_count: number;
+            /**
+             * Field Count
+             * @default 0
+             */
+            field_count: number;
+            created_at?: components["schemas"]["JsonValue"] | null;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** DedupResponse */
         DedupResponse: {
             /**
@@ -11995,6 +12363,29 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DeleteAllMessagesResponse */
+        DeleteAllMessagesResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Count */
+            count: number;
+        };
+        /** DeleteExampleResponse */
+        DeleteExampleResponse: {
+            /** Message */
+            message: string;
+            /** Id */
+            id: number;
+        };
+        /** DeleteMessageResponse */
+        DeleteMessageResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** Message Id */
+            message_id: string;
+        };
         /** DeletePagesRequest */
         DeletePagesRequest: {
             /** Output Mode */
@@ -12031,6 +12422,11 @@ export interface components {
             chunks_deleted: number;
             /** Embeddings Deleted */
             embeddings_deleted: number;
+        };
+        /** DeleteTriggerResponse */
+        DeleteTriggerResponse: {
+            /** Deleted */
+            deleted: boolean;
         };
         /** DerivativeRequest */
         DerivativeRequest: {
@@ -12128,6 +12524,15 @@ export interface components {
             job_id: string;
             /** Deleted */
             deleted: number;
+        };
+        /** DistinctValuesResponse */
+        DistinctValuesResponse: {
+            /** Field Name */
+            field_name: string;
+            /** Values */
+            values: components["schemas"]["JsonValue"][];
+            /** Count */
+            count: number;
         };
         /** DocumentDetail */
         DocumentDetail: {
@@ -12352,7 +12757,7 @@ export interface components {
             canonical_value: string;
             /** Normalized Value */
             normalized_value?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Source Annotation Id */
             source_annotation_id?: string | null;
@@ -12780,8 +13185,7 @@ export interface components {
              * @default false
              */
             is_required: boolean;
-            /** Default Value */
-            default_value?: unknown;
+            default_value?: components["schemas"]["JsonValue"] | null;
             /** Validation Rules */
             validation_rules?: {
                 [key: string]: unknown;
@@ -12815,12 +13219,30 @@ export interface components {
              * @default false
              */
             is_required: boolean;
-            /** Default Value */
-            default_value?: unknown;
+            default_value?: components["schemas"]["JsonValue"] | null;
             /** Validation Rules */
             validation_rules?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** FieldRecord */
+        FieldRecord: {
+            /** Id */
+            id: string;
+            /** Field Name */
+            field_name?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** Data Type */
+            data_type?: string | null;
+            /** Field Order */
+            field_order?: number | null;
+            /** Is Required */
+            is_required?: boolean | null;
+            default_value?: components["schemas"]["JsonValue"] | null;
+            validation_rules?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** FileAnalysisHead */
         FileAnalysisHead: {
@@ -12977,7 +13399,7 @@ export interface components {
             derivation_kind?: string | null;
             /** Derivation Metadata */
             derivation_metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Has Descendants
@@ -13035,7 +13457,7 @@ export interface components {
              * @default {}
              */
             metadata: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Created At */
             created_at?: string | null;
@@ -13056,7 +13478,7 @@ export interface components {
             override_kind: string;
             /** Override Value */
             override_value: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Notes */
             notes?: string | null;
@@ -13149,7 +13571,7 @@ export interface components {
             parent_folder_id?: string | null;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Created At */
             created_at?: string | null;
@@ -13211,6 +13633,17 @@ export interface components {
              * Offset
              * @default 0
              */
+            offset: number;
+        };
+        /** FilterRowsResponse */
+        FilterRowsResponse: {
+            /** Rows */
+            rows: components["schemas"]["DatasetRow"][];
+            /** Count */
+            count: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
             offset: number;
         };
         /** FinalizeUploadRequest */
@@ -13373,6 +13806,17 @@ export interface components {
             /** Disabled */
             disabled: boolean;
         };
+        /** ForkConversationResponse */
+        ForkConversationResponse: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Forked From Id */
+            forked_from_id: string;
+            /** Forked At Position */
+            forked_at_position?: number | null;
+            /** Message Count */
+            message_count: number;
+        };
         /**
          * ForkRequest
          * @description Payload for forking a conversation.
@@ -13389,6 +13833,26 @@ export interface components {
             up_to_position?: number | null;
             /** Title */
             title?: string | null;
+        };
+        /** GetConversationResponse */
+        GetConversationResponse: {
+            conversation: components["schemas"]["ConversationRecord"];
+            /** Related */
+            related: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** GetToolResponse */
+        GetToolResponse: {
+            tool: components["schemas"]["ToolRecord"];
+            /** Related */
+            related: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | string;
+        } & {
+            [key: string]: unknown;
         };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
@@ -13840,6 +14304,88 @@ export interface components {
             height: number;
             bbox?: components["schemas"]["BboxInput"] | null;
         };
+        /** InvalidateCacheResponse */
+        InvalidateCacheResponse: {
+            /** Cleared */
+            cleared: boolean;
+            /** Conversation Id */
+            conversation_id: string;
+        };
+        /** IssueClassEmbed */
+        IssueClassEmbed: {
+            /**
+             * Key
+             * @default
+             */
+            key: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Category
+             * @default
+             */
+            category: string;
+            /**
+             * Severity
+             * @default
+             */
+            severity: string;
+            /**
+             * Disposition
+             * @default
+             */
+            disposition: string;
+        };
+        /**
+         * IssueClassRecord
+         * @description ``ops_issue_class`` row as projected by ``to_dict()``.
+         *
+         *     ORM ``to_dict`` projections include nullable columns and audit fields
+         *     that evolve with the schema, so ``extra="allow"`` keeps the wire
+         *     backward-compatible without per-field churn.
+         */
+        IssueClassRecord: {
+            /** Id */
+            id?: string | null;
+            /** Key */
+            key?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Severity */
+            severity?: string | null;
+            /** Disposition */
+            disposition?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Alert Threshold */
+            alert_threshold?: number | null;
+            /** Alert Window Minutes */
+            alert_window_minutes?: number | null;
+            /** Resolution Notes */
+            resolution_notes?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** IssueClassStatsResponse */
+        IssueClassStatsResponse: {
+            /** Total Events */
+            total_events: number;
+            /** Recovered Events */
+            recovered_events: number;
+            /** Unrecovered Events */
+            unrecovered_events: number;
+            /** Recovery Rate */
+            recovery_rate: number;
+            /** Events 24H */
+            events_24h: number;
+        };
         /** IssueClassUpdate */
         IssueClassUpdate: {
             /** Disposition */
@@ -13856,6 +14402,24 @@ export interface components {
             alert_window_minutes?: number | null;
             /** Resolution Notes */
             resolution_notes?: string | null;
+        };
+        /**
+         * IssueEventRecord
+         * @description ``ops_issue_event`` row + optional ``ops_issue_class`` embed.
+         */
+        IssueEventRecord: {
+            /** Id */
+            id?: string | null;
+            /** Issue Class Id */
+            issue_class_id?: string | null;
+            /** Provider */
+            provider?: string | null;
+            /** Was Recovered */
+            was_recovered?: boolean | null;
+            occurred_at?: components["schemas"]["JsonValue"] | null;
+            ops_issue_class?: components["schemas"]["IssueClassEmbed"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** Item */
         Item: {
@@ -13941,6 +14505,7 @@ export interface components {
             /** Selected Version */
             selected_version?: number | null;
         };
+        JsonValue: unknown;
         /** KeyFindingEntry */
         KeyFindingEntry: {
             /** Label Category */
@@ -14167,6 +14732,51 @@ export interface components {
              * @default v1
              */
             classifier_version: string;
+        };
+        /**
+         * LegacyCustomTool
+         * @description Deprecated request-side custom-tool spec.
+         *
+         *     New code should send ``tools: [{"kind": "inline", ...}]`` (``ToolSpec``)
+         *     instead. The router translates this shape to ``InlineToolSpec`` via
+         *     ``apply_unified_tools``.
+         */
+        LegacyCustomTool: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            input_schema?: components["schemas"]["LegacyCustomToolInputSchema"] | null;
+            inputSchema?: components["schemas"]["LegacyCustomToolInputSchema"] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * LegacyCustomToolInputSchema
+         * @description JSON Schema fragment describing a legacy custom tool's input.
+         *
+         *     Mirrors ``matrx_ai.tools.models.CustomToolInputSchema`` on the wire while
+         *     staying permissive — historical payloads sometimes include
+         *     ``additionalProperties``, ``description``, or other JSON Schema keywords
+         *     that this model lets through unchanged.
+         */
+        LegacyCustomToolInputSchema: {
+            /**
+             * Type
+             * @default object
+             */
+            type: string;
+            /** Properties */
+            properties?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Required */
+            required?: string[];
+        } & {
+            [key: string]: unknown;
         };
         /** LegalSearchRequest */
         LegalSearchRequest: {
@@ -14575,6 +15185,91 @@ export interface components {
              */
             processing_descendants: components["schemas"]["LineageNode"][];
         };
+        /** ListConversationsResponse */
+        ListConversationsResponse: {
+            /** Conversations */
+            conversations: components["schemas"]["ConversationRecord"][];
+            /** Count */
+            count: number;
+        };
+        /** ListDatasetsResponse */
+        ListDatasetsResponse: {
+            /** Datasets */
+            datasets: components["schemas"]["DatasetSummary"][];
+            /** Count */
+            count: number;
+        };
+        /** ListExamplesResponse */
+        ListExamplesResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["ItemResponse"][];
+        };
+        /** ListFieldsResponse */
+        ListFieldsResponse: {
+            /** Fields */
+            fields: components["schemas"]["FieldRecord"][];
+            /** Count */
+            count: number;
+        };
+        /** ListGroupedItemsResponse */
+        ListGroupedItemsResponse: {
+            /** Grouped Items */
+            grouped_items: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Count */
+            count: number;
+        };
+        /** ListItemsResponse */
+        ListItemsResponse: {
+            /** Items */
+            items: components["schemas"]["PicklistItem"][];
+            /** Count */
+            count: number;
+        };
+        /** ListPicklistsResponse */
+        ListPicklistsResponse: {
+            /** Picklists */
+            picklists: components["schemas"]["PicklistSummary"][];
+            /** Count */
+            count: number;
+        };
+        /** ListRequestsResponse */
+        ListRequestsResponse: {
+            /** Requests */
+            requests: components["schemas"]["RequestRecord"][];
+            /** Count */
+            count: number;
+        };
+        /** ListRowsResponse */
+        ListRowsResponse: {
+            /** Rows */
+            rows: components["schemas"]["DatasetRow"][];
+            /** Count */
+            count: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** ListToolsByAppResponse */
+        ListToolsByAppResponse: {
+            /** Tools */
+            tools: components["schemas"]["ToolRecord"][];
+            /** Count */
+            count: number;
+            /** Source App */
+            source_app: string;
+        };
+        /** ListToolsResponse */
+        ListToolsResponse: {
+            /** Tools */
+            tools: components["schemas"]["ToolRecord"][];
+            /** Count */
+            count: number;
+        };
         /** ManifestFact */
         ManifestFact: {
             /** Label */
@@ -14725,6 +15420,29 @@ export interface components {
             /** Is Relevant */
             is_relevant?: boolean | null;
         };
+        /** MemoryCostByEventType */
+        MemoryCostByEventType: {
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /**
+             * Cost
+             * @default 0
+             */
+            cost: number;
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+        };
         /** MemoryCostSummary */
         MemoryCostSummary: {
             /** Conversation Id */
@@ -14739,9 +15457,7 @@ export interface components {
             event_count: number;
             /** By Event Type */
             by_event_type: {
-                [key: string]: {
-                    [key: string]: unknown;
-                };
+                [key: string]: components["schemas"]["MemoryCostByEventType"];
             };
         };
         /** MergePdfSource */
@@ -14881,6 +15597,25 @@ export interface components {
                 };
             };
         };
+        /** OpsSummaryResponse */
+        OpsSummaryResponse: {
+            /** Total Issue Classes */
+            total_issue_classes: number;
+            /** Active Issue Classes */
+            active_issue_classes: number;
+            /** Suppressed Issue Classes */
+            suppressed_issue_classes: number;
+            /** Total Events */
+            total_events: number;
+            /** Unrecovered Events */
+            unrecovered_events: number;
+            /** Recovered Events */
+            recovered_events: number;
+            /** Events 24H */
+            events_24h: number;
+            /** Unrecovered 24H */
+            unrecovered_24h: number;
+        };
         /** OverlayBboxIn */
         OverlayBboxIn: {
             /** X0 */
@@ -14981,11 +15716,11 @@ export interface components {
             extraction_method?: string | null;
             /** Blocks */
             blocks?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
             /** Words */
             words?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
             /**
              * Chunk Ids
@@ -15471,7 +16206,7 @@ export interface components {
              * @default {}
              */
             arguments: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Iteration
@@ -15482,6 +16217,31 @@ export interface components {
             created_at?: string | null;
             /** Expires At */
             expires_at?: string | null;
+        };
+        /**
+         * PermissionRecord
+         * @description A single permission grant row (``cld_permissions``).
+         *
+         *     The PermissionsManager DB layer returns raw row dicts; extra keys are
+         *     tolerated so timestamps / audit fields can appear without a model bump.
+         */
+        PermissionRecord: {
+            /** Resource Id */
+            resource_id?: string | null;
+            /** Resource Type */
+            resource_type?: string | null;
+            /** Grantee Id */
+            grantee_id?: string | null;
+            /** Grantee Type */
+            grantee_type?: string | null;
+            /** Permission Level */
+            permission_level?: string | null;
+            /** Granted By */
+            granted_by?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** PicklistCreate */
         PicklistCreate: {
@@ -15522,6 +16282,53 @@ export interface components {
              * @description Optional group applied to every item when using `labels` mode.
              */
             group_name?: string | null;
+        };
+        /** PicklistDetail */
+        PicklistDetail: {
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Authenticated Read */
+            authenticated_read?: boolean | null;
+            /** Public Read */
+            public_read?: boolean | null;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            created_at?: components["schemas"]["JsonValue"] | null;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Items */
+            items?: components["schemas"]["PicklistItem"][];
+            /** Grouped Items */
+            grouped_items?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PicklistItem */
+        PicklistItem: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Help Text */
+            help_text?: string | null;
+            /** Group Name */
+            group_name?: string | null;
+            /** Icon Name */
+            icon_name?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** PicklistItemInput */
         PicklistItemInput: {
@@ -15569,6 +16376,30 @@ export interface components {
             authenticated_read?: boolean | null;
             /** Public Read */
             public_read?: boolean | null;
+        };
+        /** PicklistSummary */
+        PicklistSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Authenticated Read */
+            authenticated_read?: boolean | null;
+            /** Public Read */
+            public_read?: boolean | null;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            created_at?: components["schemas"]["JsonValue"] | null;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** PicklistUpdate */
         PicklistUpdate: {
@@ -15658,6 +16489,11 @@ export interface components {
          * @enum {string}
          */
         PostPrepOption: "none" | "translation" | "summarization" | "expansion" | "fact_checking";
+        /** PreferencesWriteResponse */
+        PreferencesWriteResponse: {
+            /** Status */
+            status: string;
+        };
         /**
          * PresetSummary
          * @description One preset, as listed by GET /assets/presets.
@@ -15833,7 +16669,7 @@ export interface components {
             block_count: number;
             /** Blocks */
             blocks: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
         };
         /** ProcessResponse */
@@ -15843,6 +16679,20 @@ export interface components {
             source: components["schemas"]["StudioSourceOut"];
             /** Variants */
             variants: components["schemas"]["StudioVariantOut"][];
+        };
+        /**
+         * ProjectionResponse
+         * @description Projection result — each row is a free-form subset of the requested fields.
+         */
+        ProjectionResponse: {
+            /** Rows */
+            rows: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Count */
+            count: number;
+            /** Fields */
+            fields: string[];
         };
         /** PromptStartRequest */
         PromptStartRequest: {
@@ -15897,9 +16747,7 @@ export interface components {
              * Custom Tools
              * @default []
              */
-            custom_tools: {
-                [key: string]: unknown;
-            }[];
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
             ide_state?: components["schemas"]["IdeState"] | null;
             /**
              * Context
@@ -16248,7 +17096,7 @@ export interface components {
              * @default []
              */
             tables: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Image Png Base64 */
             image_png_base64?: string | null;
@@ -16561,6 +17409,15 @@ export interface components {
             /** Last Synced At */
             last_synced_at: string | null;
         };
+        /** RequestRecord */
+        RequestRecord: {
+            /** Id */
+            id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * ResearchTopicSummary
          * @description Compact projection of an rs_topic row used by topic-picker UIs.
@@ -16638,9 +17495,7 @@ export interface components {
              * Custom Tools
              * @default []
              */
-            custom_tools: {
-                [key: string]: unknown;
-            }[];
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
         };
         /** ResumeRunRequest */
         ResumeRunRequest: {
@@ -16958,6 +17813,18 @@ export interface components {
             enabled: boolean;
         };
         /**
+         * SchemaTypesResponse
+         * @description Map of ``field_name -> data_type``.
+         */
+        SchemaTypesResponse: {
+            /** Types */
+            types: {
+                [key: string]: string;
+            };
+            /** Count */
+            count: number;
+        };
+        /**
          * ScrubRequest
          * @description Composite scrub call — wipes the categories opted-in via flags.
          */
@@ -17187,6 +18054,17 @@ export interface components {
             /** Y1 */
             y1: number;
         };
+        /** SearchExamplesResponse */
+        SearchExamplesResponse: {
+            /** Query */
+            query: string;
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Results */
+            results: components["schemas"]["ItemResponse"][];
+        };
         /** SearchFilesResponse */
         SearchFilesResponse: {
             /** Results */
@@ -17303,6 +18181,30 @@ export interface components {
             expires_at?: string | null;
             /** Max Uses */
             max_uses?: number | null;
+        };
+        /**
+         * ShareLinkRecord
+         * @description A single share-link row (``cld_share_links``).
+         */
+        ShareLinkRecord: {
+            /** Share Token */
+            share_token?: string | null;
+            /** Resource Id */
+            resource_id?: string | null;
+            /** Resource Type */
+            resource_type?: string | null;
+            /** Permission Level */
+            permission_level?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+            /** Use Count */
+            use_count?: number | null;
+        } & {
+            [key: string]: unknown;
         };
         /** ShareLinkResolveResponse */
         ShareLinkResolveResponse: {
@@ -17694,7 +18596,7 @@ export interface components {
             rate_limit_downloads_per_min?: number | null;
             /** Features */
             features?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** StripMetadataRequest */
@@ -17985,6 +18887,27 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * ToolRecord
+         * @description Tool definition row as returned by ``ToolDef.to_dict()``.
+         *
+         *     Tool rows carry provider-specific JSON-Schema fragments
+         *     (``input_schema``, ``output_schema``) and free-form metadata, so most
+         *     fields are typed as ``JsonValue``. Extra keys are tolerated because
+         *     the generated manager's ``to_dict`` can evolve independently.
+         */
+        ToolRecord: {
+            /** Id */
+            id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Source App */
+            source_app?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ToolResultsRequest */
         ToolResultsRequest: {
             /** Results */
@@ -18139,19 +19062,135 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * TrashFileEntry
+         * @description Soft-deleted file as projected by the ``cld_list_trash`` RPC.
+         *
+         *     The RPC returns ``cld_files`` rows with their canonical column set;
+         *     extra keys are tolerated because new columns can land before this
+         *     model is bumped.
+         */
+        TrashFileEntry: {
+            /** Id */
+            id?: string | null;
+            /** File Path */
+            file_path?: string | null;
+            /** File Name */
+            file_name?: string | null;
+            /** File Size */
+            file_size?: number | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Visibility */
+            visibility?: string | null;
+            /** Parent Folder Id */
+            parent_folder_id?: string | null;
+            /** Deleted At */
+            deleted_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * TrashFolderEntry
+         * @description Soft-deleted folder as projected by the ``cld_list_trash`` RPC.
+         */
+        TrashFolderEntry: {
+            /** Id */
+            id?: string | null;
+            /** Folder Path */
+            folder_path?: string | null;
+            /** Folder Name */
+            folder_name?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Visibility */
+            visibility?: string | null;
+            /** Deleted At */
+            deleted_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** TrashListResponse */
         TrashListResponse: {
             /** Files */
-            files: {
-                [key: string]: unknown;
-            }[];
+            files: components["schemas"]["TrashFileEntry"][];
             /** Folders */
-            folders: {
-                [key: string]: unknown;
-            }[];
+            folders: components["schemas"]["TrashFolderEntry"][];
+        };
+        /**
+         * TriggerRecord
+         * @description Trigger row as returned by ``TriggerStore``'s Pydantic model.
+         *
+         *     The TriggerStore returns a typed Pydantic model that we previously
+         *     ``model_dump(mode="json")``-ed into a free dict. Here we keep the
+         *     wire surface backward-compatible by accepting any extra keys the
+         *     upstream model adds; the explicit subset documents the contract.
+         */
+        TriggerRecord: {
+            /** Id */
+            id?: string | null;
+            /** Definition Id */
+            definition_id?: string | null;
+            /** Definition Version Id */
+            definition_version_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Cron Expression */
+            cron_expression?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Max Steps */
+            max_steps?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** UpdateMessageResponse */
+        UpdateMessageResponse: {
+            /** Updated */
+            updated: boolean;
+            /** Message Id */
+            message_id: string;
+            /** Fields */
+            fields: string[];
+        };
+        /** UpdateRowResponse */
+        UpdateRowResponse: {
+            /** Id */
+            id: string;
+            /** Data */
+            data: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
         };
         /** UpdateTriggerActiveRequest */
         UpdateTriggerActiveRequest: {
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** UpdateTriggerActiveResponse */
+        UpdateTriggerActiveResponse: {
             /** Is Active */
             is_active: boolean;
         };
@@ -18181,6 +19220,57 @@ export interface components {
             substitute_formats?: {
                 [key: string]: string;
             } | null;
+        };
+        /**
+         * UserAnalysisPreferencesResponse
+         * @description Round-tripped user preferences row.
+         *
+         *     The detector / pattern / override sub-fields are user-defined
+         *     JSONB payloads that the detector pipeline interprets, so they ride
+         *     through as ``JsonValue`` rather than typed Pydantic models.
+         */
+        UserAnalysisPreferencesResponse: {
+            /**
+             * Per Detector Enabled
+             * @default {}
+             */
+            per_detector_enabled: {
+                [key: string]: boolean;
+            };
+            /**
+             * Default Tier Per Detector
+             * @default {}
+             */
+            default_tier_per_detector: {
+                [key: string]: string;
+            };
+            /**
+             * Custom Patterns
+             * @default []
+             */
+            custom_patterns: components["schemas"]["JsonValue"][];
+            /**
+             * Default Redaction Mode
+             * @default reversible
+             */
+            default_redaction_mode: string;
+            /**
+             * Per File Type Overrides
+             * @default {}
+             */
+            per_file_type_overrides: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Substitute Formats
+             * @default {}
+             */
+            substitute_formats: {
+                [key: string]: string;
+            };
+            updated_at?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** UserDataStoreCreate */
         UserDataStoreCreate: {
@@ -18216,7 +19306,7 @@ export interface components {
             is_active: boolean;
             /** Settings */
             settings: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Members */
             members: components["schemas"]["UserDataStoreDetailMember"][];
@@ -18644,7 +19734,7 @@ export interface components {
             comments?: string | null;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** User Id */
             user_id?: string | null;
@@ -18785,28 +19875,6 @@ export interface components {
             field_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
-        };
-        /**
-         * _PdfCompressRequest
-         * @description JSON body for ``POST /assets/pdf-compress`` (MediaRef source).
-         */
-        _PdfCompressRequest: {
-            /** Source */
-            source: {
-                [key: string]: unknown;
-            };
-            /**
-             * Level
-             * @default 3
-             */
-            level: number;
-            /** Max Size Bytes */
-            max_size_bytes?: number | null;
-            /**
-             * Max Inline Bytes
-             * @default 262144
-             */
-            max_inline_bytes: number;
         };
         /** WarmRequest */
         aidream__api__routers__agents__WarmRequest: {
@@ -19477,7 +20545,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListToolsResponse"];
                 };
             };
         };
@@ -19499,7 +20567,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListToolsByAppResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19528,7 +20596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListToolsByAppResponse"];
                 };
             };
         };
@@ -19548,7 +20616,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListToolsByAppResponse"];
                 };
             };
         };
@@ -19570,7 +20638,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GetToolResponse"];
                 };
             };
             /** @description Validation Error */
@@ -26184,6 +27252,37 @@ export interface operations {
             };
         };
     };
+    index_run_into_rag_page_extraction_runs__run_id__index_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     legal_search_legal_search_post: {
         parameters: {
             query?: never;
@@ -27233,9 +28332,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ListDatasetsResponse"];
                 };
             };
         };
@@ -27259,9 +28356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DatasetDetail"];
                 };
             };
             /** @description Validation Error */
@@ -27292,9 +28387,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DatasetDetail"];
                 };
             };
             /** @description Validation Error */
@@ -27325,9 +28418,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ListFieldsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27362,9 +28453,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AddFieldResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27403,9 +28492,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ListRowsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27444,9 +28531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AddRowsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27478,9 +28563,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DatasetRow"];
                 };
             };
             /** @description Validation Error */
@@ -27519,9 +28602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["UpdateRowResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27557,9 +28638,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ProjectionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27593,9 +28672,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DistinctValuesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27630,9 +28707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FilterRowsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27663,9 +28738,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SchemaTypesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27699,9 +28772,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ListPicklistsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27734,9 +28805,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PicklistDetail"];
                 };
             };
             /** @description Validation Error */
@@ -27770,9 +28839,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PicklistDetail"];
                 };
             };
             /** @description Validation Error */
@@ -27836,9 +28903,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PicklistDetail"];
                 };
             };
             /** @description Validation Error */
@@ -27871,9 +28936,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ListItemsResponse"] | components["schemas"]["ListGroupedItemsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27908,9 +28971,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AddItemsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -27971,9 +29032,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PicklistItem"];
                 };
             };
             /** @description Validation Error */
@@ -28039,9 +29098,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PicklistItem"];
                 };
             };
             /** @description Validation Error */
@@ -30292,9 +31349,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["TriggerRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -30327,9 +31382,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["TriggerRecord"];
                 };
             };
             /** @description Validation Error */
@@ -30360,9 +31413,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["TriggerRecord"];
                 };
             };
             /** @description Validation Error */
@@ -30393,9 +31444,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["DeleteTriggerResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30430,9 +31479,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["UpdateTriggerActiveResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30558,7 +31605,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListConversationsResponse"];
                 };
             };
         };
@@ -30580,7 +31627,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GetConversationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30611,7 +31658,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListRequestsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30642,7 +31689,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["InvalidateCacheResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30674,7 +31721,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DeleteMessageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30710,7 +31757,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["UpdateMessageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30741,7 +31788,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DeleteAllMessagesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -30776,7 +31823,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ForkConversationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -31090,7 +32137,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["_PdfCompressRequest"];
+                "application/json": components["schemas"]["AssetPdfCompressRequest"];
             };
         };
         responses: {
@@ -32357,9 +33404,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["PermissionRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32394,9 +33439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PermissionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32461,9 +33504,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["PermissionRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32498,9 +33539,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PermissionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32565,9 +33604,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["ShareLinkRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32602,9 +33639,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ShareLinkRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32635,9 +33670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["ShareLinkRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32672,9 +33705,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ShareLinkRecord"];
                 };
             };
             /** @description Validation Error */
@@ -33707,9 +34738,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BridgeListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -33780,9 +34809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BridgePutResponse"];
                 };
             };
             /** @description Validation Error */
@@ -33847,9 +34874,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BridgeQuotaResponse"];
                 };
             };
             /** @description Validation Error */
@@ -33885,9 +34910,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BridgeChangesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -33916,9 +34939,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BridgeIntegrationResponse"];
                 };
             };
         };
@@ -33971,7 +34992,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListExamplesResponse"];
                 };
             };
         };
@@ -34026,7 +35047,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ItemResponse"];
                 };
             };
             /** @description Validation Error */
@@ -34061,7 +35082,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ItemResponse"];
                 };
             };
             /** @description Validation Error */
@@ -34092,7 +35113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DeleteExampleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -34125,7 +35146,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SearchExamplesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -34510,9 +35531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["IssueClassRecord"][];
                 };
             };
         };
@@ -34534,9 +35553,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["IssueClassRecord"];
                 };
             };
             /** @description Validation Error */
@@ -34571,9 +35588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["IssueClassRecord"];
                 };
             };
             /** @description Validation Error */
@@ -34607,9 +35622,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["IssueEventRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -34643,9 +35656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["IssueEventRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -34674,9 +35685,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["OpsSummaryResponse"];
                 };
             };
         };
@@ -34698,9 +35707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["IssueClassStatsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -35436,9 +36443,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["UserAnalysisPreferencesResponse"];
                 };
             };
         };
@@ -35462,9 +36467,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["PreferencesWriteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -35493,9 +36496,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["AnalysisRecipeRecord"][];
                 };
             };
         };
@@ -35519,9 +36520,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CreateRecipeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -35556,9 +36555,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["PreferencesWriteResponse"];
                 };
             };
             /** @description Validation Error */

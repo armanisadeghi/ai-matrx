@@ -69,9 +69,26 @@ export async function listResults(opts: {
   return (data ?? []) as PageExtractionResult[];
 }
 
-export async function getLatestRunId(
-  jobId: string,
-): Promise<string | null> {
+/**
+ * Every result row for a file, across every template ("All extractions"
+ * view in the main pane). The caller joins these against the jobs list
+ * to render a Template column. Ordered by canonical page then creation
+ * time so the table is stable when results from different jobs interleave.
+ */
+export async function listResultsForFile(
+  fileId: string,
+): Promise<PageExtractionResult[]> {
+  const { data, error } = await db
+    .from("page_extraction_results")
+    .select("*")
+    .eq("file_id", fileId)
+    .order("canonical_page", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as PageExtractionResult[];
+}
+
+export async function getLatestRunId(jobId: string): Promise<string | null> {
   const { data: jobRow, error: jobErr } = await db
     .from("page_extraction_jobs")
     .select("latest_run_id")

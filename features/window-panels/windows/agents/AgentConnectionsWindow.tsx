@@ -5,6 +5,7 @@ import { Settings } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentConnectionsSidebar } from "@/features/agent-connections/components/AgentConnectionsSidebar";
 import { AgentConnectionsBody } from "@/features/agent-connections/components/AgentConnectionsBody";
+import { AgentConnectionsNavProvider } from "@/features/agent-connections/components/AgentConnectionsNavContext";
 import type { AgentConnectionsSection } from "@/features/agent-connections/types";
 import { ScopePicker } from "@/features/agent-connections/components/ScopePicker";
 import {
@@ -81,26 +82,28 @@ function AgentConnectionsWindowInner({
   );
 
   return (
-    <WindowPanel
-      id="agent-connections-window"
-      titleNode={titleNode}
-      title="Agent Customizations"
-      width={1100}
-      height={720}
-      minWidth={640}
-      minHeight={420}
-      position="center"
-      onClose={onClose}
-      actionsRight={<ScopePicker />}
-      sidebar={sidebarContent}
-      sidebarDefaultSize={220}
-      sidebarMinSize={180}
-      sidebarClassName="bg-muted/10 border-r border-border"
-      overlayId="agentConnectionsWindow"
-      onCollectData={collectData}
-      bodyClassName="bg-background"
-    >
-      <AgentConnectionsBody />
-    </WindowPanel>
+    <AgentConnectionsNavProvider mode="overlay">
+      <WindowPanel
+        id="agent-connections-window"
+        titleNode={titleNode}
+        title="Agent Customizations"
+        width={1100}
+        height={720}
+        minWidth={640}
+        minHeight={420}
+        position="center"
+        onClose={onClose}
+        actionsRight={<ScopePicker />}
+        sidebar={sidebarContent}
+        sidebarDefaultSize={220}
+        sidebarMinSize={180}
+        sidebarClassName="bg-muted/10 border-r border-border"
+        overlayId="agentConnectionsWindow"
+        onCollectData={collectData}
+        bodyClassName="bg-background"
+      >
+        <AgentConnectionsBody />
+      </WindowPanel>
+    </AgentConnectionsNavProvider>
   );
 }

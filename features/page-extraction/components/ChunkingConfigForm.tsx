@@ -1,68 +1,78 @@
 /**
  * features/page-extraction/components/ChunkingConfigForm.tsx
  *
- * User-driven form for assembling a chunked extraction run. NO silent
- * defaults — page range and chunk size are required user inputs.
+ * Content Extractor right-panel host. Renders ONE of three states:
  *
- *   ┌────────────────────────────────────────────────────────┐
- *   │ Agent              [ Pick from your agents     ▾ ]     │
- *   │ Pages              [ "1-50, 80-90"              ]     │
- *   │                    382 available · 60 in scope         │
- *   │ Chunk size         [ pages per agent call       ]     │
- *   │                    → 5 chunks                          │
- *   │ Source variations  [x] Cleaned text                    │
- *   │                    [ ] Raw text                        │
- *   │                    [ ] PDF page (coming soon)          │
- *   │ ─────────────────────────────────────────────────────  │
- *   │ [ Save as named Job ]  (optional)                      │
- *   │              [ Run extraction ]                        │
- *   └────────────────────────────────────────────────────────┘
+ *   • LIST-ONLY  — no template selected and not editing. Show the saved
+ *                  list + a "New template" button. Nothing else.
+ *   • READ-ONLY  — a saved template is selected. Show its details
+ *                  (agent, pages, chunk size, variable wiring) plus
+ *                  Edit + Run buttons. No form noise.
+ *   • EDITING    — the user clicked Edit, New, or saved a brand-new
+ *                  draft. The full editor (agent + page range + chunk
+ *                  size + variable wiring via `VariableMappingEditor`).
+ *
+ * The state is driven by:
+ *   - `selectedJobId`     — currently-loaded saved template, if any.
+ *   - `editingByFile[id]` — boolean (Redux) flipped by user actions.
+ *
+ * The editor used to be always-rendered, which buried the "just run
+ * this" flow under a wall of inputs and falsely told the user variables
+ * were "unmapped" (no mapping UI was wired). With the new
+ * `matrx-user/content-extractor` surface + `VariableMappingEditor`, the
+ * full surface-value catalog is available as dropdowns, the legacy
+ * heuristic is opt-in via an "Auto-suggest" button, and the user only
+ * sees the editor when they're actually editing.
  */
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Loader2, Plus, Repeat, Save, X } from "lucide-react";
-import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertCircle, Loader2, Plus, Save } from "lucide-react";
+import {
+  upsertJobInCache,
+  useExtractionJobs,
+} from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { SOURCE_VARIATIONS } from "@/features/page-extraction/constants";
 import {
+  clearDraft,
   ensureDraft,
   patchDraft,
-  toggleDraftVariation,
+  selectJobForFile,
+  setEditing,
 } from "@/features/page-extraction/redux/pageExtractionSlice";
-import { selectDraftForFile } from "@/features/page-extraction/redux/selectors";
-// useExtractionStream lives in SavedJobsList — Run is no longer
-// triggered from this form.
+import {
+  selectDraftForFile,
+  selectIsEditingForFile,
+  selectSelectedJobForFile,
+} from "@/features/page-extraction/redux/selectors";
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
-import { parsePageRangeInput } from "@/features/page-extraction/utils/chunk-preview";
-import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
+import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
+import {
+  formatPageRange,
+  parsePageRangeInput,
+} from "@/features/page-extraction/utils/chunk-preview";
 import { SavedJobsList } from "@/features/page-extraction/components/SavedJobsList";
+import { VariableMappingEditor } from "@/features/page-extraction/components/VariableMappingEditor";
+import { TemplateReadOnlyView } from "@/features/page-extraction/components/TemplateReadOnlyView";
 import {
   DraftValidationError,
   draftDiffersFromJob,
   saveTemplateFromDraft,
   validateDraft,
 } from "@/features/page-extraction/services/run-from-draft";
-import {
-  clearDraft,
-  selectJobForFile,
-} from "@/features/page-extraction/redux/pageExtractionSlice";
-import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { getJob } from "@/features/page-extraction/api/jobs";
 import type {
   PageExtractionJob,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
-import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -77,38 +87,22 @@ export function ChunkingConfigForm({
 }: ChunkingConfigFormProps) {
   const dispatch = useAppDispatch();
   const toast = useToastManager("page-extraction");
-  const userId = useAppSelector(selectUserId);
-  const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
   const selectedJobId = useAppSelector((s) =>
     selectSelectedJobForFile(s, fileId),
   );
-  // streamError surfaces only if SavedJobsList propagates one; the form
-  // itself no longer initiates runs.
-  const streamError: string | null = null;
-  const {
-    chunks,
-    stats,
-    availablePages,
-    loading: pagesLoading,
-  } = useChunkPreview({ fileId, processedDocumentId });
+  const isEditing = useAppSelector((s) => selectIsEditingForFile(s, fileId));
 
-  const agent = useAppSelector((s) =>
-    draft.agentId ? selectAgentById(s, draft.agentId) : undefined,
-  );
-
-  // Mirror of the currently-loaded saved Job — drives the "dirty?" check
-  // and the Save-vs-Update button label. Fetched on selectedJobId change.
-  const [loadedJob, setLoadedJob] = useState<PageExtractionJob | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // Ensure a draft exists for this file on mount.
+  // Make sure a draft exists for this file the moment we mount. Cheap
+  // and idempotent; required because both the editor and the run flow
+  // poke at `draft.*`.
   useEffect(() => {
     dispatch(ensureDraft({ fileId }));
   }, [dispatch, fileId]);
 
-  // When the selected Job changes, hydrate the draft from the Job and
-  // remember the snapshot. This is what makes clicking a saved template
-  // row "view" it — the form just becomes that template.
+  // Hydrate the loaded job whenever the selection changes. This is
+  // shared across the read-only view and the editor — both need the
+  // job's source-of-truth snapshot.
+  const [loadedJob, setLoadedJob] = useState<PageExtractionJob | null>(null);
   useEffect(() => {
     let cancelled = false;
     if (!selectedJobId) {
@@ -118,33 +112,13 @@ export function ChunkingConfigForm({
     void getJob(selectedJobId).then((job) => {
       if (cancelled || !job) return;
       setLoadedJob(job);
+      // Hydrate the draft so an immediate "Edit" reflects the saved
+      // snapshot. (We do NOT enter edit mode here — that's a user
+      // action.)
       dispatch(
         patchDraft({
           fileId,
-          patch: {
-            agentId: job.agent_id,
-            scopePages: job.scope_pages ?? [],
-            scopePagesInputRaw: job.scope_pages?.length
-              ? formatPageRange(job.scope_pages)
-              : "",
-            chunkSize: job.chunk_size,
-            chunkOverlap: job.chunk_overlap,
-            sourceVariations: (job.source_variations ?? [
-              "clean_text",
-            ]) as SourceVariationKind[],
-            chunkingStrategy: (job.chunking_strategy ?? "pages") as
-              | "pages"
-              | "keyword"
-              | "manual"
-              | "section",
-            jobName: job.name,
-            saveAsJob: true,
-            variableMapping: job.variable_mapping ?? {},
-            outputSchema: job.output_schema as unknown,
-            maxConcurrent: job.max_concurrent,
-            extraInputs: job.extra_inputs ?? [],
-            ragBoost: job.rag_boost ?? null,
-          },
+          patch: jobToDraftPatch(job),
         }),
       );
     });
@@ -153,48 +127,183 @@ export function ChunkingConfigForm({
     };
   }, [selectedJobId, fileId, dispatch]);
 
-  const isDirty = useMemo(
-    () => draftDiffersFromJob(draft, loadedJob),
-    [draft, loadedJob],
+  // Eagerly fetch full agent details (variable definitions) for the
+  // selected job's agent — otherwise the readonly view shows "Loading
+  // agent variables…" forever and the editor's mapping dropdown comes
+  // up empty.
+  const loadedAgentId = loadedJob?.agent_id ?? null;
+  useEffect(() => {
+    if (!loadedAgentId) return;
+    void dispatch(fetchAgentExecutionMinimal(loadedAgentId));
+  }, [loadedAgentId, dispatch]);
+
+  const loadedAgent = useAppSelector((s) =>
+    loadedAgentId ? selectAgentById(s, loadedAgentId) : undefined,
   );
 
-  // When the agent changes, hydrate the FULL definition. The initial
-  // agent list only carries name/id/etc. — `variableDefinitions` is
-  // populated by the on-demand RPC `agx_get_execution_minimal`. Without
-  // this fetch our `deriveVariableMapping` heuristic has nothing to work
-  // with and Jobs get saved with `variable_mapping: {}` (the bug that
-  // caused empty `[]` agent responses across every chunk).
+  // Run handler — shared by the readonly view's Run button and any
+  // future "save & run" flow.
+  const { running: streamRunning, start: startRun } = useExtractionStream();
+  const handleRunSelected = useCallback(async () => {
+    if (!selectedJobId) return;
+    try {
+      await startRun(fileId, { job_id: selectedJobId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Run failed");
+    }
+  }, [selectedJobId, startRun, fileId, toast]);
+
+  // Mode transitions ------------------------------------------------
+
+  const enterNewTemplate = () => {
+    dispatch(selectJobForFile({ fileId, jobId: null }));
+    dispatch(clearDraft({ fileId }));
+    dispatch(ensureDraft({ fileId }));
+    setLoadedJob(null);
+    dispatch(setEditing({ fileId, editing: true }));
+  };
+
+  const enterEditExisting = () => {
+    dispatch(setEditing({ fileId, editing: true }));
+  };
+
+  const leaveEditing = () => {
+    dispatch(setEditing({ fileId, editing: false }));
+  };
+
+  // Render ---------------------------------------------------------
+
+  // EDITING — full form takes over the panel.
+  if (isEditing) {
+    return (
+      <TemplateEditor
+        fileId={fileId}
+        processedDocumentId={processedDocumentId}
+        documentName={documentName}
+        loadedJob={loadedJob}
+        onSaved={(job) => {
+          setLoadedJob(job);
+          leaveEditing();
+        }}
+        onCancel={leaveEditing}
+      />
+    );
+  }
+
+  // NOT EDITING — header + saved list + (readonly view if a job is
+  // selected). When nothing is selected the list itself is the entire
+  // surface.
+  return (
+    <div className="p-3 space-y-3 text-[11px]">
+      {/* Header — context + New */}
+      <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 border border-border">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            Content extractors
+          </p>
+          <p className="text-[11px] text-muted-foreground/80 truncate">
+            Save reusable extraction templates for this document.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="h-7 px-2 text-[10px] shrink-0"
+          onClick={enterNewTemplate}
+          title="Compose a fresh template"
+        >
+          <Plus className="w-3 h-3 mr-0.5" />
+          New
+        </Button>
+      </div>
+
+      <SavedJobsList fileId={fileId} />
+
+      {selectedJobId && loadedJob && (
+        <TemplateReadOnlyView
+          job={loadedJob}
+          agentName={loadedAgent?.name ?? null}
+          agentVariables={loadedAgent?.variableDefinitions}
+          running={streamRunning}
+          onEdit={enterEditExisting}
+          onRun={handleRunSelected}
+        />
+      )}
+
+      {!selectedJobId && (
+        <p className="text-[10px] text-muted-foreground/70 leading-snug px-1">
+          Click a saved template above to preview or run it, or{" "}
+          <span className="font-medium">New</span> to compose one.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── TemplateEditor: the full form, only rendered when isEditing ────────
+
+interface TemplateEditorProps {
+  fileId: string;
+  processedDocumentId: string | null;
+  documentName: string;
+  loadedJob: PageExtractionJob | null;
+  onSaved: (job: PageExtractionJob) => void;
+  onCancel: () => void;
+}
+
+function TemplateEditor({
+  fileId,
+  processedDocumentId,
+  documentName,
+  loadedJob,
+  onSaved,
+  onCancel,
+}: TemplateEditorProps) {
+  const dispatch = useAppDispatch();
+  const toast = useToastManager("page-extraction");
+  const userId = useAppSelector(selectUserId);
+  const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
+  const selectedJobId = useAppSelector((s) =>
+    selectSelectedJobForFile(s, fileId),
+  );
+  const {
+    chunks,
+    stats,
+    availablePages,
+    loading: pagesLoading,
+  } = useChunkPreview({ fileId, processedDocumentId });
+
+  // Other saved templates on this file — feed the extra-inputs manager
+  // inside VariableMappingEditor (each becomes a wireable option).
+  const { jobs: allJobs } = useExtractionJobs(fileId);
+  const candidateJobs = useMemo(
+    () => allJobs.filter((j) => j.id !== selectedJobId),
+    [allJobs, selectedJobId],
+  );
+
+  const agent = useAppSelector((s) =>
+    draft.agentId ? selectAgentById(s, draft.agentId) : undefined,
+  );
+
+  // Fetch full agent definition (variable_definitions live there, not
+  // in the listing). Without this the mapping editor has nothing to
+  // render.
   useEffect(() => {
     if (!draft.agentId) return;
     void dispatch(fetchAgentExecutionMinimal(draft.agentId));
   }, [draft.agentId, dispatch]);
 
-  // Auto-derive variable_mapping once the agent's variableDefinitions are
-  // loaded (or when selected variations change). Re-runs when the agent
-  // changes too. If the user wants to lock in a custom mapping, save the
-  // Job and re-use it — saved Jobs keep their mapping verbatim on the
-  // server.
-  useEffect(() => {
-    if (!agent) return;
-    if (!agent.variableDefinitions) return; // still loading
-    const derived = deriveVariableMapping(
-      agent.variableDefinitions,
-      draft.sourceVariations,
-    );
-    dispatch(patchDraft({ fileId, patch: { variableMapping: derived } }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    agent?.id,
-    agent?.variableDefinitions?.length,
-    draft.sourceVariations.join("|"),
-    fileId,
-  ]);
+  const [saving, setSaving] = useState(false);
 
-  // Local error for the page-range input only.
-  const [rangeError, setRangeError] = useState<string | null>(null);
+  const isDirty = useMemo(
+    () => draftDiffersFromJob(draft, loadedJob),
+    [draft, loadedJob],
+  );
 
   const saveIssues = useMemo(() => validateDraft(draft), [draft]);
   const canSave = saveIssues.length === 0 && !saving;
+
+  // Local error for the page-range input only.
+  const [rangeError, setRangeError] = useState<string | null>(null);
 
   const handleRangeChange = (raw: string) => {
     setRangeError(null);
@@ -224,7 +333,6 @@ export function ChunkingConfigForm({
       return;
     }
     const next = Math.max(1, n);
-    // Clamp overlap so it remains < chunkSize.
     const overlap = Math.max(0, Math.min(next - 1, draft.chunkOverlap));
     dispatch(
       patchDraft({
@@ -267,11 +375,17 @@ export function ChunkingConfigForm({
         fallbackName: documentName,
         existingJobId: selectedJobId,
       });
-      // Make the new/updated Job the active one and refresh the local
-      // snapshot so the "dirty" indicator clears.
+      // Push the freshly-saved row into the shared jobs cache BEFORE
+      // dispatching the selection. Without this, the JobPicker dropdown
+      // in the main pane shows a blank placeholder (no matching
+      // <SelectItem> for the new id) until Supabase Realtime catches up.
+      // Realtime is enabled on this table, but the round-trip can be
+      // 100ms-2s — long enough for the user to see a no-name run in
+      // progress and assume it failed.
+      upsertJobInCache(fileId, job);
       dispatch(selectJobForFile({ fileId, jobId: job.id }));
-      setLoadedJob(job);
       toast.success(selectedJobId ? "Template updated" : "Template saved");
+      onSaved(job);
     } catch (err) {
       if (err instanceof DraftValidationError) {
         toast.error(err.issues[0]);
@@ -283,60 +397,27 @@ export function ChunkingConfigForm({
     }
   };
 
-  const handleNewTemplate = () => {
-    dispatch(selectJobForFile({ fileId, jobId: null }));
-    dispatch(clearDraft({ fileId }));
-    dispatch(ensureDraft({ fileId }));
-    setLoadedJob(null);
-    toast.success("Started a new template");
-  };
-
   const handleCancel = () => {
     if (selectedJobId && loadedJob) {
-      // Editing an existing template — reset to the persisted state.
-      dispatch(
-        patchDraft({
-          fileId,
-          patch: {
-            agentId: loadedJob.agent_id,
-            scopePages: loadedJob.scope_pages ?? [],
-            scopePagesInputRaw: loadedJob.scope_pages?.length
-              ? formatPageRange(loadedJob.scope_pages)
-              : "",
-            chunkSize: loadedJob.chunk_size,
-            chunkOverlap: loadedJob.chunk_overlap,
-            sourceVariations: (loadedJob.source_variations ?? [
-              "clean_text",
-            ]) as SourceVariationKind[],
-            chunkingStrategy: (loadedJob.chunking_strategy ?? "pages") as
-              | "pages"
-              | "keyword"
-              | "manual"
-              | "section",
-            jobName: loadedJob.name,
-            saveAsJob: true,
-            variableMapping: loadedJob.variable_mapping ?? {},
-            outputSchema: loadedJob.output_schema as unknown,
-            maxConcurrent: loadedJob.max_concurrent,
-            extraInputs: loadedJob.extra_inputs ?? [],
-            ragBoost: loadedJob.rag_boost ?? null,
-          },
-        }),
-      );
-      toast.success("Changes discarded");
+      // Editing an existing template — discard pending changes by
+      // re-hydrating from the saved snapshot, then bounce to readonly.
+      dispatch(patchDraft({ fileId, patch: jobToDraftPatch(loadedJob) }));
+      onCancel();
     } else {
-      // Composing a new template — drop it.
-      handleNewTemplate();
+      // Composing a NEW template — drop it and bounce back to the list.
+      dispatch(clearDraft({ fileId }));
+      dispatch(ensureDraft({ fileId }));
+      onCancel();
     }
   };
 
   return (
     <div className="p-3 space-y-3 text-[11px]">
-      {/* Status banner — what's loaded right now + start-fresh button */}
+      {/* Header — what we're editing right now */}
       <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 border border-border">
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            {selectedJobId ? "Editing" : "New template"}
+            {selectedJobId ? "Editing template" : "New template"}
           </p>
           <p className="text-[11px] font-medium truncate">
             {loadedJob?.name ?? draft.jobName.trim() ?? "Untitled"}
@@ -347,69 +428,30 @@ export function ChunkingConfigForm({
             )}
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-[10px] shrink-0"
-          onClick={handleNewTemplate}
-          title="Start a fresh, blank template"
-        >
-          <Plus className="w-3 h-3 mr-0.5" />
-          New
-        </Button>
       </div>
 
-      {/* Saved templates — click a row to view, play to run, trash to delete. */}
-      <SavedJobsList fileId={fileId} />
-
-      {/* 1. Template name — first thing the user sets. */}
-      <Field
-        label="Template name"
-        required
-        hint="What to call this template in the Saved list."
-      >
+      {/* 1. Template name */}
+      <Field label="Template name" required>
         <Input
           value={draft.jobName}
           onChange={(e) =>
             dispatch(patchDraft({ fileId, patch: { jobName: e.target.value } }))
           }
-          placeholder={`e.g. "${documentName} extraction"`}
+          placeholder={`${documentName} extraction`}
           className="h-7 text-[11px]"
         />
       </Field>
 
-      {/* 2. Agent — second. Default label is the explicit "Select an Agent". */}
-      <Field label="Agent" required hint="Pick one of your agents.">
-        <AgentListDropdown
-          onSelect={(id) =>
-            dispatch(patchDraft({ fileId, patch: { agentId: id } }))
-          }
-          label={agent?.name ?? "Select an Agent"}
-          noBorder={false}
-        />
-        {agent && (
-          <VariableMappingPreview
-            agentName={agent.name}
-            agentVariables={agent.variableDefinitions}
-            mapping={draft.variableMapping}
-          />
-        )}
-      </Field>
-
-      {/* 3. Page range — REQUIRED, no default */}
+      {/* 2. Page range */}
       <Field
         label="Pages"
         required
-        hint={
-          pagesLoading
-            ? "Loading page list…"
-            : `${availablePages.length} pages in this document`
-        }
+        hint={pagesLoading ? "Loading…" : `${availablePages.length} available`}
       >
         <Input
           value={draft.scopePagesInputRaw}
           onChange={(e) => handleRangeChange(e.target.value)}
-          placeholder='e.g. "1-50, 80-90"'
+          placeholder="1-50, 80-90"
           className="h-7 text-[11px]"
         />
         {draft.scopePages.length > 0 && (
@@ -417,7 +459,7 @@ export function ChunkingConfigForm({
             <span className="font-mono text-foreground/80">
               {draft.scopePages.length}
             </span>{" "}
-            page{draft.scopePages.length === 1 ? "" : "s"} in scope
+            in scope
           </p>
         )}
         {rangeError && (
@@ -427,20 +469,20 @@ export function ChunkingConfigForm({
         )}
       </Field>
 
-      {/* 4. Chunk size + overlap — overlap defaults to 0; user can set. */}
+      {/* 3. Chunk size + overlap */}
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Chunk size" required hint="Pages per agent call.">
+        <Field label="Chunk size" required hint="Pages per call">
           <Input
             value={draft.chunkSize ?? ""}
             onChange={(e) => handleChunkSizeChange(e.target.value)}
             type="number"
             min={1}
             max={50}
-            placeholder="e.g. 12"
+            placeholder="12"
             className="h-7 text-[11px]"
           />
         </Field>
-        <Field label="Overlap" hint="Repeat pages.">
+        <Field label="Overlap" hint="Repeat pages">
           <Input
             value={draft.chunkOverlap}
             onChange={(e) => handleChunkOverlapChange(e.target.value)}
@@ -470,74 +512,40 @@ export function ChunkingConfigForm({
         </p>
       )}
 
-      {/* 5. Source variations */}
-      <Field
-        label="Content source"
-        required
-        hint="What the agent will see for each chunk."
-      >
-        <div className="space-y-1.5">
-          {SOURCE_VARIATIONS.map((v) => {
-            const checked = draft.sourceVariations.includes(v.kind);
-            const disabled = v.comingSoon === true;
-            return (
-              <label
-                key={v.kind}
-                className={`flex items-start gap-2 ${
-                  disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                }`}
-              >
-                <Checkbox
-                  checked={checked}
-                  disabled={disabled}
-                  onCheckedChange={() => {
-                    if (disabled) return;
-                    dispatch(
-                      toggleDraftVariation({
-                        fileId,
-                        kind: v.kind as SourceVariationKind,
-                      }),
-                    );
-                  }}
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-medium text-foreground">
-                      {v.label}
-                    </span>
-                    {v.comingSoon && (
-                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                        coming soon
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </label>
-            );
-          })}
-        </div>
+      {/* 4. Agent + variable wiring. Wiring drives `source_variations`
+              implicitly — picking "N clean-text chunks" tells the save
+              path to request `clean_text` from the backend; no separate
+              checkbox section. Extra inputs from other templates are
+              managed inline at the bottom of the wiring panel and
+              appear as their own dropdown options. */}
+      <Field label="Agent" required>
+        <AgentListDropdown
+          onSelect={(id) =>
+            dispatch(patchDraft({ fileId, patch: { agentId: id } }))
+          }
+          label={agent?.name ?? "Select an Agent"}
+          noBorder={false}
+        />
+        {agent && (
+          <VariableMappingEditor
+            agentName={agent.name}
+            agentVariables={agent.variableDefinitions}
+            mapping={draft.variableMapping}
+            chunkCount={chunks.length}
+            extraInputs={draft.extraInputs}
+            candidateJobs={candidateJobs}
+            onChange={(next) =>
+              dispatch(patchDraft({ fileId, patch: { variableMapping: next } }))
+            }
+            onChangeExtraInputs={(next) =>
+              dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
+            }
+          />
+        )}
       </Field>
 
-      {/* 6. Extra inputs — pull result rows from OTHER templates as
-              named variables for this template's agent. */}
-      <ExtraInputsEditor
-        fileId={fileId}
-        excludeJobId={selectedJobId}
-        extraInputs={draft.extraInputs}
-        onChange={(next) =>
-          dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
-        }
-      />
-
-      {/* 7. RAG-boost override — empty means "inherit the agent's
-              default_rag_boost", a number overrides for this job's
-              derivatives + bridged chunks. Power-user knob; collapsed
-              by default to avoid visual noise on the common path. */}
-      <Field
-        label="RAG boost override"
-        hint="Leave blank to inherit the agent's default. Number = override for this job."
-      >
+      {/* 5. RAG-boost override */}
+      <Field label="RAG boost" hint="Blank = agent default">
         <Input
           value={draft.ragBoost ?? ""}
           onChange={(e) => {
@@ -548,9 +556,7 @@ export function ChunkingConfigForm({
             }
             const parsed = Math.round(Number.parseInt(raw, 10));
             if (Number.isFinite(parsed)) {
-              dispatch(
-                patchDraft({ fileId, patch: { ragBoost: parsed } }),
-              );
+              dispatch(patchDraft({ fileId, patch: { ragBoost: parsed } }));
             }
           }}
           type="number"
@@ -562,15 +568,7 @@ export function ChunkingConfigForm({
         />
       </Field>
 
-      {streamError && (
-        <p className="text-[10px] text-destructive leading-snug">
-          {streamError}
-        </p>
-      )}
-
-      {/* Bottom — Cancel | Save. RUN is intentionally NOT here; it
-          lives on the play icon of saved templates so the template
-          editing flow and the run flow never share buttons. */}
+      {/* Sticky bottom — Cancel + Save/Update */}
       <div className="sticky bottom-0 -mx-3 -mb-3 px-3 py-2 border-t border-border bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Button
@@ -581,7 +579,7 @@ export function ChunkingConfigForm({
             disabled={saving}
             title={
               selectedJobId
-                ? "Discard changes and reload the saved template"
+                ? "Discard changes and return to the saved template view"
                 : "Discard this new template"
             }
           >
@@ -619,188 +617,7 @@ export function ChunkingConfigForm({
             ))}
           </ul>
         )}
-        <p className="text-[10px] text-muted-foreground/70 leading-snug mt-1.5">
-          To run an extraction, click the{" "}
-          <Repeat className="w-2.5 h-2.5 inline-block" /> on a saved template
-          above.
-        </p>
       </div>
-    </div>
-  );
-}
-
-// ─── Internal: extra-inputs editor ────────────────────────────────────────
-
-function ExtraInputsEditor({
-  fileId,
-  excludeJobId,
-  extraInputs,
-  onChange,
-}: {
-  fileId: string;
-  excludeJobId: string | null | undefined;
-  extraInputs: { name: string; source_job_id: string }[];
-  onChange: (next: { name: string; source_job_id: string }[]) => void;
-}) {
-  const { jobs } = useExtractionJobs(fileId);
-  const candidateJobs = jobs.filter((j) => j.id !== excludeJobId);
-
-  const addRow = () => {
-    onChange([...extraInputs, { name: "", source_job_id: "" }]);
-  };
-  const updateRow = (
-    idx: number,
-    patch: Partial<{ name: string; source_job_id: string }>,
-  ) => {
-    onChange(
-      extraInputs.map((row, i) => (i === idx ? { ...row, ...patch } : row)),
-    );
-  };
-  const removeRow = (idx: number) => {
-    onChange(extraInputs.filter((_, i) => i !== idx));
-  };
-
-  if (candidateJobs.length === 0 && extraInputs.length === 0) {
-    return (
-      <Field
-        label="Extra inputs"
-        hint="Use another template's results as variables."
-      >
-        <p className="text-[10px] text-muted-foreground/70 leading-snug">
-          Save another template first — you can then pipe its results into this
-          one as a named variable.
-        </p>
-      </Field>
-    );
-  }
-
-  return (
-    <Field label="Extra inputs" hint="Pull result rows from other templates.">
-      <div className="space-y-1.5">
-        {extraInputs.map((row, idx) => (
-          <div key={idx} className="flex items-center gap-1.5">
-            <Input
-              value={row.name}
-              onChange={(e) => updateRow(idx, { name: e.target.value })}
-              placeholder="variable_name"
-              className="h-7 text-[11px] w-1/3 font-mono"
-            />
-            <span className="text-[10px] text-muted-foreground">←</span>
-            <select
-              value={row.source_job_id}
-              onChange={(e) =>
-                updateRow(idx, { source_job_id: e.target.value })
-              }
-              className="h-7 text-[11px] flex-1 min-w-0 rounded-md border border-input bg-background px-2"
-            >
-              <option value="">Select template…</option>
-              {candidateJobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.name}
-                </option>
-              ))}
-            </select>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-              onClick={() => removeRow(idx)}
-              title="Remove this input"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        ))}
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-[10px] w-full"
-          onClick={addRow}
-          disabled={candidateJobs.length === 0}
-        >
-          <Plus className="w-3 h-3 mr-1" />
-          Add input from another template
-        </Button>
-        {extraInputs.length > 0 && (
-          <p className="text-[10px] text-muted-foreground/70 leading-snug">
-            Each variable is a JSON array of result rows from the source
-            template, filtered to the current chunk&apos;s page range. Route via
-            the agent variable wiring above.
-          </p>
-        )}
-      </div>
-    </Field>
-  );
-}
-
-// ─── Internal: variable-mapping preview ───────────────────────────────────
-
-function VariableMappingPreview({
-  agentName,
-  agentVariables,
-  mapping,
-}: {
-  agentName: string;
-  agentVariables:
-    | { name: string; helpText?: string | null }[]
-    | null
-    | undefined;
-  mapping: Record<string, string>;
-}) {
-  if (!agentVariables || agentVariables.length === 0) {
-    return (
-      <p className="mt-1 text-[10px] text-muted-foreground/70 leading-snug">
-        {agentName} declares no variables — the agent's prompt runs as-is.
-      </p>
-    );
-  }
-  // Build the inverse view: each agent var → which surface key fills it.
-  const inverse = new Map<string, string>();
-  for (const [surfaceKey, agentVar] of Object.entries(mapping)) {
-    // Multiple surface keys can map to the same agent var (selection +
-    // content + clean_text all route to page_content). Show the most
-    // informative one — prefer the named source variation over the
-    // back-compat aliases.
-    const isAlias = surfaceKey === "selection" || surfaceKey === "content";
-    if (!inverse.has(agentVar) || !isAlias) {
-      inverse.set(agentVar, surfaceKey);
-    }
-  }
-
-  const allMapped = agentVariables.every((v) => inverse.has(v.name));
-
-  return (
-    <div className="my-2 space-y-0.5">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-        Variable wiring
-      </p>
-      <ul className="space-y-0.5 text-xs">
-        {agentVariables.map((v) => {
-          const sourceKey = inverse.get(v.name);
-          return (
-            <li
-              key={v.name}
-              className="flex items-baseline gap-1.5 leading-snug"
-            >
-              <code className="font-mono text-foreground/80">{v.name}</code>
-              <span className="text-muted-foreground">←</span>
-              {sourceKey ? (
-                <code className="font-mono text-primary">{sourceKey}</code>
-              ) : (
-                <span className="text-amber-700 dark:text-amber-400 italic">
-                  unmapped
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {!allMapped && (
-        <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-snug">
-          Some agent variables aren't wired up. The run may still work if the
-          agent treats them as optional.
-        </p>
-      )}
     </div>
   );
 }
@@ -834,4 +651,38 @@ function Field({
       {children}
     </div>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Convert a saved Job into the partial draft patch needed to render it.
+ * Used both on initial selection (eager hydrate so Edit just works) and
+ * on Cancel-while-editing-existing (discard local diffs).
+ */
+function jobToDraftPatch(job: PageExtractionJob) {
+  return {
+    agentId: job.agent_id,
+    scopePages: job.scope_pages ?? [],
+    scopePagesInputRaw: job.scope_pages?.length
+      ? formatPageRange(job.scope_pages)
+      : "",
+    chunkSize: job.chunk_size,
+    chunkOverlap: job.chunk_overlap,
+    sourceVariations: (job.source_variations ?? [
+      "clean_text",
+    ]) as SourceVariationKind[],
+    chunkingStrategy: (job.chunking_strategy ?? "pages") as
+      | "pages"
+      | "keyword"
+      | "manual"
+      | "section",
+    jobName: job.name,
+    saveAsJob: true,
+    variableMapping: job.variable_mapping ?? {},
+    outputSchema: job.output_schema as unknown,
+    maxConcurrent: job.max_concurrent,
+    extraInputs: job.extra_inputs ?? [],
+    ragBoost: job.rag_boost ?? null,
+  };
 }

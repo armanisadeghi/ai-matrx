@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { isContextReviewOverdue } from "../utils/contextItemPresentation";
 
 type Props = {
   scope: ScopeState;
@@ -221,7 +222,9 @@ export function ContextAnalytics({ scope }: Props) {
 
       {/* Stale detection */}
       {rankings && (
-        <StaleDetection items={rankings.filter((r) => r.is_overdue_review)} />
+        <StaleDetection
+          items={rankings.filter((r) => isContextReviewOverdue(r))}
+        />
       )}
     </div>
   );

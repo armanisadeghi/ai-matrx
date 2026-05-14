@@ -599,9 +599,6 @@ export function BlockRow({
             rounded="none"
             alt="Attached image"
             className="h-16 w-auto max-w-[150px] rounded border border-border"
-            onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = "none";
-            }}
           />
         </div>
       )}

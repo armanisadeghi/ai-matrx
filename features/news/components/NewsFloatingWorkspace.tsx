@@ -162,9 +162,6 @@ export function NewsFloatingWorkspace() {
 }
 
 function NewsItem({ article }: { article: Article }) {
-  const [imgError, setImgError] = useState(false);
-  const showImage = article.urlToImage && !imgError;
-
   return (
     <a
       href={article.url}
@@ -173,21 +170,21 @@ function NewsItem({ article }: { article: Article }) {
       className="group block rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/30 transition-all p-2.5 shadow-sm"
     >
       <div className="flex gap-3">
-        {/* Thumbnail */}
+        {/* Thumbnail — InlineMediaRef shows a Newspaper icon when the article
+            has no urlToImage, and its built-in informative error fallback
+            when the URL exists but fails to load. */}
         <div className="w-20 h-20 shrink-0 bg-muted rounded border border-border/50 relative overflow-hidden flex items-center justify-center">
-           {showImage ? (
-             <InlineMediaRef
-               ref={article.urlToImage}
-               size="fill"
-               fit="cover"
-               rounded="none"
-               alt={article.title}
-               className="group-hover:scale-105 transition-transform duration-300"
-               onError={() => setImgError(true)}
-             />
-           ) : (
-             <Newspaper className="w-6 h-6 text-muted-foreground/30" />
-           )}
+          <InlineMediaRef
+            ref={article.urlToImage ?? null}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            alt={article.title}
+            className="group-hover:scale-105 transition-transform duration-300"
+            fallbackIcon={
+              <Newspaper className="w-6 h-6 text-muted-foreground/30" />
+            }
+          />
         </div>
 
         {/* Content */}

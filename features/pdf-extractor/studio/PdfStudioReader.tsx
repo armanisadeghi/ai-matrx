@@ -62,6 +62,10 @@ import { uploadFile } from "@/features/files/api/files";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
+import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
 
 // react-pdf + pdfjs-dist is ~400KB; defer both viewers until they mount.
 const PdfStudioUrlViewer = dynamic(() => import("./PdfStudioUrlViewer"), {
@@ -106,12 +110,7 @@ function PdfCldFileViewer({
   pageNumber?: number;
   onPageChange?: (page: number) => void;
 }) {
-  const {
-    remoteUrl,
-    headers,
-    loading,
-    error,
-  } = usePdfRemoteSource(fileId);
+  const { remoteUrl, headers, loading, error } = usePdfRemoteSource(fileId);
   return (
     <PdfDocumentRenderer
       remoteUrl={remoteUrl}
@@ -246,7 +245,7 @@ export function PdfStudioReader({
           paneKey="raw"
           title="Raw extraction"
           subtitle="System A · per-page"
-          icon={<FileText className="w-3 h-3 text-muted-foreground" />}
+          icon={<FileText className="w-3 h-3 text-primary" />}
           doc={doc}
           pages={pages}
           field="raw"
@@ -296,37 +295,12 @@ export function PdfStudioReader({
         />
       )}
       {visiblePanes.has("extractions") && (
-        <section className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border">
-          <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
-            <SquareStack className="w-3 h-3 text-primary" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
-              Extractions
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              · per-page results
-            </span>
-            <button
-              type="button"
-              onClick={() => onTogglePane("extractions")}
-              className="ml-auto p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
-              title="Hide pane"
-            >
-              <EyeOff className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="flex-1 min-h-0">
-            <ExtractionsPane
-              fileId={
-                doc.sourceKind === "cld_file" && doc.sourceId
-                  ? doc.sourceId
-                  : null
-              }
-              processedDocumentId={doc.id}
-              activePage={activePage}
-              onJumpToPage={onJumpToPage}
-            />
-          </div>
-        </section>
+        <ExtractionsSection
+          doc={doc}
+          activePage={activePage}
+          onTogglePane={() => onTogglePane("extractions")}
+          onJumpToPage={onJumpToPage}
+        />
       )}
     </div>
   );
@@ -401,10 +375,12 @@ function PdfPane({
           ) : editMode === "reorder" ? (
             <GripVertical className="w-3 h-3 text-primary" />
           ) : (
-            <FileText className="w-3 h-3 text-muted-foreground" />
+            <FileText className="w-3 h-3 text-primary" />
           )
         }
         onTogglePane={editMode ? undefined : onTogglePane}
+        onCopyAll={!editMode && doc.source ? () => doc.source! : undefined}
+        copyAllLabel="Copy PDF source URL"
       />
 
       {editMode === "reorder" ? (
@@ -1641,6 +1617,70 @@ function Highlighted({ text, query }: { text: string; query: string }) {
 }
 
 // ── Pane header (shared) ──────────────────────────────────────────────────
+
+// ── Extractions section ───────────────────────────────────────────────────
+
+function ExtractionsSection({
+  doc,
+  activePage,
+  onTogglePane,
+  onJumpToPage,
+}: {
+  doc: PdfDocument;
+  activePage?: number | null;
+  onTogglePane: () => void;
+  onJumpToPage?: (page: number) => void;
+}) {
+  const fileId =
+    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
+  const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
+  const inAllView = isAllJobsView(viewedJobId);
+
+  // Mirror exactly what ResultsTable displays — same hooks, same data.
+  const { results: singleResults } = useExtractionResults(
+    inAllView ? null : viewedJobId,
+  );
+  const { results: allResults } = useExtractionResultsForFile(
+    inAllView ? fileId : null,
+  );
+  const results = inAllView ? allResults : singleResults;
+
+  const buildCopyText = useCallback(
+    () =>
+      results
+        .map((r) =>
+          JSON.stringify({
+            page: r.canonical_page,
+            ...((r.payload ?? {}) as Record<string, unknown>),
+          }),
+        )
+        .join("\n"),
+    [results],
+  );
+
+  return (
+    <section className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border">
+      <PaneHeader
+        title="Extractions"
+        subtitle="per-page results"
+        icon={<SquareStack className="w-3 h-3 text-primary" />}
+        onTogglePane={onTogglePane}
+        onCopyAll={results.length > 0 ? buildCopyText : undefined}
+        copyAllLabel="Copy all extraction results"
+      />
+      <div className="flex-1 min-h-0">
+        <ExtractionsPane
+          fileId={fileId}
+          processedDocumentId={doc.id}
+          activePage={activePage}
+          onJumpToPage={onJumpToPage}
+        />
+      </div>
+    </section>
+  );
+}
+
+// ── Pane header ───────────────────────────────────────────────────────────
 
 function PaneHeader({
   title,

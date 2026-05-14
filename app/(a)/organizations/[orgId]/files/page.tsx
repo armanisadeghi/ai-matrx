@@ -1,34 +1,85 @@
 "use client";
 
 import React from "react";
-import { FolderOpen } from "lucide-react";
+import { useParams } from "next/navigation";
+import { FolderOpen, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
-import { Card } from "@/components/ui/card";
+import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
+import { supabase } from "@/utils/supabase/client";
+import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
-/**
- * Organization Shared Files Page
- * Route: /organizations/[slug]/files
- */
+const SELECT_COLS = "id, filename, mime_type, size, updated_at, folder_path";
+
+const fetchOwned = async (orgId: string) => {
+  const res = await supabase
+    .from("user_files")
+    .select(SELECT_COLS)
+    .eq("organization_id", orgId)
+    .order("updated_at", { ascending: false });
+  return (res.data ?? []) as Array<Record<string, unknown>>;
+};
+
+const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
+  const size = row.size as number | null | undefined;
+  const sizeStr =
+    size && size > 0
+      ? size > 1024 * 1024
+        ? `${(size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(size / 1024))} KB`
+      : null;
+  return {
+    id: String(row.id),
+    title: (row.filename as string | null) ?? "Untitled",
+    subtitle: [row.mime_type as string | null, sizeStr]
+      .filter(Boolean)
+      .join(" · "),
+    updatedAt: (row.updated_at as string | null) ?? null,
+    tags: row.folder_path ? [String(row.folder_path)] : undefined,
+    source,
+  };
+};
+
+const getHref = (id: string) => `/files/f/${id}`;
+
 export default function OrgFilesPage() {
+  const params = useParams();
+  const orgIdParam = params.orgId as string;
+  const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const org = await getOrganizationBySlugOrId(orgIdParam);
+      if (!cancelled && org) setResolvedOrgId(org.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgIdParam]);
+
   return (
     <OrgResourceLayout
       resourceName="Files"
       icon={<FolderOpen className="h-4 w-4" />}
     >
-      <Card className="p-12 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FolderOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Shared Files</h2>
-          <p className="text-muted-foreground mb-6">
-            Access files and documents shared with your organization
-          </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted">
-            <span className="text-sm font-medium">Coming Soon</span>
-          </div>
+      {!resolvedOrgId ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </Card>
+      ) : (
+        <OrgResourceList
+          orgId={resolvedOrgId}
+          resourceType="user_files"
+          tableName="user_files"
+          selectColumns={SELECT_COLS}
+          ownedQuery={fetchOwned}
+          mapRow={mapRow}
+          getHref={getHref}
+          emptyTitle="No shared files yet"
+          emptyDescription="Files uploaded under this organization will appear here, along with files other members share."
+          emptyIcon={<FolderOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />}
+        />
+      )}
     </OrgResourceLayout>
   );
 }

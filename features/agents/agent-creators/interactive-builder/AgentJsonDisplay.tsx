@@ -38,8 +38,10 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { cn } from "@/styles/themes/utils";
 import {
   extractAgentJsonBlock,
+  findAgentJsonBlockSpan,
   flattenContent,
   parsePartialAgentJson,
+  splitAroundAgentJsonBlock,
   type PartialAgentData,
 } from "../utils/agent-progressive-json-parser";
 
@@ -107,12 +109,15 @@ export function AgentStreamingResponse({
   isStreamActive: boolean;
   extracted?: Record<string, unknown> | null;
 }) {
-  // Only render a card if we see the start of a json block. Otherwise fall
-  // back to raw markdown (handles the pre-JSON reasoning phase).
-  const hasJsonBlock =
-    /```json/.test(content) || /```\s*\n\s*\{/.test(content);
+  // Locate the JSON block — fenced (```json / plain ```) or raw ({…}).
+  // The agent-generator currently emits raw JSON with no fences, then a
+  // `---` divider and a markdown explanation. We must work for both shapes.
+  const span = findAgentJsonBlockSpan(content);
 
-  if (!hasJsonBlock && !extracted) {
+  // No JSON in sight AND no parsed object from the streaming tracker —
+  // we're either in the pre-JSON prose phase or just have prose. Render
+  // the raw markdown so the user sees something instead of a void.
+  if (!span && !extracted) {
     return (
       <MarkdownStream
         content={content}
@@ -122,20 +127,23 @@ export function AgentStreamingResponse({
     );
   }
 
-  // Normalize plain ``` blocks to ```json so downstream regexes work.
-  const normalized = content.replace(/```(\s*\n\s*\{)/g, "```json$1");
-  const beforeMatch = normalized.match(/([\s\S]*?)```json/);
-  const afterMatch = normalized.match(/```json[\s\S]*?```([\s\S]*)/);
-  const before = beforeMatch ? beforeMatch[1].trim() : "";
-  const after = afterMatch ? afterMatch[1].trim() : "";
+  const { before, after } = splitAroundAgentJsonBlock(content);
+  // Once the JSON has opened, the post-JSON markdown can only be safely
+  // shown after the object closes — otherwise a brace-balanced prefix
+  // could mis-split mid-stream and flash garbage. splitAroundAgentJsonBlock
+  // already returns an empty `after` while the body is open.
 
   return (
     <div className="space-y-3">
       {before && (
-        <MarkdownStream content={before} isStreamActive={false} hideCopyButton />
+        <MarkdownStream
+          content={before}
+          isStreamActive={false}
+          hideCopyButton
+        />
       )}
       <AgentJsonDisplay
-        content={normalized}
+        content={content}
         isStreamActive={isStreamActive}
         extracted={extracted}
       />
@@ -427,26 +435,24 @@ function MessageCard({
   content: string;
   isStreamActive: boolean;
 }) {
-  const palette: Record<
-    string,
-    { color: string; bg: string; border: string }
-  > = {
-    system: {
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-50 dark:bg-blue-950/20",
-      border: "border-blue-200 dark:border-blue-800",
-    },
-    user: {
-      color: "text-green-600 dark:text-green-400",
-      bg: "bg-green-50 dark:bg-green-950/20",
-      border: "border-green-200 dark:border-green-800",
-    },
-    assistant: {
-      color: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-50 dark:bg-purple-950/20",
-      border: "border-purple-200 dark:border-purple-800",
-    },
-  };
+  const palette: Record<string, { color: string; bg: string; border: string }> =
+    {
+      system: {
+        color: "text-blue-600 dark:text-blue-400",
+        bg: "bg-blue-50 dark:bg-blue-950/20",
+        border: "border-blue-200 dark:border-blue-800",
+      },
+      user: {
+        color: "text-green-600 dark:text-green-400",
+        bg: "bg-green-50 dark:bg-green-950/20",
+        border: "border-green-200 dark:border-green-800",
+      },
+      assistant: {
+        color: "text-purple-600 dark:text-purple-400",
+        bg: "bg-purple-50 dark:bg-purple-950/20",
+        border: "border-purple-200 dark:border-purple-800",
+      },
+    };
   const c = palette[role] ?? palette.system;
   return (
     <div className={cn("border rounded-md overflow-hidden", c.border)}>
@@ -538,7 +544,9 @@ function ContextSlotsTable({
           <tr className="bg-muted/50 border-b">
             <th className="px-2 py-1 text-left font-semibold">Key</th>
             <th className="px-2 py-1 text-left font-semibold">Type</th>
-            <th className="px-2 py-1 text-left font-semibold">Label / Description</th>
+            <th className="px-2 py-1 text-left font-semibold">
+              Label / Description
+            </th>
           </tr>
         </thead>
         <tbody>

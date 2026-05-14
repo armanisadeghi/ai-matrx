@@ -15,10 +15,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { OrganizationWithRole } from "../types";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@/features/files";
+import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
 
 interface OrganizationCardProps {
   organization: OrganizationWithRole;
@@ -39,7 +39,11 @@ export function OrganizationCard({
   organization,
   onUpdate,
 }: OrganizationCardProps) {
-  const router = useRouter();
+  // Presentation-aware nav: dismisses the settings window/drawer
+  // before pushing when this card is rendered inside the settings
+  // overlay. Standalone /settings/organizations route navigates
+  // directly. Cmd/Ctrl/middle-click always opens in a new tab.
+  const navigate = useSettingsNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
 
   const isPersonal = organization.isPersonal;
@@ -93,15 +97,11 @@ export function OrganizationCard({
   const settingsPath = `/organizations/${organization.id}/settings`;
 
   const handleNavigate = (e?: React.MouseEvent) => {
-    if (e && (e.metaKey || e.ctrlKey)) return;
-    e?.preventDefault();
-    setIsNavigating(true);
-    router.push(settingsPath);
-  };
-
-  const handleViewSettings = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    handleNavigate(e);
+    // Let new-tab modifiers through untouched — the hook handles them.
+    if (!e || !(e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) {
+      setIsNavigating(true);
+    }
+    navigate(settingsPath, e ?? null);
   };
 
   // Determine available actions based on role
@@ -116,13 +116,7 @@ export function OrganizationCard({
           "border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10",
         isNavigating && "opacity-50 pointer-events-none",
       )}
-      onClick={(e) => {
-        if (e.metaKey || e.ctrlKey) {
-          window.open(settingsPath, "_blank");
-          return;
-        }
-        handleNavigate();
-      }}
+      onClick={(e) => handleNavigate(e)}
     >
       <div className="flex items-start justify-between gap-4">
         {/* Left side - Org info */}

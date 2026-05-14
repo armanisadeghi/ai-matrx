@@ -1,11 +1,11 @@
 "use client";
 /**
  * Organization Hooks
- * 
+ *
  * React hooks for organization management in components.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   Organization,
   OrganizationWithRole,
@@ -17,7 +17,7 @@ import {
   CreateOrganizationOptions,
   UpdateOrganizationOptions,
   InviteMemberOptions,
-} from './types';
+} from "./types";
 import {
   getUserOrganizations,
   getOrganization,
@@ -36,7 +36,7 @@ import {
   getUserInvitations,
   acceptInvitation,
   isSlugAvailable,
-} from './service';
+} from "./service";
 
 // ============================================================================
 // Organization Listing Hooks
@@ -46,7 +46,9 @@ import {
  * Hook to get all organizations for current user
  */
 export function useUserOrganizations() {
-  const [organizations, setOrganizations] = useState<OrganizationWithRole[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationWithRole[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +60,8 @@ export function useUserOrganizations() {
       const data = await getUserOrganizations();
       setOrganizations(data);
     } catch (err: any) {
-      console.error('Error fetching organizations:', err);
-      setError(err.message || 'Failed to fetch organizations');
+      console.error("Error fetching organizations:", err);
+      setError(err.message || "Failed to fetch organizations");
     } finally {
       setLoading(false);
     }
@@ -99,8 +101,8 @@ export function useOrganization(orgId: string | undefined) {
       const data = await getOrganization(orgId);
       setOrganization(data);
     } catch (err: any) {
-      console.error('Error fetching organization:', err);
-      setError(err.message || 'Failed to fetch organization');
+      console.error("Error fetching organization:", err);
+      setError(err.message || "Failed to fetch organization");
     } finally {
       setLoading(false);
     }
@@ -137,12 +139,12 @@ export function useOrganizationOperations() {
       const result = await createOrganization(options);
 
       if (!result.success) {
-        setError(result.error || 'Failed to create organization');
+        setError(result.error || "Failed to create organization");
       }
 
       return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create organization';
+      const errorMessage = err.message || "Failed to create organization";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -159,19 +161,19 @@ export function useOrganizationOperations() {
         const result = await updateOrganization(orgId, updates);
 
         if (!result.success) {
-          setError(result.error || 'Failed to update organization');
+          setError(result.error || "Failed to update organization");
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to update organization';
+        const errorMessage = err.message || "Failed to update organization";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   const remove = useCallback(async (orgId: string) => {
@@ -182,12 +184,12 @@ export function useOrganizationOperations() {
       const result = await deleteOrganization(orgId);
 
       if (!result.success) {
-        setError(result.error || 'Failed to delete organization');
+        setError(result.error || "Failed to delete organization");
       }
 
       return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to delete organization';
+      const errorMessage = err.message || "Failed to delete organization";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -230,8 +232,8 @@ export function useOrganizationMembers(orgId: string | undefined) {
       const data = await getOrganizationMembers(orgId);
       setMembers(data);
     } catch (err: any) {
-      console.error('Error fetching members:', err);
-      setError(err.message || 'Failed to fetch members');
+      console.error("Error fetching members:", err);
+      setError(err.message || "Failed to fetch members");
     } finally {
       setLoading(false);
     }
@@ -266,21 +268,21 @@ export function useMemberOperations(orgId: string) {
         const result = await updateMemberRole(orgId, userId, newRole);
 
         if (!result.success) {
-          setError(result.error || 'Failed to update member role');
+          setError(result.error || "Failed to update member role");
         } else {
           await refreshMembers();
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to update member role';
+        const errorMessage = err.message || "Failed to update member role";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [orgId, refreshMembers]
+    [orgId, refreshMembers],
   );
 
   const remove = useCallback(
@@ -292,21 +294,21 @@ export function useMemberOperations(orgId: string) {
         const result = await removeMember(orgId, userId);
 
         if (!result.success) {
-          setError(result.error || 'Failed to remove member');
+          setError(result.error || "Failed to remove member");
         } else {
           await refreshMembers();
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to remove member';
+        const errorMessage = err.message || "Failed to remove member";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [orgId, refreshMembers]
+    [orgId, refreshMembers],
   );
 
   const leave = useCallback(async () => {
@@ -317,12 +319,12 @@ export function useMemberOperations(orgId: string) {
       const result = await leaveOrganization(orgId);
 
       if (!result.success) {
-        setError(result.error || 'Failed to leave organization');
+        setError(result.error || "Failed to leave organization");
       }
 
       return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to leave organization';
+      const errorMessage = err.message || "Failed to leave organization";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -366,11 +368,11 @@ export function useUserRole(orgId: string | undefined) {
   return {
     role,
     loading,
-    isOwner: role === 'owner',
-    isAdmin: role === 'admin' || role === 'owner',
-    canManageMembers: role === 'admin' || role === 'owner',
-    canManageSettings: role === 'admin' || role === 'owner',
-    canDelete: role === 'owner',
+    isOwner: role === "owner",
+    isAdmin: role === "admin" || role === "owner",
+    canManageMembers: role === "admin" || role === "owner",
+    canManageSettings: role === "admin" || role === "owner",
+    canDelete: role === "owner",
   };
 }
 
@@ -400,8 +402,8 @@ export function useOrganizationInvitations(orgId: string | undefined) {
       const data = await getOrganizationInvitations(orgId);
       setInvitations(data);
     } catch (err: any) {
-      console.error('Error fetching invitations:', err);
-      setError(err.message || 'Failed to fetch invitations');
+      console.error("Error fetching invitations:", err);
+      setError(err.message || "Failed to fetch invitations");
     } finally {
       setLoading(false);
     }
@@ -428,7 +430,7 @@ export function useInvitationOperations(orgId: string) {
   const { refresh: refreshInvitations } = useOrganizationInvitations(orgId);
 
   const invite = useCallback(
-    async (options: Omit<InviteMemberOptions, 'organizationId'>) => {
+    async (options: Omit<InviteMemberOptions, "organizationId">) => {
       setLoading(true);
       setError(null);
 
@@ -439,21 +441,21 @@ export function useInvitationOperations(orgId: string) {
         });
 
         if (!result.success) {
-          setError(result.error || 'Failed to send invitation');
+          setError(result.error || "Failed to send invitation");
         } else {
           await refreshInvitations();
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to send invitation';
+        const errorMessage = err.message || "Failed to send invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [orgId, refreshInvitations]
+    [orgId, refreshInvitations],
   );
 
   const cancel = useCallback(
@@ -465,21 +467,21 @@ export function useInvitationOperations(orgId: string) {
         const result = await cancelInvitation(invitationId);
 
         if (!result.success) {
-          setError(result.error || 'Failed to cancel invitation');
+          setError(result.error || "Failed to cancel invitation");
         } else {
           await refreshInvitations();
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to cancel invitation';
+        const errorMessage = err.message || "Failed to cancel invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [refreshInvitations]
+    [refreshInvitations],
   );
 
   const resend = useCallback(
@@ -491,21 +493,21 @@ export function useInvitationOperations(orgId: string) {
         const result = await resendInvitation(invitationId);
 
         if (!result.success) {
-          setError(result.error || 'Failed to resend invitation');
+          setError(result.error || "Failed to resend invitation");
         } else {
           await refreshInvitations();
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to resend invitation';
+        const errorMessage = err.message || "Failed to resend invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [refreshInvitations]
+    [refreshInvitations],
   );
 
   return {
@@ -521,7 +523,9 @@ export function useInvitationOperations(orgId: string) {
  * Hook to get invitations for current user
  */
 export function useUserInvitations() {
-  const [invitations, setInvitations] = useState<OrganizationInvitationWithOrg[]>([]);
+  const [invitations, setInvitations] = useState<
+    OrganizationInvitationWithOrg[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -533,8 +537,8 @@ export function useUserInvitations() {
       const data = await getUserInvitations();
       setInvitations(data);
     } catch (err: any) {
-      console.error('Error fetching user invitations:', err);
-      setError(err.message || 'Failed to fetch invitations');
+      console.error("Error fetching user invitations:", err);
+      setError(err.message || "Failed to fetch invitations");
     } finally {
       setLoading(false);
     }
@@ -553,21 +557,21 @@ export function useUserInvitations() {
         const result = await acceptInvitation(token);
 
         if (!result.success) {
-          setError(result.error || 'Failed to accept invitation');
+          setError(result.error || "Failed to accept invitation");
         } else {
           await fetchInvitations();
         }
 
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to accept invitation';
+        const errorMessage = err.message || "Failed to accept invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [fetchInvitations]
+    [fetchInvitations],
   );
 
   return {
@@ -606,7 +610,10 @@ export function useSlugAvailability(slug: string, debounceMs: number = 500) {
 
     return () => {
       clearTimeout(timer);
+      // Reset both states so a stale "Available" result from a previous slug
+      // can never let the form submit while a new check is still pending.
       setChecking(false);
+      setAvailable(null);
     };
   }, [slug, debounceMs]);
 
@@ -615,4 +622,3 @@ export function useSlugAvailability(slug: string, debounceMs: number = 500) {
     checking,
   };
 }
-

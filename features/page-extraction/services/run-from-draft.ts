@@ -18,7 +18,44 @@ import type {
   PageExtractionJob,
   PageExtractionJobInsert,
   PageExtractionJobUpdate,
+  SourceVariationKind,
 } from "@/features/page-extraction/types";
+
+/**
+ * Surface keys that, when claimed by the variable mapping, imply the
+ * corresponding `source_variation` must be enabled on the Job so the
+ * Python backend actually computes that text shape per chunk. We used
+ * to ask the user to tick checkboxes for these; now we derive them
+ * automatically from the agent's variable wiring.
+ */
+const VARIATION_GATING_KEYS: ReadonlyArray<SourceVariationKind> = [
+  "clean_text",
+  "raw_text",
+  "pdf_page",
+];
+
+/**
+ * Derive the minimal `source_variations` list a Job needs from its
+ * `variable_mapping`. A variation is required iff its name appears as
+ * a key in the mapping (which means some agent variable is wired to
+ * that chunk text shape).
+ *
+ * Returns `["clean_text"]` as a safety floor — the backend rejects an
+ * empty list, and clean text is the most useful default. Users wiring
+ * to other variations get those added on top automatically.
+ */
+export function deriveSourceVariations(
+  mapping: Record<string, string>,
+): SourceVariationKind[] {
+  const claimed = new Set<SourceVariationKind>();
+  for (const key of Object.keys(mapping)) {
+    if (VARIATION_GATING_KEYS.includes(key as SourceVariationKind)) {
+      claimed.add(key as SourceVariationKind);
+    }
+  }
+  if (claimed.size === 0) claimed.add("clean_text");
+  return Array.from(claimed);
+}
 
 export interface SaveTemplateOptions {
   fileId: string;
@@ -41,18 +78,18 @@ export class DraftValidationError extends Error {
 /**
  * Save-level validation. Lighter than the run-level checks: we only refuse
  * a Save when the draft is missing things that would make the row invalid
- * (agent, source variations). Page range / chunk size can be set later
- * before clicking Run.
+ * (agent + at least one mapped variable). Page range / chunk size can be
+ * set later before clicking Run.
+ *
+ * `source_variations` is no longer validated directly — it's derived
+ * from `variable_mapping` at save time. As long as at least one agent
+ * variable is wired, the derivation produces a non-empty list.
  */
 export function validateDraft(draft: ChunkingConfigDraft): string[] {
   const issues: string[] = [];
   if (!draft.agentId) issues.push("Pick an agent.");
-  if (draft.sourceVariations.length === 0)
-    issues.push("Pick at least one source variation.");
   if (draft.agentId && Object.keys(draft.variableMapping).length === 0) {
-    issues.push(
-      "Agent variables aren't wired yet. Wait for the agent definition to load (a moment after picking the agent).",
-    );
+    issues.push("Wire at least one agent variable.");
   }
   return issues;
 }
@@ -84,6 +121,12 @@ export async function saveTemplateFromDraft(
 
   const name = draft.jobName.trim() || `${opts.fallbackName} extraction`;
 
+  // `source_variations` is derived from the variable mapping — the
+  // user doesn't tick boxes for it anymore. Whatever chunk text shape
+  // they wire (clean_text / raw_text / pdf_page) ends up requested
+  // from the backend.
+  const sourceVariations = deriveSourceVariations(draft.variableMapping);
+
   // Saved templates are always is_saved=true going forward. The
   // distinction between "ad-hoc" and "saved" Jobs is going away — every
   // template the user creates is a named row they explicitly saved.
@@ -99,7 +142,7 @@ export async function saveTemplateFromDraft(
       chunk_size: draft.chunkSize ?? 1,
       chunk_overlap: draft.chunkOverlap,
       scope_pages: draft.scopePages.length ? draft.scopePages : null,
-      source_variations: draft.sourceVariations,
+      source_variations: sourceVariations,
       chunking_strategy: draft.chunkingStrategy,
       is_saved: true,
       extra_inputs: draft.extraInputs,
@@ -124,7 +167,7 @@ export async function saveTemplateFromDraft(
     chunk_size: draft.chunkSize ?? 1,
     chunk_overlap: draft.chunkOverlap,
     scope_pages: draft.scopePages.length ? draft.scopePages : null,
-    source_variations: draft.sourceVariations,
+    source_variations: sourceVariations,
     chunking_strategy: draft.chunkingStrategy,
     is_saved: true,
     extra_inputs: draft.extraInputs,
@@ -163,10 +206,13 @@ export function draftDiffersFromJob(
   if (draft.chunkingStrategy !== job.chunking_strategy) return true;
   if (draft.jobName.trim() && draft.jobName.trim() !== job.name) return true;
   if (!arraysEqual(draft.scopePages, job.scope_pages ?? [])) return true;
+  // `source_variations` is derived from the mapping at save time —
+  // compare the *derived* shape against what's persisted, ignoring the
+  // staler `draft.sourceVariations` (kept around only for back-compat).
   if (
     !arraysEqual(
-      draft.sourceVariations,
-      (job.source_variations ?? []) as string[],
+      deriveSourceVariations(draft.variableMapping).slice().sort(),
+      ((job.source_variations ?? []) as string[]).slice().sort(),
     )
   )
     return true;

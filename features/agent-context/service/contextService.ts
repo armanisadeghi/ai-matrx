@@ -2,9 +2,6 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
-
-type CtxContextItemsInsert =
-  Database["public"]["Tables"]["ctx_context_items"]["Insert"];
 import type {
   ContextItem,
   ContextItemManifest,
@@ -17,97 +14,72 @@ import type {
   ContextItemStatus,
   ContextDashboardStats,
   ContextCategoryHealth,
-  ContextScopeLevel,
 } from "../types";
 import { ATTENTION_STATUSES } from "../constants";
 
-function scopeColumn(
-  scopeType: ContextScopeLevel,
-): "user_id" | "organization_id" | "project_id" | "task_id" | null {
-  switch (scopeType) {
-    case "user":
-      return "user_id";
-    case "organization":
-      return "organization_id";
-    case "project":
-      return "project_id";
-    case "task":
-      return "task_id";
-    case "scope":
-      return null;
-  }
-}
-
-function scopeFilter(
-  query: any,
-  scopeType: ContextScopeLevel,
-  scopeId: string,
-) {
-  const col = scopeColumn(scopeType);
-  if (!col) {
-    throw new Error(
-      "scopeFilter cannot be used with dynamic scopes — use fetchManifestByScope instead",
-    );
-  }
-  return query.eq(col, scopeId);
-}
+type CtxContextItemsInsert =
+  Database["public"]["Tables"]["ctx_context_items"]["Insert"];
+type CtxScopeTypesInsert =
+  Database["public"]["Tables"]["ctx_scope_types"]["Insert"];
 
 export const contextService = {
-  // ─── Manifest (lightweight list) ───────────────────────────────────
-  async fetchManifest(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
-  ): Promise<ContextItemManifest[]> {
-    if (scopeType === "scope") {
-      return this.fetchManifestByScope(scopeId);
-    }
+  // ─── Manifest: items for a scope instance (with current values) ────
+  // Gets all context items defined for this scope's type, with current
+  // values for the given scope instance merged in.
+  async fetchManifest(scopeId: string): Promise<ContextItemManifest[]> {
+    const { data: scope, error: scopeErr } = await supabase
+      .from("ctx_scopes")
+      .select("scope_type_id")
+      .eq("id", scopeId)
+      .single();
+    if (scopeErr) throw scopeErr;
 
-    let query = supabase
+    const { data: items, error: itemsErr } = await supabase
       .from("ctx_context_items")
-      .select(
-        "*, ctx_context_item_values!current_value_id(text_value, updated_at)",
-      )
+      .select("*")
+      .eq("scope_type_id", scope.scope_type_id)
+      .eq("is_active", true)
       .order("category", { ascending: true, nullsFirst: true })
       .order("display_name", { ascending: true });
+    if (itemsErr) throw itemsErr;
 
-    query = scopeFilter(query, scopeType, scopeId);
-    const { data, error } = await query;
-    if (error) throw error;
+    if (!items || items.length === 0) return [];
 
-    return (data ?? []).map((row: any) => ({
-      ...row,
-      current_text_value: row.ctx_context_item_values?.text_value ?? null,
-      value_last_updated: row.ctx_context_item_values?.updated_at ?? null,
-    })) as ContextItemManifest[];
+    const itemIds = items.map((i) => i.id);
+    const { data: values, error: valuesErr } = await supabase
+      .from("ctx_context_item_values")
+      .select("context_item_id, value_text, created_at")
+      .eq("scope_id", scopeId)
+      .eq("is_current", true)
+      .in("context_item_id", itemIds);
+    if (valuesErr) throw valuesErr;
+
+    const valueMap = new Map((values ?? []).map((v) => [v.context_item_id, v]));
+
+    return items.map((item) => ({
+      ...item,
+      current_text_value: valueMap.get(item.id)?.value_text ?? null,
+      value_last_updated: valueMap.get(item.id)?.created_at ?? null,
+    }));
   },
 
-  // ─── Manifest via dynamic scope (ctx_scope_assignments) ────────────
-  async fetchManifestByScope(scopeId: string): Promise<ContextItemManifest[]> {
-    const { data: assignments, error: aErr } = await supabase
-      .from("ctx_scope_assignments")
-      .select("entity_id")
-      .eq("scope_id", scopeId)
-      .eq("entity_type", "context_item");
-    if (aErr) throw aErr;
-
-    const itemIds = (assignments ?? []).map((a) => a.entity_id);
-    if (itemIds.length === 0) return [];
-
+  // ─── Manifest: all items defined for a scope type (no scope values) ─
+  async fetchManifestByScopeType(
+    scopeTypeId: string,
+  ): Promise<ContextItemManifest[]> {
     const { data, error } = await supabase
       .from("ctx_context_items")
-      .select(
-        "*, ctx_context_item_values!current_value_id(text_value, updated_at)",
-      )
-      .in("id", itemIds)
+      .select("*")
+      .eq("scope_type_id", scopeTypeId)
+      .eq("is_active", true)
       .order("category", { ascending: true, nullsFirst: true })
       .order("display_name", { ascending: true });
     if (error) throw error;
-
-    return (data ?? []).map((row: any) => ({
-      ...row,
-      current_text_value: row.ctx_context_item_values?.text_value ?? null,
-      value_last_updated: row.ctx_context_item_values?.updated_at ?? null,
-    })) as ContextItemManifest[];
+    return (data ?? []).map((item) => ({
+      ...item,
+      current_text_value: null,
+      value_last_updated: null,
+    }));
   },
 
   // ─── Full item detail ─────────────────────────────────────────────
@@ -121,78 +93,53 @@ export const contextService = {
     return data as ContextItem;
   },
 
-  // ─── Current value for an item ────────────────────────────────────
-  async fetchCurrentValue(itemId: string): Promise<ContextItemValue | null> {
+  // ─── Current value for an item in a specific scope ────────────────
+  async fetchCurrentValue(
+    itemId: string,
+    scopeId: string,
+  ): Promise<ContextItemValue | null> {
     const { data, error } = await supabase
       .from("ctx_context_item_values")
       .select("*")
       .eq("context_item_id", itemId)
+      .eq("scope_id", scopeId)
       .eq("is_current", true)
       .maybeSingle();
     if (error) throw error;
     return data as ContextItemValue | null;
   },
 
-  // ─── Version history ──────────────────────────────────────────────
-  async fetchVersionHistory(itemId: string): Promise<ContextItemValue[]> {
+  // ─── Version history for an item in a specific scope ─────────────
+  async fetchVersionHistory(
+    itemId: string,
+    scopeId: string,
+  ): Promise<ContextItemValue[]> {
     const { data, error } = await supabase
       .from("ctx_context_item_values")
       .select("*")
       .eq("context_item_id", itemId)
+      .eq("scope_id", scopeId)
       .order("version", { ascending: false });
     if (error) throw error;
-    return data as ContextItemValue[];
+    return (data ?? []) as ContextItemValue[];
   },
 
-  // ─── Create item ──────────────────────────────────────────────────
+  // ─── Create item (defines a field on a scope type) ────────────────
   async createItem(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
-    formData: ContextItemFormData,
-    orgId?: string,
-  ): Promise<ContextItem> {
-    if (scopeType === "scope") {
-      return this.createItemForScope(scopeId, formData, orgId);
-    }
-
-    const col = scopeColumn(scopeType)!;
-    const { data, error } = await supabase
-      .from("ctx_context_items")
-      .insert({ ...formData, [col]: scopeId })
-      .select()
-      .single();
-    if (error) throw error;
-    return data as ContextItem;
-  },
-
-  // ─── Create item and link to dynamic scope ─────────────────────────
-  async createItemForScope(
-    scopeId: string,
-    formData: ContextItemFormData,
-    orgId?: string,
+    scopeTypeId: string,
+    formData: Omit<ContextItemFormData, "scope_type_id">,
   ): Promise<ContextItem> {
     const insertPayload: CtxContextItemsInsert = {
       ...formData,
-      ...(orgId ? { organization_id: orgId } : {}),
+      scope_type_id: scopeTypeId,
     };
-
-    const { data: item, error: itemErr } = await supabase
+    const { data, error } = await supabase
       .from("ctx_context_items")
       .insert(insertPayload)
       .select()
       .single();
-    if (itemErr) throw itemErr;
-
-    const { error: assignErr } = await supabase
-      .from("ctx_scope_assignments")
-      .insert({
-        scope_id: scopeId,
-        entity_type: "context_item",
-        entity_id: (item as ContextItem).id,
-      });
-    if (assignErr) throw assignErr;
-
-    return item as ContextItem;
+    if (error) throw error;
+    return data as unknown as ContextItem;
   },
 
   // ─── Update item metadata ─────────────────────────────────────────
@@ -230,9 +177,10 @@ export const contextService = {
     return data as ContextItem;
   },
 
-  // ─── Create new value version ─────────────────────────────────────
+  // ─── Create new value version for a scope instance ────────────────
   async createValue(
     itemId: string,
+    scopeId: string,
     valueData: ContextValueFormData,
     sourceType: Database["public"]["Enums"]["context_source_type"] = "manual",
   ): Promise<ContextItemValue> {
@@ -240,13 +188,14 @@ export const contextService = {
       .from("ctx_context_item_values")
       .insert({
         context_item_id: itemId,
+        scope_id: scopeId,
         ...valueData,
         source_type: sourceType,
       })
       .select()
       .single();
     if (error) throw error;
-    return data as ContextItemValue;
+    return data as unknown as ContextItemValue;
   },
 
   // ─── Archive / soft delete ────────────────────────────────────────
@@ -258,70 +207,33 @@ export const contextService = {
     if (error) throw error;
   },
 
-  // ─── Dashboard stats ──────────────────────────────────────────────
-  async fetchDashboardStats(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
-  ): Promise<ContextDashboardStats> {
-    if (scopeType === "scope") {
-      const manifest = await this.fetchManifestByScope(scopeId);
-      const active = manifest.filter((i) => i.status === "active");
-      return {
-        totalItems: manifest.length,
-        activeVerified: active.length,
-        needsAttention: manifest.filter((i) =>
-          ATTENTION_STATUSES.includes(i.status as ContextItemStatus),
-        ).length,
-        emptyStub: manifest.filter(
-          (i) => !i.has_nested_objects && !i.char_count,
-        ).length,
-      };
-    }
-
-    let query = supabase
-      .from("ctx_context_items")
-      .select("id, status, current_value_id, is_active")
-      .eq("is_active", true);
-
-    query = scopeFilter(query, scopeType, scopeId);
-    const { data, error } = await query;
-    if (error) throw error;
-
-    const items = data ?? [];
+  // ─── Dashboard stats for a scope instance ─────────────────────────
+  // emptyStub = items with no value entered yet for this scope
+  async fetchDashboardStats(scopeId: string): Promise<ContextDashboardStats> {
+    const manifest = await this.fetchManifest(scopeId);
     return {
-      totalItems: items.length,
-      activeVerified: items.filter((i) => i.status === "active").length,
-      needsAttention: items.filter((i) =>
+      totalItems: manifest.length,
+      activeVerified: manifest.filter((i) => i.status === "active").length,
+      needsAttention: manifest.filter((i) =>
         ATTENTION_STATUSES.includes(i.status as ContextItemStatus),
       ).length,
-      emptyStub: items.filter((i) => !i.current_value_id).length,
+      emptyStub: manifest.filter((i) => !i.current_text_value).length,
     };
   },
 
-  // ─── Category health breakdown ────────────────────────────────────
+  // ─── Category health breakdown for a scope type ───────────────────
   async fetchCategoryHealth(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
+    scopeTypeId: string,
   ): Promise<ContextCategoryHealth[]> {
-    let items: { category: string | null; status: string }[];
+    const { data, error } = await supabase
+      .from("ctx_context_items")
+      .select("category, status")
+      .eq("scope_type_id", scopeTypeId)
+      .eq("is_active", true);
+    if (error) throw error;
 
-    if (scopeType === "scope") {
-      const manifest = await this.fetchManifestByScope(scopeId);
-      items = manifest.map((m) => ({ category: m.category, status: m.status }));
-    } else {
-      let query = supabase
-        .from("ctx_context_items")
-        .select("category, status")
-        .eq("is_active", true);
-
-      query = scopeFilter(query, scopeType, scopeId);
-      const { data, error } = await query;
-      if (error) throw error;
-      items = data ?? [];
-    }
     const categoryMap = new Map<string, ContextCategoryHealth>();
-
-    for (const item of items) {
+    for (const item of data ?? []) {
       const cat = item.category || "Uncategorized";
       if (!categoryMap.has(cat)) {
         categoryMap.set(cat, {
@@ -341,43 +253,16 @@ export const contextService = {
       if (ATTENTION_STATUSES.includes(item.status as ContextItemStatus))
         h.needsAttention++;
     }
-
     return Array.from(categoryMap.values()).sort((a, b) => b.total - a.total);
   },
 
-  // ─── Attention queue (sorted by urgency: stale-overdue → needs_review → ai_enriched → needs_update → partial) ──
+  // ─── Attention queue for a scope instance ─────────────────────────
+  // Items with attention-needing statuses, sorted by urgency then age.
   async fetchAttentionQueue(
-    scopeType: ContextScopeLevel,
     scopeId: string,
+    limit = 20,
   ): Promise<ContextItemManifest[]> {
-    let mapped: ContextItemManifest[];
-
-    if (scopeType === "scope") {
-      const all = await this.fetchManifestByScope(scopeId);
-      mapped = all
-        .filter((i) =>
-          ATTENTION_STATUSES.includes(i.status as ContextItemStatus),
-        )
-        .slice(0, 20);
-    } else {
-      let query = supabase
-        .from("ctx_context_items")
-        .select(
-          "*, ctx_context_item_values!current_value_id(text_value, updated_at)",
-        )
-        .in("status", ATTENTION_STATUSES)
-        .limit(20);
-
-      query = scopeFilter(query, scopeType, scopeId);
-      const { data, error } = await query;
-      if (error) throw error;
-
-      mapped = (data ?? []).map((row: any) => ({
-        ...row,
-        current_text_value: row.ctx_context_item_values?.text_value ?? null,
-        value_last_updated: row.ctx_context_item_values?.updated_at ?? null,
-      })) as ContextItemManifest[];
-    }
+    const manifest = await this.fetchManifest(scopeId);
 
     const priorityOrder: Record<string, number> = {
       stale: 1,
@@ -387,30 +272,28 @@ export const contextService = {
       partial: 5,
     };
 
-    return mapped.sort((a, b) => {
-      const pa = priorityOrder[a.status] ?? 99;
-      const pb = priorityOrder[b.status] ?? 99;
-      if (pa !== pb) return pa - pb;
-      // Within same priority, older items first
-      return (a.value_last_updated ?? "").localeCompare(
-        b.value_last_updated ?? "",
-      );
-    });
+    return manifest
+      .filter((i) => ATTENTION_STATUSES.includes(i.status as ContextItemStatus))
+      .sort((a, b) => {
+        const pa = priorityOrder[a.status] ?? 99;
+        const pb = priorityOrder[b.status] ?? 99;
+        if (pa !== pb) return pa - pb;
+        return (a.value_last_updated ?? "").localeCompare(
+          b.value_last_updated ?? "",
+        );
+      })
+      .slice(0, limit);
   },
 
   // ─── Recent access log ────────────────────────────────────────────
-  async fetchRecentAccessLog(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
-    limit = 10,
-  ): Promise<ContextAccessLogEntry[]> {
+  async fetchRecentAccessLog(limit = 10): Promise<ContextAccessLogEntry[]> {
     const { data, error } = await supabase
       .from("ctx_context_access_log")
       .select("*")
       .order("accessed_at", { ascending: false })
       .limit(limit);
     if (error) throw error;
-    return data as ContextAccessLogEntry[];
+    return (data ?? []) as ContextAccessLogEntry[];
   },
 
   // ─── Access summary per item ──────────────────────────────────────
@@ -437,147 +320,106 @@ export const contextService = {
   // ─── Templates ────────────────────────────────────────────────────
   async fetchTemplates(): Promise<ContextTemplate[]> {
     const { data, error } = await supabase
-      .from("ctx_context_templates")
+      .from("ctx_templates")
       .select("*")
-      .order("industry_category", { ascending: true })
-      .order("display_order", { ascending: true });
+      .eq("is_active", true)
+      .order("category", { ascending: true })
+      .order("sort_order", { ascending: true });
     if (error) throw error;
-    return data as ContextTemplate[];
+    return (data ?? []) as ContextTemplate[];
   },
 
-  async fetchTemplatesByIndustry(
-    industryCategory: string,
-  ): Promise<ContextTemplate[]> {
+  async fetchTemplatesByCategory(category: string): Promise<ContextTemplate[]> {
     const { data, error } = await supabase
-      .from("ctx_context_templates")
+      .from("ctx_templates")
       .select("*")
-      .eq("industry_category", industryCategory)
-      .order("display_order", { ascending: true });
+      .eq("category", category)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
     if (error) throw error;
-    return data as ContextTemplate[];
+    return (data ?? []) as ContextTemplate[];
   },
 
   // ─── Apply template ───────────────────────────────────────────────
+  // Bootstraps an org by:
+  //   1. Creating ctx_scope_types rows from the template's scope type definitions
+  //   2. Creating ctx_context_items rows for each new scope type
+  // The user then adds actual scopes (instances) and their values.
   async applyTemplate(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
-    templateItems: ContextTemplate[],
-    existingKeys: Set<string>,
-    orgId?: string,
-  ): Promise<{ created: number; skipped: number }> {
-    if (scopeType === "scope") {
-      return this.applyTemplateToScope(
-        scopeId,
-        templateItems,
-        existingKeys,
-        orgId,
-      );
+    templateId: string,
+    orgId: string,
+  ): Promise<{ createdScopeTypes: number; createdItems: number }> {
+    // Step 1: get template scope types
+    const { data: templateScopeTypes, error: tErr } = await supabase
+      .from("ctx_template_scope_types")
+      .select("*")
+      .eq("template_id", templateId)
+      .order("sort_order", { ascending: true });
+    if (tErr) throw tErr;
+    if (!templateScopeTypes || templateScopeTypes.length === 0) {
+      return { createdScopeTypes: 0, createdItems: 0 };
     }
 
-    const col = scopeColumn(scopeType)!;
-    const toCreate = templateItems.filter((t) => !existingKeys.has(t.item_key));
-    const skipped = templateItems.length - toCreate.length;
+    let totalItems = 0;
 
-    if (toCreate.length > 0) {
-      const rows = toCreate.map((t) => ({
-        key: t.item_key,
-        display_name: t.item_display_name,
-        description: t.item_description,
-        value_type: t.default_value_type,
-        fetch_hint: t.default_fetch_hint,
-        sensitivity: t.default_sensitivity,
+    for (const tst of templateScopeTypes) {
+      // Step 2: create a real scope type for the org
+      const scopeTypePayload: CtxScopeTypesInsert = {
+        organization_id: orgId,
+        label_singular: tst.label_singular,
+        label_plural: tst.label_plural,
+        description: tst.description,
+        icon: tst.icon,
+        sort_order: tst.sort_order,
+        parent_type_id: null, // hierarchy wiring done separately if needed
+      };
+      const { data: newScopeType, error: stErr } = await supabase
+        .from("ctx_scope_types")
+        .insert(scopeTypePayload)
+        .select("id")
+        .single();
+      if (stErr) throw stErr;
+
+      // Step 3: get template context items for this scope type
+      const { data: templateItems, error: tiErr } = await supabase
+        .from("ctx_template_context_items")
+        .select("*")
+        .eq("template_scope_type_id", tst.id)
+        .order("sort_order", { ascending: true });
+      if (tiErr) throw tiErr;
+
+      if (!templateItems || templateItems.length === 0) continue;
+
+      // Step 4: create context items for the new scope type
+      const itemRows: CtxContextItemsInsert[] = templateItems.map((ti) => ({
+        scope_type_id: newScopeType.id,
+        key: ti.key,
+        display_name: ti.display_name,
+        description: ti.description,
+        value_type: ti.value_type,
         status: "stub" as const,
-        template_item_key: t.item_key,
-        review_interval_days: t.suggested_review_interval_days,
-        [col]: scopeId,
       }));
 
-      const { error } = await supabase.from("ctx_context_items").insert(rows);
-      if (error) throw error;
-    }
-
-    return { created: toCreate.length, skipped };
-  },
-
-  // ─── Apply template to dynamic scope ───────────────────────────────
-  async applyTemplateToScope(
-    scopeId: string,
-    templateItems: ContextTemplate[],
-    existingKeys: Set<string>,
-    orgId?: string,
-  ): Promise<{ created: number; skipped: number }> {
-    const toCreate = templateItems.filter((t) => !existingKeys.has(t.item_key));
-    const skipped = templateItems.length - toCreate.length;
-
-    if (toCreate.length > 0) {
-      const rows: CtxContextItemsInsert[] = toCreate.map((t) => ({
-        key: t.item_key,
-        display_name: t.item_display_name,
-        description: t.item_description,
-        value_type: t.default_value_type,
-        fetch_hint: t.default_fetch_hint,
-        sensitivity: t.default_sensitivity,
-        status: "stub",
-        template_item_key: t.item_key,
-        review_interval_days: t.suggested_review_interval_days,
-        ...(orgId ? { organization_id: orgId } : {}),
-      }));
-
-      const { data: created, error } = await supabase
+      const { error: itemsErr } = await supabase
         .from("ctx_context_items")
-        .insert(rows)
-        .select("id");
-      if (error) throw error;
+        .insert(itemRows);
+      if (itemsErr) throw itemsErr;
 
-      if (created && created.length > 0) {
-        const assignments = created.map((item) => ({
-          scope_id: scopeId,
-          entity_type: "context_item" as const,
-          entity_id: item.id,
-        }));
-        const { error: assignErr } = await supabase
-          .from("ctx_scope_assignments")
-          .insert(assignments);
-        if (assignErr) throw assignErr;
-      }
+      totalItems += itemRows.length;
     }
 
-    return { created: toCreate.length, skipped };
+    return {
+      createdScopeTypes: templateScopeTypes.length,
+      createdItems: totalItems,
+    };
   },
 
-  // ─── Fetch existing keys in scope (for template dedup) ────────────
-  async fetchExistingKeys(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
-  ): Promise<Set<string>> {
-    if (scopeType === "scope") {
-      return this.fetchExistingKeysByScope(scopeId);
-    }
-
-    let query = supabase.from("ctx_context_items").select("key");
-
-    query = scopeFilter(query, scopeType, scopeId);
-    const { data, error } = await query;
-    if (error) throw error;
-    return new Set((data ?? []).map((d) => d.key));
-  },
-
-  // ─── Fetch existing keys via dynamic scope ─────────────────────────
-  async fetchExistingKeysByScope(scopeId: string): Promise<Set<string>> {
-    const { data: assignments, error: aErr } = await supabase
-      .from("ctx_scope_assignments")
-      .select("entity_id")
-      .eq("scope_id", scopeId)
-      .eq("entity_type", "context_item");
-    if (aErr) throw aErr;
-
-    const itemIds = (assignments ?? []).map((a) => a.entity_id);
-    if (itemIds.length === 0) return new Set();
-
+  // ─── Existing keys for a scope type (dedup before create) ─────────
+  async fetchExistingKeys(scopeTypeId: string): Promise<Set<string>> {
     const { data, error } = await supabase
       .from("ctx_context_items")
       .select("key")
-      .in("id", itemIds);
+      .eq("scope_type_id", scopeTypeId);
     if (error) throw error;
     return new Set((data ?? []).map((d) => d.key));
   },
@@ -586,11 +428,12 @@ export const contextService = {
   async duplicateItem(itemId: string): Promise<ContextItem> {
     const original = await this.fetchItem(itemId);
     const {
-      id,
-      created_at,
-      updated_at,
-      current_value_id,
-      status_updated_at,
+      id: _id,
+      created_at: _ca,
+      updated_at: _ua,
+      status_updated_at: _sua,
+      current_text_value: _cv,
+      value_last_updated: _vl,
       ...rest
     } = original;
 
@@ -601,7 +444,6 @@ export const contextService = {
         key: `${rest.key}_copy`,
         display_name: `${rest.display_name} (Copy)`,
         status: "stub" as const,
-        current_value_id: null,
       })
       .select()
       .single();
@@ -609,10 +451,8 @@ export const contextService = {
     return data as ContextItem;
   },
 
-  // ─── Analytics: fetch volume over time ────────────────────────────
+  // ─── Analytics: fetch access volume over time ─────────────────────
   async fetchAccessVolume(
-    scopeType: ContextScopeLevel,
-    scopeId: string,
     days = 30,
   ): Promise<{ date: string; count: number }[]> {
     const since = new Date(Date.now() - days * 86400000).toISOString();
@@ -634,13 +474,12 @@ export const contextService = {
     }));
   },
 
-  // ─── Analytics: item usage rankings ───────────────────────────────
+  // ─── Analytics: item usage rankings for a scope instance ──────────
   async fetchItemUsageRankings(
-    scopeType: ContextScopeLevel,
     scopeId: string,
   ): Promise<(ContextItemManifest & ContextAccessSummary)[]> {
     const [items, logs] = await Promise.all([
-      this.fetchManifest(scopeType, scopeId),
+      this.fetchManifest(scopeId),
       supabase
         .from("ctx_context_access_log")
         .select("context_item_id, was_useful, accessed_at")

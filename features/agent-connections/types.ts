@@ -13,7 +13,8 @@ export type AgentConnectionsSection =
   | "hooks"
   | "mcpServers"
   | "plugins"
-  | "registries";
+  | "registries"
+  | "preferences";
 
 export type Scope = "user" | "organization" | "project" | "task";
 
@@ -26,6 +27,9 @@ export interface SidebarSection {
   value: AgentConnectionsSection;
   label: string;
   icon: LucideIcon;
+  /** Optional URL slug. Defaults to `value` when omitted. Use this to override
+   *  camelCase enum values with kebab-case URL paths. */
+  urlSegment?: string;
 }
 
 export interface OverviewCard {

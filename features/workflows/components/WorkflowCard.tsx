@@ -7,12 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WorkflowIcon, Calendar, Tag } from "lucide-react";
 import { Workflow } from '@/lib/redux/workflow/types';
+import { ShareButton } from "@/features/sharing";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface WorkflowCardProps {
   workflow: Workflow;
 }
 
 export function WorkflowCard({ workflow }: WorkflowCardProps) {
+  const currentUserId = useAppSelector(selectUserId);
+  const isOwner = Boolean(
+    currentUserId && (workflow as { user_id?: string | null }).user_id === currentUserId,
+  );
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -77,9 +84,24 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
               <span>Recently updated</span>
             </div>
             
-            <Button size="sm" variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Open
-            </Button>
+            <div className="flex items-center gap-1">
+              {isOwner && (
+                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  <ShareButton
+                    resourceType="workflow"
+                    resourceId={workflow.id}
+                    resourceName={workflow.name}
+                    isOwner={true}
+                    variant="ghost"
+                    size="icon"
+                    showStatus={false}
+                  />
+                </div>
+              )}
+              <Button size="sm" variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                Open
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

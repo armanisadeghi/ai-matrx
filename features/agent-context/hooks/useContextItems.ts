@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/utils/supabase/client";
 import { contextService } from "../service/contextService";
 import type { Database } from "@/types/database.types";
 import type {
@@ -16,7 +17,6 @@ import type {
   ContextCategoryHealth,
   ContextTemplate,
   ContextAccessSummary,
-  ContextIndustryGroup,
 } from "../types";
 
 type ContextSourceType = Database["public"]["Enums"]["context_source_type"];
@@ -183,12 +183,11 @@ export function useContextUsageRankings(
 export function useCreateContextItem(
   scopeType: ContextScopeLevel,
   scopeId: string,
-  orgId?: string,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (formData: ContextItemFormData) =>
-      contextService.createItem(scopeType, scopeId, formData, orgId),
+      contextService.createItem(scopeType, scopeId, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: KEYS.manifest(scopeType, scopeId),
@@ -293,7 +292,7 @@ export function useCreateContextValue(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       itemId,
       valueData,
       sourceType,
@@ -301,7 +300,33 @@ export function useCreateContextValue(
       itemId: string;
       valueData: ContextValueFormData;
       sourceType?: ContextSourceType;
-    }) => contextService.createValue(itemId, valueData, sourceType),
+    }) => {
+      const { data: current } = await supabase
+        .from("ctx_context_item_values")
+        .select("scope_id")
+        .eq("context_item_id", itemId)
+        .eq("is_current", true)
+        .maybeSingle();
+
+      let valueScopeId = current?.scope_id ?? null;
+      if (!valueScopeId) {
+        valueScopeId = await contextService.resolvePrimaryValueScopeId(
+          scopeType,
+          scopeId,
+        );
+      }
+      if (!valueScopeId) {
+        throw new Error(
+          "Cannot save value: no ctx_scopes target (link the item to a scope or create a value from a scope context).",
+        );
+      }
+      return contextService.createValue(
+        itemId,
+        valueScopeId,
+        valueData,
+        sourceType,
+      );
+    },
     onSuccess: (_data, { itemId }) => {
       queryClient.invalidateQueries({ queryKey: KEYS.value(itemId) });
       queryClient.invalidateQueries({ queryKey: KEYS.history(itemId) });
@@ -361,11 +386,14 @@ export function useDuplicateContextItem(
 export function useApplyTemplate(
   scopeType: ContextScopeLevel,
   scopeId: string,
-  orgId?: string,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (templateItems: ContextTemplate[]) => {
+    mutationFn: async (templates: ContextTemplate[]) => {
+      const templateId = templates[0]?.id;
+      if (!templateId) {
+        throw new Error("No template selected.");
+      }
       const existingKeys = await contextService.fetchExistingKeys(
         scopeType,
         scopeId,
@@ -373,9 +401,8 @@ export function useApplyTemplate(
       return contextService.applyTemplate(
         scopeType,
         scopeId,
-        templateItems,
+        templateId,
         existingKeys,
-        orgId,
       );
     },
     onSuccess: ({ created, skipped }) => {

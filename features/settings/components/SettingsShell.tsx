@@ -8,7 +8,7 @@
  * separately — covered by `userPreferencesWindow`.
  */
 
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Check, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
@@ -19,6 +19,7 @@ import { SettingsDrawerNav } from "@/components/official/settings/tree/SettingsD
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 import { getTabTreeNodes, findTab } from "../registry";
 import { SettingsTabHost } from "./SettingsTabHost";
+import { SettingsPresentationProvider } from "./SettingsPresentationContext";
 
 export type SettingsShellProps = {
   /** Controls whether the shell is mounted. */
@@ -68,6 +69,11 @@ export function SettingsShell({
   const prefsMeta = useSelector((s: RootState) => s.userPreferences._meta);
   const isSaving = prefsMeta?.isLoading ?? false;
 
+  // Stable callback for tab switching — passed into the presentation
+  // context so descendants (breadcrumbs, "open profile" buttons in
+  // other tabs, etc.) can swap tabs in-place instead of route-pushing.
+  const activateTab = useCallback((id: string) => setActiveTabId(id), []);
+
   if (!isOpen) return null;
 
   const activeTab = activeTabId ? (findTab(activeTabId) ?? null) : null;
@@ -90,63 +96,75 @@ export function SettingsShell({
 
   if (isMobile) {
     return (
-      <SettingsDrawerNav
-        nodes={treeNodes}
-        activeId={activeTabId}
-        onActivate={setActiveTabId}
-        renderTab={(node) => {
-          const tab = findTab(node.id);
-          return (
-            <SettingsTabHost
-              activeTab={tab ?? null}
-              treeNodes={treeNodes}
-              showBreadcrumb={false}
-            />
-          );
-        }}
-        open={isOpen}
-        onOpenChange={(next) => {
-          if (!next) onClose();
-        }}
-        title="Settings"
-      />
+      <SettingsPresentationProvider
+        presentation="drawer"
+        closeShell={onClose}
+        setActiveTabId={activateTab}
+      >
+        <SettingsDrawerNav
+          nodes={treeNodes}
+          activeId={activeTabId}
+          onActivate={setActiveTabId}
+          renderTab={(node) => {
+            const tab = findTab(node.id);
+            return (
+              <SettingsTabHost
+                activeTab={tab ?? null}
+                treeNodes={treeNodes}
+                showBreadcrumb={false}
+              />
+            );
+          }}
+          open={isOpen}
+          onOpenChange={(next) => {
+            if (!next) onClose();
+          }}
+          title="Settings"
+        />
+      </SettingsPresentationProvider>
     );
   }
 
   return (
-    <WindowPanel
-      title="Settings"
-      width="72vw"
-      height="78vh"
-      minWidth={640}
-      minHeight={480}
-      overlayId="userPreferencesWindow"
-      urlSyncKey="userPreferencesWindow"
-      onClose={onClose}
-      sidebar={
-        <SettingsTree
-          nodes={treeNodes}
-          activeId={activeTabId}
-          onActivate={setActiveTabId}
-        />
-      }
-      sidebarDefaultSize={240}
-      sidebarMinSize={180}
-      sidebarClassName="p-0"
-      titleNode={
-        <span className="flex items-center gap-1.5 text-sm font-semibold">
-          <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          Settings
-        </span>
-      }
-      footerLeft={footerStatus}
-      onCollectData={() => ({ activeTabId })}
+    <SettingsPresentationProvider
+      presentation="window"
+      closeShell={onClose}
+      setActiveTabId={activateTab}
     >
-      <SettingsTabHost
-        activeTab={activeTab}
-        treeNodes={treeNodes}
-        onNavigate={(id) => setActiveTabId(id)}
-      />
-    </WindowPanel>
+      <WindowPanel
+        title="Settings"
+        width="72vw"
+        height="78vh"
+        minWidth={640}
+        minHeight={480}
+        overlayId="userPreferencesWindow"
+        urlSyncKey="userPreferencesWindow"
+        onClose={onClose}
+        sidebar={
+          <SettingsTree
+            nodes={treeNodes}
+            activeId={activeTabId}
+            onActivate={setActiveTabId}
+          />
+        }
+        sidebarDefaultSize={240}
+        sidebarMinSize={180}
+        sidebarClassName="p-0"
+        titleNode={
+          <span className="flex items-center gap-1.5 text-sm font-semibold">
+            <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            Settings
+          </span>
+        }
+        footerLeft={footerStatus}
+        onCollectData={() => ({ activeTabId })}
+      >
+        <SettingsTabHost
+          activeTab={activeTab}
+          treeNodes={treeNodes}
+          onNavigate={(id) => setActiveTabId(id)}
+        />
+      </WindowPanel>
+    </SettingsPresentationProvider>
   );
 }

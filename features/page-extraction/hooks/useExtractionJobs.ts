@@ -14,12 +14,43 @@ import type { PageExtractionJob } from "@/features/page-extraction/types";
 import {
   createSharedStore,
   invalidateKey,
+  setKey,
   useSharedStore,
 } from "@/features/file-analysis/hooks/shared-cache";
 
 const store = createSharedStore<PageExtractionJob[]>(async (fileId) => {
   return listJobsForFile(fileId);
 });
+
+/**
+ * Optimistically insert-or-replace a job in the shared cache so the
+ * picker (and anything else reading `useExtractionJobs(fileId)`) sees
+ * the new name **immediately** after a save — no need to wait for the
+ * Supabase Realtime round-trip. Realtime will still fire and converge
+ * to canonical state via `invalidateKey`; this is just the fast path
+ * for the in-tab actor.
+ *
+ * Ordering matches `listJobsForFile`: newest `created_at` first.
+ */
+export function upsertJobInCache(fileId: string, job: PageExtractionJob): void {
+  setKey(store, fileId, (prev) => {
+    const list = prev ?? [];
+    const without = list.filter((j) => j.id !== job.id);
+    return [job, ...without].sort((a, b) => {
+      const at = new Date(a.created_at ?? 0).getTime();
+      const bt = new Date(b.created_at ?? 0).getTime();
+      return bt - at;
+    });
+  });
+}
+
+/**
+ * Optimistically remove a job from the shared cache (used by the
+ * sidebar's soft-delete affordance so the row vanishes instantly).
+ */
+export function removeJobFromCache(fileId: string, jobId: string): void {
+  setKey(store, fileId, (prev) => (prev ?? []).filter((j) => j.id !== jobId));
+}
 
 const realtimeRefcount = new Map<
   string,
