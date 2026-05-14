@@ -38,6 +38,25 @@ export const selectSelectedJobForFile = (
 };
 
 /**
+ * The job whose **data** is being viewed in the main extractions pane.
+ * Falls back to `selectedJobByFile` when the user hasn't explicitly
+ * picked a different one in the JobPicker — so by default, the data
+ * view follows the sidebar.
+ *
+ * Use this for the main pane (JobPicker, RunProgressBar, ResultsTable,
+ * ChunksTab activeRun overlay). Use `selectSelectedJobForFile` for the
+ * right inspector (ChunkingConfigForm, SavedJobsList highlight).
+ */
+export const selectViewedJobForFile = (
+  state: RootState,
+  fileId: string | null | undefined,
+): string | null => {
+  if (!fileId) return null;
+  const r = root(state);
+  return r?.viewedJobByFile[fileId] ?? r?.selectedJobByFile[fileId] ?? null;
+};
+
+/**
  * True when the ChunkingConfigForm should be rendered as the full editor
  * for this file. False means: render the read-only display (when a job is
  * selected) or the empty-list state (when nothing is selected).

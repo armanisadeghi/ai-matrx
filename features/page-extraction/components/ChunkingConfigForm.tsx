@@ -28,25 +28,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Loader2, Plus, Save, X } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Save } from "lucide-react";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { SOURCE_VARIATIONS } from "@/features/page-extraction/constants";
 import {
   clearDraft,
   ensureDraft,
   patchDraft,
   selectJobForFile,
   setEditing,
-  toggleDraftVariation,
 } from "@/features/page-extraction/redux/pageExtractionSlice";
 import {
   selectDraftForFile,
@@ -272,6 +269,14 @@ function TemplateEditor({
     loading: pagesLoading,
   } = useChunkPreview({ fileId, processedDocumentId });
 
+  // Other saved templates on this file — feed the extra-inputs manager
+  // inside VariableMappingEditor (each becomes a wireable option).
+  const { jobs: allJobs } = useExtractionJobs(fileId);
+  const candidateJobs = useMemo(
+    () => allJobs.filter((j) => j.id !== selectedJobId),
+    [allJobs, selectedJobId],
+  );
+
   const agent = useAppSelector((s) =>
     draft.agentId ? selectAgentById(s, draft.agentId) : undefined,
   );
@@ -415,57 +420,27 @@ function TemplateEditor({
       </div>
 
       {/* 1. Template name */}
-      <Field
-        label="Template name"
-        required
-        hint="What to call this template in the Saved list."
-      >
+      <Field label="Template name" required>
         <Input
           value={draft.jobName}
           onChange={(e) =>
             dispatch(patchDraft({ fileId, patch: { jobName: e.target.value } }))
           }
-          placeholder={`e.g. "${documentName} extraction"`}
+          placeholder={`${documentName} extraction`}
           className="h-7 text-[11px]"
         />
       </Field>
 
-      {/* 2. Agent — picker + variable-mapping editor */}
-      <Field label="Agent" required hint="Pick one of your agents.">
-        <AgentListDropdown
-          onSelect={(id) =>
-            dispatch(patchDraft({ fileId, patch: { agentId: id } }))
-          }
-          label={agent?.name ?? "Select an Agent"}
-          noBorder={false}
-        />
-        {agent && (
-          <VariableMappingEditor
-            agentName={agent.name}
-            agentVariables={agent.variableDefinitions}
-            mapping={draft.variableMapping}
-            selectedVariations={draft.sourceVariations}
-            onChange={(next) =>
-              dispatch(patchDraft({ fileId, patch: { variableMapping: next } }))
-            }
-          />
-        )}
-      </Field>
-
-      {/* 3. Page range */}
+      {/* 2. Page range */}
       <Field
         label="Pages"
         required
-        hint={
-          pagesLoading
-            ? "Loading page list…"
-            : `${availablePages.length} pages in this document`
-        }
+        hint={pagesLoading ? "Loading…" : `${availablePages.length} available`}
       >
         <Input
           value={draft.scopePagesInputRaw}
           onChange={(e) => handleRangeChange(e.target.value)}
-          placeholder='e.g. "1-50, 80-90"'
+          placeholder="1-50, 80-90"
           className="h-7 text-[11px]"
         />
         {draft.scopePages.length > 0 && (
@@ -473,7 +448,7 @@ function TemplateEditor({
             <span className="font-mono text-foreground/80">
               {draft.scopePages.length}
             </span>{" "}
-            page{draft.scopePages.length === 1 ? "" : "s"} in scope
+            in scope
           </p>
         )}
         {rangeError && (
@@ -483,20 +458,20 @@ function TemplateEditor({
         )}
       </Field>
 
-      {/* 4. Chunk size + overlap */}
+      {/* 3. Chunk size + overlap */}
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Chunk size" required hint="Pages per agent call.">
+        <Field label="Chunk size" required hint="Pages per call">
           <Input
             value={draft.chunkSize ?? ""}
             onChange={(e) => handleChunkSizeChange(e.target.value)}
             type="number"
             min={1}
             max={50}
-            placeholder="e.g. 12"
+            placeholder="12"
             className="h-7 text-[11px]"
           />
         </Field>
-        <Field label="Overlap" hint="Repeat pages.">
+        <Field label="Overlap" hint="Repeat pages">
           <Input
             value={draft.chunkOverlap}
             onChange={(e) => handleChunkOverlapChange(e.target.value)}
@@ -526,75 +501,40 @@ function TemplateEditor({
         </p>
       )}
 
-      {/* 5. Source variations — what the backend computes per chunk, which
-              gates the matching surface values (`clean_text`, `raw_text`,
-              `pdf_page`) above. */}
-      <Field
-        label="Per-chunk text to fetch"
-        required
-        hint="Tick what the variable wiring above needs."
-      >
-        <div className="space-y-1.5">
-          {SOURCE_VARIATIONS.map((v) => {
-            const checked = draft.sourceVariations.includes(v.kind);
-            const disabled = v.comingSoon === true;
-            return (
-              <label
-                key={v.kind}
-                className={`flex items-start gap-2 ${
-                  disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                }`}
-              >
-                <Checkbox
-                  checked={checked}
-                  disabled={disabled}
-                  onCheckedChange={() => {
-                    if (disabled) return;
-                    dispatch(
-                      toggleDraftVariation({
-                        fileId,
-                        kind: v.kind as SourceVariationKind,
-                      }),
-                    );
-                  }}
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-medium text-foreground">
-                      {v.label}
-                    </span>
-                    <code className="text-[10px] text-muted-foreground/80 font-mono">
-                      {v.kind}
-                    </code>
-                    {v.comingSoon && (
-                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                        coming soon
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </label>
-            );
-          })}
-        </div>
+      {/* 4. Agent + variable wiring. Wiring drives `source_variations`
+              implicitly — picking "N clean-text chunks" tells the save
+              path to request `clean_text` from the backend; no separate
+              checkbox section. Extra inputs from other templates are
+              managed inline at the bottom of the wiring panel and
+              appear as their own dropdown options. */}
+      <Field label="Agent" required>
+        <AgentListDropdown
+          onSelect={(id) =>
+            dispatch(patchDraft({ fileId, patch: { agentId: id } }))
+          }
+          label={agent?.name ?? "Select an Agent"}
+          noBorder={false}
+        />
+        {agent && (
+          <VariableMappingEditor
+            agentName={agent.name}
+            agentVariables={agent.variableDefinitions}
+            mapping={draft.variableMapping}
+            chunkCount={chunks.length}
+            extraInputs={draft.extraInputs}
+            candidateJobs={candidateJobs}
+            onChange={(next) =>
+              dispatch(patchDraft({ fileId, patch: { variableMapping: next } }))
+            }
+            onChangeExtraInputs={(next) =>
+              dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
+            }
+          />
+        )}
       </Field>
 
-      {/* 6. Extra inputs */}
-      <ExtraInputsEditor
-        fileId={fileId}
-        excludeJobId={selectedJobId}
-        extraInputs={draft.extraInputs}
-        onChange={(next) =>
-          dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
-        }
-      />
-
-      {/* 7. RAG-boost override */}
-      <Field
-        label="RAG boost override"
-        hint="Leave blank to inherit the agent's default. Number = override for this job."
-      >
+      {/* 5. RAG-boost override */}
+      <Field label="RAG boost" hint="Blank = agent default">
         <Input
           value={draft.ragBoost ?? ""}
           onChange={(e) => {
@@ -668,110 +608,6 @@ function TemplateEditor({
         )}
       </div>
     </div>
-  );
-}
-
-// ─── Internal: extra-inputs editor ────────────────────────────────────────
-
-function ExtraInputsEditor({
-  fileId,
-  excludeJobId,
-  extraInputs,
-  onChange,
-}: {
-  fileId: string;
-  excludeJobId: string | null | undefined;
-  extraInputs: { name: string; source_job_id: string }[];
-  onChange: (next: { name: string; source_job_id: string }[]) => void;
-}) {
-  const { jobs } = useExtractionJobs(fileId);
-  const candidateJobs = jobs.filter((j) => j.id !== excludeJobId);
-
-  const addRow = () => {
-    onChange([...extraInputs, { name: "", source_job_id: "" }]);
-  };
-  const updateRow = (
-    idx: number,
-    patch: Partial<{ name: string; source_job_id: string }>,
-  ) => {
-    onChange(
-      extraInputs.map((row, i) => (i === idx ? { ...row, ...patch } : row)),
-    );
-  };
-  const removeRow = (idx: number) => {
-    onChange(extraInputs.filter((_, i) => i !== idx));
-  };
-
-  if (candidateJobs.length === 0 && extraInputs.length === 0) {
-    return (
-      <Field
-        label="Extra inputs"
-        hint="Use another template's results as variables."
-      >
-        <p className="text-[10px] text-muted-foreground/70 leading-snug">
-          Save another template first — you can then pipe its results into this
-          one as a named variable.
-        </p>
-      </Field>
-    );
-  }
-
-  return (
-    <Field label="Extra inputs" hint="Pull result rows from other templates.">
-      <div className="space-y-1.5">
-        {extraInputs.map((row, idx) => (
-          <div key={idx} className="flex items-center gap-1.5">
-            <Input
-              value={row.name}
-              onChange={(e) => updateRow(idx, { name: e.target.value })}
-              placeholder="variable_name"
-              className="h-7 text-[11px] w-1/3 font-mono"
-            />
-            <span className="text-[10px] text-muted-foreground">←</span>
-            <select
-              value={row.source_job_id}
-              onChange={(e) =>
-                updateRow(idx, { source_job_id: e.target.value })
-              }
-              className="h-7 text-[11px] flex-1 min-w-0 rounded-md border border-input bg-background px-2"
-            >
-              <option value="">Select template…</option>
-              {candidateJobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.name}
-                </option>
-              ))}
-            </select>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-              onClick={() => removeRow(idx)}
-              title="Remove this input"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        ))}
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-[10px] w-full"
-          onClick={addRow}
-          disabled={candidateJobs.length === 0}
-        >
-          <Plus className="w-3 h-3 mr-1" />
-          Add input from another template
-        </Button>
-        {extraInputs.length > 0 && (
-          <p className="text-[10px] text-muted-foreground/70 leading-snug">
-            Each variable is a JSON array of result rows from the source
-            template, filtered to the current chunk&apos;s page range. Route via
-            the agent variable wiring above.
-          </p>
-        )}
-      </div>
-    </Field>
   );
 }
 

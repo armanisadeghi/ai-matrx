@@ -131,8 +131,23 @@ export const emptyDraft = (): ChunkingConfigDraft => ({
 export interface PageExtractionState {
   /** jobId → active or last-known run state for that job */
   activeRuns: Record<string, ActiveJobRun>;
-  /** fileId → currently-visible jobId (UI selection). */
+  /**
+   * fileId → the template currently active in the **right inspector**
+   * (the "Chunked Runs" sidebar). Drives ChunkingConfigForm — the
+   * readonly view, the editor draft hydration, and the SavedJobsList
+   * row highlight. Treat this as "what the user is editing / working
+   * with right now."
+   */
   selectedJobByFile: Record<string, string>;
+  /**
+   * fileId → the template whose **data** is currently being viewed in
+   * the **main extractions pane** (the JobPicker dropdown, chunks/results
+   * tabs, RunProgressBar). Decoupled from `selectedJobByFile` so the
+   * user can browse past run output while building a new template in
+   * the sidebar. Falls back to `selectedJobByFile` via
+   * `selectViewedJobForFile` when not explicitly set.
+   */
+  viewedJobByFile: Record<string, string>;
   /** fileId → in-memory chunking config the user is currently building. */
   draftsByFile: Record<string, ChunkingConfigDraft>;
   /**
@@ -150,6 +165,7 @@ export interface PageExtractionState {
 const initialState: PageExtractionState = {
   activeRuns: {},
   selectedJobByFile: {},
+  viewedJobByFile: {},
   draftsByFile: {},
   editingByFile: {},
 };
@@ -158,13 +174,50 @@ const slice = createSlice({
   name: "pageExtraction",
   initialState,
   reducers: {
+    /**
+     * The sidebar / form selector. Writes to `selectedJobByFile`. Also
+     * propagates the new value down to `viewedJobByFile` so the main
+     * pane's data view follows when the user explicitly picks a
+     * template — that's the natural "click template → see its data"
+     * flow. The converse (`viewJobForFile`) does NOT touch
+     * `selectedJobByFile`, so changing the data view never kicks the
+     * user out of whatever they're editing in the sidebar.
+     *
+     * Special case: clearing (`jobId = null`) only clears the sidebar.
+     * The data view stays where it was — common scenario is "I'm
+     * looking at template B's results, click 'New' to compose a new
+     * template targeted at the gaps I see". The viewed run shouldn't
+     * vanish when the sidebar deselects.
+     */
     selectJobForFile(
       state,
       action: PayloadAction<{ fileId: string; jobId: string | null }>,
     ) {
       const { fileId, jobId } = action.payload;
-      if (jobId) state.selectedJobByFile[fileId] = jobId;
-      else delete state.selectedJobByFile[fileId];
+      if (jobId) {
+        state.selectedJobByFile[fileId] = jobId;
+        state.viewedJobByFile[fileId] = jobId;
+      } else {
+        delete state.selectedJobByFile[fileId];
+        // Intentionally leave viewedJobByFile alone.
+      }
+    },
+
+    /**
+     * The data-view selector. Writes to `viewedJobByFile` ONLY.
+     * Used by the main extractions pane's JobPicker so the user can
+     * browse a different run's results without the sidebar following
+     * along (and dragging them out of an in-progress New-template
+     * session). Passing `null` clears the viewed selection without
+     * touching the sidebar.
+     */
+    viewJobForFile(
+      state,
+      action: PayloadAction<{ fileId: string; jobId: string | null }>,
+    ) {
+      const { fileId, jobId } = action.payload;
+      if (jobId) state.viewedJobByFile[fileId] = jobId;
+      else delete state.viewedJobByFile[fileId];
     },
 
     runStarted(
@@ -415,6 +468,7 @@ const slice = createSlice({
 
 export const {
   selectJobForFile,
+  viewJobForFile,
   runStarted,
   pageRunStarted,
   pageRunDelta,

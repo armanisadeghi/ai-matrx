@@ -20,7 +20,21 @@ export interface TemplateScopeType {
   fields: TemplateScopeTypeField[];
   parent_type_id?: string | null;
   parent_type_key?: string | null;
+  parent_type_label?: string | null;
   max_assignments_per_entity?: number | null;
+}
+
+/**
+ * Flattened view of every scope_type across every template — used by the
+ * "Individual scopes" mode of the template gallery so users can borrow a
+ * single scope from any template instead of the entire bundle.
+ */
+export interface FlatTemplateScopeType extends TemplateScopeType {
+  template_id: string;
+  template_key: string;
+  template_name: string;
+  template_category: string;
+  template_is_personal: boolean;
 }
 
 export interface ScopeTemplate {
@@ -163,4 +177,34 @@ export const selectPersonalTemplates = createSelector(
 export const selectBusinessTemplates = createSelector(
   [selectAllTemplates],
   (templates) => templates.filter((t) => !t.is_personal),
+);
+
+/**
+ * Flatten every template's scope_types into a single alphabetized list with
+ * source-template metadata stamped on each entry. Computed once per template
+ * data change.
+ */
+export const selectAllFlatScopeTypes = createSelector(
+  [selectAllTemplates],
+  (templates): FlatTemplateScopeType[] => {
+    const out: FlatTemplateScopeType[] = [];
+    for (const t of templates) {
+      for (const st of t.scope_types) {
+        out.push({
+          ...st,
+          template_id: t.id,
+          template_key: t.key,
+          template_name: t.name,
+          template_category: t.category,
+          template_is_personal: t.is_personal,
+        });
+      }
+    }
+    out.sort((a, b) =>
+      a.label_plural.localeCompare(b.label_plural, undefined, {
+        sensitivity: "base",
+      }),
+    );
+    return out;
+  },
 );

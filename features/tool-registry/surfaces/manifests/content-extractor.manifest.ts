@@ -12,11 +12,15 @@
  * variables to. The Python backend reads the per-Job `variable_mapping`
  * (`{ surface_value_name: agent_variable_name }`) and routes accordingly.
  *
- * Each VALUE here corresponds to one item the surface emits per chunk.
- * Some are populated unconditionally (filename, page_numbers); others
- * only when the Job selected the matching `source_variations` entry
- * (clean_text, raw_text, pdf_page). The `alwaysAvailable` flag reflects
- * "guaranteed every launch" — not "always non-empty."
+ * **Superset of `matrx-user/pdf-widgets`.** Everything the widgets
+ * surface exposes (filename, file_id, processed_document_id,
+ * current_page, total_pages, page_numbers, scope_kind, using_clean_text,
+ * plus baselines) is inherited verbatim. On top of that we add the
+ * chunk-only values (`clean_text`, `raw_text`, `pdf_page`,
+ * `chunk_index`, `chunk_count`, `job_id`, `run_id`). The mapping
+ * editor surfaces "Dynamic chunks" first because those are the
+ * primary input — but never withholds the inherited values. If we
+ * have it, the user can wire it.
  *
  * The Job's saved `variable_mapping` is the source of truth for which
  * surface keys flow into which agent variables at run time — this
@@ -29,32 +33,25 @@ import type {
   SurfaceValue,
 } from "@/features/tool-registry/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { getPdfWidgetsSurfaceSpecificValues } from "./pdf-widgets.manifest";
 
 /**
- * Surface-specific values the Content Extractor emits per chunk. Order
- * here drives the dropdown order in binding UIs (sort_order).
+ * Chunk-only values the Content Extractor adds on top of the widget
+ * surface. These all describe per-chunk state — they are what makes
+ * this surface a chunked-run surface rather than a one-shot one.
+ *
+ * Note: `filename`, `file_id`, `processed_document_id`, `current_page`,
+ * `total_pages`, `page_numbers`, `scope_kind`, `using_clean_text`,
+ * `full_document_text`, `current_page_text`, `page_range_text`,
+ * `selected_text`, `active_scope_text` are inherited from `pdf-widgets`
+ * via `getPdfWidgetsSurfaceSpecificValues()` — do not redeclare here.
+ *
+ * Sort orders 50-99 — these sit BELOW the baseline `selection` (100)
+ * and inherited widget values (200+) so the binding editor surfaces
+ * "Dynamic chunks" first. Per-chunk text inputs are the primary input
+ * on this surface; everything inherited is secondary.
  */
 const surfaceSpecific: SurfaceValue[] = [
-  {
-    name: "filename",
-    label: "Document filename",
-    description:
-      'Display name of the document being extracted (e.g. "medical-record-2024.pdf"). Populated for every chunk of every run.',
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 80,
-    sortOrder: 300,
-  },
-  {
-    name: "page_numbers",
-    label: "Page range",
-    description:
-      'Human-formatted page range of the current chunk (e.g. "12-15", "3, 7, 9"). Populated for every chunk.',
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 16,
-    sortOrder: 310,
-  },
   {
     name: "clean_text",
     label: "Chunk text (cleaned)",
@@ -63,7 +60,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 4000,
-    sortOrder: 320,
+    sortOrder: 50,
   },
   {
     name: "raw_text",
@@ -73,7 +70,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,
-    sortOrder: 330,
+    sortOrder: 60,
   },
   {
     name: "pdf_page",
@@ -83,7 +80,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 0,
-    sortOrder: 340,
+    sortOrder: 70,
   },
   {
     name: "chunk_index",
@@ -93,7 +90,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: true,
     typicalCharCount: 4,
-    sortOrder: 350,
+    sortOrder: 80,
   },
   {
     name: "chunk_count",
@@ -103,27 +100,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "number",
     alwaysAvailable: true,
     typicalCharCount: 4,
-    sortOrder: 360,
-  },
-  {
-    name: "file_id",
-    label: "File ID",
-    description:
-      "UUID of the source `cld_files` row. Useful for tool calls that need to load related metadata.",
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 36,
-    sortOrder: 370,
-  },
-  {
-    name: "processed_document_id",
-    label: "Processed document ID",
-    description:
-      "UUID of the `processed_documents` row backing this extraction. Empty when the source file has no processed-document derivative.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    sortOrder: 380,
+    sortOrder: 90,
   },
   {
     name: "job_id",
@@ -133,7 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 36,
-    sortOrder: 390,
+    sortOrder: 95,
   },
   {
     name: "run_id",
@@ -143,25 +120,45 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 36,
+    sortOrder: 99,
+  },
+
+  // Overrides of inherited widget values whose semantic shifts in
+  // chunked context. Only label + description change; sortOrder
+  // stays at the inherited position. Listed LAST so the merge step
+  // (last-write wins) picks these over the inherited entries.
+  {
+    name: "current_page",
+    label: "First page of current chunk",
+    description:
+      "1-indexed page number of the first page in the current chunk. Useful for ordering or sub-page anchoring. Always populated when running a Job.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 4,
     sortOrder: 400,
+  },
+  {
+    name: "page_numbers",
+    label: "Chunk page range",
+    description:
+      'Human-formatted page range covered by the CURRENT CHUNK (e.g. "12-15"). Each chunk gets its own value. Always populated when running a Job; empty in design-time preview.',
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 16,
+    sortOrder: 410,
   },
 ];
 
 export const contentExtractorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-extractor",
   values: mergeBaselineValues(
-    // Baseline values kept for cross-surface consistency. They are NOT
-    // the primary entry points for chunked-run agents — `clean_text` /
-    // `raw_text` / `pdf_page` are. The mapping editor groups these
-    // under a "Show more" footer so they don't crowd the primary view.
-    //
-    //   `selection` + `content` — back-compat aliases. The surface
+    // Baseline:
+    //   `selection` + `content` — back-compat aliases. The runtime
     //     duplicates the primary chunk text into these so pre-Phase-2
     //     Jobs whose mappings target them keep working.
-    //   `text_before` / `text_after` — baseline standards. This surface
-    //     has no "selection within a region" concept, so they're never
-    //     populated. Still declared for system consistency; advisory
-    //     copy in the editor warns the user.
+    //   `text_before` / `text_after` — unused on this surface (no
+    //     "selection within a region" concept). Declared for
+    //     cross-surface consistency.
     //   `context` — escape hatch for free-form additions.
     pickBaseline(
       "selection",
@@ -170,7 +167,12 @@ export const contentExtractorManifest: SurfaceManifest = {
       "text_after",
       "context",
     ),
-    surfaceSpecific,
+    // Inherited widget values FIRST, then chunk-specific entries. The
+    // merge step is last-write-wins by `name`, so any entry in
+    // `surfaceSpecific` that re-declares an inherited name (e.g.
+    // `page_numbers`, `current_page` whose semantics differ in
+    // chunked context) overrides the widget version.
+    [...getPdfWidgetsSurfaceSpecificValues(), ...surfaceSpecific],
   ),
 };
 
@@ -190,24 +192,36 @@ export const contentExtractorManifest: SurfaceManifest = {
  * `runtime.applicationScope` + `runtime.surfaceName`.
  */
 export function createContentExtractorScope(values: {
-  // alwaysAvailable: true → required
-  filename: string;
-  page_numbers: string;
+  // alwaysAvailable: true → required (chunk-specific)
   chunk_index: number;
   chunk_count: number;
-  file_id: string;
   job_id: string;
   run_id: string;
-  // alwaysAvailable: false → optional
+  // alwaysAvailable: true → required (inherited from pdf-widgets)
+  full_document_text: string;
+  current_page_text: string;
+  active_scope_text: string;
+  filename: string;
+  file_id: string;
+  total_pages: number;
+  current_page: number;
+  scope_kind: "full" | "current" | "range" | "selection";
+  using_clean_text: boolean;
+  // alwaysAvailable: false → optional (chunk-specific)
+  clean_text?: string;
+  raw_text?: string;
+  pdf_page?: Record<string, unknown>;
+  // alwaysAvailable: false → optional (inherited from pdf-widgets)
+  page_range_text?: string;
+  selected_text?: string;
+  processed_document_id?: string;
+  page_numbers?: string;
+  // baseline back-compat aliases (selection ≈ active_scope_text, content ≈ full_document_text)
   selection?: string;
   content?: string;
   text_before?: string;
   text_after?: string;
   context?: Record<string, unknown>;
-  clean_text?: string;
-  raw_text?: string;
-  pdf_page?: Record<string, unknown>;
-  processed_document_id?: string;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

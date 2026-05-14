@@ -27,9 +27,8 @@ import { JobPicker } from "@/features/page-extraction/components/JobPicker";
 import { RunProgressBar } from "@/features/page-extraction/components/RunProgressBar";
 import { ResultsTable } from "@/features/page-extraction/components/ResultsTable";
 import { ChunksTab } from "@/features/page-extraction/components/ChunksTab";
-import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { usePageRunsRealtime } from "@/features/page-extraction/hooks/usePageRunsRealtime";
-import { usePersistedJobSelection } from "@/features/page-extraction/hooks/usePersistedJobSelection";
 
 export interface ExtractionsPaneProps {
   fileId: string | null;
@@ -47,11 +46,14 @@ export function ExtractionsPane({
   activePage,
   onJumpToPage,
 }: ExtractionsPaneProps) {
-  const jobId = useAppSelector((s) => selectSelectedJobForFile(s, fileId));
-
-  // Restore the user's last-selected template across refreshes — the
-  // Redux selection slice is in-memory only.
-  usePersistedJobSelection(fileId);
+  // This pane shows the DATA view (chunks preview, results, run progress)
+  // for whichever job the user has picked in the JobPicker dropdown.
+  // It deliberately uses `viewedJobByFile` (with fallback to
+  // `selectedJobByFile`) so the user can browse past run data without
+  // pulling the right inspector's sidebar along — they can be looking
+  // at template B's results while building a new template in the
+  // sidebar. See pageExtractionSlice for the full rationale.
+  const jobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
 
   // Realtime fallback: even if the SSE stream is interrupted, the
   // per-chunk state (raw_response, parsed_payload) lands via Realtime.

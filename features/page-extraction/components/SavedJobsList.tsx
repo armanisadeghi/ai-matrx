@@ -25,8 +25,14 @@ import { cn } from "@/lib/utils";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
 import { deleteJob } from "@/features/page-extraction/api/jobs";
-import { selectJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
-import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import {
+  selectJobForFile,
+  viewJobForFile,
+} from "@/features/page-extraction/redux/pageExtractionSlice";
+import {
+  selectSelectedJobForFile,
+  selectViewedJobForFile,
+} from "@/features/page-extraction/redux/selectors";
 import type { PageExtractionJob } from "@/features/page-extraction/types";
 
 export function SavedJobsList({ fileId }: { fileId: string }) {
@@ -36,6 +42,7 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
   const selectedJobId = useAppSelector((s) =>
     selectSelectedJobForFile(s, fileId),
   );
+  const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
   const { running, start } = useExtractionStream();
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
@@ -81,9 +88,14 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
     setDeletingJobId(job.id);
     try {
       await deleteJob(job.id);
-      // If the deleted template was the active one, clear the selection.
+      // Clear any pointer to the now-gone job so the form / data view
+      // don't dangle on a deleted id. Both pointers are independent
+      // (sidebar vs. data view), so check both.
       if (selectedJobId === job.id) {
         dispatch(selectJobForFile({ fileId, jobId: null }));
+      }
+      if (viewedJobId === job.id) {
+        dispatch(viewJobForFile({ fileId, jobId: null }));
       }
       refetch();
       toast.success(`Deleted "${job.name}"`);
@@ -124,8 +136,8 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
                   {job.name}
                 </p>
                 <p className="text-[10px] text-muted-foreground tabular-nums">
-                  chunk {job.chunk_size} ·{" "}
-                  {job.source_variations?.length ?? 1} src ·{" "}
+                  chunk {job.chunk_size} · {job.source_variations?.length ?? 1}{" "}
+                  src ·{" "}
                   {job.scope_pages?.length
                     ? `${job.scope_pages.length} pages`
                     : "all pages"}

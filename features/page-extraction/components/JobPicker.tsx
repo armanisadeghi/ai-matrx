@@ -1,14 +1,22 @@
 /**
  * features/page-extraction/components/JobPicker.tsx
  *
- * Dropdown selecting which Job is active for the current file. Writes
- * the choice into Redux (selectedJobByFile) so other components in the
- * extractions pane (results table, progress bar) follow it.
+ * Dropdown in the main extractions pane that picks which saved Job's
+ * DATA the user is currently viewing (chunks preview, results table,
+ * run progress). Writes to `viewedJobByFile` ONLY — never touches
+ * `selectedJobByFile`. That decoupling is intentional: the user can
+ * browse past results without dragging the right inspector's sidebar
+ * along (which would kick them out of an in-progress "New template"
+ * session). See `pageExtractionSlice` for the full rationale.
+ *
+ * The sidebar's own SavedJobsList is the canonical way to "select" a
+ * template — when the user clicks a sidebar row, both `selectedJob`
+ * and `viewedJob` update, so the data view follows. The asymmetry is:
+ * sidebar → data view (yes); data view → sidebar (no).
  */
 
 "use client";
 
-import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   Select,
@@ -18,25 +26,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
-import {
-  selectJobForFile,
-} from "@/features/page-extraction/redux/pageExtractionSlice";
-import { selectSelectedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { viewJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 
 export function JobPicker({ fileId }: { fileId: string | null }) {
   const dispatch = useAppDispatch();
   const { jobs, loading } = useExtractionJobs(fileId);
-  const selectedJobId = useAppSelector((s) =>
-    selectSelectedJobForFile(s, fileId),
-  );
-
-  // Auto-select the most recent job once jobs load and nothing is selected.
-  useEffect(() => {
-    if (!fileId) return;
-    if (selectedJobId) return;
-    if (jobs.length === 0) return;
-    dispatch(selectJobForFile({ fileId, jobId: jobs[0].id }));
-  }, [fileId, selectedJobId, jobs, dispatch]);
+  const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
 
   if (!fileId) return null;
 
@@ -58,15 +54,13 @@ export function JobPicker({ fileId }: { fileId: string | null }) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-      <span className="text-xs text-muted-foreground shrink-0">Job</span>
+      <span className="text-xs text-muted-foreground shrink-0">View</span>
       <Select
-        value={selectedJobId ?? undefined}
-        onValueChange={(jobId) =>
-          dispatch(selectJobForFile({ fileId, jobId }))
-        }
+        value={viewedJobId ?? undefined}
+        onValueChange={(jobId) => dispatch(viewJobForFile({ fileId, jobId }))}
       >
         <SelectTrigger className="h-7 text-xs">
-          <SelectValue placeholder="Pick a job…" />
+          <SelectValue placeholder="Pick a job to view…" />
         </SelectTrigger>
         <SelectContent>
           {jobs.map((j) => (
