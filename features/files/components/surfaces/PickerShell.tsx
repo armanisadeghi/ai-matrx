@@ -43,7 +43,7 @@ import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -124,9 +124,13 @@ interface PickerFileThumbnailProps {
 
 function PickerFileThumbnail({ fileId, publicUrl, mimeType, fileName }: PickerFileThumbnailProps) {
   const isImage = mimeType?.startsWith("image/") ?? false;
-  // Only hit the hook when there's no publicUrl (private/unsigned files).
-  const hookSrc = useFileSrc(!isImage || publicUrl ? null : { kind: "file_id", fileId, mime: mimeType ?? undefined });
-  const src = isImage ? (publicUrl ?? hookSrc) : null;
+  // Use the asset endpoint (GET /files/{id}/asset) — same path FilePreview uses for images.
+  // It returns CDN URL for public files and signed-inline for private, in one call.
+  // Skip the fetch entirely if we already have publicUrl or it's not an image.
+  const { primaryUrl } = useFileAsset(isImage && !publicUrl ? fileId : null, {
+    signedUrlTtl: 3600,
+  });
+  const src = isImage ? (publicUrl ?? primaryUrl) : null;
 
   if (!src) {
     return <FileIcon fileName={fileName} size={18} />;
