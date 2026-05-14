@@ -26,6 +26,16 @@ import {
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
 import { fetchMemoryCost } from "@/features/agents/redux/execution-system/observational-memory/fetch-memory-cost.thunk";
 import { formatCostUsd, formatTokens } from "./format";
+import type { components } from "@/types/python-generated/api-types";
+
+type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
+
+const EMPTY_BREAKDOWN_ROW: MemoryCostByEventType = {
+  count: 0,
+  cost: 0,
+  input_tokens: 0,
+  output_tokens: 0,
+};
 
 interface MemoryCostCardProps {
   conversationId: string;
@@ -55,9 +65,7 @@ export function MemoryCostCard({
     if (fetchState?.status === "loading") return;
     if (fetchState?.status === "success") return;
     dispatch(fetchMemoryCost({ conversationId }));
-    // We only auto-fetch once per mount + conversation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, autoFetch]);
+  }, [conversationId, autoFetch, dispatch]);
 
   const breakdown = summary?.by_event_type ?? {};
   const breakdownKeys = Object.keys(breakdown).sort();
@@ -173,7 +181,8 @@ export function MemoryCostCard({
               </thead>
               <tbody>
                 {breakdownKeys.map((key) => {
-                  const row = breakdown[key] ?? {};
+                  const row: MemoryCostByEventType =
+                    breakdown[key] ?? EMPTY_BREAKDOWN_ROW;
                   const count = toNum(row.count);
                   const cost = toNum(row.cost);
                   const inTokens = toNum(row.input_tokens);

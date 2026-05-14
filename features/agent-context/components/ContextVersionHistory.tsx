@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ContextValuePreview } from './ContextValuePreview';
 import { useContextItem, useContextVersionHistory, useCreateContextValue } from '../hooks/useContextItems';
-import type { ContextItemValue } from '../types';
+import type { ContextItemValue, ContextValueFormData } from '../types';
 import type { ScopeState } from '../hooks/useContextScope';
 import { AlertTriangle, RotateCcw, User, Component } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,6 +16,16 @@ type Props = {
   itemId: string;
   scope: ScopeState;
 };
+
+function restoredValueJson(
+  raw: ContextItemValue['value_json'],
+): ContextValueFormData['value_json'] {
+  if (raw == null) return null;
+  if (typeof raw === 'object') {
+    return raw as ContextValueFormData['value_json'];
+  }
+  return null;
+}
 
 export function ContextVersionHistory({ itemId, scope }: Props) {
   const { data: item } = useContextItem(itemId);
@@ -51,7 +61,7 @@ export function ContextVersionHistory({ itemId, scope }: Props) {
         value_text: active.value_text,
         value_number: active.value_number,
         value_boolean: active.value_boolean,
-        value_json: active.value_json,
+        value_json: restoredValueJson(active.value_json),
         value_document_url: active.value_document_url,
         value_document_size_bytes: active.value_document_size_bytes,
         value_reference_id: active.value_reference_id,

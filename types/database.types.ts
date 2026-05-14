@@ -4831,6 +4831,7 @@ export type Database = {
           has_nested_objects: boolean
           id: string
           is_current: boolean
+          scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
           value_boolean: boolean | null
           value_document_size_bytes: number | null
@@ -4852,6 +4853,7 @@ export type Database = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
           value_document_size_bytes?: number | null
@@ -4873,6 +4875,7 @@ export type Database = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
           value_document_size_bytes?: number | null
@@ -4892,6 +4895,13 @@ export type Database = {
             referencedRelation: "ctx_context_items"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ctx_context_item_values_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ctx_context_items: {
@@ -4899,7 +4909,6 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
-          current_value_id: string | null
           depends_on: string[]
           description: string
           display_name: string
@@ -4909,10 +4918,8 @@ export type Database = {
           key: string
           last_verified_at: string | null
           next_review_at: string | null
-          organization_id: string | null
-          owner_user_id: string | null
-          project_id: string | null
           review_interval_days: number | null
+          scope_type_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
           source_type: Database["public"]["Enums"]["context_source_type"]
           status: Database["public"]["Enums"]["context_item_status"]
@@ -4920,17 +4927,14 @@ export type Database = {
           status_updated_at: string
           status_updated_by: string | null
           tags: string[]
-          task_id: string | null
           template_item_key: string | null
           updated_at: string
-          user_id: string | null
           value_type: Database["public"]["Enums"]["context_value_type"]
         }
         Insert: {
           category?: string | null
           created_at?: string
           created_by?: string | null
-          current_value_id?: string | null
           depends_on?: string[]
           description?: string
           display_name: string
@@ -4940,10 +4944,8 @@ export type Database = {
           key: string
           last_verified_at?: string | null
           next_review_at?: string | null
-          organization_id?: string | null
-          owner_user_id?: string | null
-          project_id?: string | null
           review_interval_days?: number | null
+          scope_type_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
@@ -4951,17 +4953,14 @@ export type Database = {
           status_updated_at?: string
           status_updated_by?: string | null
           tags?: string[]
-          task_id?: string | null
           template_item_key?: string | null
           updated_at?: string
-          user_id?: string | null
           value_type?: Database["public"]["Enums"]["context_value_type"]
         }
         Update: {
           category?: string | null
           created_at?: string
           created_by?: string | null
-          current_value_id?: string | null
           depends_on?: string[]
           description?: string
           display_name?: string
@@ -4971,10 +4970,8 @@ export type Database = {
           key?: string
           last_verified_at?: string | null
           next_review_at?: string | null
-          organization_id?: string | null
-          owner_user_id?: string | null
-          project_id?: string | null
           review_interval_days?: number | null
+          scope_type_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
@@ -4982,111 +4979,19 @@ export type Database = {
           status_updated_at?: string
           status_updated_by?: string | null
           tags?: string[]
-          task_id?: string | null
           template_item_key?: string | null
           updated_at?: string
-          user_id?: string | null
           value_type?: Database["public"]["Enums"]["context_value_type"]
         }
         Relationships: [
           {
-            foreignKeyName: "context_items_current_value_id_fkey"
-            columns: ["current_value_id"]
+            foreignKeyName: "ctx_context_items_scope_type_id_fkey"
+            columns: ["scope_type_id"]
             isOneToOne: false
-            referencedRelation: "ctx_context_item_values"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_items_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_items_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_items_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
+            referencedRelation: "ctx_scope_types"
             referencedColumns: ["id"]
           },
         ]
-      }
-      ctx_context_templates: {
-        Row: {
-          applies_to_text: string | null
-          created_at: string
-          default_fetch_hint: Database["public"]["Enums"]["context_fetch_hint"]
-          default_scope_level: string
-          default_sensitivity: Database["public"]["Enums"]["context_sensitivity"]
-          default_value_type: Database["public"]["Enums"]["context_value_type"]
-          display_order: number
-          example_value: Json | null
-          fill_guidance: string | null
-          id: string
-          industry_category: string
-          is_active: boolean
-          is_required: boolean
-          item_description: string
-          item_display_name: string
-          item_key: string
-          suggested_review_interval_days: number | null
-          template_label: string
-          template_name: string
-          updated_at: string
-        }
-        Insert: {
-          applies_to_text?: string | null
-          created_at?: string
-          default_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          default_scope_level?: string
-          default_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          default_value_type?: Database["public"]["Enums"]["context_value_type"]
-          display_order?: number
-          example_value?: Json | null
-          fill_guidance?: string | null
-          id?: string
-          industry_category: string
-          is_active?: boolean
-          is_required?: boolean
-          item_description: string
-          item_display_name: string
-          item_key: string
-          suggested_review_interval_days?: number | null
-          template_label: string
-          template_name: string
-          updated_at?: string
-        }
-        Update: {
-          applies_to_text?: string | null
-          created_at?: string
-          default_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          default_scope_level?: string
-          default_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          default_value_type?: Database["public"]["Enums"]["context_value_type"]
-          display_order?: number
-          example_value?: Json | null
-          fill_guidance?: string | null
-          id?: string
-          industry_category?: string
-          is_active?: boolean
-          is_required?: boolean
-          item_description?: string
-          item_display_name?: string
-          item_key?: string
-          suggested_review_interval_days?: number | null
-          template_label?: string
-          template_name?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       ctx_context_variables: {
         Row: {
@@ -5695,6 +5600,140 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ctx_template_context_items: {
+        Row: {
+          description: string
+          display_name: string
+          id: string
+          key: string
+          sort_order: number
+          template_scope_type_id: string
+          value_type: Database["public"]["Enums"]["context_value_type"]
+        }
+        Insert: {
+          description?: string
+          display_name: string
+          id?: string
+          key: string
+          sort_order?: number
+          template_scope_type_id: string
+          value_type?: Database["public"]["Enums"]["context_value_type"]
+        }
+        Update: {
+          description?: string
+          display_name?: string
+          id?: string
+          key?: string
+          sort_order?: number
+          template_scope_type_id?: string
+          value_type?: Database["public"]["Enums"]["context_value_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_template_context_items_template_scope_type_id_fkey"
+            columns: ["template_scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_template_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctx_template_scope_types: {
+        Row: {
+          description: string
+          icon: string
+          id: string
+          key: string
+          label_plural: string
+          label_singular: string
+          max_assignments_per_entity: number | null
+          parent_template_type_id: string | null
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          description?: string
+          icon?: string
+          id?: string
+          key: string
+          label_plural: string
+          label_singular: string
+          max_assignments_per_entity?: number | null
+          parent_template_type_id?: string | null
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          label_plural?: string
+          label_singular?: string
+          max_assignments_per_entity?: number | null
+          parent_template_type_id?: string | null
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_template_scope_types_parent_template_type_id_fkey"
+            columns: ["parent_template_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_template_scope_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_template_scope_types_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctx_templates: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          is_personal: boolean
+          key: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          is_personal?: boolean
+          key: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          is_personal?: boolean
+          key?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       ctx_user_active_context: {
         Row: {
@@ -22096,6 +22135,14 @@ export type Database = {
         Args: { p_rows: Json; p_table_id: string }
         Returns: number
       }
+      apply_template: {
+        Args: { p_org_id: string; p_template_id: string }
+        Returns: Json
+      }
+      apply_template_by_key: {
+        Args: { p_org_id: string; p_template_key: string }
+        Returns: Json
+      }
       assign_random_colors_to_node_all_nodes: {
         Args: never
         Returns: undefined
@@ -22589,6 +22636,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_context_item: {
+        Args: {
+          p_category?: string
+          p_description?: string
+          p_display_name: string
+          p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+          p_key: string
+          p_scope_type_id: string
+          p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          p_tags?: string[]
+          p_value_type: Database["public"]["Enums"]["context_value_type"]
+        }
+        Returns: Json
+      }
       create_new_user_table: {
         Args: {
           p_authenticated_read?: boolean
@@ -22718,6 +22779,7 @@ export type Database = {
         }
         Returns: string
       }
+      ctx_seed_template: { Args: { p_template: Json }; Returns: string }
       cx_canvas_archive: {
         Args: { p_canvas_id: string; p_include_versions?: boolean }
         Returns: undefined
@@ -24144,87 +24206,6 @@ export type Database = {
               value: Json
             }[]
           }
-      get_context_item_value: {
-        Args: {
-          p_agent_id?: string
-          p_app_source?: string
-          p_key: string
-          p_log_access?: boolean
-          p_organization_id?: string
-          p_project_id?: string
-          p_request_id?: string
-          p_task_id?: string
-          p_user_id?: string
-        }
-        Returns: {
-          category: string
-          change_summary: string
-          char_count: number
-          data_point_count: number
-          description: string
-          display_name: string
-          has_nested_objects: boolean
-          item_id: string
-          key: string
-          sensitivity: string
-          source_scope: string
-          status: string
-          value_boolean: boolean
-          value_created_at: string
-          value_document_url: string
-          value_json: Json
-          value_number: number
-          value_reference_id: string
-          value_reference_type: string
-          value_text: string
-          value_type: string
-          version: number
-        }[]
-      }
-      get_context_items_by_fetch_hint: {
-        Args: {
-          p_fetch_hint: string
-          p_organization_id?: string
-          p_project_id?: string
-          p_task_id?: string
-          p_user_id?: string
-          p_with_values?: boolean
-        }
-        Returns: Json
-      }
-      get_context_items_manifest: {
-        Args: {
-          p_category?: string
-          p_fetch_hint?: string
-          p_include_statuses?: string[]
-          p_organization_id?: string
-          p_project_id?: string
-          p_task_id?: string
-          p_user_id?: string
-        }
-        Returns: {
-          category: string
-          char_count: number
-          data_point_count: number
-          depends_on: string[]
-          description: string
-          display_name: string
-          fetch_hint: string
-          has_nested_objects: boolean
-          has_value: boolean
-          is_overdue_review: boolean
-          item_id: string
-          key: string
-          next_review_at: string
-          sensitivity: string
-          source_scope: string
-          status: string
-          tags: string[]
-          value_last_updated: string
-          value_source_type: string
-          value_type: string
-        }[]
-      }
       get_conversation_for_display: {
         Args: { p_conversation_id: string }
         Returns: {
@@ -24789,6 +24770,14 @@ export type Database = {
         }[]
       }
       get_schema: { Args: never; Returns: Json }
+      get_scope_context: {
+        Args: {
+          p_include_empty?: boolean
+          p_item_ids?: string[]
+          p_scope_id: string
+        }
+        Returns: Json
+      }
       get_scope_tree: {
         Args: { p_org_id: string; p_type_id?: string }
         Returns: Json
@@ -25081,6 +25070,14 @@ export type Database = {
         Returns: Json
       }
       get_user_tables: { Args: never; Returns: Json }
+      get_value_history: {
+        Args: {
+          p_context_item_id: string
+          p_limit?: number
+          p_scope_id: string
+        }
+        Returns: Json
+      }
       get_version_diff: {
         Args: {
           p_entity_id: string
@@ -25152,6 +25149,10 @@ export type Database = {
         Returns: Json
       }
       list_field_data_types: { Args: never; Returns: string[] }
+      list_scope_type_items: {
+        Args: { p_scope_type_id: string }
+        Returns: Json
+      }
       list_scope_types: { Args: { p_org_id: string }; Returns: Json }
       list_scopes: {
         Args: {
@@ -25170,6 +25171,10 @@ export type Database = {
           order_dir?: string
           ref: Json
         }
+        Returns: Json
+      }
+      list_templates: {
+        Args: { p_category?: string; p_personal_only?: boolean }
         Returns: Json
       }
       lookup_user_by_email: {
@@ -25348,20 +25353,6 @@ export type Database = {
             Returns: Json
           }
       reset_daily_guest_counters: { Args: never; Returns: undefined }
-      resolve_active_context_items: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      resolve_context_items_for_agent: {
-        Args: {
-          p_include_statuses?: string[]
-          p_organization_id?: string
-          p_project_id?: string
-          p_task_id?: string
-          p_user_id?: string
-        }
-        Returns: Json
-      }
       resolve_feedback_item: {
         Args: {
           p_id: string
@@ -25614,6 +25605,19 @@ export type Database = {
           p_entity_id: string
           p_entity_type: string
           p_scope_ids: string[]
+        }
+        Returns: Json
+      }
+      set_scope_context_value: {
+        Args: {
+          p_change_summary?: string
+          p_context_item_id: string
+          p_scope_id: string
+          p_value_boolean?: boolean
+          p_value_document_url?: string
+          p_value_json?: Json
+          p_value_number?: number
+          p_value_text?: string
         }
         Returns: Json
       }

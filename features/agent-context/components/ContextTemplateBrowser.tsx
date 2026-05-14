@@ -53,7 +53,7 @@ import {
   useApplyTemplate,
 } from "../hooks/useContextItems";
 import { contextService } from "../service/contextService";
-import { INDUSTRY_CATEGORIES, VALUE_TYPE_CONFIG } from "../constants";
+import { INDUSTRY_CATEGORIES } from "../constants";
 import type { ContextTemplate, ContextScopeLevel } from "../types";
 import type { ScopeState } from "../hooks/useContextScope";
 
@@ -108,7 +108,6 @@ export function ContextTemplateBrowser({ scope }: Props) {
   const applyMutation = useApplyTemplate(
     applyTarget.scopeType,
     applyTarget.scopeId,
-    applyTarget.scopeType === "scope" ? (orgId ?? undefined) : undefined,
   );
   const router = useRouter();
 
@@ -116,9 +115,9 @@ export function ContextTemplateBrowser({ scope }: Props) {
     if (!templates) return new Map<string, ContextTemplate[]>();
     const map = new Map<string, ContextTemplate[]>();
     for (const t of templates) {
-      const list = map.get(t.industry_category) ?? [];
+      const list = map.get(t.category) ?? [];
       list.push(t);
-      map.set(t.industry_category, list);
+      map.set(t.category, list);
     }
     return map;
   }, [templates]);
@@ -167,46 +166,19 @@ export function ContextTemplateBrowser({ scope }: Props) {
               <CardContent className="p-3 flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-semibold">
-                      {item.item_display_name}
-                    </h3>
+                    <h3 className="text-xs font-semibold">{item.name}</h3>
                     <code className="text-[10px] font-mono text-muted-foreground">
-                      {item.item_key}
+                      {item.key}
                     </code>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {item.item_description}
+                    {item.description || "—"}
                   </p>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <Badge variant="secondary" className="h-4 text-[9px]">
-                      {VALUE_TYPE_CONFIG[item.default_value_type].label}
-                    </Badge>
                     <Badge variant="outline" className="h-4 text-[9px]">
-                      {item.default_scope_level}
+                      Template package
                     </Badge>
-                    {item.is_required && (
-                      <Badge variant="warning" className="h-4 text-[9px]">
-                        Required
-                      </Badge>
-                    )}
                   </div>
-                  {item.fill_guidance && (
-                    <p className="text-[10px] text-muted-foreground/70 mt-1 italic">
-                      {item.fill_guidance}
-                    </p>
-                  )}
-                  {item.example_value && (
-                    <details className="mt-1">
-                      <summary className="text-[10px] text-primary cursor-pointer">
-                        See example
-                      </summary>
-                      <pre className="text-[9px] font-mono bg-muted/50 rounded p-1 mt-1 overflow-x-auto">
-                        {typeof item.example_value === "string"
-                          ? item.example_value
-                          : JSON.stringify(item.example_value, null, 2)}
-                      </pre>
-                    </details>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -241,8 +213,8 @@ export function ContextTemplateBrowser({ scope }: Props) {
           const items = grouped.get(cat.key) ?? [];
           if (items.length === 0) return null;
           const Icon = INDUSTRY_ICONS[cat.iconName] ?? Globe;
-          const requiredCount = items.filter((i) => i.is_required).length;
-          const examples = items.slice(0, 3).map((i) => i.item_display_name);
+          const requiredCount = 0;
+          const examples = items.slice(0, 3).map((i) => i.name);
 
           return (
             <Card
@@ -373,11 +345,11 @@ function ApplyTemplateDialog({
     }
   }, [dispatch, orgId]);
 
-  const required = items.filter((i) => i.is_required);
-  const optional = items.filter((i) => !i.is_required);
+  const required: ContextTemplate[] = [];
+  const optional = items;
   const selectedItems = items.filter((i) => checkedIds.has(i.id));
-  const toCreate = selectedItems.filter((i) => !existingKeys.has(i.item_key));
-  const toSkip = selectedItems.filter((i) => existingKeys.has(i.item_key));
+  const toCreate = selectedItems.filter((i) => !existingKeys.has(i.key));
+  const toSkip = selectedItems.filter((i) => existingKeys.has(i.key));
 
   useEffect(() => {
     if (step === "confirm") {
@@ -389,7 +361,7 @@ function ApplyTemplateDialog({
     }
   }, [step, selectedScope]);
 
-  const recommendedScope = items[0]?.default_scope_level ?? scope.scopeType;
+  const recommendedScope = scope.scopeType;
 
   const toggle = (id: string, isRequired: boolean) => {
     if (isRequired) return;
@@ -588,12 +560,12 @@ function ApplyTemplateDialog({
                   {required.map((item) => (
                     <div key={item.id} className="flex items-center gap-2 py-1">
                       <Checkbox checked disabled />
-                      <span className="text-xs">{item.item_display_name}</span>
+                      <span className="text-xs">{item.name}</span>
                       <Badge
                         variant="outline"
                         className="h-4 text-[9px] ml-auto font-mono"
                       >
-                        {item.item_key}
+                        {item.key}
                       </Badge>
                     </div>
                   ))}
@@ -611,12 +583,12 @@ function ApplyTemplateDialog({
                         checked={checkedIds.has(item.id)}
                         onCheckedChange={() => toggle(item.id, false)}
                       />
-                      <span className="text-xs">{item.item_display_name}</span>
+                      <span className="text-xs">{item.name}</span>
                       <Badge
                         variant="outline"
                         className="h-4 text-[9px] ml-auto font-mono"
                       >
-                        {item.item_key}
+                        {item.key}
                       </Badge>
                     </div>
                   ))}
@@ -650,11 +622,9 @@ function ApplyTemplateDialog({
                           className="flex items-center gap-2 py-0.5"
                         >
                           <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-                          <span className="text-xs">
-                            {item.item_display_name}
-                          </span>
+                          <span className="text-xs">{item.name}</span>
                           <code className="text-[9px] font-mono text-muted-foreground ml-auto">
-                            {item.item_key}
+                            {item.key}
                           </code>
                         </div>
                       ))}
@@ -673,10 +643,10 @@ function ApplyTemplateDialog({
                           >
                             <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
                             <span className="text-xs line-through">
-                              {item.item_display_name}
+                              {item.name}
                             </span>
                             <code className="text-[9px] font-mono text-muted-foreground ml-auto">
-                              {item.item_key}
+                              {item.key}
                             </code>
                           </div>
                         ))}

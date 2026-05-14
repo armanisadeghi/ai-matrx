@@ -60,6 +60,7 @@ function NewItemContent() {
     <div className="space-y-4">
       <h1 className="text-base font-bold">Create Context Item</h1>
       <ContextItemForm
+        defaultScopeTypeId={scope.scopeTypeId ?? null}
         onSave={handleSave}
         isPending={createItem.isPending || createValue.isPending}
       />

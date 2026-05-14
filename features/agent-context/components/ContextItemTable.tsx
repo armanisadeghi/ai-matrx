@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ContextStatusBadge } from "./ContextStatusBadge";
 import { FETCH_HINT_CONFIG } from "../constants";
 import type { ContextItemManifest, ContextItemStatus } from "../types";
+import { isContextReviewOverdue } from "../utils/contextItemPresentation";
 
 type Props = {
   items: ContextItemManifest[];
@@ -83,7 +84,7 @@ export function ContextItemTable({ items, onStatusChange }: Props) {
                   : "—"}
               </TableCell>
               <TableCell>
-                {item.is_overdue_review ? (
+                {isContextReviewOverdue(item) ? (
                   <Badge variant="destructive" className="h-4 text-[10px] px-1">
                     Overdue
                   </Badge>

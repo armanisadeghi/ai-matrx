@@ -86,6 +86,17 @@ export async function createOrganization(
 
     if (orgError) {
       console.error("Error creating organization:", orgError.message);
+      // PostgreSQL unique violation (23505) on the slug column
+      if (
+        orgError.code === "23505" &&
+        orgError.message?.toLowerCase().includes("slug")
+      ) {
+        return {
+          success: false,
+          error:
+            "That URL slug is already taken. Please choose a different one.",
+        };
+      }
       return {
         success: false,
         error: orgError.message || "Failed to create organization",
@@ -355,21 +366,26 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
 }
 
 /**
- * Check if a slug is available
- * @param slug Slug to check
- * @returns True if available
+ * Check if a slug is available.
+ * Uses a SECURITY DEFINER RPC so the check bypasses RLS — otherwise the
+ * client-side Supabase query can only see orgs the current user belongs to,
+ * which makes every slug look "available" even when it isn't.
  */
 export async function isSlugAvailable(slug: string): Promise<boolean> {
   try {
-    const { data } = await supabase
-      .from("organizations")
-      .select("id")
-      .eq("slug", slug)
-      .single();
+    const { data, error } = await supabase.rpc("check_org_slug_available", {
+      slug_to_check: slug,
+    });
 
-    return !data;
-  } catch (error) {
-    return true; // If error (not found), slug is available
+    if (error) {
+      console.warn("isSlugAvailable RPC error:", error.message);
+      // Fall back to optimistic "available"; the insert will catch duplicates.
+      return true;
+    }
+
+    return data === true;
+  } catch {
+    return true;
   }
 }
 

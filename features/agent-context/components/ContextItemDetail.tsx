@@ -40,8 +40,8 @@ import {
   useDuplicateContextItem,
   useArchiveContextItem,
 } from "../hooks/useContextItems";
-import type { ContextItemStatus } from "../types";
 import type { ScopeState } from "../hooks/useContextScope";
+import { isContextReviewOverdue } from "../utils/contextItemPresentation";
 
 type Props = {
   itemId: string;
@@ -264,7 +264,7 @@ export function ContextItemDetail({ itemId, scope }: Props) {
               )}
               {item.next_review_at && (
                 <MetadataRow label="Next Review">
-                  {item.is_overdue_review ? (
+                  {isContextReviewOverdue(item) ? (
                     <Badge
                       variant="destructive"
                       className="h-4 text-[10px] px-1"

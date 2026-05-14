@@ -55,7 +55,7 @@ import { getManifest } from "@/features/tool-registry/surfaces/manifests/registr
 import { CONTENT_EXTRACTOR_SURFACE_NAME } from "@/features/page-extraction/constants";
 import type { SurfaceValue } from "@/features/tool-registry/surfaces/types";
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
-import type { ExtraExtractionInput } from "@/features/page-extraction/redux/pageExtractionSlice";
+import type { ExtraExtractionInput } from "@/features/page-extraction/types";
 import type { PageExtractionJob } from "@/features/page-extraction/types";
 
 export interface AgentVariableForMapping {
@@ -141,6 +141,7 @@ type Option =
       key: string;
       label: string;
       hint?: string;
+      muted?: boolean;
     };
 
 interface OptionGroup {

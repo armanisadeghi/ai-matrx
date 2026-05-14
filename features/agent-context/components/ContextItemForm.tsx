@@ -24,11 +24,13 @@ import type {
 type Props = {
   item?: ContextItem | null;
   value?: ContextItemValue | null;
+  /** Required for new items when URL scope has no `scopeTypeId` (must match a `ctx_scope_types.id`). */
+  defaultScopeTypeId?: string | null;
   onSave: (formData: ContextItemFormData, valueData: ContextValueFormData) => void;
   isPending?: boolean;
 };
 
-export function ContextItemForm({ item, value, onSave, isPending }: Props) {
+export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPending }: Props) {
   const isEdit = !!item;
   const hasExistingValue = !!(value && (value.value_text || value.value_number != null || value.value_boolean != null || value.value_json || value.value_document_url || value.value_reference_id));
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -129,7 +131,8 @@ export function ContextItemForm({ item, value, onSave, isPending }: Props) {
     }
   };
 
-  const canSubmit = displayName && key && description && (!changeSummaryRequired || changeSummary.trim());
+  const scopeTypeOk = isEdit || !!defaultScopeTypeId;
+  const canSubmit = displayName && key && description && scopeTypeOk && (!changeSummaryRequired || changeSummary.trim());
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,10 +152,10 @@ export function ContextItemForm({ item, value, onSave, isPending }: Props) {
       fetch_hint: fetchHint,
       sensitivity,
       source_type: 'manual',
+      scope_type_id: item?.scope_type_id ?? defaultScopeTypeId ?? '',
       review_interval_days: reviewEnabled ? reviewDays : null,
       last_verified_at: null,
       depends_on: [],
-      owner_user_id: null,
     };
     onSave(formData, buildValueData());
   };

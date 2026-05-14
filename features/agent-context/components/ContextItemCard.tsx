@@ -40,6 +40,7 @@ import {
   FETCH_HINT_CONFIG,
 } from "../constants";
 import type { ContextItemManifest, ContextItemStatus } from "../types";
+import { isContextReviewOverdue } from "../utils/contextItemPresentation";
 
 const FETCH_HINT_ICONS: Record<
   string,
@@ -208,7 +209,7 @@ export function ContextItemCard({
                 </Tooltip>
               )}
             </TooltipProvider>
-            {item.is_overdue_review && (
+            {isContextReviewOverdue(item) && (
               <Badge variant="destructive" className="h-4 text-[10px] px-1">
                 Overdue
               </Badge>
