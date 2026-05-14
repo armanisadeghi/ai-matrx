@@ -125,28 +125,35 @@ export function clampRectInImage(
   aspect: number | undefined,
   imgW: number,
   imgH: number,
+  handle: Handle = "pan",
 ): CropRect {
   let { x, y, w, h } = rect;
 
   if (aspect !== undefined) {
-    if (w > imgW) {
-      w = imgW;
-      h = w / aspect;
-    }
-    if (h > imgH) {
-      h = imgH;
-      w = h * aspect;
-    }
+    // Aspect-locked: cap size proportionally, then clamp position.
+    if (w > imgW) { w = imgW; h = w / aspect; }
+    if (h > imgH) { h = imgH; w = h * aspect; }
+    w = Math.max(MIN_NATURAL, w);
+    h = Math.max(MIN_NATURAL, h);
+    x = clamp(x, 0, imgW - w);
+    y = clamp(y, 0, imgH - h);
+  } else if (handle === "pan") {
+    // Free pan: preserve size, clamp position so the box doesn't leave the image.
+    w = clamp(w, MIN_NATURAL, imgW);
+    h = clamp(h, MIN_NATURAL, imgH);
+    x = clamp(x, 0, imgW - w);
+    y = clamp(y, 0, imgH - h);
   } else {
-    w = Math.min(w, imgW);
-    h = Math.min(h, imgH);
+    // Free resize: clamp each edge independently so the opposite edge stays put.
+    // Without this, capping the width then clamping x would silently shift the
+    // far edge when a near edge is dragged past the image boundary.
+    const right = clamp(x + w, MIN_NATURAL, imgW);
+    const bottom = clamp(y + h, MIN_NATURAL, imgH);
+    x = clamp(x, 0, imgW - MIN_NATURAL);
+    y = clamp(y, 0, imgH - MIN_NATURAL);
+    w = Math.max(MIN_NATURAL, right - x);
+    h = Math.max(MIN_NATURAL, bottom - y);
   }
-
-  w = Math.max(MIN_NATURAL, w);
-  h = Math.max(MIN_NATURAL, h);
-
-  x = clamp(x, 0, imgW - w);
-  y = clamp(y, 0, imgH - h);
 
   return { x, y, w, h };
 }
@@ -469,7 +476,7 @@ export function useInitialCropController({
       const deltaX = (e.clientX - drag.startClientX) / imageDisplay.scale;
       const deltaY = (e.clientY - drag.startClientY) / imageDisplay.scale;
       const proposed = applyDragToRect(drag, deltaX, deltaY, aspect);
-      setCrop(clampRectInImage(proposed, aspect, naturalSize.w, naturalSize.h));
+      setCrop(clampRectInImage(proposed, aspect, naturalSize.w, naturalSize.h, drag.handle));
     },
     [drag, imageDisplay, naturalSize, aspect],
   );
