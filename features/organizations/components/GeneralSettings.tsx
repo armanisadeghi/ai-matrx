@@ -12,7 +12,7 @@ import { updateOrganization } from "../service";
 import { validateOrgName, type Organization, type OrgRole } from "../types";
 import { InlineMediaRef } from "@/features/files";
 import { format } from "date-fns";
-import { ImageCropUploader } from "@/components/official/ImageCropUploader";
+import { ImageCropModal } from "@/components/official/ImageCropModal";
 import { folderForOrg } from "@/features/files";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
@@ -46,6 +46,7 @@ export function GeneralSettings({
   const refreshLayoutOrganization = useOrgSettingsLayoutRefresh();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [logoModalOpen, setLogoModalOpen] = useState(false);
 
   // Form state
   const [name, setName] = useState(organization.name);
@@ -263,48 +264,65 @@ export function GeneralSettings({
           )}
         </div>
 
-        {/* Logo — drag-drop with Sharp variants, or paste a URL */}
+        {/* Logo */}
         <div className="space-y-2">
           <Label>Logo</Label>
-          {isEditing ? (
-            <ImageCropUploader
-              preset="logo"
-              currentUrl={logoUrl || null}
-              onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
-              folder={`${folderForOrg(organization.id)}/logo`}
-              disabled={isSaving}
-              label="Organization logo"
-              defaultAspect={1}
-            />
-          ) : (
-            <div className="flex items-center gap-4">
-              {logoUrl ? (
-                <>
-                  <InlineMediaRef
-                    ref={logoUrl}
-                    size={{ width: 64, height: 64 }}
-                    fit="cover"
-                    rounded="lg"
-                    border="subtle"
-                    fallback={null}
-                    alt={name}
-                  />
-                  <a
-                    href={logoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
-                    View logo
-                  </a>
-                </>
-              ) : (
-                <span className="text-sm text-muted-foreground italic">
-                  No logo provided
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {logoUrl ? (
+              <InlineMediaRef
+                ref={logoUrl}
+                size={{ width: 64, height: 64 }}
+                fit="cover"
+                rounded="lg"
+                border="subtle"
+                fallback={null}
+                alt={name}
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
+                <span className="text-xs text-muted-foreground">No logo</span>
+              </div>
+            )}
+            {isEditing && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setLogoModalOpen(true)}
+                disabled={isSaving}
+              >
+                {logoUrl ? "Change logo" : "Upload logo"}
+              </Button>
+            )}
+            {!isEditing && logoUrl && (
+              <a
+                href={logoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                View logo
+              </a>
+            )}
+            {!isEditing && !logoUrl && (
+              <span className="text-sm text-muted-foreground italic">
+                No logo provided
+              </span>
+            )}
+          </div>
+          <ImageCropModal
+            open={logoModalOpen}
+            onOpenChange={setLogoModalOpen}
+            onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
+            currentUrl={logoUrl || null}
+            preset="logo"
+            folder={`${folderForOrg(organization.id)}/logo`}
+            title="Update Organization Logo"
+            label="Logo"
+            defaultAspect={1}
+            currentImageShape="square"
+            currentImageAlt={name}
+          />
         </div>
 
         {/* Metadata (Read-only) */}

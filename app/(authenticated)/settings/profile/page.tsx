@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { setUserMetadata } from "@/lib/redux/slices/userProfileSlice";
-import { User, Check, Clock } from "lucide-react";
+import { User, Check, Clock, Camera } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -19,10 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { FaGoogle, FaGithub } from "react-icons/fa";
 import { toast } from "sonner";
-import { ImageCropUploader } from "@/components/official/ImageCropUploader";
+import { ImageCropModal } from "@/components/official/ImageCropModal";
 import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
 
-// Map of provider names to their icons and colors
 const providerStyles: Record<
   string,
   {
@@ -43,7 +42,6 @@ const providerStyles: Record<
   },
 };
 
-// Default provider style for unknown providers
 const defaultProviderStyle = {
   icon: <User size={14} />,
   color: "text-blue-600 dark:text-blue-400",
@@ -54,9 +52,10 @@ export default function ProfilePage() {
   const user = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
   const [isEditing, setIsEditing] = useState(false);
-  const [isChangingPhoto, setIsChangingPhoto] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
-  const currentPhotoUrl = user.userMetadata.avatarUrl ?? user.userMetadata.picture ?? null;
+  const currentPhotoUrl =
+    user.userMetadata.avatarUrl ?? user.userMetadata.picture ?? null;
 
   const handlePhotoComplete = async (result: ImageUploaderResult | null) => {
     const url = result?.primary_url ?? null;
@@ -69,30 +68,38 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error("Failed to save photo");
       dispatch(setUserMetadata({ avatarUrl: url, picture: url }));
       toast.success(url ? "Profile photo updated" : "Profile photo removed");
-      setIsChangingPhoto(false);
     } catch {
       toast.error("Could not save profile photo — please try again");
     }
   };
 
-  // Helper function to get provider style
   const getProviderStyle = (provider: string) => {
     return providerStyles[provider.toLowerCase()] || defaultProviderStyle;
   };
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
+      <ImageCropModal
+        open={photoOpen}
+        onOpenChange={setPhotoOpen}
+        onComplete={(result) => void handlePhotoComplete(result)}
+        currentUrl={currentPhotoUrl}
+        preset="avatar"
+        visibility="public"
+        title="Update Profile Photo"
+        label="Photo"
+        defaultAspect={1}
+        currentImageShape="circle"
+        currentImageAlt="Profile photo"
+      />
+
       {/* Profile Header Card */}
       <Card className="mb-4 md:mb-6">
         <CardContent className="pt-4 md:pt-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
-            <div className="flex flex-col items-center gap-2 mx-auto md:mx-0">
-              <button
-                type="button"
-                onClick={() => setIsChangingPhoto((v) => !v)}
-                className="relative group h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-600 bg-gray-200 dark:bg-zinc-700 flex items-center justify-center shrink-0"
-                title="Change profile photo"
-              >
+            {/* Avatar with camera badge */}
+            <div className="relative mx-auto md:mx-0 shrink-0">
+              <div className="relative h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-600 bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
                 {currentPhotoUrl ? (
                   <Image
                     src={currentPhotoUrl}
@@ -104,34 +111,17 @@ export default function ProfilePage() {
                 ) : (
                   <User size={40} className="text-gray-400 dark:text-gray-500" />
                 )}
-                <span className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] font-medium text-white leading-tight text-center px-1">
-                    {isChangingPhoto ? "Cancel" : "Change"}
-                  </span>
-                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhotoOpen(true)}
+                className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+                title="Change profile photo"
+              >
+                <Camera size={14} />
               </button>
-
-              {isChangingPhoto && (
-                <div className="w-full max-w-xs mt-1">
-                  <ImageCropUploader
-                    preset="avatar"
-                    currentUrl={currentPhotoUrl}
-                    label="Profile photo"
-                    defaultAspect={1}
-                    visibility="public"
-                    onComplete={(result) => void handlePhotoComplete(result)}
-                    onError={(msg) => toast.error(msg)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setIsChangingPhoto(false)}
-                    className="mt-1 text-xs text-muted-foreground hover:text-foreground w-full text-center"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
             </div>
+
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {user.userMetadata.fullName || user.userMetadata.name || "User"}
