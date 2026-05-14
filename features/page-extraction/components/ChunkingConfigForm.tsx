@@ -29,7 +29,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2, Plus, Save } from "lucide-react";
-import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
+import {
+  upsertJobInCache,
+  useExtractionJobs,
+} from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -372,6 +375,14 @@ function TemplateEditor({
         fallbackName: documentName,
         existingJobId: selectedJobId,
       });
+      // Push the freshly-saved row into the shared jobs cache BEFORE
+      // dispatching the selection. Without this, the JobPicker dropdown
+      // in the main pane shows a blank placeholder (no matching
+      // <SelectItem> for the new id) until Supabase Realtime catches up.
+      // Realtime is enabled on this table, but the round-trip can be
+      // 100ms-2s — long enough for the user to see a no-name run in
+      // progress and assume it failed.
+      upsertJobInCache(fileId, job);
       dispatch(selectJobForFile({ fileId, jobId: job.id }));
       toast.success(selectedJobId ? "Template updated" : "Template saved");
       onSaved(job);

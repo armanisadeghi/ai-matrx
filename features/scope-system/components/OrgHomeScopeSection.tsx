@@ -32,7 +32,7 @@ import {
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { NewScopeInline } from "./NewScopeInline";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { pickColorForId } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
 
@@ -63,15 +63,13 @@ export function OrgHomeScopeSection({
   // Fetch values for each scope (one RPC each — fine for the small N here).
   useEffect(() => {
     for (const scope of scopes) {
-      dispatch(
-        getScopeContext({ scope_id: scope.id, include_empty: true }),
-      );
+      dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
     }
     // Re-run when scope ids change
   }, [dispatch, scopes]);
 
   const Icon = resolveIcon(scopeType.icon);
-  const color = pickColorForId(scopeType.id);
+  const color = resolveColor(scopeType);
   const columns = items.slice(0, MAX_COLUMNS);
   const overflowCount = Math.max(0, items.length - MAX_COLUMNS);
 
@@ -105,7 +103,7 @@ export function OrgHomeScopeSection({
             size="sm"
             onClick={() => setEditing(true)}
             aria-label={`Edit ${scopeType.label_plural}`}
-            title="Edit scope settings"
+            title="Edit scope type settings"
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -159,17 +157,29 @@ export function OrgHomeScopeSection({
       {scopes.length > 0 && (
         <>
           <div className="overflow-x-auto -mx-2">
-            <Table>
+            <Table className="table-fixed w-full">
+              <colgroup>
+                <col className="w-[160px]" />
+                {columns.map((col) => (
+                  <col key={col.id} className="w-[180px]" />
+                ))}
+                {overflowCount > 0 && <col className="w-[80px]" />}
+              </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-2">Name</TableHead>
+                  <TableHead className="px-2 whitespace-nowrap">Name</TableHead>
                   {columns.map((col) => (
-                    <TableHead key={col.id} className="px-2">
-                      {col.display_name}
+                    <TableHead
+                      key={col.id}
+                      className="px-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-0"
+                    >
+                      <span className="block truncate" title={col.display_name}>
+                        {col.display_name}
+                      </span>
                     </TableHead>
                   ))}
                   {overflowCount > 0 && (
-                    <TableHead className="px-2 text-muted-foreground">
+                    <TableHead className="px-2 text-muted-foreground whitespace-nowrap">
                       +{overflowCount} more
                     </TableHead>
                   )}
@@ -236,11 +246,20 @@ function ScopeRow({
       onClick={onClick}
       className="cursor-pointer hover:bg-accent/40 group"
     >
-      <TableCell className="px-2 font-medium">
-        <span className="inline-flex items-center gap-1.5">
-          {scopeName}
-          <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        </span>
+      <TableCell className="px-2 font-medium max-w-0">
+        <TooltipProvider delayDuration={400}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-1.5 w-full min-w-0">
+                <span className="truncate">{scopeName}</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p className="text-xs">{scopeName}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </TableCell>
       {columns.map((col) => {
         const row = valueMap.get(col.id);
@@ -248,7 +267,10 @@ function ScopeRow({
         const isEmpty = !display;
         if (!rows) {
           return (
-            <TableCell key={col.id} className="px-2 text-muted-foreground">
+            <TableCell
+              key={col.id}
+              className="px-2 text-muted-foreground max-w-0"
+            >
               <Loader2 className="h-3 w-3 animate-spin" />
             </TableCell>
           );
@@ -256,31 +278,33 @@ function ScopeRow({
         return (
           <TableCell
             key={col.id}
-            className={`px-2 ${isEmpty ? "text-muted-foreground" : ""}`}
+            className={`px-2 max-w-0 ${isEmpty ? "text-muted-foreground" : ""}`}
           >
             {isEmpty ? (
-              "—"
-            ) : display.length > 40 ? (
-              <TooltipProvider delayDuration={200}>
+              <span className="truncate block">—</span>
+            ) : (
+              <TooltipProvider delayDuration={400}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="line-clamp-1 inline-block max-w-[200px] cursor-help">
+                    <span className="truncate block cursor-help">
                       {display}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-sm">
-                    <p className="text-xs whitespace-pre-wrap">{display}</p>
+                  <TooltipContent side="top" className="max-w-sm">
+                    <p className="text-xs whitespace-pre-wrap break-words">
+                      {display}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            ) : (
-              <span className="line-clamp-1 inline-block">{display}</span>
             )}
           </TableCell>
         );
       })}
       {overflowCount > 0 && (
-        <TableCell className="px-2 text-muted-foreground">…</TableCell>
+        <TableCell className="px-2 text-muted-foreground whitespace-nowrap">
+          …
+        </TableCell>
       )}
     </TableRow>
   );

@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { pickColorForId } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 
 interface ScopeTypeCardProps {
@@ -20,7 +20,7 @@ export function ScopeTypeCard({
   onClick,
 }: ScopeTypeCardProps) {
   const Icon = resolveIcon(scopeType.icon);
-  const color = pickColorForId(scopeType.id);
+  const color = resolveColor(scopeType);
 
   return (
     <Card
@@ -56,8 +56,7 @@ export function ScopeTypeCard({
             {itemCount !== null && (
               <>
                 {" · "}
-                {itemCount}{" "}
-                {itemCount === 1 ? "context item" : "context items"}
+                {itemCount} {itemCount === 1 ? "context item" : "context items"}
               </>
             )}
           </p>

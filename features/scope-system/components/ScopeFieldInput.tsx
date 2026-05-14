@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, AlertCircle, Pencil, Maximize2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
@@ -13,8 +13,6 @@ interface ScopeFieldInputProps {
   scopeId: string;
   row: ScopeContextRow;
 }
-
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 function rowToString(row: ScopeContextRow): string {
   if (row.value_text != null) return row.value_text;
@@ -57,8 +55,7 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
     setValue(initial);
   }, [initial]);
 
-  const isJsonType =
-    row.value_type === "object" || row.value_type === "array";
+  const isJsonType = row.value_type === "object" || row.value_type === "array";
 
   return (
     <>
@@ -91,7 +88,7 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
             </Button>
           </div>
         </div>
-        <Textarea
+        <ProTextarea
           id={`field-${row.item_id}`}
           value={value}
           onChange={(e) => {
@@ -103,13 +100,9 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
             commit(e.target.value);
           }}
           placeholder={placeholderForType(row.value_type)}
-          rows={3}
-          className={
-            isJsonType
-              ? "font-mono text-sm resize-y min-h-[80px]"
-              : "resize-y min-h-[80px]"
-          }
-          style={INPUT_NO_ZOOM}
+          minHeight={80}
+          className={isJsonType ? "font-mono text-sm" : undefined}
+          autoGrow
         />
         {row.description && (
           <p className="text-xs text-muted-foreground">{row.description}</p>

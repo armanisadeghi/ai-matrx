@@ -13,6 +13,7 @@ import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
 export default function ScopeDetailPage() {
   const params = useParams();
   const orgSlugOrId = params.orgId as string;
+  const typeId = params.typeId as string;
   const scopeId = params.scopeId as string;
   const dispatch = useAppDispatch();
 
@@ -30,7 +31,7 @@ export default function ScopeDetailPage() {
         }
         setOrgId(org.id);
         dispatch(fetchScopeTypes(org.id));
-        dispatch(fetchScopes({ org_id: org.id }));
+        dispatch(fetchScopes({ org_id: org.id, type_id: typeId }));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
@@ -38,7 +39,7 @@ export default function ScopeDetailPage() {
       }
     }
     resolve();
-  }, [orgSlugOrId, dispatch]);
+  }, [orgSlugOrId, typeId, dispatch]);
 
   if (loading || !orgId) {
     return (

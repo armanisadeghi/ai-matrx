@@ -22,6 +22,30 @@ import type {
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 
+/**
+ * Sentinel for the "All extractions" view in the main extractions pane.
+ * When `viewedJobByFile[fileId]` equals this string, the pane renders the
+ * cross-template aggregate (every result row for the file, with a
+ * `Template` column added) instead of a single Job's data. Stored as a
+ * value in `viewedJobByFile` so we don't need a parallel boolean slice
+ * field — the picker, the data view, and persistence all key off the
+ * same record.
+ *
+ * The double-underscore prefix ensures it can never collide with a real
+ * job id (UUIDs).
+ */
+export const EXTRACTIONS_ALL_VIEW = "__all__";
+
+/**
+ * Type guard for the All-view sentinel. Use this everywhere instead of
+ * comparing the string literal so a future rename only touches this file.
+ */
+export function isAllJobsView(
+  jobId: string | null | undefined,
+): jobId is typeof EXTRACTIONS_ALL_VIEW {
+  return jobId === EXTRACTIONS_ALL_VIEW;
+}
+
 export interface ActivePageRun {
   pageRunId: string;
   chunkIndex: number;

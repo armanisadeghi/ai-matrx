@@ -22,7 +22,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
-import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
+import {
+  removeJobFromCache,
+  useExtractionJobs,
+} from "@/features/page-extraction/hooks/useExtractionJobs";
 import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
 import { deleteJob } from "@/features/page-extraction/api/jobs";
 import {
@@ -88,6 +91,11 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
     setDeletingJobId(job.id);
     try {
       await deleteJob(job.id);
+      // Drop the archived row from the shared cache immediately so the
+      // sidebar list updates without waiting for Realtime (the soft
+      // delete sets archived_at, which Realtime will report as an
+      // UPDATE — listJobsForFile would then filter it out on refetch).
+      removeJobFromCache(fileId, job.id);
       // Clear any pointer to the now-gone job so the form / data view
       // don't dangle on a deleted id. Both pointers are independent
       // (sidebar vs. data view), so check both.

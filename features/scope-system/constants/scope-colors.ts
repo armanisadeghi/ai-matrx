@@ -77,3 +77,15 @@ export function pickColorByKey(key: string | undefined): ScopeColor {
   const found = SCOPE_COLORS.find((c) => c.key === key);
   return found ?? SCOPE_COLORS[0];
 }
+
+/** Prefer the stored color key; fall back to a deterministic hash of the id. */
+export function resolveColor(scopeType: {
+  id: string;
+  color?: string | null;
+}): ScopeColor {
+  if (scopeType.color) {
+    const found = SCOPE_COLORS.find((c) => c.key === scopeType.color);
+    if (found) return found;
+  }
+  return pickColorForId(scopeType.id);
+}

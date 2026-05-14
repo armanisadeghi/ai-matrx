@@ -56,7 +56,6 @@ interface TemplateGalleryDrawerProps {
   onApplied?: () => void;
 }
 
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 const ALL = "__all__";
 
 type Mode = "templates" | "individual";
@@ -86,8 +85,9 @@ export function TemplateGalleryDrawer({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>(ALL);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [applyingIndividualKey, setApplyingIndividualKey] =
-    useState<string | null>(null);
+  const [applyingIndividualKey, setApplyingIndividualKey] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (open && !loaded) {
@@ -115,9 +115,7 @@ export function TemplateGalleryDrawer({
         (t) =>
           t.name.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
-          t.scope_types.some((st) =>
-            st.label_plural.toLowerCase().includes(q),
-          ),
+          t.scope_types.some((st) => st.label_plural.toLowerCase().includes(q)),
       );
     }
     return list;
@@ -149,9 +147,10 @@ export function TemplateGalleryDrawer({
   }, [allFlat, personalOnly, category, query]);
 
   const categories = useMemo(() => {
-    const base = personalOnly !== undefined
-      ? allTemplates.filter((t) => t.is_personal === personalOnly)
-      : allTemplates;
+    const base =
+      personalOnly !== undefined
+        ? allTemplates.filter((t) => t.is_personal === personalOnly)
+        : allTemplates;
     const set = new Set<string>();
     for (const t of base) set.add(t.category);
     return Array.from(set).sort();
@@ -185,7 +184,9 @@ export function TemplateGalleryDrawer({
    * parent, the user re-assigns it via Edit later.
    */
   async function handleApplyIndividual(
-    item: FlatTemplateScopeType | (TemplateScopeType & { template_name: string; template_id: string }),
+    item:
+      | FlatTemplateScopeType
+      | (TemplateScopeType & { template_name: string; template_id: string }),
     keyForRow: string,
   ) {
     setApplyingIndividualKey(keyForRow);
@@ -196,8 +197,7 @@ export function TemplateGalleryDrawer({
           label_singular: item.label_singular,
           label_plural: item.label_plural,
           icon: item.icon || "Folder",
-          max_assignments:
-            item.max_assignments_per_entity ?? undefined,
+          max_assignments: item.max_assignments_per_entity ?? undefined,
         }),
       ).unwrap();
       for (const field of item.fields) {
@@ -265,7 +265,7 @@ export function TemplateGalleryDrawer({
                     : "Search scopes, source templates, fields"
                 }
                 className="pl-9"
-                style={INPUT_NO_ZOOM}
+                style={{ fontSize: "16px" }}
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -333,8 +333,8 @@ export function TemplateGalleryDrawer({
               <p className="text-xs text-muted-foreground">
                 {visibleFlat.length}{" "}
                 {visibleFlat.length === 1 ? "scope" : "scopes"} from{" "}
-                {new Set(visibleFlat.map((s) => s.template_id)).size}{" "}
-                templates, alphabetical
+                {new Set(visibleFlat.map((s) => s.template_id)).size} templates,
+                alphabetical
               </p>
               {visibleFlat.map((item, idx) => {
                 const rowKey = `${item.template_id}:${item.label_plural}:${idx}`;
@@ -414,10 +414,8 @@ function TemplateCard({
   onClick: () => void;
 }) {
   const Icon = resolveIcon(template.icon);
-  const totalFields = template.scope_types.reduce(
-    (sum, st) => sum + (st.field_count ?? st.fields.length ?? 0),
-    0,
-  );
+  const visibleScopes = template.scope_types.slice(0, 3);
+  const scopeOverflow = Math.max(0, template.scope_types.length - 3);
   return (
     <Card
       role="button"
@@ -443,13 +441,20 @@ function TemplateCard({
             {template.description}
           </p>
           <div className="flex flex-wrap gap-1 mt-2">
-            <Badge variant="secondary" className="text-[10px]">
-              {template.scope_types.length}{" "}
-              {template.scope_types.length === 1 ? "scope" : "scopes"}
-            </Badge>
-            <Badge variant="secondary" className="text-[10px]">
-              {totalFields} context items
-            </Badge>
+            {visibleScopes.map((st) => (
+              <Badge
+                key={st.label_plural}
+                variant="secondary"
+                className="text-[10px]"
+              >
+                {st.label_plural}
+              </Badge>
+            ))}
+            {scopeOverflow > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                +{scopeOverflow} more
+              </Badge>
+            )}
             {template.is_personal && (
               <Badge variant="outline" className="text-[10px]">
                 Personal
@@ -472,7 +477,7 @@ function FlatScopeRow({
   onApply: () => void;
 }) {
   const Icon = resolveIcon(item.icon);
-  const previewFields = item.fields.slice(0, 4);
+  const previewFields = item.fields.slice(0, 3);
   const overflow = Math.max(0, item.fields.length - previewFields.length);
   return (
     <Card className="p-3">
@@ -532,11 +537,7 @@ function FlatScopeRow({
           disabled={busy}
           className="shrink-0"
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <>Add</>
-          )}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <>Add</>}
         </Button>
       </div>
     </Card>
@@ -605,14 +606,16 @@ function TemplateDetail({
                     <p className="text-sm font-medium">{st.label_plural}</p>
                     <p className="text-xs text-muted-foreground">
                       {st.fields.length}{" "}
-                      {st.fields.length === 1 ? "context item" : "context items"}
+                      {st.fields.length === 1
+                        ? "context item"
+                        : "context items"}
                       {st.max_assignments_per_entity != null && (
                         <> · max {st.max_assignments_per_entity} per record</>
                       )}
                     </p>
                     {st.fields.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {st.fields.map((f) => (
+                        {st.fields.slice(0, 3).map((f) => (
                           <Badge
                             key={f.key}
                             variant="outline"
@@ -621,6 +624,14 @@ function TemplateDetail({
                             {f.display_name}
                           </Badge>
                         ))}
+                        {st.fields.length > 3 && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-normal"
+                          >
+                            +{st.fields.length - 3} more
+                          </Badge>
+                        )}
                       </div>
                     )}
                   </div>

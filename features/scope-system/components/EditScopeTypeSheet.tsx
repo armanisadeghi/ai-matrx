@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
@@ -60,8 +60,6 @@ type ItemDraft = {
   initialDisplayName?: string;
   toDelete?: boolean;
 };
-
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 const newRow = (): ItemDraft => ({
   id: `new:${Math.random().toString(36).slice(2)}`,
@@ -215,9 +213,8 @@ export function EditScopeTypeSheet({
       const descriptionChanged = description !== scopeType.description;
       const sortChanged = sortOrder !== scopeType.sort_order;
       const maxChanged =
-        (maxAssignments
-          ? parseInt(maxAssignments, 10)
-          : null) !== scopeType.max_assignments_per_entity;
+        (maxAssignments ? parseInt(maxAssignments, 10) : null) !==
+        scopeType.max_assignments_per_entity;
 
       if (
         labelChanged ||
@@ -315,7 +312,7 @@ export function EditScopeTypeSheet({
           className="w-full sm:max-w-lg overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle>Edit scope</SheetTitle>
+            <SheetTitle>Edit scope type</SheetTitle>
             <SheetDescription>
               Rename, change the icon and color, manage context items, and
               adjust advanced settings.
@@ -330,7 +327,7 @@ export function EditScopeTypeSheet({
                 <Input
                   value={labelSingular}
                   onChange={(e) => setLabelSingular(e.target.value)}
-                  style={INPUT_NO_ZOOM}
+                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
               </div>
@@ -339,7 +336,7 @@ export function EditScopeTypeSheet({
                 <Input
                   value={labelPlural}
                   onChange={(e) => setLabelPlural(e.target.value)}
-                  style={INPUT_NO_ZOOM}
+                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
               </div>
@@ -368,12 +365,11 @@ export function EditScopeTypeSheet({
 
             <div className="space-y-1.5">
               <Label className="text-xs">Description (optional)</Label>
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-                className="resize-none"
-                style={INPUT_NO_ZOOM}
+                minHeight={64}
+                autoGrow
                 disabled={busy}
               />
             </div>
@@ -393,10 +389,7 @@ export function EditScopeTypeSheet({
                   const isNew = row.id.startsWith("new:");
                   const removed = !!row.toDelete;
                   return (
-                    <div
-                      key={row.rowId}
-                      className="flex items-center gap-1.5"
-                    >
+                    <div key={row.rowId} className="flex items-center gap-1.5">
                       <Input
                         ref={(el) => {
                           if (el) rowInputsRef.current.set(row.rowId, el);
@@ -411,7 +404,7 @@ export function EditScopeTypeSheet({
                         }
                         onKeyDown={(e) => handleRowKeyDown(e, row, idx)}
                         disabled={busy || removed}
-                        style={INPUT_NO_ZOOM}
+                        style={{ fontSize: "16px" }}
                         className={
                           removed
                             ? "line-through text-muted-foreground bg-rose-50/40 dark:bg-rose-950/20"
@@ -502,7 +495,7 @@ export function EditScopeTypeSheet({
                         setSortOrder(parseInt(e.target.value, 10) || 0)
                       }
                       min={0}
-                      style={INPUT_NO_ZOOM}
+                      style={{ fontSize: "16px" }}
                       disabled={busy}
                     />
                   </div>
@@ -514,7 +507,7 @@ export function EditScopeTypeSheet({
                       onChange={(e) => setMaxAssignments(e.target.value)}
                       placeholder="Unlimited"
                       min={1}
-                      style={INPUT_NO_ZOOM}
+                      style={{ fontSize: "16px" }}
                       disabled={busy}
                     />
                   </div>

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -53,8 +53,6 @@ interface EditContextItemSheetProps {
   itemId: string | null;
 }
 
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
-
 export function EditContextItemSheet({
   open,
   onOpenChange,
@@ -70,8 +68,7 @@ export function EditContextItemSheet({
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [valueType, setValueType] =
-    useState<ContextValueType>("string");
+  const [valueType, setValueType] = useState<ContextValueType>("string");
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
   const [sensitivity, setSensitivity] =
     useState<ContextSensitivity>("internal");
@@ -172,15 +169,12 @@ export function EditContextItemSheet({
 
   return (
     <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg overflow-y-auto"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Edit context item</SheetTitle>
           <SheetDescription>
-            Full settings for this context item. Changes apply to every scope
-            of this type.
+            Full settings for this context item. Changes apply to every scope of
+            this type.
           </SheetDescription>
         </SheetHeader>
 
@@ -190,7 +184,7 @@ export function EditContextItemSheet({
             <Input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              style={INPUT_NO_ZOOM}
+              style={{ fontSize: "16px" }}
               disabled={busy}
             />
             <p className="text-[10px] font-mono text-muted-foreground">
@@ -200,13 +194,12 @@ export function EditContextItemSheet({
 
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="resize-none"
+              minHeight={80}
+              autoGrow
               placeholder="What is this context item for? When should an agent use it?"
-              style={INPUT_NO_ZOOM}
               disabled={busy}
             />
           </div>
@@ -217,7 +210,7 @@ export function EditContextItemSheet({
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g. Brand & Identity"
-              style={INPUT_NO_ZOOM}
+              style={{ fontSize: "16px" }}
               disabled={busy}
               list="context-item-category-suggestions"
             />
@@ -240,13 +233,13 @@ export function EditContextItemSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(
-                    Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]
-                  ).map((k) => (
-                    <SelectItem key={k} value={k}>
-                      {VALUE_TYPE_CONFIG[k].label}
-                    </SelectItem>
-                  ))}
+                  {(Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]).map(
+                    (k) => (
+                      <SelectItem key={k} value={k}>
+                        {VALUE_TYPE_CONFIG[k].label}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
               {valueTypeChanged && (
@@ -267,13 +260,13 @@ export function EditContextItemSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(
-                    Object.keys(FETCH_HINT_CONFIG) as ContextFetchHint[]
-                  ).map((k) => (
-                    <SelectItem key={k} value={k}>
-                      {FETCH_HINT_CONFIG[k].label}
-                    </SelectItem>
-                  ))}
+                  {(Object.keys(FETCH_HINT_CONFIG) as ContextFetchHint[]).map(
+                    (k) => (
+                      <SelectItem key={k} value={k}>
+                        {FETCH_HINT_CONFIG[k].label}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">
@@ -293,13 +286,13 @@ export function EditContextItemSheet({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(
-                  Object.keys(SENSITIVITY_CONFIG) as ContextSensitivity[]
-                ).map((k) => (
-                  <SelectItem key={k} value={k}>
-                    {SENSITIVITY_CONFIG[k].label}
-                  </SelectItem>
-                ))}
+                {(Object.keys(SENSITIVITY_CONFIG) as ContextSensitivity[]).map(
+                  (k) => (
+                    <SelectItem key={k} value={k}>
+                      {SENSITIVITY_CONFIG[k].label}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground">
@@ -320,7 +313,7 @@ export function EditContextItemSheet({
                     addTag();
                   }
                 }}
-                style={INPUT_NO_ZOOM}
+                style={{ fontSize: "16px" }}
                 disabled={busy}
                 className="flex-1"
               />
@@ -367,7 +360,7 @@ export function EditContextItemSheet({
                 onChange={(e) => setReviewIntervalDays(e.target.value)}
                 placeholder="No schedule"
                 min={1}
-                style={INPUT_NO_ZOOM}
+                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
               <p className="text-[10px] text-muted-foreground">
@@ -384,13 +377,12 @@ export function EditContextItemSheet({
 
           <div className="space-y-1.5">
             <Label className="text-xs">Status note</Label>
-            <Textarea
+            <ProTextarea
               value={statusNote}
               onChange={(e) => setStatusNote(e.target.value)}
-              rows={2}
-              className="resize-none"
+              minHeight={64}
+              autoGrow
               placeholder="Notes about the current state of this item"
-              style={INPUT_NO_ZOOM}
               disabled={busy}
             />
           </div>

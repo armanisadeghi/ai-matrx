@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Plus, X, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -33,8 +33,6 @@ type NewItemRow = {
   display_name: string;
   value: string;
 };
-
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 const newRow = (): NewItemRow => ({
   rowId: Math.random().toString(36).slice(2),
@@ -189,7 +187,7 @@ export function NewScopeInline({
             onChange={(e) => setName(e.target.value)}
             disabled={busy}
             required
-            style={INPUT_NO_ZOOM}
+            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="space-y-1.5">
@@ -199,7 +197,7 @@ export function NewScopeInline({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={busy}
-            style={INPUT_NO_ZOOM}
+            style={{ fontSize: "16px" }}
           />
         </div>
 
@@ -219,15 +217,14 @@ export function NewScopeInline({
                   {item.display_name}
                   <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
-                <Textarea
+                <ProTextarea
                   id={`new-scope-val-${item.id}`}
-                  rows={3}
                   value={existingValues[item.id] ?? ""}
                   onChange={(e) => setExistingValue(item.id, e.target.value)}
                   placeholder="Leave blank to fill later"
                   disabled={busy}
-                  style={INPUT_NO_ZOOM}
-                  className="resize-y min-h-[80px]"
+                  minHeight={80}
+                  autoGrow
                 />
                 {item.description && (
                   <p className="text-xs text-muted-foreground">
@@ -262,7 +259,7 @@ export function NewScopeInline({
                       })
                     }
                     disabled={busy}
-                    style={INPUT_NO_ZOOM}
+                    style={{ fontSize: "16px" }}
                     className="flex-1"
                   />
                   <Button
@@ -276,16 +273,15 @@ export function NewScopeInline({
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <Textarea
+                <ProTextarea
                   placeholder="Value for this one (optional)"
                   value={row.value}
                   onChange={(e) =>
                     updateNewItemRow(row.rowId, { value: e.target.value })
                   }
-                  rows={3}
                   disabled={busy}
-                  style={INPUT_NO_ZOOM}
-                  className="resize-y min-h-[80px]"
+                  minHeight={80}
+                  autoGrow
                 />
               </div>
             ))}

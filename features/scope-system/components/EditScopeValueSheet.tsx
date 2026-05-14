@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,8 +36,6 @@ interface EditScopeValueSheetProps {
   scopeId: string;
   itemId: string;
 }
-
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 function rowToString(row: ScopeContextRow): string {
   if (row.value_text != null) return row.value_text;
@@ -139,10 +137,7 @@ export function EditScopeValueSheet({
 
   return (
     <>
-      <Sheet
-        open={open}
-        onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}
-      >
+      <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
         <SheetContent
           side="right"
           className="w-full sm:max-w-2xl overflow-y-auto"
@@ -224,14 +219,15 @@ export function EditScopeValueSheet({
                     </span>
                   )}
                 </Label>
-                <Textarea
+                <ProTextarea
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  rows={14}
+                  minHeight={200}
+                  autoGrow
                   className={
                     row.value_type === "object" || row.value_type === "array"
-                      ? "font-mono text-sm resize-y min-h-[200px]"
-                      : "resize-y min-h-[200px]"
+                      ? "font-mono text-sm"
+                      : undefined
                   }
                   placeholder={
                     row.value_type === "object" || row.value_type === "array"
@@ -240,7 +236,6 @@ export function EditScopeValueSheet({
                         ? "https://..."
                         : "Enter the value"
                   }
-                  style={INPUT_NO_ZOOM}
                   disabled={busy}
                 />
                 {jsonError && (
@@ -258,7 +253,7 @@ export function EditScopeValueSheet({
                 value={changeSummary}
                 onChange={(e) => setChangeSummary(e.target.value)}
                 placeholder="What changed and why?"
-                style={INPUT_NO_ZOOM}
+                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
               <p className="text-[10px] text-muted-foreground">

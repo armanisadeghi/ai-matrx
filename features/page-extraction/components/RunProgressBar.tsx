@@ -11,11 +11,19 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { Progress } from "@/components/ui/progress";
 import { selectRunProgress } from "@/features/page-extraction/redux/selectors";
+import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 
 export function RunProgressBar({ jobId }: { jobId: string | null }) {
-  const progress = useAppSelector((s) => selectRunProgress(s, jobId));
+  // Run progress is per-template — the "All" view aggregates results
+  // from every template, which doesn't have a single progress bar to
+  // show. Hide it; users wanting to watch a specific run pick that
+  // template in the View dropdown.
+  const isAll = isAllJobsView(jobId);
+  const progress = useAppSelector((s) =>
+    selectRunProgress(s, isAll ? null : jobId),
+  );
 
-  if (!jobId || progress.status === "idle") return null;
+  if (!jobId || isAll || progress.status === "idle") return null;
 
   const pct =
     progress.chunkCount > 0

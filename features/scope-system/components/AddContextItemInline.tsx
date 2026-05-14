@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createContextItem } from "@/features/scope-system/redux/contextItemsSlice";
@@ -19,8 +20,6 @@ interface AddContextItemInlineProps {
   scopeTypeId: string;
   labelPlural: string;
 }
-
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 export function AddContextItemInline({
   scopeId,
@@ -115,7 +114,7 @@ export function AddContextItemInline({
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={busy}
-          style={INPUT_NO_ZOOM}
+          style={{ fontSize: "16px" }}
         />
         {key && (
           <p className="text-[10px] font-mono text-muted-foreground">{key}</p>
@@ -125,12 +124,13 @@ export function AddContextItemInline({
         <label className="text-xs font-medium text-muted-foreground">
           Value for this one (optional)
         </label>
-        <Input
+        <ProTextarea
           placeholder="Leave blank to fill later"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           disabled={busy}
-          style={INPUT_NO_ZOOM}
+          minHeight={80}
+          autoGrow
         />
       </div>
       <div className="flex items-center gap-2 justify-end">

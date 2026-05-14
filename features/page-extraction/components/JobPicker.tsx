@@ -9,6 +9,12 @@
  * along (which would kick them out of an in-progress "New template"
  * session). See `pageExtractionSlice` for the full rationale.
  *
+ * The first option is always "All extractions" — backed by the
+ * `EXTRACTIONS_ALL_VIEW` sentinel. When chosen, the pane renders the
+ * cross-template aggregate (every result row for the file, with a
+ * Template column). Chunks/run-progress are per-template only and
+ * gracefully degrade to a hint when the All-view is active.
+ *
  * The sidebar's own SavedJobsList is the canonical way to "select" a
  * template — when the user clicks a sidebar row, both `selectedJob`
  * and `viewedJob` update, so the data view follows. The asymmetry is:
@@ -22,11 +28,15 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
-import { viewJobForFile } from "@/features/page-extraction/redux/pageExtractionSlice";
+import {
+  EXTRACTIONS_ALL_VIEW,
+  viewJobForFile,
+} from "@/features/page-extraction/redux/pageExtractionSlice";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 
 export function JobPicker({ fileId }: { fileId: string | null }) {
@@ -63,6 +73,10 @@ export function JobPicker({ fileId }: { fileId: string | null }) {
           <SelectValue placeholder="Pick a job to view…" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value={EXTRACTIONS_ALL_VIEW}>
+            All extractions ({jobs.length})
+          </SelectItem>
+          <SelectSeparator />
           {jobs.map((j) => (
             <SelectItem key={j.id} value={j.id}>
               {j.name}

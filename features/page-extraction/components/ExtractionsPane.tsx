@@ -95,8 +95,14 @@ export function ExtractionsPane({
         >
           {/* Show ALL results for the template. Filtering to the current
               page hid every row when the user was on page 1 and findings
-              were on pages 11+. Click a row to jump instead. */}
-          <ResultsTable jobId={jobId} onJumpToPage={onJumpToPage} />
+              were on pages 11+. Click a row to jump instead.
+              `fileId` is required for the All-view path, which fetches
+              every result row across every template. */}
+          <ResultsTable
+            jobId={jobId}
+            fileId={fileId}
+            onJumpToPage={onJumpToPage}
+          />
         </TabsContent>
       </Tabs>
     </div>

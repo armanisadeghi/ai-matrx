@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,7 +47,6 @@ interface AddScopeModalProps {
 }
 
 const NONE_VALUE = "__none__";
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 const newItemRow = (): ContextItemDraft => ({
   id: Math.random().toString(36).slice(2),
@@ -207,10 +206,7 @@ export function AddScopeModal({
 
   return (
     <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg overflow-y-auto"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Add a scope</SheetTitle>
           <SheetDescription>
@@ -229,7 +225,7 @@ export function AddScopeModal({
                 value={labelSingular}
                 onChange={(e) => handleSingularChange(e.target.value)}
                 placeholder="Client"
-                style={INPUT_NO_ZOOM}
+                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -242,7 +238,7 @@ export function AddScopeModal({
                   setLabelPlural(e.target.value);
                 }}
                 placeholder="Clients"
-                style={INPUT_NO_ZOOM}
+                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -260,13 +256,12 @@ export function AddScopeModal({
 
           <div className="space-y-1.5">
             <Label className="text-xs">Description (optional)</Label>
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What goes here?"
-              rows={2}
-              className="resize-none"
-              style={INPUT_NO_ZOOM}
+              minHeight={64}
+              autoGrow
               disabled={busy}
             />
           </div>
@@ -295,7 +290,7 @@ export function AddScopeModal({
                     value={row.display_name}
                     onChange={(e) => updateItemRow(row.id, e.target.value)}
                     disabled={busy}
-                    style={INPUT_NO_ZOOM}
+                    style={{ fontSize: "16px" }}
                   />
                   <Button
                     type="button"
@@ -362,7 +357,7 @@ export function AddScopeModal({
                       setSortOrder(parseInt(e.target.value, 10) || 0)
                     }
                     min={0}
-                    style={INPUT_NO_ZOOM}
+                    style={{ fontSize: "16px" }}
                     disabled={busy}
                   />
                 </div>
@@ -377,7 +372,7 @@ export function AddScopeModal({
                     onChange={(e) => setMaxAssignments(e.target.value)}
                     placeholder="Unlimited"
                     min={1}
-                    style={INPUT_NO_ZOOM}
+                    style={{ fontSize: "16px" }}
                     disabled={busy}
                   />
                   <p className="text-[10px] text-muted-foreground">
@@ -421,7 +416,7 @@ export function AddScopeModal({
                         addVariableKey();
                       }
                     }}
-                    style={INPUT_NO_ZOOM}
+                    style={{ fontSize: "16px" }}
                     disabled={busy}
                     className="flex-1"
                   />

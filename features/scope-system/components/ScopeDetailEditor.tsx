@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -33,14 +33,12 @@ import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { pickColorForId } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 
 interface ScopeDetailEditorProps {
   orgSlugOrId: string;
   scopeId: string;
 }
-
-const INPUT_NO_ZOOM: React.CSSProperties = { fontSize: "16px" };
 
 export function ScopeDetailEditor({
   orgSlugOrId,
@@ -86,7 +84,7 @@ export function ScopeDetailEditor({
   }
 
   const Icon = resolveIcon(scopeType.icon);
-  const color = pickColorForId(scopeType.id);
+  const color = resolveColor(scopeType);
 
   async function saveName() {
     if (!scope) return;
@@ -144,9 +142,7 @@ export function ScopeDetailEditor({
     try {
       await dispatch(deleteScope(scopeId)).unwrap();
       toast.success(`Deleted “${scope.name}”`);
-      router.push(
-        `/organizations/${orgSlugOrId}/scopes/${scopeType.id}`,
-      );
+      router.push(`/organizations/${orgSlugOrId}/scopes/${scopeType.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
       setDeleting(false);
@@ -170,7 +166,7 @@ export function ScopeDetailEditor({
             onClick={() => setEditingType(true)}
           >
             <Settings className="h-3.5 w-3.5 mr-1.5" />
-            Edit {scopeType.label_singular} settings
+            Edit scope type
           </Button>
           <Button
             variant="outline"
@@ -212,7 +208,7 @@ export function ScopeDetailEditor({
                   }}
                   className="text-xl font-bold h-auto py-1"
                   disabled={savingName}
-                  style={INPUT_NO_ZOOM}
+                  style={{ fontSize: "16px" }}
                 />
                 <Button
                   size="icon"
@@ -261,15 +257,14 @@ export function ScopeDetailEditor({
 
             {editingDescription ? (
               <div className="mt-3 space-y-2">
-                <Textarea
+                <ProTextarea
                   autoFocus
-                  rows={3}
+                  minHeight={80}
+                  autoGrow
                   value={descriptionDraft}
                   onChange={(e) => setDescriptionDraft(e.target.value)}
                   placeholder="Describe this scope (optional)"
                   disabled={savingDescription}
-                  style={INPUT_NO_ZOOM}
-                  className="resize-none"
                 />
                 <div className="flex items-center gap-2">
                   <Button
@@ -351,9 +346,7 @@ export function ScopeDetailEditor({
         onOpenChange={setEditingType}
         orgId={scopeType.organization_id}
         typeId={scopeType.id}
-        onDeleted={() =>
-          router.push(`/organizations/${orgSlugOrId}/scopes`)
-        }
+        onDeleted={() => router.push(`/organizations/${orgSlugOrId}/scopes`)}
       />
     </div>
   );

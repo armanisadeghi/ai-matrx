@@ -181,3 +181,28 @@ export function invalidateKey<T>(store: Store<T>, key: string): void {
 export function peekKey<T>(store: Store<T>, key: string): T | null {
   return store.cache.get(key)?.data ?? null;
 }
+
+/**
+ * Imperative write — replace the cached value for `key` and notify all
+ * subscribers. Used for optimistic updates: a mutator (e.g. a save call)
+ * can push the new shape into the cache immediately, without waiting for
+ * Realtime to round-trip the change. Realtime + invalidateKey will still
+ * fire later and converge to the canonical server state, so this is
+ * "fast-path"-only — never the source of truth.
+ *
+ * Pass a value to overwrite outright, or a function to derive next from
+ * previous (useful for upserts into a list).
+ */
+export function setKey<T>(
+  store: Store<T>,
+  key: string,
+  next: T | ((prev: T | null) => T),
+): void {
+  const entry = ensureEntry(store, key);
+  const resolved =
+    typeof next === "function"
+      ? (next as (prev: T | null) => T)(entry.data)
+      : next;
+  entry.data = resolved;
+  notify(entry);
+}
