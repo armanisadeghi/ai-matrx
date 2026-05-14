@@ -597,6 +597,8 @@ interface InitialCropViewportProps {
   controller: CropViewportPort;
   /** Tailwind classes for the viewport container — wrappers control sizing. */
   className?: string;
+  /** Shape preview overlay inside the crop box — circle for avatars, square (rounded) for logos. */
+  cropShape?: 'circle' | 'square';
 }
 
 /**
@@ -611,6 +613,7 @@ interface InitialCropViewportProps {
 export function InitialCropViewport({
   controller,
   className,
+  cropShape,
 }: InitialCropViewportProps) {
   const {
     setContainerRef,
@@ -717,6 +720,18 @@ export function InitialCropViewport({
               <div className="absolute left-1/3 top-0 bottom-0 border-l border-white/25" />
               <div className="absolute left-2/3 top-0 bottom-0 border-l border-white/25" />
             </div>
+
+            {/* Shape preview — darkens the corners outside the target shape so the user
+                sees a live preview of how the final avatar/logo will be cropped */}
+            {cropShape && (
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  borderRadius: cropShape === 'circle' ? '50%' : '8px',
+                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                }}
+              />
+            )}
 
             {/* Edge handles */}
             <button

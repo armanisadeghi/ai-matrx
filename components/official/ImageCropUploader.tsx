@@ -272,11 +272,12 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
 interface CropStepProps {
     file: File;
     defaultAspect?: number;
+    cropShape?: 'circle' | 'square';
     onConfirm: (cropped: File) => void;
     onCancel: () => void;
 }
 
-function CropStep({ file, defaultAspect, onConfirm, onCancel }: CropStepProps) {
+function CropStep({ file, defaultAspect, cropShape, onConfirm, onCancel }: CropStepProps) {
     const ctrl = useInitialCropController({
         files: [file],
         onComplete: (results) => { if (results[0]) onConfirm(results[0]); },
@@ -292,7 +293,7 @@ function CropStep({ file, defaultAspect, onConfirm, onCancel }: CropStepProps) {
 
     return (
         <div className="flex flex-col rounded-xl overflow-hidden border border-border bg-zinc-950">
-            <InitialCropViewport controller={ctrl} className="h-64" />
+            <InitialCropViewport controller={ctrl} className="h-64" cropShape={cropShape} />
             <InitialCropAspectBar controller={ctrl} className="bg-card border-t border-border" />
             <div className="flex items-center justify-between gap-2 p-3 bg-card border-t border-border">
                 <button
@@ -494,6 +495,7 @@ export function ImageCropUploader({
                 <CropStep
                     file={pendingFile}
                     defaultAspect={defaultAspect}
+                    cropShape={previewShape}
                     onConfirm={(f) => void handleCropConfirm(f)}
                     onCancel={handleCropCancel}
                 />
