@@ -18,8 +18,13 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import {
+  selectUser,
+  selectUserId,
+  selectUserAvatarUrl,
+} from "@/lib/redux/selectors/userSelectors";
+import { setUserMetadata } from "@/lib/redux/slices/userProfileSlice";
 import {
   AlertTriangle,
   AtSign,
@@ -39,6 +44,10 @@ import {
 } from "lucide-react";
 import { FaGoogle, FaGithub } from "react-icons/fa";
 
+import { ImageCropModal } from "@/components/official/ImageCropModal";
+import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
+import { CloudFolders } from "@/features/files";
+import { toast } from "sonner";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,13 +68,6 @@ import { SocialHandleListEditor } from "./SocialHandleListEditor";
 import { EmergencyContactListEditor } from "./EmergencyContactListEditor";
 import { AddressFields, type AddressValues } from "./AddressFields";
 
-// Avatar uploader is heavy (drag/drop, image processing, Cloudinary calls);
-// keep it lazy so the rest of the form mounts instantly.
-const ProfilePhotoTab = React.lazy(() =>
-  import("@/features/image-manager/components/ProfilePhotoTab").then((m) => ({
-    default: m.ProfilePhotoTab,
-  })),
-);
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -252,8 +254,28 @@ export default UserProfilePage;
 
 function HeaderSection({ account }: { account: UserAccountData }) {
   const user = useAppSelector(selectUser);
+  const userId = useAppSelector(selectUserId);
+  const currentAvatarUrl = useAppSelector(selectUserAvatarUrl);
+  const dispatch = useAppDispatch();
   const [photoOpen, setPhotoOpen] = useState(false);
-  const avatarUrl = account.avatar_url ?? account.picture;
+
+  const avatarUrl = currentAvatarUrl ?? account.avatar_url ?? account.picture ?? null;
+
+  const handlePhotoComplete = async (result: ImageUploaderResult | null) => {
+    const url = result?.primary_url ?? result?.image_url ?? null;
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_url: url, picture: url }),
+      });
+      if (!res.ok) throw new Error("Failed to save photo");
+      dispatch(setUserMetadata({ avatarUrl: url, picture: url }));
+      toast.success(url ? "Profile photo updated" : "Profile photo removed");
+    } catch {
+      toast.error("Could not save profile photo — please try again");
+    }
+  };
 
   return (
     <section
@@ -261,29 +283,29 @@ function HeaderSection({ account }: { account: UserAccountData }) {
       className="rounded-lg border border-border bg-card p-4 md:p-5"
     >
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:gap-6">
-        <button
-          type="button"
-          onClick={() => setPhotoOpen((o) => !o)}
-          className="group relative mx-auto h-20 w-20 overflow-hidden rounded-full bg-muted ring-2 ring-border md:mx-0 md:h-24 md:w-24"
-          aria-label="Change profile photo"
-        >
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt="Profile"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 80px, 96px"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-              <UserIcon className="h-9 w-9" />
-            </div>
-          )}
-          <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
-            <Upload className="h-5 w-5 text-white" />
-          </span>
-        </button>
+        <div className="relative mx-auto shrink-0 md:mx-0">
+          <button
+            type="button"
+            onClick={() => setPhotoOpen(true)}
+            className="group relative h-20 w-20 overflow-hidden rounded-full bg-muted ring-2 ring-border md:h-24 md:w-24 flex items-center justify-center"
+            aria-label="Change profile photo"
+          >
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt="Profile"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 80px, 96px"
+              />
+            ) : (
+              <UserIcon className="h-9 w-9 text-muted-foreground" />
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+              <Upload className="h-5 w-5 text-white" />
+            </span>
+          </button>
+        </div>
         <div className="flex-1 text-center md:text-left">
           <h2 className="text-xl font-semibold text-foreground md:text-2xl">
             {account.display_name ||
@@ -315,26 +337,32 @@ function HeaderSection({ account }: { account: UserAccountData }) {
           </div>
         </div>
         <Button
-          variant={photoOpen ? "outline" : "secondary"}
+          variant="secondary"
           size="sm"
-          onClick={() => setPhotoOpen((o) => !o)}
+          onClick={() => setPhotoOpen(true)}
         >
-          {photoOpen ? "Close uploader" : "Change photo"}
+          Change photo
         </Button>
       </div>
-      {photoOpen && (
-        <div className="mt-4 rounded-md border border-border/60 bg-background">
-          <React.Suspense
-            fallback={
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            }
-          >
-            <ProfilePhotoTab />
-          </React.Suspense>
-        </div>
-      )}
+
+      <ImageCropModal
+        open={photoOpen}
+        onOpenChange={setPhotoOpen}
+        onComplete={(result) => void handlePhotoComplete(result)}
+        currentUrl={avatarUrl}
+        preset="avatar"
+        folder={
+          userId
+            ? `${CloudFolders.IMAGES_AVATARS}/${userId}`
+            : CloudFolders.IMAGES_AVATARS
+        }
+        visibility="public"
+        title="Update Profile Photo"
+        label="Photo"
+        defaultAspect={1}
+        currentImageShape="circle"
+        currentImageAlt="Profile photo"
+      />
     </section>
   );
 }
