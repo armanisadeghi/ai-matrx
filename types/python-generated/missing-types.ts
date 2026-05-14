@@ -93,10 +93,23 @@ export interface AudioOutputRenderBlock {
 export interface ImageOutputRenderBlock {
   type: "image_output";
   content: string;
-  /** Python sends: { url: string; mime_type: string } — see ImageOutputData in stream-events.ts */
+  /**
+   * Python sends ImageOutputData — see stream-events.ts.
+   * Canonical S3 key is <owner>/<file_id> (no subfolder, no extension) so
+   * file_id is self-identifying from the URL path when present.
+   * Priority for display: cdn_url → file handler (via file_id) → signed_url → url
+   */
   data: {
     url: string;
     mime_type: string;
+    /** cloud_files UUID. S3 key is <owner>/<file_id>. */
+    file_id?: string | null;
+    /** Permanent CDN URL (public files). Prefer over signed_url when present. */
+    cdn_url?: string | null;
+    /** Presigned S3 URL (~1h expiry). */
+    signed_url?: string | null;
+    /** Download-disposition URL. */
+    download_url?: string | null;
   };
   metadata?: Record<string, unknown>;
 }

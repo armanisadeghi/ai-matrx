@@ -40,20 +40,32 @@ import { toast } from "sonner";
 import { useFileAs, useFileMutation } from "@/features/files";
 import type { FileSource } from "@/features/files";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 
-// Extract the cloud_files UUID from an S3 path: /{userId}/{folder}/{uuid}.{ext}
-// AI-generated images are registered in cloud_files at upload time, so we
-// route through the universal handler (which auto-refreshes signed URLs via
-// the expiry-wheel and returns the right URL flavour). When the URL doesn't
-// carry a recognisable UUID we render it directly.
-function extractCloudFileId(url: string): string | null {
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Canonical S3 key scheme: /<owner_id>/<file_id> (no subfolder, no extension).
+ * Extracts the file_id from the second path segment when it is a valid UUID.
+ * Falls back to stripping extension from the last segment for legacy paths.
+ *
+ * Priority: always prefer the explicit fileId prop over URL extraction.
+ */
+function extractCloudFileIdFromUrl(url: string): string | null {
   try {
     const parts = new URL(url).pathname.split("/").filter(Boolean);
+    // Canonical scheme: /<owner>/<file_id> — second segment is file_id
+    if (parts.length >= 2) {
+      const candidate = parts[1];
+      if (UUID_RE.test(candidate)) return candidate;
+    }
+    // Legacy fallback: last segment may be <uuid>.ext
     const last = parts[parts.length - 1] ?? "";
-    const uuid = last.replace(/\.[^.]+$/, "");
-    const uuidRe =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRe.test(uuid) ? uuid : null;
+    const stripped = last.replace(/\.[^.]+$/, "");
+    if (UUID_RE.test(stripped)) return stripped;
+    return null;
   } catch {
     return null;
   }
@@ -62,6 +74,14 @@ function extractCloudFileId(url: string): string | null {
 export interface ImageOutputBlockProps {
   url: string;
   mimeType?: string;
+  /** cloud_files UUID from the stream event. Canonical S3 key is <owner>/<file_id>. */
+  fileId?: string | null;
+  /** Permanent CDN URL (public files). Preferred for display when present. */
+  cdnUrl?: string | null;
+  /** Explicit presigned URL (~1h expiry). Used when file_id is unavailable. */
+  signedUrl?: string | null;
+  /** Download-disposition URL. Used for the download action. */
+  downloadUrl?: string | null;
 }
 
 // ─── Shimmer skeleton ─────────────────────────────────────────────────────────
@@ -120,20 +140,74 @@ function useLongPress(onLongPress: () => void, ms = 500) {
 const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   url: initialUrl,
   mimeType,
+  fileId: fileIdProp,
+  cdnUrl,
+  signedUrl,
+  downloadUrl,
 }) => {
-  const fileId = extractCloudFileId(initialUrl);
-  const source: FileSource | null = fileId
-    ? { kind: "file_id", fileId }
+  const isAdmin = useAppSelector(selectIsAdmin);
+
+  // ── File ID resolution ────────────────────────────────────────────────────
+  // 1. Explicit prop from stream event (most reliable — Python sets this)
+  // 2. Extract from canonical URL path: /<owner>/<file_id> (no extension)
+  // 3. Neither → raw presigned URL only, will expire; warn dev/admin
+  const resolvedFileId =
+    fileIdProp ?? extractCloudFileIdFromUrl(initialUrl) ?? null;
+
+  const usingPresignedFallback = !resolvedFileId;
+
+  const source: FileSource | null = resolvedFileId
+    ? { kind: "file_id", fileId: resolvedFileId }
     : null;
-  const { result, status, error: resolveError } = useFileAs(source, {
+
+  const {
+    result,
+    status,
+    error: resolveError,
+  } = useFileAs(source, {
     kind: "html_src",
   });
-  const url = result ?? initialUrl;
+
+  // ── Display URL priority ──────────────────────────────────────────────────
+  // cdn_url: permanent (public files) — best choice, no expiry
+  // file handler result: auto-refreshed signed URL via expiry-wheel
+  // signed_url / initialUrl: presigned fallback (~1h expiry)
+  const url = cdnUrl ?? result ?? signedUrl ?? initialUrl;
   const loading = status === "resolving";
-  const error = resolveError?.message ?? null;
+
+  // Show error only when there's genuinely nothing to display
+  const error =
+    status === "error" && !url
+      ? (resolveError?.message ?? "Unknown error")
+      : null;
+
   // No imperative refresh — the handler's expiry-wheel auto-mints new URLs.
   const refresh = () => {};
+
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // Warn in dev or for admins when we're using a raw presigned URL with no
+  // file_id. This means URL auto-refresh won't work and the image will break
+  // after the presigned URL expires (~1h). Python should include file_id.
+  useEffect(() => {
+    if (!usingPresignedFallback) return;
+    const msg =
+      "ImageOutputBlock: no file_id available — serving raw presigned URL " +
+      "(expires ~1h, no auto-refresh). Python should include file_id in the " +
+      "image_output event.";
+    if (process.env.NODE_ENV === "development") {
+      console.warn(msg);
+    }
+    if (isAdmin) {
+      toast.warning("Image loaded from temporary URL (expires ~1h)", {
+        description: "Python did not send file_id — auto-refresh unavailable.",
+        duration: 8000,
+      });
+    }
+    // Only fire once per URL, not on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -142,6 +216,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
 
   useEffect(() => {
     setImageLoaded(false);
+    setImgError(false);
   }, [url]);
 
   const ext =
@@ -152,8 +227,10 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   const handleDownload = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
+    // Prefer the explicit download URL (attachment disposition) over display URL
+    const fetchUrl = downloadUrl ?? url;
     try {
-      const response = await fetch(url);
+      const response = await fetch(fetchUrl);
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -180,13 +257,13 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
   };
 
   const handleShare = async () => {
-    if (!fileId) {
+    if (!resolvedFileId) {
       await handleCopyLink();
       return;
     }
     try {
-      await fileMutation.setVisibility(fileId, "public");
-      const { url: publicUrl } = await fileMutation.signedUrl(fileId, {
+      await fileMutation.setVisibility(resolvedFileId, "public");
+      const { url: publicUrl } = await fileMutation.signedUrl(resolvedFileId, {
         expiresIn: 604_800,
       });
       await navigator.clipboard.writeText(publicUrl);
@@ -225,7 +302,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
 
   // ── Error state ────────────────────────────────────────────────────────────
 
-  if (error) {
+  if (error || imgError) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-lg bg-muted/30 px-4 py-6 my-2">
         <AlertCircle className="w-5 h-5 text-muted-foreground" />
@@ -323,7 +400,7 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
                 imageLoaded ? "opacity-100" : "opacity-0",
               ].join(" ")}
               onLoad={() => setImageLoaded(true)}
-              onError={undefined}
+              onError={() => setImgError(true)}
             />
 
             {/* Hover toolbar (desktop) */}
@@ -452,7 +529,6 @@ const ImageOutputBlock: React.FC<ImageOutputBlockProps> = ({
               src={url}
               alt="AI generated image"
               className="max-w-full max-h-[85dvh] object-contain rounded-lg"
-              onError={undefined}
             />
             <button
               onClick={() => setIsExpanded(false)}

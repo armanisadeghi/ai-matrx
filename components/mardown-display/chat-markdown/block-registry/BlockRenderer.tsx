@@ -232,17 +232,19 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
 
     case "image_output": {
-      // Python sends: { url: string; mime_type: string }
-      // Component wants: { url: string; mimeType?: string }
-      // TODO(python): rename mime_type → mimeType in the Python ImageOutputData schema.
       const sd = block.serverData ?? {};
-      const url = sd.url as string | undefined;
+      const url =
+        (sd.url as string | undefined) ?? (sd.signed_url as string | undefined);
       if (!url) return null;
       return (
         <BlockComponents.ImageOutputBlock
           key={index}
           url={url}
           mimeType={sd.mime_type as string | undefined}
+          fileId={sd.file_id as string | null | undefined}
+          cdnUrl={sd.cdn_url as string | null | undefined}
+          signedUrl={sd.signed_url as string | null | undefined}
+          downloadUrl={sd.download_url as string | null | undefined}
         />
       );
     }
