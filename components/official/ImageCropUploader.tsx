@@ -384,8 +384,14 @@ export function ImageCropUploader({
     const { upload } = useFileUpload();
     const [stage, setStage] = useState<Stage>('pick');
     const [pendingFile, setPendingFile] = useState<File | null>(null);
+    const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [showPicker, setShowPicker] = useState(!currentUrl);
+
+    // Clean up the preview object URL when the uploading state exits.
+    useEffect(() => {
+        return () => { if (uploadPreviewUrl) URL.revokeObjectURL(uploadPreviewUrl); };
+    }, [uploadPreviewUrl]);
 
     const handleError = useCallback((msg: string) => {
         setErrorMsg(msg);
@@ -400,6 +406,8 @@ export function ImageCropUploader({
     }, []);
 
     const handleCropConfirm = useCallback(async (cropped: File) => {
+        const previewUrl = URL.createObjectURL(cropped);
+        setUploadPreviewUrl(previewUrl);
         setStage('uploading');
         try {
             // upload() with preset routes through POST /assets which already
@@ -418,9 +426,11 @@ export function ImageCropUploader({
                 image_url: result.image_url ?? normalized.url ?? null,
             });
             setPendingFile(null);
+            setUploadPreviewUrl(null);
             setStage('pick');
             setShowPicker(false);
         } catch (err) {
+            setUploadPreviewUrl(null);
             handleError(extractErrorMessage(err));
         }
     }, [upload, preset, folder, visibility, onComplete, handleError]);
@@ -486,11 +496,30 @@ export function ImageCropUploader({
                 />
             )}
 
-            {/* Uploading */}
+            {/* Uploading — show the cropped image dimmed with a spinner overlay */}
             {stage === 'uploading' && (
-                <div className="flex items-center justify-center gap-2 py-6 rounded-xl border border-border bg-muted/20">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Uploading & generating variants…</p>
+                <div className="relative rounded-xl overflow-hidden border border-border bg-muted/20">
+                    {uploadPreviewUrl ? (
+                        <>
+                            <img
+                                src={uploadPreviewUrl}
+                                alt="Uploading preview"
+                                className="w-full object-cover opacity-40 pointer-events-none select-none"
+                                style={{ maxHeight: 256 }}
+                            />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary drop-shadow" />
+                                <p className="text-xs font-medium text-foreground/80 drop-shadow">
+                                    Uploading & generating variants…
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-center gap-2 py-6">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            <p className="text-sm text-muted-foreground">Uploading & generating variants…</p>
+                        </div>
+                    )}
                 </div>
             )}
 
