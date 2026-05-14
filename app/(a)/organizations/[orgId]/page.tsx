@@ -18,6 +18,9 @@ import {
   Puzzle,
   SquareFunction,
   Zap,
+  FolderTree,
+  Plus,
+  LayoutTemplate,
 } from "lucide-react";
 import { FaIndent } from "react-icons/fa6";
 import { LuNotepadText } from "react-icons/lu";
@@ -36,6 +39,15 @@ import { InlineMediaRef } from "@/features/files";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { countOrgSharedResources } from "@/utils/permissions/orgResources";
 import { supabase } from "@/utils/supabase/client";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  fetchScopeTypes,
+  selectScopeTypesByOrg,
+} from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
+import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
+import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
+import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
 
 export default function OrganizationOverviewPage() {
   const params = useParams();
@@ -167,6 +179,26 @@ export default function OrganizationOverviewPage() {
     scopeId: organization?.id,
     autoFetch: Boolean(organization?.id),
   });
+
+  const dispatch = useAppDispatch();
+  const scopeTypes = useAppSelector((s) =>
+    selectScopeTypesByOrg(s, organization?.id ?? ""),
+  );
+  const [addScopeOpen, setAddScopeOpen] = React.useState(false);
+  const [galleryOpen, setGalleryOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!organization?.id) return;
+    dispatch(fetchScopeTypes(organization.id));
+    dispatch(fetchScopes({ org_id: organization.id }));
+  }, [dispatch, organization?.id]);
+
+  function openAddScope() {
+    setAddScopeOpen(true);
+  }
+  function openTemplateGallery() {
+    setGalleryOpen(true);
+  }
 
   if (loading) {
     return (
@@ -476,6 +508,86 @@ export default function OrganizationOverviewPage() {
             ))}
           </div>
         </Card>
+
+        {/* Scopes */}
+        {scopeTypes.length === 0 ? (
+          <Card className="p-6 md:p-8 space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="text-sky-600 dark:text-sky-400 shrink-0">
+                <FolderTree className="h-7 w-7" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold mb-1">
+                  Set up your scopes
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Scopes group what your team works on — clients, products,
+                  teams, anything. Define a few and they’ll show up here with
+                  all their details.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              <Button size="sm" onClick={openAddScope}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Add a scope
+              </Button>
+              <Button size="sm" variant="outline" onClick={openTemplateGallery}>
+                <LayoutTemplate className="h-4 w-4 mr-1.5" />
+                Browse templates
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {scopeTypes.map((scopeType) => (
+              <OrgHomeScopeSection
+                key={scopeType.id}
+                scopeType={scopeType}
+                orgId={organization.id}
+                orgSlugOrId={slug}
+              />
+            ))}
+
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openAddScope}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Add scope
+              </Button>
+              <span className="text-muted-foreground/50">·</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openTemplateGallery}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LayoutTemplate className="h-4 w-4 mr-1.5" />
+                Add from template
+              </Button>
+            </div>
+          </>
+        )}
+
+        {organization?.id && (
+          <>
+            <AddScopeModal
+              open={addScopeOpen}
+              onOpenChange={setAddScopeOpen}
+              orgId={organization.id}
+            />
+            <TemplateGalleryDrawer
+              open={galleryOpen}
+              onOpenChange={setGalleryOpen}
+              orgId={organization.id}
+              personalOnly={organization.isPersonal ? true : undefined}
+            />
+          </>
+        )}
       </div>
     </div>
   );

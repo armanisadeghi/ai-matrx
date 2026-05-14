@@ -100,6 +100,9 @@ import scopeTypesReducer from "@/features/agent-context/redux/scope/scopeTypesSl
 import scopesReducer from "@/features/agent-context/redux/scope/scopesSlice";
 import scopeAssignmentsReducer from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
 import scopeContextReducer from "@/features/agent-context/redux/scope/scopeContextSlice";
+import contextItemsReducer from "@/features/scope-system/redux/contextItemsSlice";
+import scopeValuesReducer from "@/features/scope-system/redux/scopeValuesSlice";
+import templatesReducer from "@/features/scope-system/redux/templatesSlice";
 import promptEditorReducer from "./slices/promptEditorSlice";
 import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
 import { messageActionsReducer } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
@@ -294,6 +297,9 @@ export const slimReducerMap = {
   scopes: scopesReducer,
   scopeAssignments: scopeAssignmentsReducer,
   scopeContext: scopeContextReducer,
+  contextItems: contextItemsReducer,
+  scopeValues: scopeValuesReducer,
+  templates: templatesReducer,
 
   tasksUi: taskUiReducer,
   quickTasksWindow: quickTasksWindowReducer,

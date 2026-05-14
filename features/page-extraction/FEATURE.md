@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-12`
+**Last updated:** `2026-05-13`
 
 ---
 
@@ -148,3 +148,14 @@ Python side ([`aidream/api/routers/page_extraction.py`](../../../aidream/aidream
 
 - **2026-05-12** — Phase 1 scaffold (storage + minimal fan-out + first PDF Extractor wiring).
 - **2026-05-12** — Phase 2 rework: user-driven config, source variations, live chunk preview, tabbed Extractions pane, removed all hardcoded defaults. Migration `page_extraction_variations_and_strategy.sql` adds `source_variations`, `chunking_strategy`, `is_saved`.
+- **2026-05-13** — Surface integration:
+  - Declared `matrx-user/content-extractor` surface ([content-extractor.manifest.ts](../tool-registry/surfaces/manifests/content-extractor.manifest.ts)) with 16 SurfaceValues — 11 surface-specific (`filename`, `page_numbers`, `clean_text`, `raw_text`, `pdf_page`, `chunk_index`, `chunk_count`, `file_id`, `processed_document_id`, `job_id`, `run_id`) + 5 baseline values (`selection`, `content`, `text_before`, `text_after`, `context`) for cross-surface consistency. The baseline values are kept under "Show advanced" in the mapping picker because chunked runs have no selection concept — they're emitted as legacy aliases for `clean_text` (back-compat with Phase-1 Jobs) but new mappings should target `clean_text` / `raw_text` / `pdf_page` directly. The three chunk-content values use `"Chunk text (cleaned)" / "Chunk text (raw OCR)" / "Chunk pages (PDF)"` labels so the user reads them as "the chunk's content in this format" rather than four independent text variables. Seeded `ui_surface` row + synced values to `ui_surface_value`.
+  - Replaced the read-only `VariableMappingPreview` with a true `VariableMappingEditor` ([components/VariableMappingEditor.tsx](components/VariableMappingEditor.tsx)) — one dropdown per agent variable, populated directly from the manifest registry. The dropdown has TWO tiers:
+    - **Primary** (always visible) — `Chunk content (the agent's input)`, `Chunk location`, `Document`, `Run`, `Other`. These are the values that meaningfully exist for a chunked run.
+    - **Advanced** (collapsed behind "Show advanced") — `selection`, `content`, `text_before`, `text_after`. These are baseline standards used by widget-style surfaces (notes editor, code editor, context menus) but conceptually mismatched with chunked runs. They're kept in the manifest for system consistency and auto-expand if any current mapping uses them.
+  - Items render single-line as `Label  snake_case_name`. Items gated by an inactive variation (e.g. `clean_text` when "Cleaned text" is unticked below) render muted, and any agent variable mapped to one shows an inline warning. Already-claimed surface keys are disabled in other rows to prevent double-binding. `deriveVariableMapping` is opt-in via an "Auto-suggest" button — never auto-applied.
+  - Refactored [`ChunkingConfigForm`](components/ChunkingConfigForm.tsx) into three states:
+    1. **List-only** — no template selected → header + `SavedJobsList` + "New" button.
+    2. **Read-only** — saved template selected → header + `SavedJobsList` + `TemplateReadOnlyView` ([components/TemplateReadOnlyView.tsx](components/TemplateReadOnlyView.tsx)) with Edit + Run buttons.
+    3. **Editing** — full form (only rendered when the user clicked Edit or New). Saved state lives in Redux (`pageExtraction.editingByFile`).
+  - `pageExtractionSlice` adds `editingByFile: Record<string, boolean>` + `setEditing` action; `selectors.ts` exposes `selectIsEditingForFile`.

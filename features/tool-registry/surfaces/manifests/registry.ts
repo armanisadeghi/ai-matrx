@@ -20,11 +20,13 @@
 import type { SurfaceManifest } from "@/features/tool-registry/surfaces/types";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { codeEditorManifest } from "./code-editor.manifest";
+import { contentExtractorManifest } from "./content-extractor.manifest";
 
 /** All registered surface manifests. Import order does not matter. */
 export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
   notesEditorManifest,
   codeEditorManifest,
+  contentExtractorManifest,
 ];
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */

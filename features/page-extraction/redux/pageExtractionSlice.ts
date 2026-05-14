@@ -135,12 +135,23 @@ export interface PageExtractionState {
   selectedJobByFile: Record<string, string>;
   /** fileId → in-memory chunking config the user is currently building. */
   draftsByFile: Record<string, ChunkingConfigDraft>;
+  /**
+   * fileId → whether the ChunkingConfigForm is currently in EDIT mode.
+   *
+   * When false (and a job is selected), the form panel renders a clean
+   * read-only display of the selected template plus Edit + Run buttons.
+   * When true (or no job is selected and the user clicked "+ New"),
+   * the full editor renders. This separation keeps the "I just want to
+   * run this" flow from being buried under the editor every time.
+   */
+  editingByFile: Record<string, boolean>;
 }
 
 const initialState: PageExtractionState = {
   activeRuns: {},
   selectedJobByFile: {},
   draftsByFile: {},
+  editingByFile: {},
 };
 
 const slice = createSlice({
@@ -388,6 +399,17 @@ const slice = createSlice({
     clearDraft(state, action: PayloadAction<{ fileId: string }>) {
       delete state.draftsByFile[action.payload.fileId];
     },
+
+    // ── Editing mode (form vs read-only) ─────────────────────────────────
+
+    setEditing(
+      state,
+      action: PayloadAction<{ fileId: string; editing: boolean }>,
+    ) {
+      const { fileId, editing } = action.payload;
+      if (editing) state.editingByFile[fileId] = true;
+      else delete state.editingByFile[fileId];
+    },
   },
 });
 
@@ -405,6 +427,7 @@ export const {
   patchDraft,
   toggleDraftVariation,
   clearDraft,
+  setEditing,
 } = slice.actions;
 
 export default slice.reducer;
