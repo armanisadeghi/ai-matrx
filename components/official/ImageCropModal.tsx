@@ -120,6 +120,7 @@ function ModalContent({
                 defaultAspect={defaultAspect}
                 visibility={visibility}
                 folder={folder}
+                previewShape={currentImageShape}
                 onComplete={onDone}
                 onError={(msg) => toast.error(msg)}
             />

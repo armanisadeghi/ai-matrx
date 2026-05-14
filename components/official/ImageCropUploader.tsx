@@ -72,6 +72,8 @@ export interface ImageCropUploaderProps {
     className?: string;
     /** Aspect ratio to pre-lock on (e.g. 1 for 1:1). Default: free. */
     defaultAspect?: number;
+    /** Shape of the upload preview shown while the image is being uploaded. */
+    previewShape?: 'circle' | 'square';
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -380,6 +382,7 @@ export function ImageCropUploader({
     disabled = false,
     className,
     defaultAspect,
+    previewShape = 'square',
 }: ImageCropUploaderProps) {
     const { upload } = useFileUpload();
     const [stage, setStage] = useState<Stage>('pick');
@@ -496,30 +499,32 @@ export function ImageCropUploader({
                 />
             )}
 
-            {/* Uploading — show the cropped image dimmed with a spinner overlay */}
+            {/* Uploading — show the cropped image shaped to match the final display */}
             {stage === 'uploading' && (
-                <div className="relative rounded-xl overflow-hidden border border-border bg-muted/20">
+                <div className="flex flex-col items-center gap-3 py-5">
                     {uploadPreviewUrl ? (
-                        <>
+                        <div className="relative shrink-0">
                             <img
                                 src={uploadPreviewUrl}
                                 alt="Uploading preview"
-                                className="w-full object-cover opacity-40 pointer-events-none select-none"
-                                style={{ maxHeight: 256 }}
+                                className={cn(
+                                    'object-cover opacity-50 pointer-events-none select-none',
+                                    previewShape === 'circle'
+                                        ? 'h-24 w-24 rounded-full'
+                                        : 'h-24 w-24 rounded-xl',
+                                )}
                             />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary drop-shadow" />
-                                <p className="text-xs font-medium text-foreground/80 drop-shadow">
-                                    Uploading & generating variants…
-                                </p>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Loader2 className={cn(
+                                    'animate-spin text-primary drop-shadow-md',
+                                    'h-8 w-8',
+                                )} />
                             </div>
-                        </>
-                    ) : (
-                        <div className="flex items-center justify-center gap-2 py-6">
-                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                            <p className="text-sm text-muted-foreground">Uploading & generating variants…</p>
                         </div>
+                    ) : (
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     )}
+                    <p className="text-xs text-muted-foreground">Uploading & generating variants…</p>
                 </div>
             )}
 
