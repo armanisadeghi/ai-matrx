@@ -278,7 +278,7 @@ export default function SettingsLayoutClient({
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-h-0 overflow-y-auto bg-transparent">
+        <main className="flex-1 min-h-0 overflow-y-auto bg-transparent pb-24 md:pb-0">
           {children}
         </main>
       </div>

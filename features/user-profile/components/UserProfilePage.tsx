@@ -282,8 +282,8 @@ function HeaderSection({ account }: { account: UserAccountData }) {
       id={PROFILE_SECTION_IDS.header}
       className="rounded-lg border border-border bg-card p-4 md:p-5"
     >
-      <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:gap-6">
-        <div className="relative mx-auto shrink-0 md:mx-0">
+      <div className="flex flex-col items-center gap-4 md:flex-row md:items-center md:gap-6">
+        <div className="relative shrink-0">
           <button
             type="button"
             onClick={() => setPhotoOpen(true)}
@@ -306,7 +306,7 @@ function HeaderSection({ account }: { account: UserAccountData }) {
             </span>
           </button>
         </div>
-        <div className="flex-1 text-center md:text-left">
+        <div className="w-full flex-1 text-center md:text-left">
           <h2 className="text-xl font-semibold text-foreground md:text-2xl">
             {account.display_name ||
               account.full_name ||
