@@ -989,6 +989,26 @@
     font-size: 1.0625rem; /* Match body font size for form elements */
   }
 
+  /* Native date/time pickers: tell the browser which color scheme to use so
+     the calendar/clock icon and popup match the app theme. Without this the
+     picker icon is always rendered in the OS default (usually dark) even when
+     the app is in dark mode, making it invisible on dark backgrounds. */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"] {
+    color-scheme: light;
+  }
+
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="datetime-local"],
+  .dark input[type="month"],
+  .dark input[type="week"] {
+    color-scheme: dark;
+  }
+
   /* RTL/Arabic font size adjustments - make RTL text slightly larger for better readability */
   .rtl,
   [dir="rtl"] {

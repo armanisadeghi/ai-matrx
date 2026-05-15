@@ -68,7 +68,6 @@ import { SocialHandleListEditor } from "./SocialHandleListEditor";
 import { EmergencyContactListEditor } from "./EmergencyContactListEditor";
 import { AddressFields, type AddressValues } from "./AddressFields";
 
-
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const PROVIDER_ICONS: Record<string, { icon: React.ReactNode; color: string }> =
@@ -259,7 +258,8 @@ function HeaderSection({ account }: { account: UserAccountData }) {
   const dispatch = useAppDispatch();
   const [photoOpen, setPhotoOpen] = useState(false);
 
-  const avatarUrl = currentAvatarUrl ?? account.avatar_url ?? account.picture ?? null;
+  const avatarUrl =
+    currentAvatarUrl ?? account.avatar_url ?? account.picture ?? null;
 
   const handlePhotoComplete = async (result: ImageUploaderResult | null) => {
     const url = result?.primary_url ?? result?.image_url ?? null;
@@ -877,23 +877,18 @@ function SectionAnchor({
       id={id}
       className="scroll-mt-16 rounded-lg border border-border bg-card p-3 md:p-4"
     >
-      <header
-        ref={headerRef}
-        className="mb-3 flex items-start justify-between gap-3"
-      >
-        <div className="flex items-start gap-2.5">
-          <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-md bg-muted text-muted-foreground">
+      <header ref={headerRef} className="mb-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
             <Icon className="h-3.5 w-3.5" />
           </span>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-            {description && (
-              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-                {description}
-              </p>
-            )}
-          </div>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
+        {description && (
+          <p className="mt-1 text-xs leading-snug text-muted-foreground">
+            {description}
+          </p>
+        )}
       </header>
       <div>{children}</div>
       {footer && (

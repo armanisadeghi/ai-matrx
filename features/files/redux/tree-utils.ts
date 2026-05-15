@@ -15,6 +15,18 @@ import type {
 } from "@/features/files/types";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 
+const EMPTY_SORTED_IDS: string[] = [];
+
+/**
+ * Stable empty folder/file id lists — never allocate `{ folderIds: [], fileIds: [] }`
+ * inline inside Redux selectors or `useAppSelector` (new reference each call →
+ * Strict Mode stability warnings + avoidable rerenders).
+ */
+export const EMPTY_TREE_CHILDREN: TreeChildren = {
+  folderIds: EMPTY_SORTED_IDS,
+  fileIds: EMPTY_SORTED_IDS,
+};
+
 // ---------------------------------------------------------------------------
 // Ancestry
 // ---------------------------------------------------------------------------
@@ -224,6 +236,10 @@ export function sortChildren(
   sortBy: SortBy,
   sortDir: SortDirection,
 ): TreeChildren {
+  if (children.folderIds.length === 0 && children.fileIds.length === 0) {
+    return EMPTY_TREE_CHILDREN;
+  }
+
   const folderNodes = children.folderIds
     .map((id) => foldersById[id])
     .filter(Boolean)
@@ -237,6 +253,10 @@ export function sortChildren(
   const sign = sortDir === "asc" ? 1 : -1;
   folderNodes.sort((a, b) => sign * compareNodes(a, b, sortBy));
   fileNodes.sort((a, b) => sign * compareNodes(a, b, sortBy));
+
+  if (folderNodes.length === 0 && fileNodes.length === 0) {
+    return EMPTY_TREE_CHILDREN;
+  }
 
   return {
     folderIds: folderNodes.map((n) => n.id),

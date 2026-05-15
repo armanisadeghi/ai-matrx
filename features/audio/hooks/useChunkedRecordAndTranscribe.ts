@@ -17,14 +17,17 @@
  *   - On crash, the AudioRecoveryProvider detects orphaned entries on next load.
  */
 
-'use client';
+"use client";
 
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { TranscriptionOptions, TranscriptionResult } from '../types';
-import { AUDIO_LIMITS, AUDIO_API_ROUTES } from '../constants';
-import { getErrorSolution } from '../utils/microphone-diagnostics';
-import { audioSafetyStore } from '../services/audioSafetyStore';
-import { uploadAndTranscribeFull, logClientError } from '../services/audioFallbackUpload';
+import { useState, useRef, useCallback, useEffect } from "react";
+import { TranscriptionOptions, TranscriptionResult } from "../types";
+import { AUDIO_LIMITS, AUDIO_API_ROUTES } from "../constants";
+import { getErrorSolution } from "../utils/microphone-diagnostics";
+import { audioSafetyStore } from "../services/audioSafetyStore";
+import {
+  uploadAndTranscribeFull,
+  logClientError,
+} from "../services/audioFallbackUpload";
 
 /**
  * Per-chunk timing + content payload. Fires once per chunk after a successful
@@ -62,107 +65,193 @@ export function useChunkedRecordAndTranscribe({
   chunkDurationMs = AUDIO_LIMITS.CHUNK_DURATION_MS,
   transcriptionOptions,
 }: UseChunkedRecordAndTranscribeProps = {}) {
-  const [isRecording, setIsRecording]       = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isPaused, setIsPaused]             = useState(false);
-  const [duration, setDuration]             = useState(0);
-  const [audioLevel, setAudioLevel]         = useState(0);
-  const [liveTranscript, setLiveTranscript] = useState('');
+  const [isPaused, setIsPaused] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState("");
   const [failedChunkCount, setFailedChunkCount] = useState(0);
 
-  const streamRef          = useRef<MediaStream | null>(null);
-  const mediaRecorderRef   = useRef<MediaRecorder | null>(null);
-  const accumulatedRef     = useRef('');
-  const pendingRef         = useRef(0);
-  const isStoppingRef      = useRef(false);
-  const mimeTypeRef        = useRef('audio/webm');
-  const rotationTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const durationTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef       = useRef(0);
-  const pausedAtRef        = useRef(0);
-  const pausedDurationRef  = useRef(0);
-  const audioCtxRef        = useRef<AudioContext | null>(null);
-  const analyserRef        = useRef<AnalyserNode | null>(null);
-  const rafRef             = useRef<number | null>(null);
-  const safetyIdRef        = useRef<string>('');
-  const chunkIndexRef      = useRef(0);
-  const failedIndicesRef   = useRef<number[]>([]);
-  const allChunkBlobsRef   = useRef<Blob[]>([]);
-  const userIdRef          = useRef<string>('');
-  const transcriptsMapRef  = useRef<Map<number, string>>(new Map());
-  const chunkTimingsRef    = useRef<Map<number, { tStart: number; tEnd: number }>>(new Map());
+  const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const accumulatedRef = useRef("");
+  const pendingRef = useRef(0);
+  const isStoppingRef = useRef(false);
+  const mimeTypeRef = useRef("audio/webm");
+  const rotationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef(0);
+  const pausedAtRef = useRef(0);
+  const pausedDurationRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const safetyIdRef = useRef<string>("");
+  const isPageHidingRef = useRef(false);
+  const chunkIndexRef = useRef(0);
+  const failedIndicesRef = useRef<number[]>([]);
+  const allChunkBlobsRef = useRef<Blob[]>([]);
+  const userIdRef = useRef<string>("");
+  const transcriptsMapRef = useRef<Map<number, string>>(new Map());
+  const chunkTimingsRef = useRef<Map<number, { tStart: number; tEnd: number }>>(
+    new Map(),
+  );
   const scheduleNextRotationRef = useRef<(() => void) | null>(null);
 
   const onTranscriptionCompleteRef = useRef(onTranscriptionComplete);
-  const onChunkTranscribedRef      = useRef(onChunkTranscribed);
-  const onChunkCompleteRef         = useRef(onChunkComplete);
-  const onChunkErrorRef            = useRef(onChunkError);
-  const onErrorRef                 = useRef(onError);
-  const transcriptionOptionsRef    = useRef(transcriptionOptions);
-  useEffect(() => { onTranscriptionCompleteRef.current = onTranscriptionComplete; }, [onTranscriptionComplete]);
-  useEffect(() => { onChunkTranscribedRef.current = onChunkTranscribed; }, [onChunkTranscribed]);
-  useEffect(() => { onChunkCompleteRef.current = onChunkComplete; }, [onChunkComplete]);
-  useEffect(() => { onChunkErrorRef.current = onChunkError; }, [onChunkError]);
-  useEffect(() => { onErrorRef.current = onError; }, [onError]);
-  useEffect(() => { transcriptionOptionsRef.current = transcriptionOptions; }, [transcriptionOptions]);
+  const onChunkTranscribedRef = useRef(onChunkTranscribed);
+  const onChunkCompleteRef = useRef(onChunkComplete);
+  const onChunkErrorRef = useRef(onChunkError);
+  const onErrorRef = useRef(onError);
+  const transcriptionOptionsRef = useRef(transcriptionOptions);
+  useEffect(() => {
+    onTranscriptionCompleteRef.current = onTranscriptionComplete;
+  }, [onTranscriptionComplete]);
+  useEffect(() => {
+    onChunkTranscribedRef.current = onChunkTranscribed;
+  }, [onChunkTranscribed]);
+  useEffect(() => {
+    onChunkCompleteRef.current = onChunkComplete;
+  }, [onChunkComplete]);
+  useEffect(() => {
+    onChunkErrorRef.current = onChunkError;
+  }, [onChunkError]);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+  useEffect(() => {
+    transcriptionOptionsRef.current = transcriptionOptions;
+  }, [transcriptionOptions]);
 
   const sessionRelativeSec = useCallback(() => {
     if (!startTimeRef.current) return 0;
-    const elapsed = Date.now() - startTimeRef.current - pausedDurationRef.current;
+    const elapsed =
+      Date.now() - startTimeRef.current - pausedDurationRef.current;
     return Math.max(0, elapsed) / 1000;
   }, []);
 
   const cleanup = useCallback(() => {
-    if (rotationTimerRef.current)  { clearTimeout(rotationTimerRef.current as any);  rotationTimerRef.current  = null; }
-    if (durationTimerRef.current)  { clearInterval(durationTimerRef.current);  durationTimerRef.current  = null; }
-    if (rafRef.current)            { cancelAnimationFrame(rafRef.current);      rafRef.current            = null; }
-    if (audioCtxRef.current?.state !== 'closed') {
+    if (rotationTimerRef.current) {
+      clearTimeout(rotationTimerRef.current as any);
+      rotationTimerRef.current = null;
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (audioCtxRef.current?.state !== "closed") {
       audioCtxRef.current?.close().catch(() => {});
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    if (mediaRecorderRef.current?.state !== 'inactive') {
+    if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current?.stop();
     }
     mediaRecorderRef.current = null;
     setAudioLevel(0);
     setIsPaused(false);
-    pausedAtRef.current       = 0;
+    pausedAtRef.current = 0;
     pausedDurationRef.current = 0;
-    isStoppingRef.current     = false;
+    isStoppingRef.current = false;
   }, []);
 
-  useEffect(() => () => { cleanup(); }, [cleanup]);
+  useEffect(
+    () => () => {
+      cleanup();
+    },
+    [cleanup],
+  );
+
+  // Bug 4 fix: flush the active recorder to IndexedDB when the page unloads.
+  // `pagehide` fires on navigation, refresh, and tab close (more reliable than
+  // `beforeunload`, and supported on iOS Safari). When it fires we immediately
+  // stop the recorder so `onstop` triggers → transcribeBlob saves the chunk to
+  // IndexedDB (see Bug 3 fix above) before the browser tears down the page.
+  // We set `isPageHidingRef` so transcribeBlob skips the network call and only
+  // does the save — a fetch starting during page unload would be cancelled anyway.
+  useEffect(() => {
+    const handleUnload = () => {
+      const mr = mediaRecorderRef.current;
+      if (!mr || mr.state !== "recording") return;
+      if (isStoppingRef.current) return; // already stopping, nothing to do
+
+      isPageHidingRef.current = true;
+      isStoppingRef.current = true;
+
+      // Cancel pending timers so rotateChunk doesn't fire again after us.
+      if (rotationTimerRef.current) {
+        clearTimeout(rotationTimerRef.current as ReturnType<typeof setTimeout>);
+        rotationTimerRef.current = null;
+      }
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+        durationTimerRef.current = null;
+      }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+
+      // Release the microphone immediately.
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+
+      // Stopping the recorder flushes its internal buffer → onstop fires →
+      // transcribeBlob saves the chunk to IndexedDB.
+      try {
+        mr.stop();
+      } catch {}
+      mediaRecorderRef.current = null;
+    };
+
+    window.addEventListener("pagehide", handleUnload);
+    return () => {
+      window.removeEventListener("pagehide", handleUnload);
+    };
+  }, []); // refs only — no reactive deps needed
 
   const persistText = useCallback(async (text: string) => {
     if (safetyIdRef.current) {
-      try { await audioSafetyStore.saveText(safetyIdRef.current, text); } catch {}
+      try {
+        await audioSafetyStore.saveText(safetyIdRef.current, text);
+      } catch {}
     }
   }, []);
 
-  const runFallbackTranscription = useCallback(async (): Promise<TranscriptionResult | null> => {
-    if (allChunkBlobsRef.current.length === 0) return null;
+  const runFallbackTranscription =
+    useCallback(async (): Promise<TranscriptionResult | null> => {
+      if (allChunkBlobsRef.current.length === 0) return null;
 
-    const fullBlob = new Blob(allChunkBlobsRef.current, { type: mimeTypeRef.current });
-    if (fullBlob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES) return null;
+      const fullBlob = new Blob(allChunkBlobsRef.current, {
+        type: mimeTypeRef.current,
+      });
+      if (fullBlob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES) return null;
 
-    try {
-      const result = await uploadAndTranscribeFull(
-        fullBlob,
-        userIdRef.current || 'anonymous',
-        transcriptionOptionsRef.current,
-      );
-      return result;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Fallback transcription failed';
-      console.error('[chunked-transcription] Fallback failed:', msg);
-      return { success: false, text: '', error: msg };
-    }
-  }, []);
+      try {
+        const result = await uploadAndTranscribeFull(
+          fullBlob,
+          userIdRef.current || "anonymous",
+          transcriptionOptionsRef.current,
+        );
+        return result;
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Fallback transcription failed";
+        console.error("[chunked-transcription] Fallback failed:", msg);
+        return { success: false, text: "", error: msg };
+      }
+    }, []);
 
   const maybeFireFinal = useCallback(async () => {
     if (!isStoppingRef.current || pendingRef.current > 0) return;
@@ -183,214 +272,269 @@ export function useChunkedRecordAndTranscribe({
     setIsTranscribing(false);
 
     if (safetyIdRef.current) {
-      try { await audioSafetyStore.markComplete(safetyIdRef.current); } catch {}
+      try {
+        await audioSafetyStore.markComplete(safetyIdRef.current);
+      } catch {}
     }
 
     onTranscriptionCompleteRef.current?.({ success: true, text: finalText });
 
-    // Auto-persist into transcripts system silently
-    if (finalText) {
-      import('@/utils/auth/getUserId').then(({ getUserId }) => {
+    // Auto-persist into transcripts system silently (skip on page unload).
+    if (finalText && !isPageHidingRef.current) {
+      import("@/utils/auth/getUserId").then(({ getUserId }) => {
         const userId = getUserId();
         if (userId) {
-          import('@/features/transcripts/service/transcriptsService').then(({ saveDraftTranscript }) => {
-            const finalBlob = new Blob(allChunkBlobsRef.current, { type: mimeTypeRef.current });
-            import('@/features/transcripts/service/audioStorageService').then(({ saveAudioToStorage }) => {
-              saveAudioToStorage(finalBlob, userId, undefined, 3).then(uploadResult => {
-                saveDraftTranscript({
-                  title: 'Voice Pad Recording',
-                  segments: [{
-                    id: Date.now().toString(),
-                    text: finalText,
-                    seconds: duration,
-                    timecode: '0:00'
-                  }],
-                  source_type: 'audio',
-                  folder_name: 'Recordings',
-                  audio_file_path: uploadResult.fileId
-                }).catch((err) => {
-                  console.warn('[chunked-transcription] Failed to auto-persist transcript with audio:', err);
-                });
-              }).catch(uploadErr => {
-                console.warn('[chunked-transcription] Failed to save audio file to storage:', uploadErr);
-                // Fallback to saving draft transcript without audio
-                saveDraftTranscript({
-                  title: 'Voice Pad Recording',
-                  segments: [{
-                    id: Date.now().toString(),
-                    text: finalText,
-                    seconds: duration,
-                    timecode: '0:00'
-                  }],
-                  source_type: 'audio',
-                  folder_name: 'Recordings'
-                }).catch((err) => {
-                  console.warn('[chunked-transcription] Failed to auto-persist transcript:', err);
-                });
+          import("@/features/transcripts/service/transcriptsService").then(
+            ({ saveDraftTranscript }) => {
+              const finalBlob = new Blob(allChunkBlobsRef.current, {
+                type: mimeTypeRef.current,
               });
-            });
-          });
+              import("@/features/transcripts/service/audioStorageService").then(
+                ({ saveAudioToStorage }) => {
+                  saveAudioToStorage(finalBlob, userId, undefined, 3)
+                    .then((uploadResult) => {
+                      saveDraftTranscript({
+                        title: "Voice Pad Recording",
+                        segments: [
+                          {
+                            id: Date.now().toString(),
+                            text: finalText,
+                            seconds: duration,
+                            timecode: "0:00",
+                          },
+                        ],
+                        source_type: "audio",
+                        folder_name: "Recordings",
+                        audio_file_path: uploadResult.fileId,
+                      }).catch((err) => {
+                        console.warn(
+                          "[chunked-transcription] Failed to auto-persist transcript with audio:",
+                          err,
+                        );
+                      });
+                    })
+                    .catch((uploadErr) => {
+                      console.warn(
+                        "[chunked-transcription] Failed to save audio file to storage:",
+                        uploadErr,
+                      );
+                      // Fallback to saving draft transcript without audio
+                      saveDraftTranscript({
+                        title: "Voice Pad Recording",
+                        segments: [
+                          {
+                            id: Date.now().toString(),
+                            text: finalText,
+                            seconds: duration,
+                            timecode: "0:00",
+                          },
+                        ],
+                        source_type: "audio",
+                        folder_name: "Recordings",
+                      }).catch((err) => {
+                        console.warn(
+                          "[chunked-transcription] Failed to auto-persist transcript:",
+                          err,
+                        );
+                      });
+                    });
+                },
+              );
+            },
+          );
         }
       });
     }
   }, [runFallbackTranscription, persistText, duration]);
 
-  const transcribeBlob = useCallback(async (blob: Blob, idx: number) => {
-    if (blob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES) {
-      maybeFireFinal();
-      return;
-    }
-
-    allChunkBlobsRef.current.push(blob);
-
-    if (safetyIdRef.current) {
-      try { await audioSafetyStore.saveChunk(safetyIdRef.current, blob); } catch {}
-    }
-
-    let blobToSend = blob;
-    let isCombo = false;
-
-    // At idx 2 (the 6-10s mark), we combine clumps 0, 1, and 2 into a single full 10-second chunk
-    if (idx === 2) {
-      blobToSend = new Blob(allChunkBlobsRef.current.slice(0, 3), { type: mimeTypeRef.current });
-      isCombo = true;
-    }
-
-    pendingRef.current += 1;
-    setIsTranscribing(true);
-
-    try {
-      const opts = transcriptionOptionsRef.current;
-      const ext  = blobToSend.type.includes('webm') ? 'webm' : 'wav';
-      const form = new FormData();
-      form.append('file', new File([blobToSend], `chunk.${ext}`, { type: blobToSend.type }));
-      if (opts?.language) form.append('language', opts.language);
-      if (opts?.prompt)   form.append('prompt',   opts.prompt);
-
-      const res  = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, { method: 'POST', body: form });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || data.details || `HTTP ${res.status}`);
-      }
-
-      if (data.success && data.text?.trim()) {
-        const snippet = (data.text as string).trim();
-        
-        if (isCombo) {
-          transcriptsMapRef.current.set(0, '');
-          transcriptsMapRef.current.set(1, '');
-          transcriptsMapRef.current.set(2, snippet);
-        } else {
-          // If we receive late responses for 0 or 1 after 2 has already eclipsed them, ignore them
-          if ((idx === 0 || idx === 1) && transcriptsMapRef.current.has(2)) {
-            // Ignored
-          } else {
-            transcriptsMapRef.current.set(idx, snippet);
-          }
-        }
-
-        const full = Array.from(transcriptsMapRef.current.entries())
-            .sort((a,b) => a[0] - b[0])
-            .map(e => e[1])
-            .filter(Boolean)
-            .join(' ');
-
-        accumulatedRef.current = full;
-        setLiveTranscript(full);
-        await persistText(full);
-        onChunkTranscribedRef.current?.(snippet, full);
-
-        // Per-chunk timing payload for timeline-anchored consumers
-        // (transcript-studio Column 1). The combo-chunk at idx 2 covers the
-        // span from idx 0's start to idx 2's end; emit one event spanning
-        // that whole window so Column 1 stays append-only without overlap.
-        const cb = onChunkCompleteRef.current;
-        if (cb) {
-          if (isCombo) {
-            const t0 = chunkTimingsRef.current.get(0);
-            const t2 = chunkTimingsRef.current.get(2);
-            if (t0 && t2) {
-              cb({
-                chunkIndex: 2,
-                tStart: t0.tStart,
-                tEnd: t2.tEnd,
-                text: snippet,
-                accumulatedText: full,
-              });
-            }
-          } else {
-            const timing = chunkTimingsRef.current.get(idx);
-            if (timing) {
-              cb({
-                chunkIndex: idx,
-                tStart: timing.tStart,
-                tEnd: timing.tEnd,
-                text: snippet,
-                accumulatedText: full,
-              });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Chunk transcription failed';
-      console.error(`[chunked-transcription] chunk ${idx} failed:`, msg);
-
-      failedIndicesRef.current.push(idx);
-      setFailedChunkCount(failedIndicesRef.current.length);
-
+  const transcribeBlob = useCallback(
+    async (blob: Blob, idx: number) => {
+      // Always persist to the safety net first — before any size check or API call.
+      // Even a tiny or silent chunk is real audio the user produced. The transcription
+      // API can skip it, but the safety store must never lose it.
+      allChunkBlobsRef.current.push(blob);
       if (safetyIdRef.current) {
-        try { await audioSafetyStore.addFailedChunk(safetyIdRef.current, idx); } catch {}
+        try {
+          await audioSafetyStore.saveChunk(safetyIdRef.current, blob);
+        } catch {}
       }
 
-      await logClientError({
-        errorCode: 'CHUNK_FAILED',
-        errorMessage: msg,
-        fileSizeBytes: blobToSend.size,
-        chunkIndex: idx,
-        apiRoute: AUDIO_API_ROUTES.TRANSCRIBE,
+      // Skip transcription for tiny chunks (not enough audio) or when the page is
+      // unloading — in that case we just want the save above to complete, not start
+      // a network request that will be cancelled mid-flight.
+      if (blob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES || isPageHidingRef.current) {
+        maybeFireFinal();
+        return;
+      }
+
+      let blobToSend = blob;
+      let isCombo = false;
+
+      // At idx 2 (the 6-10s mark), we combine clumps 0, 1, and 2 into a single full 10-second chunk
+      if (idx === 2) {
+        blobToSend = new Blob(allChunkBlobsRef.current.slice(0, 3), {
+          type: mimeTypeRef.current,
+        });
+        isCombo = true;
+      }
+
+      pendingRef.current += 1;
+      setIsTranscribing(true);
+
+      try {
+        const opts = transcriptionOptionsRef.current;
+        const ext = blobToSend.type.includes("webm") ? "webm" : "wav";
+        const form = new FormData();
+        form.append(
+          "file",
+          new File([blobToSend], `chunk.${ext}`, { type: blobToSend.type }),
+        );
+        if (opts?.language) form.append("language", opts.language);
+        if (opts?.prompt) form.append("prompt", opts.prompt);
+
+        const res = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, {
+          method: "POST",
+          body: form,
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || data.details || `HTTP ${res.status}`);
+        }
+
+        if (data.success && data.text?.trim()) {
+          const snippet = (data.text as string).trim();
+
+          if (isCombo) {
+            transcriptsMapRef.current.set(0, "");
+            transcriptsMapRef.current.set(1, "");
+            transcriptsMapRef.current.set(2, snippet);
+          } else {
+            // If we receive late responses for 0 or 1 after 2 has already eclipsed them, ignore them
+            if ((idx === 0 || idx === 1) && transcriptsMapRef.current.has(2)) {
+              // Ignored
+            } else {
+              transcriptsMapRef.current.set(idx, snippet);
+            }
+          }
+
+          const full = Array.from(transcriptsMapRef.current.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map((e) => e[1])
+            .filter(Boolean)
+            .join(" ");
+
+          accumulatedRef.current = full;
+          setLiveTranscript(full);
+          await persistText(full);
+          onChunkTranscribedRef.current?.(snippet, full);
+
+          // Per-chunk timing payload for timeline-anchored consumers
+          // (transcript-studio Column 1). The combo-chunk at idx 2 covers the
+          // span from idx 0's start to idx 2's end; emit one event spanning
+          // that whole window so Column 1 stays append-only without overlap.
+          const cb = onChunkCompleteRef.current;
+          if (cb) {
+            if (isCombo) {
+              const t0 = chunkTimingsRef.current.get(0);
+              const t2 = chunkTimingsRef.current.get(2);
+              if (t0 && t2) {
+                cb({
+                  chunkIndex: 2,
+                  tStart: t0.tStart,
+                  tEnd: t2.tEnd,
+                  text: snippet,
+                  accumulatedText: full,
+                });
+              }
+            } else {
+              const timing = chunkTimingsRef.current.get(idx);
+              if (timing) {
+                cb({
+                  chunkIndex: idx,
+                  tStart: timing.tStart,
+                  tEnd: timing.tEnd,
+                  text: snippet,
+                  accumulatedText: full,
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Chunk transcription failed";
+        console.error(`[chunked-transcription] chunk ${idx} failed:`, msg);
+
+        failedIndicesRef.current.push(idx);
+        setFailedChunkCount(failedIndicesRef.current.length);
+
+        if (safetyIdRef.current) {
+          try {
+            await audioSafetyStore.addFailedChunk(safetyIdRef.current, idx);
+          } catch {}
+        }
+
+        await logClientError({
+          errorCode: "CHUNK_FAILED",
+          errorMessage: msg,
+          fileSizeBytes: blobToSend.size,
+          chunkIndex: idx,
+          apiRoute: AUDIO_API_ROUTES.TRANSCRIBE,
+        });
+
+        onChunkErrorRef.current?.(idx, msg);
+      } finally {
+        pendingRef.current -= 1;
+        maybeFireFinal();
+      }
+    },
+    [maybeFireFinal, persistText],
+  );
+
+  const createRecorder = useCallback(
+    (stream: MediaStream): MediaRecorder => {
+      const mime = mimeTypeRef.current;
+      const chunks: Blob[] = [];
+      const idx = chunkIndexRef.current++;
+      const mr = new MediaRecorder(stream, { mimeType: mime });
+
+      // Anchor this chunk's session-relative window so downstream consumers
+      // (transcript-studio Column 1) can place text on the audio timeline.
+      chunkTimingsRef.current.set(idx, {
+        tStart: sessionRelativeSec(),
+        tEnd: 0,
       });
 
-      onChunkErrorRef.current?.(idx, msg);
-    } finally {
-      pendingRef.current -= 1;
-      maybeFireFinal();
-    }
-  }, [maybeFireFinal, persistText]);
+      mr.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      mr.onstop = () => {
+        const timing = chunkTimingsRef.current.get(idx);
+        if (timing) timing.tEnd = sessionRelativeSec();
+        const blob = new Blob(chunks, { type: mime });
+        transcribeBlob(blob, idx);
+      };
 
-  const createRecorder = useCallback((stream: MediaStream): MediaRecorder => {
-    const mime   = mimeTypeRef.current;
-    const chunks: Blob[] = [];
-    const idx = chunkIndexRef.current++;
-    const mr  = new MediaRecorder(stream, { mimeType: mime });
-
-    // Anchor this chunk's session-relative window so downstream consumers
-    // (transcript-studio Column 1) can place text on the audio timeline.
-    chunkTimingsRef.current.set(idx, { tStart: sessionRelativeSec(), tEnd: 0 });
-
-    mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-    mr.onstop          = ()  => {
-      const timing = chunkTimingsRef.current.get(idx);
-      if (timing) timing.tEnd = sessionRelativeSec();
-      const blob = new Blob(chunks, { type: mime });
-      transcribeBlob(blob, idx);
-    };
-
-    mr.start(100);
-    return mr;
-  }, [transcribeBlob, sessionRelativeSec]);
+      mr.start(100);
+      return mr;
+    },
+    [transcribeBlob, sessionRelativeSec],
+  );
 
   const rotateChunk = useCallback(() => {
     if (!streamRef.current || !mediaRecorderRef.current) return;
-    if (mediaRecorderRef.current.state !== 'recording')  return;
+    if (mediaRecorderRef.current.state !== "recording") return;
 
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = createRecorder(streamRef.current);
   }, [createRecorder]);
 
   const startAudioAnalysis = useCallback(() => {
-    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     const tick = () => {
       if (!analyserRef.current) return;
       const buf = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -403,9 +547,17 @@ export function useChunkedRecordAndTranscribe({
   }, []);
 
   const startDurationTimer = useCallback(() => {
-    if (durationTimerRef.current) { clearInterval(durationTimerRef.current); durationTimerRef.current = null; }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
     durationTimerRef.current = setInterval(() => {
-      setDuration(Math.floor((Date.now() - startTimeRef.current - pausedDurationRef.current) / 1000));
+      setDuration(
+        Math.floor(
+          (Date.now() - startTimeRef.current - pausedDurationRef.current) /
+            1000,
+        ),
+      );
     }, 100);
   }, []);
 
@@ -425,54 +577,65 @@ export function useChunkedRecordAndTranscribe({
 
   const startRecording = useCallback(async () => {
     try {
-      isStoppingRef.current  = false;
-      accumulatedRef.current = '';
-      pendingRef.current     = 0;
-      chunkIndexRef.current  = 0;
+      isStoppingRef.current = false;
+      accumulatedRef.current = "";
+      pendingRef.current = 0;
+      chunkIndexRef.current = 0;
       failedIndicesRef.current = [];
       allChunkBlobsRef.current = [];
       transcriptsMapRef.current.clear();
       chunkTimingsRef.current.clear();
-      setLiveTranscript('');
+      setLiveTranscript("");
       setFailedChunkCount(0);
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl:  true,
-          sampleRate:       16_000,
+          autoGainControl: true,
+          sampleRate: 16_000,
         },
       });
       streamRef.current = stream;
 
-      audioCtxRef.current  = new AudioContext();
-      analyserRef.current  = audioCtxRef.current.createAnalyser();
-      analyserRef.current.fftSize               = 256;
+      audioCtxRef.current = new AudioContext();
+      analyserRef.current = audioCtxRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
       analyserRef.current.smoothingTimeConstant = 0.8;
-      audioCtxRef.current.createMediaStreamSource(stream).connect(analyserRef.current);
+      audioCtxRef.current
+        .createMediaStreamSource(stream)
+        .connect(analyserRef.current);
 
       startAudioAnalysis();
 
-      mimeTypeRef.current = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
+      mimeTypeRef.current = MediaRecorder.isTypeSupported(
+        "audio/webm;codecs=opus",
+      )
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
 
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const safetyId  = `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const safetyId = `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       safetyIdRef.current = safetyId;
 
       try {
-        await audioSafetyStore.createEntry(safetyId, sessionId, mimeTypeRef.current);
+        await audioSafetyStore.createEntry(
+          safetyId,
+          sessionId,
+          mimeTypeRef.current,
+        );
       } catch (err) {
-        console.warn('[chunked-transcription] IndexedDB init failed, continuing without persistence:', err);
-        safetyIdRef.current = '';
+        console.warn(
+          "[chunked-transcription] IndexedDB init failed, continuing without persistence:",
+          err,
+        );
+        safetyIdRef.current = "";
       }
 
       mediaRecorderRef.current = createRecorder(stream);
 
       setIsRecording(true);
-      startTimeRef.current      = Date.now();
+      startTimeRef.current = Date.now();
       pausedDurationRef.current = 0;
 
       startDurationTimer();
@@ -483,21 +646,36 @@ export function useChunkedRecordAndTranscribe({
       onErrorRef.current?.(sol.message, sol.code);
       cleanup();
     }
-  }, [cleanup, startAudioAnalysis, startDurationTimer, createRecorder, rotateChunk]);
+  }, [
+    cleanup,
+    startAudioAnalysis,
+    startDurationTimer,
+    createRecorder,
+    rotateChunk,
+  ]);
 
   const stopRecording = useCallback(() => {
     isStoppingRef.current = true;
 
-    if (rotationTimerRef.current)  { clearTimeout(rotationTimerRef.current as any);   rotationTimerRef.current  = null; }
-    if (durationTimerRef.current)  { clearInterval(durationTimerRef.current);   durationTimerRef.current  = null; }
-    if (rafRef.current)            { cancelAnimationFrame(rafRef.current);       rafRef.current            = null; }
-    if (audioCtxRef.current?.state !== 'closed') {
+    if (rotationTimerRef.current) {
+      clearTimeout(rotationTimerRef.current as any);
+      rotationTimerRef.current = null;
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (audioCtxRef.current?.state !== "closed") {
       audioCtxRef.current?.close().catch(() => {});
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
 
@@ -507,10 +685,15 @@ export function useChunkedRecordAndTranscribe({
     pausedDurationRef.current = 0;
 
     if (safetyIdRef.current) {
-      audioSafetyStore.setStatus(safetyIdRef.current, 'transcribing').catch(() => {});
+      audioSafetyStore
+        .setStatus(safetyIdRef.current, "transcribing")
+        .catch(() => {});
     }
 
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
+    if (
+      !mediaRecorderRef.current ||
+      mediaRecorderRef.current.state === "inactive"
+    ) {
       mediaRecorderRef.current = null;
       if (pendingRef.current === 0) {
         maybeFireFinal();
@@ -523,11 +706,24 @@ export function useChunkedRecordAndTranscribe({
   }, [maybeFireFinal]);
 
   const pauseRecording = useCallback(() => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
+    if (
+      !mediaRecorderRef.current ||
+      mediaRecorderRef.current.state !== "recording"
+    )
+      return;
 
-    if (rotationTimerRef.current) { clearTimeout(rotationTimerRef.current as any); rotationTimerRef.current = null; }
-    if (durationTimerRef.current) { clearInterval(durationTimerRef.current); durationTimerRef.current = null; }
-    if (rafRef.current)           { cancelAnimationFrame(rafRef.current);    rafRef.current = null; }
+    if (rotationTimerRef.current) {
+      clearTimeout(rotationTimerRef.current as any);
+      rotationTimerRef.current = null;
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
 
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = null;
@@ -555,11 +751,11 @@ export function useChunkedRecordAndTranscribe({
     setIsTranscribing(false);
     setDuration(0);
     setAudioLevel(0);
-    setLiveTranscript('');
+    setLiveTranscript("");
     setFailedChunkCount(0);
-    accumulatedRef.current   = '';
-    pendingRef.current       = 0;
-    chunkIndexRef.current    = 0;
+    accumulatedRef.current = "";
+    pendingRef.current = 0;
+    chunkIndexRef.current = 0;
     failedIndicesRef.current = [];
     allChunkBlobsRef.current = [];
     transcriptsMapRef.current.clear();

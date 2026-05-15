@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
+  EMPTY_TREE_CHILDREN,
   selectAllFilesMap,
   selectAllFoldersMap,
   selectSortedChildrenOfFolder,
@@ -122,7 +123,12 @@ interface PickerFileThumbnailProps {
   fileName: string;
 }
 
-function PickerFileThumbnail({ fileId, publicUrl, mimeType, fileName }: PickerFileThumbnailProps) {
+function PickerFileThumbnail({
+  fileId,
+  publicUrl,
+  mimeType,
+  fileName,
+}: PickerFileThumbnailProps) {
   const isImage = mimeType?.startsWith("image/") ?? false;
   // Use the asset endpoint (GET /files/{id}/asset) — same path FilePreview uses for images.
   // It returns CDN URL for public files and signed-inline for private, in one call.
@@ -138,7 +144,12 @@ function PickerFileThumbnail({ fileId, publicUrl, mimeType, fileName }: PickerFi
 
   return (
     <div className="h-10 w-10 rounded-md overflow-hidden shrink-0 bg-muted border border-border/50">
-      <img src={src} alt="" className="h-full w-full object-cover" draggable={false} />
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-cover"
+        draggable={false}
+      />
     </div>
   );
 }
@@ -166,7 +177,7 @@ function PickerBody({
   const folderSorted = useAppSelector((s) =>
     currentFolderId
       ? selectSortedChildrenOfFolder(s, currentFolderId)
-      : { folderIds: [], fileIds: [] },
+      : EMPTY_TREE_CHILDREN,
   );
   useFolderContents(currentFolderId);
   const children = currentFolderId ? folderSorted : rootSorted;
