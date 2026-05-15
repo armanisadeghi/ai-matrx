@@ -863,7 +863,13 @@ export function InitialCropAspectBar({
       })}
       <button
         type="button"
-        onClick={resetCrop}
+        onClick={() => {
+          if (allowedAspects !== undefined && !allowedAspects.includes(undefined)) {
+            setAspect(allowedAspects[0]);
+          } else {
+            resetCrop();
+          }
+        }}
         disabled={!naturalSize}
         className="ml-auto inline-flex items-center gap-1 h-7 px-2 text-xs rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50"
       >
