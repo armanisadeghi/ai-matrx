@@ -435,6 +435,8 @@ export function NoteContentEditor({ noteId }: NoteContentEditorProps) {
 
       <NoteContextMenu
         noteId={noteId}
+        instanceId={instanceId}
+        editorMode={editorMode}
         isDirty={isDirty}
         allFolders={allFolders}
         currentFolder={currentFolder}

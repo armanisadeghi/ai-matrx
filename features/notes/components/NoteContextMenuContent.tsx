@@ -86,6 +86,8 @@ import type {
 import { mapScopeToVariables } from "@/features/prompt-builtins/utils/execution";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+import { useNotesSurfaceScope } from "@/features/notes/hooks/useNotesSurfaceScope";
+import type { EditorMode } from "./NoteEditorCore";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { toast } from "@/components/ui/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -124,6 +126,13 @@ type MenuKit = {
 
 export interface NoteContextMenuContentProps {
   noteId: string;
+  /**
+   * Notes view instance id — drives surface scope (open tabs, split note). Optional
+   * to support overlay callsites (e.g. WindowNotesBody) that aren't multi-tab.
+   */
+  instanceId?: string;
+  /** Current editor mode — published on the `matrx-user/notes` surface scope. */
+  editorMode?: EditorMode;
   isDirty: boolean;
   allFolders: string[];
   currentFolder: string | undefined;
@@ -281,6 +290,8 @@ function CategoryItems({
 
 export function NoteContextMenuHeavy({
   noteId,
+  instanceId,
+  editorMode,
   isDirty,
   allFolders,
   currentFolder,
@@ -327,6 +338,16 @@ export function NoteContextMenuHeavy({
   } = useQuickActions();
 
   const trigger = useShortcutTrigger();
+
+  // Builder for the `matrx-user/notes` surface scope. Invoked at the moment a
+  // shortcut is launched so DOM selection state is captured live.
+  const buildSurfaceScope = useNotesSurfaceScope({
+    instanceId,
+    noteId,
+    content: noteContent,
+    textareaRef: textareaRef ?? { current: null },
+    editorMode: editorMode ?? "plain",
+  });
 
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [skipSelectionRestore, setSkipSelectionRestore] = useState(false);
@@ -686,29 +707,12 @@ export function NoteContextMenuHeavy({
 
   const executeAction = useCallback(
     async (item: ShortcutItem, placementType: string = "ai-action") => {
-      const ta = textareaRef?.current;
-      const selectionText =
-        capturedSelection.current?.text ||
-        (ta ? ta.value.substring(ta.selectionStart, ta.selectionEnd) : "");
-
-      const contextPayload = ta
-        ? formatEditorSurroundContext(ta.value, {
-            selectionStart: ta.selectionStart,
-            selectionEnd: ta.selectionEnd,
-          })
-        : formatEditorSurroundContext(noteContent, {
-            selectionStart: 0,
-            selectionEnd: 0,
-          });
-
-      // Live UI scope passed to the shortcut. The shortcut row owns its own
-      // scopeMappings/contextMappings and decides which keys it consumes —
-      // unmatched keys are dropped harmlessly by the agent execution path.
-      const applicationScope = {
-        selection: selectionText,
-        content: noteContent,
-        context: contextPayload,
-      };
+      // Live surface scope for `matrx-user/notes`. Built fresh on each invocation
+      // so DOM selection state (selectionStart/End on the textarea) is current.
+      // The shortcut row owns its own value_mappings and decides which surface
+      // values it consumes — unmapped keys are dropped harmlessly by the launcher.
+      const applicationScope = buildSurfaceScope();
+      const selectionText = (applicationScope.selection as string | undefined) ?? "";
 
       // Admin debug indicator still uses the legacy resolution preview to
       // surface what *would* have been mapped under the prompt-builtin's
@@ -717,7 +721,9 @@ export function NoteContextMenuHeavy({
       if (isDebugMode) {
         const previewVariables = item.prompt_builtin
           ? mapScopeToVariables(
-              applicationScope,
+              applicationScope as unknown as Parameters<
+                typeof mapScopeToVariables
+              >[0],
               item.scope_mappings ?? {},
               item.prompt_builtin.variableDefaults ?? [],
             )
@@ -756,6 +762,7 @@ export function NoteContextMenuHeavy({
         await trigger(item.id, {
           scope: applicationScope as unknown as ApplicationScope,
           sourceFeature: "notes",
+          runtime: { surfaceName: "matrx-user/notes" },
         });
       } catch (error) {
         console.error("[NoteContextMenu] Shortcut launch error:", error);
@@ -769,7 +776,7 @@ export function NoteContextMenuHeavy({
         });
       }
     },
-    [dispatch, isDebugMode, noteContent, textareaRef, trigger],
+    [buildSurfaceScope, dispatch, isDebugMode, trigger],
   );
 
   const insertBlock = useCallback(

@@ -100,6 +100,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 ## Change log
 
+- `2026-05-15` — Notes now emits the `matrx-user/notes` surface scope when launching an agent shortcut from the context menu. Adds `hooks/useNotesSurfaceScope.ts` (the scope builder) and `utils/markdown-headings.ts` (heading-aware section slicing). The surface manifest at `features/tool-registry/surfaces/manifests/notes-editor.manifest.ts` declares 19 surface-specific values covering active-note metadata, selection/scope mirror, workspace context, and editor pane state.
 - `2026-04-25` — Removed `@/features/notes` barrel imports; consumers use `components/NotesLayout`, `service/notesApi`, `actions/CategoryNotesModal`, `types` (no new barrel file).
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.
 
