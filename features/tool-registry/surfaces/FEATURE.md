@@ -124,3 +124,12 @@ After the user-requested "go all in" pass, the page picks up:
 - **2026-05-05 (later)** — v2.1: drawer, rename via FK cascade, bulk
   delete, candidate inventory dialog, inline client creation, keyboard
   shortcuts.
+- **2026-05-15** — `matrx-user/notes` manifest expanded from the Phase 1
+  stub (4 surface-specific values) to a full 19 surface-specific + 5
+  baseline declaration covering selection / scope mirror, active-note
+  metadata, workspace context (open tabs, folder tree), and editor / pane
+  state. Renamed `current_note_category` → `current_note_folder`
+  (existing name was misleading; zero downstream bindings to migrate).
+  Notes editor context menu now emits the surface scope and tags
+  `runtime.surfaceName = "matrx-user/notes"` so `agx_agent_surface`
+  bindings resolve at launch. See `features/notes/hooks/useNotesSurfaceScope.ts`.

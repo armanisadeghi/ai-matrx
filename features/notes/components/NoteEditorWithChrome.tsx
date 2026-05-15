@@ -228,6 +228,7 @@ export function NoteEditorWithChrome({
   return (
     <NoteContextMenu
       noteId={noteId}
+      editorMode={editorMode}
       isDirty={isDirty}
       allFolders={allFolders}
       currentFolder={currentFolder}
