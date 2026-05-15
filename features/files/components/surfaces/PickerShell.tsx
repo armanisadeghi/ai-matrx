@@ -43,6 +43,7 @@ import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -107,6 +108,38 @@ export function DrawerShell(props: PickerShellProps) {
         </div>
       </DrawerContent>
     </Drawer>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Thumbnail for image files in the picker list
+// ---------------------------------------------------------------------------
+
+interface PickerFileThumbnailProps {
+  fileId: string;
+  publicUrl: string | null;
+  mimeType: string | null;
+  fileName: string;
+}
+
+function PickerFileThumbnail({ fileId, publicUrl, mimeType, fileName }: PickerFileThumbnailProps) {
+  const isImage = mimeType?.startsWith("image/") ?? false;
+  // Use the asset endpoint (GET /files/{id}/asset) — same path FilePreview uses for images.
+  // It returns CDN URL for public files and signed-inline for private, in one call.
+  // Skip the fetch entirely if we already have publicUrl or it's not an image.
+  const { primaryUrl } = useFileAsset(isImage && !publicUrl ? fileId : null, {
+    signedUrlTtl: 3600,
+  });
+  const src = isImage ? (publicUrl ?? primaryUrl) : null;
+
+  if (!src) {
+    return <FileIcon fileName={fileName} size={18} />;
+  }
+
+  return (
+    <div className="h-10 w-10 rounded-md overflow-hidden shrink-0 bg-muted border border-border/50">
+      <img src={src} alt="" className="h-full w-full object-cover" draggable={false} />
+    </div>
   );
 }
 
@@ -232,6 +265,7 @@ function PickerBody({
               if (!file) return null;
               const disabled = !extOk(file.fileName);
               const selected = selectedFileIds.includes(id);
+              const isImage = file.mimeType?.startsWith("image/") ?? false;
               return (
                 <li key={id}>
                   <button
@@ -239,13 +273,19 @@ function PickerBody({
                     disabled={disabled}
                     onClick={() => handleToggleFile(id)}
                     className={cn(
-                      "flex w-full items-center gap-3 px-4 py-2 text-left text-sm",
+                      "flex w-full items-center gap-3 px-4 text-left text-sm",
+                      isImage ? "py-1.5" : "py-2",
                       disabled && "opacity-50",
                       !disabled && "hover:bg-accent/60",
                       selected && "bg-accent text-accent-foreground",
                     )}
                   >
-                    <FileIcon fileName={file.fileName} size={18} />
+                    <PickerFileThumbnail
+                      fileId={file.id}
+                      publicUrl={file.publicUrl}
+                      mimeType={file.mimeType}
+                      fileName={file.fileName}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="truncate">{file.fileName}</div>
                       <FileMeta
@@ -259,7 +299,7 @@ function PickerBody({
                       />
                     </div>
                     {selected ? (
-                      <Check className="h-4 w-4" aria-hidden="true" />
+                      <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
                     ) : null}
                   </button>
                 </li>
