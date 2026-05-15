@@ -133,3 +133,19 @@ After the user-requested "go all in" pass, the page picks up:
   Notes editor context menu now emits the surface scope and tags
   `runtime.surfaceName = "matrx-user/notes"` so `agx_agent_surface`
   bindings resolve at launch. See `features/notes/hooks/useNotesSurfaceScope.ts`.
+- **2026-05-15 (later)** — `matrx-user/transcripts` manifest landed —
+  24 surface-specific + 3 baseline values covering segment / playback
+  mirror (`active_text`, `current_segment_*`, `current_playback_time`),
+  transcript identity, the speaker dimension (`speaker_list`,
+  `per_speaker_text`), full segments dimension (`all_segments`,
+  `all_segments_text`), and media/editor state. Viewer
+  (`features/transcripts/components/TranscriptViewer.tsx`) now wraps the
+  segment area in `UnifiedAgentContextMenu` with `surfaceName =
+  "matrx-user/transcripts"`, emitting scope via
+  `features/transcripts/hooks/useTranscriptsSurfaceScope.ts`. Audio
+  playback state is read live from the `<audio>` ref at trigger time so
+  the emitted `current_playback_time` / `current_segment_*` are
+  click-accurate. New `transcripts` value added to the `SourceFeature`
+  union. Sister surface `matrx-user/transcript-studio` (live recording
+  with 3 agent pipelines) is intentionally NOT bundled — it has existing
+  hand-coded scope vocabulary to preserve and warrants its own PR.
