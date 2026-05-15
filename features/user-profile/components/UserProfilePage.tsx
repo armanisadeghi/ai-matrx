@@ -360,6 +360,7 @@ function HeaderSection({ account }: { account: UserAccountData }) {
         title="Update Profile Photo"
         label="Photo"
         defaultAspect={1}
+        allowedAspects={[1]}
         currentImageShape="circle"
         currentImageAlt="Profile photo"
       />

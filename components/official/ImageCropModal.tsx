@@ -48,6 +48,11 @@ export interface ImageCropModalProps {
     /** Label shown above the picker ("New photo", "New logo", etc.). */
     label?: string;
     defaultAspect?: number;
+    /**
+     * Restrict which aspect-ratio chips the crop step offers. Pass `[1]` to
+     * enforce square-only (avatar, logo). Omit to show all choices.
+     */
+    allowedAspects?: Array<number | undefined>;
     /** Shape of the current-image thumbnail — circle for avatars, square for logos. */
     currentImageShape?: 'circle' | 'square';
     /** Alt text for the current image thumbnail. */
@@ -61,6 +66,7 @@ interface InnerContentProps {
     visibility: Visibility;
     label: string;
     defaultAspect?: number;
+    allowedAspects?: Array<number | undefined>;
     currentImageShape: 'circle' | 'square';
     currentImageAlt: string;
     onDone: (result: ImageUploaderResult | null) => void;
@@ -73,6 +79,7 @@ function ModalContent({
     visibility,
     label,
     defaultAspect,
+    allowedAspects,
     currentImageShape,
     currentImageAlt,
     onDone,
@@ -118,6 +125,7 @@ function ModalContent({
                 currentUrl={null}
                 label={currentUrl ? `New ${label.toLowerCase()}` : label}
                 defaultAspect={defaultAspect}
+                allowedAspects={allowedAspects}
                 visibility={visibility}
                 folder={folder}
                 previewShape={currentImageShape}
@@ -139,6 +147,7 @@ export function ImageCropModal({
     title = 'Update Image',
     label = 'Image',
     defaultAspect,
+    allowedAspects,
     currentImageShape = 'square',
     currentImageAlt = 'Current image',
 }: ImageCropModalProps) {
@@ -157,6 +166,7 @@ export function ImageCropModal({
             visibility={visibility}
             label={label}
             defaultAspect={defaultAspect}
+            allowedAspects={allowedAspects}
             currentImageShape={currentImageShape}
             currentImageAlt={currentImageAlt}
             onDone={handleDone}

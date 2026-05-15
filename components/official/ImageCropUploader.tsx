@@ -72,6 +72,11 @@ export interface ImageCropUploaderProps {
     className?: string;
     /** Aspect ratio to pre-lock on (e.g. 1 for 1:1). Default: free. */
     defaultAspect?: number;
+    /**
+     * Restrict which aspect-ratio chips are offered during cropping.
+     * Pass `[1]` to enforce square-only (avatar, logo). Omit to allow all.
+     */
+    allowedAspects?: Array<number | undefined>;
     /** Shape of the upload preview shown while the image is being uploaded. */
     previewShape?: 'circle' | 'square';
 }
@@ -273,11 +278,12 @@ interface CropStepProps {
     file: File;
     defaultAspect?: number;
     cropShape?: 'circle' | 'square';
+    allowedAspects?: Array<number | undefined>;
     onConfirm: (cropped: File) => void;
     onCancel: () => void;
 }
 
-function CropStep({ file, defaultAspect, cropShape, onConfirm, onCancel }: CropStepProps) {
+function CropStep({ file, defaultAspect, cropShape, allowedAspects, onConfirm, onCancel }: CropStepProps) {
     const ctrl = useInitialCropController({
         files: [file],
         onComplete: (results) => { if (results[0]) onConfirm(results[0]); },
@@ -294,7 +300,7 @@ function CropStep({ file, defaultAspect, cropShape, onConfirm, onCancel }: CropS
     return (
         <div className="flex flex-col rounded-xl overflow-hidden border border-border bg-zinc-950">
             <InitialCropViewport controller={ctrl} className="h-64" cropShape={cropShape} />
-            <InitialCropAspectBar controller={ctrl} className="bg-card border-t border-border" />
+            <InitialCropAspectBar controller={ctrl} className="bg-card border-t border-border" allowedAspects={allowedAspects} />
             <div className="flex items-center justify-between gap-2 p-3 bg-card border-t border-border">
                 <button
                     type="button"
@@ -383,6 +389,7 @@ export function ImageCropUploader({
     disabled = false,
     className,
     defaultAspect,
+    allowedAspects,
     previewShape = 'square',
 }: ImageCropUploaderProps) {
     const { upload } = useFileUpload();
@@ -496,6 +503,7 @@ export function ImageCropUploader({
                     file={pendingFile}
                     defaultAspect={defaultAspect}
                     cropShape={previewShape}
+                    allowedAspects={allowedAspects}
                     onConfirm={(f) => void handleCropConfirm(f)}
                     onCancel={handleCropCancel}
                 />

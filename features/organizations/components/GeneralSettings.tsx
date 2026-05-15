@@ -320,6 +320,7 @@ export function GeneralSettings({
             title="Update Organization Logo"
             label="Logo"
             defaultAspect={1}
+            allowedAspects={[1]}
             currentImageShape="square"
             currentImageAlt={name}
           />

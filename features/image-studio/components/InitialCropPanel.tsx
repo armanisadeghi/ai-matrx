@@ -812,6 +812,12 @@ export function InitialCropViewport({
 interface InitialCropAspectBarProps {
   controller: CropAspectPort;
   className?: string;
+  /**
+   * Restrict which aspect-ratio chips are shown. Pass `[1]` to show only the
+   * 1:1 chip (avatar/logo use-case). Omit to show all choices.
+   * Use `undefined` in the array to allow the "Free" choice.
+   */
+  allowedAspects?: Array<number | undefined>;
 }
 
 /**
@@ -821,8 +827,12 @@ interface InitialCropAspectBarProps {
 export function InitialCropAspectBar({
   controller,
   className,
+  allowedAspects,
 }: InitialCropAspectBarProps) {
   const { aspect, setAspect, resetCrop, naturalSize } = controller;
+  const choices = allowedAspects !== undefined
+    ? ASPECT_CHOICES.filter((c) => allowedAspects.includes(c.value))
+    : ASPECT_CHOICES;
   return (
     <div
       className={cn(
@@ -831,7 +841,7 @@ export function InitialCropAspectBar({
       )}
     >
       <span className="text-xs text-muted-foreground mr-1">Aspect</span>
-      {ASPECT_CHOICES.map((c) => {
+      {choices.map((c) => {
         const active = aspect === c.value;
         return (
           <button
