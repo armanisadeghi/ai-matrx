@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { SqlFunction } from "@/types/sql-functions";
+import { parseArguments } from "../utils/parseArguments";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,130 +17,10 @@ import {
   Copy,
   Check,
   ArrowRight,
+  Play,
 } from "lucide-react";
 import SyntaxHighlighter from "@/features/administration/database-admin/SyntaxHighlighter";
-
-interface ParsedArgument {
-  mode: string;
-  name: string;
-  type: string;
-  defaultValue?: string;
-}
-
-function parseArguments(argString: string): ParsedArgument[] {
-  if (!argString?.trim()) return [];
-
-  const args: ParsedArgument[] = [];
-  let depth = 0;
-  let current = "";
-
-  for (const char of argString) {
-    if (char === "(" || char === "[") depth++;
-    else if (char === ")" || char === "]") depth--;
-
-    if (char === "," && depth === 0) {
-      args.push(parseSingleArg(current.trim()));
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  if (current.trim()) args.push(parseSingleArg(current.trim()));
-
-  return args;
-}
-
-function parseSingleArg(raw: string): ParsedArgument {
-  const defaultMatch = raw.match(/^(.+?)\s+DEFAULT\s+(.+)$/i);
-  const mainPart = defaultMatch ? defaultMatch[1].trim() : raw;
-  const defaultValue = defaultMatch ? defaultMatch[2].trim() : undefined;
-
-  const modes = ["INOUT", "IN", "OUT", "VARIADIC"];
-  let mode = "IN";
-  let rest = mainPart;
-
-  for (const m of modes) {
-    if (rest.toUpperCase().startsWith(m + " ")) {
-      mode = m;
-      rest = rest.slice(m.length).trim();
-      break;
-    }
-  }
-
-  const lastSpace = rest.lastIndexOf(" ");
-  if (lastSpace === -1) {
-    return { mode, name: "", type: rest, defaultValue };
-  }
-
-  const possibleType = rest.slice(lastSpace + 1);
-  const possibleName = rest.slice(0, lastSpace);
-
-  const typeIndicators = [
-    "integer",
-    "int",
-    "bigint",
-    "smallint",
-    "serial",
-    "bigserial",
-    "text",
-    "varchar",
-    "char",
-    "character",
-    "name",
-    "boolean",
-    "bool",
-    "uuid",
-    "json",
-    "jsonb",
-    "xml",
-    "timestamp",
-    "timestamptz",
-    "date",
-    "time",
-    "timetz",
-    "interval",
-    "numeric",
-    "decimal",
-    "real",
-    "float",
-    "double",
-    "bytea",
-    "oid",
-    "regclass",
-    "regtype",
-    "void",
-    "trigger",
-    "record",
-    "anyelement",
-    "anyarray",
-    "inet",
-    "cidr",
-    "macaddr",
-    "point",
-    "line",
-    "lseg",
-    "box",
-    "path",
-    "polygon",
-    "circle",
-    "int4",
-    "int8",
-    "int2",
-    "float4",
-    "float8",
-  ];
-
-  const lowerType = possibleType.toLowerCase().replace("[]", "");
-  if (
-    typeIndicators.includes(lowerType) ||
-    possibleType.includes(".") ||
-    possibleType.endsWith("[]")
-  ) {
-    return { mode, name: possibleName, type: possibleType, defaultValue };
-  }
-
-  return { mode, name: "", type: rest, defaultValue };
-}
+import SqlFunctionTester from "./SqlFunctionTester";
 
 interface SqlFunctionDetailProps {
   func: SqlFunction;
@@ -184,6 +65,10 @@ export default function SqlFunctionDetail({
   onDelete,
 }: SqlFunctionDetailProps) {
   const [defCopied, setDefCopied] = useState(false);
+  const [rightPanel, setRightPanel] = useState<"definition" | "test">(
+    "definition",
+  );
+
   const parsedArgs = parseArguments(func.arguments);
 
   const fnLabel = `${func.schema}.${func.name}`;
@@ -467,41 +352,75 @@ export default function SqlFunctionDetail({
           )}
         </div>
 
-        {/* Right: source code */}
+        {/* Right: definition or test runner */}
         <div className="flex flex-col min-h-0 overflow-hidden">
+          {/* Right panel header with mode toggle */}
           <div className="flex items-center justify-between px-3 py-1 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-              Definition
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyCode}
-              className="h-5 text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 px-1.5"
-            >
-              {defCopied ? (
-                <>
-                  <Check className="h-3 w-3 mr-1" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3 w-3 mr-1" />
-                  Copy
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setRightPanel("definition")}
+                className={`text-[10px] px-2 py-0.5 rounded font-medium uppercase tracking-wider transition-colors ${
+                  rightPanel === "definition"
+                    ? "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                }`}
+              >
+                Definition
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightPanel("test")}
+                className={`text-[10px] px-2 py-0.5 rounded font-medium uppercase tracking-wider transition-colors flex items-center gap-1 ${
+                  rightPanel === "test"
+                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                }`}
+              >
+                <Play className="h-2.5 w-2.5" />
+                Test Runner
+              </button>
+            </div>
+
+            {rightPanel === "definition" && func.definition && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyCode}
+                className="h-5 text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 px-1.5"
+              >
+                {defCopied ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            )}
           </div>
-          <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-900/50 [&_pre]:!rounded-none [&_pre]:!p-3">
-            {func.definition ? (
-              <SyntaxHighlighter
-                code={func.definition}
-                language={func.language || "sql"}
-              />
+
+          {/* Right panel body */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {rightPanel === "definition" ? (
+              <div className="h-full overflow-auto bg-slate-50 dark:bg-slate-900/50 [&_pre]:!rounded-none [&_pre]:!p-3">
+                {func.definition ? (
+                  <SyntaxHighlighter
+                    code={func.definition}
+                    language={func.language || "sql"}
+                  />
+                ) : (
+                  <p className="p-3 text-xs text-slate-500 dark:text-slate-400 italic">
+                    Source code not available
+                  </p>
+                )}
+              </div>
             ) : (
-              <p className="p-3 text-xs text-slate-500 dark:text-slate-400 italic">
-                Source code not available
-              </p>
+              <SqlFunctionTester func={func} parsedArgs={parsedArgs} />
             )}
           </div>
         </div>

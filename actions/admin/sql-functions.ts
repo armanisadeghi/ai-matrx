@@ -140,6 +140,98 @@ export async function updateSqlFunction(functionDefinition: string) {
   }
 }
 
+interface FunctionCallArg {
+  argName: string;
+  argType: string;
+  value: string;
+  isNull: boolean;
+}
+
+function formatSqlArgValue(type: string, value: string): string {
+  const lower = type.toLowerCase().replace(/\[\]$/, "").trim();
+  const isArray = type.trim().endsWith("[]");
+
+  if (isArray) {
+    return `'${value.replace(/'/g, "''")}'::${lower}[]`;
+  }
+
+  const numericTypes = [
+    "integer",
+    "int",
+    "int4",
+    "int8",
+    "int2",
+    "bigint",
+    "smallint",
+    "serial",
+    "bigserial",
+    "numeric",
+    "decimal",
+    "real",
+    "float",
+    "float4",
+    "float8",
+    "double precision",
+    "double",
+    "oid",
+  ];
+
+  if (numericTypes.includes(lower)) {
+    return value.trim() || "0";
+  }
+
+  if (["boolean", "bool"].includes(lower)) {
+    return value === "true" ? "true" : "false";
+  }
+
+  if (["json", "jsonb"].includes(lower)) {
+    return `'${value.replace(/'/g, "''")}'::${lower}`;
+  }
+
+  if (lower === "uuid") {
+    return `'${value.replace(/'/g, "''")}'::uuid`;
+  }
+
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+/**
+ * Executes a SQL function call for testing purposes and returns the result.
+ */
+export async function executeSqlFunctionCall(
+  schema: string,
+  name: string,
+  returns: string,
+  args: FunctionCallArg[],
+): Promise<{ data: unknown; error: string | null; sql: string }> {
+  const argParts = args.map((arg) => {
+    if (arg.isNull) {
+      return arg.argName ? `${arg.argName} => NULL` : "NULL";
+    }
+    const formatted = formatSqlArgValue(arg.argType, arg.value);
+    return arg.argName ? `${arg.argName} => ${formatted}` : formatted;
+  });
+
+  const returnsLower = returns.toLowerCase().trim();
+  const isVoid = returnsLower === "void";
+  const functionCall = `${schema}.${name}(${argParts.join(", ")})`;
+  const sql = isVoid
+    ? `SELECT ${functionCall}`
+    : `SELECT * FROM ${functionCall}`;
+
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: sql,
+    });
+    if (error) return { data: null, error: error.message, sql };
+    return { data, error: null, sql };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { data: null, error: msg, sql };
+  }
+}
+
 /**
  * Deletes a SQL function
  */

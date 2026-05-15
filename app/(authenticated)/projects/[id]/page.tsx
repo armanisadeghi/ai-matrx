@@ -2,13 +2,7 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Puzzle,
-  Settings,
-  ArrowLeft,
-  Loader2,
-  CheckSquare,
-} from "lucide-react";
+import { Puzzle, Settings, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -18,6 +12,7 @@ import {
   getProjectUserRole,
 } from "@/features/projects/service";
 import type { Project, ProjectRole } from "@/features/projects/types";
+import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 
 // Personal project slugs are NOT globally unique (DB only enforces uniqueness on
 // `(organization_id, slug)`, and PG treats NULL org_ids as distinct). So this
@@ -164,29 +159,7 @@ export default function PersonalProjectDetailPage() {
             )}
           </div>
 
-          <Card className="p-8 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckSquare className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <h2 className="text-lg font-semibold mb-2">Project Tasks</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Task management for this project will appear here.
-              </p>
-              {canManage && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    router.push(`/projects/${project.id}/settings`)
-                  }
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage Project
-                </Button>
-              )}
-            </div>
-          </Card>
+          <ProjectReferencesPanel projectId={project.id} />
         </div>
       </div>
     </div>

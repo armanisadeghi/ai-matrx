@@ -22143,6 +22143,10 @@ export type Database = {
         Args: { p_org_id: string; p_template_key: string }
         Returns: Json
       }
+      apply_template_definition: {
+        Args: { p_definition: Json; p_org_id: string }
+        Returns: Json
+      }
       assign_random_colors_to_node_all_nodes: {
         Args: never
         Returns: undefined
@@ -22250,6 +22254,10 @@ export type Database = {
           remaining: number
           total_used: number
         }[]
+      }
+      check_org_slug_available: {
+        Args: { slug_to_check: string }
+        Returns: boolean
       }
       check_prompt_app_drift: {
         Args: { p_user_id?: string }
@@ -23220,6 +23228,10 @@ export type Database = {
         Returns: Json
       }
       execute_safe_query: { Args: { query: string }; Returns: Json }
+      expand_archetype: {
+        Args: { p_archetype: string; p_choices?: Json }
+        Returns: Json
+      }
       expire_stale_tunnels: { Args: never; Returns: undefined }
       export_user_table_as_csv:
         | { Args: { p_table_id: string }; Returns: string }
@@ -24632,6 +24644,25 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_project_references: {
+        Args: { p_project_id: string }
+        Returns: {
+          column_name: string
+          row_count: number
+          schema_name: string
+          table_name: string
+        }[]
+      }
+      get_project_references_detailed: {
+        Args: { p_project_id: string; p_sample_limit?: number }
+        Returns: {
+          column_name: string
+          row_count: number
+          sample_ids: string[]
+          schema_name: string
+          table_name: string
+        }[]
+      }
       get_prompt_access_level: {
         Args: { prompt_id: string }
         Returns: {
@@ -25030,6 +25061,11 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_user_scopes: { Args: { p_user_id?: string }; Returns: Json }
+      get_user_scopes_with_projects: {
+        Args: { p_user_id?: string }
+        Returns: Json
+      }
       get_user_session_data: {
         Args: { p_user_id: string }
         Returns: {
@@ -25177,6 +25213,7 @@ export type Database = {
         Args: { p_category?: string; p_personal_only?: boolean }
         Returns: Json
       }
+      list_wizard_archetypes: { Args: never; Returns: Json }
       lookup_user_by_email: {
         Args: { lookup_email: string }
         Returns: {

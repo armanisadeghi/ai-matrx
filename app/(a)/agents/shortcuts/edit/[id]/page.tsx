@@ -36,7 +36,7 @@ export default function UserEditShortcutPage({
 
   const goToList = () => {
     startTransition(() => {
-      router.push("/agents/shortcuts/shortcuts");
+      router.push("/agents/shortcuts");
     });
   };
 
@@ -98,7 +98,7 @@ export default function UserEditShortcutPage({
                 This shortcut doesn&apos;t exist in your personal shortcuts.
               </p>
             </div>
-            <Link href="/agents/shortcuts/shortcuts">
+            <Link href="/agents/shortcuts">
               <Button size="sm">
                 <ArrowLeft className="h-4 w-4 mr-1.5" />
                 Back to shortcuts

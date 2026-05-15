@@ -515,7 +515,7 @@ function AiActionsPanel({
           ))}
 
           <Link
-            href="/agents/shortcuts/shortcuts"
+            href="/agents/shortcuts"
             className="flex items-center justify-center gap-1 px-2.5 py-2 bg-muted/30 border border-dashed border-border rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
           >
             <Plus className="w-3 h-3" />
