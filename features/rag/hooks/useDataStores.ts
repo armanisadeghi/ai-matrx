@@ -372,7 +372,12 @@ interface ApiRichMember {
   notes: string | null;
   name: string;
   mime_type: string | null;
-  file_size: number | null;
+  /**
+   * Phase 0 rename: `file_size` → `size_bytes` (see
+   * docs/PYTHON_UPDATES.md §3). The Python `RichDataStoreMember` schema
+   * has been regenerated.
+   */
+  size_bytes: number | null;
   processed_document_id: string | null;
   pages: number;
   chunks: number;
@@ -416,7 +421,7 @@ export function useDataStoreMembersRich(storeId: string | null) {
             notes: m.notes,
             name: m.name ?? m.source_id,
             mimeType: m.mime_type,
-            fileSize: m.file_size,
+            fileSize: m.size_bytes,
             processedDocumentId: m.processed_document_id,
             pages: typeof m.pages === "number" ? m.pages : 0,
             chunks: typeof m.chunks === "number" ? m.chunks : 0,

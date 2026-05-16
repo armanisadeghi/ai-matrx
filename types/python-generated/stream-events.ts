@@ -411,6 +411,156 @@ export interface ImageOutputData {
   download_url?: string | null;
 }
 
+export interface AudioBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_uri?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "audio";
+  duration_ms?: number | null;
+  transcript?: string | null;
+}
+
+export interface DocumentBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_uri?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "document";
+  page_count?: number | null;
+  page1_url?: string | null;
+}
+
+export interface ImageBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_uri?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "image";
+  width?: number | null;
+  height?: number | null;
+  vision_class?: string | null;
+}
+
+export interface JsonValue {
+}
+
+export interface VideoBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_uri?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "video";
+  width?: number | null;
+  height?: number | null;
+  duration_ms?: number | null;
+  poster_url?: string | null;
+}
+
+export interface YouTubeBlock {
+  origin?: "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_uri?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "youtube";
+  video_id?: string | null;
+}
+
+export interface MediaBlockData {
+  type?: "media_block";
+  block: ImageBlock | VideoBlock | AudioBlock | DocumentBlock | YouTubeBlock;
+}
+
 export interface MemoryBufferSpawnedData {
   type?: "memory_buffer_spawned";
   conversation_id: string;
@@ -539,6 +689,7 @@ export type TypedDataPayload =
   | FetchResultsData
   | FunctionResultData
   | ImageOutputData
+  | MediaBlockData
   | MemoryBufferSpawnedData
   | MemoryContextInjectedData
   | MemoryErrorData

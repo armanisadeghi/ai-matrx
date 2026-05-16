@@ -27,9 +27,9 @@ export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
   // The visible `url` field: prefer the most permanent option so reload
   // works even if the signed URL has expired and metadata isn't read.
   const visibleUrl =
-    (block.origin === "external" ? block.externalUrl : block.cdnUrl) ??
-    block.signedUrl ??
-    undefined;
+    block.origin === "matrx"
+      ? (block.cdnUrl ?? block.signedUrl ?? undefined)
+      : block.externalUrl || undefined;
 
   // Pack the canonical fields into metadata under explicit keys. We do NOT
   // drop the caller's free-form `metadata` — we merge it in first so any
@@ -37,21 +37,24 @@ export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
   const callerMetadata = block.metadata ?? {};
   const packed: Record<string, unknown> = {
     ...callerMetadata,
+    kind: block.kind,
     origin: block.origin,
-    cdn_url: block.cdnUrl,
-    signed_url: block.signedUrl,
-    download_url: block.downloadUrl,
     mime_type: block.mimeType,
     file_name: block.fileName,
     width: block.width,
     height: block.height,
     size_bytes: block.sizeBytes,
+    vision_class: block.visionClass,
     status: block.status,
     progress: block.progress,
-    signed_url_expires_at: block.signedUrlExpiresAt,
+    error_message: block.errorMessage,
   };
 
   if (block.origin === "matrx") {
+    packed.cdn_url = block.cdnUrl;
+    packed.signed_url = block.signedUrl;
+    packed.download_url = block.downloadUrl;
+    packed.signed_url_expires_at = block.signedUrlExpiresAt;
     packed.file_id = block.fileId;
     packed.file_uri = block.fileUri;
     packed.canonical_file_uri = block.canonicalFileUri;

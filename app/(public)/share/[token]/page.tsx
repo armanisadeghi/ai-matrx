@@ -39,8 +39,7 @@ function isDocumentishMime(mime: string | null | undefined): boolean {
     mime ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     mime === "application/vnd.ms-excel" ||
-    mime ===
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   );
 }
 
@@ -110,10 +109,12 @@ export default async function PublicSharePage({ params }: PageProps) {
         </div>
 
         <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          {file.file_size != null ? (
+          {file.size_bytes != null ? (
             <>
               <dt className="text-muted-foreground">Size</dt>
-              <dd className="tabular-nums">{formatFileSize(file.file_size)}</dd>
+              <dd className="tabular-nums">
+                {formatFileSize(file.size_bytes)}
+              </dd>
             </>
           ) : null}
           <dt className="text-muted-foreground">Permission</dt>

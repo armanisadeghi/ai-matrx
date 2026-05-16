@@ -30,6 +30,7 @@ export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
       : null;
 
   return {
+    kind: "image",
     origin: "matrx",
     fileId: row.id,
     fileUri: row.storage_uri,
@@ -56,10 +57,14 @@ export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
     fileName: row.file_name,
     width,
     height,
-    sizeBytes: row.file_size ?? null,
+    // Phase 0 rename: cld_files.file_size → cld_files.size_bytes. See
+    // docs/PYTHON_UPDATES.md §3.
+    sizeBytes: row.size_bytes ?? null,
+    visionClass: null,
 
     status: "complete",
     progress: null,
+    errorMessage: null,
     signedUrlExpiresAt: null,
 
     metadata,

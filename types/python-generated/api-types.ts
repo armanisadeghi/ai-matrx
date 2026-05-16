@@ -10343,14 +10343,19 @@ export interface components {
             file_id: string;
             /** File Path */
             file_path: string;
+            /**
+             * File Uri
+             * @description Native cloud storage URI (s3://bucket/key). Same value as the underlying cld_files row's storage_uri — surfaced here so the FE wire contract carries the canonical native URI alongside the logical file_path.
+             */
+            file_uri?: string | null;
             /** Width */
             width?: number | null;
             /** Height */
             height?: number | null;
             /** Mime Type */
             mime_type?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Url */
             url?: string | null;
             /** Cdn Url */
@@ -10359,6 +10364,8 @@ export interface components {
             signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
+            /** Signed Url Expires At */
+            signed_url_expires_at?: number | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -10659,8 +10666,8 @@ export interface components {
             id?: string | null;
             /** File Path */
             file_path?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Mime Type */
             mime_type?: string | null;
             /**
@@ -13823,8 +13830,8 @@ export interface components {
             file_name: string;
             /** Mime Type */
             mime_type?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Checksum */
             checksum?: string | null;
             /**
@@ -13872,8 +13879,8 @@ export interface components {
             storage_uri: string;
             /** Version Number */
             version_number: number;
-            /** File Size */
-            file_size: number | null;
+            /** Size Bytes */
+            size_bytes: number | null;
             /** Checksum */
             checksum: string | null;
             /** Url */
@@ -18044,8 +18051,8 @@ export interface components {
             name: string;
             /** Mime Type */
             mime_type: string | null;
-            /** File Size */
-            file_size: number | null;
+            /** Size Bytes */
+            size_bytes: number | null;
             /** Processed Document Id */
             processed_document_id: string | null;
             /** Pages */
@@ -19547,8 +19554,8 @@ export interface components {
             file_path?: string | null;
             /** File Name */
             file_name?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Mime Type */
             mime_type?: string | null;
             /** Visibility */
@@ -20157,8 +20164,8 @@ export interface components {
             file_path: string;
             /** Mime Type */
             mime_type: string;
-            /** File Size */
-            file_size: number;
+            /** Size Bytes */
+            size_bytes: number;
             /**
              * Master Url
              * @description Signed URL for the master file (1 week TTL)

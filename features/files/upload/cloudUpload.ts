@@ -276,7 +276,8 @@ export async function cloudUploadRaw(
       ok: true,
       fileId: upload.data.file_id,
       filePath: upload.data.file_path,
-      fileSize: upload.data.file_size,
+      // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
+      fileSize: upload.data.size_bytes,
       versionNumber: upload.data.version_number,
       url: upload.data.url ?? null,
       shareToken,
@@ -371,7 +372,8 @@ export async function cloudUpload(
           storage_uri: upload.data.storage_uri,
           file_name: upload.data.file_path.split("/").pop() ?? file.name,
           mime_type: file.type || null,
-          file_size: upload.data.file_size,
+          // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
+          size_bytes: upload.data.size_bytes,
           checksum: upload.data.checksum,
           visibility: options.visibility ?? "private",
           current_version: upload.data.version_number,
@@ -435,7 +437,8 @@ export async function cloudUpload(
       ok: true,
       fileId: upload.data.file_id,
       filePath: upload.data.file_path,
-      fileSize: upload.data.file_size,
+      // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
+      fileSize: upload.data.size_bytes,
       versionNumber: upload.data.version_number,
       url: upload.data.url ?? null,
       shareToken,

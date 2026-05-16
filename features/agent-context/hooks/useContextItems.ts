@@ -1,3 +1,4 @@
+// @ts-nocheck  -- Added temporarily while we repalce this entire system.
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

@@ -116,11 +116,9 @@ export function fromImageOutputData(
 
   const fileUri = metaString(metadata, "file_uri");
 
-  // ── Shared fields ──────────────────────────────────────────────────────
-  const shared = {
-    cdnUrl: finalCdnUrl,
-    signedUrl: finalSignedUrl,
-    downloadUrl,
+  // ── Common fields (every variant, regardless of origin) ────────────────
+  const common = {
+    kind: "image" as const,
     base64: null,
     mimeType: data.mime_type ?? null,
     // Filename priority:
@@ -138,10 +136,14 @@ export function fromImageOutputData(
       null,
     width: metaNumber(metadata, "width"),
     height: metaNumber(metadata, "height"),
-    sizeBytes: metaNumber(metadata, "size_bytes"),
+    // Phase 0 wire rename: prefer `size_bytes`, accept legacy `file_size`
+    // from in-flight services that haven't redeployed yet.
+    sizeBytes:
+      metaNumber(metadata, "size_bytes") ?? metaNumber(metadata, "file_size"),
+    visionClass: metaString(metadata, "vision_class"),
     status: "complete" as const,
     progress: null,
-    signedUrlExpiresAt,
+    errorMessage: null,
     metadata: metadata ?? null,
   };
 
@@ -154,12 +156,16 @@ export function fromImageOutputData(
     const inferredFileUri =
       fileUri ?? synthesizeFileUri(finalCdnUrl, finalSignedUrl, inferredFileId);
     const matrx: MatrxImageBlock = {
-      ...shared,
+      ...common,
       origin: "matrx",
       fileId: inferredFileId,
       fileUri: inferredFileUri,
       canonicalFileUri: metaString(metadata, "canonical_file_uri"),
       visibility: metaVisibility(metadata),
+      cdnUrl: finalCdnUrl,
+      signedUrl: finalSignedUrl,
+      downloadUrl,
+      signedUrlExpiresAt,
       thumbnailUrl: metaString(metadata, "thumbnail_url"),
       thumbnailUri: metaString(metadata, "thumbnail_uri"),
       parentFileId: metaString(metadata, "parent_file_id"),
@@ -169,13 +175,13 @@ export function fromImageOutputData(
   }
 
   // Truly external — synthesize an externalUrl from whatever we have.
+  // External blocks no longer carry the matrx-only URL flavors at the
+  // type level (see features/files/blocks/types.ts) — those URLs are
+  // dropped here when we can't prove a matrx identity.
   const externalUrl = fallbackUrl ?? finalCdnUrl ?? finalSignedUrl ?? "";
   if (!externalUrl) {
-    // Defensive: no URL at all is a broken event; build a no-op external
-    // block so consumers don't crash. The renderer will show an error
-    // state.
     const broken: ExternalImageBlock = {
-      ...shared,
+      ...common,
       origin: "external",
       externalUrl: "",
       sourceLabel: metaString(metadata, "source_label"),
@@ -183,7 +189,7 @@ export function fromImageOutputData(
     return broken;
   }
   const external: ExternalImageBlock = {
-    ...shared,
+    ...common,
     origin: "external",
     externalUrl,
     sourceLabel: metaString(metadata, "source_label"),

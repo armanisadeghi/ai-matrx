@@ -28,19 +28,18 @@ export function fromPartialImageData(
   // until the final event lands. The renderer treats them as "best available
   // preview" while waiting for the upsert.
   return {
+    kind: "image",
     origin: "external",
-    cdnUrl: null,
-    signedUrl: null,
-    downloadUrl: null,
     base64: data.b64_json,
     mimeType: data.mime_type ?? "image/png",
     fileName: null,
     width: null,
     height: null,
     sizeBytes: null,
+    visionClass: null,
     status: "streaming",
     progress: data.progress ?? null,
-    signedUrlExpiresAt: null,
+    errorMessage: null,
     metadata: carriedMetadata ?? null,
     externalUrl: "",
     sourceLabel: "Generating",

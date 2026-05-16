@@ -191,7 +191,10 @@ export const loadUserFileTree = createAsyncThunk<
         fileName: row.file_name,
         parentFolderId: row.parent_folder_id,
         mimeType: row.mime_type,
-        fileSize: row.file_size,
+        // Phase 0 rename: `file_size` → `size_bytes`. The
+        // `CloudTreeFileRow` shape and Supabase row both carry the new
+        // name now. See docs/PYTHON_UPDATES.md §3.
+        fileSize: row.size_bytes,
         visibility: row.visibility,
         currentVersion: row.current_version,
         createdAt: row.created_at,
@@ -927,7 +930,8 @@ export const uploadFiles = createAsyncThunk<
               storage_uri: data.storage_uri,
               file_name: data.file_path.split("/").pop() ?? targetName,
               mime_type: file.type || null,
-              file_size: data.file_size,
+              // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
+              size_bytes: data.size_bytes,
               checksum: data.checksum,
               visibility: arg.visibility ?? "private",
               current_version: data.version_number,

@@ -29203,6 +29203,18 @@
             "type": "string",
             "title": "File Path"
           },
+          "file_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Uri",
+            "description": "Native cloud storage URI (s3://bucket/key). Same value as the underlying cld_files row's storage_uri — surfaced here so the FE wire contract carries the canonical native URI alongside the logical file_path."
+          },
           "width": {
             "anyOf": [
               {
@@ -29236,7 +29248,7 @@
             ],
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -29245,7 +29257,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "url": {
             "anyOf": [
@@ -29290,6 +29302,17 @@
               }
             ],
             "title": "Download Url"
+          },
+          "signed_url_expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url Expires At"
           },
           "metadata": {
             "additionalProperties": true,
@@ -30003,7 +30026,7 @@
             ],
             "title": "File Path"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -30012,7 +30035,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "mime_type": {
             "anyOf": [
@@ -39220,7 +39243,7 @@
             ],
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -39229,7 +39252,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "checksum": {
             "anyOf": [
@@ -39398,7 +39421,7 @@
             "type": "integer",
             "title": "Version Number"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -39407,7 +39430,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "checksum": {
             "anyOf": [
@@ -39453,7 +39476,7 @@
           "file_path",
           "storage_uri",
           "version_number",
-          "file_size",
+          "size_bytes",
           "checksum",
           "url",
           "is_new"
@@ -50800,7 +50823,7 @@
             ],
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -50809,7 +50832,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "processed_document_id": {
             "anyOf": [
@@ -50847,7 +50870,7 @@
           "notes",
           "name",
           "mime_type",
-          "file_size",
+          "size_bytes",
           "processed_document_id",
           "pages",
           "chunks",
@@ -54853,7 +54876,7 @@
             ],
             "title": "File Name"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -54862,7 +54885,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "mime_type": {
             "anyOf": [
@@ -56547,9 +56570,9 @@
             "type": "string",
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "type": "integer",
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "master_url": {
             "anyOf": [
@@ -56608,7 +56631,7 @@
           "storage_uri",
           "file_path",
           "mime_type",
-          "file_size"
+          "size_bytes"
         ],
         "title": "VisionMediaUploadResponse",
         "description": "Response payload for ``POST /media/upload``."

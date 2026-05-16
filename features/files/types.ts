@@ -305,7 +305,13 @@ export interface CloudTreeFileRow {
   file_name: string;
   parent_folder_id: string | null;
   mime_type: string | null;
-  file_size: number | null;
+  /**
+   * File size in bytes. Renamed from `file_size` in Phase 0 (see
+   * docs/PYTHON_UPDATES.md §3). The RPC `tree_for_owner` (and friends)
+   * now returns `size_bytes`; converters read both names defensively
+   * during the transition. Consumers should always read `size_bytes`.
+   */
+  size_bytes: number | null;
   visibility: Visibility;
   current_version: number;
   effective_permission: PermissionLevel | null;
@@ -1235,14 +1241,41 @@ export interface AssetVariant {
   key: string;
   file_id: string;
   file_path: string;
+  /**
+   * Native cloud URI (`s3://bucket/owner/file_id`). Useful for fallback
+   * re-hydration paths where storage-URI access is the only path. Added
+   * in Phase 0 (see docs/PYTHON_UPDATES.md §4).
+   */
+  file_uri: string | null;
   width: number | null;
   height: number | null;
   mime_type: string | null;
-  file_size: number | null;
+  /**
+   * File size in bytes. Renamed from `file_size` in Phase 0 (see
+   * docs/PYTHON_UPDATES.md §3). Old servers may still send `file_size`
+   * during the transition — consumers should fall back to the legacy
+   * field name when reading older responses.
+   */
+  size_bytes: number | null;
+  /**
+   * Legacy alias for `size_bytes`. Populated by older servers during
+   * the Phase 0 transition window. Read `size_bytes` first; fall back
+   * to this only when re-hydrating older persisted responses.
+   *
+   * @deprecated Use `size_bytes`.
+   */
+  file_size?: number | null;
   url: string | null;
   cdn_url: string | null;
   signed_url: string | null;
   download_url: string | null;
+  /**
+   * Ms epoch when `signed_url` becomes invalid. Server-computed at mint
+   * time (see docs/PYTHON_UPDATES.md §4). Use to schedule refreshes
+   * ~30s before instead of parsing X-Amz query params. `null` when only
+   * a CDN URL was minted (CDN URLs don't expire).
+   */
+  signed_url_expires_at: number | null;
   metadata: Record<string, unknown>;
 }
 

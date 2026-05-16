@@ -277,13 +277,18 @@ function buildSyntheticResult(
         key: "original",
         file_id: "",
         file_path: "",
+        file_uri: null,
         width: null,
         height: null,
         mime_type: null,
-        file_size: null,
+        // Phase 0 rename: `file_size` → `size_bytes` (see
+        // docs/PYTHON_UPDATES.md §3). `file_size` is kept on the
+        // `AssetVariant` shape as a legacy fallback for older payloads.
+        size_bytes: null,
         url,
         cdn_url: null,
         signed_url: null,
+        signed_url_expires_at: null,
         download_url: null,
         metadata: {},
       },

@@ -191,17 +191,28 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
   switch (block.type) {
     case "audio_output": {
-      // Python sends: { url: string; mime_type: string }
-      // Component wants: { url: string; mimeType?: string }
-      // TODO(python): rename mime_type → mimeType in the Python AudioOutputData schema.
-      const sd = block.serverData ?? {};
-      const url = sd.url as string | undefined;
+      // Two inbound shapes during the Phase 0/2 transition:
+      //  - Legacy `audio_output` event       → snake_case `{ url, mime_type }`
+      //  - Canonical `media_block(kind=audio)` → camelCase `UnifiedMediaBlock`
+      //    with `cdnUrl` / `signedUrl` / `externalUrl` (no `url`).
+      // Read both; prefer the canonical fields when present.
+      // TODO: collapse onto `UnifiedMediaBlock` end-to-end when audio gets
+      // an `UnifiedAudioBlockRenderer` matching the image one.
+      const sd = (block.serverData ?? {}) as Record<string, unknown>;
+      const url =
+        (sd.cdnUrl as string | undefined) ??
+        (sd.signedUrl as string | undefined) ??
+        (sd.externalUrl as string | undefined) ??
+        (sd.url as string | undefined);
       if (!url) return null;
       return (
         <BlockComponents.AudioOutputBlock
           key={index}
           url={url}
-          mimeType={sd.mime_type as string | undefined}
+          mimeType={
+            (sd.mimeType as string | undefined) ??
+            (sd.mime_type as string | undefined)
+          }
         />
       );
     }
@@ -249,19 +260,38 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
 
     case "video_output": {
-      // Python sends: { url: string; mime_type: string }
-      // Component wants: { url: string; mimeType?: string }
-      // TODO(python): rename mime_type → mimeType in the Python VideoOutputData schema.
-      const sd = block.serverData ?? {};
-      const url = sd.url as string | undefined;
+      // Same dual-shape handling as `audio_output`. See that case.
+      const sd = (block.serverData ?? {}) as Record<string, unknown>;
+      const url =
+        (sd.cdnUrl as string | undefined) ??
+        (sd.signedUrl as string | undefined) ??
+        (sd.externalUrl as string | undefined) ??
+        (sd.url as string | undefined);
       if (!url) return null;
       return (
         <BlockComponents.VideoOutputBlock
           key={index}
           url={url}
-          mimeType={sd.mime_type as string | undefined}
+          mimeType={
+            (sd.mimeType as string | undefined) ??
+            (sd.mime_type as string | undefined)
+          }
         />
       );
+    }
+
+    case "media_block": {
+      // Document and YouTube kinds land here via the `media_block`
+      // stream-event branch in process-stream.ts. We don't have a
+      // unified renderer for those kinds yet (image gets the dedicated
+      // UnifiedImageBlockRenderer; audio/video reuse the legacy
+      // BlockComponents above). For now we no-op to avoid flashing a
+      // broken card — the data is preserved on the render block and a
+      // dedicated renderer can pick it up when it ships.
+      // TODO: route to a UnifiedMediaBlockRenderer that dispatches on
+      // `block.serverData.kind` (document → DocumentPreview, youtube →
+      // YouTubeEmbed) once those components exist.
+      return null;
     }
 
     case "search_results": {

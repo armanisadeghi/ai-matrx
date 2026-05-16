@@ -51,9 +51,7 @@ function toGranteeType(raw: string | null | undefined): GranteeType {
   return raw === "group" ? "group" : "user";
 }
 
-function toMetadataObject(
-  raw: unknown,
-): Record<string, unknown> {
+function toMetadataObject(raw: unknown): Record<string, unknown> {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     return raw as Record<string, unknown>;
   }
@@ -72,7 +70,10 @@ export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
     storageUri: row.storage_uri,
     fileName: row.file_name,
     mimeType: row.mime_type,
-    fileSize: row.file_size,
+    // Phase 0 rename: `cld_files.file_size` → `cld_files.size_bytes`.
+    // See docs/PYTHON_UPDATES.md §3. The Supabase generated row type
+    // already carries the new column name.
+    fileSize: row.size_bytes,
     checksum: row.checksum,
     visibility: toVisibility(row.visibility),
     currentVersion: row.current_version,
@@ -116,7 +117,10 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     storageUri: row.storage_uri,
     fileName: row.file_name,
     mimeType: row.mime_type ?? null,
-    fileSize: row.file_size ?? null,
+    // Phase 0 rename: `FileRecord.file_size` → `FileRecord.size_bytes`.
+    // The Python OpenAPI schema has been regenerated. See
+    // docs/PYTHON_UPDATES.md §3.
+    fileSize: row.size_bytes ?? null,
     checksum: row.checksum ?? null,
     visibility: toVisibility(row.visibility),
     currentVersion: row.current_version ?? 1,
@@ -130,7 +134,8 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     publicUrl: row.public_url ?? null,
     source: { kind: "real" },
     duplicateOfFileId: extras.duplicate_of_file_id ?? null,
-    canonicalProcessedDocumentId: extras.canonical_processed_document_id ?? null,
+    canonicalProcessedDocumentId:
+      extras.canonical_processed_document_id ?? null,
   };
 }
 
@@ -166,7 +171,8 @@ export function dbRowToCloudFileVersion(
     fileId: row.file_id,
     versionNumber: row.version_number,
     storageUri: row.storage_uri,
-    fileSize: row.file_size,
+    // Phase 0 rename — see `dbRowToCloudFile` above.
+    fileSize: row.size_bytes,
     checksum: row.checksum,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -219,9 +225,7 @@ export function dbRowToCloudShareLink(row: CloudShareLinkRow): CloudShareLink {
 // Groups
 // ---------------------------------------------------------------------------
 
-export function dbRowToCloudUserGroup(
-  row: CloudUserGroupRow,
-): CloudUserGroup {
+export function dbRowToCloudUserGroup(row: CloudUserGroupRow): CloudUserGroup {
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -281,8 +285,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
   const hasFolderName = typeof row.folder_name === "string";
   const hasFileName = typeof row.file_name === "string";
 
-  const isFolder =
-    explicitKind === "folder" || (hasFolderName && !hasFileName);
+  const isFolder = explicitKind === "folder" || (hasFolderName && !hasFileName);
 
   const created = str(row, "created_at") ?? new Date().toISOString();
   const updated = str(row, "updated_at") ?? created;
@@ -322,9 +325,10 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
   const folderName = str(row, "folder_name") ?? str(row, "name") ?? "";
   const filePath = str(row, "file_path") ?? str(row, "path") ?? "";
   const fileName = str(row, "file_name") ?? str(row, "name") ?? "";
-  const parentFolderId =
-    str(row, "parent_folder_id") ?? str(row, "parent_id");
-  const fileSize = num(row, "file_size") ?? num(row, "size_bytes");
+  const parentFolderId = str(row, "parent_folder_id") ?? str(row, "parent_id");
+  // Phase 0 rename: `file_size` → `size_bytes`. Read both during the
+  // transition; emit canonical `size_bytes` on the output row.
+  const sizeBytes = num(row, "size_bytes") ?? num(row, "file_size");
 
   if (isFolder) {
     return {
@@ -334,9 +338,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
       folder_name: folderName,
       parent_id: str(row, "parent_id"),
       visibility,
-      effective_permission: effPerm
-        ? toPermissionLevel(effPerm)
-        : null,
+      effective_permission: effPerm ? toPermissionLevel(effPerm) : null,
       owner_id: str(row, "owner_id") ?? "",
       created_at: created,
       updated_at: updated,
@@ -351,12 +353,10 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
     file_name: fileName,
     parent_folder_id: parentFolderId,
     mime_type: str(row, "mime_type"),
-    file_size: fileSize,
+    size_bytes: sizeBytes,
     visibility,
     current_version: num(row, "current_version") ?? 1,
-    effective_permission: effPerm
-      ? toPermissionLevel(effPerm)
-      : null,
+    effective_permission: effPerm ? toPermissionLevel(effPerm) : null,
     owner_id: str(row, "owner_id") ?? "",
     created_at: created,
     updated_at: updated,
@@ -418,10 +418,7 @@ export function fileIdToMediaRef(
  * we don't own, etc.). Use this ONLY when you don't have a `file_id` —
  * otherwise the backend has to follow the URL to resolve the file.
  */
-export function urlToMediaRef(
-  url: string,
-  mimeType?: string | null,
-): MediaRef {
+export function urlToMediaRef(url: string, mimeType?: string | null): MediaRef {
   const ref: MediaRef = { url };
   if (mimeType) ref.mime_type = mimeType;
   return ref;

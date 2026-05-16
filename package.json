@@ -7,7 +7,7 @@
     "build": "ts-node scripts/generate-manifest.ts && tsx scripts/check-registry.ts && pnpm build:sw && pnpm build:pdfjs-worker && next build",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
-    "postinstall": "tsx scripts/copy-pdfjs-worker.ts",
+    "postinstall": "tsx scripts/copy-pdfjs-worker.ts && npx simple-git-hooks",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && tsx scripts/check-registry.ts && bash scripts/fix-encoding.sh && next build",
     "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
@@ -45,6 +45,9 @@
     "check:public-imports": "npx tsx scripts/check-public-imports.ts",
     "check:registry": "tsx scripts/check-registry.ts",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
+    "check:doctrine": "tsx scripts/check-doctrine.ts",
+    "check:doctrine:staged": "tsx scripts/check-doctrine.ts --staged",
+    "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:bundle:capture": "tsx scripts/check-bundle-size.ts --capture",
     "check:bundle:update": "tsx scripts/check-bundle-size.ts --update-baseline",
@@ -270,12 +273,14 @@
     "jest": "latest",
     "jest-environment-jsdom": "^30.3.0",
     "jsdom": "latest",
+    "lint-staged": "^15.2.10",
     "madge": "^8.0.0",
     "os-browserify": "latest",
     "postcss": "latest",
     "process": "latest",
     "react-email": "^5.2.9",
     "script-loader": "latest",
+    "simple-git-hooks": "^2.11.1",
     "stream-browserify": "latest",
     "stream-http": "latest",
     "tailwind-scrollbar": "latest",
@@ -306,6 +311,14 @@
       "protobufjs",
       "supabase",
       "utf-8-validate"
+    ]
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged && pnpm check:doctrine:staged"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --max-warnings=0 --no-warn-ignored"
     ]
   },
   "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"

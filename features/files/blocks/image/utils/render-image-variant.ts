@@ -116,7 +116,9 @@ export async function renderImageVariant(
     mimeType: variant.mime_type,
     width: variant.width,
     height: variant.height,
-    sizeBytes: variant.file_size,
+    // Phase 0 rename — see docs/PYTHON_UPDATES.md §3. Old API
+    // payloads may still carry `file_size`; we read it as a fallback.
+    sizeBytes: variant.size_bytes ?? variant.file_size ?? null,
   };
 }
 

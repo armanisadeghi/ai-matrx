@@ -107,6 +107,11 @@ async function fetchProcessingChildren(
 }
 
 function rowToBinary(row: Record<string, unknown>): BinaryNode {
+  // Phase 0 rename: `cld_files.file_size` → `cld_files.size_bytes`.
+  // Read `size_bytes` first; fall back to legacy `file_size` for any
+  // pre-migration cached payloads still floating around.
+  // See docs/PYTHON_UPDATES.md §3.
+  const rawSize = row.size_bytes ?? row.file_size;
   return {
     id: row.id as string,
     fileName: (row.file_name as string) ?? "Unnamed file",
@@ -116,10 +121,10 @@ function rowToBinary(row: Record<string, unknown>): BinaryNode {
     parentFileId: (row.parent_file_id as string | null) ?? null,
     mimeType: (row.mime_type as string | null) ?? null,
     fileSize:
-      typeof row.file_size === "number"
-        ? (row.file_size as number)
-        : row.file_size != null
-          ? Number(row.file_size)
+      typeof rawSize === "number"
+        ? rawSize
+        : rawSize != null
+          ? Number(rawSize)
           : null,
     createdAt: row.created_at as string,
   };
@@ -129,7 +134,7 @@ async function fetchCldFile(cldId: string): Promise<BinaryNode | null> {
   const { data, error } = await supabase
     .from("cld_files")
     .select(
-      "id, file_name, derivation_kind, derivation_metadata, parent_file_id, mime_type, file_size, created_at",
+      "id, file_name, derivation_kind, derivation_metadata, parent_file_id, mime_type, size_bytes, created_at",
     )
     .eq("id", cldId)
     .is("deleted_at", null)
@@ -156,7 +161,7 @@ async function fetchBinaryChildren(cldId: string): Promise<BinaryNode[]> {
   const { data, error } = await supabase
     .from("cld_files")
     .select(
-      "id, file_name, derivation_kind, derivation_metadata, parent_file_id, mime_type, file_size, created_at",
+      "id, file_name, derivation_kind, derivation_metadata, parent_file_id, mime_type, size_bytes, created_at",
     )
     .eq("parent_file_id", cldId)
     .is("deleted_at", null)

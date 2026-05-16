@@ -201,9 +201,14 @@ export function useImageActions({
     }
   }, [currentSrc]);
 
+  // downloadUrl only exists on matrx-origin blocks (where the server
+  // mints a Content-Disposition: attachment signed URL). External blocks
+  // fall through to the currently-rendered src.
+  const matrxDownloadUrl = block.origin === "matrx" ? block.downloadUrl : null;
+
   const download = useCallback(async () => {
     if (isDownloading) return;
-    const url = block.downloadUrl ?? currentSrc;
+    const url = matrxDownloadUrl ?? currentSrc;
     if (!url) {
       toast.error("No download URL available");
       return;
@@ -218,7 +223,7 @@ export function useImageActions({
     }
   }, [
     isDownloading,
-    block.downloadUrl,
+    matrxDownloadUrl,
     currentSrc,
     downloadName,
     downloadUrlAsFile,

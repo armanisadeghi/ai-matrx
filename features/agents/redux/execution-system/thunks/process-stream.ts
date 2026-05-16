@@ -99,11 +99,16 @@ import {
 import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
 import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
+import {
+  fromMediaBlock,
+  isMediaBlockData,
+} from "@/features/files/blocks/adapters/from-media-block";
 import type {
   ImageOutputData,
   PartialImageData,
 } from "@/types/python-generated/stream-events";
 import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
+import type { UnifiedMediaBlock } from "@/features/files/blocks/types";
 import {
   upsertUserRequest,
   patchUserRequest,
@@ -610,6 +615,63 @@ export async function processStream({
             data: d as MemoryErrorData,
           }),
         );
+      } else if (isMediaBlockData(d)) {
+        // ── Phase 0 canonical path ─────────────────────────────────────────
+        // Python's new `media_block` event carries the full
+        // `UnifiedMediaBlock` shape on `data.block`. Lift to our domain
+        // shape via the single canonical adapter and route by `kind`.
+        //
+        // Each kind maps to the same legacy render-block type the FE
+        // already consumed (`image_output` / `audio_output` / `video_output`)
+        // so existing renderers and selectors keep working without churn.
+        // When `kind: "document"` or `kind: "youtube"` arrives we use the
+        // generic `media_block` type and rely on the renderer to dispatch
+        // on `block.data.kind`.
+        //
+        // See docs/PYTHON_UPDATES.md §2 for the wire contract.
+        const unified: UnifiedMediaBlock = fromMediaBlock(d.block);
+        const isStreamingPartial = unified.status === "streaming";
+
+        const renderBlockType =
+          unified.kind === "image"
+            ? "image_output"
+            : unified.kind === "audio"
+              ? "audio_output"
+              : unified.kind === "video"
+                ? "video_output"
+                : "media_block";
+
+        // Partials + finals collapse onto one render block per stream
+        // so the renderer never sees flicker. Image keeps the legacy
+        // `image_block_current` key so it shares state with the
+        // `image_output` / `partial_image` legacy adapters during the
+        // transition window. Other kinds use a kind-keyed stable id so
+        // multiple in-flight audio/video clips can stream side by side.
+        const stableKey =
+          unified.kind === "image"
+            ? "image_block_current"
+            : `media_block_${unified.kind}_current`;
+
+        dispatch(
+          upsertRenderBlock({
+            requestId,
+            block: {
+              blockId: stableKey,
+              blockIndex: renderBlockEvents,
+              type: renderBlockType,
+              status: isStreamingPartial ? "streaming" : "complete",
+              content: null,
+              data: unified as unknown as Record<string, unknown>,
+            },
+          }),
+        );
+
+        // Open the image peek overlay on a FINAL image arrival. Skip on
+        // streaming partials (would flash too early) and on non-image kinds
+        // (the peek host is image-only today).
+        if (unified.kind === "image" && !isStreamingPartial) {
+          dispatch(openOverlay({ overlayId: "imagePeekHost" }));
+        }
       } else {
         const blockType = [
           "audio_output",
@@ -630,10 +692,11 @@ export async function processStream({
           ? dataType
           : "unknown_data_event";
 
-        // Image events ride the canonical UnifiedImageBlock shape through the
-        // store. Adapters lift whatever Python sends into the agreed shape so
-        // every consumer (renderer, popover, action bar, persistence) speaks
-        // the same vocabulary. See features/files/blocks/image/UNIFIED_IMAGE_BLOCK.md.
+        // ── Legacy fallback path ──────────────────────────────────────────
+        // Backed by `image_output` / `partial_image` / `audio_output` /
+        // `video_output` events from un-redeployed services. Will retire
+        // once Python's `media_block` rollout completes (~one release
+        // cycle after deploy).
         let blockData: Record<string, unknown>;
         if (dataType === "image_output") {
           const unified: UnifiedImageBlock = fromImageOutputData(
