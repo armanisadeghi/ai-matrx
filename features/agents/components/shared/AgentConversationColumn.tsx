@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
+import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 
 import { cn } from "@/lib/utils";
 
@@ -74,7 +75,7 @@ export function AgentConversationColumn({
   return (
     <div
       className={cn(
-        "h-full flex flex-col overflow-hidden",
+        "h-full flex flex-col overflow-hidden px-2",
         constrainWidth && "w-full max-w-3xl mx-auto pb-2",
       )}
     >
@@ -84,6 +85,13 @@ export function AgentConversationColumn({
           onScroll={handleScroll}
           className="h-full overflow-y-auto pt-12"
         >
+          {/* Older-history pagination trigger. Isolated component — */}
+          {/* subscribes only to the older-page flags so its re-renders */}
+          {/* never reach the message tree below. */}
+          <OlderMessagesSentinel
+            conversationId={displayId}
+            scrollRef={scrollRef}
+          />
           <AgentConversationDisplay
             conversationId={displayId}
             surfaceKey={surfaceKey}

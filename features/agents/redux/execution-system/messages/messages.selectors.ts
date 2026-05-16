@@ -55,6 +55,37 @@ export const selectOrderedMessageIds =
   (state: RootState): string[] =>
     state.messages.byConversationId[conversationId]?.orderedIds ?? EMPTY_IDS;
 
+/**
+ * First (oldest currently loaded) message id. Used by the
+ * `OlderMessagesSentinel` as a stable signal to detect that a prepend has
+ * landed — it changes only when older history is appended on top.
+ */
+export const selectFirstMessageId =
+  (conversationId: string) =>
+  (state: RootState): string | undefined =>
+    state.messages.byConversationId[conversationId]?.orderedIds?.[0];
+
+// ---------------------------------------------------------------------------
+// Pagination selectors — used exclusively by the older-history scroll
+// sentinel. Kept narrow so the conversation display tree never subscribes
+// to them; only the sentinel re-renders when these flip.
+// ---------------------------------------------------------------------------
+
+export const selectHasMoreOlderMessages =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.messages.byConversationId[conversationId]?.hasMoreOlder ?? false;
+
+export const selectIsLoadingOlderMessages =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.messages.byConversationId[conversationId]?.isLoadingOlder ?? false;
+
+export const selectOldestLoadedPosition =
+  (conversationId: string) =>
+  (state: RootState): number | null =>
+    state.messages.byConversationId[conversationId]?.oldestPosition ?? null;
+
 export const selectMessageById =
   (conversationId: string, messageId: string) =>
   (state: RootState): MessageRecord | undefined =>

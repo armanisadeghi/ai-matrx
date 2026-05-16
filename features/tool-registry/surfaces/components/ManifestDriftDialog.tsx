@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -84,7 +83,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {loading && (
             <div className="flex items-center justify-center py-8 text-xs text-muted-foreground gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -110,82 +109,80 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
           )}
 
           {!loading && report && totalIssues > 0 && (
-            <ScrollArea className="flex-1 min-h-0">
-              <div className="space-y-3 pr-2">
-                <Section
-                  title="Manifest values missing from DB"
-                  count={report.manifestsMissingInDb.length}
-                  tone="amber"
-                  description="Declared in code but not yet upserted. Sync to apply."
-                >
-                  {report.manifestsMissingInDb.map((d) => (
-                    <DriftRow
-                      key={`m-${d.surfaceName}-${d.valueName}`}
-                      drift={d}
-                    />
-                  ))}
-                </Section>
+            <div className="space-y-3">
+              <Section
+                title="Manifest values missing from DB"
+                count={report.manifestsMissingInDb.length}
+                tone="amber"
+                description="Declared in code but not yet upserted. Sync to apply."
+              >
+                {report.manifestsMissingInDb.map((d) => (
+                  <DriftRow
+                    key={`m-${d.surfaceName}-${d.valueName}`}
+                    drift={d}
+                  />
+                ))}
+              </Section>
 
-                <Section
-                  title="DB values without a code manifest"
-                  count={report.dbValuesNotInManifest.length}
-                  tone="rose"
-                  description="Stale rows. Sync with “Delete stale rows” to clean up."
-                >
-                  {report.dbValuesNotInManifest.map((d) => (
-                    <DriftRow
-                      key={`d-${d.surfaceName}-${d.valueName}`}
-                      drift={d}
-                    />
-                  ))}
-                </Section>
+              <Section
+                title="DB values without a code manifest"
+                count={report.dbValuesNotInManifest.length}
+                tone="rose"
+                description='Stale rows. Sync with "Delete stale rows" to clean up.'
+              >
+                {report.dbValuesNotInManifest.map((d) => (
+                  <DriftRow
+                    key={`d-${d.surfaceName}-${d.valueName}`}
+                    drift={d}
+                  />
+                ))}
+              </Section>
 
-                <Section
-                  title="Field-level diffs"
-                  count={report.diffs.length}
-                  tone="orange"
-                  description="Same name on both sides but fields differ. Sync to make DB match code."
-                >
-                  {report.diffs.map((d) => (
-                    <DriftRow
-                      key={`diff-${d.surfaceName}-${d.valueName}`}
-                      drift={d}
-                      showDiff
-                    />
-                  ))}
-                </Section>
+              <Section
+                title="Field-level diffs"
+                count={report.diffs.length}
+                tone="orange"
+                description="Same name on both sides but fields differ. Sync to make DB match code."
+              >
+                {report.diffs.map((d) => (
+                  <DriftRow
+                    key={`diff-${d.surfaceName}-${d.valueName}`}
+                    drift={d}
+                    showDiff
+                  />
+                ))}
+              </Section>
 
-                <Section
-                  title="Broken agent mappings"
-                  count={report.brokenAgentMappings.length}
-                  tone="rose"
-                  description="Agent bindings reference SurfaceValues that no longer exist. Remap to a valid value, remove, or keep & notify."
-                >
-                  {report.brokenAgentMappings.map((b) => (
-                    <BrokenRow
-                      key={`ag-${b.bindingId}-${b.mappingKey}`}
-                      broken={b}
-                      onResolved={() => void load()}
-                    />
-                  ))}
-                </Section>
+              <Section
+                title="Broken agent mappings"
+                count={report.brokenAgentMappings.length}
+                tone="rose"
+                description="Agent bindings reference SurfaceValues that no longer exist. Remap to a valid value, remove, or keep & notify."
+              >
+                {report.brokenAgentMappings.map((b) => (
+                  <BrokenRow
+                    key={`ag-${b.bindingId}-${b.mappingKey}`}
+                    broken={b}
+                    onResolved={() => void load()}
+                  />
+                ))}
+              </Section>
 
-                <Section
-                  title="Broken tool mappings"
-                  count={report.brokenToolMappings.length}
-                  tone="rose"
-                  description="Tool bindings reference SurfaceValues that no longer exist. Remap, remove, or notify."
-                >
-                  {report.brokenToolMappings.map((b) => (
-                    <BrokenRow
-                      key={`tl-${b.bindingId}-${b.mappingKey}`}
-                      broken={b}
-                      onResolved={() => void load()}
-                    />
-                  ))}
-                </Section>
-              </div>
-            </ScrollArea>
+              <Section
+                title="Broken tool mappings"
+                count={report.brokenToolMappings.length}
+                tone="rose"
+                description="Tool bindings reference SurfaceValues that no longer exist. Remap, remove, or notify."
+              >
+                {report.brokenToolMappings.map((b) => (
+                  <BrokenRow
+                    key={`tl-${b.bindingId}-${b.mappingKey}`}
+                    broken={b}
+                    onResolved={() => void load()}
+                  />
+                ))}
+              </Section>
+            </div>
           )}
         </div>
 

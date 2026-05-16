@@ -18,7 +18,7 @@ import {
   unregisterSurface,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
 
 interface AgentBuilderRightPanelProps {
   agentId: string;
@@ -47,16 +47,19 @@ export function AgentBuilderRightPanel({
     };
   }, [dispatch, surfaceKey]);
 
-  const agentOptions: ManagedAgentOptions = {
-    surfaceKey,
-    sourceFeature,
-    apiEndpointMode: "manual",
-    showAutoClearToggle: true,
-    autoClearConversation: true,
-    config: {
+  const agentOptions: ConversationInvocation = {
+    identity: { surfaceKey },
+    engine: { kind: "agent", agentId },
+    routing: { apiEndpointMode: "manual" },
+    origin: { origin: "manual", sourceFeature },
+    display: {
+      showAutoClearToggle: true,
+      autoClearConversation: true,
+      showVariablePanel: true,
+    },
+    behavior: {
       autoRun: false,
       allowChat: true,
-      showVariablePanel: true,
     },
   };
 

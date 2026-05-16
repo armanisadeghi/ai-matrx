@@ -1000,10 +1000,12 @@ export type Database = {
           show_pre_execution_gate: boolean | null
           show_variable_panel: boolean
           sort_order: number
+          surface_name: string | null
           task_id: string | null
           updated_at: string
           use_latest: boolean
           user_id: string | null
+          value_mappings: Json | null
           variables_panel_style: string
         }
         Insert: {
@@ -1040,10 +1042,12 @@ export type Database = {
           show_pre_execution_gate?: boolean | null
           show_variable_panel?: boolean
           sort_order?: number
+          surface_name?: string | null
           task_id?: string | null
           updated_at?: string
           use_latest?: boolean
           user_id?: string | null
+          value_mappings?: Json | null
           variables_panel_style?: string
         }
         Update: {
@@ -1080,10 +1084,12 @@ export type Database = {
           show_pre_execution_gate?: boolean | null
           show_variable_panel?: boolean
           sort_order?: number
+          surface_name?: string | null
           task_id?: string | null
           updated_at?: string
           use_latest?: boolean
           user_id?: string | null
+          value_mappings?: Json | null
           variables_panel_style?: string
         }
         Relationships: [
@@ -1121,6 +1127,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agx_shortcut_surface_fk"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
           },
           {
             foreignKeyName: "agx_shortcut_task_fk"
@@ -22734,6 +22747,18 @@ export type Database = {
           p_sort_order?: number
         }
         Returns: Json
+      }
+      create_shortcut_from_agent_surface: {
+        Args: {
+          p_agent_surface_id: string
+          p_category_id: string
+          p_organization_id?: string
+          p_overrides?: Json
+          p_project_id?: string
+          p_task_id?: string
+          p_user_id?: string
+        }
+        Returns: string
       }
       create_task_with_association: {
         Args: {

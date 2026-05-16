@@ -146,13 +146,28 @@ export function AgentConversationDisplay({
     return entries;
   }, [messages, isActive, latestRequestId]);
 
+  // Auto-scroll to bottom — fires ONLY when a new message lands at the
+  // bottom of the transcript (the LAST entry's key changed AND the entry
+  // count grew). The bottom-key check is what distinguishes a normal
+  // append (new user/assistant turn → scroll) from an older-history
+  // prepend (`loadOlderMessages` adds messages at the TOP → the last
+  // key is unchanged → do not scroll). Without this guard, pagination
+  // would yank the user back to the bottom on every page.
   const prevLengthRef = useRef(displayEntries.length);
+  const prevLastKeyRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (displayEntries.length > prevLengthRef.current) {
+    const count = displayEntries.length;
+    const lastKey = displayEntries[count - 1]?.key;
+    if (
+      count > prevLengthRef.current &&
+      lastKey &&
+      lastKey !== prevLastKeyRef.current
+    ) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    prevLengthRef.current = displayEntries.length;
-  }, [displayEntries.length]);
+    prevLengthRef.current = count;
+    prevLastKeyRef.current = lastKey;
+  }, [displayEntries]);
 
   if (displayEntries.length === 0) {
     return <AgentEmptyMessageDisplay conversationId={conversationId} />;

@@ -1185,6 +1185,327 @@ export function callConversationMemoryCost(
   >;
 }
 
+// ============================================================================
+// SECTION 17 — CONVERSATION API (BATCH / FORK / COMPACTION)
+// ============================================================================
+//
+// Wrappers for the new server-side conversation operations documented in
+// docs/FE_CONVERSATION_API_CHANGES.md. These are ADDITIVE: they live alongside
+// the existing direct-Supabase RPC thunks (forkConversation, deleteMessage,
+// editMessage, etc.) so callers can opt in per surface without losing the
+// existing implementation. Final consolidation can happen once the new
+// endpoints are validated end-to-end in this codebase.
+
+// ─── Conversation: Fork (extended) ───────────────────────────────────────────
+//
+// POST /cx/conversations/{id}/fork — copy a conversation up to a chosen point.
+// Backwards-compatible extension of the legacy fork: now accepts
+// `from_message_id` + `exclusive` in addition to `up_to_position`.
+
+export type ConversationForkBody = components["schemas"]["ForkRequest"];
+export type ConversationForkResponse =
+  components["schemas"]["ForkConversationResponse"];
+
+export interface CallConversationForkOptions {
+  conversationId: string;
+  body: ConversationForkBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  _testOverrides?: TestOverrides;
+}
+
+export function callConversationFork(
+  options: CallConversationForkOptions,
+): ThunkAction<
+  Promise<ApiCallResult<ConversationForkResponse>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}/fork",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    _testOverrides: options._testOverrides,
+  }) as ThunkAction<
+    Promise<ApiCallResult<ConversationForkResponse>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
+// ─── Conversation: Fork-and-Run (streaming) ──────────────────────────────────
+//
+// POST /ai/conversations/{id}/fork-and-run — one-shot fork + new turn. The
+// first NDJSON event is `kind: "conversation.forked"` (see
+// `features/agents/types/conversation-stream-events.ts`), then standard agent
+// stream output. This collapses the "edit a message → fork → continue" flow
+// into a single atomic round trip.
+
+export type ConversationForkAndRunBody =
+  components["schemas"]["ForkAndRunRequest"];
+
+export interface CallConversationForkAndRunOptions {
+  conversationId: string;
+  body: ConversationForkAndRunBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  onStreamStart?: (
+    requestId: string | null,
+    conversationId: string | null,
+  ) => void;
+  onStreamEvent?: (event: TypedStreamEvent) => void;
+  onStreamComplete?: (
+    requestId: string | null,
+    conversationId: string | null,
+  ) => void;
+  onStreamError?: (error: ApiCallError) => void;
+  _testOverrides?: TestOverrides;
+}
+
+export function callConversationForkAndRun(
+  options: CallConversationForkAndRunOptions,
+) {
+  return callApi({
+    path: "/ai/conversations/{conversation_id}/fork-and-run",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: true,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    onStreamStart: options.onStreamStart,
+    onStreamEvent: options.onStreamEvent,
+    onStreamComplete: options.onStreamComplete,
+    onStreamError: options.onStreamError,
+    _testOverrides: options._testOverrides,
+  });
+}
+
+// ─── Messages: Batch delete with tool-pair cascade ───────────────────────────
+//
+// POST /cx/conversations/{id}/messages/delete — hard delete. Smarter than the
+// per-row legacy path: keeps tool_use / tool_result adjacency intact so the
+// next provider call never sees an orphan tool block. Pass `dry_run: true` to
+// preview the resolved set without writing.
+
+export type MessageSelector = components["schemas"]["MessageSelector"];
+export type BatchDeleteBody = components["schemas"]["BatchDeleteRequest"];
+export type BatchDeleteResult = components["schemas"]["BatchDeleteResponse"];
+
+export interface CallBatchDeleteMessagesOptions {
+  conversationId: string;
+  body: BatchDeleteBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  _testOverrides?: TestOverrides;
+}
+
+export function callBatchDeleteMessages(
+  options: CallBatchDeleteMessagesOptions,
+): ThunkAction<
+  Promise<ApiCallResult<BatchDeleteResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}/messages/delete",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    _testOverrides: options._testOverrides,
+  }) as ThunkAction<
+    Promise<ApiCallResult<BatchDeleteResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
+// ─── Messages: Replace (user-initiated compaction) ───────────────────────────
+//
+// POST /cx/conversations/{id}/messages/replace — soft-delete the selected
+// rows and insert a single visible summary message in their place. Reversible
+// via /messages/restore using the returned `compaction_group_id`.
+
+export type ReplaceMessagesBody = components["schemas"]["ReplaceRequest"];
+export type ReplaceMessagesResult = components["schemas"]["ReplaceResponse"];
+
+export interface CallReplaceMessagesOptions {
+  conversationId: string;
+  body: ReplaceMessagesBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  _testOverrides?: TestOverrides;
+}
+
+export function callReplaceMessages(
+  options: CallReplaceMessagesOptions,
+): ThunkAction<
+  Promise<ApiCallResult<ReplaceMessagesResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}/messages/replace",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    _testOverrides: options._testOverrides,
+  }) as ThunkAction<
+    Promise<ApiCallResult<ReplaceMessagesResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
+// ─── Messages: Hide (system-initiated compaction) ────────────────────────────
+//
+// POST /cx/conversations/{id}/messages/hide — flip `is_visible_to_model=false`
+// on the selected rows. User still sees them; nothing is soft-deleted;
+// positions don't move. Reversible via /messages/restore.
+
+export type HideMessagesBody = components["schemas"]["HideRequest"];
+export type HideMessagesResult = components["schemas"]["HideResponse"];
+
+export interface CallHideMessagesOptions {
+  conversationId: string;
+  body: HideMessagesBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  _testOverrides?: TestOverrides;
+}
+
+export function callHideMessages(
+  options: CallHideMessagesOptions,
+): ThunkAction<
+  Promise<ApiCallResult<HideMessagesResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}/messages/hide",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    _testOverrides: options._testOverrides,
+  }) as ThunkAction<
+    Promise<ApiCallResult<HideMessagesResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
+// ─── Messages: Restore (undo a replace or hide) ──────────────────────────────
+//
+// POST /cx/conversations/{id}/messages/restore — reverse a previous
+// /messages/replace or /messages/hide. Identify the op via either
+// `compaction_group_id` or `summary_message_id` (replace only).
+//
+// NOTE the response schema is namespaced — there's an unrelated
+// `RestoreResponse` in the file_analysis router. The generated `paths`
+// already resolves to the right one; the typed return below points at the
+// namespaced schema for callers that want to type it explicitly.
+
+export type RestoreCompactionBody = components["schemas"]["RestoreRequest"];
+export type RestoreCompactionResult =
+  components["schemas"]["aidream__api__routers__cx_data__RestoreResponse"];
+
+export interface CallRestoreCompactionOptions {
+  conversationId: string;
+  body: RestoreCompactionBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  _testOverrides?: TestOverrides;
+}
+
+export function callRestoreCompaction(
+  options: CallRestoreCompactionOptions,
+): ThunkAction<
+  Promise<ApiCallResult<RestoreCompactionResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}/messages/restore",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    _testOverrides: options._testOverrides,
+  }) as ThunkAction<
+    Promise<ApiCallResult<RestoreCompactionResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
+// ─── Turns: Compact one or more whole turns ──────────────────────────────────
+//
+// POST /cx/conversations/{id}/turns/compact — turn = role:"user" → next
+// role:"user" (exclusive). Server resolves the turn boundary and delegates to
+// /messages/replace (mode="user") or /messages/hide (mode="system"). Caller
+// supplies the summary content; this endpoint does not run an LLM.
+
+export type CompactTurnsBody = components["schemas"]["CompactTurnsRequest"];
+export type CompactTurnsResult = components["schemas"]["CompactTurnsResponse"];
+
+export interface CallCompactTurnsOptions {
+  conversationId: string;
+  body: CompactTurnsBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  _testOverrides?: TestOverrides;
+}
+
+export function callCompactTurns(
+  options: CallCompactTurnsOptions,
+): ThunkAction<
+  Promise<ApiCallResult<CompactTurnsResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}/turns/compact",
+    method: "POST",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    _testOverrides: options._testOverrides,
+  }) as ThunkAction<
+    Promise<ApiCallResult<CompactTurnsResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
 // ─── TODO: Add more wrappers as callers are migrated ─────────────────────────
 // callChat(...)
 // callDirectChat(...)

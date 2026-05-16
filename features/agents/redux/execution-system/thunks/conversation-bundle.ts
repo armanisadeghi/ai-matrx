@@ -1,0 +1,499 @@
+/**
+ * conversation-bundle — shared utilities for the `get_cx_conversation_bundle`
+ * RPC. Used by both `loadConversation` (initial hydration) and
+ * `loadOlderMessages` (paginated history).
+ *
+ * The RPC is the single source of truth for any conversation history fetch:
+ *   - `p_message_limit` (1..200, default 10) — page size.
+ *   - `p_before_position` (smallint cursor) — fetch messages with
+ *     `position < p_before_position`. NULL → newest page.
+ *   - Returns `messages`, `tool_calls`, `artifacts`, and `media` JOINED to the
+ *     page's message IDs, plus a `pagination` block with `oldest_position` and
+ *     `has_more` so callers can advance the cursor.
+ */
+
+import { supabase } from "@/utils/supabase/client";
+import type { Json } from "@/types/database.types";
+import type { MessageRecord } from "../messages/messages.slice";
+import type {
+  CxUserRequestRecord,
+  CxRequestRecord,
+  CxToolCallRecord,
+} from "../observability/observability.slice";
+
+// =============================================================================
+// Bundle shape — mirrors `get_cx_conversation_bundle` return JSONB
+// =============================================================================
+
+export interface BundlePagination {
+  limit: number;
+  returned_count: number;
+  oldest_position: number | null;
+  has_more: boolean;
+}
+
+export interface CxConversationBundle {
+  conversation: CxConversationRow;
+  messages: CxMessageRow[];
+  tool_calls: CxToolCallRow[];
+  artifacts: unknown[];
+  media: unknown[];
+  pagination: BundlePagination;
+  // Legacy parity fields — populated only by the fallback path that
+  // queries observability tables directly (the RPC's bundle doesn't carry
+  // user_requests / requests with the older-pages join).
+  userRequests?: CxUserRequestRow[];
+  requests?: CxRequestRow[];
+}
+
+export interface CxConversationRow {
+  id: string;
+  user_id: string;
+  title: string | null;
+  description: string | null;
+  keywords: string[] | null;
+  system_instruction: string | null;
+  status: string;
+  message_count: number;
+  config: Json;
+  metadata: Json;
+  variables: Json;
+  overrides: Json;
+  last_model_id: string | null;
+  initial_agent_id: string | null;
+  initial_agent_version_id: string | null;
+  parent_conversation_id: string | null;
+  forked_from_id: string | null;
+  forked_at_position: number | null;
+  organization_id: string | null;
+  project_id: string | null;
+  task_id: string | null;
+  is_public: boolean;
+  is_ephemeral: boolean;
+  source_app: string;
+  source_feature: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CxMessageRow {
+  id: string;
+  conversation_id: string;
+  agent_id: string | null;
+  role: string;
+  content: Json;
+  content_history: Json | null;
+  user_content: Json | null;
+  position: number;
+  source: string;
+  status: string;
+  is_visible_to_model: boolean;
+  is_visible_to_user: boolean;
+  metadata: Json;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface CxToolCallRow {
+  id: string;
+  conversation_id: string;
+  user_request_id: string | null;
+  message_id: string | null;
+  user_id: string;
+  call_id: string;
+  tool_name: string;
+  tool_name_as_called: string | null;
+  tool_type: string;
+  iteration: number;
+  status: string;
+  success: boolean;
+  is_error: boolean | null;
+  error_type: string | null;
+  error_message: string | null;
+  arguments: Json;
+  output: string | null;
+  output_chars: number;
+  output_preview: Json | null;
+  output_type: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  cost_usd: number | null;
+  duration_ms: number;
+  started_at: string;
+  completed_at: string;
+  parent_call_id: string | null;
+  retry_count: number | null;
+  persist_key: string | null;
+  file_path: string | null;
+  execution_events: Json | null;
+  metadata: Json;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface CxUserRequestRow {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  agent_id: string | null;
+  agent_version_id: string | null;
+  status: string;
+  iterations: number;
+  finish_reason: string | null;
+  error: string | null;
+  trigger_message_position: number | null;
+  result_start_position: number | null;
+  result_end_position: number | null;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_cached_tokens: number;
+  total_tokens: number;
+  total_tool_calls: number;
+  total_cost: number | null;
+  total_duration_ms: number | null;
+  api_duration_ms: number | null;
+  tool_duration_ms: number | null;
+  source_app: string;
+  source_feature: string;
+  metadata: Json;
+  created_at: string;
+  completed_at: string | null;
+  deleted_at: string | null;
+}
+
+export interface CxRequestRow {
+  id: string;
+  conversation_id: string;
+  user_request_id: string;
+  ai_model_id: string;
+  api_class: string | null;
+  iteration: number;
+  response_id: string | null;
+  finish_reason: string | null;
+  input_tokens: number | null;
+  cached_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  cost: number | null;
+  total_duration_ms: number | null;
+  api_duration_ms: number | null;
+  tool_duration_ms: number | null;
+  tool_calls_count: number | null;
+  tool_calls_details: Json | null;
+  metadata: Json;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+// =============================================================================
+// Bundle fetch — RPC-first with fallback
+// =============================================================================
+
+export interface FetchBundleOptions {
+  messageLimit?: number;
+  beforePosition?: number | null;
+  /**
+   * Skip the legacy fallback path that queries `cx_user_request` and
+   * `cx_request` directly. Pagination callers should pass `true` — those
+   * tables are only useful on the initial hydrate; subsequent pages don't
+   * need them because the conversation-level observability is already
+   * populated.
+   */
+  skipObservabilityFallback?: boolean;
+}
+
+function describeSupabaseError(err: unknown): Record<string, unknown> {
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    return {
+      message: e.message,
+      code: e.code,
+      details: e.details,
+      hint: e.hint,
+      status: e.status,
+      statusCode: e.statusCode,
+      name: e.name,
+      raw: err,
+    };
+  }
+  return { raw: err };
+}
+
+export { describeSupabaseError };
+
+/**
+ * Fetches a page of conversation history via `get_cx_conversation_bundle`.
+ * Falls back to direct table queries when the RPC is unavailable (dev DBs
+ * without the migration applied).
+ */
+export async function fetchConversationBundle(
+  conversationId: string,
+  options: FetchBundleOptions = {},
+): Promise<CxConversationBundle> {
+  const {
+    messageLimit = 50,
+    beforePosition = null,
+    skipObservabilityFallback = false,
+  } = options;
+
+  // Preferred: single-round-trip RPC. SQL signature
+  // (p_conversation_id uuid, p_message_limit int, p_before_position smallint).
+  try {
+    const { data, error } = await supabase.rpc("get_cx_conversation_bundle", {
+      p_conversation_id: conversationId,
+      p_message_limit: messageLimit,
+      p_before_position: beforePosition ?? undefined,
+    });
+    if (!error && data) {
+      return data as unknown as CxConversationBundle;
+    }
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[conversation-bundle] RPC unavailable — falling back to parallel queries.",
+      describeSupabaseError(error),
+    );
+  } catch (rpcErr) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[conversation-bundle] RPC threw — falling back to parallel queries.",
+      describeSupabaseError(rpcErr),
+    );
+  }
+
+  // Fallback. Runs when the RPC isn't deployed or errors transiently.
+  // Shape mirrors the RPC contract so downstream code is uniform.
+  const messageQuery = supabase
+    .from("cx_message")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
+    .order("position", { ascending: false })
+    .limit(Math.max(1, Math.min(messageLimit, 200)));
+  if (beforePosition != null) {
+    messageQuery.lt("position", beforePosition);
+  }
+
+  const observabilityQueries = skipObservabilityFallback
+    ? [Promise.resolve({ data: [] }), Promise.resolve({ data: [] })]
+    : [
+        supabase
+          .from("cx_user_request")
+          .select("*")
+          .eq("conversation_id", conversationId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("cx_request")
+          .select("*")
+          .eq("conversation_id", conversationId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: true }),
+      ];
+
+  const [conversationRes, messagesRes, userRequestsRes, requestsRes] =
+    await Promise.all([
+      supabase
+        .from("cx_conversation")
+        .select("*")
+        .eq("id", conversationId)
+        .single(),
+      messageQuery,
+      ...observabilityQueries,
+    ]);
+
+  if (conversationRes.error) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[conversation-bundle] cx_conversation query error:",
+      describeSupabaseError(conversationRes.error),
+    );
+    throw conversationRes.error;
+  }
+  if (!conversationRes.data) {
+    throw new Error(`Conversation ${conversationId} not found`);
+  }
+
+  const rawMessages = (messagesRes.data ?? []) as unknown as CxMessageRow[];
+  const sortedAsc = [...rawMessages].sort((a, b) => a.position - b.position);
+  const messageIds = sortedAsc.map((m) => m.id);
+
+  let toolCalls: CxToolCallRow[] = [];
+  if (messageIds.length > 0) {
+    const toolsRes = await supabase
+      .from("cx_tl_call")
+      .select("*")
+      .in("message_id", messageIds)
+      .is("deleted_at", null)
+      .order("started_at", { ascending: true });
+    toolCalls = (toolsRes.data ?? []) as unknown as CxToolCallRow[];
+  }
+
+  const oldestPosition = sortedAsc[0]?.position ?? null;
+  let hasMore = false;
+  if (oldestPosition != null) {
+    const olderCheck = await supabase
+      .from("cx_message")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", conversationId)
+      .is("deleted_at", null)
+      .lt("position", oldestPosition);
+    hasMore = (olderCheck.count ?? 0) > 0;
+  }
+
+  return {
+    conversation: conversationRes.data as unknown as CxConversationRow,
+    messages: sortedAsc,
+    tool_calls: toolCalls,
+    artifacts: [],
+    media: [],
+    pagination: {
+      limit: messageLimit,
+      returned_count: sortedAsc.length,
+      oldest_position: oldestPosition,
+      has_more: hasMore,
+    },
+    userRequests: (userRequestsRes?.data ??
+      []) as unknown as CxUserRequestRow[],
+    requests: (requestsRes?.data ?? []) as unknown as CxRequestRow[],
+  };
+}
+
+// =============================================================================
+// Row → Record converters
+// =============================================================================
+
+export function messageRowToRecord(row: CxMessageRow): MessageRecord {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    agentId: row.agent_id,
+    role: (row.role as MessageRecord["role"]) ?? "user",
+    content: row.content,
+    contentHistory: row.content_history,
+    userContent: row.user_content,
+    position: row.position,
+    source: row.source,
+    status: row.status,
+    isVisibleToModel: row.is_visible_to_model,
+    isVisibleToUser: row.is_visible_to_user,
+    metadata: row.metadata,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  };
+}
+
+export function userRequestRowToRecord(
+  row: CxUserRequestRow,
+): CxUserRequestRecord {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    userId: row.user_id,
+    agentId: row.agent_id,
+    agentVersionId: row.agent_version_id,
+    status: row.status,
+    iterations: row.iterations,
+    finishReason: row.finish_reason,
+    error: row.error,
+    triggerMessagePosition: row.trigger_message_position,
+    resultStartPosition: row.result_start_position,
+    resultEndPosition: row.result_end_position,
+    totalInputTokens: row.total_input_tokens,
+    totalOutputTokens: row.total_output_tokens,
+    totalCachedTokens: row.total_cached_tokens,
+    totalTokens: row.total_tokens,
+    totalToolCalls: row.total_tool_calls,
+    totalCost: row.total_cost,
+    totalDurationMs: row.total_duration_ms,
+    apiDurationMs: row.api_duration_ms,
+    toolDurationMs: row.tool_duration_ms,
+    sourceApp: row.source_app,
+    sourceFeature: row.source_feature,
+    metadata: row.metadata,
+    createdAt: row.created_at,
+    completedAt: row.completed_at,
+    deletedAt: row.deleted_at,
+  };
+}
+
+export function requestRowToRecord(row: CxRequestRow): CxRequestRecord {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    userRequestId: row.user_request_id,
+    aiModelId: row.ai_model_id,
+    apiClass: row.api_class,
+    iteration: row.iteration,
+    responseId: row.response_id,
+    finishReason: row.finish_reason,
+    inputTokens: row.input_tokens,
+    cachedTokens: row.cached_tokens,
+    outputTokens: row.output_tokens,
+    totalTokens: row.total_tokens,
+    cost: row.cost,
+    totalDurationMs: row.total_duration_ms,
+    apiDurationMs: row.api_duration_ms,
+    toolDurationMs: row.tool_duration_ms,
+    toolCallsCount: row.tool_calls_count,
+    toolCallsDetails: row.tool_calls_details,
+    metadata: row.metadata,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  };
+}
+
+export function toolCallRowToRecord(row: CxToolCallRow): CxToolCallRecord {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    userRequestId: row.user_request_id,
+    messageId: row.message_id,
+    userId: row.user_id,
+    callId: row.call_id,
+    toolName: row.tool_name,
+    toolNameAsCalled: row.tool_name_as_called ?? null,
+    toolType: row.tool_type,
+    iteration: row.iteration,
+    status: row.status,
+    success: row.success,
+    isError: row.is_error,
+    errorType: row.error_type,
+    errorMessage: row.error_message,
+    arguments: row.arguments,
+    output: row.output,
+    outputChars: row.output_chars,
+    outputPreview: row.output_preview,
+    outputType: row.output_type,
+    inputTokens: row.input_tokens,
+    outputTokens: row.output_tokens,
+    totalTokens: row.total_tokens,
+    costUsd: row.cost_usd,
+    durationMs: row.duration_ms,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    parentCallId: row.parent_call_id,
+    retryCount: row.retry_count,
+    persistKey: row.persist_key,
+    filePath: row.file_path,
+    executionEvents: row.execution_events,
+    metadata: row.metadata,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  };
+}
+
+/**
+ * Normalize the bundle's tool_calls payload — accepts both snake_case
+ * (`tool_calls`) and camelCase (`toolCalls`) keys so the slice never
+ * silently drops data if the server ever shifts conventions.
+ */
+export function extractBundleToolCalls(
+  bundle: CxConversationBundle,
+): CxToolCallRow[] {
+  const bundleAny = bundle as unknown as {
+    tool_calls?: CxToolCallRow[];
+    toolCalls?: CxToolCallRow[];
+  };
+  return bundleAny.tool_calls ?? bundleAny.toolCalls ?? [];
+}

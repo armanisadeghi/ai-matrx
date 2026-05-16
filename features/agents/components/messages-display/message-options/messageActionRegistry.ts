@@ -52,10 +52,7 @@ import {
   setPendingSource,
 } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "sonner";
-import {
-  openOverlay,
-  closeOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -309,7 +306,8 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
               messageId: messageId ?? undefined,
               conversationId: conversationId ?? undefined,
               title: "HTML Preview & Publishing",
-              description: "Edit markdown, preview HTML, and publish your content",
+              description:
+                "Edit markdown, preview HTML, and publish your content",
               onSave: async (newContent: string) => {
                 if (conversationId && messageId) {
                   try {
@@ -327,7 +325,9 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
                     console.error("[html-preview] save failed", err);
                   }
                 }
-                dispatch(closeOverlay({ overlayId: "htmlPreview", instanceId }));
+                dispatch(
+                  closeOverlay({ overlayId: "htmlPreview", instanceId }),
+                );
               },
               showSaveButton: Boolean(conversationId && messageId),
               isAgentSystem: true,
@@ -822,7 +822,10 @@ function editAndResubmitItem(ctx: MessageActionContext): MenuItem {
                 // Read position from state right before firing. Fork at
                 // (position - 1) so the user's new message becomes the next
                 // turn on the branch, replacing whatever originally came after.
-                const positionThunk = (_: unknown, getState: () => RootState) => {
+                const positionThunk = (
+                  _: unknown,
+                  getState: () => RootState,
+                ) => {
                   const entry =
                     getState().messages.byConversationId[conversationId];
                   const msg = entry?.byId?.[messageId];
@@ -914,13 +917,15 @@ function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
           conversationId: string;
         };
 
-        // Post-fork affordance: offer the user a one-click jump to the new
-        // branch. They can also "Stay here" — the new branch is reachable
-        // from the conversation sidebar either way. Toast (not modal)
-        // because forking is reversible and we don't want to break flow.
+        // Post-fork affordance: explicitly ask the user where to go
+        // next. The previous toast-based version was easy to miss;
+        // forking only has two sensible follow-ups (stay or jump) so
+        // a modal prompt is the right tool here. The branch is also
+        // reachable from the conversation sidebar regardless of which
+        // option they pick.
         if (surfaceKey && result?.conversationId) {
-          const { showForkOutcomeToast } = await import("./ForkOutcomeToast");
-          showForkOutcomeToast({
+          const { promptForkOutcome } = await import("./promptForkOutcome");
+          await promptForkOutcome({
             dispatch,
             surfaceKey,
             newConversationId: result.conversationId,

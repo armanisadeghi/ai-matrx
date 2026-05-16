@@ -811,6 +811,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/conversation/{conversation_id}/fork-and-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork And Run
+         * @description Fork a conversation and immediately run a new turn on the fork.
+         *
+         *     Equivalent to calling ``POST /conversations/{id}/fork`` followed by
+         *     ``POST /conversations/{new_id}`` — but in one request, on one
+         *     streaming response. The first event on the stream is a
+         *     ``conversation.forked`` payload carrying the new ``conversation_id``
+         *     so the client can switch context before any agent output arrives.
+         *
+         *     Use this for "regenerate from here" / "edit this message and
+         *     re-ask" flows. The source conversation is left untouched.
+         */
+        post: operations["fork_and_run_ai_conversation__conversation_id__fork_and_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/conversations/{conversation_id}/fork-and-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork And Run
+         * @description Fork a conversation and immediately run a new turn on the fork.
+         *
+         *     Equivalent to calling ``POST /conversations/{id}/fork`` followed by
+         *     ``POST /conversations/{new_id}`` — but in one request, on one
+         *     streaming response. The first event on the stream is a
+         *     ``conversation.forked`` payload carrying the new ``conversation_id``
+         *     so the client can switch context before any agent output arrives.
+         *
+         *     Use this for "regenerate from here" / "edit this message and
+         *     re-ask" flows. The source conversation is left untouched.
+         */
+        post: operations["fork_and_run_ai_conversations__conversation_id__fork_and_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/conversation/{conversation_id}/tool_results": {
         parameters: {
             query?: never;
@@ -6465,11 +6523,159 @@ export interface paths {
          *
          *     Copies the source ``cx_conversation`` (as a new row with a fresh UUID
          *     and ``forked_from_id`` pointing back) and every ``cx_message`` up to
-         *     ``up_to_position``. The source is left untouched. Message IDs on the
-         *     fork are freshly generated so the two conversations remain
+         *     the chosen fork point. The source is left untouched. Message IDs on
+         *     the fork are freshly generated so the two conversations remain
          *     independently editable.
          */
         post: operations["fork_conversation_cx_conversations__conversation_id__fork_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Delete Messages
+         * @description Hard-delete a set of messages with optional tool-pair cascading.
+         *
+         *     Mirrors the existing single-row ``DELETE`` endpoint but takes a
+         *     flexible selector so the client can pass an explicit list of IDs, a
+         *     position range, or a "truncate after X" anchor. When
+         *     ``cascade_tool_pairs=True`` (default) the operation is "smart" — it
+         *     extends the resolved set to keep ``tool_use ↔ tool_result`` adjacent
+         *     rows together, so the next provider call never sees an orphan tool
+         *     block. ``dry_run=true`` resolves the set and returns it without
+         *     deleting anything.
+         */
+        post: operations["batch_delete_messages_cx_conversations__conversation_id__messages_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Messages
+         * @description User-initiated compaction: soft-delete a range and insert a summary.
+         *
+         *     Stashes the selected rows (moves their position to a negative slot,
+         *     sets ``deleted_at`` / ``status="compacted_hidden"`` / both visibility
+         *     flags false) and inserts a new ``assistant`` message at the original
+         *     first-replaced position carrying the caller-supplied summary
+         *     content. Reversible via ``POST /messages/restore`` using the
+         *     ``compaction_group_id`` from the response.
+         *
+         *     The summary row's metadata carries a ``compaction_summary`` block
+         *     listing every replaced message and its original position so the UI
+         *     can render an "N messages compacted — view originals" affordance.
+         */
+        post: operations["replace_messages_cx_conversations__conversation_id__messages_replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide Messages From Model
+         * @description System-initiated compaction: hide messages from the model only.
+         *
+         *     Flips ``is_visible_to_model=False`` on the selected rows. The user
+         *     still sees them in the UI (``is_visible_to_user`` unchanged), the
+         *     rows stay at their original positions, and nothing is soft-deleted.
+         *     The original visibility flags are stashed in
+         *     ``metadata.compaction_archive`` so ``POST /messages/restore`` can
+         *     reverse the operation.
+         *
+         *     Use this when an automated system (background memory, context
+         *     optimizer) wants to shrink what the model reads without disrupting
+         *     the user's view of the conversation. Pair it with an
+         *     out-of-band summary injection (system prompt, recent-context note)
+         *     if the model needs to know what it can no longer see.
+         */
+        post: operations["hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Compaction
+         * @description Reverse a previous /messages/replace or /messages/hide call.
+         *
+         *     Identify the operation via ``compaction_group_id`` OR
+         *     ``summary_message_id`` (replace operations only; hide operations
+         *     have no summary row). Restores every archived row's original
+         *     position, status, deleted_at, and visibility from its
+         *     ``metadata.compaction_archive`` snapshot, then hard-deletes the
+         *     summary row (if any, and ``delete_summary=True``).
+         */
+        post: operations["restore_compaction_cx_conversations__conversation_id__messages_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/turns/compact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compact Turns
+         * @description Compact one or more whole turns.
+         *
+         *     A turn = ``role="user"`` message → next ``role="user"`` message
+         *     (exclusive). The endpoint resolves the turn boundary from the live
+         *     conversation, then delegates to /messages/replace (``mode="user"``)
+         *     or /messages/hide (``mode="system"``) under the hood. The caller
+         *     supplies the summary content; this endpoint does not run an LLM —
+         *     use whatever summarization agent you like upstream, or invoke the
+         *     chat endpoints separately and pass the result here.
+         */
+        post: operations["compact_turns_cx_conversations__conversation_id__turns_compact_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10186,6 +10392,31 @@ export interface components {
             /** Created At */
             created_at: string;
         };
+        /** BatchDeleteRequest */
+        BatchDeleteRequest: {
+            selector: components["schemas"]["MessageSelector"];
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /** BatchDeleteResponse */
+        BatchDeleteResponse: {
+            /** Deleted Ids */
+            deleted_ids: string[];
+            /** Cascaded Ids */
+            cascaded_ids: string[];
+            /** Remaining Count */
+            remaining_count: number;
+            /** Dry Run */
+            dry_run: boolean;
+        };
         /** BatchScrapeRequest */
         BatchScrapeRequest: {
             /** Urls */
@@ -11485,6 +11716,45 @@ export interface components {
             size: number;
             /** Public Url */
             public_url?: string | null;
+        };
+        /** CompactTurnsRequest */
+        CompactTurnsRequest: {
+            range: components["schemas"]["TurnRange"];
+            /** Summary Content */
+            summary_content: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Mode
+             * @default user
+             * @enum {string}
+             */
+            mode: "user" | "system";
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+            /** Summary Metadata */
+            summary_metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** CompactTurnsResponse */
+        CompactTurnsResponse: {
+            /** Compaction Group Id */
+            compaction_group_id: string;
+            /** Summary Message Id */
+            summary_message_id: string | null;
+            /** Compacted Message Ids */
+            compacted_message_ids: string[];
+            /** Turn Count */
+            turn_count: number;
+            /** Position Range */
+            position_range: [
+                number,
+                number
+            ];
         };
         /**
          * CompensationOut
@@ -13806,6 +14076,122 @@ export interface components {
             /** Disabled */
             disabled: boolean;
         };
+        /**
+         * ForkAndRunRequest
+         * @description Fork an existing conversation, then run a new turn on the fork.
+         *
+         *     All fields from ``ConversationContinueRequest`` apply (user_input,
+         *     tools, client, config_overrides, etc.) — they drive the new turn
+         *     exactly as if the caller had hit ``POST /conversations/{new_id}``.
+         *
+         *     Selectors (provide at most one — default copies every live message):
+         *     - ``up_to_position`` — copy messages with ``position <= N``.
+         *     - ``from_message_id`` — copy up to and including this message. Set
+         *       ``exclusive=True`` to fork *before* it (the natural shape for
+         *       "edit this message" — message N is dropped, the new turn replaces it).
+         *
+         *     ``fork_title`` overrides the auto-generated ``"Fork: <source>"``
+         *     title on the new conversation.
+         */
+        ForkAndRunRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store: boolean;
+            /** User Input */
+            user_input: string | {
+                [key: string]: unknown;
+            }[];
+            config_overrides?: components["schemas"]["LLMParams"] | null;
+            /**
+             * Stream
+             * @default true
+             */
+            stream: boolean;
+            /**
+             * Debug
+             * @default false
+             */
+            debug: boolean;
+            /**
+             * Tools
+             * @default []
+             */
+            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            /** Tools Replace */
+            tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
+            client?: components["schemas"]["ClientContext"] | null;
+            /**
+             * Client Tools
+             * @default []
+             */
+            client_tools: string[];
+            /**
+             * Custom Tools
+             * @default []
+             */
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            ide_state?: components["schemas"]["IdeState"] | null;
+            /**
+             * Context
+             * @default {}
+             */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Writable Variables
+             * @default []
+             */
+            writable_variables: string[];
+            /**
+             * Allow Context Create
+             * @default false
+             */
+            allow_context_create: boolean;
+            /**
+             * Block Mode
+             * @default false
+             */
+            block_mode: boolean;
+            /**
+             * Snapshot
+             * @default false
+             */
+            snapshot: boolean;
+            /** Memory */
+            memory?: boolean | null;
+            /** Memory Model */
+            memory_model?: string | null;
+            /**
+             * Memory Scope
+             * @default thread
+             */
+            memory_scope: string;
+            cache_bypass?: components["schemas"]["CacheBypass"] | null;
+            /** Up To Position */
+            up_to_position?: number | null;
+            /** From Message Id */
+            from_message_id?: string | null;
+            /**
+             * Exclusive
+             * @default false
+             */
+            exclusive: boolean;
+            /** Fork Title */
+            fork_title?: string | null;
+        };
         /** ForkConversationResponse */
         ForkConversationResponse: {
             /** Conversation Id */
@@ -13821,9 +14207,12 @@ export interface components {
          * ForkRequest
          * @description Payload for forking a conversation.
          *
-         *     ``up_to_position`` — when set, only messages with ``position`` less
-         *     than or equal to this value are copied to the fork. Callers use this
-         *     to branch mid-conversation. ``None`` copies every message.
+         *     Selectors (provide at most one; default copies everything):
+         *     - ``up_to_position`` — copy messages with ``position <= N``.
+         *     - ``from_message_id`` — copy messages up to and including this
+         *       message. Set ``exclusive=True`` to fork up to but NOT including it
+         *       (i.e. "fork the conversation before this message" — the natural
+         *       shape for "edit this message").
          *
          *     ``title`` — optional title for the forked conversation. Defaults to
          *     the source conversation's title prefixed with ``"Fork: "``.
@@ -13831,6 +14220,13 @@ export interface components {
         ForkRequest: {
             /** Up To Position */
             up_to_position?: number | null;
+            /** From Message Id */
+            from_message_id?: string | null;
+            /**
+             * Exclusive
+             * @default false
+             */
+            exclusive: boolean;
             /** Title */
             title?: string | null;
         };
@@ -13977,6 +14373,22 @@ export interface components {
             embeddings_in_scope: number;
             /** Distinct Sources */
             distinct_sources: number;
+        };
+        /** HideRequest */
+        HideRequest: {
+            selector: components["schemas"]["MessageSelector"];
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+        };
+        /** HideResponse */
+        HideResponse: {
+            /** Compaction Group Id */
+            compaction_group_id: string;
+            /** Hidden Message Ids */
+            hidden_message_ids: string[];
         };
         /** IdeDiagnostic */
         IdeDiagnostic: {
@@ -15494,6 +15906,31 @@ export interface components {
              * @default merged.pdf
              */
             filename: string;
+        };
+        /**
+         * MessageSelector
+         * @description Reusable selection grammar for batch message operations.
+         *
+         *     Provide EXACTLY ONE selection form. Mixed forms raise 422.
+         */
+        MessageSelector: {
+            /** Message Ids */
+            message_ids?: string[] | null;
+            /** From Position */
+            from_position?: number | null;
+            /** To Position */
+            to_position?: number | null;
+            /** From Message Id */
+            from_message_id?: string | null;
+            /** To Message Id */
+            to_message_id?: string | null;
+            /** After Message Id */
+            after_message_id?: string | null;
+            /**
+             * Inclusive
+             * @default true
+             */
+            inclusive: boolean;
         };
         /**
          * MessageUpdate
@@ -17383,6 +17820,34 @@ export interface components {
              */
             detector_version: string;
         };
+        /** ReplaceRequest */
+        ReplaceRequest: {
+            selector: components["schemas"]["MessageSelector"];
+            /** Summary Content */
+            summary_content: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+            /** Summary Metadata */
+            summary_metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ReplaceResponse */
+        ReplaceResponse: {
+            /** Summary Message Id */
+            summary_message_id: string;
+            /** Compaction Group Id */
+            compaction_group_id: string;
+            /** Stashed Message Ids */
+            stashed_message_ids: string[];
+            /** Summary Position */
+            summary_position: number;
+        };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
             /** Repositories */
@@ -17452,19 +17917,24 @@ export interface components {
             /** Field Id */
             field_id?: string | null;
         };
+        /** RestoreRequest */
+        RestoreRequest: {
+            /** Compaction Group Id */
+            compaction_group_id?: string | null;
+            /** Summary Message Id */
+            summary_message_id?: string | null;
+            /**
+             * Delete Summary
+             * @default true
+             */
+            delete_summary: boolean;
+        };
         /** RestoreRequestBody */
         RestoreRequestBody: {
             /** Session Id */
             session_id: string;
             /** Session Key B64 */
             session_key_b64: string;
-            /** Text */
-            text: string;
-        };
-        /** RestoreResponse */
-        RestoreResponse: {
-            /** Session Id */
-            session_id: string;
             /** Text */
             text: string;
         };
@@ -19166,6 +19636,25 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * TurnRange
+         * @description Identify one or more contiguous turns to compact.
+         *
+         *     ``from_user_message_id`` — the user message that starts the first
+         *     turn in the range. Required.
+         *
+         *     ``to_user_message_id`` — the user message that starts the FIRST turn
+         *     AFTER the range. The turn-range covers everything from
+         *     ``from_user_message_id`` up to but NOT including
+         *     ``to_user_message_id``. If omitted, the range extends to the end of
+         *     the conversation (inclusive of the final turn).
+         */
+        TurnRange: {
+            /** From User Message Id */
+            from_user_message_id: string;
+            /** To User Message Id */
+            to_user_message_id?: string | null;
+        };
         /** UpdateMessageResponse */
         UpdateMessageResponse: {
             /** Updated */
@@ -19888,6 +20377,22 @@ export interface components {
         aidream__api__routers__agents_blocks__WarmRequest: {
             /** Source */
             source?: string | null;
+        };
+        /** RestoreResponse */
+        aidream__api__routers__cx_data__RestoreResponse: {
+            /** Restored Message Ids */
+            restored_message_ids: string[];
+            /** Deleted Summary Id */
+            deleted_summary_id: string | null;
+            /** Compaction Group Id */
+            compaction_group_id: string;
+        };
+        /** RestoreResponse */
+        aidream__api__routers__file_analysis__RestoreResponse: {
+            /** Session Id */
+            session_id: string;
+            /** Text */
+            text: string;
         };
         /** SearchHitOut */
         aidream__api__routers__file_search__SearchHitOut: {
@@ -21171,6 +21676,76 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ConversationContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_and_run_ai_conversation__conversation_id__fork_and_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForkAndRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_and_run_ai_conversations__conversation_id__fork_and_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForkAndRunRequest"];
             };
         };
         responses: {
@@ -31837,6 +32412,181 @@ export interface operations {
             };
         };
     };
+    batch_delete_messages_cx_conversations__conversation_id__messages_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_messages_cx_conversations__conversation_id__messages_replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplaceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HideResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_compaction_cx_conversations__conversation_id__messages_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__cx_data__RestoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compact_turns_cx_conversations__conversation_id__turns_compact_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompactTurnsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompactTurnsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_podcast_image_media_podcast_upload_image_post: {
         parameters: {
             query?: never;
@@ -36351,7 +37101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RestoreResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__file_analysis__RestoreResponse"];
                 };
             };
             /** @description Validation Error */

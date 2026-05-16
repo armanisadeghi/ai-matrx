@@ -21,6 +21,7 @@ import {
   Columns,
   Eye,
   History,
+  RefreshCw,
   X,
 } from "lucide-react";
 import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
@@ -36,9 +37,9 @@ const MobileNotesView = dynamic(() => import("./mobile/MobileNotesView"), {
 
 const NoteVersionHistory = dynamic(
   () =>
-    import("@/features/notes/components/NoteVersionHistory").then(
-      (mod) => ({ default: mod.NoteVersionHistory }),
-    ),
+    import("@/features/notes/components/NoteVersionHistory").then((mod) => ({
+      default: mod.NoteVersionHistory,
+    })),
   { ssr: false },
 );
 import {
@@ -53,7 +54,12 @@ import {
   closeSplit,
   markTabInteraction,
 } from "../redux/slice";
-import { fetchNotesList, fetchNoteContent, saveNote } from "../redux/thunks";
+import {
+  fetchNotesList,
+  fetchNoteContent,
+  refreshNoteContent,
+  saveNote,
+} from "../redux/thunks";
 import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
 import {
   selectOtherUsersActive,
@@ -100,6 +106,7 @@ export function NotesView({ config, className }: NotesViewProps) {
   const showSidebar = config?.showSidebar ?? true;
   const showTabs = config?.showTabs ?? true;
   const [showHistory, setShowHistory] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const singleNote = config?.singleNote ?? null;
 
   // ── URL param hydration: read ?tabs= and ?active= on mount ────────
@@ -221,6 +228,27 @@ export function NotesView({ config, className }: NotesViewProps) {
     [dispatch, activeTabId],
   );
 
+  // ── Refresh: refetch list + force-refetch every open tab ──────────
+  // Mirrors the route-start fetches so the user can pull the latest server
+  // state on demand (e.g. after editing on another device).
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      const work: Promise<unknown>[] = [dispatch(fetchNotesList()).unwrap()];
+      if (orgId) {
+        work.push(dispatch(fetchScopeTypes(orgId)).unwrap());
+        work.push(dispatch(fetchScopes({ org_id: orgId })).unwrap());
+      }
+      for (const noteId of openTabs ?? []) {
+        work.push(dispatch(refreshNoteContent(noteId)).unwrap());
+      }
+      await Promise.allSettled(work);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [dispatch, isRefreshing, openTabs, orgId]);
+
   // ── Keyboard shortcuts ───────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -295,57 +323,79 @@ export function NotesView({ config, className }: NotesViewProps) {
       ) : (
         <div className={`flex h-full w-full min-h-0 ${className ?? ""}`}>
           {/* ── Header center: View mode buttons (portaled into shell header) */}
-          {activeTabId && (
-            <PageHeader>
-              <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
-                <button
-                  className={modeBtnClass("plain")}
-                  onClick={() => setMode("plain")}
-                >
-                  <FileText /> Edit
-                </button>
-                <button
-                  className={cn(modeBtnClass("split"), "max-lg:hidden")}
-                  onClick={() => setMode("split")}
-                >
-                  <SplitSquareHorizontal /> Split
-                </button>
-                <button
-                  className={cn(modeBtnClass("wysiwyg"), "max-lg:hidden")}
-                  onClick={() => setMode("wysiwyg")}
-                >
-                  <PilcrowRight /> Rich
-                </button>
-                <button
-                  className={cn(
-                    modeBtnClass("markdown-split"),
-                    "max-lg:hidden",
-                  )}
-                  onClick={() => setMode("markdown-split")}
-                >
-                  <Columns /> MD Split
-                </button>
-                <button
-                  className={modeBtnClass("preview")}
-                  onClick={() => setMode("preview")}
-                >
-                  <Eye /> Preview
-                </button>
-                <div className="w-px h-4 bg-border/30 mx-0.5" />
-                <button
-                  className={cn(
-                    "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
-                    showHistory
-                      ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-                      : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
-                  )}
-                  onClick={() => setShowHistory((v) => !v)}
-                >
-                  <History /> History
-                </button>
-              </div>
-            </PageHeader>
-          )}
+          <PageHeader>
+            <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
+              {activeTabId && (
+                <>
+                  <button
+                    className={modeBtnClass("plain")}
+                    onClick={() => setMode("plain")}
+                  >
+                    <FileText /> Edit
+                  </button>
+                  <button
+                    className={cn(modeBtnClass("split"), "max-lg:hidden")}
+                    onClick={() => setMode("split")}
+                  >
+                    <SplitSquareHorizontal /> Split
+                  </button>
+                  <button
+                    className={cn(modeBtnClass("wysiwyg"), "max-lg:hidden")}
+                    onClick={() => setMode("wysiwyg")}
+                  >
+                    <PilcrowRight /> Rich
+                  </button>
+                  <button
+                    className={cn(
+                      modeBtnClass("markdown-split"),
+                      "max-lg:hidden",
+                    )}
+                    onClick={() => setMode("markdown-split")}
+                  >
+                    <Columns /> MD Split
+                  </button>
+                  <button
+                    className={modeBtnClass("preview")}
+                    onClick={() => setMode("preview")}
+                  >
+                    <Eye /> Preview
+                  </button>
+                  <div className="w-px h-4 bg-border/30 mx-0.5" />
+                  <button
+                    className={cn(
+                      "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
+                      showHistory
+                        ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                        : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+                    )}
+                    onClick={() => setShowHistory((v) => !v)}
+                  >
+                    <History /> History
+                  </button>
+                  <div className="w-px h-4 bg-border/30 mx-0.5" />
+                </>
+              )}
+              <button
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
+                  isRefreshing
+                    ? "text-[var(--shell-nav-text-hover)]"
+                    : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+                )}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                title={
+                  isRefreshing
+                    ? "Refreshing…"
+                    : "Refresh notes list and open tabs"
+                }
+                aria-label="Refresh notes"
+              >
+                <RefreshCw className={cn(isRefreshing && "animate-spin")} />{" "}
+                Refresh
+              </button>
+            </div>
+          </PageHeader>
 
           {/* Layer 5: Sidebar */}
           {showSidebar && !singleNote && (

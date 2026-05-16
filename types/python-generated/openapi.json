@@ -1553,6 +1553,108 @@
         }
       }
     },
+    "/ai/conversation/{conversation_id}/fork-and-run": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Fork And Run",
+        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched.",
+        "operationId": "fork_and_run_ai_conversation__conversation_id__fork_and_run_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkAndRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversations/{conversation_id}/fork-and-run": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Fork And Run",
+        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched.",
+        "operationId": "fork_and_run_ai_conversations__conversation_id__fork_and_run_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkAndRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/conversation/{conversation_id}/tool_results": {
       "post": {
         "tags": [
@@ -17495,7 +17597,7 @@
           "Conversations"
         ],
         "summary": "Fork Conversation",
-        "description": "Create a new conversation branched from an existing one.\n\nCopies the source ``cx_conversation`` (as a new row with a fresh UUID\nand ``forked_from_id`` pointing back) and every ``cx_message`` up to\n``up_to_position``. The source is left untouched. Message IDs on the\nfork are freshly generated so the two conversations remain\nindependently editable.",
+        "description": "Create a new conversation branched from an existing one.\n\nCopies the source ``cx_conversation`` (as a new row with a fresh UUID\nand ``forked_from_id`` pointing back) and every ``cx_message`` up to\nthe chosen fork point. The source is left untouched. Message IDs on\nthe fork are freshly generated so the two conversations remain\nindependently editable.",
         "operationId": "fork_conversation_cx_conversations__conversation_id__fork_post",
         "parameters": [
           {
@@ -17532,6 +17634,271 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ForkConversationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/delete": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Batch Delete Messages",
+        "description": "Hard-delete a set of messages with optional tool-pair cascading.\n\nMirrors the existing single-row ``DELETE`` endpoint but takes a\nflexible selector so the client can pass an explicit list of IDs, a\nposition range, or a \"truncate after X\" anchor. When\n``cascade_tool_pairs=True`` (default) the operation is \"smart\" — it\nextends the resolved set to keep ``tool_use ↔ tool_result`` adjacent\nrows together, so the next provider call never sees an orphan tool\nblock. ``dry_run=true`` resolves the set and returns it without\ndeleting anything.",
+        "operationId": "batch_delete_messages_cx_conversations__conversation_id__messages_delete_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchDeleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/replace": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Replace Messages",
+        "description": "User-initiated compaction: soft-delete a range and insert a summary.\n\nStashes the selected rows (moves their position to a negative slot,\nsets ``deleted_at`` / ``status=\"compacted_hidden\"`` / both visibility\nflags false) and inserts a new ``assistant`` message at the original\nfirst-replaced position carrying the caller-supplied summary\ncontent. Reversible via ``POST /messages/restore`` using the\n``compaction_group_id`` from the response.\n\nThe summary row's metadata carries a ``compaction_summary`` block\nlisting every replaced message and its original position so the UI\ncan render an \"N messages compacted — view originals\" affordance.",
+        "operationId": "replace_messages_cx_conversations__conversation_id__messages_replace_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplaceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/hide": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Hide Messages From Model",
+        "description": "System-initiated compaction: hide messages from the model only.\n\nFlips ``is_visible_to_model=False`` on the selected rows. The user\nstill sees them in the UI (``is_visible_to_user`` unchanged), the\nrows stay at their original positions, and nothing is soft-deleted.\nThe original visibility flags are stashed in\n``metadata.compaction_archive`` so ``POST /messages/restore`` can\nreverse the operation.\n\nUse this when an automated system (background memory, context\noptimizer) wants to shrink what the model reads without disrupting\nthe user's view of the conversation. Pair it with an\nout-of-band summary injection (system prompt, recent-context note)\nif the model needs to know what it can no longer see.",
+        "operationId": "hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HideResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/restore": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Restore Compaction",
+        "description": "Reverse a previous /messages/replace or /messages/hide call.\n\nIdentify the operation via ``compaction_group_id`` OR\n``summary_message_id`` (replace operations only; hide operations\nhave no summary row). Restores every archived row's original\nposition, status, deleted_at, and visibility from its\n``metadata.compaction_archive`` snapshot, then hard-deletes the\nsummary row (if any, and ``delete_summary=True``).",
+        "operationId": "restore_compaction_cx_conversations__conversation_id__messages_restore_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__cx_data__RestoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/turns/compact": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Compact Turns",
+        "description": "Compact one or more whole turns.\n\nA turn = ``role=\"user\"`` message → next ``role=\"user\"`` message\n(exclusive). The endpoint resolves the turn boundary from the live\nconversation, then delegates to /messages/replace (``mode=\"user\"``)\nor /messages/hide (``mode=\"system\"``) under the hood. The caller\nsupplies the summary content; this endpoint does not run an LLM —\nuse whatever summarization agent you like upstream, or invoke the\nchat endpoints separately and pass the result here.",
+        "operationId": "compact_turns_cx_conversations__conversation_id__turns_compact_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompactTurnsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompactTurnsResponse"
                 }
               }
             }
@@ -24604,7 +24971,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RestoreResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__file_analysis__RestoreResponse"
                 }
               }
             }
@@ -29027,6 +29394,63 @@
         ],
         "title": "AuditRow"
       },
+      "BatchDeleteRequest": {
+        "properties": {
+          "selector": {
+            "$ref": "#/components/schemas/MessageSelector"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "BatchDeleteRequest"
+      },
+      "BatchDeleteResponse": {
+        "properties": {
+          "deleted_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Ids"
+          },
+          "cascaded_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cascaded Ids"
+          },
+          "remaining_count": {
+            "type": "integer",
+            "title": "Remaining Count"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted_ids",
+          "cascaded_ids",
+          "remaining_count",
+          "dry_run"
+        ],
+        "title": "BatchDeleteResponse"
+      },
       "BatchScrapeRequest": {
         "properties": {
           "urls": {
@@ -33028,6 +33452,107 @@
           "size"
         ],
         "title": "CommittedVariant"
+      },
+      "CompactTurnsRequest": {
+        "properties": {
+          "range": {
+            "$ref": "#/components/schemas/TurnRange"
+          },
+          "summary_content": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Summary Content"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "user",
+              "system"
+            ],
+            "title": "Mode",
+            "default": "user"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          },
+          "summary_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "range",
+          "summary_content"
+        ],
+        "title": "CompactTurnsRequest"
+      },
+      "CompactTurnsResponse": {
+        "properties": {
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          },
+          "summary_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Message Id"
+          },
+          "compacted_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Compacted Message Ids"
+          },
+          "turn_count": {
+            "type": "integer",
+            "title": "Turn Count"
+          },
+          "position_range": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Position Range"
+          }
+        },
+        "type": "object",
+        "required": [
+          "compaction_group_id",
+          "summary_message_id",
+          "compacted_message_ids",
+          "turn_count",
+          "position_range"
+        ],
+        "title": "CompactTurnsResponse"
       },
       "CompensationOut": {
         "properties": {
@@ -39415,6 +39940,309 @@
         ],
         "title": "ForceDisableResponse"
       },
+      "ForkAndRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "default": true
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "User Input"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": true
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          },
+          "tools": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RegisteredToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/InlineToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/AgentToolSpec"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "agent": "#/components/schemas/AgentToolSpec",
+                  "inline": "#/components/schemas/InlineToolSpec",
+                  "registered": "#/components/schemas/RegisteredToolSpec"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Tools",
+            "default": []
+          },
+          "tools_replace": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RegisteredToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InlineToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AgentToolSpec"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {
+                      "agent": "#/components/schemas/AgentToolSpec",
+                      "inline": "#/components/schemas/InlineToolSpec",
+                      "registered": "#/components/schemas/RegisteredToolSpec"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Replace"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Client Tools",
+            "default": []
+          },
+          "custom_tools": {
+            "items": {
+              "$ref": "#/components/schemas/LegacyCustomTool"
+            },
+            "type": "array",
+            "title": "Custom Tools",
+            "default": []
+          },
+          "ide_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdeState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "default": {}
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "default": []
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "default": false
+          },
+          "block_mode": {
+            "type": "boolean",
+            "title": "Block Mode",
+            "default": false
+          },
+          "snapshot": {
+            "type": "boolean",
+            "title": "Snapshot",
+            "default": false
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory"
+          },
+          "memory_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Model"
+          },
+          "memory_scope": {
+            "type": "string",
+            "title": "Memory Scope",
+            "default": "thread"
+          },
+          "cache_bypass": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CacheBypass"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "up_to_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To Position"
+          },
+          "from_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Message Id"
+          },
+          "exclusive": {
+            "type": "boolean",
+            "title": "Exclusive",
+            "default": false
+          },
+          "fork_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fork Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_input"
+        ],
+        "title": "ForkAndRunRequest",
+        "description": "Fork an existing conversation, then run a new turn on the fork.\n\nAll fields from ``ConversationContinueRequest`` apply (user_input,\ntools, client, config_overrides, etc.) — they drive the new turn\nexactly as if the caller had hit ``POST /conversations/{new_id}``.\n\nSelectors (provide at most one — default copies every live message):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy up to and including this message. Set\n  ``exclusive=True`` to fork *before* it (the natural shape for\n  \"edit this message\" — message N is dropped, the new turn replaces it).\n\n``fork_title`` overrides the auto-generated ``\"Fork: <source>\"``\ntitle on the new conversation."
+      },
       "ForkConversationResponse": {
         "properties": {
           "conversation_id": {
@@ -39462,6 +40290,22 @@
             ],
             "title": "Up To Position"
           },
+          "from_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Message Id"
+          },
+          "exclusive": {
+            "type": "boolean",
+            "title": "Exclusive",
+            "default": false
+          },
           "title": {
             "anyOf": [
               {
@@ -39476,7 +40320,7 @@
         },
         "type": "object",
         "title": "ForkRequest",
-        "description": "Payload for forking a conversation.\n\n``up_to_position`` — when set, only messages with ``position`` less\nthan or equal to this value are copied to the fork. Callers use this\nto branch mid-conversation. ``None`` copies every message.\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
+        "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
       },
       "GetConversationResponse": {
         "properties": {
@@ -39746,6 +40590,45 @@
           "distinct_sources"
         ],
         "title": "HealthResponse"
+      },
+      "HideRequest": {
+        "properties": {
+          "selector": {
+            "$ref": "#/components/schemas/MessageSelector"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "HideRequest"
+      },
+      "HideResponse": {
+        "properties": {
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          },
+          "hidden_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hidden Message Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "compaction_group_id",
+          "hidden_message_ids"
+        ],
+        "title": "HideResponse"
       },
       "IdeDiagnostic": {
         "properties": {
@@ -44354,6 +45237,88 @@
           "sources"
         ],
         "title": "MergePdfsRequest"
+      },
+      "MessageSelector": {
+        "properties": {
+          "message_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ids"
+          },
+          "from_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Position"
+          },
+          "to_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Position"
+          },
+          "from_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Message Id"
+          },
+          "to_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Message Id"
+          },
+          "after_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After Message Id"
+          },
+          "inclusive": {
+            "type": "boolean",
+            "title": "Inclusive",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MessageSelector",
+        "description": "Reusable selection grammar for batch message operations.\n\nProvide EXACTLY ONE selection form. Mixed forms raise 422."
       },
       "MessageUpdate": {
         "properties": {
@@ -49217,6 +50182,76 @@
         ],
         "title": "RepeatedRegionsReport"
       },
+      "ReplaceRequest": {
+        "properties": {
+          "selector": {
+            "$ref": "#/components/schemas/MessageSelector"
+          },
+          "summary_content": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Summary Content"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          },
+          "summary_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector",
+          "summary_content"
+        ],
+        "title": "ReplaceRequest"
+      },
+      "ReplaceResponse": {
+        "properties": {
+          "summary_message_id": {
+            "type": "string",
+            "title": "Summary Message Id"
+          },
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          },
+          "stashed_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stashed Message Ids"
+          },
+          "summary_position": {
+            "type": "integer",
+            "title": "Summary Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary_message_id",
+          "compaction_group_id",
+          "stashed_message_ids",
+          "summary_position"
+        ],
+        "title": "ReplaceResponse"
+      },
       "RepositoriesListResponse": {
         "properties": {
           "repositories": {
@@ -49427,6 +50462,40 @@
         ],
         "title": "ResolvedPath"
       },
+      "RestoreRequest": {
+        "properties": {
+          "compaction_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compaction Group Id"
+          },
+          "summary_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Message Id"
+          },
+          "delete_summary": {
+            "type": "boolean",
+            "title": "Delete Summary",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RestoreRequest"
+      },
       "RestoreRequestBody": {
         "properties": {
           "session_id": {
@@ -49449,24 +50518,6 @@
           "text"
         ],
         "title": "RestoreRequestBody"
-      },
-      "RestoreResponse": {
-        "properties": {
-          "session_id": {
-            "type": "string",
-            "title": "Session Id"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "session_id",
-          "text"
-        ],
-        "title": "RestoreResponse"
       },
       "ResumeRequest": {
         "properties": {
@@ -54167,6 +55218,32 @@
         "title": "TriggerRecord",
         "description": "Trigger row as returned by ``TriggerStore``'s Pydantic model.\n\nThe TriggerStore returns a typed Pydantic model that we previously\n``model_dump(mode=\"json\")``-ed into a free dict. Here we keep the\nwire surface backward-compatible by accepting any extra keys the\nupstream model adds; the explicit subset documents the contract."
       },
+      "TurnRange": {
+        "properties": {
+          "from_user_message_id": {
+            "type": "string",
+            "title": "From User Message Id"
+          },
+          "to_user_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To User Message Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "from_user_message_id"
+        ],
+        "title": "TurnRange",
+        "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
+      },
       "UpdateMessageResponse": {
         "properties": {
           "updated": {
@@ -56340,6 +57417,57 @@
         },
         "type": "object",
         "title": "WarmRequest"
+      },
+      "aidream__api__routers__cx_data__RestoreResponse": {
+        "properties": {
+          "restored_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Restored Message Ids"
+          },
+          "deleted_summary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted Summary Id"
+          },
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "restored_message_ids",
+          "deleted_summary_id",
+          "compaction_group_id"
+        ],
+        "title": "RestoreResponse"
+      },
+      "aidream__api__routers__file_analysis__RestoreResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "text"
+        ],
+        "title": "RestoreResponse"
       },
       "aidream__api__routers__file_search__SearchHitOut": {
         "properties": {

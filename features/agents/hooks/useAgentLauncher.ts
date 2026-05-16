@@ -34,10 +34,46 @@ import {
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 import type { ManagedAgentOptions } from "../types/instance.types";
+import type { ConversationInvocation } from "../types/conversation-invocation.types";
+import { invocationToManagedOptions } from "../redux/execution-system/thunks/launch-conversation.thunk";
 import {
   launchAgentExecution,
   LaunchResult,
 } from "../redux/execution-system/thunks/launch-agent-execution.thunk";
+
+// =============================================================================
+// ConversationInvocation type guard
+// =============================================================================
+
+/**
+ * Discriminates `ConversationInvocation` from the legacy `ManagedAgentOptions`
+ * by checking for the four required top-level object properties that exist only
+ * on the new type (`identity`, `engine`, `routing`, `origin`).
+ */
+function isConversationInvocation(
+  options: ManagedAgentOptions | ConversationInvocation,
+): options is ConversationInvocation {
+  return (
+    "identity" in options &&
+    "engine" in options &&
+    "routing" in options &&
+    "origin" in options
+  );
+}
+
+/**
+ * Normalises the caller-supplied options into the `ManagedAgentOptions` shape
+ * the hook's internals expect. Accepts either the legacy flat envelope or the
+ * new grouped `ConversationInvocation` type — output is identical either way.
+ */
+function normaliseOptions(
+  input: ManagedAgentOptions | ConversationInvocation | undefined,
+): ManagedAgentOptions | undefined {
+  if (!input) return undefined;
+  return isConversationInvocation(input)
+    ? invocationToManagedOptions(input)
+    : input;
+}
 
 // =============================================================================
 // Return types
@@ -86,6 +122,10 @@ export function useAgentLauncher(
   agentId: string,
   options: ManagedAgentOptions,
 ): ManagedReturn;
+export function useAgentLauncher(
+  agentId: string,
+  options: ConversationInvocation,
+): ManagedReturn;
 
 // =============================================================================
 // Implementation
@@ -93,8 +133,9 @@ export function useAgentLauncher(
 
 export function useAgentLauncher(
   agentId?: string,
-  options?: ManagedAgentOptions,
+  optionsInput?: ManagedAgentOptions | ConversationInvocation,
 ): ImperativeMethods | ManagedReturn {
+  const options = normaliseOptions(optionsInput);
   const dispatch = useAppDispatch();
   const surfaceKey = options?.surfaceKey;
   const conversationId = useAppSelector(selectFocusedConversation(surfaceKey));
