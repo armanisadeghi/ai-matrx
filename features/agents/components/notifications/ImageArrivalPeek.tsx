@@ -9,74 +9,44 @@
  *  - Hovering freezes the timer — the card stays until the user moves away,
  *    then the remaining time resumes.
  *  - Clicking the X or the thumbnail dismisses immediately.
- *  - The image is NOT downloaded twice: the browser cache deduplicates the
- *    request because `ImageOutputBlock` (inline) and this card both render
- *    the same URL string. The universal handler's expiry-wheel ensures
- *    any signed-URL refresh is also coalesced across components.
+ *  - The thumbnail itself is rendered by `UnifiedImageBlockRenderer` in
+ *    its `compact` variant — same component that renders the inline image
+ *    in the message body. The handler's expiry-wheel coalesces refresh
+ *    across both surfaces, and the browser cache dedupes the actual HTTP
+ *    fetch.
  */
 
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ImageIcon, Maximize2, Loader2 } from "lucide-react";
-import { useFileAs } from "@/features/files";
-import { InlineMediaRef } from "@/features/files";
-import type { FileSource } from "@/features/files";
-
-// Extract the cloud_files UUID from an S3 path:
-//   /{userId}/{folder}/{uuid}.{ext}
-// AI-generated images are registered in cloud_files at upload time, so we
-// route through the handler (which auto-refreshes signed URLs via the
-// expiry-wheel). When the URL isn't a recognisable cloud-file shape we
-// fall back to using it directly as the <img src>.
-function fileSourceFromS3Url(url: string): FileSource | null {
-  try {
-    const parts = new URL(url).pathname.split("/").filter(Boolean);
-    const last = parts[parts.length - 1] ?? "";
-    const uuid = last.replace(/\.[^.]+$/, "");
-    const uuidRe =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRe.test(uuid) ? { kind: "file_id", fileId: uuid } : null;
-  } catch {
-    return null;
-  }
-}
+import { X, ImageIcon } from "lucide-react";
+import { UnifiedImageBlockRenderer } from "@/features/files/blocks/image/UnifiedImageBlockRenderer";
+import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
 
 export interface ImageArrivalPeekProps {
   /** `${requestId}:${blockId}` — globally unique across all requests. */
   peekId: string;
-  /** The presigned URL from the stream chunk. */
-  url: string;
-  mimeType?: string;
+  /** Canonical image block — same shape the inline message renderer reads. */
+  block: UnifiedImageBlock;
   /** Called when the card finishes its exit animation. */
   onDismiss: (peekId: string) => void;
   /**
-   * Called when the user clicks the image thumbnail.
-   * Opens the full-screen ImageViewerWindow for this image.
+   * Called when the user clicks the image thumbnail with the resolved
+   * `src`. Opens the full-screen ImageViewerWindow.
    */
-  onImageClick: (url: string) => void;
+  onImageClick: (src: string) => void;
   /** How long (ms) before auto-dismiss. Default: 5000. */
   autoHideMs?: number;
 }
 
 export function ImageArrivalPeek({
   peekId,
-  url: initialUrl,
-  mimeType,
+  block,
   onDismiss,
   onImageClick,
   autoHideMs = 5_000,
 }: ImageArrivalPeekProps) {
-  // Route the AI-generated S3 URL through the universal handler so the
-  // signed URL auto-refreshes via the expiry-wheel. The handler picks the
-  // right URL flavour (CDN for public, signed for private). If the input
-  // URL doesn't carry a cloud-file UUID we render it directly.
-  const source = fileSourceFromS3Url(initialUrl);
-  const { result, status } = useFileAs(source, { kind: "html_src" });
-  const url = result ?? initialUrl;
-  const loading = status === "resolving";
-
   const [visible, setVisible] = useState(true);
 
   // Timer management — pause on hover, resume on leave
@@ -87,7 +57,6 @@ export function ImageArrivalPeek({
   const dismiss = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setVisible(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const startTimer = useCallback(
@@ -110,13 +79,14 @@ export function ImageArrivalPeek({
     else dismiss();
   }, [startTimer, dismiss]);
 
-  // Start the auto-dismiss countdown on mount
   useEffect(() => {
     startTimer(autoHideMs);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [autoHideMs, startTimer]);
+
+  const mimeLabel = block.mimeType?.split("/")[1] ?? null;
 
   return (
     <AnimatePresence onExitComplete={() => onDismiss(peekId)}>
@@ -140,9 +110,9 @@ export function ImageArrivalPeek({
             <span className="text-xs font-medium text-foreground flex-1 leading-none">
               New image
             </span>
-            {mimeType && (
+            {mimeLabel && (
               <span className="text-[10px] font-mono text-muted-foreground">
-                {mimeType.split("/")[1]}
+                {mimeLabel}
               </span>
             )}
             <button
@@ -156,33 +126,17 @@ export function ImageArrivalPeek({
 
           {/* Thumbnail — click opens the full ImageViewerWindow */}
           <div
-            className="relative mx-2 mb-2 rounded-lg overflow-hidden bg-muted/40 cursor-pointer group"
+            className="relative mx-2 mb-2 rounded-lg overflow-hidden bg-muted/40"
             style={{ height: 110 }}
-            onClick={() => {
-              dismiss();
-              onImageClick(url);
-            }}
           >
-            {loading ? (
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <>
-                <InlineMediaRef
-                  ref={url}
-                  alt="AI image output"
-                  size="fill"
-                  fit="cover"
-                  rounded="none"
-                  fallback="skeleton"
-                />
-                {/* Hover overlay hint */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
-                  <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </>
-            )}
+            <UnifiedImageBlockRenderer
+              block={block}
+              variant="compact"
+              onCompactClick={(src) => {
+                dismiss();
+                onImageClick(src);
+              }}
+            />
           </div>
         </motion.div>
       )}

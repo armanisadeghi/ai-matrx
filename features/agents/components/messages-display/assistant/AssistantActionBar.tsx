@@ -16,7 +16,14 @@
  * Edit & Resubmit (a user-message-only flow) is hidden.
  */
 
-import React, { useState, useRef, useCallback, lazy, Suspense, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  lazy,
+  Suspense,
+  useMemo,
+} from "react";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import {
   ThumbsUpTapButton,
@@ -37,6 +44,7 @@ import {
   selectIsLatestAssistantMessage,
   extractFlatText,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import type { RootState } from "@/lib/redux/store";
 import {
   selectResponseDensity,
   selectShowAssistantMessageOptions,
@@ -78,7 +86,10 @@ function serializeSaveError(error: unknown): {
       message,
     };
   }
-  return { logPayload: { raw: extractErrorMessage(error) }, message: "Save failed" };
+  return {
+    logPayload: { raw: extractErrorMessage(error) },
+    message: "Save failed",
+  };
 }
 
 const MessageOptionsMenu = lazy(() =>
@@ -101,6 +112,18 @@ export interface AssistantActionBarProps {
    * registry. Optional — falls back to no navigation when omitted.
    */
   surfaceKey?: string;
+  /**
+   * When this bar is rendered at the end of a multi-message AssistantTurnGroup
+   * (multi-iteration agentic turn), `groupMessageIds` carries every
+   * assistant `cx_message.id` in the group in transcript order. Used to
+   * aggregate text across iterations for Copy / Speak — the user sees one
+   * cohesive turn, so copying should grab the whole turn, not just the
+   * final iteration. Edit / Like / Delete remain anchored to `messageId`
+   * (the latest assistant message — the user-visible answer).
+   *
+   * When omitted, behavior is identical to pre-grouping (single-message).
+   */
+  groupMessageIds?: string[];
 }
 
 export function AssistantActionBar({
@@ -109,6 +132,7 @@ export function AssistantActionBar({
   onFullPrint,
   isCapturing,
   surfaceKey,
+  groupMessageIds,
 }: AssistantActionBarProps) {
   const dispatch = useAppDispatch();
   const [isCopied, setIsCopied] = useState(false);
@@ -134,11 +158,39 @@ export function AssistantActionBar({
   const content = useMemo(() => extractFlatText(record), [record]);
   const metadata = useMemo<Record<string, unknown> | null>(
     () =>
-      record?.metadata
-        ? (record.metadata as Record<string, unknown>)
-        : null,
+      record?.metadata ? (record.metadata as Record<string, unknown>) : null,
     [record?.metadata],
   );
+
+  // For multi-iteration agentic turns, the surrounding AssistantTurnGroup
+  // passes the full chain of assistant message ids. Pull all their records
+  // and concatenate their flat text — Copy / Speak then cover the whole
+  // logical turn instead of just the final iteration.
+  //
+  // Subscribing to `byId` is fine here: this component is rendered only
+  // once per group (not per iteration), and the bar is hidden while the
+  // turn is streaming (`!isStreamActive` gate in AgentAssistantMessage),
+  // so stream-time mutations never cause a re-render anyway.
+  const byId = useAppSelector(
+    (state: RootState) => state.messages.byConversationId[conversationId]?.byId,
+  );
+  const aggregatedContent = useMemo(() => {
+    if (!groupMessageIds || groupMessageIds.length <= 1 || !byId) return null;
+    let out = "";
+    for (const id of groupMessageIds) {
+      const rec = byId[id];
+      const text = extractFlatText(rec);
+      if (!text) continue;
+      if (out.length > 0) out += "\n\n";
+      out += text;
+    }
+    return out.length > 0 ? out : null;
+  }, [groupMessageIds, byId]);
+
+  // Copy / Speak target the whole turn; Edit / notes / overflow-menu stay
+  // anchored to the latest message (`content`) because those flows want
+  // "the answer", not the multi-step trace.
+  const copySpeakContent = aggregatedContent ?? content;
 
   // In compact (agentic) density, hide the action bar by default for any
   // assistant turn that has another assistant turn after it. The latest
@@ -222,7 +274,7 @@ export function AssistantActionBar({
   const canFork = (messagePosition ?? 0) > 0;
 
   const handleCopy = async () => {
-    await copyToClipboard(content, {
+    await copyToClipboard(copySpeakContent, {
       onSuccess: () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
@@ -264,71 +316,71 @@ export function AssistantActionBar({
             "opacity-0 group-hover/assistant-msg:opacity-100 focus-within:opacity-100",
         )}
       >
-      <TapTargetButtonGroup>
-        <ThumbsUpTapButton
-          variant="group"
-          onClick={() => {
-            setIsLiked(!isLiked);
-            if (isDisliked) setIsDisliked(false);
-          }}
-          ariaLabel="Like message"
-          className={
-            isLiked
-              ? "text-green-500 dark:text-green-400"
-              : "text-muted-foreground"
-          }
-        />
-
-        <ThumbsDownTapButton
-          variant="group"
-          onClick={() => {
-            setIsDisliked(!isDisliked);
-            if (isLiked) setIsLiked(false);
-          }}
-          ariaLabel="Dislike message"
-          className={
-            isDisliked
-              ? "text-red-500 dark:text-red-400"
-              : "text-muted-foreground"
-          }
-        />
-
-        {isCopied ? (
-          <CheckTapButton
+        <TapTargetButtonGroup>
+          <ThumbsUpTapButton
             variant="group"
-            onClick={handleCopy}
-            ariaLabel="Copied"
-            className="text-blue-500 dark:text-blue-400"
+            onClick={() => {
+              setIsLiked(!isLiked);
+              if (isDisliked) setIsDisliked(false);
+            }}
+            ariaLabel="Like message"
+            className={
+              isLiked
+                ? "text-green-500 dark:text-green-400"
+                : "text-muted-foreground"
+            }
           />
-        ) : (
-          <CopyTapButton
+
+          <ThumbsDownTapButton
             variant="group"
-            onClick={handleCopy}
-            ariaLabel="Copy message"
-            className="text-muted-foreground"
+            onClick={() => {
+              setIsDisliked(!isDisliked);
+              if (isLiked) setIsLiked(false);
+            }}
+            ariaLabel="Dislike message"
+            className={
+              isDisliked
+                ? "text-red-500 dark:text-red-400"
+                : "text-muted-foreground"
+            }
           />
-        )}
 
-        <StreamingSpeakerButton text={content} variant="group" />
-
-        <PencilTapButton
-          variant="group"
-          onClick={handleEdit}
-          ariaLabel="Edit message"
-          className="text-muted-foreground"
-        />
-
-        {showOptions && (
-          <div ref={moreOptionsButtonRef}>
-            <MoreHorizontalTapButton
+          {isCopied ? (
+            <CheckTapButton
               variant="group"
-              onClick={() => setShowOptionsMenu(true)}
-              ariaLabel="More options"
+              onClick={handleCopy}
+              ariaLabel="Copied"
+              className="text-blue-500 dark:text-blue-400"
+            />
+          ) : (
+            <CopyTapButton
+              variant="group"
+              onClick={handleCopy}
+              ariaLabel="Copy message"
               className="text-muted-foreground"
             />
-          </div>
-        )}
-      </TapTargetButtonGroup>
+          )}
+
+          <StreamingSpeakerButton text={copySpeakContent} variant="group" />
+
+          <PencilTapButton
+            variant="group"
+            onClick={handleEdit}
+            ariaLabel="Edit message"
+            className="text-muted-foreground"
+          />
+
+          {showOptions && (
+            <div ref={moreOptionsButtonRef}>
+              <MoreHorizontalTapButton
+                variant="group"
+                onClick={() => setShowOptionsMenu(true)}
+                ariaLabel="More options"
+                className="text-muted-foreground"
+              />
+            </div>
+          )}
+        </TapTargetButtonGroup>
       </div>
 
       {showOptions && showOptionsMenu && (

@@ -64,6 +64,13 @@ interface AgentAssistantMessageProps {
    */
   surfaceKey?: string;
   compact?: boolean;
+  /**
+   * Suppress the per-message AssistantActionBar. Used by AssistantTurnGroup
+   * to consolidate N sibling assistant messages (multi-iteration agentic
+   * turns) into one trailing action bar at the end of the group. When set,
+   * the print/full-DOM capture target also lifts to the group container.
+   */
+  hideActionBar?: boolean;
 }
 
 export function AgentAssistantMessage({
@@ -72,6 +79,7 @@ export function AgentAssistantMessage({
   messageId,
   isStreamActive = false,
   surfaceKey,
+  hideActionBar = false,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
 
@@ -199,9 +207,15 @@ export function AgentAssistantMessage({
   // — `requestId` wins over `messageInterleavedContent`.
   const effectiveRequestId = requestId;
 
+  // When this message is rendered inside an AssistantTurnGroup the parent
+  // owns the DOM-capture target (so "Print" covers the whole logical turn,
+  // not just the last iteration). In that case we skip our own captureRef
+  // and let the parent's ref wrap the full group.
+  const containerRef = hideActionBar ? undefined : captureRef;
+
   return (
     <div
-      ref={captureRef}
+      ref={containerRef}
       data-message-id={messageId ?? undefined}
       // `group/assistant-msg` is the hover anchor for AssistantActionBar's
       // compact-density "show on hover" behaviour. Hovering anywhere on the
@@ -232,7 +246,7 @@ export function AgentAssistantMessage({
           messageId={messageId}
         />
       )}
-      {!isStreamActive && messageId && (
+      {!hideActionBar && !isStreamActive && messageId && (
         <AssistantActionBar
           messageId={messageId}
           conversationId={conversationId}

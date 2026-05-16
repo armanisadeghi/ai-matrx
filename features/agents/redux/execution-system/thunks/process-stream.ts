@@ -96,6 +96,14 @@ import {
   updateMessageRecord,
   promoteMessageId,
 } from "../messages/messages.slice";
+import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
+import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
+import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
+import type {
+  ImageOutputData,
+  PartialImageData,
+} from "@/types/python-generated/stream-events";
+import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
 import {
   upsertUserRequest,
   patchUserRequest,
@@ -622,29 +630,59 @@ export async function processStream({
           ? dataType
           : "unknown_data_event";
 
-        const blockData: Record<string, unknown> =
-          blockType === "unknown_data_event"
-            ? { ...(d as UntypedDataPayload), _dataType: dataType }
-            : (d as unknown as Record<string, unknown>);
+        // Image events ride the canonical UnifiedImageBlock shape through the
+        // store. Adapters lift whatever Python sends into the agreed shape so
+        // every consumer (renderer, popover, action bar, persistence) speaks
+        // the same vocabulary. See features/files/blocks/image/UNIFIED_IMAGE_BLOCK.md.
+        let blockData: Record<string, unknown>;
+        if (dataType === "image_output") {
+          const unified: UnifiedImageBlock = fromImageOutputData(
+            d as ImageOutputData,
+            ((d as unknown as Record<string, unknown>).metadata as
+              | Record<string, unknown>
+              | undefined) ?? null,
+          );
+          blockData = unified as unknown as Record<string, unknown>;
+        } else if (dataType === "partial_image") {
+          const unified: UnifiedImageBlock = fromPartialImageData(
+            d as PartialImageData,
+          );
+          blockData = unified as unknown as Record<string, unknown>;
+        } else if (blockType === "unknown_data_event") {
+          blockData = { ...(d as UntypedDataPayload), _dataType: dataType };
+        } else {
+          blockData = d as unknown as Record<string, unknown>;
+        }
+
+        // Partial images share the blockId with the eventual final image_output
+        // so the upsert collapses partial + complete into one entry. The final
+        // event lands with status "complete" and the URL fields populated; the
+        // partial leaves only base64 + status "streaming".
+        const partialKey =
+          dataType === "partial_image" || dataType === "image_output"
+            ? "image_block_current"
+            : undefined;
+        const blockId = partialKey ?? `data_${dataType}_${totalEvents}`;
+        const finalBlockType =
+          dataType === "partial_image" ? "image_output" : blockType;
 
         dispatch(
           upsertRenderBlock({
             requestId,
             block: {
-              blockId: `data_${dataType}_${totalEvents}`,
+              blockId,
               blockIndex: renderBlockEvents,
-              type: blockType,
-              status: "complete",
+              type: finalBlockType,
+              status: dataType === "partial_image" ? "streaming" : "complete",
               content: null,
               data: blockData,
             },
           }),
         );
 
-        // Open the image peek notification overlay when an image arrives.
-        // The overlay loads lazily via the window registry — no bundle cost.
-        // ImageArrivalPeekHost self-closes when all cards are dismissed.
-        if (blockType === "image_output") {
+        // Open the image peek notification overlay when a FINAL image arrives.
+        // Skip on partials — the overlay would flash too early.
+        if (dataType === "image_output") {
           dispatch(openOverlay({ overlayId: "imagePeekHost" }));
         }
       }
@@ -752,10 +790,24 @@ export async function processStream({
       );
     } else if (isRenderBlockEvent(event)) {
       renderBlockEvents++;
+      // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
+      // canonical UnifiedImageBlock adapter so the rest of the system sees
+      // the same shape as data-event image_output blocks. The adapter takes
+      // the loose `RenderBlockPayload` directly and validates internally —
+      // no force-cast to `ImageRenderBlock` needed.
+      let block = event.data;
+      if (block.type === "image") {
+        const unified = fromRenderBlock(block);
+        block = {
+          ...block,
+          type: "image_output",
+          data: unified as unknown as Record<string, unknown>,
+        };
+      }
       dispatch(
         upsertRenderBlock({
           requestId,
-          block: event.data,
+          block,
         }),
       );
       dispatch(

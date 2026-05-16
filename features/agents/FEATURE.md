@@ -281,7 +281,49 @@ That's it — Rename / Pin / Archive / Delete / Duplicate / Share / Open in new 
 
 ---
 
+## Conversation transcript: logical turn grouping
+
+The agent backend reserves a **new `cx_message` per server iteration** (one for each thinking step / tool_call / final text emission inside a single agentic turn). So a tool-heavy answer becomes 10–100+ adjacent `assistant` rows in `messages.byId` — even though, conceptually, the user asked **one** question and got **one** answer that happened to include a multi-step trace.
+
+Rendering each iteration as its own visual unit fragmented the answer: every iteration got its own `space-y-6` gap and its own AssistantActionBar, scattering controls across the transcript. The fix is a render-layer **logical turn grouping** that collapses contiguous assistant messages between two user messages into a single visual unit.
+
+### Anatomy (`features/agents/components/messages-display/`)
+
+| File | Role |
+|---|---|
+| `AgentConversationDisplay.tsx` | Builds the existing per-entry `displayEntries[]` (streaming-bubble detection unchanged), then runs a grouping pass that emits `DisplayGroup[]` — `{ kind: "user", messageId }` or `{ kind: "assistant", members: AssistantTurnGroupMember[] }`. Outer `space-y-6` lives BETWEEN groups; inside groups is flush. |
+| `assistant/AssistantTurnGroup.tsx` | Renders N child `AgentAssistantMessage`s with `hideActionBar={true}` and emits **one** trailing `AssistantActionBar` anchored to the latest assistant `messageId` in the group. Owns the DOM-capture `<div>` so "Print" covers the whole turn. |
+| `assistant/AgentAssistantMessage.tsx` | Accepts `hideActionBar?: boolean`. When true: skips its internal `AssistantActionBar` *and* skips wrapping itself in `captureRef` (parent owns capture). Content rendering (`MarkdownStream`, files strip, error UI) is unchanged. |
+| `assistant/AssistantActionBar.tsx` | Accepts `groupMessageIds?: string[]`. When set with >1 ids: `Copy` and `Speak` aggregate `extractFlatText` across every member of the group (joined with blank lines). `Edit` / `Like` / `Delete` / overflow-menu stay anchored to the single `messageId` (the latest in the group — the "answer"). |
+
+### Visual rules
+
+- **Zero added chrome between sub-messages.** No card, no left rail, no iteration badges, no extra spacing. The natural content (tool cards, thinking blocks, text) already provides all the visual rhythm a multi-step turn needs.
+- **One action bar per group**, anchored to the **last** assistant message. Intermediate iterations carry no bar at all.
+- **Compact-density behaviour carries over for free.** `selectIsLatestAssistantMessage` returns true only for the conversation-wide latest assistant — which is the group bar's anchor only for the newest turn. Older groups' bars hover-reveal exactly as before.
+- **Streaming gate is unchanged.** The group bar renders only when the group's last member has `isStreamActive === false` AND resolves to a real `messageId` — same gate as the pre-grouping per-message path.
+
+### Action semantics on the group bar
+
+| Action | Anchor |
+|---|---|
+| Copy | Aggregated across every member (`groupMessageIds`) |
+| Speak (TTS) | Aggregated across every member |
+| Print (full DOM capture → PDF) | The group's outer `<div>` — covers every iteration's DOM + files strip |
+| Like / Dislike | Latest `messageId` (the answer) |
+| Edit (full-screen editor) | Latest `messageId` |
+| Retry (atomic) | Latest `messageId` → `atomicRetry` walks back to the preceding user turn → naturally retries the whole logical turn |
+| Fork / Delete / overflow menu | Latest `messageId` (single-iteration semantics preserved; future work may extend Delete to cascade across the group) |
+
+### Single-iteration turns are unchanged
+
+A turn with exactly one assistant `cx_message` becomes a one-member group. Visually and behaviourally identical to the pre-grouping render: same content, same bar, same single-message `Copy` / `Speak` text (aggregation is skipped when `groupMessageIds.length <= 1`).
+
+---
+
 ## Change log
+
+- `2026-05-15` — **Logical turn grouping in the transcript.** Multi-iteration agentic flows (each iteration = one server-side `cx_message` reservation) used to render as N adjacent assistant blocks, each with its own `space-y-6` gap and its own AssistantActionBar, fragmenting the answer and scattering controls. Introduced a render-layer grouping pass in `AgentConversationDisplay`: contiguous assistant entries between two user messages collapse into a single `AssistantTurnGroup` that renders sub-messages flush (zero added chrome between iterations) and emits ONE trailing `AssistantActionBar` anchored to the latest member. `AgentAssistantMessage` gained `hideActionBar?: boolean` (suppresses per-member bar + lifts capture-ref to the group). `AssistantActionBar` gained `groupMessageIds?: string[]` — when set, `Copy` and `Speak` aggregate flat text across every iteration; `Edit` / `Like` / `Delete` / overflow stay anchored to the latest `messageId` (the answer). Print / DOM capture now covers the whole logical turn. **Zero data-model changes** — purely a display-layer derivation; `messages.byId` and the streaming-bubble detection are untouched. Single-iteration turns render identically to before. See "Conversation transcript: logical turn grouping" above.
 
 - `2026-05-15` — **Unified conversation row context menu** wired into every conversation list in the app (9 surfaces). Single registry + singleton hook + `ConversationRowMenu` component — see the "Conversation row context menu" section above. DB-backed via new `cx_conversation.is_favorite` column + updated `get_agent_conversations` RPC; new thunks in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts` apply optimistic updates across both the `conversationList` and `conversationHistory` slices and revert on failure. `softDeleteConversation` was extended to dispatch `removeConversationFromScopes` so deleted rows disappear from every sidebar without a re-fetch. Rename / Pin / Archive / Delete / Duplicate / Share / Open-in-new-tab / Copy-link now behave identically whether triggered from the chat sidebar, runner sidebar, floating widget, quick-chat-history window, per-agent run history window, builder History tab, or the code editor history panel. The CodeEditorHistoryPanel keeps its existing `Trash2` button for DRAFT rows (still local-only, calls `destroyInstanceIfAllowed`) and adds the new menu for real conversations. Z-index discipline: every action calls `onCloseMenu()` **before** opening a dialog so the AdvancedMenu and confirm/text-input dialogs never overlap.
 - `2026-05-15` — `atomicRetry` now handles multimodal user turns. The thunk used to call `extractFlatText(triggeringUserMessage)` and reject with "atomic retry can only resubmit text turns" whenever the user message had no `text` part — which happens any time the original input was an image, an attached webpage/notes/table resource, or any other non-text MessagePart. Fixed by splitting the triggering user message's `MessagePart[]` content into a joined text string (every `text` part) and a non-text remainder (everything else, with assistant-only types `tool_call` / `tool_result` / `thinking` filtered out defensively), then seeding **both** `setUserInputText` and `setUserInputMessageParts`. `assembleRequest` already concatenates them onto `user_input` for a brand-new turn, so multimodal retries now produce the same payload the original send did. The only remaining reject path is a user message with literally zero content blocks, which should be unreachable. Both `/agents/[id]/build` and `/agents/[id]/run` share this thunk, so the fix lands in one place.

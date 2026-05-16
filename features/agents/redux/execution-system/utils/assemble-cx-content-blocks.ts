@@ -36,6 +36,8 @@ import type {
   TimelineReasoningEnd,
   TimelineToolEvent,
 } from "@/features/agents/types/request.types";
+import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
+import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -92,8 +94,7 @@ function reconstructBlockMarkdown(block: {
     case "text":
       return content;
     case "code": {
-      const language =
-        typeof data.language === "string" ? data.language : "";
+      const language = typeof data.language === "string" ? data.language : "";
       return `\`\`\`${language}\n${content}\n\`\`\``;
     }
     case "reasoning":
@@ -354,6 +355,21 @@ function renderBlockToMediaBlock(block: {
   data?: Record<string, unknown> | null;
 }): CxMediaContent | null {
   const data = block.data ?? {};
+
+  // Image blocks: process-stream.ts converts every image data event to a
+  // UnifiedImageBlock before upserting, so `data` is the canonical shape.
+  // Use the guard to prove the shape — a legacy entry that predates the
+  // adapter migration falls through to the shallow mapping below, which
+  // preserves at least the URL so we don't lose data on persistence.
+  if (block.type === "image_output" && isUnifiedImageBlock(data)) {
+    // Route through `toCxMediaPart` — packs every canonical field into
+    // metadata so `fromCxMediaPart` can re-lift them losslessly on reload.
+    return toCxMediaPart(data);
+  }
+
+  // Audio / video / generic media: legacy shallow mapping. Will get the
+  // same canonical-shape treatment in a follow-up pass (one block type
+  // at a time, mirroring the image template).
   const url =
     typeof data.url === "string"
       ? data.url

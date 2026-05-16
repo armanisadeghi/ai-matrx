@@ -1,0 +1,214 @@
+/**
+ * features/files/blocks/image/adapters/from-image-output-data.ts
+ *
+ * Convert a Python `image_output` data event into a UnifiedImageBlock.
+ *
+ * Today's Python wire shape (ImageOutputData):
+ *   { type: "image_output", url, mime_type, file_id?, cdn_url?, signed_url?,
+ *     download_url? }
+ *
+ * What this adapter does:
+ *   - Lifts `file_id` to identify a matrx-owned file (most common case).
+ *   - Tries to extract `file_id` from `url` if Python didn't supply one
+ *     (legacy fallback — eventually deletable).
+ *   - Computes `signedUrlExpiresAt` from the X-Amz-Date / X-Amz-Expires
+ *     query params on `signed_url` (or `url` if it looks signed).
+ *   - Promotes additional fields from `metadata` if Python included them
+ *     there as a transitional shim:
+ *       file_uri, visibility, thumbnail_url, thumbnail_uri,
+ *       canonical_file_uri, parent_file_id, derivation_kind,
+ *       file_name, width, height, size_bytes, signed_url_expires_at.
+ *   - When no `file_id` is recoverable, falls back to an external block
+ *     using whichever URL is most likely permanent.
+ *
+ * Delete when Python emits UnifiedImageBlock directly (Phase 2).
+ */
+
+import type { ImageOutputData } from "@/types/python-generated/stream-events";
+import type {
+  UnifiedImageBlock,
+  MatrxImageBlock,
+  ExternalImageBlock,
+} from "../types";
+import { extractFileIdFromUrl } from "../helpers/extract-file-id-from-url";
+import { parseFilenameFromUrl } from "../helpers/parse-filename-from-url";
+import { parseSignedUrlExpiry } from "../helpers/parse-signed-url-expiry";
+
+/**
+ * Read a string from a metadata bag, returning null when missing / wrong type.
+ */
+function metaString(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string,
+): string | null {
+  if (!metadata) return null;
+  const value = metadata[key];
+  return typeof value === "string" ? value : null;
+}
+
+function metaNumber(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string,
+): number | null {
+  if (!metadata) return null;
+  const value = metadata[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function metaVisibility(
+  metadata: Record<string, unknown> | null | undefined,
+): "public" | "private" | "shared" {
+  const value = metaString(metadata, "visibility");
+  if (value === "public" || value === "private" || value === "shared")
+    return value;
+  // Default assumption: AI-generated images are stored with `visibility: "public"`
+  // in cld_files (see the example row in UNIFIED_IMAGE_BLOCK.md). When Python
+  // doesn't tell us, public is the safer fallback because it never tries to
+  // refresh a signed URL that doesn't exist.
+  return "public";
+}
+
+export function fromImageOutputData(
+  data: ImageOutputData,
+  carriedMetadata?: Record<string, unknown> | null,
+): UnifiedImageBlock {
+  // `metadata` may live either on the top-level event envelope or inside the
+  // payload itself depending on Python's emit point. Caller passes whichever
+  // is most relevant; we read both as fallbacks.
+  const metadata = carriedMetadata ?? null;
+
+  // ── URL flavors ────────────────────────────────────────────────────────
+  const cdnUrl = data.cdn_url ?? null;
+  const signedUrl = data.signed_url ?? null;
+  const downloadUrl = data.download_url ?? null;
+
+  // Today Python sets `url` to one of: cdn url (public files), signed url
+  // (private), or a vanity URL. If neither cdn_url nor signed_url is set,
+  // we use `url` as the best-effort source URL.
+  const fallbackUrl = data.url;
+
+  // Heuristic: if `fallbackUrl` carries the X-Amz signature markers, treat
+  // it as a signed URL (so expiry is detected). Otherwise treat as cdn.
+  const fallbackLooksSigned =
+    typeof fallbackUrl === "string" &&
+    /[?&]X-Amz-(Date|Signature|Expires)=/.test(fallbackUrl);
+
+  const finalSignedUrl =
+    signedUrl ?? (fallbackLooksSigned ? fallbackUrl : null);
+  const finalCdnUrl =
+    cdnUrl ?? (fallbackLooksSigned ? null : (fallbackUrl ?? null));
+
+  // ── Expiry ─────────────────────────────────────────────────────────────
+  const explicitExpiry = metaNumber(metadata, "signed_url_expires_at");
+  const derivedExpiry = finalSignedUrl
+    ? parseSignedUrlExpiry(finalSignedUrl)
+    : null;
+  const signedUrlExpiresAt = explicitExpiry ?? derivedExpiry;
+
+  // ── Identity ───────────────────────────────────────────────────────────
+  const explicitFileId = data.file_id ?? null;
+  const inferredFileId =
+    explicitFileId ??
+    extractFileIdFromUrl(finalCdnUrl) ??
+    extractFileIdFromUrl(finalSignedUrl) ??
+    extractFileIdFromUrl(fallbackUrl) ??
+    null;
+
+  const fileUri = metaString(metadata, "file_uri");
+
+  // ── Shared fields ──────────────────────────────────────────────────────
+  const shared = {
+    cdnUrl: finalCdnUrl,
+    signedUrl: finalSignedUrl,
+    downloadUrl,
+    base64: null,
+    mimeType: data.mime_type ?? null,
+    // Filename priority:
+    //   1. Explicit `file_name` in the event metadata (Python's intent).
+    //   2. The filename baked into the signed URL's
+    //      `response-content-disposition` query param — Python sets this
+    //      to the AI-chosen name on every signed-URL mint, and it's the
+    //      ground truth for "what should the user see on download".
+    //   3. null — fall back to a generic `image.<ext>` at the callsite.
+    fileName:
+      metaString(metadata, "file_name") ??
+      parseFilenameFromUrl(downloadUrl) ??
+      parseFilenameFromUrl(finalSignedUrl) ??
+      parseFilenameFromUrl(finalCdnUrl) ??
+      null,
+    width: metaNumber(metadata, "width"),
+    height: metaNumber(metadata, "height"),
+    sizeBytes: metaNumber(metadata, "size_bytes"),
+    status: "complete" as const,
+    progress: null,
+    signedUrlExpiresAt,
+    metadata: metadata ?? null,
+  };
+
+  // ── Variant selection ──────────────────────────────────────────────────
+  // We can build a matrx block only if we have BOTH a fileId AND a fileUri.
+  // If we only have fileId, we synthesize a minimal s3:// uri from the cdn
+  // url path (canonical scheme `/<owner>/<file_id>`). Anything weirder
+  // collapses to external.
+  if (inferredFileId) {
+    const inferredFileUri =
+      fileUri ?? synthesizeFileUri(finalCdnUrl, finalSignedUrl, inferredFileId);
+    const matrx: MatrxImageBlock = {
+      ...shared,
+      origin: "matrx",
+      fileId: inferredFileId,
+      fileUri: inferredFileUri,
+      canonicalFileUri: metaString(metadata, "canonical_file_uri"),
+      visibility: metaVisibility(metadata),
+      thumbnailUrl: metaString(metadata, "thumbnail_url"),
+      thumbnailUri: metaString(metadata, "thumbnail_uri"),
+      parentFileId: metaString(metadata, "parent_file_id"),
+      derivationKind: metaString(metadata, "derivation_kind"),
+    };
+    return matrx;
+  }
+
+  // Truly external — synthesize an externalUrl from whatever we have.
+  const externalUrl = fallbackUrl ?? finalCdnUrl ?? finalSignedUrl ?? "";
+  if (!externalUrl) {
+    // Defensive: no URL at all is a broken event; build a no-op external
+    // block so consumers don't crash. The renderer will show an error
+    // state.
+    const broken: ExternalImageBlock = {
+      ...shared,
+      origin: "external",
+      externalUrl: "",
+      sourceLabel: metaString(metadata, "source_label"),
+    };
+    return broken;
+  }
+  const external: ExternalImageBlock = {
+    ...shared,
+    origin: "external",
+    externalUrl,
+    sourceLabel: metaString(metadata, "source_label"),
+  };
+  return external;
+}
+
+/**
+ * Build a synthetic `s3://` uri from a CDN or signed URL when Python didn't
+ * include `file_uri`. The canonical key scheme is `/{owner}/{file_id}` so the
+ * resulting URI is `s3://{host}/{owner}/{file_id}` — enough to satisfy the
+ * fileUri invariant on `MatrxImageBlock`. The handler never reads this for
+ * resolution (it uses fileId), so an approximation is safe.
+ */
+function synthesizeFileUri(
+  cdnUrl: string | null,
+  signedUrl: string | null,
+  fileId: string,
+): string {
+  const src = cdnUrl ?? signedUrl;
+  if (!src) return `s3://unknown/${fileId}`;
+  try {
+    const parsed = new URL(src);
+    return `s3://${parsed.host}${parsed.pathname}`;
+  } catch {
+    return `s3://unknown/${fileId}`;
+  }
+}

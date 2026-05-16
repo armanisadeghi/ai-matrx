@@ -187,7 +187,87 @@ components/
     ├── FilePicker.tsx
     ├── FolderPicker.tsx
     └── SaveAsDialog.tsx
+
+blocks/                   # canonical message-block renderers (one shape per type)
+└── image/                # UnifiedImageBlock — the only image renderer in the app
+    ├── types.ts                            # UnifiedImageBlock (matrx | external)
+    ├── guards.ts                           # isUnifiedImageBlock() — runtime narrowing at boundaries
+    ├── UnifiedImageBlockRenderer.tsx       # THE renderer — inline + compact variants (pure view)
+    ├── useUnifiedImageUrl.ts               # THE URL hook — central expiry + refresh
+    ├── useImageActions.ts                  # ALL action callbacks (download / print / share / variants)
+    ├── ImageSharePopover.tsx               # Cross-platform share surface (popover desktop, drawer mobile)
+    ├── helpers/
+    │   ├── derive-viewer-url.ts            # (block) → /files/f/{fileId}
+    │   ├── extract-file-id-from-url.ts     # UUID-from-S3 fallback
+    │   ├── parse-filename-from-url.ts      # AI-named filename from `response-content-disposition`
+    │   └── parse-signed-url-expiry.ts      # AWS SigV4 X-Amz-Date + X-Amz-Expires
+    ├── utils/
+    │   ├── render-image-variant.ts         # `addAssetVariants` wrapper — server-side resize / format conversion
+    │   └── print-image.ts                  # Hidden-iframe print without popup-blocker hits
+    ├── adapters/                           # boundary translation (deleted incrementally)
+    │   ├── from-image-output-data.ts       # stream image_output event → UnifiedImageBlock
+    │   ├── from-partial-image-data.ts      # stream partial_image → streaming UnifiedImageBlock
+    │   ├── from-render-block.ts            # markdown render_block:image → UnifiedImageBlock
+    │   ├── from-cx-media-part.ts           # DB cx_message media part → UnifiedImageBlock
+    │   ├── from-cld-files-row.ts           # raw cld_files row → MatrxImageBlock (fallback)
+    │   └── to-cx-media-part.ts             # UnifiedImageBlock → CxMediaContent (persistence)
+    └── UNIFIED_IMAGE_BLOCK.md              # Python-team handoff doc + phase plan
 ```
+
+### Blocks subsystem — one canonical shape per media type
+
+`blocks/` is where the canonical message-block renderers live. Each subdirectory
+owns a single content-block type with **one** typed shape (`UnifiedImageBlock`),
+**one** renderer (`UnifiedImageBlockRenderer`), **one** URL/expiry hook
+(`useUnifiedImageUrl`), and a thin set of **adapters** that funnel every inbound
+source (Python stream events, DB-stored messages, partial-image events, external
+URLs, raw `cld_files` rows) into that canonical shape at the earliest boundary.
+
+```
+Sources (any path)
+  │
+  ▼
+adapters/from-*.ts ──►  UnifiedImageBlock  ──►  Redux state
+                              │
+                              ├─►  UnifiedImageBlockRenderer  (inline message body)
+                              ├─►  UnifiedImageBlockRenderer  (compact — peek toast)
+                              ├─►  ImageViewerWindow          (fullscreen)
+                              └─►  adapters/to-cx-media-part.ts  ──►  cx_message.content[]
+```
+
+**Why this exists:** before this subsystem, every consumer (inline renderer,
+peek popover, action bar, viewer) had its own ad-hoc reading of `block.data`
+fields. Streaming images and DB-loaded images carried different shapes;
+signed-URL expiry was handled inconsistently or not at all. The canonical
+shape collapses every consumer onto a single contract, and the
+`useUnifiedImageUrl` hook is the **only** place expiry detection and re-mint
+logic lives in the entire app.
+
+**Boundary wiring (where adapters are called today):**
+
+| Boundary | File | Adapter |
+|---|---|---|
+| Stream — typed data event | [`process-stream.ts`](../agents/redux/execution-system/thunks/process-stream.ts) | `fromImageOutputData` / `fromPartialImageData` |
+| Stream — markdown render_block | [`process-stream.ts`](../agents/redux/execution-system/thunks/process-stream.ts) | `fromRenderBlock` |
+| DB load (message normalize) | [`normalize-content-blocks.ts`](../agents/redux/execution-system/utils/normalize-content-blocks.ts) | `fromCxMediaPart` |
+| DB write (message assemble) | [`assemble-cx-content-blocks.ts`](../agents/redux/execution-system/utils/assemble-cx-content-blocks.ts) | `toCxMediaPart` |
+| Fallback re-hydrate | (on-demand) | `fromCldFilesRow` |
+
+The adapters are **temporary translation layers**. The plan is for Python to
+adopt the canonical shape directly — first in stream events, then in
+`cx_message.content[]` storage — at which point the inbound adapters are
+deleted one by one. The outbound `toCxMediaPart` becomes a no-op pass-through
+when the DB row already carries the canonical shape. See
+[`blocks/image/UNIFIED_IMAGE_BLOCK.md`](blocks/image/UNIFIED_IMAGE_BLOCK.md)
+for the Python-team handoff.
+
+**Adding a new media type (audio, video, document):** follow the image
+template. Create `blocks/{kind}/` with the same six pieces (`types.ts`,
+`{Kind}BlockRenderer.tsx`, `use{Kind}Url.ts`, `helpers/`, `adapters/from-*`
+and `to-*`, plus the handoff doc), then wire the same five boundaries
+(stream typed event, stream render_block, normalize, assemble, fallback).
+Image is the reference implementation — keep audio/video/document drift
+from it to zero so the template stays valid.
 
 **Contract for core components:**
 - `fileId` (never path) is the stable identity.
@@ -315,6 +395,8 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-05-16** — Image block: rich action surface + truthful sharing. Added [`useImageActions`](blocks/image/useImageActions.ts) as the single source of truth for every image-block callback (download, copy, copy link, copy image, print, view original, plus the two new server-side variants below). Renderer ([`UnifiedImageBlockRenderer`](blocks/image/UnifiedImageBlockRenderer.tsx)) is now pure view code that renders the toolbar / dropdown / context menu / drawer from this hook. **Sharing no longer lies:** replaced the old "set visibility=public then copy the 1-hour signed URL" path with [`ImageSharePopover`](blocks/image/ImageSharePopover.tsx) — a cross-platform popover (Drawer on mobile) that copies the file's CDN URL when it's already public, or creates / reuses a no-expiry read-only `cld_share_links` row and copies its `/share/{token}` URL. Pasting the link gets you a URL that still works in a week. Advanced settings open the existing [`ShareLinkDialog`](components/core/ShareLinkDialog/ShareLinkDialog.tsx) for per-link expiry / permission / max-uses. **Download as JPEG / PNG / WebP / AVIF** and **Resize and download (2048 / 1024 / 512 / 256 px)** submenus go through the new [`renderImageVariant`](blocks/image/utils/render-image-variant.ts) helper which calls `getAssetForFile` (idempotent promote) + `addAssetVariants` (idempotent on key) so the converted variant PERSISTS on the asset envelope and the next click is a cache hit. Filename fix: the AI-chosen name baked into the signed URL's `response-content-disposition` query param is now extracted by [`parseFilenameFromUrl`](blocks/image/helpers/parse-filename-from-url.ts) and surfaces on `block.fileName`, so downloads land with the right name instead of `image.png`. **Print** action via hidden-iframe [`printImage`](blocks/image/utils/print-image.ts) — no popup-blocker hit, image-only print doc with edge-to-edge layout.
+- **2026-05-16** — Unified Image Block subsystem shipped. New canonical shape `UnifiedImageBlock` (matrx | external variants) lives in [blocks/image/types.ts](blocks/image/types.ts) with full inbound adapters ([from-image-output-data](blocks/image/adapters/from-image-output-data.ts), [from-partial-image-data](blocks/image/adapters/from-partial-image-data.ts), [from-render-block](blocks/image/adapters/from-render-block.ts), [from-cx-media-part](blocks/image/adapters/from-cx-media-part.ts), [from-cld-files-row](blocks/image/adapters/from-cld-files-row.ts)) + outbound [to-cx-media-part](blocks/image/adapters/to-cx-media-part.ts). [`useUnifiedImageUrl`](blocks/image/useUnifiedImageUrl.ts) is now the only place expiry detection and signed-URL re-mint live — it bridges into the existing handler's expiry-wheel via `useFileAs`. [`UnifiedImageBlockRenderer`](blocks/image/UnifiedImageBlockRenderer.tsx) replaces the legacy `ImageOutputBlock` (deleted) and ships both `inline` and `compact` variants powering chat messages, the bottom-right peek toast ([`ImageArrivalPeek`](../agents/components/notifications/ImageArrivalPeek.tsx)), and the lightbox. Boundary wiring: [process-stream.ts](../agents/redux/execution-system/thunks/process-stream.ts) converts every stream event to `UnifiedImageBlock` before upsert, [normalize-content-blocks.ts](../agents/redux/execution-system/utils/normalize-content-blocks.ts) converts every DB-loaded media:image part on hydrate, [assemble-cx-content-blocks.ts](../agents/redux/execution-system/utils/assemble-cx-content-blocks.ts) round-trips via `toCxMediaPart` on persist. Fixes the streaming-image render gap: [`selectUnifiedSlots`](../agents/redux/execution-system/active-requests/active-requests.selectors.ts) now emits slots for `image_output` / `audio_output` / `video_output` data events, and [EnhancedChatMarkdown](../../components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx) no longer drops content-less media render blocks. Python-team handoff: [blocks/image/UNIFIED_IMAGE_BLOCK.md](blocks/image/UNIFIED_IMAGE_BLOCK.md) describes the canonical shape, the on-disk mapping, and the deletion plan for the inbound adapters as Python adopts the shape natively (Phases 1–3). Audio / video / document follow the same template in subsequent passes.
 - **2026-05-15** — Redux selector stability for tree children: canonical [`EMPTY_TREE_CHILDREN`](redux/tree-utils.ts) replaces inline `{ folderIds: [], fileIds: [] }` in [`selectChildrenOfFolder`](redux/selectors.ts), [`sortChildren`](redux/tree-utils.ts) (empty in/out), and pickers/hooks that previously returned fresh objects from `useAppSelector` when no folder was active ([`PickerShell`](components/surfaces/PickerShell.tsx), [`useFolderContents`](hooks/useFolderContents.ts), [`MobileStack`](components/surfaces/MobileStack.tsx)). [`selectSortedRootChildren`](redux/selectors.ts) / [`selectSortedChildrenOfFolder`](redux/selectors.ts) now key off [`selectSortBy`](redux/selectors.ts) + [`selectSortDir`](redux/selectors.ts) instead of building `{ sortBy, sortDir }` from `selectUiSlice` on every `cloudFiles` root replacement — fewer avoidable recomputes. [`CloudFilesTab`](../../components/image/cloud/CloudFilesTab.tsx) and [`FilesResourcePicker`](../resource-manager/resource-picker/FilesResourcePicker.tsx) use the same stable empty constant where applicable.
 - **2026-05-11** — SVG promoted to a first-class `PreviewKind`. Previously `.svg` was lumped into the generic `image` kind, which (a) showed the same lucide `Image` icon as PNG/JPG (visually indistinguishable from raster), (b) routed through `ImagePreview`'s plain `<img>` (no transparency-grid background, no way to inspect markup), and (c) was hidden from the Edit button because `image` isn't in `EDITABLE_KINDS` — even though SVG is just XML. The fix touches the full path: [file-types.ts](utils/file-types.ts) adds `"svg"` to `PreviewKind`, swaps the SVG entry's icon to `PenTool` (amber) and `previewKind` to `"svg"`, and the `getFilePreviewProfile` MIME-override block now explicitly preserves `"svg"` instead of clobbering `image/svg+xml` to `"image"`. New [previewers/SvgPreview.tsx](components/core/FilePreview/previewers/SvgPreview.tsx) renders on the `bg-checkerboard` utility with a Rendered/Source toggle (Source lazily fetches bytes via `useFileBlob` only when the user opens it). [FilePreview.tsx](components/core/FilePreview/FilePreview.tsx) switch routes `"svg"` to it. [preview-actions.ts](components/core/FilePreview/preview-actions.ts) adds `"svg"` to `EDITABLE_KINDS` so the Edit button surfaces. [PreviewPane.tsx](components/surfaces/PreviewPane.tsx) `EditTabContent` falls through `"svg"` into `CloudFileInlineEditor` (Monaco) with `xml` language. [CloudFileInlineEditor.tsx](components/core/FileEditor/CloudFileInlineEditor.tsx) `LANGUAGE_BY_EXT` and code-workspace [`languageFromFilename`](../code/styles/file-icon.tsx) both learn `svg → xml`. Code workspace's [`useOpenFile`](../code/hooks/useOpenFile.ts) intentionally does NOT add `"svg"` to `isBinary` — SVGs now open directly in Monaco for editing. [`BinaryFileViewer`](../code/editor/BinaryFileViewer.tsx) keeps a defensive `case "svg"` falling through to `ImagePreview` for the rare path where an SVG arrives as a binary tab anyway.
 - **2026-05-08** — Central renderable image URL resolver added at [utils/resolveRenderableImageUrl.ts](utils/resolveRenderableImageUrl.ts). It accepts public URLs, cloud file records, file ids, and image-source metadata; caches signed URL results by cloud file id; reuses valid signed URLs; and refreshes expired known cloud-file URLs. `useSignedUrl()` and Image Manager cloud-file resolution now delegate through this path.

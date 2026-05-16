@@ -12,6 +12,7 @@ import {
   selectAccumulatedText,
   selectUnifiedSlots,
   selectAllRenderBlocks,
+  SPECIAL_RENDER_BLOCK_TYPES,
   type ContentSegment,
   type UnifiedSlot,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -57,6 +58,14 @@ export interface ChatMarkdownDisplayProps {
    */
   applyLocalEdits?: boolean;
 }
+
+// Render-block types that carry their payload on `data` rather than
+// `content` — they must NOT be skipped when content is empty.
+const MEDIA_RENDER_BLOCK_TYPES = new Set([
+  "image_output",
+  "audio_output",
+  "video_output",
+]);
 
 const _EMPTY_SEGMENTS: ContentSegment[] = [];
 const _EMPTY_SLOTS: UnifiedSlot[] = [];
@@ -151,12 +160,21 @@ export const EnhancedChatMarkdownInternal: React.FC<
     (serverProcessedBlocks && serverProcessedBlocks.length > 0) ||
     hasClientBlocks;
   const isWaitingForContent =
-    hasRequestOrTaskId &&
-    !resolvedContent.trim() &&
-    !hasReceivedNonTextContent;
+    hasRequestOrTaskId && !resolvedContent.trim() && !hasReceivedNonTextContent;
 
+  // A unified slot is "special" — i.e. needs the interleaved-unified
+  // renderer rather than plain markdown — when it's a tool card, a phase
+  // status, or a media render block (image_output / audio_output /
+  // video_output). Without the media check, a pure-image stream (no text
+  // run at all) falls through to the plain-content branch and renders
+  // nothing, even though the slot is sitting right there.
   const hasUnifiedSpecial = unifiedSlots.some(
-    (s) => s.kind === "tool" || s.kind === "status",
+    (s) =>
+      s.kind === "tool" ||
+      s.kind === "status" ||
+      (s.kind === "render_block" &&
+        s.blockType !== undefined &&
+        SPECIAL_RENDER_BLOCK_TYPES.has(s.blockType)),
   );
 
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
@@ -511,7 +529,16 @@ export const EnhancedChatMarkdownInternal: React.FC<
             ? unifiedSlots.map((slot, i) => {
                 if (slot.kind === "render_block") {
                   const rb = renderBlocksMap[slot.blockId];
-                  if (!rb || !rb.content?.trim()) return null;
+                  if (!rb) return null;
+                  // Media blocks (image_output / audio_output / video_output)
+                  // carry their payload on `data`, not `content`. Don't drop
+                  // them just because content is empty.
+                  if (
+                    !MEDIA_RENDER_BLOCK_TYPES.has(rb.type) &&
+                    !rb.content?.trim()
+                  ) {
+                    return null;
+                  }
                   const block = renderBlockToContentBlock(rb);
                   return renderBlock(block, i);
                 }

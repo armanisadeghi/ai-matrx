@@ -199,6 +199,30 @@ const deletedFileHooksRestriction = {
     ],
 };
 
+// Doctrine anti-pattern #3 — Parallel Redux slices (see PRINCIPLES.md).
+// `createSlice` / `createReducer` must live alongside the rest of the store
+// in `lib/redux/**` or `features/*/redux/**`. Calling them anywhere else
+// is almost always a sign that a new slice is being spun up for data that
+// already has a canonical home. Extend the existing slice instead.
+// The bottom-of-file override (allowedSlicePaths) re-enables these imports
+// for the legitimate slice dirs only.
+const parallelSliceRestriction = {
+    paths: [
+        {
+            name: '@reduxjs/toolkit',
+            importNames: ['createSlice', 'createReducer'],
+            message:
+                'createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLES.md anti-pattern #3 (Parallel Redux slices). If a genuinely new slice is needed, place it in the canonical dirs.',
+        },
+        {
+            name: '@reduxjs/toolkit/react',
+            importNames: ['createSlice', 'createReducer'],
+            message:
+                'createSlice / createReducer must live in lib/redux/** or features/*/redux/**. See PRINCIPLES.md anti-pattern #3.',
+        },
+    ],
+};
+
 // All file flows must funnel through @/features/files. ESLint cannot
 // fully prevent direct supabase.storage member access (no AST rule for that
 // without a custom plugin), but `no-restricted-syntax` catches the canonical
@@ -285,7 +309,10 @@ export default [
                 'error',
                 {
                     patterns: windowPanelsImportRestriction.patterns,
-                    paths: deletedFileHooksRestriction.paths,
+                    paths: [
+                        ...deletedFileHooksRestriction.paths,
+                        ...parallelSliceRestriction.paths,
+                    ],
                 },
             ],
             // Browser dialogs are banned — see CLAUDE.md "Browser dialogs are BANNED".
@@ -416,6 +443,31 @@ export default [
             'features/rag/components/search/RagSearchHits.tsx',
             'features/resource-manager/resource-picker/FilesResourcePicker.tsx',
             'features/whatsapp-clone/hooks/useWhatsAppMedia.ts',
+        ],
+        rules: {
+            'no-restricted-imports': 'off',
+        },
+    },
+    // Doctrine anti-pattern #3 (Parallel Redux slices) — the parallelSliceRestriction
+    // bans `createSlice` / `createReducer` everywhere by default. The override below
+    // re-enables them for the canonical slice locations and for test fixtures.
+    // The override turns off `no-restricted-imports` entirely for these paths since
+    // those files have no business importing window-panel internals or deleted file
+    // hooks either.
+    //
+    // If you find yourself adding a new path to this allowlist for non-test code,
+    // stop and re-read PRINCIPLES.md anti-pattern #3 — the answer is almost always
+    // "extend an existing slice", not "add a new slice location".
+    {
+        files: [
+            'lib/redux/**',
+            'lib/sync/**',
+            'features/*/redux/**',
+            'features/*/state/**',
+            'styles/themes/**',
+            '**/__tests__/**',
+            '**/*.test.ts',
+            '**/*.test.tsx',
         ],
         rules: {
             'no-restricted-imports': 'off',

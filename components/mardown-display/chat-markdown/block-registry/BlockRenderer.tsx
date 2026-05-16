@@ -12,6 +12,7 @@ import {
   selectHideReasoning,
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -232,19 +233,17 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
 
     case "image_output": {
-      const sd = block.serverData ?? {};
-      const url =
-        (sd.url as string | undefined) ?? (sd.signed_url as string | undefined);
-      if (!url) return null;
+      // block.serverData IS the UnifiedImageBlock — every inbound path
+      // (process-stream.ts, normalize-content-blocks.ts) converts to the
+      // canonical shape before storing. See features/files/blocks/image/types.ts.
+      // Use the guard to prove the shape rather than force-casting from
+      // `Record<string, unknown>` — anything that doesn't pass the guard is
+      // a stale entry from before the migration and gets silently skipped.
+      if (!isUnifiedImageBlock(block.serverData)) return null;
       return (
         <BlockComponents.ImageOutputBlock
           key={index}
-          url={url}
-          mimeType={sd.mime_type as string | undefined}
-          fileId={sd.file_id as string | null | undefined}
-          cdnUrl={sd.cdn_url as string | null | undefined}
-          signedUrl={sd.signed_url as string | null | undefined}
-          downloadUrl={sd.download_url as string | null | undefined}
+          block={block.serverData}
         />
       );
     }

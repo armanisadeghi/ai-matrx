@@ -80,8 +80,7 @@ export function ImageArrivalPeekHost({
         <div key={peek.peekId} className="pointer-events-auto">
           <ImageArrivalPeek
             peekId={peek.peekId}
-            url={peek.url}
-            mimeType={peek.mimeType}
+            block={peek.block}
             onDismiss={dismiss}
             onImageClick={handleImageClick}
           />

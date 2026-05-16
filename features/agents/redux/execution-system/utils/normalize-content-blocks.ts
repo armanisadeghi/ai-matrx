@@ -8,6 +8,7 @@ import type {
   DocumentMediaPart,
   YouTubeMediaPart,
 } from "@/types/python-generated/stream-events";
+import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
 
 /**
  * Normalizes `cx_message.content[]` items into the canonical `RenderBlockPayload`
@@ -287,22 +288,24 @@ type AnyMediaPart =
 
 function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
   switch (raw.kind) {
-    case "image":
-      // Matches `ImageOutputData` (url + mime_type).
+    case "image": {
+      // Images flow through the canonical UnifiedImageBlock shape — adapters
+      // lift fileId, cdn_url, signed_url, visibility, thumbnails, etc. back
+      // out of `metadata` where assembleMessageParts deposited them. The
+      // payload at `data` is a fully-populated UnifiedImageBlock — the
+      // renderer and action bar never need to consult `metadata` again.
+      // See features/files/blocks/image/UNIFIED_IMAGE_BLOCK.md.
+      const unified = fromCxMediaPart(raw);
       return {
         blockId: newId("db_image_output"),
         blockIndex: index,
         type: "image_output",
         status: "complete",
         content: null,
-        data: {
-          type: "image_output",
-          url: raw.url ?? null,
-          file_uri: raw.file_uri ?? null,
-          mime_type: raw.mime_type ?? null,
-        },
+        data: unified as unknown as Record<string, unknown>,
         metadata: raw.metadata,
       };
+    }
 
     case "audio":
       // Matches `AudioOutputData` (url + mime_type), with transcription

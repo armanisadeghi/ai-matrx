@@ -6,6 +6,28 @@ Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, m
 
 ---
 
+## Operating Principle: Build the platform, not the artifact.
+
+> **The artifact is disposable. The class of failure goes extinct.**
+
+Every task — feature, bug, or refactor — is a probe that exposes what the platform is missing. Your real job is to build (or extend) the missing capability and complete the task by consuming it. **Friction is the spec for your next primitive.**
+
+- **Forbidden:** code that only serves this one artifact and could not be reused.
+- **Required:** generic, named, documented platform primitives.
+
+**Three acceptance tests:**
+- *Feature:* "If I deleted what I just built, could I rebuild it in minutes using only existing platform capabilities?"
+- *Bug:* "Is this entire class of failure now structurally impossible — not just patched here?"
+- *Any change that adds a type / component / slice / hook:* "Did I prove (grep, file read, or `Explore` subagent) that no existing primitive could be extended instead?"
+
+If yes — done. If no — the remainder is your next infrastructure ticket. Extract it.
+
+The five frontend anti-patterns that violate this doctrine — local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap — each with concrete "look here first" anchors and a search algorithm scaled by feature size, are catalogued in **[PRINCIPLES.md](./PRINCIPLES.md)**. Read it once, internalize it, return when you hit friction.
+
+Enforcement: ESLint rules in [`eslint.config.mjs`](./eslint.config.mjs), the `pnpm check:doctrine` script ([`scripts/check-doctrine.ts`](./scripts/check-doctrine.ts)), and the pre-commit hook configured in `package.json`. Every `FEATURE.md` includes a Doctrine compliance section ([template](./features/_FEATURE_TEMPLATE.md)).
+
+---
+
 ## Web Access for Testing
 
 - User: `admin@admin.com` / `Password1234#`
