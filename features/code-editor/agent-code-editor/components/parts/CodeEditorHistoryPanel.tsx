@@ -11,7 +11,7 @@
  * callbacks up to `SmartCodeEditor`, which owns the widget handle + active id.
  */
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, MessageSquare, Loader2, Trash2 } from "lucide-react";
+import {
+  Plus,
+  MessageSquare,
+  Loader2,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useMergedAgentConversations,
   type MergedConversationRow,
 } from "../../hooks/useMergedAgentConversations";
 import type { CodeEditorAgentConfig } from "../../types";
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
 
 interface CodeEditorHistoryPanelProps {
   agents: CodeEditorAgentConfig[];
@@ -51,6 +63,23 @@ export function CodeEditorHistoryPanel({
   const dispatch = useAppDispatch();
   const agentIds = React.useMemo(() => agents.map((a) => a.id), [agents]);
   const { rows, status, errorMessages } = useMergedAgentConversations(agentIds);
+
+  const rowMenu = useConversationRowMenu();
+  const openRowMenu = useCallback(
+    (row: MergedConversationRow, anchor: MenuAnchor) => {
+      if (row.isDraft || !row.item) return;
+      const data: ConversationRowMenuData = {
+        conversationId: row.conversationId,
+        title: row.item.title,
+        isFavorite: row.item.isFavorite ?? false,
+        isArchived: row.item.status === "archived",
+        isOwner: true,
+        href: `/agents/${row.agentId}/run?conversationId=${row.conversationId}`,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [rowMenu],
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background border-r border-border">
@@ -113,9 +142,12 @@ export function CodeEditorHistoryPanel({
                 ? () => dispatch(destroyInstanceIfAllowed(row.conversationId))
                 : undefined
             }
+            onOpenMenu={openRowMenu}
           />
         ))}
       </div>
+
+      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 }
@@ -125,12 +157,15 @@ function HistoryRow({
   isActive,
   onSelect,
   onDelete,
+  onOpenMenu,
 }: {
   row: MergedConversationRow;
   isActive: boolean;
   onSelect: () => void;
   onDelete?: () => void;
+  onOpenMenu: (row: MergedConversationRow, anchor: MenuAnchor) => void;
 }) {
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const date = row.isDraft
     ? null
     : row.sortKey
@@ -144,10 +179,13 @@ function HistoryRow({
     <div
       className={cn(
         "group relative border-b border-border/50 transition-colors",
-        isActive
-          ? "bg-primary/10"
-          : "hover:bg-muted/50",
+        isActive ? "bg-primary/10" : "hover:bg-muted/50",
       )}
+      onContextMenu={(e) => {
+        if (row.isDraft) return;
+        e.preventDefault();
+        onOpenMenu(row, e);
+      }}
     >
       <button
         type="button"
@@ -176,7 +214,8 @@ function HistoryRow({
           </div>
         </div>
       </button>
-      {onDelete && (
+
+      {onDelete ? (
         <button
           type="button"
           onClick={(e) => {
@@ -191,6 +230,24 @@ function HistoryRow({
           aria-label="Delete draft"
         >
           <Trash2 className="w-3 h-3 text-destructive" />
+        </button>
+      ) : (
+        <button
+          ref={menuBtnRef}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (menuBtnRef.current) onOpenMenu(row, menuBtnRef.current);
+          }}
+          className={cn(
+            "absolute right-1.5 top-1/2 -translate-y-1/2 h-6 w-6",
+            "flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted",
+            "opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity",
+          )}
+          aria-label="More options"
+          title="More options"
+        >
+          <MoreHorizontal className="w-3 h-3" />
         </button>
       )}
     </div>

@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronDown,
   ChevronRight,
   Clock,
   MessageSquare,
+  MoreHorizontal,
   Loader2,
   History,
   Workflow,
@@ -23,6 +30,12 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import type { RootState } from "@/lib/redux/store";
 import { useAppStore } from "@/lib/redux/hooks";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
 
 const SURFACE_KEY = "agent-run-history-window";
 
@@ -73,11 +86,13 @@ function VersionGroupRow({
   selectedId,
   onSelect,
   defaultOpen,
+  onOpenMenu,
 }: {
   group: VersionGroup;
   selectedId: string | null;
   onSelect: (id: string) => void;
   defaultOpen: boolean;
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const hasActive = group.conversations.some(
@@ -110,46 +125,90 @@ function VersionGroupRow({
 
       {open && (
         <div className="pl-2">
-          {group.conversations.map((conv) => {
-            const isActive = conv.conversationId === selectedId;
-            const date = formatDate(conv.updatedAt);
-            return (
-              <button
-                key={conv.conversationId}
-                type="button"
-                onClick={() => onSelect(conv.conversationId)}
-                className={cn(
-                  "flex items-start gap-2 w-full px-2 py-1.5 text-left transition-colors border-l-2",
-                  isActive
-                    ? "border-primary bg-primary/8 text-primary"
-                    : "border-transparent hover:bg-muted/40 text-foreground",
-                )}
-              >
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={cn(
-                      "text-xs font-medium truncate leading-tight",
-                      isActive ? "text-primary" : "text-foreground",
-                    )}
-                  >
-                    {conv.title?.trim() || "Untitled"}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
-                    <span className="text-[10px] text-muted-foreground/70">
-                      {conv.messageCount}
-                      {date ? ` · ${date}` : ""}
-                    </span>
-                  </div>
-                </div>
-                {isActive && (
-                  <ChevronRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-                )}
-              </button>
-            );
-          })}
+          {group.conversations.map((conv) => (
+            <VersionConversationRow
+              key={conv.conversationId}
+              conv={conv}
+              isActive={conv.conversationId === selectedId}
+              onSelect={onSelect}
+              onOpenMenu={onOpenMenu}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function VersionConversationRow({
+  conv,
+  isActive,
+  onSelect,
+  onOpenMenu,
+}: {
+  conv: ConversationListItem;
+  isActive: boolean;
+  onSelect: (id: string) => void;
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
+}) {
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const date = formatDate(conv.updatedAt);
+
+  return (
+    <div
+      className={cn(
+        "group flex items-start gap-2 w-full pr-1 transition-colors border-l-2",
+        isActive
+          ? "border-primary bg-primary/8 text-primary"
+          : "border-transparent hover:bg-muted/40 text-foreground",
+      )}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onOpenMenu(conv, e);
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onSelect(conv.conversationId)}
+        className="flex-1 min-w-0 flex items-start gap-2 px-2 py-1.5 text-left"
+      >
+        <div className="flex-1 min-w-0">
+          <p
+            className={cn(
+              "text-xs font-medium truncate leading-tight",
+              isActive ? "text-primary" : "text-foreground",
+            )}
+          >
+            {conv.title?.trim() || "Untitled"}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
+            <span className="text-[10px] text-muted-foreground/70">
+              {conv.messageCount}
+              {date ? ` · ${date}` : ""}
+            </span>
+          </div>
+        </div>
+        {isActive && (
+          <ChevronRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+        )}
+      </button>
+      <button
+        ref={menuBtnRef}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
+        }}
+        className={cn(
+          "shrink-0 self-start mt-1.5 flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
+          "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+        )}
+        aria-label="More options"
+        title="More options"
+      >
+        <MoreHorizontal size={12} />
+      </button>
     </div>
   );
 }
@@ -159,11 +218,13 @@ function RunHistorySidebar({
   selectedConversationId,
   onSelect,
   onAgentSelect,
+  onOpenMenu,
 }: {
   agentId: string | null;
   selectedConversationId: string | null;
   onSelect: (id: string) => void;
   onAgentSelect: (id: string) => void;
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
   const dispatch = useAppDispatch();
 
@@ -265,6 +326,7 @@ function RunHistorySidebar({
             selectedId={selectedConversationId}
             onSelect={onSelect}
             defaultOpen={i === 0}
+            onOpenMenu={onOpenMenu}
           />
         ))}
       </div>
@@ -343,6 +405,23 @@ function AgentRunHistoryWindowInner({
     setSelectedConversationId(null);
   }, []);
 
+  const rowMenu = useConversationRowMenu();
+  const openRowMenu = useCallback(
+    (conv: ConversationListItem, anchor: MenuAnchor) => {
+      if (!agentId) return;
+      const data: ConversationRowMenuData = {
+        conversationId: conv.conversationId,
+        title: conv.title,
+        isFavorite: conv.isFavorite ?? false,
+        isArchived: conv.status === "archived",
+        isOwner: true,
+        href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [agentId, rowMenu],
+  );
+
   const handleSelect = useCallback(
     async (conversationId: string) => {
       setSelectedConversationId(conversationId);
@@ -403,6 +482,7 @@ function AgentRunHistoryWindowInner({
           selectedConversationId={selectedConversationId}
           onSelect={handleSelect}
           onAgentSelect={handleAgentSelect}
+          onOpenMenu={openRowMenu}
         />
       }
       sidebarDefaultSize={220}
@@ -428,6 +508,8 @@ function AgentRunHistoryWindowInner({
           </div>
         </div>
       )}
+
+      <ConversationRowMenu {...rowMenu.menuProps} />
     </WindowPanel>
   );
 }

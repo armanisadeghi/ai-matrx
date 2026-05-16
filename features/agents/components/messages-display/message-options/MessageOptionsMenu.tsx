@@ -17,7 +17,7 @@
 import React, { useEffect } from "react";
 import AdvancedMenu from "@/components/official/AdvancedMenu";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/slices/userSlice";
+import { selectUser, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectAgentIsConfirmedOwner } from "@/features/agents/redux/agent-definition/selectors";
 import { selectMessageStreamRequestId } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -75,6 +75,11 @@ export function MessageOptionsMenu({
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const isAuthenticated = !!user?.email;
+  // Gates the "Server API (test)" menu section that exposes the new
+  // Python-backed conversation endpoints (fork, batch-delete, hide,
+  // replace-with-summary, restore). Super admin only — hidden for
+  // everyone else.
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
 
   // ── Creator detection — conversation → agent → isConfirmedOwner ──────────
   // `agentId` sits on the execution instance (cx_conversation.agent_id mirrored
@@ -118,6 +123,7 @@ export function MessageOptionsMenu({
     streamRequestId,
     surfaceKey: surfaceKey ?? null,
     onRequestDelete,
+    isAdmin,
   };
 
   const menuItems =

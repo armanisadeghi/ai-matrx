@@ -187,8 +187,104 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 
 ---
 
+## Conversation row context menu (cross-surface)
+
+Every conversation-list surface in the app uses the **same** singleton context menu — one menu instance per list, opened by either a hover-revealed `⋯` button or a right-click `onContextMenu`. The menu is built declaratively from a single registry and dispatches optimistic thunks against shared slices, so a Rename / Pin / Archive / Delete fired from any surface immediately updates every other surface that's listing the same conversation (no re-fetch).
+
+### Anatomy (`features/agents/components/conversation-actions/`)
+
+| File | Role |
+|---|---|
+| `conversationActionRegistry.tsx` | Pure factory `(ctx) => MenuItem[]`. Items: Rename, Pin/Unpin, Open in new tab, Copy link, Duplicate, Share…, Archive/Unarchive, Delete. Every action calls `ctx.onCloseMenu()` **before** opening a modal so the menu closes and z-index doesn't fight the dialog. |
+| `useConversationRowMenu.ts` | Singleton hook. Manages `isOpen` / `data` / `anchorElement`. Anchor accepts an `HTMLElement` (for `⋯` clicks), a `React.MouseEvent` (for right-click), or `{ x, y }` (programmatic) — synthesizes a zero-size anchor element at the coordinates so `AdvancedMenu`'s positioner Just Works. |
+| `ConversationRowMenu.tsx` | Thin wrapper around `AdvancedMenu` + the Rename `TextInputDialog`. Consumes the hook's `menuProps` spread. |
+
+### Data + thunks
+
+The menu is fully DB-backed:
+
+- `cx_conversation.is_favorite` — boolean column, partial index on `(user_id, updated_at desc) where is_favorite = true and deleted_at is null`. RLS lets the owner write directly; no RPC needed.
+- `get_agent_conversations` RPC returns `is_favorite` in its row shape; `fetchGlobalConversations` selects it too. The mapping helpers (`mapRpcRowToConversationListItem`, `buildConversationListItemFromExecution`) populate `ConversationListItem.isFavorite`.
+- All actions live in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts`:
+  - `renameConversation` — optimistic against `conversationList` + `conversationHistory` slices, direct Supabase update, reverts on failure.
+  - `setConversationFavorite` — same pattern, writes `is_favorite`.
+  - `setConversationArchived` — same pattern, writes `status`.
+  - `duplicateConversation` — wraps the **server** `forkConversationServer` with no selector + `Copy of <title>`.
+- `softDeleteConversation` (existing thunk in `execution-system/message-crud/`) was enhanced to dispatch `removeConversationFromScopes({ conversationId })` so every `ConversationHistorySidebar` consumer drops the row without a re-fetch.
+
+### Wired consumers (single source of truth — every conversation list)
+
+| Surface | File |
+|---|---|
+| Chat / Code / Agent-apps history | `features/agents/components/conversation-history/ConversationHistorySidebar.tsx` |
+| Runner shell sidebar (large route) | `features/agents/components/shell/AgentRunSidebarMenu.tsx` |
+| Runner in-page sidebar (legacy) | `features/agents/components/run/run-sidebar/AgentRunsSidebar.tsx` |
+| Agent chat assistant widget | `features/agents/components/agent-widgets/AgentChatHistorySidebar.tsx` |
+| Quick chat history window | `features/window-panels/windows/agents/ChatHistoryWindow.tsx` |
+| Per-agent run history window | `features/window-panels/windows/agents/AgentRunHistoryWindow.tsx` |
+| Agent-run-as-window | `features/window-panels/windows/agents/AgentRunWindow.tsx` |
+| Builder "History" tab | `features/window-panels/windows/agents/AgentContentHistoryPanel.tsx` |
+| Code editor history panel | `features/code-editor/agent-code-editor/components/parts/CodeEditorHistoryPanel.tsx` (DRAFT rows still use Trash2; real conversations get the menu) |
+
+### How to add the menu to a new conversation list (5-minute drop-in)
+
+```tsx
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { MoreHorizontal } from "lucide-react";
+
+function MyList(/* ... */) {
+  const rowMenu = useConversationRowMenu();
+  const openRowMenu = useCallback(
+    (conv: ConversationListItem, anchor: MenuAnchor) => {
+      const data: ConversationRowMenuData = {
+        conversationId: conv.conversationId,
+        title: conv.title,
+        isFavorite: conv.isFavorite ?? false,
+        isArchived: conv.status === "archived",
+        isOwner: true,
+        // Canonical link for "Open in new tab" / "Copy link":
+        href: `/agents/${conv.agentId}/run?conversationId=${conv.conversationId}`,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [rowMenu],
+  );
+
+  return (
+    <>
+      {conversations.map((conv) => (
+        <Row
+          key={conv.conversationId}
+          conv={conv}
+          onOpenMenu={openRowMenu}      // wire to ⋯ button (anchor = button ref)
+                                         // and onContextMenu (anchor = MouseEvent)
+        />
+      ))}
+      {/* mount once per list */}
+      <ConversationRowMenu {...rowMenu.menuProps} />
+    </>
+  );
+}
+```
+
+The row component must:
+1. Render a `MoreHorizontal` button — `opacity-100 md:opacity-0 md:group-hover:opacity-100` (always visible on mobile, hover-revealed on desktop).
+2. Wire `onContextMenu={(e) => { e.preventDefault(); onOpenMenu(conv, e); }}` on its outer wrapper.
+3. `e.stopPropagation()` on the menu button's `onClick` so it doesn't also fire row selection.
+
+That's it — Rename / Pin / Archive / Delete / Duplicate / Share / Open in new tab / Copy link all light up automatically and stay consistent across every surface.
+
+---
+
 ## Change log
 
+- `2026-05-15` — **Unified conversation row context menu** wired into every conversation list in the app (9 surfaces). Single registry + singleton hook + `ConversationRowMenu` component — see the "Conversation row context menu" section above. DB-backed via new `cx_conversation.is_favorite` column + updated `get_agent_conversations` RPC; new thunks in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts` apply optimistic updates across both the `conversationList` and `conversationHistory` slices and revert on failure. `softDeleteConversation` was extended to dispatch `removeConversationFromScopes` so deleted rows disappear from every sidebar without a re-fetch. Rename / Pin / Archive / Delete / Duplicate / Share / Open-in-new-tab / Copy-link now behave identically whether triggered from the chat sidebar, runner sidebar, floating widget, quick-chat-history window, per-agent run history window, builder History tab, or the code editor history panel. The CodeEditorHistoryPanel keeps its existing `Trash2` button for DRAFT rows (still local-only, calls `destroyInstanceIfAllowed`) and adds the new menu for real conversations. Z-index discipline: every action calls `onCloseMenu()` **before** opening a dialog so the AdvancedMenu and confirm/text-input dialogs never overlap.
+- `2026-05-15` — `atomicRetry` now handles multimodal user turns. The thunk used to call `extractFlatText(triggeringUserMessage)` and reject with "atomic retry can only resubmit text turns" whenever the user message had no `text` part — which happens any time the original input was an image, an attached webpage/notes/table resource, or any other non-text MessagePart. Fixed by splitting the triggering user message's `MessagePart[]` content into a joined text string (every `text` part) and a non-text remainder (everything else, with assistant-only types `tool_call` / `tool_result` / `thinking` filtered out defensively), then seeding **both** `setUserInputText` and `setUserInputMessageParts`. `assembleRequest` already concatenates them onto `user_input` for a brand-new turn, so multimodal retries now produce the same payload the original send did. The only remaining reject path is a user message with literally zero content blocks, which should be unreachable. Both `/agents/[id]/build` and `/agents/[id]/run` share this thunk, so the fix lands in one place.
 - `2026-05-15` — **Server-side conversation API: opt-in parallel paths wired.** The Python team shipped a batch of new HTTP endpoints that overlap with existing direct-Supabase RPC thunks (fork, delete, edit-and-fork) and add a whole new compaction capability (replace / hide / restore / turns-compact). Spec lives at [`docs/FE_CONVERSATION_API_CHANGES.md`](../../docs/FE_CONVERSATION_API_CHANGES.md); request/response types are in the auto-generated `types/python-generated/api-types.ts`. We wired every new endpoint **additively** — none of the existing thunks were touched, and no call site was changed:
   - **`lib/api/call-api.ts`** — added 7 typed wrappers: `callConversationFork`, `callConversationForkAndRun` (streaming), `callBatchDeleteMessages`, `callReplaceMessages`, `callHideMessages`, `callRestoreCompaction`, `callCompactTurns`. Body / response shapes are all inferred from the generated OpenAPI types — passing the wrong shape is a compile-time error.
   - **`features/agents/types/conversation-stream-events.ts`** — manual mirror of `ConversationForkedEvent`, the first-event-on-stream payload from `/ai/conversations/{id}/fork-and-run`. Not in `api-types.ts` because stream-event payloads aren't OpenAPI-shaped (same pattern as the scraper's `page_extraction` events).

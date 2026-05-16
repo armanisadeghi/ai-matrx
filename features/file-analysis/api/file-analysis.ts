@@ -109,7 +109,8 @@ export type ExtractedTextPageOut = Schemas["ExtractedTextPageOut"];
 export type MaskRequestBody = Schemas["MaskRequestBody"];
 export type MaskResponse = Schemas["MaskResponse"];
 export type RestoreRequestBody = Schemas["RestoreRequestBody"];
-export type RestoreResponse = Schemas["RestoreResponse"];
+export type RestoreResponse =
+  Schemas["aidream__api__routers__file_analysis__RestoreResponse"];
 
 type Result<T> = Promise<{ data: T; meta: ResponseMeta }>;
 const fid = (id: string) => encodeURIComponent(id);
@@ -148,7 +149,10 @@ export function getActivePageIds(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<ActivePageIdsResponse> {
-  return getJson<ActivePageIdsResponse>(`/files/${fid(fileId)}/active-pages`, opts);
+  return getJson<ActivePageIdsResponse>(
+    `/files/${fid(fileId)}/active-pages`,
+    opts,
+  );
 }
 
 export function getPage(
@@ -156,7 +160,10 @@ export function getPage(
   pageId: string,
   opts: RequestOptions = {},
 ): Result<FilePageOut> {
-  return getJson<FilePageOut>(`/files/${fid(fileId)}/pages/${fid(pageId)}`, opts);
+  return getJson<FilePageOut>(
+    `/files/${fid(fileId)}/pages/${fid(pageId)}`,
+    opts,
+  );
 }
 
 export function excludePage(
@@ -214,22 +221,34 @@ export function listOverrides(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<FilePageOverrideOut[]> {
-  return getJson<FilePageOverrideOut[]>(`/files/${fid(fileId)}/overrides`, opts);
+  return getJson<FilePageOverrideOut[]>(
+    `/files/${fid(fileId)}/overrides`,
+    opts,
+  );
 }
 
 // ─── Annotations ─────────────────────────────────────────────────────────────
 
 export function listAnnotations(
   fileId: string,
-  params: { labelCategory?: string; pageNumber?: number; includeRejected?: boolean } = {},
+  params: {
+    labelCategory?: string;
+    pageNumber?: number;
+    includeRejected?: boolean;
+  } = {},
   opts: RequestOptions = {},
 ): Result<AnnotationOut[]> {
   const qs: string[] = [];
-  if (params.labelCategory) qs.push(`label_category=${encodeURIComponent(params.labelCategory)}`);
-  if (params.pageNumber !== undefined) qs.push(`page_number=${params.pageNumber}`);
+  if (params.labelCategory)
+    qs.push(`label_category=${encodeURIComponent(params.labelCategory)}`);
+  if (params.pageNumber !== undefined)
+    qs.push(`page_number=${params.pageNumber}`);
   if (params.includeRejected) qs.push("include_rejected=true");
   const q = qs.length ? `?${qs.join("&")}` : "";
-  return getJson<AnnotationOut[]>(`/files/${fid(fileId)}/annotations${q}`, opts);
+  return getJson<AnnotationOut[]>(
+    `/files/${fid(fileId)}/annotations${q}`,
+    opts,
+  );
 }
 
 export function createAnnotation(
@@ -308,7 +327,10 @@ export function getKeyFindings(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<KeyFindingsResponse> {
-  return getJson<KeyFindingsResponse>(`/files/${fid(fileId)}/key-findings`, opts);
+  return getJson<KeyFindingsResponse>(
+    `/files/${fid(fileId)}/key-findings`,
+    opts,
+  );
 }
 
 export function getAnnotationManifest(
@@ -368,10 +390,7 @@ export function deleteEntity(
   entityId: string,
   opts: RequestOptions = {},
 ): Result<null> {
-  return delJson<null>(
-    `/files/${fid(fileId)}/entities/${fid(entityId)}`,
-    opts,
-  );
+  return delJson<null>(`/files/${fid(fileId)}/entities/${fid(entityId)}`, opts);
 }
 
 export function findSimilar(

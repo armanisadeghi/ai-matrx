@@ -34,6 +34,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  MoreHorizontal,
   Search,
   Star,
   StarOff,
@@ -55,6 +56,14 @@ import {
 } from "@/features/agents/redux/conversation-history/slice";
 import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { setConversationFavorite } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { toast } from "sonner";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */
@@ -74,10 +83,35 @@ export interface ConversationHistorySidebarProps {
   /** Page size passed to the fetch thunk. Default: 30. */
   pageSize?: number;
 
-  /** Returns whether a given conversation is a favorite. */
+  /**
+   * Returns whether a given conversation is a favorite. Optional —
+   * defaults to reading `conv.isFavorite` from the DB column. Pass only
+   * when the surface needs a non-DB-backed favorites source (legacy
+   * client-only preferences, scratch lists, etc.).
+   */
   isFavorite?: (conversationId: string) => boolean;
-  /** Called when the user toggles the star on a row. */
+  /**
+   * Called when the user toggles the star on a row. Optional — defaults
+   * to dispatching `setConversationFavorite` which writes to the DB
+   * `cx_conversation.is_favorite` column. Pair with a custom
+   * `isFavorite` to override.
+   */
   onToggleFavorite?: (conv: ConversationListItem) => void;
+  /**
+   * Builds the canonical href for "Open in new tab" / "Copy link" in the
+   * row context menu. Defaults to `/chat/<id>` — chat-style surfaces can
+   * accept the default; runner surfaces should pass a builder that
+   * returns `/agents/<agentId>/run?c=<id>` so the new tab lands on the
+   * right route.
+   */
+  getConversationHref?: (conv: ConversationListItem) => string;
+  /**
+   * Optional surface key passed to `duplicateConversation` — when set,
+   * focus jumps to the new copy on success. Sidebars hosted inside a
+   * focus-aware surface (runner, /code) should pass their surface id;
+   * sidebars without a focus system can omit.
+   */
+  surfaceKey?: string;
 
   /** Content rendered above the list when no filter/agents are in scope. */
   emptyState?: React.ReactNode;
@@ -129,6 +163,8 @@ export const ConversationHistorySidebar: React.FC<
   pageSize = 30,
   isFavorite,
   onToggleFavorite,
+  getConversationHref,
+  surfaceKey,
   emptyState,
   headerSlot,
   headerActions,
@@ -216,10 +252,69 @@ export const ConversationHistorySidebar: React.FC<
     );
   }, [dispatch, scopeId, hasMore, status]);
 
+  // ── Favorites — DB-backed by default, overridable per surface ────────────
+  //
+  // The DB-backed default reads `conv.isFavorite` from the entity row
+  // (`cx_conversation.is_favorite`). When the host passes its own
+  // `isFavorite`/`onToggleFavorite` (e.g. /code's old client-only
+  // preferences), we honor that as the source of truth instead — at most
+  // one favorites system per surface.
+  const isFavoriteResolved = useCallback(
+    (conversationId: string): boolean => {
+      if (isFavorite) return isFavorite(conversationId);
+      const item = scope.items.find((i) => i.conversationId === conversationId);
+      return item?.isFavorite ?? false;
+    },
+    [isFavorite, scope.items],
+  );
+
+  const onToggleFavoriteResolved = useCallback(
+    async (conv: ConversationListItem) => {
+      if (onToggleFavorite) {
+        onToggleFavorite(conv);
+        return;
+      }
+      const result = await dispatch(
+        setConversationFavorite({
+          conversationId: conv.conversationId,
+          isFavorite: !conv.isFavorite,
+        }),
+      );
+      if (setConversationFavorite.rejected.match(result)) {
+        toast.error(result.payload?.message ?? "Failed to update pin");
+      }
+    },
+    [dispatch, onToggleFavorite],
+  );
+
   const favorites = useMemo(() => {
-    if (!isFavorite) return [] as ConversationListItem[];
-    return scope.items.filter((i) => isFavorite(i.conversationId));
-  }, [scope.items, isFavorite]);
+    return scope.items.filter((i) => isFavoriteResolved(i.conversationId));
+  }, [scope.items, isFavoriteResolved]);
+
+  // ── Row context menu (shared singleton across all rows) ──────────────────
+  const rowMenu = useConversationRowMenu();
+
+  const defaultHref = useCallback(
+    (conv: ConversationListItem): string => `/chat/${conv.conversationId}`,
+    [],
+  );
+
+  const openRowMenu = useCallback(
+    (conv: ConversationListItem, anchor: MenuAnchor) => {
+      const href = (getConversationHref ?? defaultHref)(conv);
+      const data: ConversationRowMenuData = {
+        conversationId: conv.conversationId,
+        title: conv.title,
+        isFavorite: isFavoriteResolved(conv.conversationId),
+        isArchived: conv.status === "archived",
+        isOwner: true,
+        href,
+        surfaceKey,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [rowMenu, getConversationHref, defaultHref, isFavoriteResolved, surfaceKey],
+  );
 
   const empty =
     status !== "loading" && count === 0 && !searchTerm.trim() && emptyState;
@@ -288,8 +383,9 @@ export const ConversationHistorySidebar: React.FC<
                 conv={conv}
                 active={conv.conversationId === activeConversationId}
                 onOpen={onOpenConversation}
-                isFavorite={isFavorite?.(conv.conversationId) ?? false}
-                onToggleFavorite={onToggleFavorite}
+                isFavorite={isFavoriteResolved(conv.conversationId)}
+                onToggleFavorite={onToggleFavoriteResolved}
+                onOpenMenu={openRowMenu}
               />
             ))}
           </Section>
@@ -312,8 +408,9 @@ export const ConversationHistorySidebar: React.FC<
                   conv={conv}
                   active={conv.conversationId === activeConversationId}
                   onOpen={onOpenConversation}
-                  isFavorite={isFavorite?.(conv.conversationId) ?? false}
-                  onToggleFavorite={onToggleFavorite}
+                  isFavorite={isFavoriteResolved(conv.conversationId)}
+                  onToggleFavorite={onToggleFavoriteResolved}
+                  onOpenMenu={openRowMenu}
                 />
               ))}
             </Section>
@@ -336,8 +433,9 @@ export const ConversationHistorySidebar: React.FC<
                   conv={conv}
                   active={conv.conversationId === activeConversationId}
                   onOpen={onOpenConversation}
-                  isFavorite={isFavorite?.(conv.conversationId) ?? false}
-                  onToggleFavorite={onToggleFavorite}
+                  isFavorite={isFavoriteResolved(conv.conversationId)}
+                  onToggleFavorite={onToggleFavoriteResolved}
+                  onOpenMenu={openRowMenu}
                   showAgentHint={false}
                 />
               ))}
@@ -372,6 +470,10 @@ export const ConversationHistorySidebar: React.FC<
           </div>
         )}
       </div>
+
+      {/* Singleton context menu for every row in this sidebar. Mounting once
+          keeps the dialog/portal cost flat regardless of list length. */}
+      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 };
@@ -507,6 +609,8 @@ interface RowProps {
   onOpen?: (conv: ConversationListItem) => void;
   isFavorite: boolean;
   onToggleFavorite?: (conv: ConversationListItem) => void;
+  /** Open the row context menu (singleton, owned by the sidebar). */
+  onOpenMenu?: (conv: ConversationListItem, anchor: MenuAnchor) => void;
   showAgentHint?: boolean;
 }
 
@@ -516,9 +620,11 @@ const Row: React.FC<RowProps> = ({
   onOpen,
   isFavorite,
   onToggleFavorite,
+  onOpenMenu,
   showAgentHint = true,
 }) => {
   const title = conv.title?.trim() || untitled(conv);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   return (
     <div
       className={cn(
@@ -528,6 +634,11 @@ const Row: React.FC<RowProps> = ({
         active && ACTIVE_ROW_BG,
       )}
       onClick={() => onOpen?.(conv)}
+      onContextMenu={(e) => {
+        if (!onOpenMenu) return;
+        e.preventDefault();
+        onOpenMenu(conv, e);
+      }}
     >
       <StreamingDot conversationId={conv.conversationId} />
       <span className="min-w-0 flex-1 truncate">{title}</span>
@@ -553,6 +664,27 @@ const Row: React.FC<RowProps> = ({
           ) : (
             <StarOff size={11} className="text-muted-foreground" />
           )}
+        </button>
+      )}
+      {onOpenMenu && (
+        // Always rendered so right-click + keyboard ⋯ have a stable anchor.
+        // Hidden on desktop until row hover, always visible on mobile so
+        // touch users don't need long-press.
+        <button
+          ref={menuBtnRef}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
+          }}
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
+            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+          )}
+          aria-label="More options"
+          title="More options"
+        >
+          <MoreHorizontal size={12} />
         </button>
       )}
       {showAgentHint && conv.agentId && (
