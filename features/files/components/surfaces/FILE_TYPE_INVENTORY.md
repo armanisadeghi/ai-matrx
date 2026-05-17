@@ -98,10 +98,12 @@ When the doc and the code (`features/files/utils/file-types.ts` / `FilePreview.t
 
 | # | Slot | Where |
 |---|---|---|
-| 24 | Editable-kind classification | `preview-actions.ts` → `EDITABLE_KINDS` |
+| 24 | Editable-kind classification | `preview-actions.ts` → `EDITABLE_KINDS` (now includes `image` + `pdf`) |
 | 25 | Monaco language id mapping | `CloudFileInlineEditor.tsx` → `LANGUAGE_BY_EXT` |
-| 26 | Save → new-version handler | `CloudFileInlineEditor.handleSave` (uses `uploadFiles` thunk) |
-| 27 | 🔴 Per-type non-text editor | Image cropper, CSV grid, etc. — all "Coming soon" today |
+| 26 | Save → new-version handler (text) | `CloudFileInlineEditor.handleSave` (uses `uploadFiles` thunk) |
+| 27a | ✅ Per-type non-text editor — image | `ImageEditTab.tsx` → `EditModeShell` (Filerobot 5.0.1 + AI toolbar) |
+| 27b | ✅ Per-type non-text editor — PDF | `PdfEditTab.tsx` → `AnnotatablePdfCanvas` + filtered `InspectorRail` (Pages / Doc Ops / Notes / Findings / Redact / Search) |
+| 27c | 🔴 Per-type non-text editor — CSV / spreadsheet / video / audio | Still "Coming soon" |
 | 28 | 🔴 Format-on-save / linter hook | Not implemented |
 | 29 | 🔴 Starter template for "New <type>" | Not implemented |
 
@@ -164,13 +166,16 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## Image (jpg / png / webp / avif / gif)
 
-**Tier:** T2 (in progress) · **Registry:** `previewKind: "image"`
+**Tier:** T2 · **Registry:** `previewKind: "image"`
 
 **Has** ✅
 - Registry: extensions, MIME, category, displayName, icon, color, `thumbnailStrategy: "auto"`
 - ImagePreview previewer (passive in `PreviewPane`, controlled in `SingleFileShell`)
 - ImagePreviewControls rail: zoom (10–800%), rotate ±90°, fit/100% toggle, transparency grid, reset
-- Action bar: Download, Copy link, Rename, Delete
+- **Edit tab: full Filerobot editor** via `ImageEditTab` → `EditModeShell` — crop, rotate, flip, resize, fine-tune (brightness/contrast/HSV/warmth/blur/threshold/posterize/pixelate/noise), filters, freehand pen, shapes (rect/ellipse/polygon/line/arrow), text, watermark. Saves land in the source file's parent folder with a `-edited` suffix; toast surfaces a link to the new file.
+- **AI toolbar in Edit:** Suggest edits (stub), Remove BG, Upscale 2×/4×, AI edit by prompt. The `cloudFileId` is plumbed alongside the resolved URL so the toolbar stays functional even though the source is `kind: "url"`.
+- Action bar: Download, Copy link, **Edit** (jumps to the Edit tab), **Open in Image Studio** (`/images/edit?cloudFileId=…` for a full-screen workspace), Rename, Delete.
+- `EDITABLE_KINDS` includes `"image"`
 - Variant thumbnails via `useFileAsset` (signed asset URL with `hero_url`/`cover_url`/`primary_url`)
 - AI metadata enrichment (description, keywords, dominant colors) surfaced in the Info tab
 - Kind chip: "Images"
@@ -180,15 +185,19 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 2. 🔴 **Click-and-drag pan** when zoomed past fit (wheel / trackpad pan already work via overflow scroll)
 3. 🔴 **EXIF in Info tab** — camera, lens, focal length, GPS, taken-at (slot #34)
 4. 🔴 **Image-specific Analysis detectors** — OCR, NSFW, dominant-objects, content-aware bounding boxes (slot #32)
-5. 🔴 **Inline image editor** — crop, rotate-and-save, annotate (slot #27)
+5. 🟡 **Save-as-new-version** — today the Edit tab saves a new `cld_files` row in the source's parent folder. Future: optionally bump `currentVersion` on the source instead (Versions tab gets a new row, same fileId / path).
 6. 🔴 **Image diff** — side-by-side, onion-skin, difference blend (slot #36)
 7. 🔴 **Convert-to** — heic → jpg, png → webp, large-original → resized variants (slot #42)
 8. 🟡 **HEIC/HEIF server-side conversion** — currently Safari-only
+9. 🟡 **Re-enable AI ops on Python** — Remove BG / Upscale / AI edit / Suggest edits all 404 today (front-end gracefully surfaces "ships next wave" toasts)
 
 **Code touchpoints**
 - `features/files/utils/file-types.ts` (registry)
 - `features/files/components/core/FilePreview/previewers/ImagePreview.tsx`
 - `features/files/components/surfaces/single-file/ImagePreviewControls.tsx`
+- `features/files/components/surfaces/single-file/ImageEditTab.tsx` (Edit tab body)
+- `features/image-studio/modes/edit/EditModeShell.tsx` (the actual editor)
+- `features/image-studio/modes/edit/EditAiToolbar.tsx` (AI sidecar)
 - `features/files/hooks/useFileAsset.ts` (variants)
 
 ---
@@ -201,25 +210,35 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 - Registry: ext `pdf`, MIME `application/pdf`, displayName, icon, color
 - PdfPreview (the best previewer in the system): zoom, fit-page, fit-width, actual-size, rotate, prev/next + counter, ResizeObserver sizing, overlay slot for annotations
 - HTTP-range streaming via service worker — no full-file blob fetch
-- Action bar: Download, Copy link, plus "Open in PDF Extractor" handoff
-- Analysis tab: full detector grid (Overview, Outline, Text, PII, Tables, Images, Regions, Duplicates, Classify)
+- **Edit tab: 3-pane workshop** via `PdfEditTab` — `ThumbnailStrip` (left, page nav with annotation-count badges) + `AnnotatablePdfCanvas` (center, draw-to-annotate with snap-bbox + label picker, three modes: View / Select / Draw) + filtered `InspectorRail` (right, action panels only: Pages / Doc Ops / Notes / Findings / Redact / Search). Annotations persist through `useAnnotations` (shared cache with Analysis tab and the standalone Studio — same Realtime channel).
+- Action bar: Download, Copy link, **Edit** (jumps to the Edit tab), **Open in PDF Extractor** (floating window for the `processed_documents`-backed extraction pipeline), Rename, Delete. Inside the Edit tab: **Open in Studio** (`/files/f/{id}/studio` for the full unfiltered inspector).
+- `EDITABLE_KINDS` includes `"pdf"`
+- Analysis tab: full detector grid (Overview, Outline, Text, PII, Tables, Images, Regions, Duplicates, Classify) — deliberately separate from Edit (read vs mutate)
 - Document tab: RAG ingest + processed-document viewer + citation deep-links (`?tab=document&page=N&chunk=…`)
 - Kind chip: "PDF"
 
 **Wishlist (prioritized)**
-1. 🔴 **Edit tab content** — wire the PDF Extractor's edit surface into the Edit tab so users don't have to bounce routes (slot #27)
-2. 🔴 **In-toolbar text search (Cmd+F)** — text-layer selection works; no search UI
-3. 🔴 **Thumbnail strip + outline panel** inside the renderer (Studio has them; standard preview doesn't)
-4. 🔴 **Promote PDF toolbar controls into the SingleFileShell rail** (slot #21)
-5. 🔴 **PDF diff** — page-by-page text or visual diff for the Versions tab (slot #36)
-6. 🔴 **Convert-to** — pdf → docx / pdf → markdown export (slot #42)
-7. 🟡 **Real thumbnail (page 1)** in the file grid (slot #12, slot #13)
+1. 🔴 **In-toolbar text search (Cmd+F)** — text-layer selection works; no search UI inside `PdfDocumentRenderer` (Search lives in the Edit tab's inspector but not the canvas itself)
+2. 🔴 **Promote PDF toolbar controls into the SingleFileShell rail** (slot #21 — there is no `PdfPreviewControls.tsx` next to `ImagePreviewControls.tsx`/`HtmlPreviewControls.tsx`)
+3. 🔴 **Binary save semantics** — Doc Ops panel today downloads compressed/scrubbed/redacted blobs; future: write them back as a new version of the source `cld_files` row (the manipulation panel's `saveDerivative` exists but writes to `processed_documents`, not `cld_files`)
+4. 🔴 **PDF diff** — page-by-page text or visual diff for the Versions tab (slot #36)
+5. 🔴 **Convert-to** — pdf → docx / pdf → markdown export (slot #42)
+6. 🔴 **Form-field filling (AcroForm)** — `flatten-annotations` exists; UI for actually filling fields does not
+7. 🔴 **Signatures** — no e-sign / draw-signature flow
+8. 🟡 **Real thumbnail (page 1)** in the file grid (slot #12, slot #13)
+9. 🟡 **Consolidate `ManipulationPanel` + `DocumentOpsPanel`** — two near-identical components serving the same operations from different roots
+10. 🟡 **Reading-order + redact-repeated-regions surfacing** — both fully built backend + tested via demos; not yet exposed in either manipulation panel
 
 **Code touchpoints**
 - `features/files/utils/file-types.ts`
 - `features/files/components/core/FilePreview/previewers/PdfPreview.tsx`
-- `features/pdf-extractor/**` (the deeper PDF tooling)
-- `features/file-analysis/**` (Analysis detectors)
+- `features/files/components/surfaces/single-file/PdfEditTab.tsx` (Edit tab body)
+- `features/file-analysis/components/AnnotatablePdfCanvas.tsx` (universal annotation canvas)
+- `features/file-analysis/studio/ThumbnailStrip.tsx` / `InspectorRail.tsx` (now accepts `allowedTabs` filter)
+- `features/file-analysis/hooks/useAnnotations.ts` (shared cache + Realtime)
+- `features/pdf-extractor/**` (the `/tools/pdf-extractor` studio + manipulation panel)
+- `features/pdf-demo/**` (24 single-op demos under `ssr/demos/pdf-processing/`)
+- `lib/api/endpoints.ts` → `ENDPOINTS.pdf.*` (31 Python endpoints)
 
 ---
 

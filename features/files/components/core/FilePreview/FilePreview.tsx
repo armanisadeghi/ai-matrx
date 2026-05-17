@@ -235,6 +235,21 @@ export function FilePreview({
           dispatch(openOverlay({ overlayId: "pdfExtractorWindow" })),
       };
     }
+    // Image files get a shortcut to the full-screen Image Studio Edit mode.
+    // The Edit tab inside this viewer mounts the same Filerobot shell, but
+    // the full-page route gives the user dramatically more canvas + the
+    // AI sidecar gets the room it needs.
+    if (
+      !openInRoute &&
+      capability.previewKind === "image" &&
+      file.source.kind !== "virtual"
+    ) {
+      openInRoute = {
+        label: "Open in Image Studio",
+        onClick: () =>
+          router.push(`/images/edit?cloudFileId=${encodeURIComponent(fileId)}`),
+      };
+    }
     const previewActions = buildPreviewActions({
       file,
       previewKind: capability.previewKind,

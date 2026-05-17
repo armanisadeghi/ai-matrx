@@ -39,7 +39,8 @@ import { EditAiToolbar } from "./EditAiToolbar";
 const FilerobotImageEditor = dynamic(
   async () => {
     const ReactNs = await import("react");
-    const ReactDefault = (ReactNs as unknown as { default?: typeof ReactNs }).default ?? ReactNs;
+    const ReactDefault =
+      (ReactNs as unknown as { default?: typeof ReactNs }).default ?? ReactNs;
     (globalThis as unknown as { React?: unknown }).React = ReactDefault;
     return import("react-filerobot-image-editor");
   },
@@ -58,6 +59,7 @@ const EDIT_FOLDER = "Images/Edited";
 
 export function EditModeShell({
   source,
+  cloudFileId,
   defaultFolder = EDIT_FOLDER,
   presentation = "page",
   onSave,
@@ -143,7 +145,8 @@ export function EditModeShell({
     <div className="h-full min-h-0 flex flex-col bg-background">
       <EditAiToolbar
         sourceCloudFileId={
-          source?.kind === "cloudFileId" ? source.cloudFileId : null
+          cloudFileId ??
+          (source?.kind === "cloudFileId" ? source.cloudFileId : null)
         }
         sourceUrl={activeUrl}
         onResult={handleAiResult}

@@ -5,6 +5,7 @@
  *   pnpm validate              all steps against the LIVE backend
  *   pnpm validate --local      sync-types against the LOCAL backend (http://localhost:8000)
  *   pnpm validate --no-sync    skip the network sync-types steps (db-types + Python api-types)
+ *   pnpm validate --no-lint    skip ESLint (saves ~25min — recommended for everyday use until the lint baseline is cleaned up)
  *   pnpm validate --fast       skip sync-types AND type-check (run just the fast static checks + lint)
  *   pnpm validate --keep-going don't stop on the first failure — run every step and report the full report at the end
  *
@@ -39,6 +40,7 @@ const PROJECT_ROOT = resolve(__dirname, "..");
 const args = process.argv.slice(2);
 const useLocal = args.includes("--local");
 const noSync = args.includes("--no-sync");
+const noLint = args.includes("--no-lint");
 const fastMode = args.includes("--fast");
 const keepGoing = args.includes("--keep-going");
 
@@ -139,6 +141,7 @@ step({
   title: "ESLint (advisory — repo has a large pre-existing baseline)",
   command: ["pnpm", "lint"],
   advisory: true,
+  skip: () => (noLint ? "--no-lint" : false),
 });
 step({
   id: "type-check",
@@ -156,6 +159,7 @@ console.log(`${C.bold}  pnpm validate${C.reset}`);
 const flags = [
   useLocal && "--local",
   noSync && "--no-sync",
+  noLint && "--no-lint",
   fastMode && "--fast",
   keepGoing && "--keep-going",
 ]

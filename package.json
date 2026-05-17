@@ -57,6 +57,7 @@
     "validate:fast": "node scripts/validate.mjs --fast",
     "validate:local": "node scripts/validate.mjs --local",
     "validate:no-sync": "node scripts/validate.mjs --no-sync",
+    "validate:no-lint": "node scripts/validate.mjs --no-lint",
     "sync-types:local": "node scripts/sync-types.mjs --local",
     "sync-types:fast": "node scripts/sync-types.mjs --fast",
     "build:analyze": "ts-node scripts/generate-manifest.ts && next experimental-analyze",

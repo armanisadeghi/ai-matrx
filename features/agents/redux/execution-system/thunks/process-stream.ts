@@ -1421,7 +1421,10 @@ export async function processStream({
       dispatch(
         applyContextState({
           ...event.data,
-          cache_state: event.data.cache_state as Record<string, unknown> as never,
+          cache_state: event.data.cache_state as Record<
+            string,
+            unknown
+          > as never,
         }),
       );
     } else if (isContextTrimmedEvent(event)) {
@@ -1430,7 +1433,10 @@ export async function processStream({
       dispatch(
         applyContextTrimmed({
           ...event.data,
-          trim_summary: event.data.trim_summary as Record<string, unknown> as never,
+          trim_summary: event.data.trim_summary as Record<
+            string,
+            unknown
+          > as never,
         }),
       );
     } else {

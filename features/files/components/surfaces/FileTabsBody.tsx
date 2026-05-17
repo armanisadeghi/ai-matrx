@@ -51,6 +51,8 @@ import { FileInfoTab } from "./FileInfoTab";
 import { DocumentTab } from "./DocumentTab";
 import { FileShareTab } from "./FileShareTab";
 import { AnalysisTab } from "@/features/file-analysis/tab/AnalysisTab";
+import { ImageEditTab } from "./single-file/ImageEditTab";
+import { PdfEditTab } from "./single-file/PdfEditTab";
 
 export type FileTab =
   | "preview"
@@ -359,20 +361,20 @@ function EditTabContent({ fileId }: EditTabContentProps) {
       );
 
     case "pdf":
-      return (
-        <ComingSoon
-          title="PDF editing — coming soon"
-          description="We're wiring the PDF Extractor's edit components into this tab. For now, use the Open in new tab button to download or annotate externally."
-        />
-      );
+      // Annotation-first PDF editing — draw rectangles to label / extract /
+      // promote-to-entity, plus the action panels from the Analysis Studio
+      // (Pages / Doc Ops / Notes / Findings / Redact / Search). Content
+      // tabs (Outline / Text / PII / Tables / Images / Regions / Dupes /
+      // Classify / Info) live in the Analysis tab next door — Edit is for
+      // mutating, Analysis is for reading.
+      return <PdfEditTab fileId={fileId} className="h-full w-full" />;
 
     case "image":
-      return (
-        <ComingSoon
-          title="Image editing — coming soon"
-          description="Crop, rotate, and annotation tools will live here. The AI metadata enrichment pass already runs on every image — see the Info tab for the auto-generated description, keywords, and dominant colors."
-        />
-      );
+      // Image Studio's Edit mode (Filerobot 5.0.1 — crop / rotate / flip /
+      // resize / fine-tune / filters / annotate / watermark) plus the AI
+      // toolbar (Remove BG / Upscale / AI edit). Saves land in the source
+      // file's parent folder.
+      return <ImageEditTab fileId={fileId} className="h-full w-full" />;
 
     case "audio":
     case "video":

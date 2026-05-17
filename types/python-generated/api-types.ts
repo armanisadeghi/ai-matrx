@@ -6590,6 +6590,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cx/conversations/{conversation_id}/context-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Context State
+         * @description Return the current Model Context snapshot for a conversation.
+         *
+         *     Aggregates the rolled-up fields written by ``persist_completed_request``
+         *     plus the most-recent ``cx_request`` (last_request_* and last_raw_usage)
+         *     and the most-recent trim audit (last_trim_summary). All fields default
+         *     to zero / empty so a freshly-created conversation still returns a valid
+         *     response — the FE just sees "no measurements yet".
+         */
+        get: operations["get_context_state_cx_conversations__conversation_id__context_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cx/conversations/{conversation_id}/invalidate-cache": {
         parameters: {
             query?: never;
@@ -12376,6 +12402,60 @@ export interface components {
              * @default 0
              */
             char_count: number;
+        };
+        /**
+         * ContextStateResponse
+         * @description Same shape as the CONTEXT_STATE stream event payload.
+         *
+         *     The FE Model Context tab hydrates from this endpoint on conversation
+         *     open, then receives live updates from the CONTEXT_STATE stream events
+         *     after each turn — no polling needed once the stream is connected.
+         */
+        ContextStateResponse: {
+            /** Conversation Id */
+            conversation_id: string;
+            /**
+             * Last Request Input Tokens
+             * @default 0
+             */
+            last_request_input_tokens: number;
+            /**
+             * Last Request Cached Tokens
+             * @default 0
+             */
+            last_request_cached_tokens: number;
+            /**
+             * Last Request Output Tokens
+             * @default 0
+             */
+            last_request_output_tokens: number;
+            /**
+             * Total Chars Visible To Model
+             * @default 0
+             */
+            total_chars_visible_to_model: number;
+            /**
+             * Message Count Visible
+             * @default 0
+             */
+            message_count_visible: number;
+            /**
+             * Cache State
+             * @default {}
+             */
+            cache_state: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Last Trim Summary */
+            last_trim_summary?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Last Raw Usage */
+            last_raw_usage?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Measured At */
+            measured_at: string;
         };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
@@ -33369,6 +33449,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListRequestsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_context_state_cx_conversations__conversation_id__context_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextStateResponse"];
                 };
             };
             /** @description Validation Error */

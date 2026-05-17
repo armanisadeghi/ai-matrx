@@ -46,10 +46,7 @@ import { DuplicatesContent } from "@/features/file-analysis/content/DuplicatesCo
 import { ClassificationContent } from "@/features/file-analysis/content/ClassificationContent";
 import { MetadataContent } from "@/features/file-analysis/content/MetadataContent";
 import { RawView } from "@/features/file-analysis/content/RawView";
-import {
-  allResults,
-  findResult,
-} from "@/features/file-analysis/content/utils";
+import { allResults, findResult } from "@/features/file-analysis/content/utils";
 
 // User-driven tool panels.
 import { AnnotationsPanel } from "./panels/AnnotationsPanel";
@@ -85,6 +82,15 @@ export interface InspectorRailProps {
   onJumpToPage: (pageNumber: number, pageId?: string | null) => void;
   selectedAnnotationId: string | null;
   onSelectAnnotation: (annotationId: string | null) => void;
+  /**
+   * Optional whitelist — only these tabs are rendered in the strip.
+   * Useful when the rail is embedded in a more focused surface (e.g. the
+   * file-viewer Edit tab, which only wants the action-oriented tools and
+   * skips the read-oriented content panels that already live in the
+   * Analysis tab). The parent is responsible for keeping `activeTab` within
+   * the whitelist. Defaults to every tab.
+   */
+  allowedTabs?: readonly StudioInspectorTab[];
 }
 
 const TABS: Array<{
@@ -120,24 +126,41 @@ export function InspectorRail({
   onJumpToPage,
   selectedAnnotationId,
   onSelectAnnotation,
+  allowedTabs,
 }: InspectorRailProps) {
   const { data } = useFileAnalysis(fileId);
   const results = useMemo(() => data?.results ?? [], [data]);
   const jumpPage = (p: number) => onJumpToPage(p, null);
 
+  // If the caller restricts the tab set, only show the rows that actually
+  // contain at least one allowed tab. Skipping an empty strip avoids a
+  // ghost border line when (e.g.) the Edit tab only uses "tools".
+  const showContentStrip =
+    !allowedTabs ||
+    TABS.some((t) => t.group === "content" && allowedTabs.includes(t.id));
+  const showToolsStrip =
+    !allowedTabs ||
+    TABS.some((t) => t.group === "tools" && allowedTabs.includes(t.id));
+
   return (
     <div className="flex h-full w-full flex-col bg-card/40">
       {/* Two-row tab strip — content tabs on top, tools on bottom. */}
-      <TabStrip
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        group="content"
-      />
-      <TabStrip
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        group="tools"
-      />
+      {showContentStrip ? (
+        <TabStrip
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          group="content"
+          allowedTabs={allowedTabs}
+        />
+      ) : null}
+      {showToolsStrip ? (
+        <TabStrip
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          group="tools"
+          allowedTabs={allowedTabs}
+        />
+      ) : null}
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "outline" ? (
@@ -235,7 +258,9 @@ export function InspectorRail({
         ) : activeTab === "classification" ? (
           <RawView
             label="Page classification"
-            rawData={findResult(results, "page_classification")?.payload ?? null}
+            rawData={
+              findResult(results, "page_classification")?.payload ?? null
+            }
           >
             <ScrollPanel>
               <ClassificationContent
@@ -288,12 +313,16 @@ function TabStrip({
   activeTab,
   onTabChange,
   group,
+  allowedTabs,
 }: {
   activeTab: StudioInspectorTab;
   onTabChange: (tab: StudioInspectorTab) => void;
   group: "content" | "tools";
+  allowedTabs?: readonly StudioInspectorTab[];
 }) {
-  const items = TABS.filter((t) => t.group === group);
+  const items = TABS.filter(
+    (t) => t.group === group && (!allowedTabs || allowedTabs.includes(t.id)),
+  );
   return (
     <div
       className={cn(

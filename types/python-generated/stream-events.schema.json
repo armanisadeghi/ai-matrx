@@ -4180,7 +4180,9 @@
           "record_update",
           "resource_changed",
           "context_analysis",
-          "structured_output"
+          "structured_output",
+          "context_state",
+          "context_trimmed"
         ],
         "title": "EventType",
         "type": "string"
@@ -4224,7 +4226,9 @@
       "record_update",
       "resource_changed",
       "context_analysis",
-      "structured_output"
+      "structured_output",
+      "context_state",
+      "context_trimmed"
     ]
   }
 }

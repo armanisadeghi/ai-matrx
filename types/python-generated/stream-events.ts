@@ -24,6 +24,8 @@ export const EventType = {
   RESOURCE_CHANGED: "resource_changed",
   CONTEXT_ANALYSIS: "context_analysis",
   STRUCTURED_OUTPUT: "structured_output",
+  CONTEXT_STATE: "context_state",
+  CONTEXT_TRIMMED: "context_trimmed",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -179,24 +181,6 @@ export interface ResourceChangedPayload {
   metadata?: Record<string, unknown>;
 }
 
-export interface ContextStatePayload {
-  conversation_id: string;
-  last_request_input_tokens: number;
-  last_request_cached_tokens: number;
-  last_request_output_tokens: number;
-  total_chars_visible_to_model: number;
-  message_count_visible: number;
-  cache_state: Record<string, unknown>;
-  measured_at: string;
-}
-
-export interface ContextTrimmedPayload {
-  conversation_id: string;
-  request_id: string | null;
-  trim_summary: Record<string, unknown>;
-  measured_at: string;
-}
-
 export interface ContextAnalysisPayload {
   provider: string;
   model?: string | null;
@@ -223,6 +207,24 @@ export interface StructuredOutputPayload {
   match_count?: number;
   agent_name?: string | null;
   operation_id?: string | null;
+}
+
+export interface ContextStatePayload {
+  conversation_id: string;
+  last_request_input_tokens?: number;
+  last_request_cached_tokens?: number;
+  last_request_output_tokens?: number;
+  total_chars_visible_to_model?: number;
+  message_count_visible?: number;
+  cache_state?: Record<string, unknown>;
+  measured_at: string;
+}
+
+export interface ContextTrimmedPayload {
+  conversation_id: string;
+  request_id?: string | null;
+  trim_summary: Record<string, unknown>;
+  measured_at: string;
 }
 
 // --- Typed Record Reservation Variants (discriminated on `table`) ---

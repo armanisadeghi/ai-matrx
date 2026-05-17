@@ -6275,6 +6275,7 @@ export type Database = {
       }
       cx_conversation: {
         Row: {
+          cache_state: Json
           config: Json
           created_at: string
           deleted_at: string | null
@@ -6288,6 +6289,7 @@ export type Database = {
           is_favorite: boolean
           is_public: boolean
           keywords: string[] | null
+          last_context_breakdown: Json | null
           last_model_id: string | null
           message_count: number
           metadata: Json
@@ -6306,6 +6308,7 @@ export type Database = {
           variables: Json
         }
         Insert: {
+          cache_state?: Json
           config?: Json
           created_at?: string
           deleted_at?: string | null
@@ -6319,6 +6322,7 @@ export type Database = {
           is_favorite?: boolean
           is_public?: boolean
           keywords?: string[] | null
+          last_context_breakdown?: Json | null
           last_model_id?: string | null
           message_count?: number
           metadata?: Json
@@ -6337,6 +6341,7 @@ export type Database = {
           variables?: Json
         }
         Update: {
+          cache_state?: Json
           config?: Json
           created_at?: string
           deleted_at?: string | null
@@ -6350,6 +6355,7 @@ export type Database = {
           is_favorite?: boolean
           is_public?: boolean
           keywords?: string[] | null
+          last_context_breakdown?: Json | null
           last_model_id?: string | null
           message_count?: number
           metadata?: Json
@@ -6480,6 +6486,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           content: Json
+          content_chars: number
           content_history: Json | null
           conversation_id: string
           created_at: string
@@ -6492,11 +6499,13 @@ export type Database = {
           role: string
           source: string
           status: string
+          tool_results_chars: number
           user_content: Json | null
         }
         Insert: {
           agent_id?: string | null
           content?: Json
+          content_chars?: number
           content_history?: Json | null
           conversation_id: string
           created_at?: string
@@ -6509,11 +6518,13 @@ export type Database = {
           role: string
           source?: string
           status?: string
+          tool_results_chars?: number
           user_content?: Json | null
         }
         Update: {
           agent_id?: string | null
           content?: Json
+          content_chars?: number
           content_history?: Json | null
           conversation_id?: string
           created_at?: string
@@ -6526,6 +6537,7 @@ export type Database = {
           role?: string
           source?: string
           status?: string
+          tool_results_chars?: number
           user_content?: Json | null
         }
         Relationships: [
@@ -6730,12 +6742,14 @@ export type Database = {
           iteration: number
           metadata: Json
           output_tokens: number | null
+          raw_usage: Json | null
           response_id: string | null
           tool_calls_count: number | null
           tool_calls_details: Json | null
           tool_duration_ms: number | null
           total_duration_ms: number | null
           total_tokens: number | null
+          trim_summary: Json | null
           user_request_id: string
         }
         Insert: {
@@ -6753,12 +6767,14 @@ export type Database = {
           iteration?: number
           metadata?: Json
           output_tokens?: number | null
+          raw_usage?: Json | null
           response_id?: string | null
           tool_calls_count?: number | null
           tool_calls_details?: Json | null
           tool_duration_ms?: number | null
           total_duration_ms?: number | null
           total_tokens?: number | null
+          trim_summary?: Json | null
           user_request_id: string
         }
         Update: {
@@ -6776,12 +6792,14 @@ export type Database = {
           iteration?: number
           metadata?: Json
           output_tokens?: number | null
+          raw_usage?: Json | null
           response_id?: string | null
           tool_calls_count?: number | null
           tool_calls_details?: Json | null
           tool_duration_ms?: number | null
           total_duration_ms?: number | null
           total_tokens?: number | null
+          trim_summary?: Json | null
           user_request_id?: string
         }
         Relationships: [
@@ -18311,6 +18329,7 @@ export type Database = {
           name: string
           sort_order: number
           updated_at: string
+          url_pattern: string | null
         }
         Insert: {
           client_name: string
@@ -18320,6 +18339,7 @@ export type Database = {
           name: string
           sort_order?: number
           updated_at?: string
+          url_pattern?: string | null
         }
         Update: {
           client_name?: string
@@ -18329,6 +18349,7 @@ export type Database = {
           name?: string
           sort_order?: number
           updated_at?: string
+          url_pattern?: string | null
         }
         Relationships: [
           {
@@ -23241,6 +23262,7 @@ export type Database = {
         Returns: {
           agent_id: string | null
           content: Json
+          content_chars: number
           content_history: Json | null
           conversation_id: string
           created_at: string
@@ -23253,6 +23275,7 @@ export type Database = {
           role: string
           source: string
           status: string
+          tool_results_chars: number
           user_content: Json | null
         }
         SetofOptions: {

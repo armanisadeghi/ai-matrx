@@ -17719,6 +17719,49 @@
         }
       }
     },
+    "/cx/conversations/{conversation_id}/context-state": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Get Context State",
+        "description": "Return the current Model Context snapshot for a conversation.\n\nAggregates the rolled-up fields written by ``persist_completed_request``\nplus the most-recent ``cx_request`` (last_request_* and last_raw_usage)\nand the most-recent trim audit (last_trim_summary). All fields default\nto zero / empty so a freshly-created conversation still returns a valid\nresponse — the FE just sees \"no measurements yet\".",
+        "operationId": "get_context_state_cx_conversations__conversation_id__context_state_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/cx/conversations/{conversation_id}/invalidate-cache": {
       "post": {
         "tags": [
@@ -35230,6 +35273,87 @@
           "content"
         ],
         "title": "ContentSaveRequest"
+      },
+      "ContextStateResponse": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "last_request_input_tokens": {
+            "type": "integer",
+            "title": "Last Request Input Tokens",
+            "default": 0
+          },
+          "last_request_cached_tokens": {
+            "type": "integer",
+            "title": "Last Request Cached Tokens",
+            "default": 0
+          },
+          "last_request_output_tokens": {
+            "type": "integer",
+            "title": "Last Request Output Tokens",
+            "default": 0
+          },
+          "total_chars_visible_to_model": {
+            "type": "integer",
+            "title": "Total Chars Visible To Model",
+            "default": 0
+          },
+          "message_count_visible": {
+            "type": "integer",
+            "title": "Message Count Visible",
+            "default": 0
+          },
+          "cache_state": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Cache State",
+            "default": {}
+          },
+          "last_trim_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Trim Summary"
+          },
+          "last_raw_usage": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Raw Usage"
+          },
+          "measured_at": {
+            "type": "string",
+            "title": "Measured At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "measured_at"
+        ],
+        "title": "ContextStateResponse",
+        "description": "Same shape as the CONTEXT_STATE stream event payload.\n\nThe FE Model Context tab hydrates from this endpoint on conversation\nopen, then receives live updates from the CONTEXT_STATE stream events\nafter each turn — no polling needed once the stream is connected."
       },
       "ConversationContinueRequest": {
         "properties": {

@@ -42,17 +42,21 @@ export interface BuildPreviewActionsArgs {
   openInRoute?: { label: string; onClick: () => void };
 }
 
-// SVG and HTML are editable too — both are markup under the hood. Including
-// them surfaces the Edit handoff in the action bar so the user can jump
-// straight into the inline Monaco editor instead of having to download +
-// re-upload. HTML's previewKind: "html" gets a Rendered/Source toggle in
-// the previewer; the Edit tab is where the source is actually mutated.
+// Which preview kinds should surface an "Edit" handoff in the action bar?
+// - code / markdown / text / svg / html: routed to the inline Monaco
+//   editor via CloudFileInlineEditor (text-shaped kinds, source-is-truth).
+// - image: routed to ImageEditTab → EditModeShell (Filerobot + AI toolbar)
+//   in features/image-studio/.
+// - pdf: routed to PdfEditTab → AnnotatablePdfCanvas + filtered
+//   InspectorRail in features/file-analysis/.
 const EDITABLE_KINDS: ReadonlyArray<PreviewKind> = [
   "code",
   "markdown",
   "text",
   "svg",
   "html",
+  "image",
+  "pdf",
 ];
 
 export function buildPreviewActions(
