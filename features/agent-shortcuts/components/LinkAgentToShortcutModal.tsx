@@ -147,6 +147,8 @@ export function LinkAgentToShortcutModal({
         agentName: agent.name,
         variableDefinitions: [],
         contextSlots: [],
+        surfaceName: null,
+        valueMappings: null,
         enabledFeatures: parseShortcutContextsInput(enabledFeaturesInput),
         scopeMappings:
           Object.keys(scopeMappings).length > 0 ? scopeMappings : null,

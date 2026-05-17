@@ -42,6 +42,8 @@ import {
   isCxToolCallReservation,
   isContextAnalysisEvent,
   isStructuredOutputEvent,
+  isContextStateEvent,
+  isContextTrimmedEvent,
   type ConversationIdData,
   type ConversationLabeledData,
   type MemoryBufferSpawnedData,
@@ -79,6 +81,10 @@ import {
 import { confirmServerSync } from "../conversations/conversations.slice";
 import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
 import { invalidateActiveTools } from "../active-tools/active-tools.slice";
+import {
+  applyContextState,
+  applyContextTrimmed,
+} from "../context-state/context-state.slice";
 import {
   recordBufferSpawned,
   recordContextInjected,
@@ -1402,6 +1408,29 @@ export async function processStream({
             timestamp: now,
             data: event.data,
           },
+        }),
+      );
+    } else if (isContextStateEvent(event)) {
+      otherEvents++;
+      // Model Context tab + header gauge consume this directly. The wire
+      // payload is snake_case (mirrors the Python ContextStatePayload);
+      // the slice's reducer accepts it verbatim. The wire types from the
+      // generated stream-events.ts use Record<string, unknown> for the
+      // JSONB-shaped fields (cache_state); the slice declares the typed
+      // CacheState interface. Runtime shape matches — cast at the boundary.
+      dispatch(
+        applyContextState({
+          ...event.data,
+          cache_state: event.data.cache_state as Record<string, unknown> as never,
+        }),
+      );
+    } else if (isContextTrimmedEvent(event)) {
+      otherEvents++;
+      // Same shape-match issue as above for trim_summary's typed shape.
+      dispatch(
+        applyContextTrimmed({
+          ...event.data,
+          trim_summary: event.data.trim_summary as Record<string, unknown> as never,
         }),
       );
     } else {

@@ -5,13 +5,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Edit,
-  Loader2,
-  PlayCircle,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Edit, Loader2, PlayCircle, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,7 +82,7 @@ export function ScheduleDetail({ taskId }: Props) {
   const handleDelete = async () => {
     const ok = await confirm({
       title: "Delete schedule",
-      description: `Permanently delete "${task.title}" and its run history. This cannot be undone.`,
+      description: `Delete "${task.title}". It will stop firing and disappear from your schedules. Past runs stay in your history. This cannot be undone.`,
       confirmLabel: "Delete",
       variant: "destructive",
     });

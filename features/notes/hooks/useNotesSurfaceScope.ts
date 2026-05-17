@@ -21,8 +21,8 @@ import { useCallback } from "react";
 import type { RefObject } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { createNotesScope } from "@/features/tool-registry/surfaces/manifests/notes-editor.manifest";
-import type { SurfaceScopePayload } from "@/features/tool-registry/surfaces/types";
+import { createNotesScope } from "@/features/surfaces/manifests/notes-editor.manifest";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import {
   selectAllFolders,
   selectInstanceSplitNoteId,

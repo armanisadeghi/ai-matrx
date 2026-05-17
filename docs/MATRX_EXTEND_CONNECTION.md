@@ -7,7 +7,7 @@ envelope. The Broadcast subscriber lives in
 `hooks/useExtensionBridgeChannel.ts`; the reference inbound route is
 `app/api/extension/append-message/route.ts`; and the surface is
 declared as `chrome-extension/agent-bridge` in
-`features/tool-registry/surfaces/data/surface-candidates.ts`.
+`features/surfaces/data/surface-candidates.ts`.
 
 This is the matrx-frontend-side reference. The master doc lives in the
 extension repo — see [§ Pointer to master](#pointer-to-master) at the
@@ -79,7 +79,7 @@ Phase 2 lands:
 Previously, two fragments mentioning `chrome-extension` were dead
 references. With Phase 2 shipped, one is now backed by the real bridge:
 
-- [`features/tool-registry/surfaces/data/surface-candidates.ts`](../features/tool-registry/surfaces/data/surface-candidates.ts) —
+- [`features/surfaces/data/surface-candidates.ts`](../features/surfaces/data/surface-candidates.ts) —
   the `client_name: "chrome-extension"` type union member is now backed
   by a `SURFACE_CANDIDATES` entry: `chrome-extension/agent-bridge`. It
   documents the two substrates (`externally_connectable` +

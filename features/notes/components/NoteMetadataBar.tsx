@@ -7,12 +7,16 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { FolderOpen, ChevronDown, X, Plus, Building2, Network } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  updateNoteFolder,
-  updateNoteTags,
-} from "../redux/slice";
+  FolderOpen,
+  ChevronDown,
+  X,
+  Plus,
+  Building2,
+  Network,
+} from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { updateNoteFolder, updateNoteTags } from "../redux/slice";
 import {
   selectNoteFolder,
   selectNoteTags,
@@ -29,7 +33,7 @@ import {
   selectOrganizationId,
   selectProjectId,
   selectTaskId,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
@@ -90,7 +94,9 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
 
   const handleRemoveTag = useCallback(
     (tag: string) => {
-      dispatch(updateNoteTags({ id: noteId, tags: tags.filter((t) => t !== tag) }));
+      dispatch(
+        updateNoteTags({ id: noteId, tags: tags.filter((t) => t !== tag) }),
+      );
     },
     [dispatch, noteId, tags],
   );
@@ -103,7 +109,6 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
     setTagInput("");
     setAddingTag(false);
   }, [dispatch, noteId, tags, tagInput]);
-
 
   return (
     <>
@@ -151,10 +156,19 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
           title="Set context for this note"
         >
           <Network className="w-2.5 h-2.5" />
-          {noteTaskId ? (ctxTaskName && noteTaskId === ctxTaskId ? ctxTaskName : "Task")
-            : noteProjId ? (ctxProjName && noteProjId === ctxProjId ? ctxProjName : "Project")
-            : noteOrgId ? (ctxOrgName && noteOrgId === ctxOrgId ? ctxOrgName : "Org")
-            : "Context"}
+          {noteTaskId
+            ? ctxTaskName && noteTaskId === ctxTaskId
+              ? ctxTaskName
+              : "Task"
+            : noteProjId
+              ? ctxProjName && noteProjId === ctxProjId
+                ? ctxProjName
+                : "Project"
+              : noteOrgId
+                ? ctxOrgName && noteOrgId === ctxOrgId
+                  ? ctxOrgName
+                  : "Org"
+                : "Context"}
         </button>
         <ScopeTagsDisplay
           entityType="note"
@@ -193,7 +207,10 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleAddTag();
-                if (e.key === "Escape") { setAddingTag(false); setTagInput(""); }
+                if (e.key === "Escape") {
+                  setAddingTag(false);
+                  setTagInput("");
+                }
               }}
               onBlur={handleAddTag}
               className="w-16 px-1 py-0.5 text-[0.5625rem] bg-muted rounded border border-border outline-none shrink-0"

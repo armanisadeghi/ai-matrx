@@ -22,7 +22,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `app/(authenticated)/organizations/[orgId]/{projects,tasks,notes,files,tables,workflows,shortcuts,templates,prompt-apps,prompts,agent-apps}/` — org-scoped resource views sharing `OrgResourceLayout.tsx`
 - `app/(authenticated)/organizations/[orgId]/projects/[projectId]/` — project-scoped view within an org; `[projectId]` also accepts UUID or slug
 - `app/(authenticated)/organizations/[orgId]/settings/page.tsx` — settings hub (members, invitations, general, scopes, danger zone)
-- `app/(authenticated)/organizations/[orgId]/settings/scopes/` — scope-system config (see `features/scope-system/FEATURE.md`)
+- `app/(authenticated)/organizations/[orgId]/settings/scopes/` — scope config (see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md))
 - `app/(authenticated)/invitations/organization/accept/[token]/page.tsx` — accept org invitation
 - `app/(authenticated)/invitations/project/accept/[token]/page.tsx` — accept project invitation
 
@@ -55,7 +55,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `GET/PATCH /api/admin/invitation-requests[/id]` — admin triage of signup-access requests (separate "request an invite" flow, not org-member invites)
 
 **Redux**
-- No dedicated org slice. Active org is tracked in `features/agent-context/redux/appContextSlice.ts` (`organization_id`, `organization_name`). All other org data is fetched per-hook via service calls — no cached Redux state.
+- No dedicated org slice. Active org is tracked in `lib/redux/slices/appContextSlice.ts` (`organization_id`, `organization_name`). All other org data is fetched per-hook via service calls — no cached Redux state.
 
 ---
 
@@ -165,7 +165,7 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 - **Invitation uniqueness is per `(organization_id, email)`.** Re-inviting the same email returns `23505` → "User already invited". Use `resendInvitation` to bump the expiry instead.
 - **Invitation email must match the authenticated user's email on accept.** `acceptInvitation` filters `.eq('email', getUserEmail())`. Case-insensitive compare in the accept page as well. A user signed in with a different email sees "This invitation is for X".
 - **`/api/organizations/invite` and `/api/projects/invite` MUST run server-side.** `RESEND_API_KEY` and `EMAIL_FROM` are server env only. Do not try to send invitation emails from the client.
-- **Accepting a project invitation does NOT add the user to the parent org.** Orgs and projects have independent membership tables. If the user is not in the org, they may or may not be able to use the project depending on RLS — verify with `features/scope-system/FEATURE.md` before assuming access.
+- **Accepting a project invitation does NOT add the user to the parent org.** Orgs and projects have independent membership tables. If the user is not in the org, they may or may not be able to use the project depending on RLS — verify with `features/scopes/FEATURE.md` before assuming access.
 - **`features/invitations/emailService.ts` is a different flow.** It handles the "request access to sign up" admin approval/rejection emails (see `/api/admin/invitation-requests`), not org-member invitations. Do not wire it into org flows.
 - **`organization_members` updates/deletes silently succeed with 0 rows when RLS blocks.** Service layer compensates by requiring `.select()` + row-count check. Any new mutation against `organization_members` must follow this pattern or it will report false success.
 - **No Redux cache for org data.** Each hook refetches from Supabase. `refresh()` is exposed on every list hook — call it after any mutation (the operation hooks in `hooks.ts` already do this internally; external callers of `service.ts` directly must do it themselves).
@@ -175,10 +175,10 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 
 ## Related features
 
-- **Depends on:** `features/agent-context/redux/appContextSlice.ts` (active org state), `features/email/` + `lib/email/client.ts` (Resend integration + templates), `@/utils/auth/getUserId` (user id/email helpers), `@/utils/supabase/{client,server}`
+- **Depends on:** `lib/redux/slices/appContextSlice.ts` (active org state), `features/email/` + `lib/email/client.ts` (Resend integration + templates), `@/utils/auth/getUserId` (user id/email helpers), `@/utils/supabase/{client,server}`
 - **Depended on by:** `features/projects/` (project FKs `organization_id`), `features/scope-system/`, `features/tasks/`, `features/sharing/`, `features/agents/` (agent ownership + multi-scope), every `/organizations/[orgId]/**` route
 - **Cross-links:**
-  - [`features/scope-system/FEATURE.md`](../scope-system/FEATURE.md) — scopes sit between org and project in the hierarchy
+  - [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — scopes sit between org and project in the hierarchy
   - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — cross-org/user/project sharing of resources
   - [`features/projects/README.md`](../projects/README.md) — projects mirror this architecture
   - [`features/agents/FEATURE.md`](../agents/FEATURE.md) — agents are org-scoped; shortcuts/apps are multi-scope

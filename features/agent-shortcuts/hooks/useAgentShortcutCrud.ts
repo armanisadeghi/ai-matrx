@@ -12,6 +12,10 @@ import {
   type AdminNonGlobalShortcutRow,
 } from "@/features/agents/redux/agent-shortcuts/thunks";
 import {
+  createShortcutFromAgentSurface,
+  type CreateShortcutFromAgentSurfaceArgs,
+} from "@/features/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk";
+import {
   createCategory,
   updateCategory,
   deleteCategory,
@@ -43,6 +47,9 @@ export interface UseAgentShortcutCrudResult {
   updateShortcut: (id: string, data: Partial<AgentShortcut>) => Promise<void>;
   deleteShortcut: (id: string) => Promise<void>;
   duplicateShortcut: (id: string, targetCategoryId?: string) => Promise<string>;
+  createShortcutFromAgentSurface: (
+    args: CreateShortcutFromAgentSurfaceArgs,
+  ) => Promise<string>;
   promoteShortcutToGlobal: (args: {
     shortcutId: string;
     targetCategoryId: string;
@@ -141,6 +148,16 @@ export function useAgentShortcutCrud({
     [dispatch],
   );
 
+  const doCreateShortcutFromAgentSurface = useCallback(
+    async (args: CreateShortcutFromAgentSurfaceArgs) => {
+      const result = await dispatch(
+        createShortcutFromAgentSurface(args),
+      ).unwrap();
+      return result as string;
+    },
+    [dispatch],
+  );
+
   const doPromoteShortcutToGlobal = useCallback(
     async (args: {
       shortcutId: string;
@@ -217,6 +234,7 @@ export function useAgentShortcutCrud({
     updateShortcut: doUpdateShortcut,
     deleteShortcut: doDeleteShortcut,
     duplicateShortcut: doDuplicateShortcut,
+    createShortcutFromAgentSurface: doCreateShortcutFromAgentSurface,
     promoteShortcutToGlobal: doPromoteShortcutToGlobal,
     listNonGlobalShortcutsForAdmin: doListNonGlobalShortcutsForAdmin,
     createCategory: doCreateCategory,

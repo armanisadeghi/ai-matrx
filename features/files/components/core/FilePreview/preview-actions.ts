@@ -42,14 +42,17 @@ export interface BuildPreviewActionsArgs {
   openInRoute?: { label: string; onClick: () => void };
 }
 
-// SVG is editable too — it's plain XML under the hood. Including it here
-// surfaces the Edit handoff in the action bar so the user can jump straight
-// into the inline Monaco editor instead of having to download + re-upload.
+// SVG and HTML are editable too — both are markup under the hood. Including
+// them surfaces the Edit handoff in the action bar so the user can jump
+// straight into the inline Monaco editor instead of having to download +
+// re-upload. HTML's previewKind: "html" gets a Rendered/Source toggle in
+// the previewer; the Edit tab is where the source is actually mutated.
 const EDITABLE_KINDS: ReadonlyArray<PreviewKind> = [
   "code",
   "markdown",
   "text",
   "svg",
+  "html",
 ];
 
 export function buildPreviewActions(

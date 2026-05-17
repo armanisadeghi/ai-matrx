@@ -8,7 +8,7 @@
 > any release notes / breaking changes / runtime expectations the
 > backend team wants the frontend team to internalize.
 >
-> Last updated: 2026-05-05.
+> Last updated: 2026-05-17.
 
 ---
 
@@ -416,27 +416,71 @@ guarantees as of this release:
 
 ## 8. What's still pending
 
-Tracked items that were explicitly NOT in the latest release:
+**Pruned 2026-05-17** — many items that were ⚪ here are now 🟢 (see
+§9 changelog for proof + commit references). Current pending list:
 
-- ⚪ Resumable / TUS uploads — for files > 100 MB (or > tier cap).
-  Today: hard 5 GB ceiling on the buffered path; bypass header
-  required for >100 MB.
-- ⚪ Presigned PUT to S3 — direct browser → S3 path.
-- ⚪ Range download / streaming response — `/files/{id}/download`
-  still buffers the whole file. Range support is queued.
-- ⚪ CDN-backed permanent URLs for `visibility="public"` (currently
-  7-day signed S3).
-- ⚪ Webhooks / SSE events beyond Supabase Realtime.
-- ⚪ Storage re-keying by `file_id` so renames are pure DB ops with
-  zero S3 cost.
-- ⚪ Per-org tenancy — `organization_id` columns added to schema;
+- ⚪ **Presigned PUT to S3** — direct browser → S3 path.
+- ⚪ **Per-org tenancy** — `organization_id` columns added to schema;
   routes still single-owner.
-- ⚪ Comments / annotations / file locking.
-- ⚪ Antivirus scan.
-- ⚪ Server-side thumbnail / poster generation on upload (FE has
-  asked — see [for_python/REQUESTS.md](../for_python/REQUESTS.md)).
-- ⚪ S3 bucket CORS so direct `fetch(signed_url)` works without the
-  FastAPI proxy round-trip (FE has asked).
+- ⚪ **Comments / annotations / file locking**.
+- ⚪ **Antivirus scan**.
+- 🟡 **Subscriber-management REST surface for webhooks** — the
+  `cld_webhooks` + `cld_webhook_deliveries` tables + dispatcher
+  worker are live (Bundle B3, 2026-05-05). Owners still register
+  subscriptions via direct SQL. A `/files/webhooks/*` REST surface
+  is a small follow-up.
+- 🟡 **`fs_move` cross-adapter** in the VFS surface — same-adapter
+  works; cross-adapter (e.g. Notes → My Files) currently returns
+  400. Adapter-pair-specific copy-then-delete logic is the follow-up.
+- 🟡 **VFS: Notes `list_versions` / `restore_version`** — `note_versions`
+  exists; adapter doesn't yet expose them.
+- 🟡 **VFS: binary `fs_read`** — TUS-uploaded binary content currently
+  returns UTF-8-decoded bytes. Strict-binary needs a `binary: true`
+  arg → base64 response shape. Cloud_files adapter already advertises
+  `capabilities.binary = true`; FE can route binary previews via
+  `GET /files/{id}/url` until then.
+
+**Items the FE should re-check + flip to 🟢 in REQUESTS.md** (the
+work shipped; only acknowledgment is missing on their side):
+
+- ✅ **0a** — public-file privacy leak (closed in `da02e7cf`,
+  migration 014, verified 0 cross-owner leak in prod)
+- ✅ **0b** — variant orphan rows (closed in `a47788d6`; 6,152
+  cascade rows deleted + 134 MB S3 reclaimed; forward-write
+  defences shipped so the cascade cannot recur)
+- ✅ **0c** — tree RPC usability (closed in `da02e7cf`,
+  migration 014: default `p_limit` 200→5000, `p_order_by` param,
+  `cld_count_user_files` companion, old 5-arg overload dropped)
+- ✅ **3** — TUS uploads >100 MB (closed in Bundle E2, 2026-05-05)
+- ✅ **4** — Range download (closed in Bundle D1, 2026-05-05;
+  re-verified in `d647c143` — 206 + S3 chunked stream all working)
+- ✅ **5** — CDN-backed permanent URLs (every response shape since
+  Phase 0 carries `cdn_url` populated for `visibility="public"`
+  files; e.g. `Asset.variants["original"].cdn_url`,
+  `FileRecord.cdn_url`)
+- ✅ **6** — Storage re-keying by `file_id` (Bundle E1 shipped the
+  code; backfill **fully ran 2026-05-17**: 4,555 pre-canonical rows
+  copied to canonical S3 keys, 0 failures, 0 new
+  `_rekey_legacy_missing` flags). All 6,540 alive `cld_files` rows
+  now carry `canonical_storage_uri`. New uploads have always been
+  canonical-keyed.
+- ✅ **7** — `POST /folders` path-style (`_ensure_folder_chain` creates
+  intermediate folders atomically; verified `da02e7cf`)
+- ✅ **9** — `X-Request-Id` in realtime payloads (closed in `d647c143`;
+  middleware honours the header + every cloud_sync write stamps
+  `metadata.request_id`; FE realtime can drop the 2s timestamp-fuzzy
+  fallback)
+- ✅ **10** — Webhooks (closed in Bundle B3, 2026-05-05; outbox +
+  dispatcher live; only subscriber-management UI/REST pending)
+- ✅ **15** — VFS adapter (closed in Bundle E3, 2026-05-05; all 11
+  endpoints + 6 adapters + AI `fs_*` tools live)
+- ✅ **Server-side thumbnail generation** (closed in Bundle D2,
+  2026-05-05; massively extended in Phase 1/1c/1d — every file kind
+  now has thumbnail + og + tiny variants, plus kind-specific
+  `page1_url` for PDFs + `poster_url` for videos + real audio
+  waveforms via pydub)
+- ✅ **S3 bucket CORS** (Bundle B4 committed the canonical JSON +
+  applied to prod; FE should re-test the direct-`fetch` previewers)
 
 ---
 
@@ -444,6 +488,232 @@ Tracked items that were explicitly NOT in the latest release:
 
 Newest entries first. Each entry corresponds to one bundle in the
 plan we're working through against `for_python/REQUESTS.md`.
+
+### 2026-05-17 — Storage rekey backfill completed 🟢
+
+Closes the operational follow-up for FE REQUESTS item **6**. Bundle
+E1 (2026-05-05) shipped the canonical-storage-uri schema + read-path
+support, but the data backfill hadn't been run against prod.
+
+Ran `python -m aidream.cli.rekey_backfill` against Matrx Main:
+
+| Stat | Value |
+|---|---|
+| Rows processed | 4,555 (smoke-test 50 first, then full) |
+| `copied` (S3 server-side copy from legacy → canonical) | 4,555 |
+| `already_canonical` (skipped no-op) | 0 |
+| `legacy_missing` (legacy S3 object gone, flagged for ops) | 0 new |
+| `copy_failed` / `skipped_bad_uri` / `skipped_no_backend` | 0 |
+| Rate | ~23 rows/sec |
+
+**Final state:** 6,540 / 6,540 alive `cld_files` rows carry
+`canonical_storage_uri` (100%). Two rows have the pre-existing
+`metadata._rekey_legacy_missing` marker from earlier runs — those
+are legacy-S3-object-gone edge cases needing ops review, not new
+regressions.
+
+Renames and bulk-moves were already storage-key stable (they only
+update `file_path`); this backfill protects future writes from
+re-introducing legacy-key drift if a rename ever started copying
+bytes.
+
+---
+
+### 2026-05-17 — Phase 1d.5: tree privacy, RPC usability, X-Request-Id realtime 🟢
+
+Closes FE REQUESTS items **0a**, **0c**, **4** (re-verified), **7**
+(re-verified), **9**, **15** (re-verified). Three commits today:
+
+**Commit `da02e7cf` — migration 014 (RPC fixes)**
+
+- **0a (CRITICAL privacy)**: dropped `OR f.visibility = 'public'` from
+  the file leg of `cld_get_user_file_tree`. Was leaking every public
+  file to every authed user (50 cross-owner rows visible to one test
+  user). Now: owner OR explicit grant only. **FE can remove the
+  `loadUserFileTree` defensive filter.**
+- **0c #1 (usability)**: bumped default `p_limit` from 200 → 5000.
+  Ad-hoc callers (curl, AI tools, scripts) no longer silently
+  truncate at 200.
+- **0c #1 alt (ordering)**: new `p_order_by` parameter on
+  `cld_get_user_file_tree`. Accepts `'name'` (default, back-compat) |
+  `'updated_at_desc'` | `'created_at_desc'`. Unknown values silently
+  fall back to `'name'`. Recents UX no longer buries fresh
+  `zebra.png` uploads at the last page.
+- **0c #3 (companion)**: new `cld_count_user_files(uuid, bool, bool)
+  → jsonb` returning `{files, folders, total}`. Filters mirror
+  `cld_get_user_file_tree` exactly. FE can render
+  "page 3 of N" progress instead of a spinner.
+- **IMPORTANT**: dropped the OLD 5-arg overload of
+  `cld_get_user_file_tree` so 5-arg calls unambiguously resolve to
+  the new 6-arg version (was throwing `42725 function is not unique`
+  before the drop). Re-generate types after pulling.
+- **Item 7 verified**: `POST /folders` already supports path-style
+  `folder_path` (`_ensure_folder_chain` creates intermediate folders
+  atomically). FE can drop the `ensureFolderPath` supabase-js
+  fallback.
+
+**Commit `d647c143` — items 4, 9, 15**
+
+- **Item 9 (X-Request-Id realtime)**: matrx-connect middleware now
+  honours client-supplied `X-Request-Id` header (1-128 chars; falls
+  back to UUID otherwise). Every cloud_sync write (`managed_write_async`,
+  `managed_write`, `replace_file_async`) stamps `metadata.request_id`
+  via a new `_stamp_request_id` helper that reads from the active
+  matrx-utils context. Caller-supplied `metadata.request_id` wins.
+  **FE can drop the 2-second timestamp-fuzzy dedup fallback** —
+  realtime payloads now carry the round-tripped request_id directly.
+- **Item 4 (Range download)**: re-verified — already shipped
+  correctly. `/files/{id}/download` does proper S3-byte-range fetch
+  (`get_object(Range="bytes=start-end")`) + chunked stream via
+  `iter_chunks` + RFC-7233 206/416 responses + `Accept-Ranges: bytes`
+  advertised. Never buffers full file. **REQUESTS.md description was
+  outdated.**
+- **Item 15 (VFS adapter)**: re-verified — already fully shipped
+  (Bundle E3). `GET /virtual` returns 6 adapters with documented
+  capabilities; AI `fs_*` tools live in
+  `packages/matrx-ai/matrx_ai/tools/implementations/filesystem.py`.
+
+**Migration files in tree:**
+- `packages/matrx-utils/matrx_utils/file_handling/cloud_sync/sql/014_user_tree_privacy_and_usability.sql`
+
+**Verification on the FE side:**
+- Repro from REQUESTS item 0a: file
+  `9e4850f8-a591-4a8e-a721-d51002c771ca` (visibility=public, owner
+  `f0146c96-…`) should no longer appear in another user's
+  `cld_get_user_file_tree` response. Confirmed 0 cross-owner rows
+  visible to the test account (was 50 from 5 owners).
+- `p_order_by`: pass `'updated_at_desc'` as the 6th arg and confirm
+  the result starts with the most-recently-updated row.
+- `cld_count_user_files`: returns `{files, folders, total}` matching
+  what `cld_get_user_file_tree` would yield with the same filters.
+- `metadata.request_id` round-trip: write a file from one tab with a
+  known X-Request-Id, observe the realtime payload on a second tab
+  and confirm `payload.new.metadata.request_id` matches.
+
+---
+
+### 2026-05-16 — Phase 1d.3: variant cascade cleanup + structural prevention 🟢
+
+Closes FE REQUESTS item **0b**. Companion to the
+Phase 1/1b/1c/1d/1d.1/1d.2/2/2b/2c/2c-google/3a/3b/2c-google work
+covered in [docs/FE_MEDIA_BLOCK_CONTRACT.md](../../../aidream/docs/FE_MEDIA_BLOCK_CONTRACT.md).
+
+**What happened:** The backfill incident wrote ~7,700 variant rows;
+6,152 of those were CASCADE JUNK (variants-of-variants up to 12
+levels deep). Root cause: the backfill iterated every `cld_files`
+row matching the mime filter — INCLUDING the variant rows it had
+just written (variants are `cld_files` rows with mime `image/jpeg`
+under `system-files/variants/`). Each variant got handed back as a
+"master" and re-processed.
+
+**Three layers of defence so this cannot recur:**
+
+1. **`generate_thumbnail_for_file`** (write-path guard): refuses any
+   row with `metadata.derived_from`, `metadata.variant_key`,
+   `parent_file_id`, or `file_path LIKE 'system-files/%'`. Returns
+   early with a warning log; never reads master bytes.
+2. **Backfill `_next_batch` query filter** (primary defence): triple-
+   filters by `file_path NOT LIKE 'system-files/%'`, `parent_file_id
+   IS NULL`, AND in-process `metadata.derived_from IS NULL`.
+   Variants simply never enter iteration.
+3. **`cld_get_user_file_tree` / `cld_search_files` / `cld_list_trash`
+   RPCs** (migration 012): exclude `parent_file_id IS NOT NULL OR
+   file_path LIKE 'system-files/%'`. Even if a stray variant ever
+   slips into the table, users never see it.
+
+**Forward-write parity** for native lineage columns:
+
+- `managed_write_async` accepts `parent_file_id` + `derivation_kind`
+  kwargs.
+- `VariantsService.render_async` + `persist_prerendered_async` now
+  stamp BOTH the JSONB `metadata.derived_from` AND the native
+  `parent_file_id` + `derivation_kind` columns on every new variant
+  (`parent_file_id = master_id`, `derivation_kind = 'variant'`).
+- Migration 013 extends the `cld_files_derivation_kind_known` check
+  constraint to permit `'variant'`.
+
+**Cleanup applied to prod (Matrx Main):**
+
+| Step | Result |
+|---|---|
+| Migration 012 (RPC filters) | Arman's `/files` view: 10,948 → 4,996 visible |
+| Migration 013 backfill | 1,565 legit first-level variants got `parent_file_id` + `derivation_kind` columns stamped (data preserved) |
+| Migration 013 soft-delete | 6,152 cascade-junk rows tagged with `metadata.cascade_cleanup=true` + soft-deleted |
+| S3 cleanup CLI (`aidream/cli/cleanup_cascade_s3.py`) | 6,152 / 6,152 S3 objects deleted, ~134 MB reclaimed, **zero errors** |
+| DB hard-delete | 6,152 rows removed (after S3 success) |
+| Final state | 6,536 alive cld_files rows, 0 leftover cascade-tagged |
+
+**Migration files in tree:**
+- `packages/matrx-utils/.../sql/012_exclude_system_files_from_user_tree.sql`
+- `packages/matrx-utils/.../sql/013_cleanup_cascade_variants.sql`
+- `aidream/cli/cleanup_cascade_s3.py` (idempotent, supports
+  `--dry-run` / `--limit` / `--keep-db-rows`)
+
+**FE impact:** none on the wire shape. The cleanup happens entirely
+server-side; `/files` views show the right things automatically.
+
+---
+
+### 2026-05-16 — Canonical media-block contract: Phases 0 / 1 / 1b / 1c / 1d / 1d.1 / 2 / 2b / 2c / 2c-google / 3a / 3b 🟢
+
+**TL;DR:** One Pydantic model (`UnifiedMediaBlock`) now represents
+every media reference on every wire path (stream events, `Asset`
+envelopes, `cx_message.content[]`). Twelve phases shipped over two
+sessions; full FE-facing contract documented in
+[`docs/FE_MEDIA_BLOCK_CONTRACT.md`](../../../aidream/docs/FE_MEDIA_BLOCK_CONTRACT.md)
+with one section per phase (the canonical source for FE-side type
+generation + handler wiring).
+
+**Headline changes the FE will notice:**
+
+- **`UnifiedMediaBlock`** — discriminated union over `kind` (`image |
+  video | audio | document | youtube`) with `origin: "matrx" |
+  "external"`. Replaces 4 drifting shapes (`image_output`,
+  `partial_image`, `render_block:image`, `cx_message` media parts).
+- **`MediaBlockData`** — new stream payload `type: "media_block"`
+  carries the canonical block. Old `image_output` / `audio_output`
+  / `video_output` / `partial_image` payload types are deprecated
+  (still exported for transition; audit gate `weak_media_block` =
+  0 on `main`).
+- **`size_bytes` everywhere** — DB column `cld_files.file_size`
+  renamed to `size_bytes` (migration 010); every response shape +
+  every Pydantic model + every TS interface follows.
+- **Universal thumbnails** — every file kind (image / pdf / video /
+  audio / archive / text / unknown) gets `og_url` + `thumbnail_url`
+  + `tiny_url` in `Asset.variants`. PDFs additionally get
+  `page1_url` (full-DPI page 1); videos get `poster_url` (native-res
+  frame); audio uploads get real waveform PNGs (pydub + Pillow)
+  instead of generic icons.
+- **Probed dimensions** — `cld_files.width` / `.height` /
+  `.duration_ms` columns added (migration 010) + populated at upload
+  via the universal `probe_source_metadata`. PDF `page_count`
+  stamped into `cld_files.metadata.page_count`.
+- **`signed_url_expires_at`** — ms epoch on every URL set
+  (`SyncResult`, `AssetVariant`, every `MediaBlock`). FE can
+  schedule refresh ~30s before expiry instead of parsing X-Amz
+  query params.
+- **`cx_message.content[]` carries `file_id`** — long-standing bug
+  closed. Every media item written from now on has `file_id`,
+  `origin`, `size_bytes`, and kind-specific intrinsics (width,
+  height, duration_ms, page_count) so chat-message reads don't need
+  a follow-up `GET /assets/{id}`. Legacy reads still work via the
+  back-compat reader.
+- **AI generation metadata** — `MediaGenerationMetadata` canonical
+  shape stamped under `cld_files.metadata.generation` for every
+  AI-produced file. Per-provider mappers for OpenAI / Google /
+  Together / Replicate / xAI / ElevenLabs / Groq.
+- **Legacy `cld_files.thumbnail_*` columns dropped** (migration 011)
+  — `FileRecord.thumbnail_url` still populates (via variants
+  resolver) so the FE-visible behaviour is unchanged.
+
+**Migration files in tree:**
+- `010_canonical_media_columns.sql` — file_size → size_bytes + width/height/duration_ms
+- `011_drop_legacy_thumbnail_columns.sql`
+
+**FE-side ask:** read [`docs/FE_MEDIA_BLOCK_CONTRACT.md`](../../../aidream/docs/FE_MEDIA_BLOCK_CONTRACT.md)
+for the complete contract + every phase's wire-shape diff. After
+`pnpm sync-types` the typed shapes (`UnifiedMediaBlock`,
+`MediaBlockData`, etc.) appear in `stream-events.ts`.
 
 ### 2026-05-05 — Bundle E3: Virtual Filesystem Adapter surface 🟢 (code in tree)
 

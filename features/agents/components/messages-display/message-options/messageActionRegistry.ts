@@ -1041,7 +1041,7 @@ function creatorItems(ctx: MessageActionContext): MenuItem[] {
             overlayId: "streamDebug",
             data: {
               conversationId,
-              requestId: streamRequestId ?? null,
+              requestIdOverride: streamRequestId ?? undefined,
             },
           }),
         );

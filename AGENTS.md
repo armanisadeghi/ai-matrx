@@ -120,6 +120,28 @@ Being replaced by **agent-apps**. See `features/agents/migration/phases/phase-08
 
 ---
 
+## Scopes and Context — Canonical Model
+
+Two words, two distinct concepts. Confusing them produced the worst code rot in the repo.
+
+- **Scope** = the user-authored dimensions inside an org (`Client`, `Department`, `Repo`, `Case`, `Patient`). Each scope holds context items (the columns) and values (the cells). The only piece of context users actually edit by hand.
+- **Context** = everything the LLM receives at invocation time. Assembled by the system from scopes + org + project + task + user + ambient. Users never edit "context" as a thing.
+
+Scope is the most important *part* of context, not its synonym. Read [`features/scopes/FEATURE.md`](./features/scopes/FEATURE.md) before touching any scope/context code.
+
+**Global vs Local context — the load-bearing invariant:**
+
+- **Global context** lives in `lib/redux/slices/appContextSlice.ts` — what the user is working on right now (active org, scope selections, project, task).
+- **Local context** lives on the entity being acted on — a note's tags, a task's tags, an agent's tags via `ctx_scope_assignments`.
+- **Global context is ONLY written by Surface A components** (`ActiveScopePicker` and friends, under `features/scopes/components/active-context/`). Every other picker — every "tag this with…" UI — writes to `ctx_scope_assignments`, never `appContextSlice`. ESLint enforces this at the import path.
+- **Resolution rule:** locally-triggered actions read local-first with global as fallback. Globally-triggered actions read global only. Contradictions (global vs local disagreeing on the same scope type) surface as a warning, never a block.
+
+If a picker is silently changing the sidebar's active context, **it's a bug — even if it "feels helpful."** That pattern is the #1 thing this module exists to kill.
+
+`features/agent-context/` is the thin consumer that fills declared variable and context slots at invocation time. It reads scopes from `features/scopes/`; it does not own scope data. See [`features/agent-context/FEATURE.md`](./features/agent-context/FEATURE.md) for the resolution mechanics.
+
+---
+
 ## Feature Documentation
 
 Every Tier 1 / Tier 2 feature has a `FEATURE.md` inside its feature directory. These are the **single source of truth** for how a feature works today. AGENTS.md is just the index.
@@ -136,14 +158,14 @@ Every Tier 1 / Tier 2 feature has a `FEATURE.md` inside its feature directory. T
 | Agent shortcuts | `features/agent-shortcuts/FEATURE.md` |
 | Agent apps | `features/agent-apps/FEATURE.md` |
 | Agent connections | `features/agent-connections/FEATURE.md` |
-| Agent context + Brokers | `features/agent-context/FEATURE.md` |
+| Scopes | `features/scopes/FEATURE.md` |
+| Agent context + Brokers | `features/agent-context/FEATURE.md` (narrowed: broker resolution + slot fill; scope CRUD lives in `features/scopes/`) |
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
 | Artifacts + Canvas | `features/artifacts/FEATURE.md` |
 | Chat + Conversation | `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |
 | Permissions & Sharing | `features/sharing/FEATURE.md` |
-| Scope system | `features/scope-system/FEATURE.md` |
 | Code editor | `features/code-editor/FEATURE.md` |
 | Window Panels (all overlays) | `features/window-panels/FEATURE.md` |
 | Settings system (preferences shell, primitives, `useSetting`) | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |

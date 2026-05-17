@@ -88,9 +88,7 @@ async function hydrateFromFileId(
   const state = store.getState() as RootState;
   const cached = selectFileById(state, file.fileId);
 
-  let cloudFile = cached
-    ? cloudFileFromRecord(cached)
-    : null;
+  let cloudFile = cached ? cloudFileFromRecord(cached) : null;
 
   if (!cloudFile) {
     try {
@@ -140,7 +138,11 @@ async function ensureSignedUrl(
   expiresInSec?: number,
 ): Promise<NormalizedFile> {
   if (!file.fileId) return file;
-  if (file.url && file.lifecycle.expiresAt && file.lifecycle.expiresAt > Date.now() + 30_000) {
+  if (
+    file.url &&
+    file.lifecycle.expiresAt &&
+    file.lifecycle.expiresAt > Date.now() + 30_000
+  ) {
     return file;
   }
 
@@ -169,12 +171,13 @@ async function ensureSignedUrl(
 // MIME sniffing
 // ---------------------------------------------------------------------------
 
-async function sniffIfPossible(
-  file: NormalizedFile,
-): Promise<NormalizedFile> {
+async function sniffIfPossible(file: NormalizedFile): Promise<NormalizedFile> {
   if (!file.url || file.url.startsWith("data:")) return file;
   try {
-    const res = await fetch(file.url, { method: "GET", headers: { Range: "bytes=0-31" } });
+    const res = await fetch(file.url, {
+      method: "GET",
+      headers: { Range: "bytes=0-31" },
+    });
     if (!res.ok) return file;
     const blob = await res.blob();
     const sniffed = await sniffMimeFromBlob(blob);
@@ -195,7 +198,9 @@ async function sniffIfPossible(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function cloudFileFromRecord(record: unknown): import("@/features/files/types").CloudFile | null {
+function cloudFileFromRecord(
+  record: unknown,
+): import("@/features/files/types").CloudFile | null {
   if (!record || typeof record !== "object") return null;
   const r = record as Record<string, unknown>;
   if (typeof r.id !== "string") return null;
@@ -216,6 +221,7 @@ function cloudFileFromRecord(record: unknown): import("@/features/files/types").
     updatedAt: (r.updatedAt as string) ?? new Date().toISOString(),
     deletedAt: (r.deletedAt as string | null) ?? null,
     publicUrl: (r.publicUrl as string | null) ?? null,
+    thumbnailUrl: (r.thumbnailUrl as string | null) ?? null,
     source: (r.source as { kind: "real" }) ?? { kind: "real" },
     parentFileId: (r.parentFileId as string | null | undefined) ?? null,
     derivationKind: (r.derivationKind as string | null | undefined) ?? null,

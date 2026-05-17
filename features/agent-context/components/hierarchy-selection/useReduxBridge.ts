@@ -9,7 +9,7 @@ import {
   setProject,
   setTask,
   clearContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import type { HierarchySelection } from "./types";
 import { EMPTY_SELECTION } from "./types";
 

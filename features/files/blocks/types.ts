@@ -129,10 +129,15 @@ interface MatrxOriginFields {
   derivationKind: string | null;
 
   // ── Thumbnails ───────────────────────────────────────────────────────────
-  // Legacy fields kept for back-compat. Phase 1+ moves thumbnails into
-  // `Asset.variants["thumbnail_url"]` (queryable via GET /assets/{file_id}).
-  thumbnailUrl: string | null;
-  thumbnailUri: string | null;
+  // Phase 1b removed `thumbnail_url` + `thumbnail_uri` from the wire shape.
+  // The canonical source is now `Asset.variants["thumbnail_url"].url` via
+  // `GET /assets/{file_id}`. See docs/PYTHON_UPDATES.md "Phase 1b".
+  //
+  // For TOP-LEVEL listings, `FileRecord.thumbnail_url` (one field on the
+  // REST response) is still populated by the backend resolver and lifts
+  // onto `CloudFile.thumbnailUrl` for grid / picker components. That field
+  // lives on `CloudFile`, not on the media block — a block represents an
+  // image you're rendering, not a generic file listing.
 }
 
 /**

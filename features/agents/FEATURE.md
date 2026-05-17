@@ -156,7 +156,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 
 - **Depends on:** `features/agent-context/` + `features/brokers/` (variable/context resolution), `features/api-integrations/` (MCP + external tools), `features/artifacts/` (rendering output), `features/tool-call-visualization/` (tool UI)
 - **Depended on by:** `features/agent-shortcuts/`, `features/agent-apps/`, `features/conversation/`, almost every user-facing surface
-- **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, `features/scope-system/FEATURE.md`
+- **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ---
 

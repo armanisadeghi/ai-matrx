@@ -65,7 +65,7 @@ import {
   mapScopeToInstance,
   mapScopeToInstanceWithSurface,
 } from "@/features/agents/utils/scope-mapping";
-import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.

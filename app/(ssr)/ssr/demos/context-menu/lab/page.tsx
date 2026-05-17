@@ -93,7 +93,7 @@ import {
   selectProjectName,
   selectTaskId,
   selectTaskName,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import { selectAllContentBlocksArray } from "@/features/agents/redux/agent-content-blocks/selectors";
@@ -101,8 +101,8 @@ import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
 import type { Scope, ScopeRef } from "@/features/agents/redux/shared/scope";
 import { useUnifiedAgentContextMenu } from "@/features/context-menu-v2/hooks/useUnifiedAgentContextMenu";
-import { getAllManifests } from "@/features/tool-registry/surfaces/manifests/registry";
-import type { SurfaceManifest } from "@/features/tool-registry/surfaces/types";
+import { getAllManifests } from "@/features/surfaces/manifests/registry";
+import type { SurfaceManifest } from "@/features/surfaces/types";
 import { supabase } from "@/utils/supabase/client";
 
 import { Button } from "@/components/ui/button";

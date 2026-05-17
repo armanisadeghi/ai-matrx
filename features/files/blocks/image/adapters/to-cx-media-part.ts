@@ -59,8 +59,8 @@ export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
     packed.file_uri = block.fileUri;
     packed.canonical_file_uri = block.canonicalFileUri;
     packed.visibility = block.visibility;
-    packed.thumbnail_url = block.thumbnailUrl;
-    packed.thumbnail_uri = block.thumbnailUri;
+    // Phase 1b: `thumbnail_url` / `thumbnail_uri` removed from the block
+    // shape; thumbnails are now sourced from `Asset.variants["thumbnail_url"]`.
     packed.parent_file_id = block.parentFileId;
     packed.derivation_kind = block.derivationKind;
   } else {

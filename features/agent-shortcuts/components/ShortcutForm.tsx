@@ -302,6 +302,8 @@ function emptyFormData(): ShortcutFormData {
     agentName: null,
     variableDefinitions: [],
     contextSlots: [],
+    surfaceName: null,
+    valueMappings: null,
     enabledFeatures: [],
     scopeMappings: null,
     contextMappings: null,
@@ -479,6 +481,42 @@ export function ShortcutForm({
 
   const body = (
     <div className="space-y-4">
+      {/*
+        Plumbing-phase preview of the two new columns wired in Phase 1
+        (`surface_name`, `value_mappings`). Read-only and intentionally
+        ugly — the proper editor lands with the form rewrite.
+      */}
+      {(formData.surfaceName || formData.valueMappings) && (
+        <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 space-y-1.5 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">Surface binding</span>
+            <span className="text-[10px] text-muted-foreground">
+              (read-only preview)
+            </span>
+          </div>
+          {formData.surfaceName && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">surface_name:</span>
+              <span className="font-mono text-[11px] text-foreground">
+                {formData.surfaceName}
+              </span>
+            </div>
+          )}
+          {formData.valueMappings && (
+            <details className="text-[11px]">
+              <summary className="cursor-pointer text-muted-foreground">
+                value_mappings (
+                {Object.keys(formData.valueMappings).length} key
+                {Object.keys(formData.valueMappings).length === 1 ? "" : "s"})
+              </summary>
+              <pre className="mt-1.5 max-h-48 overflow-auto rounded bg-background px-2 py-1.5 text-[10px] text-foreground">
+                {JSON.stringify(formData.valueMappings, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
+
       {allowScopeEdit && onScopeChange && (
         <>
           <ShortcutScopePicker

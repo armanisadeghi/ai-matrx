@@ -149,6 +149,25 @@ export const CloudFolders = {
   TMP_TRANSCRIPTS: ".matrx-tmp/transcripts",
   /** Upload-in-progress staging (future use). */
   TMP_UPLOADS: ".matrx-tmp/uploads",
+
+  // ── System / infrastructure ────────────────────────────────────────────
+  // Owned and populated by the Python backend (not the user). These rows
+  // exist in `cld_files` / `cld_folders` so they have asset IDs, but they
+  // must NEVER appear in the user-facing tree.
+  //
+  // The Phase 1b/1c "SOCIAL_BASELINE" backfill (2026-05-16) created
+  // `cld_files` rows under `system-files/variants/<file_id>/<og|thumb|tiny|page1_url>.jpg`
+  // — three to four rows per source file. The cascade was cleaned up
+  // server-side on 2026-05-16 (migrations 012/013); the tree RPCs now
+  // exclude `parent_file_id IS NOT NULL` and `file_path LIKE
+  // 'system-files/%'`. The FE keeps `isSystemPath` as a defensive guard
+  // at every tree boundary (loadUserFileTree, loadFolderContents,
+  // realtime middleware). See from_python/UPDATES.md §9 (2026-05-16).
+
+  /** Root for backend-owned infrastructure files (variants, posters, etc.). */
+  SYSTEM_FILES: "system-files",
+  /** SOCIAL_BASELINE variant storage: og.jpg / thumb.jpg / tiny.jpg / page1_url.jpg. */
+  SYSTEM_VARIANTS: "system-files/variants",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -210,6 +229,36 @@ export function folderForAgentBlock(blockId: string): string {
 export function isHiddenFolder(folderPath: string): boolean {
   return (
     folderPath === CloudFolders.TMP || folderPath.startsWith(".matrx-tmp/")
+  );
+}
+
+/**
+ * True if `path` (a `cld_files.file_path` or `cld_folders.folder_path`)
+ * points at a backend-owned system / infrastructure row that must NEVER
+ * surface in the user's tree.
+ *
+ * Today this covers:
+ *  - `system-files` / `system-files/...` — backfilled SOCIAL_BASELINE
+ *    variant rows (og/thumb/tiny/page1_url) and their per-source-file
+ *    folders. ~3–4 rows per uploaded image, ~10k+ for active accounts.
+ *  - `.matrx-tmp` / `.matrx-tmp/...` — ephemeral staging the user
+ *    shouldn't see or manage.
+ *
+ * The predicate is intentionally path-based (not `derivation_kind` or
+ * `parent_file_id`) because the Python backfill didn't populate those
+ * fields on variant rows. Once they do, we'll add data-shape signals
+ * here and drop the path heuristic.
+ *
+ * Pass either a file path or a folder path — both follow the same
+ * convention (system paths are prefix-rooted).
+ */
+export function isSystemPath(path: string | null | undefined): boolean {
+  if (!path) return false;
+  return (
+    path === CloudFolders.SYSTEM_FILES ||
+    path.startsWith(`${CloudFolders.SYSTEM_FILES}/`) ||
+    path === CloudFolders.TMP ||
+    path.startsWith(`${CloudFolders.TMP}/`)
   );
 }
 

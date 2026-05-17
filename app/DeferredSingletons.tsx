@@ -172,17 +172,24 @@ export default function DeferredSingletons() {
     );
   });
 
-  // Pre-warm the full hierarchy (orgs, projects, tasks, scopes) once per
-  // session. `fetchFullContext()` is idempotent — it short-circuits if
-  // data is already loading or loaded. Lazy-imported so the thunk's dep
-  // graph (supabase client, 5 hierarchy/scope slice action creators,
-  // error utils) stays out of this file's per-entry compile graph.
-  useIdleTask("fetch-full-context", 1, async () => {
+  // Pre-warm the scope tree (features/scopes) on idle. This is the ONLY
+  // boot-time fetch in the scope/context system. `ensureScopeTree` is
+  // idempotent — status === "ready" short-circuits and in-flight is
+  // deduped inside the thunk.
+  //
+  // The legacy `fetch-full-context` idle task (which fired
+  // `fetchFullContext()` from features/agent-context/redux/hierarchyThunks)
+  // was removed here on 2026-05-16 as part of Phase 2 of the scopes
+  // rebuild. Consumers of the legacy hierarchy/projects/tasks slices that
+  // still need data fetch it on demand via `useNavTree()` — that hook is
+  // idempotent and self-fetches when `status === "idle"`. See
+  // features/scopes/FEATURE.md §"Current work".
+  useIdleTask("ensure-scope-tree", 1, async () => {
     if (!user?.id) return;
-    const { fetchFullContext } =
-      await import("@/features/agent-context/redux/hierarchyThunks");
+    const { ensureScopeTree } =
+      await import("@/features/scopes/redux/thunks/ensureScopeTree");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    dispatch(fetchFullContext() as any);
+    dispatch(ensureScopeTree() as any);
   });
 
   // Register the blob-cache Service Worker — Layer 2½ of the 3-tier byte

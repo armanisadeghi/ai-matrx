@@ -15,6 +15,8 @@ import {
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 
+const EMPTY_MCP_TOOLS: McpToolSchema[] = [];
+
 // ─── useMcpCatalog ───────────────────────────────────────────────────────────
 
 /**
@@ -55,7 +57,7 @@ export function useMcpServerTools(serverId: string | null) {
     serverId ? selectMcpServerDiscovery(state, serverId) : null,
   );
   const tools = useAppSelector((state) =>
-    serverId ? selectMcpServerTools(state, serverId) : [],
+    serverId ? selectMcpServerTools(state, serverId) : EMPTY_MCP_TOOLS,
   );
 
   const isConnected = server?.connectionStatus === "connected";

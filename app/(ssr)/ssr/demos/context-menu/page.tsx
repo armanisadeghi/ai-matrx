@@ -181,7 +181,7 @@ export default function ContextMenuHubPage() {
             </li>
             <li>
               Surface manifests:{" "}
-              <Code>features/tool-registry/surfaces/manifests/registry.ts</Code>
+              <Code>features/surfaces/manifests/registry.ts</Code>
             </li>
             <li>
               Page registry (edit to add a card):{" "}

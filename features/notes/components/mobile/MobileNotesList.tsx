@@ -1,14 +1,19 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { FolderOpen, Clock, Tag, Plus } from 'lucide-react';
-import { useNotesRedux } from '../../hooks/useNotesRedux';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { selectOrganizationId, selectProjectId, selectTaskId, selectScopeSelectionsContext } from '@/features/agent-context/redux/appContextSlice';
-import { fetchEntitiesByScopes } from '@/features/agent-context/redux/scope/scopeAssignmentsSlice';
+import React, { useState, useMemo } from "react";
+import { FolderOpen, Clock, Tag, Plus } from "lucide-react";
+import { useNotesRedux } from "../../hooks/useNotesRedux";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectOrganizationId,
+  selectProjectId,
+  selectTaskId,
+  selectScopeSelectionsContext,
+} from "@/lib/redux/slices/appContextSlice";
+import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
-import NotesFilterSheet, { NotesFilterState } from './NotesFilterSheet';
-import type { Note } from '@/features/notes/types';
+import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
+import type { Note } from "@/features/notes/types";
 
 interface MobileNotesListProps {
   onNoteSelect: (note: Note) => void;
@@ -16,11 +21,14 @@ interface MobileNotesListProps {
   onFiltersChange: (filters: NotesFilterState) => void;
 }
 
-export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange }: MobileNotesListProps) {
-  const dispatch = useAppDispatch();
+export default function MobileNotesList({
+  onNoteSelect,
+  filters,
+  onFiltersChange,
+}: MobileNotesListProps) {
   const { notes, findOrCreateEmptyNote, isLoading } = useNotesRedux();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Active context for filtering
@@ -34,37 +42,27 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
     () => Object.values(scopeSelections).filter(Boolean) as string[],
     [scopeSelections],
   );
-  const [scopeFilteredNoteIds, setScopeFilteredNoteIds] = useState<Set<string> | null>(null);
-  const lastScopeKey = useRef('');
-
-  useEffect(() => {
-    const key = [...activeScopeIds].sort().join(',');
-    if (key === lastScopeKey.current) return;
-    lastScopeKey.current = key;
-    if (activeScopeIds.length === 0) {
-      setScopeFilteredNoteIds(null);
-      return;
-    }
-    dispatch(
-      fetchEntitiesByScopes({ scope_ids: activeScopeIds, entity_type: 'note', match_all: false }),
-    )
-      .unwrap()
-      .then((entities) => setScopeFilteredNoteIds(new Set(entities.map((e) => e.entity_id))))
-      .catch(() => setScopeFilteredNoteIds(null));
-  }, [dispatch, activeScopeIds]);
+  const { entityIds: scopeFilteredNoteIds } = useEntitiesByScopes({
+    scopeIds: activeScopeIds,
+    entityType: "note",
+    matchAll: false,
+  });
 
   // Deduplicated + context-filtered notes
   const uniqueNotes = useMemo(() => {
     const seen = new Set<string>();
-    let result = notes.filter(n => {
+    let result = notes.filter((n) => {
       if (seen.has(n.id)) return false;
       seen.add(n.id);
       return true;
     });
-    if (activeOrgId) result = result.filter(n => n.organization_id === activeOrgId);
-    if (scopeFilteredNoteIds) result = result.filter(n => scopeFilteredNoteIds.has(n.id));
-    if (activeProjectId) result = result.filter(n => n.project_id === activeProjectId);
-    if (activeTaskId) result = result.filter(n => n.task_id === activeTaskId);
+    if (activeOrgId)
+      result = result.filter((n) => n.organization_id === activeOrgId);
+    if (scopeFilteredNoteIds)
+      result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
+    if (activeProjectId)
+      result = result.filter((n) => n.project_id === activeProjectId);
+    if (activeTaskId) result = result.filter((n) => n.task_id === activeTaskId);
     return result;
   }, [notes, activeOrgId, activeProjectId, activeTaskId]);
 
@@ -72,44 +70,49 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
   const filteredNotes = useMemo(() => {
     let result = uniqueNotes;
 
-    if (filters.folder !== 'all') {
-      result = result.filter(n => (n.folder_name || 'Draft') === filters.folder);
+    if (filters.folder !== "all") {
+      result = result.filter(
+        (n) => (n.folder_name || "Draft") === filters.folder,
+      );
     }
 
     if (filters.tags.length > 0) {
-      result = result.filter(n =>
-        filters.tags.every(tag => n.tags?.includes(tag))
+      result = result.filter((n) =>
+        filters.tags.every((tag) => n.tags?.includes(tag)),
       );
     }
 
     if (filters.sharedOnly) {
-      result = result.filter(n => n.shared_with && Object.keys(n.shared_with).length > 0);
+      result = result.filter(
+        (n) => n.shared_with && Object.keys(n.shared_with).length > 0,
+      );
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(n =>
-        n.label.toLowerCase().includes(q) ||
-        n.content.toLowerCase().includes(q) ||
-        n.tags?.some(t => t.toLowerCase().includes(q))
+      result = result.filter(
+        (n) =>
+          n.label.toLowerCase().includes(q) ||
+          n.content.toLowerCase().includes(q) ||
+          n.tags?.some((t) => t.toLowerCase().includes(q)),
       );
     }
 
     return result.sort((a, b) => {
-      const aVal = a[filters.sortField] ?? '';
-      const bVal = b[filters.sortField] ?? '';
+      const aVal = a[filters.sortField] ?? "";
+      const bVal = b[filters.sortField] ?? "";
       const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      return filters.sortOrder === 'asc' ? cmp : -cmp;
+      return filters.sortOrder === "asc" ? cmp : -cmp;
     });
   }, [uniqueNotes, filters, searchQuery]);
 
   const handleCreateNote = async () => {
     try {
-      const folder = filters.folder === 'all' ? 'Draft' : filters.folder;
+      const folder = filters.folder === "all" ? "Draft" : filters.folder;
       const note = await findOrCreateEmptyNote(folder);
       if (note) onNoteSelect(note);
     } catch (error) {
-      console.error('Error creating note:', error);
+      console.error("Error creating note:", error);
     }
   };
 
@@ -117,22 +120,27 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
     const date = new Date(dateString);
     const now = new Date();
     const diffHrs = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    if (diffHrs < 24) return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    if (diffHrs < 168) return date.toLocaleDateString('en-US', { weekday: 'short' });
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diffHrs < 24)
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    if (diffHrs < 168)
+      return date.toLocaleDateString("en-US", { weekday: "short" });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   const getPreviewText = (content: string | null | undefined) => {
-    const stripped = (content ?? '').replace(/[#*_~`]/g, '').trim();
-    return stripped.split('\n')[0] || 'No content';
+    const stripped = (content ?? "").replace(/[#*_~`]/g, "").trim();
+    return stripped.split("\n")[0] || "No content";
   };
 
   const isFiltered =
-    filters.folder !== 'all' ||
+    filters.folder !== "all" ||
     filters.tags.length > 0 ||
     filters.sharedOnly ||
-    filters.sortField !== 'updated_at' ||
-    filters.sortOrder !== 'desc';
+    filters.sortField !== "updated_at" ||
+    filters.sortOrder !== "desc";
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
@@ -145,12 +153,14 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
         ) : filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
             <p className="text-sm">
-              {searchQuery || isFiltered ? 'No notes match your filters' : 'No notes yet — tap + to create one'}
+              {searchQuery || isFiltered
+                ? "No notes match your filters"
+                : "No notes yet — tap + to create one"}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-border/50">
-            {filteredNotes.map(note => (
+            {filteredNotes.map((note) => (
               <button
                 key={note.id}
                 onClick={() => onNoteSelect(note)}
@@ -158,7 +168,7 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
               >
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground mb-0.5 truncate">
-                    {note.label || 'Untitled Note'}
+                    {note.label || "Untitled Note"}
                   </h3>
                   <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2 leading-relaxed">
                     {getPreviewText(note.content)}
@@ -168,7 +178,7 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
                       <Clock size={10} />
                       <span>{formatDate(note.updated_at)}</span>
                     </div>
-                    {filters.folder === 'all' && note.folder_name && (
+                    {filters.folder === "all" && note.folder_name && (
                       <div className="flex items-center gap-1">
                         <FolderOpen size={10} />
                         <span>{note.folder_name}</span>
@@ -178,8 +188,10 @@ export default function MobileNotesList({ onNoteSelect, filters, onFiltersChange
                       <div className="flex items-center gap-1">
                         <Tag size={10} />
                         <span>
-                          {note.tags.slice(0, 2).join(', ')}
-                          {note.tags.length > 2 ? ` +${note.tags.length - 2}` : ''}
+                          {note.tags.slice(0, 2).join(", ")}
+                          {note.tags.length > 2
+                            ? ` +${note.tags.length - 2}`
+                            : ""}
                         </span>
                       </div>
                     )}

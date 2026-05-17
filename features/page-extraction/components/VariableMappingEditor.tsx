@@ -51,9 +51,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getManifest } from "@/features/tool-registry/surfaces/manifests/registry";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import { CONTENT_EXTRACTOR_SURFACE_NAME } from "@/features/page-extraction/constants";
-import type { SurfaceValue } from "@/features/tool-registry/surfaces/types";
+import type { SurfaceValue } from "@/features/surfaces/types";
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
 import type { ExtraExtractionInput } from "@/features/page-extraction/types";
 import type { PageExtractionJob } from "@/features/page-extraction/types";

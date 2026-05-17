@@ -51,10 +51,12 @@ import {
   selectScopeSelectionsContext,
   setOrganization,
   setScopeSelections,
-} from "@/features/agent-context/redux/appContextSlice";
-import { selectNavOrganizations } from "@/features/agent-context/redux/hierarchySlice";
-import { selectAllScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { selectAllScopes } from "@/features/agent-context/redux/scope/scopesSlice";
+} from "@/lib/redux/slices/appContextSlice";
+import {
+  selectAllScopeTypesFlat,
+  selectAllScopesFlat,
+  selectOrganizationsList,
+} from "@/features/scopes/redux/selectors/tree";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/utils/cn";
 
@@ -116,10 +118,10 @@ export default function TasksContextSidebar() {
 
   // Context (all orgs/scopes/projects, unfiltered)
   const orgId = useAppSelector(selectOrganizationId);
-  const orgs = useAppSelector(selectNavOrganizations);
+  const orgs = useAppSelector(selectOrganizationsList);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
-  const allScopeTypes = useAppSelector(selectAllScopeTypes);
-  const allScopes = useAppSelector(selectAllScopes);
+  const allScopeTypes = useAppSelector(selectAllScopeTypesFlat);
+  const allScopes = useAppSelector(selectAllScopesFlat);
 
   // Derived: which projects are valid under current filter (null = no filter)
   const validProjectIds = useAppSelector(selectValidProjectIds);

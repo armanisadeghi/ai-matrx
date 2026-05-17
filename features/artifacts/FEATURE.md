@@ -62,7 +62,7 @@ Streamed as `content_block` NDJSON events (see [`features/agents/docs/STREAMING_
 - `metadata` — type-specific (title, summary, schema version)
 - `content` — the structured payload
 - `version` — monotonic; each update increments
-- Scope columns per [`../scope-system/FEATURE.md`](../scope-system/FEATURE.md)
+- Scope columns per [`../scopes/FEATURE.md`](../scopes/FEATURE.md)
 - Social fields (share flag, reaction counts)
 
 **Type registry** — `canvas-block-meta.ts` maps `type` → React component + metadata. Adding a new artifact type means adding an entry here plus the custom component under `features/artifacts/custom-components/`.
@@ -124,7 +124,7 @@ Adding a new artifact type:
 - **Bidirectional interaction feeds back on NEXT turn**, never mutates the model in place. State changes are additive to `user_input`.
 - **App-state sync is explicit.** Artifacts are not automatically backed by real app tables. Explicit conversions (task list → tasks) are one-way and user-initiated.
 - **Version rows are never overwritten.** Each update = new row. Previous versions remain browseable.
-- **Scope on canvas rows follows the project multi-scope convention.** See [`../scope-system/FEATURE.md`](../scope-system/FEATURE.md).
+- **Scope on canvas rows follows the project multi-scope convention.** See [`../scopes/FEATURE.md`](../scopes/FEATURE.md).
 - **Related but distinct:** Tool call visualization ([`../tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md)) is overlay UI around tool calls; artifacts are model-authored structured content. They share rendering infrastructure but aren't the same system.
 
 ---

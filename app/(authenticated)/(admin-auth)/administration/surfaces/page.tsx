@@ -1,4 +1,4 @@
-import { SurfacesContainer } from "@/features/tool-registry/surfaces/components/SurfacesContainer";
+import { SurfacesContainer } from "@/features/surfaces/components/SurfacesContainer";
 
 export const metadata = {
   title: "UI Surfaces | Tool Registry | Administration",

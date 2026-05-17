@@ -36,6 +36,9 @@ import {
   useOverlayOpen,
 } from "@/features/window-panels/hooks/useOverlay";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { DEFAULT_INSTANCE_ID } from "@/lib/redux/slices/overlaySlice";
+import { OverlayErrorBoundary } from "@/features/window-panels/diagnostics/OverlayErrorBoundary";
+import { OverlayRenderProbe } from "@/features/window-panels/diagnostics/OverlayRenderProbe";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyComponent = ComponentType<any>;
@@ -78,9 +81,15 @@ function SingletonSurface({ overlayId }: SurfaceProps) {
   const Component = getLazyComponent(entry);
 
   return (
-    <Suspense fallback={null}>
-      <Component isOpen={true} onClose={onClose} {...mergedProps} />
-    </Suspense>
+    <OverlayErrorBoundary overlayId={overlayId} instanceId={DEFAULT_INSTANCE_ID}>
+      <Suspense fallback={null}>
+        <Component isOpen={true} onClose={onClose} {...mergedProps} />
+        <OverlayRenderProbe
+          overlayId={overlayId}
+          instanceId={DEFAULT_INSTANCE_ID}
+        />
+      </Suspense>
+    </OverlayErrorBoundary>
   );
 }
 
@@ -93,18 +102,29 @@ function InstancedSurface({ overlayId }: SurfaceProps) {
   const defaults = entry.defaultData ?? {};
 
   return (
-    <Suspense fallback={null}>
+    <>
       {instances.map((inst) => (
-        <InstanceChild
+        <OverlayErrorBoundary
           key={inst.instanceId}
           overlayId={overlayId}
           instanceId={inst.instanceId}
-          Component={Component}
-          defaults={defaults}
-          data={inst.data}
-        />
+        >
+          <Suspense fallback={null}>
+            <InstanceChild
+              overlayId={overlayId}
+              instanceId={inst.instanceId}
+              Component={Component}
+              defaults={defaults}
+              data={inst.data}
+            />
+            <OverlayRenderProbe
+              overlayId={overlayId}
+              instanceId={inst.instanceId}
+            />
+          </Suspense>
+        </OverlayErrorBoundary>
       ))}
-    </Suspense>
+    </>
   );
 }
 

@@ -8,7 +8,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { computeDriftReport } from "@/features/tool-registry/surfaces/services/manifest-sync.service";
+import { computeDriftReport } from "@/features/surfaces/services/manifest-sync.service";
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";

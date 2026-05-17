@@ -24,8 +24,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useParams, useSearchParams } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -60,7 +59,7 @@ import {
   refreshNoteContent,
   saveNote,
 } from "../redux/thunks";
-import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   selectOtherUsersActive,
   selectActiveNoteEditedByOthers,
@@ -180,9 +179,10 @@ export function NotesView({ config, className }: NotesViewProps) {
 
   useEffect(() => {
     if (fetchedRef.current && orgId) {
-      // Pre-fetch scope types + scopes so ScopePicker and ScopeTagsDisplay work
-      dispatch(fetchScopeTypes(orgId));
-      dispatch(fetchScopes({ org_id: orgId }));
+      // Ensure the canonical scope tree is loaded so the new scope pickers
+      // (EntityScopeTagger / EntityTargetPicker) and the active-context
+      // surface have data. No-op if already `ready` (no refetch policy).
+      dispatch(ensureScopeTree());
     }
   }, [dispatch, orgId]);
 
@@ -237,8 +237,8 @@ export function NotesView({ config, className }: NotesViewProps) {
     try {
       const work: Promise<unknown>[] = [dispatch(fetchNotesList()).unwrap()];
       if (orgId) {
-        work.push(dispatch(fetchScopeTypes(orgId)).unwrap());
-        work.push(dispatch(fetchScopes({ org_id: orgId })).unwrap());
+        // Explicit user refresh → force-refresh the canonical scope tree.
+        work.push(dispatch(ensureScopeTree({ refresh: true })));
       }
       for (const noteId of openTabs ?? []) {
         work.push(dispatch(refreshNoteContent(noteId)).unwrap());

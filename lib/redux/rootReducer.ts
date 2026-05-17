@@ -112,7 +112,18 @@ import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
 
 import mcpReducer from "@/features/agents/redux/mcp/mcp.slice";
-import appContextReducer from "@/features/agent-context/redux/appContextSlice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
+
+// ─── New scopes module (features/scopes) ────────────────────────────
+// Mounted alongside the legacy scope slices until Phase 5 deletes them.
+// New code reads from these three keys exclusively. Legacy keys
+// (scopes, scopeTypes, scopeAssignments, scopeContext, contextItems,
+// scopeValues, templates) stay live for now so old consumers keep
+// rendering — they are slated for deletion in Phase 5.
+import scopesTreeReducer from "@/features/scopes/redux/scopesSlice";
+import contextValuesReducer from "@/features/scopes/redux/contextValuesSlice";
+import scopeTemplatesReducer from "@/features/scopes/redux/templatesSlice";
+
 import hierarchyReducer from "@/features/agent-context/redux/hierarchySlice";
 import organizationsReducer from "@/features/agent-context/redux/organizationsSlice";
 import projectsReducer from "@/features/agent-context/redux/projectsSlice";
@@ -133,11 +144,14 @@ import { default as instanceUserInputReducer } from "@/features/agents/redux/exe
 import { default as conversationsReducer } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { default as activeRequestsReducer } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { default as observabilityReducer } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { default as contextStateReducer } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
 import { default as observationalMemoryReducer } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
 import { cacheBypassReducer } from "@/features/agents/redux/execution-system/message-crud/cache-bypass.slice";
 import { default as messagesReducer } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { default as conversationFocusReducer } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { surfacesReducer } from "@/features/agents/redux/surfaces/surfaces.slice";
+import { surfacesCatalogReducer } from "@/features/surfaces/redux/surfacesCatalogSlice";
+import { agentSurfaceBindingsReducer } from "@/features/surfaces/redux/agentSurfaceBindingsSlice";
 import agentAssistantMarkdownDraftReducer from "@/features/agents/redux/agent-assistant-markdown-draft.slice";
 import { default as netRequestsReducer } from "@/lib/redux/net/netRequestsSlice";
 import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
@@ -287,6 +301,14 @@ export const slimReducerMap = {
 
   appContext: appContextReducer,
 
+  // ─── features/scopes (new module) ──────────────────────────────────
+  // Phase 5 will delete the legacy `scopes`, `scopeTypes`, `scopeAssignments`,
+  // `scopeContext`, `contextItems`, `scopeValues`, and `templates` keys below
+  // and the new `scopesTree` can be renamed to `scopes` at that point.
+  scopesTree: scopesTreeReducer,
+  contextValues: contextValuesReducer,
+  scopeTemplates: scopeTemplatesReducer,
+
   hierarchy: hierarchyReducer,
 
   organizations: organizationsReducer,
@@ -321,6 +343,7 @@ export const slimReducerMap = {
   netHealth: netHealthReducer,
   messages: messagesReducer,
   observability: observabilityReducer,
+  contextState: contextStateReducer,
 
   observationalMemory: observationalMemoryReducer,
 
@@ -328,6 +351,10 @@ export const slimReducerMap = {
 
   conversationFocus: conversationFocusReducer,
   surfaces: surfacesReducer,
+  // features/surfaces module — catalog + bindings (unrelated to the
+  // navigation registry above, which is misnamed; we'll rename it later).
+  surfacesCatalog: surfacesCatalogReducer,
+  agentSurfaceBindings: agentSurfaceBindingsReducer,
   agentAssistantMarkdownDraft: agentAssistantMarkdownDraftReducer,
 
   mcp: mcpReducer,

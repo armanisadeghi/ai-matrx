@@ -261,6 +261,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
     case "video_output": {
       // Same dual-shape handling as `audio_output`. See that case.
+      // Phase 1c: matrx-owned videos now carry `posterUrl` — the
+      // browser displays a real frame as the `<video>` poster before
+      // playback instead of a black square.
       const sd = (block.serverData ?? {}) as Record<string, unknown>;
       const url =
         (sd.cdnUrl as string | undefined) ??
@@ -276,6 +279,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             (sd.mimeType as string | undefined) ??
             (sd.mime_type as string | undefined)
           }
+          posterUrl={
+            (sd.posterUrl as string | undefined) ??
+            (sd.poster_url as string | undefined)
+          }
         />
       );
     }
@@ -288,9 +295,17 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // BlockComponents above). For now we no-op to avoid flashing a
       // broken card — the data is preserved on the render block and a
       // dedicated renderer can pick it up when it ships.
+      //
+      // Phase 1c provides:
+      //   - DocumentBlock.page1Url — full-res page 1 JPEG (~1200×1700)
+      //     for PDF previews. A future <DocumentBlockInline> can bind
+      //     this directly via <img> for a real reading preview.
+      //   - VideoBlock.posterUrl — wired through the video_output case
+      //     above for AI-generated videos.
+      //
       // TODO: route to a UnifiedMediaBlockRenderer that dispatches on
-      // `block.serverData.kind` (document → DocumentPreview, youtube →
-      // YouTubeEmbed) once those components exist.
+      // `block.serverData.kind` (document → DocumentPreview using
+      // `page1Url`, youtube → YouTubeEmbed using `videoId`).
       return null;
     }
 

@@ -1,35 +1,27 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import { Plus, X, Search, Check, Folder } from "lucide-react";
-import * as icons from "lucide-react";
-import { fetchScopeTypes, selectScopeTypesLoading } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes, selectScopesLoading } from "@/features/agent-context/redux/scope/scopesSlice";
-import { fetchEntityScopes, setEntityScopes, selectScopeIdsForEntity } from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
-import { selectEntityScopesWithLabels, selectScopePickerOptions } from "@/features/agent-context/redux/scope/selectors";
-import type { ScopePickerOption } from "@/features/agent-context/redux/scope/types";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+// TaskScopeTags — chip-style scope tagger for a single task. Renders the
+// task's currently-assigned scopes as removable colored pills with a
+// "+ Add tag" popover for new assignments. Persists via the canonical
+// `useEntityScopes` hook (features/scopes), so this file never reads
+// `ctx_scope_assignments` directly and never touches `appContextSlice`.
+
+import { useMemo, useState } from "react";
+import { Check, Plus, Search, X } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import {
+  makeSelectScopeTypesForOrg,
+  selectTreeStatus,
+} from "@/features/scopes/redux/selectors/tree";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { cn } from "@/utils/cn";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string | undefined): LucideIcon {
-  if (!name) return Folder;
-  const pascal = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascal];
-  return Icon ?? Folder;
-}
 
 interface TaskScopeTagsProps {
   taskId: string;
@@ -42,119 +34,119 @@ interface TaskScopeTagsProps {
  *
  * Renders assigned scopes as removable colored pills with a "+ Add" chip that
  * opens a searchable popover grouped by scope type. Clicking a scope
- * immediately dispatches `setEntityScopes` so Redux + the list pane reflect
- * the change instantly — no save step required.
+ * immediately persists via `setScopes` from `useEntityScopes`.
  *
- * Respects `max_assignments_per_entity` per scope type (e.g., Client = 1).
+ * Respects `max_assignments_per_entity` per scope type (default: 1 per type).
  */
 export default function TaskScopeTags({
   taskId,
   orgId,
   className,
 }: TaskScopeTagsProps) {
-  const dispatch = useAppDispatch();
+  useScopeTree();
+  const treeStatus = useAppSelector(selectTreeStatus);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const hasFetched = useRef<string>("");
 
-  const assigned = useAppSelector((s) =>
-    selectEntityScopesWithLabels(s, "task", taskId),
+  const { scopeIds, setScopes } = useEntityScopes({
+    entityType: "task",
+    entityId: taskId,
+    organizationId: orgId,
+  });
+
+  const selectScopeTypesForOrg = useMemo(
+    () => makeSelectScopeTypesForOrg(),
+    [],
   );
-  const currentIds = useAppSelector((s) =>
-    selectScopeIdsForEntity(s, "task", taskId),
-  );
-  const pickerOptions = useAppSelector((s) =>
-    selectScopePickerOptions(s, orgId),
-  );
-  const typesLoading = useAppSelector(selectScopeTypesLoading);
-  const scopesLoading = useAppSelector(selectScopesLoading);
+  const scopeTypes = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
 
-  useEffect(() => {
-    const key = `${orgId}:${taskId}`;
-    if (hasFetched.current === key) return;
-    hasFetched.current = key;
-    dispatch(fetchScopeTypes(orgId));
-    dispatch(fetchScopes({ org_id: orgId }));
-    dispatch(fetchEntityScopes({ entity_type: "task", entity_id: taskId }));
-  }, [dispatch, orgId, taskId]);
+  const selectedSet = useMemo(() => new Set(scopeIds), [scopeIds]);
 
-  const selectedSet = useMemo(() => new Set(currentIds), [currentIds]);
+  // ─── Build assigned-tag list with type metadata ───────────────────────
+  const assignedTags = useMemo(() => {
+    const tags: Array<{
+      scope_id: string;
+      scope_name: string;
+      type_id: string;
+      type_color: string;
+      type_icon: string;
+    }> = [];
+    for (const t of scopeTypes) {
+      for (const s of t.scopes) {
+        if (selectedSet.has(s.id)) {
+          tags.push({
+            scope_id: s.id,
+            scope_name: s.name,
+            type_id: t.id,
+            type_color: t.color,
+            type_icon: t.icon,
+          });
+        }
+      }
+    }
+    return tags;
+  }, [scopeTypes, selectedSet]);
 
-  const commit = (nextIds: string[]) => {
-    dispatch(
-      setEntityScopes({
-        entity_type: "task",
-        entity_id: taskId,
-        scope_ids: nextIds,
-      }),
-    );
-  };
+  // ─── Filtered groups for the popover ──────────────────────────────────
+  const filteredGroups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return scopeTypes
+      .map((t) => ({
+        ...t,
+        scopes: q
+          ? t.scopes.filter((s) => s.name.toLowerCase().includes(q))
+          : t.scopes,
+      }))
+      .filter((t) => t.scopes.length > 0);
+  }, [scopeTypes, search]);
 
-  const toggle = (scopeId: string, group: ScopePickerOption) => {
+  // ─── Toggle handlers ──────────────────────────────────────────────────
+  const toggle = (scopeId: string, type: (typeof scopeTypes)[number]) => {
     const next = new Set(selectedSet);
     if (next.has(scopeId)) {
       next.delete(scopeId);
     } else {
-      if (group.max_assignments !== null) {
-        const inGroup = group.options.filter((o) => next.has(o.value)).length;
-        if (inGroup >= group.max_assignments) {
-          // Replace the existing one in this group
-          for (const o of group.options) next.delete(o.value);
+      const max = type.max_assignments_per_entity;
+      if (max !== null && max !== undefined) {
+        const inGroup = type.scopes.filter((s) => next.has(s.id)).length;
+        if (inGroup >= max) {
+          for (const s of type.scopes) next.delete(s.id);
         }
       }
       next.add(scopeId);
     }
-    commit(Array.from(next));
+    void setScopes(Array.from(next));
   };
 
   const removeTag = (scopeId: string) => {
     const next = new Set(selectedSet);
     next.delete(scopeId);
-    commit(Array.from(next));
+    void setScopes(Array.from(next));
   };
-
-  const filteredGroups = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return pickerOptions
-      .map((g) => ({
-        ...g,
-        options: q
-          ? g.options.filter((o) => o.label.toLowerCase().includes(q))
-          : g.options,
-      }))
-      .filter((g) => g.options.length > 0);
-  }, [pickerOptions, search]);
-
-  const loading = typesLoading || scopesLoading;
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-      {assigned.map((label) => {
-        const Icon = resolveIcon(label.type_icon);
-        return (
-          <span
-            key={label.assignment_id}
-            className="group inline-flex items-center gap-1 h-6 pl-1.5 pr-0.5 rounded-full border text-[11px] font-medium transition-colors"
-            style={{
-              borderColor: label.type_color || undefined,
-              color: label.type_color || undefined,
-              backgroundColor: label.type_color
-                ? `${label.type_color}1a`
-                : undefined,
-            }}
+      {assignedTags.map((tag) => (
+        <span
+          key={tag.scope_id}
+          className="group inline-flex items-center gap-1 h-6 pl-1.5 pr-0.5 rounded-full border text-[11px] font-medium transition-colors"
+          style={{
+            borderColor: tag.type_color || undefined,
+            color: tag.type_color || undefined,
+            backgroundColor: tag.type_color ? `${tag.type_color}1a` : undefined,
+          }}
+        >
+          <DynamicIcon name={tag.type_icon} className="w-3 h-3" />
+          <span className="truncate max-w-[140px]">{tag.scope_name}</span>
+          <button
+            onClick={() => removeTag(tag.scope_id)}
+            className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-current/10 transition-colors"
+            aria-label={`Remove ${tag.scope_name}`}
           >
-            <Icon className="w-3 h-3" />
-            <span className="truncate max-w-[140px]">{label.scope_name}</span>
-            <button
-              onClick={() => removeTag(label.scope_id)}
-              className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-current/10 transition-colors"
-              aria-label={`Remove ${label.scope_name}`}
-            >
-              <X className="w-2.5 h-2.5" />
-            </button>
-          </span>
-        );
-      })}
+            <X className="w-2.5 h-2.5" />
+          </button>
+        </span>
+      ))}
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -187,7 +179,7 @@ export default function TaskScopeTags({
             />
           </div>
           <div className="max-h-80 overflow-y-auto py-1">
-            {loading && filteredGroups.length === 0 ? (
+            {treeStatus === "loading" && filteredGroups.length === 0 ? (
               <p className="text-center text-xs text-muted-foreground py-4">
                 Loading scopes...
               </p>
@@ -197,33 +189,32 @@ export default function TaskScopeTags({
               </p>
             ) : (
               filteredGroups.map((group) => {
-                const Icon = resolveIcon(group.icon);
-                const inGroup = group.options.filter((o) =>
-                  selectedSet.has(o.value),
+                const inGroup = group.scopes.filter((s) =>
+                  selectedSet.has(s.id),
                 ).length;
                 return (
-                  <div key={group.type_id} className="mb-0.5">
+                  <div key={group.id} className="mb-0.5">
                     <div className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      <Icon
+                      <DynamicIcon
+                        name={group.icon}
+                        color={group.color ?? undefined}
                         className="w-3 h-3"
-                        style={
-                          group.color ? { color: group.color } : undefined
-                        }
                       />
-                      <span>{group.label}</span>
-                      {group.max_assignments !== null && (
-                        <span className="ml-auto text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70">
-                          {inGroup}/{group.max_assignments}
-                        </span>
-                      )}
+                      <span>{group.label_plural}</span>
+                      {group.max_assignments_per_entity !== null &&
+                        group.max_assignments_per_entity !== undefined && (
+                          <span className="ml-auto text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70">
+                            {inGroup}/{group.max_assignments_per_entity}
+                          </span>
+                        )}
                     </div>
-                    {group.options.map((opt) => {
-                      const isSelected = selectedSet.has(opt.value);
+                    {group.scopes.map((opt) => {
+                      const isSelected = selectedSet.has(opt.id);
                       return (
                         <button
-                          key={opt.value}
+                          key={opt.id}
                           type="button"
-                          onClick={() => toggle(opt.value, group)}
+                          onClick={() => toggle(opt.id, group)}
                           className={cn(
                             "w-full flex items-center gap-2 px-3 py-1 text-xs transition-colors",
                             isSelected
@@ -250,7 +241,7 @@ export default function TaskScopeTags({
                             {isSelected && <Check className="w-2.5 h-2.5" />}
                           </span>
                           <span className="truncate text-left flex-1">
-                            {opt.label}
+                            {opt.name}
                           </span>
                         </button>
                       );

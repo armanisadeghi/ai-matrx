@@ -223,6 +223,24 @@ const parallelSliceRestriction = {
     ],
 };
 
+// features/scopes is the single owner of every `ctx_*` table. The
+// chokepoint is `features/scopes/service/scopesService.ts` — every other
+// file in the repo must go through that service (or a thunk/hook layered
+// on top of it). The selector catches `supabase.from('ctx_anything')`
+// calls anywhere outside the allowlist below.
+//
+// This is the "scopesService is the sole Supabase chokepoint" invariant
+// from features/scopes/FEATURE.md. Violations of this rule are how the
+// scope system rotted into 8 overlapping slices last time.
+const scopesChokepointSyntaxRestrictions = [
+    {
+        selector:
+            "CallExpression[callee.property.name='from'][arguments.0.type='Literal'][arguments.0.value=/^ctx_/]",
+        message:
+            "Direct supabase.from('ctx_*') is banned. Every ctx_* table goes through @/features/scopes/service/scopesService (mounted via scope thunks). See features/scopes/FEATURE.md.",
+    },
+];
+
 // All file flows must funnel through @/features/files. ESLint cannot
 // fully prevent direct supabase.storage member access (no AST rule for that
 // without a custom plugin), but `no-restricted-syntax` catches the canonical
@@ -369,6 +387,8 @@ export default [
                 // virtue of having actionable messages; eslint severity is shared
                 // across the array, so we keep them in the same rule slot.
                 ...fileHandlerSyntaxRestrictions,
+                // features/scopes chokepoint — only scopesService.ts may touch ctx_* tables.
+                ...scopesChokepointSyntaxRestrictions,
             ],
         },
     },
@@ -409,6 +429,61 @@ export default [
         files: ['app/(a)/files/**/*'],
         rules: {
             'no-restricted-imports': 'off',
+        },
+    },
+    // ─── features/scopes chokepoint allowlist ─────────────────────────
+    //
+    // The `scopesChokepointSyntaxRestrictions` rule bans `.from('ctx_*')`
+    // calls globally. This override re-enables them for:
+    //   1. The single permanent chokepoint:
+    //        features/scopes/service/scopesService.ts
+    //   2. Legacy modules slated for deletion in Phase 5
+    //      (features/scopes/FEATURE.md §"Retirement inventory").
+    //
+    // Adding a new path here is a Doctrine violation. Adding a new ctx_*
+    // table access in a feature consumer is the bug — route through the
+    // service instead. Remove paths from this list as Phase 5 consumes
+    // them; the ban must shrink toward the single permanent chokepoint
+    // by the end of the rebuild.
+    {
+        files: [
+            // Permanent chokepoint.
+            'features/scopes/service/scopesService.ts',
+            // Phase-5 retirement queue — these files will be deleted or
+            // rewritten to go through scopesService.
+            'features/agent-context/service/contextService.ts',
+            'features/agent-context/service/contextVariableService.ts',
+            'features/agent-context/service/hierarchyService.ts',
+            'features/agent-context/hooks/useContextItems.ts',
+            'features/agent-context/redux/organizationsSlice.ts',
+            'features/agent-context/redux/projectsSlice.ts',
+            'features/agent-context/redux/tasksSlice.ts',
+            'features/scope-system/components/AddScopeModal.tsx',
+            'features/scope-system/components/EditScopeTypeSheet.tsx',
+            'features/scope-system/redux/contextItemsSlice.ts',
+            // Consumer-feature ctx_* writes that need their own thunk
+            // re-routing (already documented in §Retirement inventory).
+            'features/notes/redux/thunks.ts',
+            'features/projects/service.ts',
+            'features/tasks/services/taskService.ts',
+            'features/tasks/services/projectService.ts',
+            'lib/redux/prompt-execution/thunks/fetchScopedVariablesThunk.ts',
+            // Admin/route surfaces that read ctx_* until their migration ships.
+            'app/(a)/organizations/[orgId]/page.tsx',
+            'app/(a)/organizations/[orgId]/tasks/page.tsx',
+            'app/(a)/invitations/project/accept/[token]/page.tsx',
+            'app/api/projects/invitations/resend/route.ts',
+            'app/api/projects/invite/route.ts',
+            'app/api/cron/due-date-reminders/route.ts',
+            'app/api/sandbox/route.ts',
+        ],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                // scopesChokepointSyntaxRestrictions intentionally omitted.
+            ],
         },
     },
     // Tier-4 ring-fence — these files still import from

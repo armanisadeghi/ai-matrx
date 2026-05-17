@@ -13,11 +13,23 @@ import {
 // Legacy chat debug panel — stubbed during Redux unification. Selectors
 // return empty data; the panel still mounts but shows nothing for chat.
 import type { RootState } from "@/lib/redux/store";
+
+const EMPTY_MESSAGES: unknown[] = [];
+const EMPTY_TOOL_CALLS: Record<string, unknown> = {};
+const STUB_SELECTED_AGENT_TOOLS: string[] = [];
+const STUB_SELECTED_AGENT = {
+  promptId: "",
+  name: "",
+  tools: STUB_SELECTED_AGENT_TOOLS,
+  configFetched: false,
+};
+
 const selectSession = (
   _state: RootState,
   _sessionId: string,
 ): Record<string, unknown> | undefined => undefined;
-const selectMessages = (_state: RootState, _sessionId: string): unknown[] => [];
+const selectMessages = (_state: RootState, _sessionId: string): unknown[] =>
+  EMPTY_MESSAGES;
 const selectUIState = (
   _state: RootState,
   _sessionId: string,
@@ -27,7 +39,7 @@ const selectIsStreaming = (_state: RootState, _sessionId: string): boolean =>
 const selectAllToolCalls = (
   _state: RootState,
   _sessionId: string,
-): Record<string, unknown> => ({});
+): Record<string, unknown> => EMPTY_TOOL_CALLS;
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -48,7 +60,7 @@ const selectSelectedAgent = (
   name: string;
   tools?: string[];
   configFetched?: boolean;
-} => ({ promptId: "", name: "", tools: [], configFetched: false });
+} => STUB_SELECTED_AGENT;
 
 const selectIsBlockMode = (_state: RootState): boolean => false;
 
@@ -99,7 +111,7 @@ export default function ChatDebug() {
     sessionId ? selectSession(s, sessionId) : undefined,
   );
   const messages = useAppSelector((s) =>
-    sessionId ? selectMessages(s, sessionId) : [],
+    sessionId ? selectMessages(s, sessionId) : EMPTY_MESSAGES,
   );
   const uiState = useAppSelector((s) =>
     sessionId ? selectUIState(s, sessionId) : null,
@@ -108,7 +120,7 @@ export default function ChatDebug() {
     sessionId ? selectIsStreaming(s, sessionId) : false,
   );
   const toolCalls = useAppSelector((s) =>
-    sessionId ? selectAllToolCalls(s, sessionId) : [],
+    sessionId ? selectAllToolCalls(s, sessionId) : EMPTY_TOOL_CALLS,
   );
 
   const chatCalls = recentCalls.filter(

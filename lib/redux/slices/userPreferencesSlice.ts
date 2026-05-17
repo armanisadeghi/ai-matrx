@@ -506,7 +506,8 @@ export const initializeUserPreferencesState = (
       maxConcurrentAgents: 4,
       workspaceName: "",
       welcomeMessage: "",
-      accentColor: "#3b82f6",
+      // Tailwind color family name (lowercase) — paired with `TailwindColorPicker`.
+      accentColor: "blue",
       enabledRegistries: [],
       quickToggleShortcut: null,
     },

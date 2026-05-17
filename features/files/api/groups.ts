@@ -3,10 +3,9 @@
  *
  * User groups (for bulk permissions).
  *
- * Backend contract: features/files/cld_files_frontend.md §6 (Groups).
+ * Backend contract: see features/files/from_python/UPDATES.md §3 (Groups).
  *
- * DB tables: cld_user_groups + cld_user_group_members. (The Python doc
- * uses `cld_file_groups` naming; see PYTHON_TEAM_COMMS.md.)
+ * DB tables: cld_user_groups + cld_user_group_members.
  */
 
 import {

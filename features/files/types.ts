@@ -177,6 +177,30 @@ export interface CloudFile {
    * URL (which the server returns as a CDN URL when applicable).
    */
   publicUrl: string | null;
+  /**
+   * Backend-rendered thumbnail URL (Phase 1b universal thumbnails). Set
+   * for **every** uploaded file regardless of MIME — Python now renders
+   * SOCIAL_BASELINE variants (og_url / thumbnail_url / tiny_url) for
+   * images, PDFs (page 1), videos (10%-mark frame), audio (waveform),
+   * and even archives / text / unknown mimes (mime-family icon PNGs).
+   *
+   * Populated by `apiFileRecordToCloudFile` from `FileRecord.thumbnail_url`
+   * — the REST response field. The server resolves this from the
+   * variants store at request time (post-Phase-1b the legacy
+   * `cld_files.thumbnail_url` column is dropped).
+   *
+   * `null` for rows coming in via the direct Supabase read path — the
+   * row doesn't carry resolved URLs. Those callers should fall back to
+   * `useFileAsset(fileId)` and read `asset.variants["thumbnail_url"].url`,
+   * or `MediaThumbnail` will fall back to the category icon.
+   *
+   * Phase 1c: PDFs additionally get `Asset.variants["page1_url"]`
+   * (page 1 at 150 DPI ~1200×1700) for full-page detail views, and
+   * videos get `Asset.variants["poster_url"]` (native-res frame) for
+   * the HTML5 `<video poster>` attribute. Those are separate from this
+   * `thumbnailUrl` field and require the asset fetch.
+   */
+  thumbnailUrl: string | null;
   /** Real S3-backed bytes vs. virtual Postgres-backed adapter row. */
   source: FileSource;
   /**

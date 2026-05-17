@@ -73,7 +73,7 @@ import {
   selectProjectId,
   selectTaskId,
   selectConversationId,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";

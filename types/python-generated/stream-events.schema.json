@@ -1757,30 +1757,6 @@
             "default": null,
             "title": "Derivation Kind"
           },
-          "thumbnail_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Url"
-          },
-          "thumbnail_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Uri"
-          },
           "external_url": {
             "anyOf": [
               {
@@ -2055,30 +2031,6 @@
             "default": null,
             "title": "Derivation Kind"
           },
-          "thumbnail_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Url"
-          },
-          "thumbnail_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Uri"
-          },
           "external_url": {
             "anyOf": [
               {
@@ -2352,30 +2304,6 @@
             ],
             "default": null,
             "title": "Derivation Kind"
-          },
-          "thumbnail_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Url"
-          },
-          "thumbnail_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Uri"
           },
           "external_url": {
             "anyOf": [
@@ -2663,30 +2591,6 @@
             ],
             "default": null,
             "title": "Derivation Kind"
-          },
-          "thumbnail_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Url"
-          },
-          "thumbnail_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Uri"
           },
           "external_url": {
             "anyOf": [
@@ -2983,30 +2887,6 @@
             ],
             "default": null,
             "title": "Derivation Kind"
-          },
-          "thumbnail_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Url"
-          },
-          "thumbnail_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Thumbnail Uri"
           },
           "external_url": {
             "anyOf": [

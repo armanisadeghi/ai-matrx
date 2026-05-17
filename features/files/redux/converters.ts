@@ -86,6 +86,11 @@ export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
     // direct DB reads (Supabase realtime, server-side SSR), callers
     // should fall back to useFileSrc({ kind: "file_id", fileId }) when this is null.
     publicUrl: null,
+    // The DB no longer has a thumbnail_url column either (Phase 1b dropped
+    // it); resolved server-side from the variants store on the REST path.
+    // Direct-DB-read callers should fall back to `useFileAsset(fileId)`
+    // and read `asset.variants["thumbnail_url"].url`.
+    thumbnailUrl: null,
     source: { kind: "real" },
     // Dedup-pyramid columns from Phase 2.0. Null on rows uploaded before
     // the dedup consolidation script ran or on rows that have never been
@@ -132,6 +137,10 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     // CDN URL for visibility="public" files when the server has the CDN
     // feature enabled. Includes a ?v=<checksum[:8]> cache-buster.
     publicUrl: row.public_url ?? null,
+    // Phase 1b: backend-rendered thumbnail (every file gets one). The
+    // wire field is resolved server-side from the variants store now
+    // that `cld_files.thumbnail_url` column has been dropped.
+    thumbnailUrl: row.thumbnail_url ?? null,
     source: { kind: "real" },
     duplicateOfFileId: extras.duplicate_of_file_id ?? null,
     canonicalProcessedDocumentId:

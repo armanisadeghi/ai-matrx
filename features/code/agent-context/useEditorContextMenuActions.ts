@@ -193,8 +193,8 @@ export function useEditorContextMenuActions({
             openOverlay({
               overlayId: "agentRunWindow",
               data: {
-                agentId: defaultAgentId ?? null,
-                selectedConversationId: null,
+                initialAgentId: defaultAgentId ?? null,
+                initialSelectedConversationId: null,
               },
             }),
           );

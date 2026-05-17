@@ -166,8 +166,10 @@ export function fromImageOutputData(
       signedUrl: finalSignedUrl,
       downloadUrl,
       signedUrlExpiresAt,
-      thumbnailUrl: metaString(metadata, "thumbnail_url"),
-      thumbnailUri: metaString(metadata, "thumbnail_uri"),
+      // Phase 1b: thumbnails removed from MatrxImageBlock — the canonical
+      // source is `Asset.variants["thumbnail_url"].url` via GET /assets/{id}.
+      // For top-level listings, `CloudFile.thumbnailUrl` (lifted from
+      // `FileRecord.thumbnail_url`) is the FE-side cache of that resolved URL.
       parentFileId: metaString(metadata, "parent_file_id"),
       derivationKind: metaString(metadata, "derivation_kind"),
     };

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SectionToolbar } from "../SectionToolbar";
+import { SectionFooter } from "../SectionFooter";
 import { useRenderBlocks } from "../../hooks/useRenderBlocks";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { CategoryTreeNode } from "../../redux/skl/selectors";
@@ -96,6 +97,11 @@ export function RenderBlocksSection() {
           )}
         </div>
       </div>
+      <SectionFooter
+        description="Render blocks are structured LLM output templates that map 1:1 to React components across every surface."
+        learnMoreLabel="Learn more about render blocks"
+        learnMoreHref="#"
+      />
     </div>
   );
 }

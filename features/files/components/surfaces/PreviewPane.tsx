@@ -8,33 +8,25 @@
  * jump, an "Open in new tab" external link, and a Close (X) — or a Back
  * arrow when we're already sitting on the dedicated `/files/f/{id}` route.
  *
- * Why this exists separately from FilePreview:
- *   - FilePreview only renders the file's body (image, video, PDF, etc.).
- *   - This wrapper owns the header bar, navigation actions, and the escape
- *     hatch the user needs when triaging files quickly.
+ * The 7-tab strip + body region is shared with the dedicated full-page
+ * viewer (`SingleFileShell`) via `<FileTabsBody/>` — keeps the two
+ * surfaces from drifting in tab semantics or deep-link behavior.
  */
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
   Copy,
   Download,
-  Edit3,
   Expand,
   ExternalLink,
-  FileSearch,
-  History,
-  Info,
   Loader2,
-  Gem,
-  Atom,
   Maximize2,
   Minimize2,
-  Share2,
   X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -47,29 +39,12 @@ import {
 import { selectFileById } from "@/features/files/redux/selectors";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
-import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
-import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
-import { CloudFileInlineEditor } from "@/features/files/components/core/FileEditor/CloudFileInlineEditor";
 import { MoreHorizontal } from "lucide-react";
-import { PreviewErrorBoundary } from "./PreviewErrorBoundary";
-import { FileInfoTab } from "./FileInfoTab";
-import { DocumentTab } from "./DocumentTab";
-import { FileShareTab } from "./FileShareTab";
-import { AnalysisTab } from "@/features/file-analysis/tab/AnalysisTab";
 import { FileLineageChip } from "./FileLineageChip";
-import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
-
-type PreviewTab =
-  | "preview"
-  | "edit"
-  | "document"
-  | "analysis"
-  | "share"
-  | "versions"
-  | "info";
+import { FileTabsBody } from "./FileTabsBody";
 
 export interface PreviewPaneProps {
   fileId: string;
@@ -101,75 +76,12 @@ export function PreviewPane({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const actions = useFileActions(fileId);
-
-  // Citation deep-links: a search hit or chat reference can route to
-  // `/files/f/<id>?tab=document&page=12&chunk=<chunk_id>`. We read the
-  // params on mount and forward them into <DocumentTab/>.
-  const deepLink = useMemo(() => {
-    if (!searchParams) return { tab: null, page: undefined, chunk: undefined };
-    const tabRaw = searchParams.get("tab");
-    const tab: PreviewTab | null =
-      tabRaw === "preview" ||
-      tabRaw === "edit" ||
-      tabRaw === "document" ||
-      tabRaw === "analysis" ||
-      tabRaw === "share" ||
-      tabRaw === "info" ||
-      tabRaw === "versions"
-        ? tabRaw
-        : null;
-    const pageRaw = searchParams.get("page");
-    const page =
-      pageRaw && Number.isFinite(Number.parseInt(pageRaw, 10))
-        ? Math.max(1, Number.parseInt(pageRaw, 10))
-        : undefined;
-    const chunk = searchParams.get("chunk") ?? undefined;
-    return { tab, page, chunk };
-  }, [searchParams]);
 
   const [downloading, setDownloading] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<PreviewTab>(
-    deepLink.tab ?? "preview",
-  );
-
-  // Reset to the Preview tab whenever the user picks a different file —
-  // each file id gets its own remount of <PreviewPane/> via the parent's
-  // conditional render, so this state is naturally scoped. If the URL
-  // carried an explicit `?tab=`, honour it on (re-)mount.
-  useEffect(() => {
-    setActiveTab(deepLink.tab ?? "preview");
-  }, [fileId, deepLink.tab]);
-
-  // Listen for "open versions tab" hints from the FileContextMenu so the
-  // "Show versions" item can pop the user straight to the right tab. We
-  // use a CustomEvent instead of a Redux state so the hint is transient
-  // — once handled it's gone, no need to clear a flag.
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ fileId?: string; tab?: PreviewTab }>)
-        .detail;
-      if (!detail || detail.fileId !== fileId) return;
-      if (
-        detail.tab === "versions" ||
-        detail.tab === "preview" ||
-        detail.tab === "info" ||
-        detail.tab === "edit" ||
-        detail.tab === "document" ||
-        detail.tab === "analysis" ||
-        detail.tab === "share"
-      ) {
-        setActiveTab(detail.tab);
-      }
-    };
-    window.addEventListener("cloud-files:open-preview-tab", handler);
-    return () =>
-      window.removeEventListener("cloud-files:open-preview-tab", handler);
-  }, [fileId]);
 
   const handleClose = useCallback(() => {
     if (onClose) {
@@ -414,296 +326,12 @@ export function PreviewPane({
         </div>
       </div>
 
-      {/* Tabs — Preview / Versions. Hidden when there's only one tab worth
-       * showing (always two for files; future: maybe Activity, Permissions). */}
-      <div
-        className="flex items-center gap-0 border-b border-border bg-card shrink-0"
-        role="tablist"
-        aria-label="Preview tabs"
-      >
-        <PreviewTabButton
-          icon={<Gem className="h-3.5 w-3.5" />}
-          label="Preview"
-          active={activeTab === "preview"}
-          onClick={() => setActiveTab("preview")}
-        />
-        <PreviewTabButton
-          icon={<Edit3 className="h-3.5 w-3.5" />}
-          label="Edit"
-          active={activeTab === "edit"}
-          onClick={() => setActiveTab("edit")}
-        />
-        <PreviewTabButton
-          icon={<FileSearch className="h-3.5 w-3.5" />}
-          label="Document"
-          active={activeTab === "document"}
-          onClick={() => setActiveTab("document")}
-          title="Processed-document view (RAG: pages, cleaned text, chunks, lineage)"
-        />
-        <PreviewTabButton
-          icon={<Atom className="h-3.5 w-3.5" />}
-          label="Analysis"
-          active={activeTab === "analysis"}
-          onClick={() => setActiveTab("analysis")}
-          title="AI-powered analysis of this file"
-        />
-        <PreviewTabButton
-          icon={<Share2 className="h-3.5 w-3.5" />}
-          label="Share"
-          active={activeTab === "share"}
-          onClick={() => setActiveTab("share")}
-          title="Visibility, share links, people & groups"
-        />
-        <PreviewTabButton
-          icon={<Info className="h-3.5 w-3.5" />}
-          label="Info"
-          active={activeTab === "info"}
-          onClick={() => setActiveTab("info")}
-        />
-        <PreviewTabButton
-          icon={<History className="h-3.5 w-3.5" />}
-          label="Versions"
-          active={activeTab === "versions"}
-          onClick={() => setActiveTab("versions")}
-        />
-      </div>
-
-      {/* Body — both tabs stay MOUNTED, only their visibility toggles.
-       *
-       * Why: every fetch-based previewer (PDF, Markdown, Code, Text, Data)
-       * goes through `useFileBlob`, which fetches the bytes and revokes
-       * the blob URL on unmount. If we conditionally rendered tabs, the
-       * Preview tab would unmount whenever the user clicked Versions —
-       * losing a 10MB PDF download and forcing a full re-fetch on
-       * return. Always-mounted with `hidden` keeps the blob alive.
-       *
-       * Each tab has its own error boundary so a crash in one doesn't
-       * blank the other.
-       */}
+      {/* Tab strip + always-mounted bodies — shared with SingleFileShell so
+       * the two surfaces never drift on tab semantics. */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "preview"}
-          aria-hidden={activeTab !== "preview"}
-        >
-          <PreviewErrorBoundary fileId={fileId}>
-            <FilePreview fileId={fileId} className="h-full w-full" />
-          </PreviewErrorBoundary>
-        </div>
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "edit"}
-          aria-hidden={activeTab !== "edit"}
-        >
-          <PreviewErrorBoundary fileId={fileId}>
-            <EditTabContent fileId={fileId} />
-          </PreviewErrorBoundary>
-        </div>
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "document"}
-          aria-hidden={activeTab !== "document"}
-        >
-          <PreviewErrorBoundary fileId={fileId}>
-            <DocumentTab
-              fileId={fileId}
-              active={activeTab === "document"}
-              initialPage={deepLink.page}
-              initialChunkId={deepLink.chunk}
-              className="h-full w-full"
-            />
-          </PreviewErrorBoundary>
-        </div>
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "analysis"}
-          aria-hidden={activeTab !== "analysis"}
-        >
-          <PreviewErrorBoundary fileId={fileId}>
-            <AnalysisTab fileId={fileId} className="h-full w-full" />
-          </PreviewErrorBoundary>
-        </div>
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "share"}
-          aria-hidden={activeTab !== "share"}
-        >
-          <PreviewErrorBoundary fileId={fileId}>
-            <FileShareTab fileId={fileId} className="h-full w-full" />
-          </PreviewErrorBoundary>
-        </div>
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "info"}
-          aria-hidden={activeTab !== "info"}
-        >
-          <FileInfoTab fileId={fileId} className="h-full w-full" />
-        </div>
-        <div
-          className="absolute inset-0 overflow-hidden"
-          hidden={activeTab !== "versions"}
-          aria-hidden={activeTab !== "versions"}
-        >
-          <FileVersionsList fileId={fileId} className="h-full w-full" />
-        </div>
+        <FileTabsBody fileId={fileId} density="compact" />
       </div>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Edit tab — dispatches on the file's `previewKind`. Text-shaped kinds
-// (text / code / markdown / data) mount the inline Monaco editor; non-text
-// kinds (image / video / audio / pdf / generic) show a "Coming soon" hint
-// so the affordance is always visible but doesn't lie about capability.
-// ---------------------------------------------------------------------------
-
-interface EditTabContentProps {
-  fileId: string;
-}
-
-function EditTabContent({ fileId }: EditTabContentProps) {
-  const file = useAppSelector((s) => selectFileById(s, fileId));
-  if (!file) return null;
-
-  // Virtual sources (Notes, Code Snippets, Agent Apps, …) own their own
-  // edit experience inside the Preview tab via `inlinePreview` — the Edit
-  // tab here is for real cloud-files only. Surface a friendly hint.
-  if (file.source.kind === "virtual") {
-    return (
-      <ComingSoon
-        title="Editing handled in Preview"
-        description="This source provides its own inline editor in the Preview tab. Switch back there to edit."
-      />
-    );
-  }
-
-  const capability = getPreviewCapability(
-    file.fileName,
-    file.mimeType,
-    file.fileSize,
-  );
-
-  switch (capability.previewKind) {
-    case "text":
-    case "code":
-    case "markdown":
-    case "data":
-    // SVG is just XML under the hood — Monaco edits it directly with the
-    // XML language (wired in CloudFileInlineEditor's LANGUAGE_BY_EXT). The
-    // Preview tab's SvgPreview offers a read-only Source view; this is
-    // where the user actually mutates the markup and re-uploads.
-    case "svg":
-      // `data` covers JSON / CSV / XLSX. JSON is editable as text; CSV/XLSX
-      // would benefit from a dedicated grid editor — Monaco still works as
-      // a fallback for now (raw CSV editing is fine).
-      return (
-        <CloudFileInlineEditor fileId={fileId} className="h-full w-full" />
-      );
-
-    case "pdf":
-      return (
-        <ComingSoon
-          title="PDF editing — coming soon"
-          description="We're wiring the PDF Extractor's edit components into this tab. For now, use the Open in new tab button to download or annotate externally."
-        />
-      );
-
-    case "image":
-      return (
-        <ComingSoon
-          title="Image editing — coming soon"
-          description="Crop, rotate, and annotation tools will live here. The AI metadata enrichment pass already runs on every image — see the Info tab for the auto-generated description, keywords, and dominant colors."
-        />
-      );
-
-    case "audio":
-    case "video":
-      return (
-        <ComingSoon
-          title={`${capability.previewKind === "audio" ? "Audio" : "Video"} editing — coming soon`}
-          description="Trim and clip tools will live here. For now, download to edit externally."
-        />
-      );
-
-    case "spreadsheet":
-      return (
-        <ComingSoon
-          title="Spreadsheet editing — coming soon"
-          description="A grid-based editor will land here. The Preview tab already supports sort + filter for read-only browsing."
-        />
-      );
-
-    case "generic":
-    default:
-      return (
-        <ComingSoon
-          title="Editing not available"
-          description="This file type doesn't have an editor yet. You can still rename, move, share, or download it from the action bar."
-        />
-      );
-  }
-}
-
-function ComingSoon({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-muted/10 p-6">
-      <div className="max-w-sm space-y-2 text-center">
-        <Edit3
-          className="mx-auto h-8 w-8 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function PreviewTabButton({
-  icon,
-  label,
-  active,
-  onClick,
-  title,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  title?: string;
-}) {
-  const button = (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-medium transition-colors",
-        active
-          ? "border-primary text-foreground"
-          : "border-transparent text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-  if (!title) return button;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>
-        {title}
-      </TooltipContent>
-    </Tooltip>
   );
 }
 

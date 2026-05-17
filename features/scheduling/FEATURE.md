@@ -2,7 +2,7 @@
 
 > **Status:** Active (v1)
 > **Tier:** 1
-> **Last updated:** 2026-05-11
+> **Last updated:** 2026-05-16
 
 User and admin surfaces for the platform-wide scheduling spine (`sch_*`
 tables). Lets users create scheduled agent tasks, observe runs live, and
@@ -186,6 +186,72 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-05-16** — Soft-delete semantics + HTTP wire-type cleanup.
+  Decoupled "deleted" from "paused" on `sch_task` so the Delete action
+  actually hides the row from the user's view (previously a deleted
+  task reappeared on the next list fetch because the FE / scanner
+  couldn't distinguish a soft-deleted row from a paused row — both
+  used `enabled=false`). Five-part change:
+  * **Migration** `migrations/sch_task_deleted_at.sql` — added
+    `sch_task.deleted_at TIMESTAMPTZ NULL` plus a partial index
+    `sch_task_user_id_active_idx ON (user_id, updated_at DESC) WHERE
+    deleted_at IS NULL` so the common "my schedules, newest first"
+    query stays fast.
+  * **matrx-scheduler package** (`api/user_queries.py`) — `list_tasks`
+    / `count_tasks` / `get_task` filter `deleted_at IS NULL`;
+    `soft_delete_task` now writes `deleted_at = now()` *and* keeps
+    `enabled = false` (belt + suspenders for the scanner);
+    `update_task` refuses to PATCH a soft-deleted row (returns None
+    → router 404) so a misbehaving FE can't silently revive a
+    deleted task. `queries.py` (scanner) also defensively filters
+    `deleted_at IS NULL`. Test asserting GET-after-delete is now
+    updated to expect 404 (was 200); 75 / 75 pass.
+  * **FE reads** (`features/scheduling/service/queries.ts`) —
+    `listAgentTasks` and `getAgentTask` add `.is("deleted_at", null)`
+    so the list view and detail / edit pages match the HTTP surface.
+    `useTaskListStream` now treats an UPDATE that flips
+    `deleted_at != null` as a removal (other tabs / sessions drop the
+    row immediately).
+  * **Wire-type cleanup** —
+    `features/scheduling/service/schedulerApi.types.ts:RunResponse`
+    dropped `claim_token` and `claim_expires_at` to match the
+    package's Pydantic schema (internal scheduler-lease state, never
+    exposed via the HTTP surface; the admin orphan-leases page still
+    reads them directly via `scheduling-admin-service.ts` against
+    `SchRunRow`).
+  * **Confirm-dialog copy** — `ScheduleRow` and `ScheduleDetail`
+    "Delete schedule" dialogs no longer claim "and its run history"
+    (run history is preserved by FK; only the schedule row is
+    hidden).
+  * **`types/database.types.ts`** — `sch_task` Row / Insert / Update
+    sections updated to include `deleted_at: string | null`.
+
+  Net effect: pressing Delete now does what users expect (gone from
+  view, doesn't reappear, never fires again) while Pause / Resume
+  remain a pure toggle on `enabled`. Run history is preserved either
+  way.
+
+- **2026-05-16** — Wired the matrx-scheduler `/scheduler/*` HTTP router
+  into aidream. The router shipped on 2026-05-13 in the
+  `matrx-scheduler` package but was never mounted on the aidream
+  FastAPI app, so every user-facing CRUD call (create / edit /
+  soft-delete / run-now / toggle-enabled) was 404'ing in prod while
+  reads (Supabase-direct) and execution (scanner-direct) continued to
+  work — masking the gap. Two surgical edits in aidream: (1)
+  `aidream/api/app.py` now calls
+  `matrx_scheduler.api.include_routers(fastapi_app, prefix="/scheduler")`
+  right after the legacy `/scheduling/*` mount so both surfaces
+  coexist; (2) `aidream/package_integration.py` injects
+  `user_supabase_factory=make_user_supabase_client` into
+  `matrx_scheduler.configure(...)` so the new routes RLS-bind to the
+  caller via the same per-request builder the legacy routes already
+  used (env-based fallback would have worked too because both read
+  `SUPABASE_MATRIX_URL` + `SUPABASE_MATRIX_PUBLISHABLE_KEY`, but
+  injecting keeps both surfaces on the exact same code path). ASGI
+  smoke shows all 16 `/scheduler/*` routes registering alongside the
+  5 legacy `/scheduling/*` routes; matrx-scheduler package tests
+  remain 75/75. No FE changes required — `schedulerClient.ts` was
+  already targeting the now-mounted endpoints.
 - **2026-05-13** — Migrated FE to aidream's new `/scheduler/*` HTTP
   router (matrx-scheduler package): created typed
   `service/schedulerClient.ts` covering all 16 endpoints; rewired

@@ -13,6 +13,11 @@
  * Python). Callers typically follow this up with a fileHandler call to
  * mint fresh URLs. Until then the block carries identity + metadata
  * only.
+ *
+ * Phase 1b note: `cld_files.thumbnail_url` + `cld_files.thumbnail_storage_uri`
+ * columns have been dropped (migration 011). The canonical thumbnail
+ * source is now `Asset.variants["thumbnail_url"].url` via
+ * `GET /assets/{file_id}`. See docs/PYTHON_UPDATES.md "Phase 1b".
  */
 
 import type { CloudFileRow } from "@/features/files/types";
@@ -20,14 +25,29 @@ import type { MatrxImageBlock } from "../types";
 
 export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
   const metadata = (row.metadata ?? null) as Record<string, unknown> | null;
+
+  // Phase 1d.1: `cld_files.width` / `cld_files.height` are first-class
+  // columns now and the server populates them at upload time. Prefer
+  // the column; fall back to metadata for pre-Phase-1d.1 rows that were
+  // probed by the old code path which dumped dims into metadata.
+  const rowWidth =
+    typeof row.width === "number" && Number.isFinite(row.width)
+      ? row.width
+      : null;
+  const rowHeight =
+    typeof row.height === "number" && Number.isFinite(row.height)
+      ? row.height
+      : null;
   const width =
-    typeof metadata?.width === "number" && Number.isFinite(metadata.width)
+    rowWidth ??
+    (typeof metadata?.width === "number" && Number.isFinite(metadata.width)
       ? metadata.width
-      : null;
+      : null);
   const height =
-    typeof metadata?.height === "number" && Number.isFinite(metadata.height)
+    rowHeight ??
+    (typeof metadata?.height === "number" && Number.isFinite(metadata.height)
       ? metadata.height
-      : null;
+      : null);
 
   return {
     kind: "image",
@@ -41,13 +61,13 @@ export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
       row.visibility === "shared"
         ? row.visibility
         : "private",
-    thumbnailUrl: row.thumbnail_url ?? null,
-    thumbnailUri: row.thumbnail_storage_uri ?? null,
     parentFileId: row.parent_file_id ?? null,
     derivationKind: row.derivation_kind ?? null,
 
     // No URLs from the DB row alone — caller follows up with fileHandler
     // to mint these. signedUrlExpiresAt stays null until that happens.
+    // Thumbnails come from the variants store (Asset.variants["thumbnail_url"])
+    // via a separate fetch, not from this row.
     cdnUrl: null,
     signedUrl: null,
     downloadUrl: null,

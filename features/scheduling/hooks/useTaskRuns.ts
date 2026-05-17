@@ -10,11 +10,14 @@ import {
   selectRunsForTask,
 } from "../redux/runs/selectors";
 import { fetchRunsForTaskThunk } from "../redux/runs/thunks";
+import type { SchRunRow } from "../types";
+
+const EMPTY_RUNS: SchRunRow[] = [];
 
 export function useTaskRuns(taskId: string | null | undefined, limit = 20) {
   const dispatch = useAppDispatch();
   const runs = useAppSelector((s) =>
-    taskId ? selectRunsForTask(s, taskId) : [],
+    taskId ? selectRunsForTask(s, taskId) : EMPTY_RUNS,
   );
   const status = useAppSelector((s) =>
     taskId ? selectRunsFetchStatus(s, taskId) : "idle",

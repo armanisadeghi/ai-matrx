@@ -58,7 +58,7 @@ interface AgentApp {
 }
 ```
 
-Scope columns follow the same multi-scope model as `AgentShortcut` (see [`../scope-system/FEATURE.md`](../scope-system/FEATURE.md)).
+Scope columns follow the same multi-scope model as `AgentShortcut` (see [`../scopes/FEATURE.md`](../scopes/FEATURE.md)).
 
 ---
 

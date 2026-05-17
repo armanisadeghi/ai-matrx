@@ -84,7 +84,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
     dispatch(
       openOverlay({
         overlayId: "observationalMemoryWindow",
-        data: { selectedConversationId: conversationId },
+        data: { initialSelectedConversationId: conversationId },
       }),
     );
 

@@ -1,44 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Filter as FilterIcon,
-  Folder,
-  X,
-} from "lucide-react";
-import * as icons from "lucide-react";
-import { EMPTY_SCOPE_PICKER_OPTIONS, selectScopePickerOptions } from "@/features/agent-context/redux/scope/selectors";
-import { fetchScopeTypes, selectScopeTypesLoading } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes, selectScopesLoading } from "@/features/agent-context/redux/scope/scopesSlice";
+// TaskScopeFilter — Sidebar filter for scoping the task list to one or more
+// scope ids. This is a *filter* (not an assignment): it writes to
+// `taskUiSlice.filterScopeIds` only — never to `ctx_scope_assignments` and
+// never to `appContextSlice`. It uses `EntityScopeTagger` in **controlled
+// mode** so the picker chrome stays consistent with every other Surface B
+// surface in the app.
+
+import { useCallback, useMemo } from "react";
+import { Filter as FilterIcon, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
+  clearFilterScopes,
   selectFilterScopeIds,
   selectFilterScopeMatchAll,
-  toggleFilterScopeId,
+  setFilterScopeIds,
   setFilterScopeMatchAll,
-  clearFilterScopes,
+  toggleFilterScopeId,
 } from "@/features/tasks/redux/taskUiSlice";
+import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
+import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/utils/cn";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 interface TaskScopeFilterProps {
   className?: string;
@@ -51,37 +38,17 @@ export default function TaskScopeFilter({
   variant = "sidebar",
 }: TaskScopeFilterProps) {
   const dispatch = useAppDispatch();
-  const orgId = useAppSelector(selectOrganizationId);
+  useScopeTree();
+  const orgId = useAppSelector(selectActiveOrganizationId);
   const filterScopeIds = useAppSelector(selectFilterScopeIds);
   const matchAll = useAppSelector(selectFilterScopeMatchAll);
-  const options = useAppSelector((s) =>
-    orgId ? selectScopePickerOptions(s, orgId) : EMPTY_SCOPE_PICKER_OPTIONS,
+
+  const handleChange = useCallback(
+    (next: string[]) => dispatch(setFilterScopeIds(next)),
+    [dispatch],
   );
-  const typesLoading = useAppSelector(selectScopeTypesLoading);
-  const scopesLoading = useAppSelector(selectScopesLoading);
-
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const hasFetched = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!orgId || hasFetched.current === orgId) return;
-    hasFetched.current = orgId;
-    dispatch(fetchScopeTypes(orgId));
-    dispatch(fetchScopes({ org_id: orgId }));
-  }, [dispatch, orgId]);
 
   if (!orgId) return null;
-
-  const selected = new Set(filterScopeIds);
-  const loading = typesLoading || scopesLoading;
-
-  if (options.length === 0 && !loading) {
-    return (
-      <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
-        No scopes defined for this organization.
-      </div>
-    );
-  }
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -114,114 +81,14 @@ export default function TaskScopeFilter({
         </div>
       )}
 
-      {variant === "compact" ? (
-        <div className="flex flex-wrap gap-1 px-3">
-          {options.flatMap((group) =>
-            group.options.map((opt) => {
-              const isSel = selected.has(opt.value);
-              return (
-                <Badge
-                  key={opt.value}
-                  variant={isSel ? "default" : "outline"}
-                  className="cursor-pointer text-xs"
-                  style={
-                    isSel
-                      ? {
-                          backgroundColor: group.color,
-                          borderColor: group.color,
-                        }
-                      : { color: group.color, borderColor: group.color }
-                  }
-                  onClick={() => dispatch(toggleFilterScopeId(opt.value))}
-                >
-                  {opt.label}
-                </Badge>
-              );
-            }),
-          )}
-        </div>
-      ) : (
-        <div className="space-y-0.5">
-          {options.map((group) => {
-            const Icon = resolveIcon(group.icon);
-            const isCollapsed = collapsed[group.type_id] ?? false;
-            const selectedCount = group.options.filter((o) =>
-              selected.has(o.value),
-            ).length;
-            return (
-              <div key={group.type_id}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCollapsed((prev) => ({
-                      ...prev,
-                      [group.type_id]: !isCollapsed,
-                    }))
-                  }
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent rounded-md"
-                >
-                  <span className="flex items-center gap-1.5">
-                    {isCollapsed ? (
-                      <ChevronRight size={12} />
-                    ) : (
-                      <ChevronDown size={12} />
-                    )}
-                    <Icon
-                      className="h-3.5 w-3.5"
-                      style={{ color: group.color }}
-                    />
-                    <span>{group.label}</span>
-                  </span>
-                  {selectedCount > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="h-4 text-[10px] px-1.5"
-                      style={{ borderColor: group.color, color: group.color }}
-                    >
-                      {selectedCount}
-                    </Badge>
-                  )}
-                </button>
-                {!isCollapsed && (
-                  <div className="pl-6 pr-3 flex flex-wrap gap-1 py-1">
-                    {group.options.length === 0 && (
-                      <span className="text-[11px] text-muted-foreground py-0.5">
-                        No scopes
-                      </span>
-                    )}
-                    {group.options.map((opt) => {
-                      const isSel = selected.has(opt.value);
-                      return (
-                        <Badge
-                          key={opt.value}
-                          variant={isSel ? "default" : "outline"}
-                          className={cn(
-                            "cursor-pointer text-[11px] px-1.5 py-0.5",
-                            !isSel && "hover:bg-accent",
-                          )}
-                          style={
-                            isSel
-                              ? {
-                                  backgroundColor: group.color,
-                                  borderColor: group.color,
-                                }
-                              : { color: group.color, borderColor: group.color }
-                          }
-                          onClick={() =>
-                            dispatch(toggleFilterScopeId(opt.value))
-                          }
-                        >
-                          {opt.label}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <EntityScopeTagger
+        value={filterScopeIds}
+        onChange={handleChange}
+        organizationId={orgId}
+        variant={variant}
+        showHeader={false}
+        allowMultiPerType
+      />
     </div>
   );
 }
@@ -233,21 +100,24 @@ export default function TaskScopeFilter({
  */
 export function ActiveScopeFilterChips({ className }: { className?: string }) {
   const dispatch = useAppDispatch();
-  const orgId = useAppSelector(selectOrganizationId);
+  const orgId = useAppSelector(selectActiveOrganizationId);
   const filterScopeIds = useAppSelector(selectFilterScopeIds);
   const matchAll = useAppSelector(selectFilterScopeMatchAll);
-  const options = useAppSelector((s) =>
-    orgId ? selectScopePickerOptions(s, orgId) : EMPTY_SCOPE_PICKER_OPTIONS,
-  );
+
+  const selectScopeTypesForOrg = useMemo(makeSelectScopeTypesForOrg, []);
+  const scopeTypes = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
+
+  const flat = useMemo(() => {
+    const m = new Map<string, { label: string; color: string }>();
+    for (const t of scopeTypes) {
+      for (const s of t.scopes) {
+        m.set(s.id, { label: s.name, color: t.color });
+      }
+    }
+    return m;
+  }, [scopeTypes]);
 
   if (filterScopeIds.length === 0) return null;
-
-  const flat = new Map<string, { label: string; color: string }>();
-  for (const group of options) {
-    for (const opt of group.options) {
-      flat.set(opt.value, { label: opt.label, color: group.color });
-    }
-  }
 
   return (
     <div

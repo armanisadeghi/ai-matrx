@@ -803,4 +803,869 @@ Stamped onto the `MediaBlockData.block.metadata` field for every AI-generated as
 - Google override: [packages/matrx-ai/matrx_ai/providers/google/google_image_api.py](../packages/matrx-ai/matrx_ai/providers/google/google_image_api.py)
 - Together override: [packages/matrx-ai/matrx_ai/providers/together/together_image_api.py](../packages/matrx-ai/matrx_ai/providers/together/together_image_api.py)
 
+---
+
+# Phase 1b — Legacy thumbnail columns dropped (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. **Two FE-visible wire-shape changes** — both small + previewed in the Phase 0 + Phase 1 notes as deprecations.
+
+## TL;DR
+
+- `cld_files.thumbnail_storage_uri` + `cld_files.thumbnail_url` **columns dropped** (migration 011). Every reader migrated to query the variants store directly via the new `thumbnail_resolver` helper.
+- `UnifiedMediaBlock.thumbnail_url` + `UnifiedMediaBlock.thumbnail_uri` **fields removed** from every block kind. The canonical source of truth is `Asset.variants["thumbnail_url"].url` via `GET /assets/{file_id}` (or the bulk thumbnail resolver on the backend).
+- The TUS upload pipeline + legacy `/files/upload` paths now write thumbnails through the Phase 1 variants pipeline — every uploaded file gets the SOCIAL_BASELINE (`og_url`, `thumbnail_url`, `tiny_url`) regardless of mime kind.
+- `FileRecord.thumbnail_url` on `GET /files/*` endpoints **still works** — now populated by the variants resolver instead of the dropped column. The FE-visible field name + behaviour is unchanged.
+
+## What broke (FE wire shape changes)
+
+### 1. `UnifiedMediaBlock.thumbnail_url` / `thumbnail_uri` — removed
+
+Phase 0 introduced these on `MediaBlockShared` and explicitly marked them legacy: *"kept for Phase 0 backward compat. Phase 1 moves thumbnails into Asset.variants['thumbnail_url']."* That migration is now complete. Both fields are gone from `ImageBlock` / `VideoBlock` / `AudioBlock` / `DocumentBlock` / `YouTubeBlock`.
+
+**Migration:** if any FE code reads `block.thumbnail_url`, switch to:
+
+```typescript
+// For inline-rendered media (chat messages, popovers):
+//   1. Resolve the asset envelope once
+const asset = await fetch(`/assets/${block.file_id}`).then(r => r.json());
+const thumbnailUrl = asset.variants["thumbnail_url"]?.url ?? null;
+//   2. Or rely on the existing FileRecord.thumbnail_url from /files/{id}
+```
+
+If you're rendering blocks inline in a chat without a follow-up GET, the cleanest path is to add a `thumbnail_url` to the block via your existing adapter from a pre-fetched asset cache — same pattern as `UNIFIED_IMAGE_BLOCK.md`'s `useUnifiedImageUrl` hook.
+
+### 2. `cld_files.thumbnail_storage_uri` / `cld_files.thumbnail_url` columns — dropped
+
+Direct DB readers (you shouldn't have any — the API is the contract — but checking: if your Supabase Realtime subscriptions or any FE-side join reads these columns, they'll return `undefined`). The fix is the same as above: read the variants store via `GET /assets/{file_id}` or the variants subscription.
+
+## What still works (no FE change needed)
+
+### `FileRecord.thumbnail_url` on `/files/*` endpoints
+
+The field name + behaviour is preserved. Backend changes:
+
+- `GET /files` (list) — bulk-resolves thumbnails for every record in the page via parallel variant lookups; field stays populated when a thumbnail variant exists.
+- `GET /files/{file_id}` — single thumbnail lookup, parallelised with the URL minting.
+- `GET /files/by-path/{path}` — same single-record resolver.
+- `GET /files/search` — same bulk resolver as list.
+
+If you saw `thumbnail_url` populated on `FileRecord` yesterday, you'll see it populated today. The column's gone but the read path now goes through the variants store transparently.
+
+### Phase 2 generation metadata
+
+Unchanged. `cld_files.metadata.generation` and `MediaBlockData.block.metadata.generation` still carry the typed `MediaGenerationMetadata` from Phase 2.
+
+### Phase 1 variants behaviour
+
+Unchanged + extended. Now applies to **every** newly-uploaded file regardless of upload path:
+
+| Upload path | Phase 1 behaviour | Phase 1b behaviour |
+|---|---|---|
+| `POST /assets` | SOCIAL_BASELINE variants rendered via universal dispatcher | unchanged |
+| AI-generated media (matrx-ai persistence) | SOCIAL_BASELINE variants rendered via universal dispatcher | unchanged |
+| **TUS upload** (`POST /files/tus/...`) | Legacy column-based thumbnail (single 256px JPEG) | **Now also routes through the variants pipeline** — `og_url` / `thumbnail_url` / `tiny_url` rendered, universal mime support inherited |
+| **Legacy `POST /files/upload`** | Same as TUS — legacy column path | **Now routes through variants pipeline** — same baseline as POST /assets |
+
+The TUS finalize handler still calls `generate_thumbnail_for_file` as a fire-and-forget background task — the function body is rewritten to dispatch through `SyncEngine.variants.render_async` with the SOCIAL_BASELINE specs, so the dispatch contract is unchanged but the storage is now variants-store-native.
+
+## Quick contract reference (post Phase 1b)
+
+```typescript
+// MediaBlockShared (all kinds inherit)
+interface MediaBlockShared {
+  kind: "image" | "video" | "audio" | "document" | "youtube";
+  origin: "matrx" | "external";
+
+  // matrx-owned
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  // REMOVED in Phase 1b:
+  // thumbnail_url?: string | null;
+  // thumbnail_uri?: string | null;
+
+  // external
+  external_url?: string | null;
+  source_label?: string | null;
+
+  // universal
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+}
+```
+
+```jsonc
+// FileRecord (unchanged — thumbnail_url now sourced from variants store)
+{
+  "id": "f1e2d3...",
+  "size_bytes": 4567890,
+  // ...standard FileRecord fields...
+  "thumbnail_url": "https://cdn.matrxserver.com/.../f1e2d3__thumb.jpg",
+  // ↑ Now resolved from cld_files variant row instead of the dropped
+  //   cld_files.thumbnail_url column. FE code path unchanged.
+}
+```
+
+## How to get a thumbnail URL (canonical answers)
+
+Three contexts, three answers. All three return the same string when the variant exists.
+
+| Context | Source | Backend helper |
+|---|---|---|
+| Have an `Asset` envelope (`GET /assets/{id}`) | `asset.variants["thumbnail_url"].url` | — |
+| Have a `FileRecord` (`GET /files/*`) | `record.thumbnail_url` | (backend already resolved) |
+| Have a `MediaBlock` from a stream event | Follow up with `GET /assets/{block.file_id}` and read `variants["thumbnail_url"].url` | `resolve_thumbnail_url_async(fm, record)` |
+
+If you're rendering many blocks (gallery, list) and a per-block `GET /assets/{id}` is too chatty, the FE-side fix is the same pattern Phase 0 introduced: pre-fetch the asset for each file once, cache it in your store, and bind `variants["thumbnail_url"].url`. Backend isn't shipping a bulk `/assets?ids=...` endpoint in this phase — open a ticket if the per-tile fetch becomes a perf issue and we'll add it.
+
+## Phase 1b backend reference
+
+- New helper: [packages/matrx-utils/matrx_utils/file_handling/cloud_sync/thumbnail_resolver.py](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/thumbnail_resolver.py) — `resolve_thumbnail_url_async` + `resolve_thumbnail_urls_async` (bulk)
+- Rewritten processor: [packages/matrx-utils/matrx_utils/file_handling/cloud_sync/processing/thumbnails.py](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/processing/thumbnails.py) — now dispatches through `SyncEngine.variants.render_async`
+- Migration: [packages/matrx-utils/matrx_utils/file_handling/cloud_sync/sql/011_drop_legacy_thumbnail_columns.sql](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/sql/011_drop_legacy_thumbnail_columns.sql)
+- Backfill updated: [packages/matrx-utils/matrx_utils/file_handling/cloud_sync/backfill/thumbnails.py](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/backfill/thumbnails.py)
+- Router migration: [aidream/api/routers/files/__init__.py](../aidream/api/routers/files/__init__.py) — list, search, by-path, and single-GET endpoints
+
+## Phase 1c and beyond — still deferred
+
+- ~~Kind-specific full-resolution variants — `page1_url` for PDFs at full DPI, `poster_url` for videos at native res~~ **→ shipped in Phase 1c, see below**
+- Audio waveform rendering (replaces mime-icon fallback for `audio/*`) — needs ffprobe/pydub for decode
+- Bulk `/assets?ids=...` endpoint if per-tile `GET /assets/{id}` becomes a perf issue
+- Mappers for Replicate, xAI, ElevenLabs, Groq, Cerebras, Cohere, Fireworks (Phase 2b — non-blocking; the default mapper covers them today)
+
+---
+
+# Phase 1c — Kind-specific full-resolution variants (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. **Wire shape is purely additive** — Phase 0/1/1b/2 contracts preserved. New: two `UnifiedMediaBlock` fields that have been defined since Phase 0 but were always `null` are now populated for PDF + video uploads.
+
+## TL;DR
+
+Every PDF and video uploaded to the platform now gets a full-resolution primary representation alongside the SOCIAL_BASELINE thumbnails:
+
+- **PDF** → `page1_url`: page 1 rendered at 150 DPI as JPEG (~1200×1700 for A4 — a real reading preview, not a thumbnail)
+- **Video** → `poster_url`: representative frame at 10% extracted at native resolution as JPEG (the standard HTML5 `<video poster=...>` source)
+
+Both surface as:
+- A new entry in `Asset.variants` (key = `"page1_url"` or `"poster_url"`)
+- A populated field on `DocumentBlock.page1_url` / `VideoBlock.poster_url`
+
+## What changed (additive)
+
+### `Asset.variants["page1_url"]` (PDFs) and `Asset.variants["poster_url"]` (videos)
+
+`POST /assets` upload of a PDF or video now writes two extra variant rows alongside the SOCIAL_BASELINE thumbnails. They appear in the response envelope's `variants` dict with stable keys:
+
+```jsonc
+GET /assets/{pdf_file_id}
+{
+  "file_id": "...",
+  "primary_key": "thumbnail_url",
+  "primary_url": "https://cdn.matrxserver.com/.../report__thumb.jpg",
+  "variants": {
+    "original":      { "key": "original",      ... },  // the PDF itself
+    "og_url":        { "key": "og_url",        ... },  // 1200×630 — social preview
+    "thumbnail_url": { "key": "thumbnail_url", ... },  // 400×400  — grid view
+    "tiny_url":      { "key": "tiny_url",      ... },  // 128×128  — icon
+    "page1_url":     {                                  // ← NEW: full-res page 1
+      "key": "page1_url",
+      "file_id": "...",
+      "mime_type": "image/jpeg",
+      "width": 1240, "height": 1754,                    // approx A4 at 150 DPI
+      "url": "https://cdn.matrxserver.com/.../report__page1.jpg",
+      "cdn_url": "...", "signed_url": null, ...
+    }
+  }
+}
+```
+
+For videos, the extra variant key is `poster_url` (and `width`/`height` reflect the source video's native frame size).
+
+### `DocumentBlock.page1_url` + `VideoBlock.poster_url` populated
+
+These fields have been on the wire shape since Phase 0 (defined on the block models) but were always `null`. They now carry the rendered variant URLs:
+
+```jsonc
+// DocumentBlock — PDF uploaded via POST /assets or AI-generated
+{
+  "kind": "document", "origin": "matrx",
+  "status": "complete",
+  "file_id": "...",
+  "mime_type": "application/pdf",
+  "page_count": null,                              // still null — extraction is separate
+  "page1_url": "https://cdn.matrxserver.com/.../report__page1.jpg",  // ← NEW: populated
+  "size_bytes": 4567890,
+  // ...standard MediaBlockShared fields...
+}
+
+// VideoBlock — video uploaded via POST /assets or AI-generated
+{
+  "kind": "video", "origin": "matrx",
+  "status": "complete",
+  "file_id": "...",
+  "mime_type": "video/mp4",
+  "width": 1920, "height": 1080, "duration_ms": null,
+  "poster_url": "https://cdn.matrxserver.com/.../movie__poster.jpg",  // ← NEW: populated
+  // ...standard MediaBlockShared fields...
+}
+```
+
+`poster_url` is automatically resolved at emission time for AI-generated videos (`MediaBlockData` streamed by the matrx-ai providers). For block construction elsewhere (e.g., FE constructing a block from an `Asset` envelope), pass the variants catalog through the existing `cloud_file_to_media_block(record, kind_variant_urls={"poster_url": ...})` API.
+
+## What you can build with this
+
+1. **Real PDF previews in chat / file picker**: bind `<img src={DocumentBlock.page1_url}>` for a readable preview of the first page instead of the 400px thumbnail. Falls back to `variants.thumbnail_url.url` when `page1_url` is missing (old uploads, render failures).
+2. **HTML5 video poster**: bind `<video poster={VideoBlock.poster_url} src={VideoBlock.url}>` so the FE shows a real frame before play, not a black square.
+3. **Document detail view**: `Asset.variants.page1_url.url` is the canonical "render the first page" URL — use it as the hero image when the user opens a PDF detail page.
+
+## What did NOT change
+
+- **No new endpoints**.
+- **No field renames**.
+- All Phase 0/1/1b/2 fields preserved unchanged.
+- Image masters get no new variants (they don't need a "primary representation" beyond `original` + SOCIAL_BASELINE).
+- Audio masters still fall back to the mime-family icon for `thumbnail_url` (Phase 1d will add a real waveform).
+- Other mime kinds (archives, text, code, generic) get no kind-specific variant — they keep the SOCIAL_BASELINE icon set.
+
+## Quick coverage matrix
+
+| Source mime | `original` | `og_url` | `thumbnail_url` | `tiny_url` | `page1_url` | `poster_url` |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `image/*` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `application/pdf` | ✓ | ✓ (page 1) | ✓ (page 1) | ✓ (page 1) | ✓ **(NEW)** | — |
+| `video/*` | ✓ | ✓ (frame) | ✓ (frame) | ✓ (frame) | — | ✓ **(NEW)** |
+| `audio/*` | ✓ | ✓ (icon) | ✓ (icon) | ✓ (icon) | — | — |
+| `application/zip`, `text/*`, etc. | ✓ | ✓ (icon) | ✓ (icon) | ✓ (icon) | — | — |
+
+## Idempotency
+
+`(master_file_id, variant_key)` pairs are unique — re-uploading the same source via `POST /assets` (or re-running the thumbnail backfill) is a no-op for variants that already exist. Migration safe: no schema changes, no data migration needed.
+
+## Phase 1c backend reference
+
+- Kind-specific renderer: [packages/matrx-utils/.../specific_handlers/thumbnail_source.py](../packages/matrx-utils/matrx_utils/file_handling/specific_handlers/thumbnail_source.py) — `render_kind_specific_variants`
+- Persistence primitive: [packages/matrx-utils/.../cloud_sync/variants_service.py](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/variants_service.py) — `VariantsService.persist_prerendered_async`
+- POST /assets dispatch: [aidream/api/routers/assets.py](../aidream/api/routers/assets.py) (section "9. Render preset variants")
+- AI gen dispatch: [packages/matrx-ai/.../media/media_persistence.py](../packages/matrx-ai/matrx_ai/media/media_persistence.py)
+- Block wiring: [packages/matrx-connect/.../media_block.py](../packages/matrx-connect/matrx_connect/context/media_block.py) — `cloud_file_to_media_block(record, *, kind_variant_urls=...)`
+
+---
+
+# Phase 1d — Audio waveform rendering (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. **Pure server-side behaviour change** — zero wire-shape change.
+
+## TL;DR
+
+`audio/*` uploads now get **real waveform PNGs** in their SOCIAL_BASELINE variants (`thumbnail_url`, `og_url`, `tiny_url`) instead of the mime-family "AUDIO" icon. The dispatcher decodes the audio via pydub+ffmpeg, computes per-bucket peak amplitudes, and renders a centered-axis waveform as a 1600×400 PNG that then feeds the variant downsamplers.
+
+## What changed
+
+Before Phase 1d:
+
+```
+audio/mpeg upload → SOCIAL_BASELINE renders a green "MPEG" icon  
+  → thumbnail_url = 400×400 of that icon
+  → og_url        = 1200×630 of that icon
+  → tiny_url      = 128×128  of that icon
+```
+
+After Phase 1d:
+
+```
+audio/mpeg upload → pydub decodes via ffmpeg → 800 peak amplitudes
+  → render 1600×400 waveform PNG (sky-400 on slate-900)  
+  → SOCIAL_BASELINE downsamples to thumbnail/og/tiny variants
+  → grid views now show a recognisable audio signature instead of a generic badge
+```
+
+## Coverage matrix (post Phase 1d)
+
+| Source mime | `original` | `og_url` | `thumbnail_url` | `tiny_url` | `page1_url` | `poster_url` |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `image/*` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `application/pdf` | ✓ | ✓ (page 1) | ✓ (page 1) | ✓ (page 1) | ✓ | — |
+| `video/*` | ✓ | ✓ (frame) | ✓ (frame) | ✓ (frame) | — | ✓ |
+| `audio/*` | ✓ | ✓ **(waveform — was icon)** | ✓ **(waveform — was icon)** | ✓ **(waveform — was icon)** | — | — |
+| Archives / text / unknown | ✓ | ✓ (icon) | ✓ (icon) | ✓ (icon) | — | — |
+
+## Failure modes
+
+The dispatcher catches every per-kind rasteriser failure and falls back to the mime-family icon (current behaviour). So:
+
+- Corrupt audio file → falls back to "AUDIO" icon (no upload failure)
+- ffmpeg missing in the deployment environment → falls back to icon
+- pydub raises an unexpected decoder error → falls back to icon
+
+Production deployments need `ffmpeg` available on PATH for pydub to decode MP3/AAC/OGG/M4A/Opus/WebM (WAV + FLAC work without it).
+
+## What did NOT change
+
+- No wire-shape change. No new fields on `AudioBlock`. No new variant keys. No new endpoints.
+- No new Pydantic models.
+- Failure modes preserved (icon fallback).
+
+If you previously called `Asset.variants["thumbnail_url"].url` for an audio file and got an icon, you'll now get a waveform image. Field names + types are identical.
+
+## Future enhancements (still deferred)
+
+- A wide-format `waveform_url` kind-specific variant (similar to `page1_url` / `poster_url`) for audio-player detail UIs that want the full 1600×400 image rather than the 400×400 thumbnail crop
+- Duration extraction → `cld_files.duration_ms` population (currently always null for audio uploads; the dispatcher decodes the file but doesn't yet persist the duration field)
+- Mappers for Replicate, xAI, ElevenLabs, Groq, Cerebras, Cohere, Fireworks (Phase 2b — non-blocking; the default mapper covers them today)
+- Bulk `/assets?ids=...` endpoint if per-tile GET becomes a perf issue
+
+## Phase 1d backend reference
+
+- Waveform renderer: [packages/matrx-utils/.../specific_handlers/thumbnail_source.py](../packages/matrx-utils/matrx_utils/file_handling/specific_handlers/thumbnail_source.py) — `_render_audio_waveform`
+- Module-level tunables: `_WAVEFORM_WIDTH`, `_WAVEFORM_HEIGHT`, `_WAVEFORM_PEAKS`, `_WAVEFORM_BG`, `_WAVEFORM_FG`, `_WAVEFORM_CENTER` (override for theme alignment)
+- Dependencies: `pydub` (already in `uv.lock` as transitive); `ffmpeg` binary required on PATH for non-WAV/FLAC formats
+
+---
+
+# Phase 1d.1 — Source-metadata probe (width / height / duration_ms / page_count)
+
+> **Status:** Shipped to `main`. **Additive wire fields** — every `UnifiedMediaBlock` field below has been on the shape since Phase 0 but was always `null`. Phase 1d.1 actually populates them.
+
+## What changed
+
+Every upload (`POST /assets`) and every AI-generated media file (matrx-ai persistence) now probes the source bytes at write time and persists the extracted dimensions / duration / page count to first-class columns or metadata:
+
+| Source kind | Probe target | Storage |
+|---|---|---|
+| `image/*` | `width`, `height` (pixels via Pillow) | `cld_files.width`, `cld_files.height` columns |
+| `application/pdf` | `page_count`, plus first-page `width`/`height` (pixels at 150 DPI) | `cld_files.metadata.page_count`, `cld_files.width`/`height` |
+| `video/*` | `width`, `height` (native frame), `duration_ms` (via OpenCV FPS × frame count) | `cld_files.width`, `cld_files.height`, `cld_files.duration_ms` |
+| `audio/*` | `duration_ms` (via pydub) | `cld_files.duration_ms` |
+
+The probe runs in a thread executor (CPU-bound work) and is fully best-effort — any decoder failure leaves the column `null` and the upload still succeeds.
+
+## What you now see on the wire (was always null before)
+
+```jsonc
+// ImageBlock — width/height now populated for ANY image upload
+{
+  "kind": "image", "origin": "matrx",
+  "file_id": "...", "mime_type": "image/png",
+  "width": 1024, "height": 768,         // ← NEW: populated
+  ...
+}
+
+// VideoBlock — width/height + duration_ms now populated
+{
+  "kind": "video", "origin": "matrx",
+  "file_id": "...", "mime_type": "video/mp4",
+  "width": 1920, "height": 1080,         // ← NEW: populated
+  "duration_ms": 120000,                  // ← NEW: 2 minutes
+  ...
+}
+
+// AudioBlock — duration_ms now populated
+{
+  "kind": "audio", "origin": "matrx",
+  "file_id": "...", "mime_type": "audio/mpeg",
+  "duration_ms": 215000,                  // ← NEW: 3 min 35 sec
+  ...
+}
+
+// DocumentBlock — page_count + width/height (first page) now populated
+{
+  "kind": "document", "origin": "matrx",
+  "file_id": "...", "mime_type": "application/pdf",
+  "width": 1240, "height": 1754,         // ← NEW: A4 at 150 DPI
+  "page_count": 42,                       // ← NEW: total pages
+  ...
+}
+```
+
+## What did NOT change
+
+- Wire shape unchanged. Every field above was already defined; you'll just see real values where you saw `null` before.
+- Old uploads (pre Phase 1d.1) keep their `null` values — no backfill yet (open follow-up if needed).
+- `cld_files` schema unchanged (`width`/`height`/`duration_ms` columns existed since Phase 0; `page_count` lives in `metadata` JSONB).
+
+## Phase 1d.1 backend reference
+
+- Probe helper: [packages/matrx-utils/.../specific_handlers/thumbnail_source.py](../packages/matrx-utils/matrx_utils/file_handling/specific_handlers/thumbnail_source.py) — `probe_source_metadata` / `ProbedMetadata`
+- POST /assets wiring: [aidream/api/routers/assets.py](../aidream/api/routers/assets.py) (section "5b. Probe source metadata")
+- AI media wiring: [packages/matrx-ai/.../media/media_persistence.py](../packages/matrx-ai/matrx_ai/media/media_persistence.py)
+- DocumentBlock.page_count → [packages/matrx-connect/.../media_block.py](../packages/matrx-connect/matrx_connect/context/media_block.py)
+
+---
+
+# Phase 3a — `cx_message.content[]` media items now carry `file_id` + canonical fields
+
+> **Status:** Shipped to `main`. **Additive storage-shape change** — legacy messages still load cleanly (back-compat reader path). New messages persist the canonical UnifiedMediaBlock-aligned fields. **No DB migration; no breaking change.**
+
+## TL;DR
+
+Closes the long-standing bug where `cx_message.content[]` media items were persisted *without* `file_id` — meaning the FE couldn't re-resolve signed URLs and had to special-case URL-only references. Every media item written from now on includes:
+
+- `file_id` (when set on the source) — **the critical fix**
+- `origin: "matrx" | "external"`
+- `size_bytes` (mapped from the internal `file_size`)
+- Image: `vision_class` and `alt` lifted into metadata for round-trippable storage
+- YouTube: `external_url` (mirrors `url`)
+
+Old messages keep working — the reader treats every new field as optional and falls back to the legacy shape when they're absent.
+
+## Storage shape (post Phase 3a)
+
+A media item in `cx_message.content[]` now looks like this when written by a Phase 3a or later server:
+
+```jsonc
+{
+  "type": "media",                   // cx_message.content[] discriminator (unchanged)
+  "kind": "image",                   // image | audio | video | document | youtube
+  "origin": "matrx",                 // ← NEW: matrx | external
+  "file_id": "122a35b5-...",         // ← NEW: persisted (was always null before!)
+  "file_uri": "s3://.../122a35b5...", // optional, when known
+  "url": "https://...",              // informational; FE re-mints fresh
+  "mime_type": "image/png",
+  "size_bytes": 2055674,             // ← NEW: was missing
+  "metadata": {
+    "vision_class": "anthropic_opus_hires",  // ← NEW: previously lost in roundtrip
+    "alt": "blueprint poster",                // ← NEW: previously lost in roundtrip
+    "media_resolution": "high",
+    // ...any caller-supplied metadata...
+  }
+}
+```
+
+For audio/video/document, the same `file_id` + `origin` + `size_bytes` fields are present, plus the kind-specific extras already in `metadata` (`auto_transcribe`, `video_metadata`, etc.).
+
+For YouTube items, `origin` is always `"external"` and a new `external_url` mirror is written alongside `url`.
+
+## What the FE can do now
+
+Previously, the FE's `from-cx-media-part.ts` adapter had to:
+1. Try to find a `file_id` somewhere in the dict (usually missing → fall back to URL handling)
+2. Compute origin heuristically
+3. Pray the URL hadn't expired by the time the message was read
+
+After Phase 3a:
+1. `block.file_id` is reliably present for any matrx-owned media → use `GET /assets/{file_id}` to re-mint URLs without heuristics
+2. `block.origin === "matrx" | "external"` is explicit → no guessing
+3. `block.size_bytes` lets you size cards/render previews without a DB hit
+4. `vision_class` / `alt` survive a write→read cycle
+
+## What did NOT change
+
+- **Storage shape is purely additive**. The legacy fields (`type`, `kind`, `url`, `base64_data`, `file_uri`, `mime_type`, `metadata`) still appear in every new write — exactly where they always did.
+- **No schema migration**. `cx_message.content` is JSONB; adding fields requires no DDL.
+- **No write-side breaking change**. Existing code that constructs an `ImageContent(file_id=..., ...)` and serializes works unchanged — the dict it produces just has more fields now.
+- **No read-side breaking change**. The legacy `reconstruct_media_content` reads still work — pre-Phase-3a messages don't have `file_id`/`origin` at top level, and the reader treats them as `None`/`"external"` cleanly.
+
+## What's intentionally deferred (Phase 3b)
+
+- `width`/`height` (for image/video) and `duration_ms` (for audio/video) and `page_count` (for document) are NOT yet persisted into the cx_message storage shape. These fields don't exist as direct attributes on `ImageContent`/`AudioContent`/etc. (they're sourced from the cld_files row at FE-read time via `GET /assets/{file_id}`). Phase 3b will either add them to the dataclasses or compute them at write time so chat-message reads don't need a follow-up GET.
+- Wire shape is still `{"type": "media", ...}` envelope, not a bare `UnifiedMediaBlock`. The `type` field stays as the cx_message dispatcher key. The FE adapter `from-cx-media-part.ts` can shrink (it has fewer fallbacks to handle) but doesn't fully disappear yet.
+
+## Phase 3a backend reference
+
+- Updated writers: [packages/matrx-ai/matrx_ai/config/media_config.py](../packages/matrx-ai/matrx_ai/config/media_config.py) — `ImageContent/AudioContent/VideoContent/DocumentContent/YouTubeVideoContent.to_storage_dict`
+- Updated reader: same file — `reconstruct_media_content` (back-compat path)
+- The reader detects legacy vs new by the presence of `file_id`/`origin` at the top level — both shapes deserialize cleanly
+
+---
+
+# Phase 3b + 2b — Final session batch (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. Wire-shape change is **purely additive on persisted shapes** (no field renames, no removals); same dimensions you already see on the stream's `MediaBlockData.block` now also appear on the `cx_message.content[]` media item after a write→read cycle.
+
+## Phase 3b — dimensions/duration/page_count persisted on cx_message storage
+
+The Phase 1d.1 probe populated these fields on the `cld_files` row + the stream event's `MediaBlockData.block`. Phase 3b plugs the last gap — when the same media block lands in `cx_message.content[]`, the dimensions are preserved through write→read instead of being lost.
+
+### What's new on the persisted shape
+
+Every media item written to `cx_message.content[]` from now on includes (when set):
+
+| Class | New persisted fields |
+|---|---|
+| `ImageContent` | `width`, `height` |
+| `AudioContent` | `duration_ms` |
+| `VideoContent` | `width`, `height`, `duration_ms` |
+| `DocumentContent` | `width`, `height`, `page_count` |
+
+These match the same names already used in `UnifiedMediaBlock` (`ImageBlock.width`, `VideoBlock.duration_ms`, `DocumentBlock.page_count`, etc.) so a chat message's media item is shape-symmetric with a stream event's `MediaBlockData.block`.
+
+### Result for the FE
+
+Before Phase 3b: an FE-rendered chat history loaded `cx_message.content[]` media items via `reconstruct_media_content`. The reader produced `ImageContent(width=None, height=None, ...)` even when the source `cld_files` row knew the dimensions — the FE had to `GET /assets/{file_id}` per item to fill in dimensions for layout.
+
+After Phase 3b: `block.width`/`height`/`duration_ms`/`page_count` are populated directly from the persisted storage. **No follow-up GET needed for chat-message renders.**
+
+### Wire-up for AI-generated media
+
+`MediaPersistResult` gains `width`, `height`, `duration_ms`, `page_count` fields populated from `probe_source_metadata` at write time. `BaseMediaGeneration._build_content_block` threads them through to the content class kwargs. The same values land on the synthetic record used to build the stream's `MediaBlockData.block`, so both surfaces carry identical data.
+
+### What did NOT change
+
+- Wire shape unchanged. Both stream `MediaBlockData.block` and `cx_message.content[]` media items had these fields defined since Phase 0 — Phase 3b just makes them actually populate after a roundtrip.
+- Storage shape is still `{type: "media", kind: "...", ...}` — adding optional fields, not changing the envelope.
+- `reconstruct_media_content` is fully back-compat: legacy messages (no `width`/`height`/`duration_ms` on top level) load with those fields as `None`, exactly like before.
+
+### Phase 3b backend reference
+
+- Dataclass field additions: [packages/matrx-ai/matrx_ai/config/media_config.py](../packages/matrx-ai/matrx_ai/config/media_config.py) — `ImageContent`, `AudioContent`, `VideoContent`, `DocumentContent`
+- `MediaPersistResult` extension: [packages/matrx-ai/matrx_ai/media/media_persistence.py](../packages/matrx-ai/matrx_ai/media/media_persistence.py)
+- `_build_content_block` threading: [packages/matrx-ai/matrx_ai/providers/base_media.py](../packages/matrx-ai/matrx_ai/providers/base_media.py)
+
+---
+
+## Phase 2b — Canonical generation metadata for Replicate, xAI, ElevenLabs
+
+Phase 2 launched the canonical `MediaGenerationMetadata` shape with rich mappers for OpenAI / Google / Together. Phase 2b adds custom mappers for the next three providers we actually use in production:
+
+| Provider | Modality | Highlights surfaced canonically |
+|---|---|---|
+| **Replicate** | image | `seed`, `steps`, `cfg_scale` (from `guidance`/`guidance_scale`), `negative_prompt`, `aspect_ratio`, `width`/`height`, `n_requested` (from `num_outputs`). Anything else from the model's input dict lands under `provider_extras.input` so per-model knobs (`safety_tolerance`, `prompt_strength`, model-specific style flags) survive. |
+| **xAI grok-imagine** | image | `revised_prompt` (grok rewrites prompts like OpenAI), `width`/`height`/`aspect_ratio` when the SDK reports them, `n_requested` |
+| **ElevenLabs** | speech (audio TTS) | `kind="speech"`, `voice_id`, `voice_name`, `audio_format`, `char_count`, `dialogue_mode` (bool — whether the call was multi-speaker dialogue or single-speaker TTS), `duration_seconds`/`duration_ms` from the probed audio |
+
+### ElevenLabs path also got the file_id treatment
+
+The ElevenLabs `_synthesize_audio` path now uses `save_media_envelope_async` instead of `save_media_async`. Effects:
+
+1. `AudioContent.file_id` is populated for ElevenLabs TTS results (was always `None` before)
+2. `MediaBlockData.block.file_id` populated on the stream event — FE can re-resolve signed URLs
+3. `cld_files.metadata.generation` carries the canonical `MediaGenerationMetadata` for the TTS call
+4. `AudioContent.duration_ms` populated automatically from the universal audio probe
+
+Other audio providers (OpenAI TTS, xAI audio, Groq, Google audio) still use the simpler `save_media_async` URL path — they emit `MediaBlockData.block` with `origin: "external"`. Those can be migrated the same way when they become primary surfaces.
+
+### What you can build with this
+
+- **"Regenerate with same settings" on Replicate/Flux images**: replay with `metadata.generation.seed` + `steps` + `cfg_scale` + `negative_prompt`
+- **Show xAI revised prompts to users**: same UX pattern as OpenAI gpt-image revisions
+- **ElevenLabs voice metadata in chat**: render the voice name + character count next to a TTS audio block. The dialogue_mode flag tells you whether to show a single-speaker label or a list of speakers.
+
+### Per-provider coverage matrix (updated)
+
+| Field | OpenAI | Google | Together | **Replicate** | **xAI** | **ElevenLabs** | Others |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `kind`, `provider`, `model`, `prompt`, `n_returned` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `revised_prompt` | ✓ | — | — | — | ✓ | — | — |
+| `width`/`height`/`aspect_ratio` | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| `quality`/`style` | ✓ | — | — | — | — | — | — |
+| `seed`/`steps`/`cfg_scale` | — | — | ✓ | ✓ | — | — | — |
+| `negative_prompt` | — | — | ✓ | ✓ | — | — | — |
+| `safety_flagged` | — | ✓ | — | — | — | — | — |
+| `duration_seconds`/`duration_ms` | — | — | — | — | — | ✓ | — |
+| `voice_id`/`voice_name` (in `provider_extras`) | — | — | — | — | — | ✓ | — |
+| `cost_usd`/`duration_ms` (operational) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ (defaults) |
+
+### Phase 2b backend reference
+
+- Mappers: [packages/matrx-ai/matrx_ai/media/generation_metadata.py](../packages/matrx-ai/matrx_ai/media/generation_metadata.py) — `map_replicate_image_response`, `map_xai_image_response`, `map_elevenlabs_audio_response`
+- Replicate override: [packages/matrx-ai/matrx_ai/providers/replicate/replicate_image_api.py](../packages/matrx-ai/matrx_ai/providers/replicate/replicate_image_api.py)
+- xAI override: [packages/matrx-ai/matrx_ai/providers/xai/xai_image_api.py](../packages/matrx-ai/matrx_ai/providers/xai/xai_image_api.py)
+- ElevenLabs envelope migration: [packages/matrx-ai/matrx_ai/providers/eleven_labs/elevenlabs_api.py](../packages/matrx-ai/matrx_ai/providers/eleven_labs/elevenlabs_api.py)
+
+---
+
+## Session-end coverage snapshot
+
+After this batch, the contract is fully end-to-end for everything the FE consumes — stream events, `Asset` envelopes, `FileRecord`/`GET /files/*`, and `cx_message.content[]` reads all carry the same canonical fields with the same names. The only remaining items on the deferred list don't change the wire contract — they're all "add custom mappers for additional providers" / "build a bulk `/assets?ids=` endpoint when needed" / "switch other audio providers to the envelope path when they become primary surfaces."
+
+---
+
+# Phase 2c — All TTS providers on the envelope path (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. **Closes the "is this a matrx-owned audio or an external URL?" question across every TTS surface.**
+
+## TL;DR
+
+OpenAI TTS, xAI TTS, and Groq TTS were the three remaining audio providers still using `save_media_async` (URL-only). All three migrated to `save_media_envelope_async` so their `AudioContent` carries `file_id`, their `MediaBlockData.block` carries the full matrx-owned shape (`origin: "matrx"`, `signed_url_expires_at`, every URL flavour), and their generation metadata stamps into `cld_files.metadata.generation` like every other media provider.
+
+ElevenLabs was already migrated in Phase 2b. After Phase 2c, **every dedicated TTS endpoint goes through the envelope path** — no FE-side guessing about which audio is re-resolvable.
+
+## What's new
+
+### Wire shape for OpenAI / xAI / Groq TTS
+
+Before Phase 2c:
+
+```jsonc
+{
+  "event": "data",
+  "data": {
+    "type": "media_block",
+    "block": {
+      "kind": "audio", "origin": "external",   // ← external — no file_id
+      "external_url": "https://signed-url-that-will-expire",
+      "mime_type": "audio/mpeg"
+      // ...no file_id, no signed_url_expires_at, no generation metadata
+    }
+  }
+}
+```
+
+After Phase 2c:
+
+```jsonc
+{
+  "event": "data",
+  "data": {
+    "type": "media_block",
+    "block": {
+      "kind": "audio", "origin": "matrx",       // ← matrx-owned
+      "file_id": "abc-...",
+      "file_uri": "s3://...",
+      "cdn_url": "https://cdn.matrxserver.com/...",
+      "signed_url": "https://...",
+      "signed_url_expires_at": 1716000000000,
+      "size_bytes": 45000,
+      "duration_ms": 2500,
+      "metadata": {
+        "generation": {
+          "kind": "speech", "provider": "openai",
+          "model": "gpt-4o-mini-tts",
+          "prompt": "Hello world",
+          "duration_seconds": 2.5, "duration_ms": 2500,
+          "provider_extras": { "voice": "alloy", "audio_format": "mp3" }
+        }
+      }
+    }
+  }
+}
+```
+
+### Canonical generation metadata for TTS
+
+`map_tts_audio_response(provider, model, prompt, voice, audio_format, duration_ms, extra)` is the new generic helper — every TTS provider uses it. Provider-specific knobs (language, speed, etc.) flow through `extra` into `provider_extras`. ElevenLabs keeps its richer `map_elevenlabs_audio_response` since it handles dialogue mode + character count.
+
+Per-provider data captured:
+
+| Provider | Canonical | provider_extras |
+|---|---|---|
+| **OpenAI TTS** | provider, model, prompt, duration_seconds/ms | voice, audio_format |
+| **xAI TTS** | provider, model, prompt, duration_seconds/ms | voice, audio_format, language |
+| **Groq TTS** | provider, model, prompt, duration_seconds/ms | voice, audio_format |
+| **ElevenLabs** (Phase 2b) | provider, model, prompt, duration_seconds/ms | voice_id, voice_name, audio_format, char_count, dialogue_mode |
+
+## What did NOT change
+
+- **Wire shape unchanged.** AudioBlock had `file_id` defined since Phase 0 — just always null for these providers. Now it's populated.
+- **No new fields on the block.**
+- **Same UnifiedMediaBlock shape** as ElevenLabs.
+
+## Still deferred (the one remaining audio surface)
+
+**Google audio (Gemini multi-modal responses)** — Google's audio doesn't go through a dedicated TTS endpoint. It comes back as inline audio data on a multi-modal Gemini response, and `AudioContent.from_google` calls `save_media()` (synchronous, URL-only) to persist it. Migrating Google audio requires:
+
+1. Changing `AudioContent.from_google` to be async + use envelope persistence, or
+2. Re-walking the Gemini response in `_emit_media_from_response` to swap external_url blocks for matrx blocks after the audio is persisted
+
+This is structurally different from the dedicated-TTS pattern and warrants its own focused change. **For now, Google audio is the only audio surface still emitting `origin: "external"` blocks.**
+
+## Audio coverage matrix (post Phase 2c)
+
+| Provider | TTS endpoint | Envelope path | file_id on block | Generation metadata |
+|---|---|:-:|:-:|:-:|
+| ElevenLabs | text_to_dialogue / TTS | ✓ | ✓ | ✓ (dialogue + voice_id) |
+| OpenAI | audio.speech.create | ✓ **(NEW)** | ✓ **(NEW)** | ✓ **(NEW)** |
+| xAI | api.x.ai/v1/tts | ✓ **(NEW)** | ✓ **(NEW)** | ✓ **(NEW)** |
+| Groq | audio.speech.create (Orpheus/PlayAI) | ✓ **(NEW)** | ✓ **(NEW)** | ✓ **(NEW)** |
+| Google | (multi-modal Gemini response) | — (deferred) | — | — |
+
+## Phase 2c backend reference
+
+- TTS mapper: [packages/matrx-ai/.../media/generation_metadata.py](../packages/matrx-ai/matrx_ai/media/generation_metadata.py) — `map_tts_audio_response`
+- OpenAI TTS: [packages/matrx-ai/.../providers/openai/openai_api.py](../packages/matrx-ai/matrx_ai/providers/openai/openai_api.py) — `_execute_tts`
+- xAI TTS: [packages/matrx-ai/.../providers/xai/xai_api.py](../packages/matrx-ai/matrx_ai/providers/xai/xai_api.py) — `_execute_tts`
+- Groq TTS: [packages/matrx-ai/.../providers/groq/groq_api.py](../packages/matrx-ai/matrx_ai/providers/groq/groq_api.py) — `_execute_tts`
+
+---
+
+# Phase 1d.2 + 3c — Comprehensive backfill (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. **Two operator-runnable CLIs** that apply every Phase 1 / 1c / 1d.1 / 3a treatment to existing rows so UI testing on legacy data shows the same visuals + canonical fields as fresh uploads. **No FE wire-shape change** — this populates fields that already exist on the contract.
+
+## TL;DR
+
+Two CLIs you run once per environment after every new media phase ships:
+
+1. **`python -m aidream.cli.thumbnail_backfill`** — per cld_files row:
+   probes dimensions/duration/page_count (Phase 1d.1), renders
+   SOCIAL_BASELINE variants (Phase 1), renders kind-specific full-res
+   variants (Phase 1c). Idempotent — re-runnable cheaply.
+
+2. **`python -m aidream.cli.cx_message_media_backfill`** — walks every
+   `cx_message.content[]`, finds media items missing `file_id`/`origin`,
+   looks them up in `cld_files` by `storage_uri`, and rewrites with
+   canonical Phase 3a/3b fields (file_id, origin, size_bytes, width,
+   height, duration_ms, page_count).
+
+After both CLIs run, every legacy row + every legacy message item carries
+the same canonical data your FE sees on new uploads.
+
+## What the file-level backfill now does
+
+The `generate_thumbnail_for_file` helper (despite the legacy name) is no
+longer just thumbnails — it's the comprehensive media-processing pass:
+
+| Step | What | Phase introduced |
+|---|---|---|
+| 1 | Probe `width`/`height`/`duration_ms`/`page_count` from source bytes | 1d.1 |
+| 2 | Persist probed values to cld_files columns (when null — non-overwriting) | 1d.1 |
+| 3 | Rasterise via universal dispatcher (image passthrough, PDF page 1, video frame, audio waveform, mime-icon fallback) | 1 |
+| 4 | Render SOCIAL_BASELINE variants (og_url, thumbnail_url, tiny_url) | 1 |
+| 5 | Render kind-specific full-res variants (page1_url for PDFs, poster_url for videos) | 1c |
+
+Idempotent at every level — VariantsService skips variant keys that
+already exist, column updates only fire when the column is null, and
+the pre-flight check in the backfill skips rows that are fully complete
+without even reading the master bytes.
+
+### CLI usage
+
+```bash
+# Process every visual file (image/pdf/video/audio):
+python -m aidream.cli.thumbnail_backfill
+
+# Smoke-test on 50 files before the full run:
+python -m aidream.cli.thumbnail_backfill --limit 50
+
+# Scope to one user:
+python -m aidream.cli.thumbnail_backfill --owner <UUID>
+
+# Force re-render even on complete rows (use after tweaking the dispatcher):
+python -m aidream.cli.thumbnail_backfill --force
+```
+
+Stats reported: `processed` / `skipped_complete` / `noop` / `failed`.
+
+## What the cx_message backfill now does
+
+For every `cx_message` row in the database, walks each `content[]`
+item. For media items missing canonical Phase 3a fields (`file_id`,
+`origin`), looks up the corresponding cld_files row via `storage_uri`
+match and rewrites in place with:
+
+- `file_id` (the FE can now re-resolve URLs via `GET /assets/{file_id}`)
+- `origin` (always `"matrx"` since we matched a cld_files row)
+- `size_bytes`, `mime_type` (filled when missing)
+- Kind-specific: `width`/`height` for image/video, `duration_ms` for
+  audio/video, `page_count` for documents
+
+Items without a `file_uri` field are skipped (no way to match them to
+a row reliably). YouTube items are skipped (always external). The
+rewrite is **purely additive** — every existing field is preserved.
+
+### CLI usage
+
+```bash
+# Process every cx_message row:
+python -m aidream.cli.cx_message_media_backfill
+
+# Dry-run — report what would change without writing:
+python -m aidream.cli.cx_message_media_backfill --dry-run
+
+# Smoke-test on 200 messages:
+python -m aidream.cli.cx_message_media_backfill --limit 200
+
+# Scope to one conversation:
+python -m aidream.cli.cx_message_media_backfill --conversation <UUID>
+```
+
+Stats reported: `rows_scanned`, `rows_already_canonical`, `rows_updated`,
+`items_enriched`, `items_skipped_no_uri`, `items_skipped_no_match`,
+`update_failures`.
+
+## Recommended run order
+
+Run the file-level backfill first (it populates the cld_files columns
+that the cx_message backfill reads). Then run cx_message:
+
+```bash
+# 1. Populate cld_files variants + dimensions on every old row
+python -m aidream.cli.thumbnail_backfill
+
+# 2. Backfill cx_message items now that cld_files has the data to copy
+python -m aidream.cli.cx_message_media_backfill
+```
+
+Both are idempotent + cursor-paginated, so they can be re-run anytime
+new phases ship to populate the latest fields on legacy data.
+
+## What did NOT change
+
+- **No wire-shape change.** Every field these CLIs populate has been
+  on the contract since the phase introduced it.
+- **No DB migrations.** Both scripts use existing columns + JSONB fields.
+- **No FE work required.** Once both CLIs have run, the FE renderers
+  that already work for fresh uploads will work identically for legacy
+  data — same fields, same shape, same behaviour.
+
+## Phase 1d.2 + 3c backend reference
+
+- File-level core: [packages/matrx-utils/.../cloud_sync/processing/thumbnails.py](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/processing/thumbnails.py) — `generate_thumbnail_for_file` / `ensure_media_processing`
+- File-level CLI: [aidream/cli/thumbnail_backfill.py](../aidream/cli/thumbnail_backfill.py)
+- cx_message CLI: [aidream/cli/cx_message_media_backfill.py](../aidream/cli/cx_message_media_backfill.py)
+- Backfill orchestrator: [packages/matrx-utils/.../cloud_sync/backfill/thumbnails.py](../packages/matrx-utils/matrx_utils/file_handling/cloud_sync/backfill/thumbnails.py) — `run_thumbnail_backfill`
+
+---
+
+# Phase 2c-google — Google multi-modal media on the envelope path (Added 2026-05-16)
+
+> **Status:** Shipped to `main`. **Closes the last external-origin media surface.** Every audio/image/video that comes back from Gemini multi-modal responses now persists via the canonical envelope path with `file_id`, variants, and generation metadata — same shape as every other provider.
+
+## TL;DR
+
+The previous Google audio/image/video path used the SYNCHRONOUS `from_google` classmethods which call `save_media()` (sync, URL-only). The returned `AudioContent` / `ImageContent` / `VideoContent` carried `url` + `mime_type` only — no `file_id` — so `_emit_media_from_response` emitted blocks with `origin: "external"`.
+
+New: `from_google_async` classmethods on each media class + `GoogleTranslator.from_google_async`. The Google API path now `await`s these so the returned content carries:
+
+- `file_id`, `file_uri`, `size_bytes`
+- `width`/`height` (image, video) + `duration_ms` (audio, video) from the probe
+- `metadata.generation` with canonical `MediaGenerationMetadata`
+- SOCIAL_BASELINE variants (og_url, thumbnail_url, tiny_url) rendered automatically as part of `save_media_envelope_async`
+- Kind-specific variants (`page1_url` for PDFs, `poster_url` for videos)
+
+`_emit_media_from_response` was already shape-aware (Phase 0 wire conversion) — once `content_item.file_id` is set, it automatically routes through `cloud_file_to_media_block` and emits `origin: "matrx"` blocks. Zero additional changes needed there.
+
+## Audio coverage matrix (final, no remaining external-origin surfaces)
+
+| Provider | Surface | Envelope path | file_id on block | Generation metadata |
+|---|---|:-:|:-:|:-:|
+| ElevenLabs | text_to_dialogue / TTS | ✓ | ✓ | ✓ (dialogue + voice_id + char_count) |
+| OpenAI | audio.speech.create | ✓ | ✓ | ✓ (voice, audio_format) |
+| xAI | api.x.ai/v1/tts | ✓ | ✓ | ✓ (voice, audio_format, language) |
+| Groq | audio.speech.create (Orpheus/PlayAI) | ✓ | ✓ | ✓ (voice, audio_format) |
+| **Google** | Gemini multi-modal | ✓ **(NEW — Phase 2c-google)** | ✓ **(NEW)** | ✓ **(NEW — generic mapper)** |
+
+## What did NOT change
+
+- **Wire shape unchanged.** AudioBlock / ImageBlock / VideoBlock had `file_id` defined since Phase 0; just always null for Google multi-modal until now.
+- **Sync `from_google` classmethods preserved** for any legacy callers (e.g. test fixtures, non-async contexts). They keep producing URL-only content.
+- **YouTube + file_data parts unchanged.** YouTube has no inline data to persist. `file_data` parts reference external Google-hosted URIs that don't need our envelope path.
+
+## Failure-mode fallback
+
+If `save_media_envelope_async` fails inside any of the three `from_google_async` paths, the helper logs a yellow warning and falls back to the legacy sync `from_google` — the response still ships with at least the URL-only content rather than dropping the media entirely.
+
+## Final session contract summary
+
+Every dedicated media surface — image, audio, video, document, youtube — across every supported provider (OpenAI, Google, Together, Replicate, xAI, ElevenLabs, Groq, **and now Google multi-modal**) now emits canonical `MediaBlockData` with `origin: "matrx"`, `file_id`, all four URL flavours, `signed_url_expires_at`, and `metadata.generation`. The FE can write one renderer for each kind and trust the same fields exist regardless of provider.
+
+## Phase 2c-google backend reference
+
+- Async classmethods: [packages/matrx-ai/matrx_ai/config/media_config.py](../packages/matrx-ai/matrx_ai/config/media_config.py) — `AudioContent.from_google_async`, `ImageContent.from_google_async`, `VideoContent.from_google_async`
+- Async translator: [packages/matrx-ai/matrx_ai/providers/google/translator.py](../packages/matrx-ai/matrx_ai/providers/google/translator.py) — `GoogleTranslator.from_google_async`
+- Google API caller: [packages/matrx-ai/matrx_ai/providers/google/google_api.py](../packages/matrx-ai/matrx_ai/providers/google/google_api.py) — both call sites now `await`
+
 

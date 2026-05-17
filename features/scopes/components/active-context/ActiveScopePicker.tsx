@@ -1,0 +1,489 @@
+// features/scopes/components/active-context/ActiveScopePicker.tsx
+//
+// Surface A picker — writes to appContextSlice. THE ONLY component family
+// allowed to dispatch setOrganization / setScopeSelections / setProject /
+// setTask. Every other "tag this with…" picker in the codebase writes to
+// `ctx_scope_assignments` via setEntityScopes (Surface B) — see
+// features/scopes/FEATURE.md §"Global vs Local context".
+//
+// Replaces features/shell/components/sidebar/DirectContextSelection.tsx as
+// the test bed. The old slices (state.scopes, state.hierarchy, ...) are
+// no longer read here — everything routes through useScopeTree (which
+// reads state.scopesTree) and the active-context selectors.
+//
+// Visual primitives — ContextRow / HoverFlyout / FlyoutItem — are reused
+// from features/agent-context/components/ContextPickerPrimitives.tsx
+// (which has no Redux dependency). Those primitives are slated for
+// retirement in Phase 5; when they leave, this file gets a one-line swap
+// to whatever the replacement is. The contract here is the data + dispatch
+// layer, not the visual layer.
+
+"use client";
+
+import type * as React from "react";
+import { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import {
+  Building,
+  FolderKanban,
+  ListCheck,
+  ChevronDown,
+  X,
+  Settings2,
+  AlertTriangle,
+} from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  clearContext,
+  selectOrganizationName,
+  selectProjectName,
+  selectTaskName,
+  setOrganization,
+  setProject,
+  setScopeSelections,
+  setTask,
+} from "@/lib/redux/slices/appContextSlice";
+import {
+  selectActiveOrganizationId,
+  selectActiveProjectId,
+  selectActiveScopeSelections,
+  selectActiveTaskId,
+} from "@/features/scopes/redux/selectors/active-context";
+import {
+  makeSelectOrphanProjects,
+  makeSelectProjectsForOrg,
+  makeSelectScopeTypesForOrg,
+  makeSelectTaskBucket,
+  makeSelectTasksForLevel,
+  selectOrganizationsList,
+  selectTreeStatus,
+} from "@/features/scopes/redux/selectors/tree";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { ensureScopeTasks } from "@/features/scopes/redux/thunks/ensureScopeTasks";
+import { ensureOrphanProjects } from "@/features/scopes/redux/thunks/ensureOrphanProjects";
+import { selectDefaultContextPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
+import {
+  ContextRow,
+  type PickerOption,
+} from "@/features/agent-context/components/ContextPickerPrimitives";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { cn } from "@/utils/cn";
+
+export interface ActiveScopePickerProps {
+  /** Start expanded (e.g., inside a bottom sheet). Default: false. */
+  defaultExpanded?: boolean;
+  /** Hide the chevron + collapsed header (always expanded). */
+  alwaysExpanded?: boolean;
+}
+
+type CollapsedIconDescriptor =
+  | { kind: "lucide"; Component: React.ComponentType<{ className?: string }> }
+  | { kind: "dynamic"; iconName: string };
+
+export function ActiveScopePicker({
+  defaultExpanded = false,
+  alwaysExpanded = false,
+}: ActiveScopePickerProps) {
+  const dispatch = useAppDispatch();
+
+  // ─── Boot fetch + status ───────────────────────────────────────────
+  useScopeTree(); // ensures the tree is fetched lazily on first render
+  const treeStatus = useAppSelector(selectTreeStatus);
+
+  // ─── Active context selectors ──────────────────────────────────────
+  const orgId = useAppSelector(selectActiveOrganizationId);
+  const orgName = useAppSelector(selectOrganizationName);
+  const projectId = useAppSelector(selectActiveProjectId);
+  const projectName = useAppSelector(selectProjectName);
+  const taskId = useAppSelector(selectActiveTaskId);
+  const taskName = useAppSelector(selectTaskName);
+  const scopeSelections = useAppSelector(selectActiveScopeSelections);
+
+  // ─── Tree selectors (per active org) ───────────────────────────────
+  const organizations = useAppSelector(selectOrganizationsList);
+  const selectScopeTypes = useMemo(() => makeSelectScopeTypesForOrg(), []);
+  const selectProjectsForOrg = useMemo(() => makeSelectProjectsForOrg(), []);
+  const selectOrphanProjects = useMemo(() => makeSelectOrphanProjects(), []);
+  const scopeTypes = useAppSelector((s) => selectScopeTypes(s, orgId));
+  const projects = useAppSelector((s) => selectProjectsForOrg(s, orgId));
+  const orphanProjectsBucket = useAppSelector((s) =>
+    selectOrphanProjects(s, orgId),
+  );
+
+  // ─── Task selectors (per drill-down level) ─────────────────────────
+  //
+  // Resolution order for the active task list:
+  //   1. Active project selected   → tasks under that project
+  //   2. Else active scope selected → tasks tagged with that scope
+  //   3. Else active org selected   → tasks at the org level
+  //   4. Else nothing
+  const activeScopeIds = useMemo(
+    () => Object.values(scopeSelections).filter(Boolean) as string[],
+    [scopeSelections],
+  );
+  const taskLevel: { level: "project" | "scope" | "org"; id: string } | null =
+    useMemo(() => {
+      if (projectId) return { level: "project", id: projectId };
+      if (activeScopeIds[0]) return { level: "scope", id: activeScopeIds[0] };
+      if (orgId) return { level: "org", id: orgId };
+      return null;
+    }, [projectId, activeScopeIds, orgId]);
+
+  const selectTaskBucket = useMemo(() => makeSelectTaskBucket(), []);
+  const selectTasks = useMemo(() => makeSelectTasksForLevel(), []);
+  const taskBucket = useAppSelector((s) =>
+    taskLevel ? selectTaskBucket(s, taskLevel) : null,
+  );
+  const tasksForLevel = useAppSelector((s) =>
+    taskLevel ? selectTasks(s, taskLevel) : undefined,
+  );
+
+  // Lazy-fetch tasks when the level changes.
+  useEffect(() => {
+    if (!taskLevel) return;
+    void dispatch(ensureScopeTasks(taskLevel.level, taskLevel.id));
+  }, [dispatch, taskLevel?.level, taskLevel?.id]);
+
+  // ─── Default-context preference (one-shot) ──────────────────────────
+  const defaultCtxPref = useAppSelector(selectDefaultContextPreferences);
+  const appliedDefault = useRef(false);
+  useEffect(() => {
+    if (appliedDefault.current) return;
+    if (!defaultCtxPref || defaultCtxPref.level === "none") {
+      appliedDefault.current = true;
+      return;
+    }
+    if (!organizations || organizations.length === 0) return;
+    const {
+      level,
+      organizationId,
+      projectId: prefProjectId,
+      taskId: prefTaskId,
+    } = defaultCtxPref;
+    if (
+      (level === "org" || level === "project" || level === "task") &&
+      organizationId
+    ) {
+      const org = organizations.find((o) => o.id === organizationId);
+      if (org) dispatch(setOrganization({ id: org.id, name: org.name }));
+    }
+    if ((level === "project" || level === "task") && prefProjectId) {
+      const proj = projects.find((p) => p.id === prefProjectId);
+      if (proj) dispatch(setProject({ id: proj.id, name: proj.name }));
+    }
+    if (level === "task" && prefTaskId) {
+      // Task name resolves later when the task bucket fetches; for now
+      // we set the id and let the chips/header backfill the name.
+      dispatch(setTask({ id: prefTaskId, name: null }));
+    }
+    appliedDefault.current = true;
+  }, [dispatch, defaultCtxPref, organizations, projects]);
+
+  // ─── Collapsed/expanded UI ─────────────────────────────────────────
+  const [expanded, setExpanded] = useState(defaultExpanded || alwaysExpanded);
+  const reallyExpanded = alwaysExpanded || expanded;
+
+  // ─── Picker options ───────────────────────────────────────────────
+  const orgOptions: PickerOption[] = useMemo(
+    () => organizations.map((o) => ({ id: o.id, name: o.name })),
+    [organizations],
+  );
+
+  const projectOptions: PickerOption[] = useMemo(
+    () => projects.map((p) => ({ id: p.id, name: p.name })),
+    [projects],
+  );
+
+  const orphanProjectOptions: PickerOption[] = useMemo(
+    () =>
+      orphanProjectsBucket.status === "ready"
+        ? orphanProjectsBucket.items.map((p) => ({
+            id: p.id,
+            name: p.name,
+          }))
+        : [],
+    [orphanProjectsBucket],
+  );
+
+  const taskOptions: PickerOption[] = useMemo(
+    () =>
+      (tasksForLevel ?? [])
+        .filter((t) => t.status !== "completed")
+        .map((t) => ({ id: t.id, name: t.title, status: t.status })),
+    [tasksForLevel],
+  );
+
+  // ─── Handlers (Surface A — all writes to appContextSlice) ──────────
+  const handleSelectOrg = useCallback(
+    (id: string | null) => {
+      const org = organizations.find((o) => o.id === id);
+      dispatch(setOrganization({ id, name: org?.name ?? null }));
+    },
+    [dispatch, organizations],
+  );
+
+  const handleSelectScope = useCallback(
+    (typeId: string, scopeId: string | null) => {
+      const next: Record<string, string | null> = { ...scopeSelections };
+      if (scopeId) next[typeId] = scopeId;
+      else delete next[typeId];
+      dispatch(setScopeSelections(next));
+    },
+    [dispatch, scopeSelections],
+  );
+
+  const handleSelectProject = useCallback(
+    (id: string | null) => {
+      const proj =
+        projects.find((p) => p.id === id) ??
+        orphanProjectsBucket.items.find((p) => p.id === id);
+      dispatch(setProject({ id, name: proj?.name ?? null }));
+    },
+    [dispatch, projects, orphanProjectsBucket.items],
+  );
+
+  const handleSelectTask = useCallback(
+    (id: string | null) => {
+      const task = tasksForLevel?.find((t) => t.id === id);
+      if (task?.project_id && !projectId) {
+        const proj = projects.find((p) => p.id === task.project_id);
+        dispatch(setProject({ id: task.project_id, name: proj?.name ?? null }));
+      }
+      dispatch(setTask({ id, name: task?.title ?? null }));
+    },
+    [dispatch, tasksForLevel, projects, projectId],
+  );
+
+  const handleClearAll = useCallback(() => {
+    dispatch(clearContext());
+  }, [dispatch]);
+
+  const handleLoadOrphanProjects = useCallback(() => {
+    if (!orgId) return;
+    void dispatch(ensureOrphanProjects(orgId));
+  }, [dispatch, orgId]);
+
+  // ─── Collapsed-header summary ──────────────────────────────────────
+  const hasAnyContext =
+    !!orgId || !!projectId || !!taskId || activeScopeIds.length > 0;
+
+  const collapsedLabel = useMemo(() => {
+    if (taskName) return taskName;
+    if (projectName) return projectName;
+    const firstScopeId = activeScopeIds[0];
+    if (firstScopeId) {
+      for (const t of scopeTypes) {
+        const s = t.scopes.find((sc) => sc.id === firstScopeId);
+        if (s) return s.name;
+      }
+    }
+    if (orgName) return orgName;
+    return null;
+  }, [taskName, projectName, activeScopeIds, scopeTypes, orgName]);
+
+  // Discriminated descriptor instead of a component-during-render — keeps
+  // render-time identity stable and lets React Compiler optimize.
+  const collapsedIcon: CollapsedIconDescriptor = (() => {
+    if (taskId) return { kind: "lucide", Component: ListCheck };
+    if (projectId) return { kind: "lucide", Component: FolderKanban };
+    const firstScopeId = activeScopeIds[0];
+    if (firstScopeId) {
+      for (const t of scopeTypes) {
+        const s = t.scopes.find((sc) => sc.id === firstScopeId);
+        if (s) return { kind: "dynamic", iconName: t.icon };
+      }
+    }
+    if (orgId) return { kind: "lucide", Component: Building };
+    return { kind: "lucide", Component: Settings2 };
+  })();
+
+  // ─── Render ────────────────────────────────────────────────────────
+  const collapsedIconClass = cn(
+    "h-3.5 w-3.5 flex-shrink-0 transition-colors",
+    hasAnyContext
+      ? "text-primary"
+      : "text-muted-foreground group-hover:text-foreground",
+  );
+
+  return (
+    <div>
+      {!alwaysExpanded && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setExpanded((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setExpanded((v) => !v);
+          }}
+          className="flex items-center gap-2 w-full px-2.5 py-1 text-left hover:bg-accent/40 transition-colors group cursor-pointer select-none"
+        >
+          {collapsedIcon.kind === "lucide" ? (
+            <collapsedIcon.Component className={collapsedIconClass} />
+          ) : (
+            <DynamicIcon
+              name={collapsedIcon.iconName}
+              className={collapsedIconClass}
+            />
+          )}
+          <span
+            className={cn(
+              "text-xs flex-1 truncate",
+              hasAnyContext
+                ? "text-foreground font-medium"
+                : "text-muted-foreground",
+            )}
+          >
+            {collapsedLabel ?? "Set Context"}
+          </span>
+          {hasAnyContext && !reallyExpanded && (
+            <button
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleClearAll();
+              }}
+              className="text-muted-foreground/40 hover:text-muted-foreground transition-colors mr-0.5"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          )}
+          <ChevronDown
+            className={cn(
+              "h-3 w-3 text-muted-foreground transition-transform duration-150",
+              reallyExpanded && "rotate-180",
+            )}
+          />
+        </div>
+      )}
+
+      {reallyExpanded && (
+        <div className="px-1.5 pb-1">
+          {treeStatus === "loading" && scopeTypes.length === 0 && (
+            <>
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2.5 px-2.5 py-1.5"
+                >
+                  <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse flex-shrink-0" />
+                  <div className="h-3 w-16 rounded bg-muted animate-pulse" />
+                </div>
+              ))}
+            </>
+          )}
+
+          {treeStatus === "error" && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] text-destructive">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              Failed to load context tree.
+            </div>
+          )}
+
+          <ContextRow
+            icon={Building}
+            label="Organization"
+            selectedName={orgName}
+            selectedId={orgId}
+            accentClass="text-violet-500"
+            options={orgOptions}
+            onSelect={handleSelectOrg}
+            emptyText="No organizations found"
+          />
+
+          {scopeTypes.map((scopeType) => {
+            const selectedScopeId = scopeSelections[scopeType.id] ?? null;
+            const selectedScope = selectedScopeId
+              ? scopeType.scopes.find((s) => s.id === selectedScopeId)
+              : null;
+            const scopeOptions: PickerOption[] = scopeType.scopes.map((s) => ({
+              id: s.id,
+              name: s.name,
+            }));
+            return (
+              <ContextRow
+                key={scopeType.id}
+                icon={(props) => (
+                  <DynamicIcon name={scopeType.icon} {...props} />
+                )}
+                label={scopeType.label_singular}
+                selectedName={selectedScope?.name ?? null}
+                selectedId={selectedScopeId}
+                accentClass="text-emerald-500"
+                options={scopeOptions}
+                onSelect={(id) => handleSelectScope(scopeType.id, id)}
+                emptyText={`No ${scopeType.label_plural.toLowerCase()} found`}
+              />
+            );
+          })}
+
+          {scopeTypes.length > 0 && (
+            <div className="mx-1 my-0.5 border-t border-border/40" />
+          )}
+
+          <ContextRow
+            icon={FolderKanban}
+            label="Project"
+            selectedName={projectName}
+            selectedId={projectId}
+            accentClass="text-amber-500"
+            options={projectOptions}
+            orphanOptions={orphanProjectOptions}
+            onSelect={handleSelectProject}
+            emptyText={
+              orgId
+                ? "No projects in this organization"
+                : "Select an organization first"
+            }
+          />
+
+          {orgId && orphanProjectsBucket.status === "unfetched" && (
+            <button
+              onClick={handleLoadOrphanProjects}
+              className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors rounded-md hover:bg-accent/30"
+            >
+              <FolderKanban className="h-2.5 w-2.5" />
+              Load other projects
+            </button>
+          )}
+          {orphanProjectsBucket.status === "empty" && (
+            <div className="px-2.5 py-1 text-[10px] text-muted-foreground/40">
+              No other projects.
+            </div>
+          )}
+
+          <ContextRow
+            icon={ListCheck}
+            label="Tasks"
+            selectedName={taskName}
+            selectedId={taskId}
+            accentClass="text-sky-500"
+            options={taskOptions}
+            onSelect={handleSelectTask}
+            emptyText={
+              !taskLevel
+                ? "Pick an org, scope, or project first"
+                : taskBucket?.status === "loading"
+                  ? "Loading tasks…"
+                  : taskBucket?.status === "empty"
+                    ? "No open tasks at this level"
+                    : "Search tasks"
+            }
+          />
+
+          {hasAnyContext && (
+            <div className="pt-0.5">
+              <button
+                onClick={handleClearAll}
+                className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors rounded-md hover:bg-accent/30"
+              >
+                <X className="h-2.5 w-2.5" />
+                Clear context
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ActiveScopePicker;

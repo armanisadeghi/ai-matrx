@@ -35,7 +35,7 @@ import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
-import { createPdfWidgetsScope } from "@/features/tool-registry/surfaces/manifests/pdf-widgets.manifest";
+import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets.manifest";
 
 export type SectionKey =
   | "widgets"

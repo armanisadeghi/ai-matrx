@@ -156,18 +156,14 @@ export function useUnifiedImageUrl(
       };
     }
 
-    // ── Matrx — placeholder: base64 / thumbnail ────────────────────────
+    // ── Matrx — placeholder: base64 (streaming partials) ───────────────
+    // Phase 1b: `block.thumbnailUrl` is no longer carried on the block —
+    // thumbnails live on `Asset.variants["thumbnail_url"]` and surface
+    // through `MediaThumbnail` (driven by `CloudFile.thumbnailUrl`),
+    // not through the image renderer's URL pipeline.
     if (block.base64) {
       return {
         src: toDataUri(block.base64, block.mimeType),
-        status: handlerStatus === "resolving" ? "loading" : "ready",
-        isPlaceholder: true,
-        fileId: block.fileId,
-      };
-    }
-    if (block.thumbnailUrl) {
-      return {
-        src: block.thumbnailUrl,
         status: handlerStatus === "resolving" ? "loading" : "ready",
         isPlaceholder: true,
         fileId: block.fileId,

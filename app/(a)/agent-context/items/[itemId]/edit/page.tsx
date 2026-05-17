@@ -34,7 +34,10 @@ function EditItemContent({ itemId }: { itemId: string }) {
   const router = useRouter();
   const { scope } = useContextScope();
   const { data: item, isLoading: itemLoading } = useContextItem(itemId);
-  const { data: value, isLoading: valueLoading } = useContextItemValue(itemId);
+  const { data: value, isLoading: valueLoading } = useContextItemValue(
+    itemId,
+    scope.scopeId,
+  );
   const updateItem = useUpdateContextItem(scope.scopeType, scope.scopeId);
   const createValue = useCreateContextValue(scope.scopeType, scope.scopeId);
 

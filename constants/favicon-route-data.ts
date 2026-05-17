@@ -55,6 +55,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/rag/repositories", favicon: { color: "#854d0e", letter: "Rp" } },
   { href: "/code", favicon: { color: "#4f46e5", letter: "Cd" } },
   { href: "/workflows", favicon: { color: "#6d28d9", letter: "Wk" } },
+  { href: "/scopes", favicon: { color: "#059669", letter: "Sc" } },
   { href: "/agent-context", favicon: { color: "#0891b2", letter: "Cx" } },
   { href: "/settings", favicon: { color: "#475569", letter: "St" } },
   { href: "/ai/cockpit", favicon: { color: "#7c3aed", letter: "Ac" } },

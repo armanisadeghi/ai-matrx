@@ -179,6 +179,24 @@ export interface ResourceChangedPayload {
   metadata?: Record<string, unknown>;
 }
 
+export interface ContextStatePayload {
+  conversation_id: string;
+  last_request_input_tokens: number;
+  last_request_cached_tokens: number;
+  last_request_output_tokens: number;
+  total_chars_visible_to_model: number;
+  message_count_visible: number;
+  cache_state: Record<string, unknown>;
+  measured_at: string;
+}
+
+export interface ContextTrimmedPayload {
+  conversation_id: string;
+  request_id: string | null;
+  trim_summary: Record<string, unknown>;
+  measured_at: string;
+}
+
 export interface ContextAnalysisPayload {
   provider: string;
   model?: string | null;
@@ -422,8 +440,6 @@ export interface AudioBlock {
   signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
-  thumbnail_url?: string | null;
-  thumbnail_uri?: string | null;
   external_url?: string | null;
   source_label?: string | null;
   base64?: string | null;
@@ -450,8 +466,6 @@ export interface DocumentBlock {
   signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
-  thumbnail_url?: string | null;
-  thumbnail_uri?: string | null;
   external_url?: string | null;
   source_label?: string | null;
   base64?: string | null;
@@ -478,8 +492,6 @@ export interface ImageBlock {
   signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
-  thumbnail_url?: string | null;
-  thumbnail_uri?: string | null;
   external_url?: string | null;
   source_label?: string | null;
   base64?: string | null;
@@ -510,8 +522,6 @@ export interface VideoBlock {
   signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
-  thumbnail_url?: string | null;
-  thumbnail_uri?: string | null;
   external_url?: string | null;
   source_label?: string | null;
   base64?: string | null;
@@ -540,8 +550,6 @@ export interface YouTubeBlock {
   signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
-  thumbnail_url?: string | null;
-  thumbnail_uri?: string | null;
   external_url?: string | null;
   source_label?: string | null;
   base64?: string | null;
@@ -2415,6 +2423,16 @@ export interface StructuredOutputEvent {
   data: StructuredOutputPayload;
 }
 
+export interface ContextStateEvent {
+  event: "context_state";
+  data: ContextStatePayload;
+}
+
+export interface ContextTrimmedEvent {
+  event: "context_trimmed";
+  data: ContextTrimmedPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -2435,7 +2453,9 @@ export type TypedStreamEvent =
   | RecordUpdateEvent
   | ResourceChangedEvent
   | ContextAnalysisEvent
-  | StructuredOutputEvent;
+  | StructuredOutputEvent
+  | ContextStateEvent
+  | ContextTrimmedEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -2545,6 +2565,14 @@ export function isContextAnalysisEvent(e: TypedStreamEvent): e is { event: "cont
 
 export function isStructuredOutputEvent(e: TypedStreamEvent): e is { event: "structured_output"; data: StructuredOutputPayload } {
   return e.event === "structured_output";
+}
+
+export function isContextStateEvent(e: TypedStreamEvent): e is { event: "context_state"; data: ContextStatePayload } {
+  return e.event === "context_state";
+}
+
+export function isContextTrimmedEvent(e: TypedStreamEvent): e is { event: "context_trimmed"; data: ContextTrimmedPayload } {
+  return e.event === "context_trimmed";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

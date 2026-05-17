@@ -9,7 +9,7 @@
  * - Thunks call `registerRequest({ requestId, kind, resourceId, resourceType })`
  *   before dispatching a REST write. The optimistic reducer has already
  *   applied the change locally.
- * - The realtime middleware calls `consumeIfOwnEcho(payload)` on every incoming
+ * - The realtime middleware calls `isOwnEcho(payload)` on every incoming
  *   event. If the payload's `metadata.request_id` matches a live ledger
  *   entry, it's our own echo — skip the dispatch. Otherwise the change came
  *   from elsewhere (server, other device, share-link visitor) and we apply it.
@@ -17,18 +17,21 @@
  *   legitimate later updates to the same resource. Thunks also explicitly
  *   `releaseRequest(requestId)` once the REST call returns (success or error).
  *
- * NOTE on dedup fallback
- * ----------------------
- * The current Python backend may or may not thread X-Request-Id through to the
- * realtime payload (see PYTHON_TEAM_COMMS.md). Until it does, we also expose
- * `findRecentOwnWrite` for timestamp-fuzzy matching within ~2s of a recent
- * own write to the same resource_id.
+ * As of 2026-05-17 the Python backend reliably stamps
+ * `metadata.request_id` on every cloud_sync write (commit `d647c143` —
+ * see features/files/from_python/UPDATES.md §9). The legacy 2s
+ * timestamp-fuzzy fallback was removed at that point — direct
+ * supabase writes that don't stamp request_id will trigger an echo
+ * re-apply, which is idempotent (upsert keyed on id).
  */
 
-import type { LedgerEntry, RequestKind, ResourceType } from "@/features/files/types";
+import type {
+  LedgerEntry,
+  RequestKind,
+  ResourceType,
+} from "@/features/files/types";
 
 const ENTRY_TTL_MS = 30_000;
-const FUZZY_WINDOW_MS = 2_000;
 
 type EntryWithTimer = LedgerEntry & { _timer: ReturnType<typeof setTimeout> };
 
@@ -85,9 +88,8 @@ export function getEntry(requestId: string): LedgerEntry | null {
 }
 
 /**
- * Checks a realtime payload for an own-echo match via the primary path
- * (explicit `request_id` in the row metadata) and — as fallback — a
- * timestamp-fuzzy match against recent own writes to the same resource.
+ * Checks a realtime payload for an own-echo match: explicit
+ * `request_id` in the row metadata matches an in-flight ledger entry.
  *
  * Returns true if the caller should SKIP this payload (it's our own echo).
  */
@@ -96,36 +98,7 @@ export function isOwnEcho(payload: {
   resourceId: string | null;
   resourceType: ResourceType | null;
 }): boolean {
-  if (payload.requestId && ledger.has(payload.requestId)) {
-    return true;
-  }
-  // Fallback path — if the backend doesn't echo request_id, approximate.
-  if (payload.resourceId) {
-    return findRecentOwnWrite(
-      payload.resourceId,
-      payload.resourceType,
-      FUZZY_WINDOW_MS,
-    );
-  }
-  return false;
-}
-
-/**
- * Fuzzy match: any entry against the same resource within `windowMs`.
- */
-export function findRecentOwnWrite(
-  resourceId: string,
-  resourceType: ResourceType | null,
-  windowMs: number = FUZZY_WINDOW_MS,
-): boolean {
-  const cutoff = Date.now() - windowMs;
-  for (const entry of ledger.values()) {
-    if (entry.resourceId !== resourceId) continue;
-    if (resourceType && entry.resourceType && entry.resourceType !== resourceType)
-      continue;
-    if (entry.createdAt >= cutoff) return true;
-  }
-  return false;
+  return Boolean(payload.requestId && ledger.has(payload.requestId));
 }
 
 /** Test/debug helper. */

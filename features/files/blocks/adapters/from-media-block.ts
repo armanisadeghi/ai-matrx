@@ -71,8 +71,8 @@ interface WireMediaBlockBase {
   signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
-  thumbnail_url?: string | null;
-  thumbnail_uri?: string | null;
+  // Phase 1b: `thumbnail_url` + `thumbnail_uri` removed from the wire.
+  // The canonical source is `Asset.variants["thumbnail_url"].url`.
 
   // External-only
   external_url?: string | null;
@@ -174,8 +174,6 @@ function matrxFields(wire: WireMediaBlockBase): {
   signedUrlExpiresAt: number | null;
   parentFileId: string | null;
   derivationKind: string | null;
-  thumbnailUrl: string | null;
-  thumbnailUri: string | null;
 } | null {
   if (wire.origin !== "matrx") return null;
   if (!wire.file_id || !wire.file_uri) return null;
@@ -191,8 +189,6 @@ function matrxFields(wire: WireMediaBlockBase): {
     signedUrlExpiresAt: wire.signed_url_expires_at ?? null,
     parentFileId: wire.parent_file_id ?? null,
     derivationKind: wire.derivation_kind ?? null,
-    thumbnailUrl: wire.thumbnail_url ?? null,
-    thumbnailUri: wire.thumbnail_uri ?? null,
   };
 }
 

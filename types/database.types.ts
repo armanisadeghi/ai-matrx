@@ -3460,8 +3460,6 @@ export type Database = {
           parent_folder_id: string | null
           size_bytes: number | null
           storage_uri: string
-          thumbnail_storage_uri: string | null
-          thumbnail_url: string | null
           updated_at: string
           visibility: string
           width: number | null
@@ -3489,8 +3487,6 @@ export type Database = {
           parent_folder_id?: string | null
           size_bytes?: number | null
           storage_uri: string
-          thumbnail_storage_uri?: string | null
-          thumbnail_url?: string | null
           updated_at?: string
           visibility?: string
           width?: number | null
@@ -3518,8 +3514,6 @@ export type Database = {
           parent_folder_id?: string | null
           size_bytes?: number | null
           storage_uri?: string
-          thumbnail_storage_uri?: string | null
-          thumbnail_url?: string | null
           updated_at?: string
           visibility?: string
           width?: number | null
@@ -7013,6 +7007,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cx_tool_trace: {
+        Row: {
+          args: Json | null
+          call_id: string | null
+          conversation_id: string | null
+          created_at: string
+          duration_ms: number | null
+          err_msg: string | null
+          err_type: string | null
+          event: string
+          id: string
+          kind: string | null
+          metadata: Json
+          process_pid: number | null
+          process_started_at: string | null
+          result_preview: string | null
+          tool_name: string
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          args?: Json | null
+          call_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          err_msg?: string | null
+          err_type?: string | null
+          event: string
+          id?: string
+          kind?: string | null
+          metadata?: Json
+          process_pid?: number | null
+          process_started_at?: string | null
+          result_preview?: string | null
+          tool_name: string
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          args?: Json | null
+          call_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          err_msg?: string | null
+          err_type?: string | null
+          event?: string
+          id?: string
+          kind?: string | null
+          metadata?: Json
+          process_pid?: number | null
+          process_started_at?: string | null
+          result_preview?: string | null
+          tool_name?: string
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       cx_user_request: {
         Row: {
@@ -13624,6 +13678,7 @@ export type Database = {
       sch_task: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           enabled: boolean
           expires_at: string | null
@@ -13640,6 +13695,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           enabled?: boolean
           expires_at?: string | null
@@ -13656,6 +13712,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           enabled?: boolean
           expires_at?: string | null
@@ -22391,6 +22448,14 @@ export type Database = {
         Returns: Json
       }
       cld_consume_share_link: { Args: { p_token: string }; Returns: Json }
+      cld_count_user_files: {
+        Args: {
+          p_include_deleted?: boolean
+          p_include_folders?: boolean
+          p_user_id: string
+        }
+        Returns: Json
+      }
       cld_ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
         Returns: string
@@ -22409,6 +22474,7 @@ export type Database = {
           p_include_folders?: boolean
           p_limit?: number
           p_offset?: number
+          p_order_by?: string
           p_user_id: string
         }
         Returns: Json

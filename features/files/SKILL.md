@@ -120,7 +120,7 @@ const link = await createShareLink(fileId, {
 | Signed URL returns 403 | Expired. Use `useFileSrc` (the handler's expiry-wheel auto-refreshes). Never cache raw signed URLs across mounts. |
 | Tree shows stale state after reconnect | `reconcileTree()` dispatch missing from the realtime middleware's `SUBSCRIBED`-after-error handler. |
 | Type error on `CloudFile.metadata` | You're using an inline type somewhere. Delete it and import from [types.ts](types.ts). |
-| 413 on upload | File >tier cap (or >100MB free). No chunked path yet — see [for_python/REQUESTS.md](for_python/REQUESTS.md) item 3. |
+| 413 on upload | File >tier cap (or >100MB free). For >100MB uploads, use the TUS endpoint at `/files/upload/tus` (shipped 2026-05-05 — see [from_python/UPDATES.md](from_python/UPDATES.md) Bundle E2). |
 
 ---
 

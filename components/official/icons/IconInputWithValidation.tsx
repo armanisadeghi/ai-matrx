@@ -159,8 +159,8 @@ export default function IconInputWithValidation({
       openOverlay({
         overlayId: "browserFrameWindow",
         data: {
-          url: LUCIDE_ICONS_GALLERY_URL,
-          windowTitle: "Lucide icons",
+          initialUrl: LUCIDE_ICONS_GALLERY_URL,
+          initialWindowTitle: "Lucide icons",
         },
       }),
     );

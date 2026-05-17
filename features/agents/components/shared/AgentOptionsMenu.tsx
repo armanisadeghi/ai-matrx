@@ -310,7 +310,10 @@ export function AgentOptionsMenu({
       dispatch(
         openOverlay({
           overlayId: "agentRunHistoryWindow",
-          data: { agentId: agentId ?? null },
+          data: {
+            agentId: agentId ?? null,
+            initialSelectedConversationId: null,
+          },
         }),
       );
       setOpen(false);
@@ -336,8 +339,8 @@ export function AgentOptionsMenu({
         openOverlay({
           overlayId: "agentRunWindow",
           data: {
-            agentId: agentId ?? null,
-            selectedConversationId: null,
+            initialAgentId: agentId ?? null,
+            initialSelectedConversationId: null,
           },
         }),
       );
@@ -709,7 +712,10 @@ function MobileMenuContent({
       dispatch(
         openOverlay({
           overlayId: "agentRunHistoryWindow",
-          data: { agentId: agentId ?? null },
+          data: {
+            agentId: agentId ?? null,
+            initialSelectedConversationId: null,
+          },
         }),
       );
       onClose();
@@ -730,8 +736,8 @@ function MobileMenuContent({
         openOverlay({
           overlayId: "agentRunWindow",
           data: {
-            agentId: agentId ?? null,
-            selectedConversationId: null,
+            initialAgentId: agentId ?? null,
+            initialSelectedConversationId: null,
           },
         }),
       );

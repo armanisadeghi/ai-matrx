@@ -1,17 +1,23 @@
 /**
  * app/(a)/files/f/[fileId]/page.tsx
  *
- * File detail — preview + metadata. Renders PageShell with `initialFileId`
- * set, which makes the preview pane active immediately.
+ * Dedicated single-file viewer at `/files/f/{fileId}`. Renders
+ * `SingleFileShell` — a full-page surface where the file is the center of
+ * focus. There's a left "Show files" sheet for jumping to other files
+ * without leaving the page, but no sidebar / list chrome competes with the
+ * file content.
+ *
+ * Distinct from `/files` and `/files/<path>` which render `PageShell` (the
+ * Dropbox-style sidebar + table + preview-pane layout). Those routes are
+ * for browsing; this route is for working on one file.
  *
  * Server-side: verify the file exists + is visible to the user. If not,
- * throw `notFound()` so the `not-found.tsx` boundary handles it.
+ * throw `notFound()` so the route's `not-found.tsx` boundary handles it.
  */
 
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { PageShell } from "@/features/files/components/surfaces/PageShell";
-import { readSidebarModeCookie } from "@/features/files/utils/server-cookies";
+import { SingleFileShell } from "@/features/files/components/surfaces/single-file/SingleFileShell";
 
 interface PageProps {
   params: Promise<{ fileId: string }>;
@@ -23,7 +29,7 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("cld_files")
-    .select("id, parent_folder_id")
+    .select("id")
     .eq("id", fileId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -32,14 +38,5 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const sidebarMode = await readSidebarModeCookie();
-
-  return (
-    <PageShell
-      section="all"
-      initialFolderId={data.parent_folder_id}
-      initialFileId={data.id}
-      initialSidebarMode={sidebarMode}
-    />
-  );
+  return <SingleFileShell fileId={data.id} />;
 }

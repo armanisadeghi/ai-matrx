@@ -99,6 +99,7 @@ export type PreviewKind =
   | "code"
   | "image"
   | "svg"
+  | "html"
   | "audio"
   | "video"
   | "pdf"
@@ -109,18 +110,28 @@ export type PreviewKind =
   | "generic";
 
 /**
- * Strategy for the small inline thumbnail rendered in grid / list views.
+ * Strategy hint for the small inline thumbnail rendered in grid / list views.
  *
- *   "image"           — fetch the file, render `<img>` (works for any
- *                       browser-renderable image format)
- *   "video-poster"    — render a `<video preload="metadata">` and let the
- *                       browser display the first frame as the thumbnail
- *   "pdf-firstpage"   — lazy-render the PDF's first page via pdfjs to a
- *                       small canvas. Heavier but yields useful previews.
- *   "backend-thumb"   — read a backend-generated thumbnail URL from
- *                       `metadata.thumbnail_url` (Python team to ship —
- *                       see PYTHON_TEAM_COMMS item "thumbnail generation")
- *   "icon"            — fallback to the file's category icon (Lucide).
+ * Phase 1b note: server-rendered thumbnails are now **universal** —
+ * every uploaded file has `FileRecord.thumbnail_url` populated (image,
+ * PDF page 1, video frame, audio waveform, or mime-family icon for
+ * unknown). `MediaThumbnail` reads `file.thumbnailUrl` first regardless
+ * of the strategy below; this enum now only controls the "live render"
+ * fallback for the brief window between upload and variant render.
+ *
+ *   "image"          — `<img src={masterCdnUrl}>` fallback when the
+ *                      backend variant hasn't finished rendering yet.
+ *   "video-poster"   — `<video preload="metadata">` fallback for the
+ *                      same window.
+ *   "pdf-firstpage"  — historic; Phase 1c now ships `page1_url` via
+ *                      the variants store. The grid path uses
+ *                      `file.thumbnailUrl`; full-page detail views can
+ *                      bind `Asset.variants["page1_url"].url`.
+ *   "backend-thumb"  — historic; now equivalent to `icon` for the live
+ *                      render fallback because the universal pipeline
+ *                      handles every backend-thumb case automatically.
+ *   "icon"           — no live render fallback. The `file.thumbnailUrl`
+ *                      lookup (or icon) is the only source.
  */
 export type ThumbnailStrategy =
   | "image"
@@ -865,13 +876,19 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     color: "text-purple-600",
     icon: Code,
   },
+  // HTML — `previewKind: "html"` so the previewer can offer a Rendered /
+  // Source toggle (sandboxed iframe vs Prism-highlighted markup). Without
+  // the split, opening a saved web page in /files just showed its source,
+  // which is the wrong default for almost every consumer. The Edit tab
+  // mounts Monaco with `html` language (see CloudFileInlineEditor's
+  // LANGUAGE_BY_EXT) and source-of-truth editing happens there.
   {
     extensions: ["html", "htm"],
     mime: "text/html",
     category: "CODE",
     subCategory: "HTML",
     displayName: "HTML",
-    previewKind: "code",
+    previewKind: "html",
     thumbnailStrategy: "icon",
     color: "text-orange-400",
     icon: Code,
@@ -1793,6 +1810,13 @@ export function getAssumedTextDetails(filename: string): FileTypeDetails {
     if (details.previewKind === "generic") {
       return { ...details, previewKind: "text", canPreview: true };
     }
+    // Force-text view explicitly demanded — for an HTML file this means the
+    // user clicked "View as text" in the binary viewer / code workspace.
+    // Demote to plain text so they see the raw markup, not the rendered
+    // iframe. (The standard Preview tab still gets the rendered toggle.)
+    if (details.previewKind === "html") {
+      return { ...details, previewKind: "text" };
+    }
     return details;
   }
   return ASSUMED_TEXT_DETAILS;
@@ -1806,7 +1830,11 @@ export function isLikelyTextFilename(filename: string): boolean {
       entry.previewKind === "code" ||
       entry.previewKind === "text" ||
       entry.previewKind === "markdown" ||
-      entry.previewKind === "data"
+      entry.previewKind === "data" ||
+      // HTML and SVG are markup-under-the-hood. The binary viewer / sniffer
+      // should treat them as text so "View as text" works on edge cases.
+      entry.previewKind === "html" ||
+      entry.previewKind === "svg"
     );
   }
   return dotfileLooksLikeText(filename);
@@ -1899,9 +1927,13 @@ export function getFilePreviewProfile(
     fromExt.previewSizeCapOverride ??
     // Streamable kinds are always allowed regardless of size. SVG joins the
     // group: even though it's text underneath, it streams as an image via
-    // a signed URL — never read into memory by the renderer.
+    // a signed URL — never read into memory by the renderer. HTML joins
+    // too: the Rendered view drives a sandboxed iframe `src={signedUrl}`
+    // (no client-side blob read), and the Source view fetches the bytes
+    // through the standard blob path which has its own truncation.
     (kind === "image" ||
     kind === "svg" ||
+    kind === "html" ||
     kind === "video" ||
     kind === "audio" ||
     kind === "pdf" ||

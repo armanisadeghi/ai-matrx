@@ -103,7 +103,7 @@ These two fragments mention `chrome-extension` but are not the bridge.
 Future agents see them and think the bridge already exists; it does
 not. Leave them alone in unrelated PRs.
 
-- `features/tool-registry/surfaces/data/surface-candidates.ts:24` —
+- `features/surfaces/data/surface-candidates.ts:24` —
   `chrome-extension` in the `client_name` type union, no surface declared.
 - `utils/errorContext.ts:10` — defensive stack-frame filter for
   `chrome-extension://` URLs in reported errors.

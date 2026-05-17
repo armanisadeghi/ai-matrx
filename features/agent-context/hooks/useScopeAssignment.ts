@@ -9,7 +9,7 @@ import {
   fetchEntityScopes,
 } from "../redux/scope/scopeAssignmentsSlice";
 import { selectScopePickerOptions } from "../redux/scope/selectors";
-import { selectOrganizationId } from "../redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 /**
  * Hook for managing scope assignments during entity creation.

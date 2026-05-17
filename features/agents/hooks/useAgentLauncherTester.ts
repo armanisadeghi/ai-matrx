@@ -4,7 +4,7 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectAppContext } from "@/features/agent-context/redux/appContextSlice";
+import { selectAppContext } from "@/lib/redux/slices/appContextSlice";
 import type {
   ApiEndpointMode,
   JsonExtractionConfig,
@@ -220,7 +220,9 @@ export function useAgentLauncherTester(
         ...(applyVariables ? { defaultVariables: currentVariables } : {}),
       },
       runtime: {
-        ...(includeEditorContext && editorSelection ? { originalText: editorSelection } : {}),
+        ...(includeEditorContext && editorSelection
+          ? { originalText: editorSelection }
+          : {}),
         ...(applicationScope ? { applicationScope } : {}),
         ...(applyUserInput && currentInput ? { userInput: currentInput } : {}),
       },

@@ -50,8 +50,11 @@ interface MatrxImageBlock extends ImageBlockShared {
   fileUri: string;                    // REQUIRED — cld_files.storage_uri
   canonicalFileUri: string | null;    // cld_files.canonical_storage_uri
   visibility: "public" | "private" | "shared";
-  thumbnailUrl: string | null;
-  thumbnailUri: string | null;
+  // Phase 1b: `thumbnailUrl` / `thumbnailUri` REMOVED. The canonical
+  // thumbnail source is `Asset.variants["thumbnail_url"].url` via
+  // `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl`
+  // (resolved server-side onto `FileRecord.thumbnail_url`) is the FE
+  // cache of that resolved URL.
   parentFileId: string | null;
   derivationKind: string | null;
 }
@@ -95,8 +98,8 @@ class MatrxImageBlock(ImageBlockShared):
     file_uri: str
     canonical_file_uri: Optional[str] = None
     visibility: Literal["public", "private", "shared"]
-    thumbnail_url: Optional[str] = None
-    thumbnail_uri: Optional[str] = None
+    # Phase 1b: thumbnail_url / thumbnail_uri removed. Canonical source:
+    # Asset.variants["thumbnail_url"].url via GET /assets/{file_id}.
     parent_file_id: Optional[str] = None
     derivation_kind: Optional[str] = None
 
@@ -122,11 +125,15 @@ UnifiedImageBlock = Union[MatrxImageBlock, ExternalImageBlock]
 | `file_name`             | `fileName`                 | For downloads. |
 | `mime_type`             | `mimeType`                 | |
 | `size_bytes`            | `sizeBytes`                | Phase 0 rename — `file_size` is gone. |
+| `width`                 | `width`                    | Phase 1d.1 — first-class column. |
+| `height`                | `height`                   | Phase 1d.1 — first-class column. |
 | `visibility`            | `visibility`               | Drives URL strategy. |
-| `thumbnail_url`         | `thumbnailUrl`             | |
-| `thumbnail_storage_uri` | `thumbnailUri`             | |
+| ~~`thumbnail_url`~~     | —                          | Phase 1b: column dropped. |
+| ~~`thumbnail_storage_uri`~~ | —                      | Phase 1b: column dropped. |
 | `parent_file_id`        | `parentFileId`             | |
 | `derivation_kind`       | `derivationKind`           | |
+
+**Phase 1b note:** thumbnails for matrx-owned media live on `Asset.variants["thumbnail_url"]` and are fetched per file via `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl` (lifted from the REST `FileRecord.thumbnail_url` field, which the backend now resolves from the variants store) is the cached source — see `MediaThumbnail` in `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx`.
 | `metadata`              | `metadata`                 | Pass-through. |
 | (computed: Python signs) | `cdnUrl`                  | From `storage_uri` for public files. |
 | (computed: Python signs) | `signedUrl`               | Pre-signed at emission time. |
@@ -216,23 +223,25 @@ fallback path in `process-stream.ts`.
    adapters. All consumers (renderer, popover, action bar, popup viewer)
    read only the canonical shape. Python wire format unchanged.
 
-2. **Phase 2 (current — wire-shape ready, awaiting Python deploy):**
+2. **Phase 2 (deployed both sides; phase 1b/1c/1d.1 universal media also shipped):**
    - **Frontend (done):** Owns the umbrella `UnifiedMediaBlock` at
      [`../types.ts`](../types.ts) (`image | video | audio | document |
      youtube`). `UnifiedImageBlock` re-exports the image discriminant.
-     Adds [`../adapters/from-media-block.ts`](../adapters/from-media-block.ts)
-     as the primary inbound adapter and wires it into `process-stream.ts`
-     ahead of the legacy event handlers. `cld_files.file_size` →
-     `size_bytes` rename and the `file_uri` / `signed_url_expires_at`
-     additions to `AssetVariant` propagated through every reader.
-   - **Backend (landed on `main`, not deployed):** Python emits the
-     canonical `media_block` event with the full `UnifiedMediaBlock`
-     payload. Once deployed, the new adapter becomes the carrier path
-     and the legacy adapters become true fallbacks.
-   - **Deletion (one release cycle after Python deploy):** Remove the
-     legacy `image_output` / `partial_image` event branches in
-     `process-stream.ts` and the matching adapters
-     (`from-image-output-data.ts`, `from-partial-image-data.ts`).
+     [`../adapters/from-media-block.ts`](../adapters/from-media-block.ts)
+     is the primary inbound adapter, wired into `process-stream.ts`
+     ahead of the legacy event handlers.
+   - **Backend (deployed):** Python emits the canonical `media_block`
+     event with the full `UnifiedMediaBlock` payload. Phase 1b dropped
+     `cld_files.thumbnail_url` / `cld_files.thumbnail_storage_uri` and
+     moved thumbnails into the variants store (`Asset.variants
+     ["thumbnail_url"]`). Phase 1c added `page1_url` (document) /
+     `poster_url` (video) variants. Phase 1d.1 promoted `width`,
+     `height`, `duration_ms`, and `page_count` to first-class columns
+     populated at upload time. Phase 2 ships `MediaGenerationMetadata`.
+   - **Deletion (next release cycle):** Remove the legacy `image_output`
+     / `partial_image` event branches in `process-stream.ts` and the
+     matching adapters (`from-image-output-data.ts`,
+     `from-partial-image-data.ts`). They are dead carriers now.
 
 3. **Phase 3 (storage shape — not started):** `cx_message.content[]`
    switches to storing `UnifiedMediaBlock` directly under a new
@@ -273,6 +282,15 @@ lands.
 
 ## Change log
 
+- **2026-05-16** — Phase 1b / 1c / 1d / 1d.1 alignment (Python deployed; FE caught up). Python's universal-thumbnail rollout shipped and the legacy `cld_files.thumbnail_url` + `cld_files.thumbnail_storage_uri` columns were dropped. Frontend changes:
+  - **`MatrxOriginFields.thumbnailUrl` + `thumbnailUri` REMOVED** from `features/files/blocks/types.ts`. The canonical thumbnail source is now `Asset.variants["thumbnail_url"].url` via `GET /assets/{file_id}` (or `CloudFile.thumbnailUrl` for grid listings, lifted from `FileRecord.thumbnail_url`).
+  - `from-cld-files-row.ts` no longer reads the dropped columns; reads first-class `row.width` / `row.height` (Phase 1d.1) with a metadata fallback.
+  - `from-media-block.ts`, `from-image-output-data.ts`, and `to-cx-media-part.ts` all drop their thumbnail fields.
+  - `useUnifiedImageUrl` drops the `block.thumbnailUrl` placeholder branch; `base64` streaming-partial path unchanged.
+  - **New `CloudFile.thumbnailUrl` field** plumbed through `apiFileRecordToCloudFile` from `FileRecord.thumbnail_url` (top-level wire field still works — backend resolves server-side from variants store).
+  - **`MediaThumbnail` rewritten around a four-source priority** — `file.thumbnailUrl` → `Asset.variants["thumbnail_url"]` via `useFileAsset` → live `<img>`/`<video>` render → category icon. Every file kind now gets a real thumbnail (PDFs show page 1, videos show a frame at 10%, audio shows a waveform, archives show server-rendered mime-family icon).
+  - **`VideoOutputBlock` accepts `posterUrl`** (Phase 1c — populated for matrx-owned videos via `Asset.variants["poster_url"]`). `BlockRenderer.tsx`'s `video_output` case reads camelCase `posterUrl` (or snake_case `poster_url`) from the block's serverData and threads it through as the HTML5 `<video poster>` attribute.
+  - **Streaming partials verified end-to-end** — `media_block` events with `status: "streaming"` + `base64` flow through `fromMediaBlock` → `ExternalImageBlock` → `process-stream.ts` upsert (`stableKey="image_block_current"` shared with the final) → `useUnifiedImageUrl` renders the `data:` URI with `isPlaceholder: true`. Final replaces in place. No flicker, no new code.
 - **2026-05-16** — Phase 2 frontend landing (wire-shape ready; awaiting Python deploy of commit `96f7ff7b`). The frontend now:
   - Owns the umbrella `UnifiedMediaBlock` (`image | video | audio | document | youtube`) at `features/files/blocks/types.ts`. `UnifiedImageBlock` re-exports the image variant.
   - Adds `features/files/blocks/adapters/from-media-block.ts` as the **primary** inbound path. It mirrors Python's shape one-for-one and only renames `snake_case` → `camelCase` + defaults nullable fields.

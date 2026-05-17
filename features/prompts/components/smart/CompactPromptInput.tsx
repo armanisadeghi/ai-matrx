@@ -25,6 +25,8 @@ import {
   setCurrentInput,
   updateVariable,
   removeResource,
+  EMPTY_ARRAY,
+  EMPTY_OBJECT,
 } from "@/lib/redux/prompt-execution/slice";
 import { SmartResourcePickerButton } from "./SmartResourcePickerButton";
 
@@ -83,25 +85,23 @@ export function CompactPromptInput({
   // ========== REDUX STATE (Conditional on runId) ==========
   // Instance-specific selectors (return stable defaults if runId undefined)
   const variableDefaults = useAppSelector((state) =>
-    runId ? selectVariableDefinitions(state, runId) : [],
+    runId ? selectVariableDefinitions(state, runId) : EMPTY_ARRAY,
   );
   const chatInput = useAppSelector((state) =>
     runId ? selectCurrentInput(state, runId) : "",
   );
   const resources = useAppSelector((state) =>
-    runId ? selectResources(state, runId) : [],
+    runId ? selectResources(state, runId) : EMPTY_ARRAY,
   );
   const variableValues = useAppSelector((state) =>
-    runId ? selectUserVariables(state, runId) : {},
+    runId ? selectUserVariables(state, runId) : EMPTY_OBJECT,
   );
 
   // File upload via the universal handler — wrapper matches the legacy
   // `uploadFn(files): Promise<UploadResult[]>` signature consumed by the
   // prompt-execution `uploadAndAddFileResource` thunk.
   const uploadAdapter = useCallback(
-    async (
-      files: File[],
-    ): Promise<Array<{ fileId?: string; url: string }>> => {
+    async (files: File[]): Promise<Array<{ fileId?: string; url: string }>> => {
       const folderPath = uploadPath
         ? `${uploadBucket}/${uploadPath}`
         : uploadBucket;
@@ -182,9 +182,8 @@ export function CompactPromptInput({
       if (!runId) return;
 
       try {
-        const { uploadAndAddFileResource } = await import(
-          "@/lib/redux/prompt-execution/thunks/resourceThunks"
-        );
+        const { uploadAndAddFileResource } =
+          await import("@/lib/redux/prompt-execution/thunks/resourceThunks");
         await dispatch(
           uploadAndAddFileResource({
             runId,
@@ -195,8 +194,7 @@ export function CompactPromptInput({
           }),
         );
       } catch (error) {
-        const reason =
-          error instanceof Error ? error.message : "Upload failed";
+        const reason = error instanceof Error ? error.message : "Upload failed";
         console.error("Failed to upload pasted image:", error);
         toast.error(`Couldn't upload pasted image: ${reason}`);
       }

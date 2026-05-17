@@ -2,7 +2,7 @@
 
 **Status:** `proposal` — design only, no migration run yet.
 **Owner:** agent-apps
-**Related:** [`features/scope-system/FEATURE.md`](../scope-system/FEATURE.md), [`features/agent-shortcuts/FEATURE.md`](../agent-shortcuts/FEATURE.md)
+**Related:** [`features/scopes/FEATURE.md`](../scopes/FEATURE.md), [`features/agent-shortcuts/FEATURE.md`](../agent-shortcuts/FEATURE.md)
 **Created:** 2026-05-09 (Phase 1d round-3 follow-up)
 
 ---
@@ -347,7 +347,7 @@ A user hitting `/agent-apps/[id]/run` can still use the app even if it's associa
 
 ## 8. Out of scope
 
-- Sharing tokens / public share links (handled by `features/sharing/` — orthogonal to scope per `features/scope-system/FEATURE.md` Flow 4).
+- Sharing tokens / public share links (handled by `features/sharing/` — orthogonal to scope per `features/scopes/FEATURE.md`).
 - Per-association overrides (e.g. "this app shows a different name in Org A vs. Org B") — would require a join row with overrides, separate proposal.
 - Workspace scope level (mentioned in the scope tree but not yet on `aga_apps`).
 - Mobile UI — the desktop multi-picker pattern translates to a Drawer sheet on mobile per CLAUDE.md, but the contract is identical.
