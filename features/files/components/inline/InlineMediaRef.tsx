@@ -4,8 +4,9 @@
  * The canonical inline media renderer. Pass a `MediaRef` (or a plain URL,
  * or just a cld_files `fileId`), get back a correctly-sized `<img>` /
  * `<video>` / `<audio>` element. URL resolution flows through the
- * universal handler so signed URLs auto-refresh via the expiry-wheel,
- * public files prefer the CDN URL, and share links route through Python.
+ * universal handler so signed URLs come from the lazy URL cache (minted
+ * once, reused while valid), public files prefer the CDN URL, and share
+ * links route through Python.
  *
  * Use this everywhere an `<img src={file.publicUrl ?? someSignedUrl}>`
  * pattern would otherwise appear. The component owns the URL lifecycle;
@@ -172,7 +173,10 @@ const SIZE_PX: Record<
   xl: 256,
 };
 
-const ROUNDED_CLASS: Record<NonNullable<InlineMediaRefProps["rounded"]>, string> = {
+const ROUNDED_CLASS: Record<
+  NonNullable<InlineMediaRefProps["rounded"]>,
+  string
+> = {
   none: "",
   sm: "rounded-sm",
   md: "rounded-md",
@@ -204,9 +208,7 @@ const UUID_RE =
  * Returns `null` for missing / unrecognised inputs so the component can
  * render its fallback.
  */
-function toFileSource(
-  ref: InlineMediaRefProps["ref"],
-): FileSource | null {
+function toFileSource(ref: InlineMediaRefProps["ref"]): FileSource | null {
   if (!ref) return null;
   if (typeof ref === "string") {
     if (UUID_RE.test(ref)) return { kind: "file_id", fileId: ref };
@@ -256,7 +258,11 @@ function FallbackVisual({
   return (
     <div
       className={wrapperCls}
-      style={isFill ? undefined : { width: dimensions.width, height: dimensions.height }}
+      style={
+        isFill
+          ? undefined
+          : { width: dimensions.width, height: dimensions.height }
+      }
       aria-hidden={kind === "skeleton"}
     >
       {kind === "icon" ? icon : null}
@@ -613,7 +619,10 @@ export function InlineMediaRef({
         },
         role: "button" as const,
         tabIndex: 0,
-        className: cn("cursor-pointer", "focus:outline-none focus:ring-2 focus:ring-primary/50"),
+        className: cn(
+          "cursor-pointer",
+          "focus:outline-none focus:ring-2 focus:ring-primary/50",
+        ),
       }
     : {};
 
@@ -628,7 +637,11 @@ export function InlineMediaRef({
   );
 
   const objectFitClass =
-    fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-fill";
+    fit === "cover"
+      ? "object-cover"
+      : fit === "contain"
+        ? "object-contain"
+        : "object-fill";
 
   // Explicit width/height attributes for fixed-size renders; omit for fill
   // mode so the parent's flex/grid sizing wins.
@@ -639,9 +652,7 @@ export function InlineMediaRef({
   if (elementType === "video") {
     return (
       <video
-        ref={
-          mediaElementRef as React.Ref<HTMLVideoElement> | undefined
-        }
+        ref={mediaElementRef as React.Ref<HTMLVideoElement> | undefined}
         src={url}
         {...sizeAttrs}
         className={cn(baseCls, objectFitClass)}
@@ -649,9 +660,7 @@ export function InlineMediaRef({
         onLoadedData={
           onLoad as React.ReactEventHandler<HTMLVideoElement> | undefined
         }
-        onError={
-          handleLoadError as React.ReactEventHandler<HTMLVideoElement>
-        }
+        onError={handleLoadError as React.ReactEventHandler<HTMLVideoElement>}
         crossOrigin={crossOrigin}
         {...interactiveProps}
       />
@@ -660,18 +669,14 @@ export function InlineMediaRef({
   if (elementType === "audio") {
     return (
       <audio
-        ref={
-          mediaElementRef as React.Ref<HTMLAudioElement> | undefined
-        }
+        ref={mediaElementRef as React.Ref<HTMLAudioElement> | undefined}
         src={url}
         className={cn(baseCls)}
         controls
         onLoadedData={
           onLoad as React.ReactEventHandler<HTMLAudioElement> | undefined
         }
-        onError={
-          handleLoadError as React.ReactEventHandler<HTMLAudioElement>
-        }
+        onError={handleLoadError as React.ReactEventHandler<HTMLAudioElement>}
         crossOrigin={crossOrigin}
         {...interactiveProps}
       />
@@ -697,9 +702,7 @@ export function InlineMediaRef({
         height={dimensions.height}
         className={cn(baseCls, objectFitClass)}
         unoptimized
-        onError={
-          handleLoadError as React.ReactEventHandler<HTMLImageElement>
-        }
+        onError={handleLoadError as React.ReactEventHandler<HTMLImageElement>}
         {...interactiveProps}
       />
     );

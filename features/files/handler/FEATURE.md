@@ -60,9 +60,9 @@ This feature is the **single source of resistance** for file flows: direct const
 2. `normalize()` returns a partial `NormalizedFile` with `fileId` set.
 3. `resolve()` hydrates: `selectFileById(state, fileId)` → if missing, `Files.getFile(fileId)` → `apiFileRecordToCloudFile(...)`.
 4. `decideForOwnedFile` chooses `origin` and `capabilities` using owner / visibility / `cld_file_permissions`.
-5. If the file is public and has `publicUrl` (CDN), use it. Otherwise mint a signed URL via `mintSignedUrl(fileId)` and register expiry with the global `expiry-wheel`.
+5. If the file is public and has `publicUrl` (CDN), use it. Otherwise call `getOrMintSignedUrl(fileId)` — returns the cached URL if one is still valid, otherwise mints one and caches it. No background timers.
 6. Output adapter `toHtmlSrc` returns the chosen URL.
-7. `<img src>` renders. Thirty seconds before the signed URL expires, the wheel re-mints; React subscribers re-render automatically.
+7. `<img src>` renders. Once the bytes are in the browser's HTTP cache the URL string's expiry is irrelevant — the image stays on screen indefinitely. If a later action needs a fresh URL (download, edit, re-mount), the cache hands out the still-valid one or lazily re-mints in the same call. No re-render is forced unless the consumer explicitly remounts.
 
 ### Flow 2 — submit a freshly-pasted image to the agent
 
@@ -75,10 +75,13 @@ This feature is the **single source of resistance** for file flows: direct const
 
 ### Flow 3 — signed URL expires while user is browsing
 
-1. `expiry-wheel` fires ~30s before `expiresAt`.
-2. Refresher calls `mintSignedUrl(fileId)` which hits `GET /files/{id}/url`.
-3. Backend re-validates owner / permissions; returns fresh URL or 403.
-4. On success: wheel `bumpExpiry`. On 403: `isS3ExpiredError` distinguishes "S3 said expired" (refetch) from "backend said access denied" (throw `FileAccessDeniedError`, surface to UI).
+There is no background refresh. The policy is **lazy mint on demand**:
+
+1. While the file's bytes are already loaded into the `<img>` / `<video>` / `<audio>`, the URL string's expiry does not matter — the browser is not re-requesting it.
+2. The next time *anything* asks for the URL (a download, an edit, a remount, a share action), the resolver routes through `getOrMintSignedUrl(fileId)`. If the cached URL is still valid (with a 60s safety margin), it's returned as-is. If not, a fresh URL is minted in that call and cached.
+3. Concurrent callers for the same fileId share one in-flight mint via the cache's request-dedup map — 20 components loading the same file produce 1 network call, not 20.
+4. The 403 retry path: if the browser ever does refetch a stale URL (e.g. memory-pressure cache eviction with the tab still open), an `<img onError>` handler can call `invalidateSignedUrl(fileId)` and force the consumer to remount with a fresh URL. Most consumers don't bother — a manual reload is acceptable for this rare edge case.
+5. Backend errors: on a permissions change, `mintSignedUrl` will surface `FileAccessDeniedError`; the cache won't store the failed mint, so the next call re-tries.
 
 ### Flow 4 — share link viewer
 
@@ -115,9 +118,18 @@ This feature is the **single source of resistance** for file flows: direct const
 
 When uploading, `inheritActiveScope: true` (default) reads `selectOrganizationId / selectProjectId / selectTaskId` from `appContext` and stamps them into `metadata.scope`. The Python backend reads this and writes the column counterparts.
 
-### Single global expiry wheel
+### Lazy signed-URL cache
 
-`intelligence/expiry-wheel.ts` keeps one timer for the entire app, sorted by next-due `expiresAt`. Centralizes signed-URL refresh so each renderer doesn't mount its own `setTimeout`. Watching is opt-in: `watchExpiry(fileId, expiresAt, refresher)`.
+`intelligence/signed-url-cache.ts` is an in-memory map of `fileId → { url, expiresAt }`, shared by every consumer in the app for the lifetime of the page. The policy is "mint on demand, never preemptively":
+
+- **No background timers.** Nothing runs in the background to refresh URLs. Once the browser has loaded the bytes the URL is a sunk cost.
+- **Cache hit → return.** If the cached URL is still valid (with a 60s safety margin so a download started right at the boundary still completes), it's returned as-is.
+- **Cache miss → mint + cache.** A single `mintSignedUrl` call populates the cache and resolves the caller.
+- **In-flight dedup.** Concurrent callers asking for the same `fileId` share one `Promise`. A grid of 50 thumbnails for the same file produces one `GET /files/{id}/url`, not 50.
+- **`invalidateSignedUrl(fileId)`** lets a 403-retry path force a re-mint.
+- **`clearSignedUrlCache()`** is called on sign-out so a previous user's URLs don't leak to a new session.
+
+The previous "expiry wheel" — a global timer that preemptively re-minted every URL ~30s before expiry — has been removed. It caused a runaway loop the moment a refresher failed to update its `expiresAt` (see Change Log, 2026-05-17). The lazy model is what AWS, Drive, Dropbox, and Slack do in production: it's simpler, cheaper, and structurally cannot loop.
 
 ### CORS-aware transport
 
@@ -183,6 +195,12 @@ These are tracked in `features/files/migration/INVENTORY.md`.
 
 ## Change log
 
+- **2026-05-17** — Switched signed-URL strategy from "global expiry wheel re-mints proactively" to "lazy mint on demand, cache while valid". This is the pattern AWS / Drive / Dropbox / Slack use in production. Concrete changes:
+  - **Deleted `intelligence/expiry-wheel.ts`.** The wheel was the source of a runaway loop: once any refresher resolved without updating its entry's `expiresAt` (which the resolver's refresher never did), `reschedule()` computed `wait = 0` and `setTimeout(tick, 0)` re-fired immediately, burning ~3 requests/second per open file. A single file left open overnight produced tens of thousands of `GET /files/{id}/url` calls. The class of failure no longer exists because the timer no longer exists.
+  - **Added `intelligence/signed-url-cache.ts`.** Module-level map keyed by `fileId` storing `{ url, expiresAt }`, with in-flight request dedup so N concurrent consumers of the same file produce one network call. Exposes `getOrMintSignedUrl`, `invalidateSignedUrl` (for `<img onError>` retries), and `clearSignedUrlCache` (for sign-out).
+  - **Rewrote `resolver.ensureSignedUrl`** to route through `getOrMintSignedUrl`. No more `watchExpiry` registration. The previously known follow-up — "freshly minted URL not propagated back to React consumers" — is now obviated: there is no automatic re-mint to propagate. The next consumer that asks for the URL gets a fresh one synchronously through the same code path.
+  - **`hooks/useFile.ts`** dropped its `unwatchExpiry` cleanup effect (no longer needed).
+  - Rationale: once the browser has the bytes in its HTTP cache the URL string's expiry doesn't matter — the `<img>` keeps rendering. URLs only need to be fresh at the moment something actively asks for them (download, edit, remount), and the cache + lazy mint handles that in one synchronous code path. Net effect: zero requests when idle, one request per (fileId × hour) when active, structurally immune to loop bugs.
 - **2026-05-07** — Direct-to-Python doctrine + obliteration round.
   - Removed the entire telemetry module and all `recordTelemetry` calls (Python owns telemetry).
   - All output URLs now point directly at Python (`{BACKEND}/files/{id}/download`, `{BACKEND}/share/{token}`). No Next.js hops.

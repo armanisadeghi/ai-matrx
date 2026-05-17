@@ -7,10 +7,11 @@
  * file off to the provider with a usable URL.
  *
  * Implementation: delegates to the universal handler
- * (`fileHandler.use(source).as({kind: "html_src"})`), so URL minting,
- * CDN-vs-signed routing, and expiry-wheel registration all happen the
- * same way as everywhere else. Permanent CDN URLs come back as-is;
- * private/shared files get a freshly-minted signed URL.
+ * (`fileHandler.use(source).as({kind: "html_src"})`), so URL minting and
+ * CDN-vs-signed routing happen the same way as everywhere else. The
+ * handler's lazy signed-URL cache returns a still-valid URL when one
+ * exists, or mints a fresh one synchronously. Permanent CDN URLs come
+ * back as-is.
  */
 
 import { fileHandler } from "@/features/files";
@@ -38,10 +39,10 @@ function getCloudFile(
 export interface ResolvedCloudUrl {
   url: string;
   /**
-   * Epoch ms when the URL expires. `null` for permanent CDN URLs. The
-   * handler's expiry-wheel handles auto-refresh internally — this field
-   * is informational, used by surfaces that persist the URL across long
-   * sessions and want to know when to re-resolve.
+   * Epoch ms when the URL expires. `null` for permanent CDN URLs.
+   * Informational only — the handler's lazy URL cache re-mints
+   * transparently the next time anyone asks for this file's URL after
+   * expiry, so most callers can ignore this field.
    */
   expiresAt: number | null;
 }

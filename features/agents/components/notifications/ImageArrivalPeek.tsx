@@ -11,9 +11,9 @@
  *  - Clicking the X or the thumbnail dismisses immediately.
  *  - The thumbnail itself is rendered by `UnifiedImageBlockRenderer` in
  *    its `compact` variant — same component that renders the inline image
- *    in the message body. The handler's expiry-wheel coalesces refresh
- *    across both surfaces, and the browser cache dedupes the actual HTTP
- *    fetch.
+ *    in the message body. The handler's lazy URL cache shares one signed
+ *    URL across both surfaces, and the browser cache dedupes the actual
+ *    HTTP fetch.
  */
 
 "use client";

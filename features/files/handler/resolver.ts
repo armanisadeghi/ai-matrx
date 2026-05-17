@@ -32,8 +32,7 @@ import {
   FileNotFoundError,
 } from "./errors";
 import { decideForOwnedFile } from "./intelligence/access";
-import { watchExpiry } from "./intelligence/expiry-wheel";
-import { mintSignedUrl } from "./intelligence/refresh";
+import { getOrMintSignedUrl } from "./intelligence/signed-url-cache";
 import { sniffMimeFromBlob } from "./intelligence/magic-bytes";
 import { fromCloudFile } from "./input/normalize";
 import { classify } from "./utils/classify";
@@ -130,7 +129,7 @@ async function hydrateFromFileId(
 }
 
 // ---------------------------------------------------------------------------
-// Signed URL minting + expiry wiring
+// Signed URL minting (lazy — cached, never preemptively refreshed)
 // ---------------------------------------------------------------------------
 
 async function ensureSignedUrl(
@@ -146,11 +145,13 @@ async function ensureSignedUrl(
     return file;
   }
 
-  const fresh = await mintSignedUrl(file.fileId, expiresInSec);
-
-  watchExpiry(file.fileId, fresh.expiresAt, async () => {
-    await mintSignedUrl(file.fileId!, expiresInSec).catch(() => undefined);
-  });
+  // Lazy mint: the cache returns the same URL for every consumer until
+  // the URL is close to expiry, at which point the NEXT call re-mints.
+  // No background timers, no proactive refresh — once the browser has
+  // rendered the bytes, the URL string's expiry is irrelevant. The next
+  // consumer that needs a URL (a download, an edit, a remount) gets a
+  // fresh one transparently.
+  const fresh = await getOrMintSignedUrl(file.fileId, expiresInSec);
 
   return {
     ...file,

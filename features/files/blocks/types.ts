@@ -98,9 +98,9 @@ interface MatrxOriginFields {
   canonicalFileUri: string | null;
   /**
    * cld_files.visibility — drives URL resolution:
-   *   "public"  — prefer cdnUrl; no expiry refresh needed
-   *   "private" — must use signedUrl; refresh via expiry-wheel
-   *   "shared"  — same refresh rules as private
+   *   "public"  — prefer cdnUrl; permanent URL, never re-minted
+   *   "private" — must use signedUrl; re-minted lazily on next access when expired
+   *   "shared"  — same minting rules as private
    */
   visibility: MediaVisibility;
 

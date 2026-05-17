@@ -7,20 +7,20 @@
  *
  * Strategy (priority order):
  *   1. External block → return `externalUrl` immediately. Done.
- *   2. Matrx + public + cdnUrl → return `cdnUrl`. No refresh ever needed.
+ *   2. Matrx + public + cdnUrl → return `cdnUrl`. Permanent URL.
  *   3. Matrx + base64 (streaming) → return a data URI placeholder while
  *      we wait for the final block to land.
- *   4. Matrx + valid signed URL → return `signedUrl`. Register with the
- *      handler so the global expiry-wheel mints a fresh one before this
- *      one dies.
+ *   4. Matrx + valid signed URL → return `signedUrl` as-is. The browser
+ *      keeps the image rendered from its HTTP cache even after the URL
+ *      expires — no proactive refresh.
  *   5. Matrx + expired/missing signed URL → ask the handler to resolve
  *      the file_id into a fresh URL. Show base64 / thumbnail as a
  *      placeholder while resolving.
  *
  * The handler's `useFileAs` does the heavy lifting: it loads cld_files
  * metadata once, picks the right URL flavor (CDN for public, signed for
- * private), and re-mints signed URLs via the global expiry-wheel — one
- * timer for the whole app, not one per visible image.
+ * private), and uses a lazy in-memory cache for signed URLs — multiple
+ * consumers of the same file share one URL and one network call.
  */
 
 "use client";
