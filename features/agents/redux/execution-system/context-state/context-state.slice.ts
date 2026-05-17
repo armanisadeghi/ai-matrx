@@ -89,27 +89,45 @@ function emptyEntry(conversationId: string): ContextStateEntry {
   };
 }
 
-// Payload shape received from the wire — snake_case mirrors the Python
-// ContextStatePayload exactly so the stream thunk can hand it through
-// without renaming each field.
+// Wire payloads — snake_case, JSONB-shaped fields typed as
+// Record<string, unknown> so the slice's actions accept the generated
+// ContextStatePayload / ContextTrimmedPayload from stream-events.ts
+// verbatim (no cast at the dispatch site). The reducer narrows the
+// runtime values to typed CacheState / TrimSummary at entry.
+//
+// Two separate shapes because the stream event NEVER carries
+// last_trim_summary / last_raw_usage (those come from the GET
+// /context-state hydration endpoint only). Making them optional on a
+// shared type breaks assignability under exactOptionalPropertyTypes —
+// keep the two distinct so each action's PayloadAction matches its
+// real source exactly.
+// Matches the generated stream-events.ts ContextStatePayload exactly —
+// pydantic int-with-default fields come out as optional. Optionality is
+// preserved here so direct assignment from a stream event compiles
+// without casts.
 export interface ContextStateWirePayload {
   conversation_id: string;
-  last_request_input_tokens: number;
-  last_request_cached_tokens: number;
-  last_request_output_tokens: number;
-  total_chars_visible_to_model: number;
-  message_count_visible: number;
-  cache_state: CacheState;
+  last_request_input_tokens?: number;
+  last_request_cached_tokens?: number;
+  last_request_output_tokens?: number;
+  total_chars_visible_to_model?: number;
+  message_count_visible?: number;
+  cache_state?: Record<string, unknown>;
   measured_at: string;
-  // From the GET /context-state hydration endpoint, not the stream event:
-  last_trim_summary?: TrimSummary | null;
-  last_raw_usage?: Record<string, unknown> | null;
 }
 
+export interface ContextStateHydrationPayload extends ContextStateWirePayload {
+  last_trim_summary: Record<string, unknown> | null;
+  last_raw_usage: Record<string, unknown> | null;
+}
+
+// Matches stream-events.ts ContextTrimmedPayload — request_id is optional
+// because ``request_id: str | None`` lands as ``?: string | null`` in the
+// generated TS.
 export interface ContextTrimmedWirePayload {
   conversation_id: string;
-  request_id: string | null;
-  trim_summary: TrimSummary;
+  request_id?: string | null;
+  trim_summary: Record<string, unknown>;
   measured_at: string;
 }
 
@@ -118,10 +136,9 @@ const contextStateSlice = createSlice({
   initialState,
   reducers: {
     /**
-     * Apply a CONTEXT_STATE event (or initial-hydration response) to the
-     * slice. Replaces the rolled-up fields; preserves lastTrimSummary +
-     * lastRawUsage when the wire payload doesn't carry them (stream events
-     * omit those; the hydration endpoint includes them).
+     * Apply a CONTEXT_STATE stream event. Preserves prior lastTrimSummary +
+     * lastRawUsage — the stream event never carries those, only the
+     * hydration endpoint does (see ``hydrateContextState`` below).
      */
     applyContextState(
       state,
@@ -134,19 +151,47 @@ const contextStateSlice = createSlice({
       state.byConversationId[p.conversation_id] = {
         ...prior,
         conversationId: p.conversation_id,
-        lastRequestInputTokens: p.last_request_input_tokens,
-        lastRequestCachedTokens: p.last_request_cached_tokens,
-        lastRequestOutputTokens: p.last_request_output_tokens,
-        totalCharsVisibleToModel: p.total_chars_visible_to_model,
-        messageCountVisible: p.message_count_visible,
-        cacheState: p.cache_state ?? {},
+        // Wire payload fields are optional (pydantic int-with-default →
+        // generated TS optional) — coalesce to 0 here so the slice's typed
+        // shape stays non-optional and consumers don't need to null-check.
+        lastRequestInputTokens: p.last_request_input_tokens ?? 0,
+        lastRequestCachedTokens: p.last_request_cached_tokens ?? 0,
+        lastRequestOutputTokens: p.last_request_output_tokens ?? 0,
+        totalCharsVisibleToModel: p.total_chars_visible_to_model ?? 0,
+        messageCountVisible: p.message_count_visible ?? 0,
+        // Narrow wire-shape Record<string, unknown> → CacheState. The
+        // CacheState interface has only optional fields so unknown extras
+        // don't break anything — they just don't get a typed accessor.
+        cacheState: (p.cache_state ?? {}) as unknown as CacheState,
         measuredAt: p.measured_at,
-        lastTrimSummary:
-          p.last_trim_summary !== undefined
-            ? p.last_trim_summary
-            : prior.lastTrimSummary,
-        lastRawUsage:
-          p.last_raw_usage !== undefined ? p.last_raw_usage : prior.lastRawUsage,
+      };
+    },
+
+    /**
+     * Apply the cold-start hydration response (GET /context-state).
+     * Same as applyContextState plus populates lastTrimSummary and
+     * lastRawUsage from the response body.
+     */
+    hydrateContextState(
+      state,
+      action: PayloadAction<ContextStateHydrationPayload>,
+    ) {
+      const p = action.payload;
+      const prior =
+        state.byConversationId[p.conversation_id] ??
+        emptyEntry(p.conversation_id);
+      state.byConversationId[p.conversation_id] = {
+        ...prior,
+        conversationId: p.conversation_id,
+        lastRequestInputTokens: p.last_request_input_tokens ?? 0,
+        lastRequestCachedTokens: p.last_request_cached_tokens ?? 0,
+        lastRequestOutputTokens: p.last_request_output_tokens ?? 0,
+        totalCharsVisibleToModel: p.total_chars_visible_to_model ?? 0,
+        messageCountVisible: p.message_count_visible ?? 0,
+        cacheState: (p.cache_state ?? {}) as unknown as CacheState,
+        measuredAt: p.measured_at,
+        lastTrimSummary: p.last_trim_summary as unknown as TrimSummary | null,
+        lastRawUsage: p.last_raw_usage,
       };
     },
 
@@ -165,7 +210,11 @@ const contextStateSlice = createSlice({
         emptyEntry(p.conversation_id);
       state.byConversationId[p.conversation_id] = {
         ...prior,
-        lastTrimSummary: p.trim_summary,
+        // Wire shape is Record<string, unknown>; the runtime contents match
+        // TrimSummary (matrx_ai writes to_dict() of the TrimReport dataclass).
+        // Narrow at the slice boundary — selectors can read typed fields off
+        // it from here on.
+        lastTrimSummary: p.trim_summary as unknown as TrimSummary,
       };
     },
 
@@ -178,6 +227,7 @@ const contextStateSlice = createSlice({
 
 export const {
   applyContextState,
+  hydrateContextState,
   applyContextTrimmed,
   clearForConversation: clearContextStateForConversation,
 } = contextStateSlice.actions;

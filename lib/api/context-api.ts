@@ -20,12 +20,12 @@ import type { RootState } from "@/lib/redux/store";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveServer } from "@/lib/redux/slices/adminPreferencesSlice";
-import {
-  applyContextState,
-  type CacheState,
-  type TrimSummary,
-} from "@/features/agents/redux/execution-system/context-state/context-state.slice";
+import { hydrateContextState } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
 
+// Wire shape from GET /cx/conversations/{id}/context-state. JSONB-shaped
+// fields are typed as Record<string, unknown> so the response can be
+// dispatched into the slice without casting. The slice's reducer narrows
+// to typed fields at boundary entry.
 export interface ContextStateApiResponse {
   conversation_id: string;
   last_request_input_tokens: number;
@@ -33,8 +33,8 @@ export interface ContextStateApiResponse {
   last_request_output_tokens: number;
   total_chars_visible_to_model: number;
   message_count_visible: number;
-  cache_state: CacheState;
-  last_trim_summary: TrimSummary | null;
+  cache_state: Record<string, unknown>;
+  last_trim_summary: Record<string, unknown> | null;
   last_raw_usage: Record<string, unknown> | null;
   measured_at: string;
 }
@@ -82,23 +82,10 @@ export const fetchContextState = createAsyncThunk<
 
     const payload = (await response.json()) as ContextStateApiResponse;
 
-    // Push into the slice. The reducer accepts the snake_case payload
-    // verbatim; carrying last_trim_summary + last_raw_usage too so the
-    // panel can render the deeper sections right away.
-    dispatch(
-      applyContextState({
-        conversation_id: payload.conversation_id,
-        last_request_input_tokens: payload.last_request_input_tokens,
-        last_request_cached_tokens: payload.last_request_cached_tokens,
-        last_request_output_tokens: payload.last_request_output_tokens,
-        total_chars_visible_to_model: payload.total_chars_visible_to_model,
-        message_count_visible: payload.message_count_visible,
-        cache_state: payload.cache_state,
-        measured_at: payload.measured_at,
-        last_trim_summary: payload.last_trim_summary,
-        last_raw_usage: payload.last_raw_usage,
-      }),
-    );
+    // Push into the slice via the hydration action — same as a CONTEXT_STATE
+    // event plus the extra last_trim_summary / last_raw_usage fields the
+    // endpoint includes for cold-start renderers.
+    dispatch(hydrateContextState(payload));
 
     return payload;
   },

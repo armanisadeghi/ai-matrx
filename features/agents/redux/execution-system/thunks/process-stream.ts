@@ -282,7 +282,7 @@ export async function processStream({
   // messageId. Single-reservation streams trivially collapse to one entry.
   const reservedAssistantTurns: Array<{ messageId: string; position: number }> =
     [];
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   let reservedUserRequestId: string | null = null;
 
   // Maps the provider's opaque `call_id` (used by activeRequests.toolLifecycle)
@@ -1412,33 +1412,14 @@ export async function processStream({
       );
     } else if (isContextStateEvent(event)) {
       otherEvents++;
-      // Model Context tab + header gauge consume this directly. The wire
-      // payload is snake_case (mirrors the Python ContextStatePayload);
-      // the slice's reducer accepts it verbatim. The wire types from the
-      // generated stream-events.ts use Record<string, unknown> for the
-      // JSONB-shaped fields (cache_state); the slice declares the typed
-      // CacheState interface. Runtime shape matches — cast at the boundary.
-      dispatch(
-        applyContextState({
-          ...event.data,
-          cache_state: event.data.cache_state as Record<
-            string,
-            unknown
-          > as never,
-        }),
-      );
+      // Wire payload is snake_case + uses Record<string, unknown> for
+      // JSONB-shaped fields (matches generated stream-events.ts). The
+      // slice's ContextStateWirePayload accepts that shape directly and
+      // narrows to typed fields inside the reducer — no cast needed here.
+      dispatch(applyContextState(event.data));
     } else if (isContextTrimmedEvent(event)) {
       otherEvents++;
-      // Same shape-match issue as above for trim_summary's typed shape.
-      dispatch(
-        applyContextTrimmed({
-          ...event.data,
-          trim_summary: event.data.trim_summary as Record<
-            string,
-            unknown
-          > as never,
-        }),
-      );
+      dispatch(applyContextTrimmed(event.data));
     } else {
       const _exhaustive: never = event;
       const unhandled = _exhaustive as { event?: string; data?: unknown };
