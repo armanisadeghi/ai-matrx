@@ -28,6 +28,7 @@ import { useImageSource } from "../shared/use-image-source";
 import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { EditAiToolbar } from "./EditAiToolbar";
+import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 
 // Filerobot 5.0.1 ships THREE files (HistoryButtons.js, TabsResponsive.js,
 // TabsNavbar/index.js) whose compiled output calls `React.createElement(...)`
@@ -36,12 +37,19 @@ import { EditAiToolbar } from "./EditAiToolbar";
 // because there's no import to preserve. Polyfill `React` on `globalThis`
 // before the Filerobot bundle loads so those bare calls resolve. Cheap +
 // localized to the Edit mode loader, gone the day Filerobot fixes the issue.
+//
+// Same vintage of build bug: those files also spread `active={boolean}` onto
+// a DOM <button>, which triggers React's "non-boolean attribute" dev warning
+// on every render. Suppress it via the shared third-party-noise filter
+// (lib/console-noise.ts) — stack-checked so it only swallows warnings whose
+// call originates inside react-filerobot-image-editor, never our own code.
 const FilerobotImageEditor = dynamic(
   async () => {
     const ReactNs = await import("react");
     const ReactDefault =
       (ReactNs as unknown as { default?: typeof ReactNs }).default ?? ReactNs;
     (globalThis as unknown as { React?: unknown }).React = ReactDefault;
+    installThirdPartyNoiseFilter();
     return import("react-filerobot-image-editor");
   },
   { ssr: false, loading: () => <EditorSkeleton /> },

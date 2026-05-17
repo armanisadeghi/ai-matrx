@@ -10,10 +10,13 @@ import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
-import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentShortcutCrud";
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { fetchFullShortcut } from "@/features/agents/redux/agent-shortcuts/thunks";
+import {
+  selectAllCategoriesArray,
+} from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
 
 import { SurfacePicker } from "./SurfacePicker";
 import { WidgetPicker } from "./WidgetPicker";
@@ -82,7 +85,49 @@ export function ShortcutEditorNext({
   }, [dispatch, shortcutId, isNew]);
 
   // ── Category tree ─────────────────────────────────────────────────────
-  const { categories } = useAgentShortcuts({ scope: "user" });
+  // Picker shows the full set of categories the user can pick from:
+  // global + their personal + their active org. Single-scope fetches
+  // miss two-thirds of what's available.
+  const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
+  const activeOrgId = useAppSelector((s) => {
+    const orgState = (
+      s as unknown as {
+        organizations?: { activeOrganizationId?: string | null };
+      }
+    ).organizations;
+    return orgState?.activeOrganizationId ?? null;
+  });
+
+  useEffect(() => {
+    void dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }));
+    void dispatch(fetchCategoriesForScope({ scope: "user", scopeId: null }));
+    if (activeOrgId) {
+      void dispatch(
+        fetchCategoriesForScope({
+          scope: "organization",
+          scopeId: activeOrgId,
+        }),
+      );
+    }
+  }, [dispatch, activeOrgId]);
+
+  const allLoadedCategories = useAppSelector(selectAllCategoriesArray);
+  const categories = useMemo(
+    () =>
+      allLoadedCategories.filter((c) => {
+        if (!c.isActive) return false;
+        const isGlobal =
+          c.userId == null &&
+          c.organizationId == null &&
+          c.projectId == null &&
+          c.taskId == null;
+        if (isGlobal) return true;
+        if (currentUserId && c.userId === currentUserId) return true;
+        if (activeOrgId && c.organizationId === activeOrgId) return true;
+        return false;
+      }),
+    [allLoadedCategories, currentUserId, activeOrgId],
+  );
 
   // ── Agent-surface bindings (used to seed mappings) ────────────────────
   const selectBindings = useMemo(
