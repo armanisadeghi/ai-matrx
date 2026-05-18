@@ -24,6 +24,7 @@ import {
   uploadAsset,
   uploadAssetWithProgress,
 } from "@/features/files/api/assets";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import {
   selectOrganizationId,
@@ -123,16 +124,26 @@ export async function uploadInternal(
   const normalized = fromCloudFile(cloudFile, source);
 
   // Stitch on the share-link fields — cloudUpload created them in the
-  // same round-trip as the upload.
+  // same round-trip as the upload. Guarantee `url` is non-empty when a
+  // share token is present: prefer the directUrl, then the user-facing
+  // `/share/{token}` page (when an appOrigin is supplied), then the
+  // canonical Python `/share/{token}/download` URL. Never assign `""`
+  // — `??` does not short-circuit empty strings and downstream consumers
+  // depend on truthiness for the URL field.
   if (result.shareToken) {
-    const shareUrl =
-      opts.appOrigin && result.shareToken
-        ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
-        : (result.shareUrl ?? "");
+    const appShareUrl = opts.appOrigin
+      ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
+      : undefined;
+    const url =
+      result.directUrl ||
+      appShareUrl ||
+      result.shareUrl ||
+      normalized.url ||
+      pythonShareUrl(result.shareToken);
     return {
       ...normalized,
       shareToken: result.shareToken,
-      url: result.directUrl ?? shareUrl ?? normalized.url,
+      url,
     };
   }
 

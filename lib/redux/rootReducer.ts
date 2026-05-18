@@ -77,6 +77,7 @@ import urlSyncReducer from "./slices/urlSyncSlice";
 
 import agentCacheReducer from "./slices/agentCacheSlice";
 import agentDefinitionReducer from "@/features/agents/redux/agent-definition/slice";
+import agentBattleReducer from "@/features/agent-battle/redux/battleSlice";
 import { conversationListReducer } from "@/features/agents/redux/conversation-list/conversation-list.slice";
 import { conversationHistoryReducer } from "@/features/agents/redux/conversation-history/slice";
 import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
@@ -364,6 +365,8 @@ export const slimReducerMap = {
 
   pageExtraction: pageExtractionReducer,
   pdfStudio: pdfStudioReducer,
+
+  agentBattle: agentBattleReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);

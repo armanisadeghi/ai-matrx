@@ -6,7 +6,6 @@
 // the app. Single system, no Supabase Storage buckets.
 
 import { fileHandler } from "@/features/files";
-import * as Files from "@/features/files/api/files";
 import { RECORDING_LIMITS } from "../constants/recording";
 
 interface UploadResult {
@@ -32,7 +31,8 @@ export function validateAudioFile(
   if (size === 0 || !blob) {
     return {
       valid: false,
-      error: "Audio file is empty. Please ensure you recorded audio before stopping.",
+      error:
+        "Audio file is empty. Please ensure you recorded audio before stopping.",
       size: 0,
     };
   }
@@ -133,10 +133,15 @@ export async function saveAudioToStorage(
 
 /**
  * Delete an audio file by its cld_files UUID. Best-effort.
+ *
+ * Routes through `fileHandler.remove` (which dispatches the canonical
+ * deleteFile thunk) so the Redux slice is updated atomically with the
+ * REST DELETE — calling `Files.deleteFile` directly leaves the slice
+ * waiting on the realtime echo and produces a race window.
  */
 export async function deleteAudioFromStorage(fileId: string): Promise<void> {
   try {
-    await Files.deleteFile(fileId, { hardDelete: true });
+    await fileHandler.remove(fileId, { hard: true });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn("Error deleting audio file:", error);

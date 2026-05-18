@@ -18,7 +18,10 @@ import {
   FileIcon as FileIconLucide,
 } from "lucide-react";
 import { PublicDownloadButton } from "./_components/PublicDownloadButton";
-import type { ShareLinkResolveResponse } from "@/features/files";
+import {
+  pythonShareResolveUrl,
+  type ShareLinkResolveResponse,
+} from "@/features/files";
 
 /**
  * Files we know render richly in the authenticated app's PreviewPane —
@@ -50,17 +53,10 @@ interface PageProps {
 async function resolveToken(
   token: string,
 ): Promise<ShareLinkResolveResponse | null> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL_PROD ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL_DEV;
-  if (!baseUrl) return null;
-
   try {
-    const res = await fetch(
-      `${baseUrl.replace(/\/$/, "")}/share/${encodeURIComponent(token)}`,
-      { cache: "no-store" },
-    );
+    const res = await fetch(pythonShareResolveUrl(token), {
+      cache: "no-store",
+    });
     if (!res.ok) return null;
     return (await res.json()) as ShareLinkResolveResponse;
   } catch {

@@ -21,7 +21,7 @@ import type { ImageFit, ImagePosition, ProcessedVariant } from "../types";
 import { getPresetById } from "../presets";
 import { formatBytes, formatDimensions } from "../utils/format-bytes";
 import { downloadSingleVariant } from "../utils/download-bundle";
-import { getSignedUrl } from "@/features/files/api/files";
+import { fileHandler } from "@/features/files/handler/handler";
 
 function fitIcon(fit: ImageFit): React.ReactNode {
   switch (fit) {
@@ -101,8 +101,11 @@ export function StudioVariantTile({
   const resolveCopyableUrl = async (): Promise<string> => {
     if (variant.publicUrl) return variant.publicUrl;
     if (variant.fileId) {
-      const { data } = await getSignedUrl(variant.fileId, { expiresIn: 3600 });
-      return data.url;
+      const url = await fileHandler
+        .use({ kind: "file_id", fileId: variant.fileId })
+        .as({ kind: "html_src" });
+      if (!url) throw new Error("Couldn't resolve a shareable URL");
+      return url;
     }
     throw new Error("Save to the library first to get a shareable URL");
   };

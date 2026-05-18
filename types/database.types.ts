@@ -4003,6 +4003,86 @@ export type Database = {
         }
         Relationships: []
       }
+      cmp_comparison_entries: {
+        Row: {
+          agent_id: string
+          agent_version: number | null
+          agent_version_snapshot_id: string | null
+          comparison_set_id: string
+          conversation_id: string
+          created_at: string
+          display_order: number
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          agent_id: string
+          agent_version?: number | null
+          agent_version_snapshot_id?: string | null
+          comparison_set_id: string
+          conversation_id: string
+          created_at?: string
+          display_order: number
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          agent_id?: string
+          agent_version?: number | null
+          agent_version_snapshot_id?: string | null
+          comparison_set_id?: string
+          conversation_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmp_comparison_entries_comparison_set_id_fkey"
+            columns: ["comparison_set_id"]
+            isOneToOne: false
+            referencedRelation: "cmp_comparison_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmp_comparison_sets: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string | null
+          project_id: string | null
+          task_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       code_file_folders: {
         Row: {
           color: string | null
@@ -6839,6 +6919,7 @@ export type Database = {
           response_message_id: string | null
           response_payload: Json | null
           trigger_message_id: string | null
+          unified_payload: Json | null
           user_request_id: string | null
         }
         Insert: {
@@ -6853,6 +6934,7 @@ export type Database = {
           response_message_id?: string | null
           response_payload?: Json | null
           trigger_message_id?: string | null
+          unified_payload?: Json | null
           user_request_id?: string | null
         }
         Update: {
@@ -6867,6 +6949,7 @@ export type Database = {
           response_message_id?: string | null
           response_payload?: Json | null
           trigger_message_id?: string | null
+          unified_payload?: Json | null
           user_request_id?: string | null
         }
         Relationships: []
@@ -17098,7 +17181,7 @@ export type Database = {
           deactivated_at?: string | null
           dedupe_exempt?: boolean
           description: string
-          function_path: string
+          function_path?: string
           gating?: Json
           icon?: string | null
           id?: string

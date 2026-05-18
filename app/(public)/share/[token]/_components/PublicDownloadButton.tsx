@@ -10,6 +10,7 @@
 
 import { useCallback, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
+import { pythonShareUrl } from "@/features/files";
 
 export interface PublicDownloadButtonProps {
   token: string;
@@ -27,17 +28,10 @@ export function PublicDownloadButton({
   const handleClick = useCallback(async () => {
     setDownloading(true);
     try {
-      if (url) {
-        triggerAnchor(url, filename);
-        return;
-      }
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL_PROD ||
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_BACKEND_URL_DEV;
-      if (!baseUrl) return;
-      const downloadUrl = `${baseUrl.replace(/\/$/, "")}/share/${encodeURIComponent(token)}/download`;
-      triggerAnchor(downloadUrl, filename);
+      // Prefer the embedded signed URL (instant, S3-direct). Fall back to
+      // Python's `/share/{token}/download` proxy, resolved via the canonical
+      // handler URL builder — never hand-assemble the URL inline.
+      triggerAnchor(url ?? pythonShareUrl(token), filename);
     } finally {
       // Keep the spinner briefly so users see feedback.
       setTimeout(() => setDownloading(false), 600);

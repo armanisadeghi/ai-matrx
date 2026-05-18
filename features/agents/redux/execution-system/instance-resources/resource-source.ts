@@ -21,12 +21,8 @@
  */
 
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
-import type {
-  FileSource,
-  MediaRef,
-  NormalizedFile,
-} from "@/features/files";
-import { normalize, preferIdentityLocator } from "@/features/files";
+import type { FileSource, MediaRef, NormalizedFile } from "@/features/files";
+import { normalize, toMediaRef } from "@/features/files";
 
 const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "image",
@@ -46,7 +42,8 @@ function pickFileSource(d: Record<string, unknown>): FileSource | null {
   if (fileId) return { kind: "file_id", fileId, mime };
   if (typeof d.file_uri === "string")
     return { kind: "file_uri", fileUri: d.file_uri, mime };
-  if (typeof d.url === "string") return { kind: "external_url", url: d.url, mime };
+  if (typeof d.url === "string")
+    return { kind: "external_url", url: d.url, mime };
   return null;
 }
 
@@ -93,9 +90,10 @@ export function refineBlockType(
 
 /**
  * Convert a picker payload into the `source` value stored on a
- * ManagedResource. For media blocks, returns a canonical `MediaRef`.
- * Identical to what `fileHandler.toMediaRef(source)` would produce on
- * outbound — kept synchronous because the slice reducer needs it inline.
+ * ManagedResource. For media blocks, returns a canonical `MediaRef`
+ * via the handler's exported `toMediaRef` builder — identical to what
+ * `fileHandler.use(...).as({ kind: "media_ref" })` produces, just sync
+ * because the slice reducer needs it inline.
  */
 export function resourceDataToSource(
   blockType: ResourceBlockType,
@@ -106,11 +104,5 @@ export function resourceDataToSource(
   const source = pickFileSource(data as Record<string, unknown>);
   if (!source) return data;
   const normalized: NormalizedFile = normalize(source);
-  const locator = preferIdentityLocator(normalized);
-  const ref: MediaRef = {};
-  if (locator.file_id) ref.file_id = locator.file_id;
-  if (locator.file_uri) ref.file_uri = locator.file_uri;
-  if (locator.url) ref.url = locator.url;
-  if (normalized.meta.mime) ref.mime_type = normalized.meta.mime;
-  return ref;
+  return toMediaRef(normalized) satisfies MediaRef;
 }

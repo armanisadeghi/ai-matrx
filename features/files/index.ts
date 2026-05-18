@@ -71,10 +71,7 @@ export {
 // Asset API — direct access for components that need fine-grained control
 // (e.g. ImageAssetUploader library tab: pick from library → ensure preset variants).
 // Import from here, never from @/features/files/api/* directly.
-export {
-  getAssetForFile,
-  addAssetVariants,
-} from "@/features/files/api/assets";
+export { getAssetForFile, addAssetVariants } from "@/features/files/api/assets";
 export { useFileDocument } from "@/features/files/hooks/useFileDocument";
 export { useSharing } from "@/features/files/hooks/useSharing";
 
@@ -101,6 +98,7 @@ export { fileHandler } from "@/features/files/handler/handler";
 // everything else.
 export { normalize } from "@/features/files/handler/input/normalize";
 export { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
+export { toMediaRef } from "@/features/files/handler/output/target";
 
 // ---------------------------------------------------------------------------
 // 3. Components — the canonical render / upload / pick surface

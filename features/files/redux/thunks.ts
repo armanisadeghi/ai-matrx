@@ -30,6 +30,7 @@ import * as Folders from "@/features/files/api/folders";
 import * as Permissions from "@/features/files/api/permissions";
 import * as ShareLinks from "@/features/files/api/share-links";
 import * as Versions from "@/features/files/api/versions";
+import { fileHandler } from "@/features/files/handler/handler";
 import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -1435,6 +1436,13 @@ export const deactivateShareLink = createAsyncThunk<
 
 // ---------------------------------------------------------------------------
 // Utility — getSignedUrl (no slice state change; caller stores the URL).
+//
+// Routes through the universal handler so we hit the lazy signed-URL cache
+// instead of always firing a network request. For public files this returns
+// the permanent CDN URL with zero network cost; for private/shared files it
+// returns the cached signed URL if still valid, otherwise mints one once.
+// `expiresIn` in the return shape is informational and pinned to the handler
+// default (3600s); callers never read it (verified across the codebase).
 // ---------------------------------------------------------------------------
 
 export const getSignedUrl = createAsyncThunk<
@@ -1449,8 +1457,13 @@ export const getSignedUrl = createAsyncThunk<
     // for any remaining callers.
     throw new Error("Signed URLs aren't available for virtual sources");
   }
-  const { data } = await Files.getSignedUrl(fileId, { expiresIn });
-  return { url: data.url, expiresIn: data.expires_in };
+  const url = await fileHandler
+    .use({ kind: "file_id", fileId })
+    .as({ kind: "html_src" });
+  if (!url) {
+    throw new Error(`Could not resolve a URL for file ${fileId}`);
+  }
+  return { url, expiresIn: expiresIn ?? 3600 };
 });
 
 // ---------------------------------------------------------------------------

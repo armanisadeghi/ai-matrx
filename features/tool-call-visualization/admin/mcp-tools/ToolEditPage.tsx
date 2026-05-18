@@ -60,14 +60,10 @@ export function ToolEditPage({ tool }: Props) {
   };
 
   const handleSave = async () => {
-    if (
-      !editedTool.name ||
-      !editedTool.description ||
-      !editedTool.function_path
-    ) {
+    if (!editedTool.name || !editedTool.description) {
       toast({
         title: "Missing required fields",
-        description: "Name, Description, and Function Path are required.",
+        description: "Name and Description are required.",
         variant: "destructive",
       });
       return;
@@ -143,9 +139,7 @@ export function ToolEditPage({ tool }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>
-          Function Path <span className="text-destructive">*</span>
-        </Label>
+        <Label>Function Path</Label>
         <Input
           value={editedTool.function_path}
           onChange={(e) => setField("function_path", e.target.value)}

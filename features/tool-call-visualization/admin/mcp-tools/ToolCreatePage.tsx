@@ -74,10 +74,10 @@ export function ToolCreatePage() {
   };
 
   const handleSave = async () => {
-    if (!tool.name || !tool.description || !tool.function_path) {
+    if (!tool.name || !tool.description) {
       toast({
         title: "Missing required fields",
-        description: "Name, Description, and Function Path are required.",
+        description: "Name and Description are required.",
         variant: "destructive",
       });
       return;
@@ -153,9 +153,7 @@ export function ToolCreatePage() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label>
-          Function Path <span className="text-destructive">*</span>
-        </Label>
+        <Label>Function Path</Label>
         <Input
           value={tool.function_path}
           onChange={(e) => setField("function_path", e.target.value)}
