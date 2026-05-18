@@ -411,10 +411,9 @@
   .notes-note-header { display: none !important; }
 }
 
-/* Tab close button — show on parent hover/active */
+/* Tab close button — show on parent hover/active, no transition for instant response */
 .notes-tab-close-btn {
   opacity: 0;
-  transition: opacity 150ms ease;
 }
 .group:hover .notes-tab-close-btn,
 .group[data-active="true"] .notes-tab-close-btn {

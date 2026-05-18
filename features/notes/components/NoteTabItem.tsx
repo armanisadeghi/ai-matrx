@@ -4,7 +4,7 @@
 // Matches ALL SSR workspace tab features:
 // - Editable title on active tab (debounced save)
 // - Dirty indicator (amber dot)
-// - Active tab action buttons: Save, Duplicate, Share, Folder, Delete, History, Voice
+// - Active tab: single ⋯ overflow menu (Save, Copy, Share, Folder, Context, Dictate, Delete)
 // - Close button on all tabs
 // - Right-click context menu
 // - DnD reordering
@@ -18,11 +18,11 @@ import {
   Share2,
   FolderInput,
   Trash2,
-  History,
   X,
   Download,
   Link2,
   Network,
+  MoreHorizontal,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -70,6 +70,9 @@ interface NoteTabItemProps {
 const actionBtnClass =
   "flex items-center justify-center w-6 h-6 rounded cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5";
 
+const menuItemClass =
+  "flex items-center gap-2 w-full px-3 py-1.5 text-xs transition-colors cursor-pointer text-foreground hover:bg-accent";
+
 export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const dispatch = useAppDispatch();
 
@@ -91,12 +94,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const [localLabel, setLocalLabel] = useState(label);
   const [showFolderDrop, setShowFolderDrop] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const [overflowMenuPos, setOverflowMenuPos] = useState<{ right: number; top: number } | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const folderBtnRef = useRef<HTMLButtonElement>(null);
-  const contextBtnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync Redux label → local
@@ -169,6 +171,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // touching anything else.
   const anyTabUiOpen =
     !!ctxMenu ||
+    !!overflowMenuPos ||
     showFolderDrop ||
     contextOpen ||
     shareOpen ||
@@ -235,7 +238,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           "group flex items-center gap-0 px-[6px] text-[0.6875rem] font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
           isActive
             ? "max-w-[340px] bg-accent/60 text-foreground"
-            : "max-w-[160px] bg-transparent text-muted-foreground hover:bg-accent/30 cursor-pointer",
+            : "max-w-[160px] bg-transparent text-muted-foreground/70 hover:text-muted-foreground hover:bg-accent/30 cursor-pointer",
         )}
         role="tab"
         data-active={isActive ? "true" : undefined}
@@ -272,7 +275,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           <span className="overflow-hidden text-ellipsis">{label}</span>
         )}
 
-        {/* Active tab action buttons */}
+        {/* Active tab: single overflow menu button */}
         {isActive && (
           <div
             className="flex items-center gap-px shrink-0 ml-1"
@@ -282,62 +285,17 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             }}
           >
             <button
-              className={cn(
-                actionBtnClass,
-                (isDirty || isSaving) && "text-amber-500",
-              )}
-              onClick={() => dispatch(saveNote(noteId))}
-              title="Save (Ctrl+S)"
-            >
-              <Save />
-            </button>
-            <button
-              className={actionBtnClass}
-              onClick={() => {
-                navigator.clipboard.writeText(content).catch(() => {});
+              className={cn(actionBtnClass, !!overflowMenuPos && "text-primary bg-accent")}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setOverflowMenuPos((v) =>
+                  v ? null : { right: window.innerWidth - rect.right, top: rect.bottom + 4 },
+                );
               }}
-              title="Copy content"
+              title="More actions"
             >
-              <Copy />
+              <MoreHorizontal />
             </button>
-            <button
-              className={actionBtnClass}
-              onClick={() => setShareOpen(true)}
-              title="Share note"
-            >
-              <Share2 />
-            </button>
-            <button
-              ref={folderBtnRef}
-              className={actionBtnClass}
-              onClick={() => setShowFolderDrop((v) => !v)}
-              title="Move to folder"
-            >
-              <FolderInput />
-            </button>
-            <button
-              ref={contextBtnRef}
-              className={cn(
-                actionBtnClass,
-                contextOpen && "text-primary bg-accent",
-              )}
-              onClick={() => setContextOpen((v) => !v)}
-              title="Set context"
-            >
-              <Network />
-            </button>
-            <button
-              className={cn(actionBtnClass, "hover:text-destructive")}
-              onClick={requestDelete}
-              title="Delete"
-            >
-              <Trash2 />
-            </button>
-            <MicrophoneIconButton
-              onTranscriptionComplete={handleTranscription}
-              variant="icon-only"
-              size="sm"
-            />
           </div>
         )}
 
@@ -471,6 +429,70 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                 </button>
               ),
             )}
+          </div>
+        </>
+      )}
+
+      {/* Overflow (⋯) menu */}
+      {overflowMenuPos && isActive && (
+        <>
+          <div className="fixed inset-0 z-[110]" onClick={() => setOverflowMenuPos(null)} />
+          <div
+            className="fixed z-[120] min-w-[180px] py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg"
+            style={{ right: overflowMenuPos.right, top: overflowMenuPos.top }}
+          >
+            <div className="px-3 py-1 text-[0.5625rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              Actions
+            </div>
+            <button
+              className={cn(menuItemClass, (isDirty || isSaving) && "text-amber-500")}
+              onClick={() => { dispatch(saveNote(noteId)); setOverflowMenuPos(null); }}
+            >
+              <Save className="w-3 h-3 shrink-0" /> Save
+              <span className="ml-auto text-[0.625rem] text-muted-foreground/60">Ctrl+S</span>
+            </button>
+            <button
+              className={menuItemClass}
+              onClick={() => { navigator.clipboard.writeText(content).catch(() => {}); setOverflowMenuPos(null); }}
+            >
+              <Copy className="w-3 h-3 shrink-0" /> Copy Content
+            </button>
+            <button
+              className={menuItemClass}
+              onClick={() => { setShareOpen(true); setOverflowMenuPos(null); }}
+            >
+              <Share2 className="w-3 h-3 shrink-0" /> Share
+            </button>
+            <button
+              className={menuItemClass}
+              onClick={() => { setShowFolderDrop((v) => !v); setOverflowMenuPos(null); }}
+            >
+              <FolderInput className="w-3 h-3 shrink-0" /> Move to Folder
+            </button>
+            <button
+              className={cn(menuItemClass, contextOpen && "text-primary")}
+              onClick={() => { setContextOpen((v) => !v); setOverflowMenuPos(null); }}
+            >
+              <Network className="w-3 h-3 shrink-0" /> Set Context
+            </button>
+            <div className={menuItemClass}>
+              <MicrophoneIconButton
+                onTranscriptionComplete={(text) => { handleTranscription(text); setOverflowMenuPos(null); }}
+                variant="icon-only"
+                size="sm"
+              />
+              <span>Dictate</span>
+            </div>
+            <div className="h-px bg-border/50 my-1" />
+            <div className="px-3 py-1 text-[0.5625rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              Danger
+            </div>
+            <button
+              className={cn(menuItemClass, "text-destructive hover:bg-destructive/10")}
+              onClick={() => { requestDelete(); setOverflowMenuPos(null); }}
+            >
+              <Trash2 className="w-3 h-3 shrink-0" /> Delete Note
+            </button>
           </div>
         </>
       )}

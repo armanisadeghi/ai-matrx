@@ -231,7 +231,7 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
 
       <div
         ref={scrollRef}
-        className="flex items-stretch flex-1 min-w-0 overflow-x-auto h-full"
+        className="flex items-stretch flex-1 min-w-0 overflow-x-auto scrollbar-none h-full"
       >
         {openTabs.map((tabId) => (
           <div
