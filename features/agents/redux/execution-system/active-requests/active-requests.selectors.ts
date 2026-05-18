@@ -102,6 +102,13 @@ export const selectRequestStatus = (requestId: string) => (state: RootState) =>
  * Derives accumulated text from render blocks (single source of truth).
  * Returns "" when no request exists — safe because "" is a string literal.
  * Memoized so consumers don't re-render unless render block content changes.
+ *
+ * When `editedText` is set on the request (by inline edit flows such as
+ * inline-decision resolve, code-block save, table edit, broker update, or
+ * full-screen save), it supersedes the render-block-derived text. This
+ * keeps the renderer in sync with what we already persisted via
+ * `cx_message_edit` without swapping the underlying data source mid-session
+ * (see AgentAssistantMessage's "lifetime rule").
  */
 export const selectAccumulatedText = (requestId: string) =>
   createSelector(
@@ -109,7 +116,10 @@ export const selectAccumulatedText = (requestId: string) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (order, blocks): string => {
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.editedText,
+    (order, blocks, editedText): string => {
+      if (editedText !== null && editedText !== undefined) return editedText;
       if (!order || !blocks || order.length === 0) return "";
       return order
         .map((id) => blocks[id]?.content ?? "")

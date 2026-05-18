@@ -1326,11 +1326,13 @@ export type Database = {
           context_window: number | null
           controls: Json | null
           endpoints: Json | null
+          guest_fallback_id: string | null
           id: string
           is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
           max_tokens: number | null
+          mid_fallback_id: string | null
           model_class: string
           model_provider: string | null
           name: string
@@ -1345,11 +1347,13 @@ export type Database = {
           context_window?: number | null
           controls?: Json | null
           endpoints?: Json | null
+          guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
           is_premium?: boolean | null
           is_primary?: boolean | null
           max_tokens?: number | null
+          mid_fallback_id?: string | null
           model_class: string
           model_provider?: string | null
           name: string
@@ -1364,11 +1368,13 @@ export type Database = {
           context_window?: number | null
           controls?: Json | null
           endpoints?: Json | null
+          guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
           is_premium?: boolean | null
           is_primary?: boolean | null
           max_tokens?: number | null
+          mid_fallback_id?: string | null
           model_class?: string
           model_provider?: string | null
           name?: string
@@ -1376,6 +1382,20 @@ export type Database = {
           provider?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_model_model_provider_fkey"
             columns: ["model_provider"]
@@ -4082,6 +4102,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      cmp_response_feedback: {
+        Row: {
+          comment: string | null
+          comparison_set_id: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          overall: number | null
+          rank: number | null
+          rating: string | null
+          request_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          comparison_set_id?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          overall?: number | null
+          rank?: number | null
+          rating?: string | null
+          request_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          comparison_set_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          overall?: number | null
+          rank?: number | null
+          rating?: string | null
+          request_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmp_response_feedback_comparison_set_id_fkey"
+            columns: ["comparison_set_id"]
+            isOneToOne: false
+            referencedRelation: "cmp_comparison_sets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       code_file_folders: {
         Row: {
@@ -7280,6 +7353,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cx_user_usage_summary: {
+        Row: {
+          auth_type: string
+          blocked_reason: string | null
+          cost_24h_mcents: number
+          cost_6h_mcents: number
+          daily_blocked: boolean
+          last_request_at: string | null
+          requests_24h: number
+          requests_6h: number
+          tokens_24h: number
+          tokens_6h: number
+          updated_at: string
+          user_id: string
+          window_24h_starts_at: string | null
+          window_6h_starts_at: string | null
+          window_blocked: boolean
+        }
+        Insert: {
+          auth_type?: string
+          blocked_reason?: string | null
+          cost_24h_mcents?: number
+          cost_6h_mcents?: number
+          daily_blocked?: boolean
+          last_request_at?: string | null
+          requests_24h?: number
+          requests_6h?: number
+          tokens_24h?: number
+          tokens_6h?: number
+          updated_at?: string
+          user_id: string
+          window_24h_starts_at?: string | null
+          window_6h_starts_at?: string | null
+          window_blocked?: boolean
+        }
+        Update: {
+          auth_type?: string
+          blocked_reason?: string | null
+          cost_24h_mcents?: number
+          cost_6h_mcents?: number
+          daily_blocked?: boolean
+          last_request_at?: string | null
+          requests_24h?: number
+          requests_6h?: number
+          tokens_24h?: number
+          tokens_6h?: number
+          updated_at?: string
+          user_id?: string
+          window_24h_starts_at?: string | null
+          window_6h_starts_at?: string | null
+          window_blocked?: boolean
+        }
+        Relationships: []
       }
       dashboard_saved_views: {
         Row: {
@@ -17060,6 +17187,63 @@ export type Database = {
           },
         ]
       }
+      system_write_failure: {
+        Row: {
+          conversation_id: string | null
+          depends_on: Json | null
+          error_text: string
+          failed_at: string
+          id: string
+          op_id: string
+          op_type: string
+          payload: Json
+          primary_key: Json
+          recovered_at: string | null
+          recovery_op_id: string | null
+          request_id: string | null
+          retry_count: number
+          table_target: string
+          traceback: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          depends_on?: Json | null
+          error_text: string
+          failed_at?: string
+          id?: string
+          op_id: string
+          op_type: string
+          payload: Json
+          primary_key: Json
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number
+          table_target: string
+          traceback?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          depends_on?: Json | null
+          error_text?: string
+          failed_at?: string
+          id?: string
+          op_id?: string
+          op_type?: string
+          payload?: Json
+          primary_key?: Json
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number
+          table_target?: string
+          traceback?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tl_bundle: {
         Row: {
           created_at: string
@@ -24156,6 +24340,23 @@ export type Database = {
           related_column_name: string
           related_entry: Json
           related_table_name: string
+        }[]
+      }
+      fn_get_user_usage_snapshot: {
+        Args: { p_user_id: string }
+        Returns: {
+          auth_type: string
+          blocked_reason: string
+          cost_24h_mcents: number
+          cost_6h_mcents: number
+          daily_blocked: boolean
+          requests_24h: number
+          requests_6h: number
+          tokens_24h: number
+          tokens_6h: number
+          window_24h_starts_at: string
+          window_6h_starts_at: string
+          window_blocked: boolean
         }[]
       }
       generate_canvas_content_hash: {

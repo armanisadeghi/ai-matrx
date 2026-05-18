@@ -292,15 +292,18 @@ export const aiModelService = {
     if (firstError?.error) throw firstError.error;
   },
 
-  /** Patch a single field on a single model (convenience for inline audit fixes) */
+  /** Patch a single field on a single model (convenience for inline audit fixes).
+   *  Widened to `keyof Omit<AiModel, "id">` so newly-added augmented fields
+   *  (mid_fallback_id, guest_fallback_id) flow through ahead of the next
+   *  `pnpm db:generate` refresh of database.types.ts. */
   async patchField(
     id: string,
-    field: keyof AiModelUpdate,
+    field: keyof Omit<AiModel, "id">,
     value: AiModel[keyof AiModel],
   ): Promise<void> {
     const { error } = await supabase
       .from("ai_model")
-      .update({ [field]: value })
+      .update({ [field]: value } as unknown as AiModelUpdate)
       .eq("id", id);
     if (error) throw error;
   },

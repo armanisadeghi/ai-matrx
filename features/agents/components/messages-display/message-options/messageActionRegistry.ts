@@ -45,6 +45,7 @@ import {
   Scissors,
   Undo2,
   ListFilter,
+  History,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
@@ -116,6 +117,15 @@ export interface MessageActionContext {
    * actions fall through to a direct delete with no fork option.
    */
   onRequestDelete?: () => void;
+  /**
+   * Optional callback fired when the user wants to view + restore prior
+   * versions of this message (cx_message.content_history). Owned by the
+   * host action bar so the dialog survives `MessageOptionsMenu` close.
+   * When omitted, the menu item is hidden.
+   */
+  onRequestEditHistory?: () => void;
+  /** Number of archived versions in cx_message.content_history. */
+  contentHistoryCount: number;
   /**
    * True when the viewer is a super admin. Gates the "Server API (test)"
    * section that exposes the new Python-backed conversation endpoints
@@ -794,6 +804,36 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
 }
 
 /**
+ * View archived versions of this message from `cx_message.content_history`
+ * and restore any of them. The dialog itself is owned by the host action
+ * bar (`AssistantActionBar`) so it stays mounted after the menu closes —
+ * this factory only wires the click into the host callback.
+ *
+ * Hidden when there is no history yet or the host didn't provide a
+ * callback (older surfaces). The label includes the version count so
+ * users can see at a glance whether anything is recoverable.
+ */
+function editHistoryItem(ctx: MessageActionContext): MenuItem {
+  const { onRequestEditHistory, onClose, contentHistoryCount } = ctx;
+  return {
+    key: "edit-history",
+    icon: History,
+    iconColor: "text-amber-500 dark:text-amber-400",
+    label:
+      contentHistoryCount > 0
+        ? `Edit history (${contentHistoryCount})`
+        : "Edit history",
+    action: () => {
+      onRequestEditHistory?.();
+      onClose();
+    },
+    category: "Edit",
+    showToast: false,
+    hidden: !onRequestEditHistory || contentHistoryCount === 0,
+  };
+}
+
+/**
  * USER MESSAGES ONLY — edit the user's prompt AND resubmit from that point.
  *
  * As of the surface-aware refactor, the canonical entry point for this
@@ -1465,6 +1505,7 @@ export function getAssistantMessageActions(
 ): MenuItem[] {
   return [
     editContentItem(ctx),
+    editHistoryItem(ctx),
     forkAtMessageItem(ctx),
     deleteMessageItem(ctx),
     ...creatorItems(ctx),
@@ -1494,6 +1535,7 @@ export function getUserMessageActions(ctx: MessageActionContext): MenuItem[] {
   // state. Keeping it out of this menu eliminates the duplicate flow.
   return [
     editContentItem(ctx),
+    editHistoryItem(ctx),
     forkAtMessageItem(ctx),
     deleteMessageItem(ctx),
     ...creatorItems(ctx),

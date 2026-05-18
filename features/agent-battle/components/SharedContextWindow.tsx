@@ -19,12 +19,21 @@
  */
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Building2, Briefcase, ClipboardList, Layers } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  selectOrganizationId,
+  selectOrganizationName,
+  selectProjectId,
+  selectProjectName,
+  selectScopeSelectionsContext,
+  selectTaskId,
+  selectTaskName,
+} from "@/lib/redux/slices/appContextSlice";
 import {
   broadcastContextEntry,
   broadcastRemoveContextEntry,
@@ -120,6 +129,8 @@ export function SharedContextWindow({ id, onClose }: SharedContextWindowProps) {
                 submittableCount === 1 ? "" : "s"
               }.`}
         </div>
+
+        <ActiveScopeReadout />
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {previewKeys.length === 0 ? (
@@ -243,6 +254,96 @@ function SharedContextRow({
           "w-full text-[11px] font-mono bg-background border-0 rounded-b-md px-2 py-1 text-foreground resize-y focus:outline-none",
         )}
       />
+    </div>
+  );
+}
+
+// =============================================================================
+// ActiveScopeReadout — read-only display of the global app context that the
+// agent execution path stamps onto every conversation record. Defaults that
+// the user can verify at a glance before submitting.
+// =============================================================================
+
+function ActiveScopeReadout() {
+  const orgId = useAppSelector(selectOrganizationId);
+  const orgName = useAppSelector(selectOrganizationName);
+  const projectId = useAppSelector(selectProjectId);
+  const projectName = useAppSelector(selectProjectName);
+  const taskId = useAppSelector(selectTaskId);
+  const taskName = useAppSelector(selectTaskName);
+  const scopeSelections = useAppSelector(selectScopeSelectionsContext);
+
+  const scopeEntries = Object.entries(scopeSelections ?? {}).filter(
+    ([, v]) => v != null,
+  );
+
+  return (
+    <div className="border-b border-border bg-muted/10 px-3 py-2 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Active context
+        </span>
+        <span className="text-[10px] text-muted-foreground/70">
+          inherited from the page scope
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+        <ScopeRow
+          icon={Layers}
+          label="Scopes"
+          value={
+            scopeEntries.length === 0
+              ? null
+              : scopeEntries
+                  .map(([k, v]) => `${k}=${(v ?? "").slice(0, 8)}`)
+                  .join("  ")
+          }
+          emphasized
+        />
+        <ScopeRow icon={Building2} label="Organization" value={orgName ?? orgId} />
+        <ScopeRow icon={Briefcase} label="Project" value={projectName ?? projectId} />
+        <ScopeRow icon={ClipboardList} label="Task" value={taskName ?? taskId} />
+      </div>
+    </div>
+  );
+}
+
+function ScopeRow({
+  icon: Icon,
+  label,
+  value,
+  emphasized,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | null | undefined;
+  emphasized?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Icon
+        className={cn(
+          "w-3 h-3 shrink-0",
+          emphasized ? "text-primary" : "text-muted-foreground",
+        )}
+      />
+      <span
+        className={cn(
+          "shrink-0",
+          emphasized ? "font-semibold text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {label}:
+      </span>
+      <span
+        className={cn(
+          "truncate min-w-0",
+          value ? "text-foreground" : "text-muted-foreground/60 italic",
+        )}
+        title={value ?? "not set"}
+      >
+        {value || "not set"}
+      </span>
     </div>
   );
 }

@@ -181,6 +181,18 @@ export interface ActiveRequest {
   /** How many raw chunk events arrived (for metrics/status checks) */
   chunkCount: number;
 
+  /**
+   * User-applied override for the rendered text. When non-null, this
+   * supersedes the server-derived text built from `renderBlocks` for the
+   * lifetime of this active-request entry — i.e. for as long as the
+   * conversation instance is mounted. Used by inline edits (inline
+   * decision resolves, code-block in-place edits, table cell edits,
+   * inline broker updates) so the on-screen content stays in sync with
+   * what we already persisted via `cx_message_edit`. Cleared on a new
+   * request and explicitly reset by revert flows.
+   */
+  editedText: string | null;
+
   // ── Reasoning Chunks ────────────────────────────────────────
   /** Same pattern as textChunks — O(1) push, joined lazily in selectors */
   reasoningChunks: string[];

@@ -49,7 +49,7 @@ The catalog and configuration surface for every LLM available to the product —
 ## Data model
 
 **Database tables** (Supabase)
-- `ai_model` — master registry row. Columns include `id`, `name`, `common_name`, `provider`, `model_provider`, `model_class`, `api_class`, `context_window`, `max_tokens`, `is_deprecated`, `is_primary`, `is_premium`, and JSONB blobs: `capabilities`, `controls`, `constraints`, `pricing`, `endpoints`.
+- `ai_model` — master registry row. Columns include `id`, `name`, `common_name`, `provider`, `model_provider`, `model_class`, `api_class`, `context_window`, `max_tokens`, `is_deprecated`, `is_primary`, `is_premium`, two self-FK columns `mid_fallback_id` + `guest_fallback_id` (see Tier fallbacks below), and JSONB blobs: `capabilities`, `controls`, `constraints`, `pricing`, `endpoints`.
 - `ai_provider` — provider catalog (Anthropic, OpenAI, Groq, …) + `provider_models_cache` JSONB (last live fetch from provider API).
 - `ai_endpoint` — endpoint rows referenced by model.
 - Referenced by (read side): `prompts.model_id`, `prompt_builtins.model_id`, `agx_agent.model_id` (+ `model_tiers.primary_model_id`), `agx_agent_templates.model_id`.
@@ -118,6 +118,23 @@ The catalog and configuration surface for every LLM available to the product —
 
 ---
 
+## Tier fallbacks — `mid_fallback_id` + `guest_fallback_id`
+
+Two self-FKs on `ai_model` let admins declare what the aidream backend should substitute when the caller is past a tier:
+
+- **`mid_fallback_id`** — picked when an authenticated user is past their soft limit. Today this is plumbed but not enforced; the column captures the intent so the eventual quota gate can read it without further schema changes.
+- **`guest_fallback_id`** — picked when the caller is unauthenticated (`X-Fingerprint-ID` header from the matrx-extend Chrome extension or any future surface). Aidream's `swap_model_for_auth_tier` runs inside `prepare_agent_run` and silently rewrites `config.model`. The original is stashed on the run's `ctx.metadata['original_model']`.
+
+Both default to `NULL`, which means "no swap; keep the agent's declared model". Set them for premium models that shouldn't run for free (Opus → Haiku for guests, Opus → Sonnet for paying users at limit; GPT-5/4o → gpt-4.1-mini for guests; Gemini Pro → Gemini 3 Flash Preview, etc.).
+
+**Editing**: every model row in `AiModelDetailPanel` has Mid-tier Fallback + Guest Fallback Selects under the Flags section. The dropdowns are grouped by provider, exclude the current model (no self-references) and deprecated rows. Choose "— no swap —" to clear the field.
+
+**Migration**: aidream `db/migrations/0045_guest_mode_and_model_tiers.sql` adds the columns + a `cx_user_usage_summary` table + an `AFTER UPDATE OF completed_at` trigger on `cx_user_request` that maintains rolling 6h/24h usage windows per user (so future enforcement is O(1)).
+
+**TS regen**: until `pnpm db:generate` refreshes `types/database.types.ts`, the two columns are added to the augmented `AiModel` type in `features/ai-models/types.ts` and the detail panel's save path casts through `unknown`. Drop those casts after the next regen.
+
+---
+
 ## Related features
 
 - **Depends on:** `utils/supabase/*` (client, server, admin/script clients), `types/database.types` (generated Supabase types)
@@ -137,6 +154,7 @@ Configuration surface is stable. The consumer side is mid-migration: prompt/buil
 
 ## Change log
 
+- `2026-05-17` — Added Tier Fallbacks section + form Selects in `AiModelDetailPanel` for `mid_fallback_id` and `guest_fallback_id` (aidream migration 0045). Powers the guest-mode model swap for the matrx-extend Chrome extension.
 - `2026-04-25` — Removed `features/ai-models/index.ts`; admin routes and provider-sync use direct imports to `components/*` and `service.ts` (same exports as before).
 - `2026-04-22` — claude: initial doc.
 

@@ -22,7 +22,10 @@ import {
   Candidate,
   type CandidateFlags,
 } from "./content-prefilter";
-import { detectJsonBlockType } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import {
+  detectJsonBlockType,
+  parseXmlAttributes,
+} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 // ============================================================================
 // Types
@@ -39,7 +42,22 @@ type BlockSubState =
       /** Set to true once we've found the JSON root key and upgraded the block type. */
       earlyTypeResolved: boolean;
     }
-  | { kind: "xml_tag"; tagName: string; closingTag: string }
+  | {
+      kind: "xml_tag";
+      tagName: string;
+      closingTag: string;
+      /**
+       * The literal opening tag text (e.g. `<decision prompt="..." id="...">`),
+       * captured at open-time. Used to (a) re-derive attributes after streaming
+       * emits and (b) build `metadata.rawXml` that the renderer / inline-edit
+       * flows feed back into `replaceBlockContent`.
+       */
+      openingTagText: string;
+      /** Parsed attributes for attribute-XML blocks (decision/artifact/editor_*). Empty for simple XML. */
+      attributes: Record<string, string>;
+      /** True for tags in ATTR_XML_TAGS — drives whether we build typed metadata. */
+      isAttrXml: boolean;
+    }
   | { kind: "table" }
   | {
       kind: "bare_json";
@@ -74,7 +92,16 @@ const SIMPLE_XML_TAGS = new Set([
   "research",
 ]);
 
-const ATTR_XML_TAGS = new Set(["decision", "artifact"]);
+const ATTR_XML_TAGS = new Set([
+  "decision",
+  "artifact",
+  // Editor pills — round-trip representation of code-editor errors and selected
+  // code snippets. Attributes carry file/line/severity/language; the body
+  // carries `<message>`+`<surrounding_code>` for errors, raw code for snippets.
+  // Must mirror ATTRIBUTE_XML_BLOCKS in content-splitter-v2.ts.
+  "editor_error",
+  "editor_code_snippet",
+]);
 
 // ============================================================================
 // Helpers
@@ -115,6 +142,89 @@ function extractOpeningXmlTag(trimmed: string): string | null {
 function mapXmlTagToBlockType(tag: string): string {
   if (tag === "think") return "thinking";
   return tag;
+}
+
+/**
+ * Extracts the literal opening tag text from the start of a trimmed line.
+ * Returns e.g. `<decision prompt="...">` or `<thinking>`.
+ * Returns the raw bracketed string verbatim; attribute parsing is a separate step.
+ */
+function extractOpeningTagText(trimmed: string, tag: string): string {
+  const close = trimmed.indexOf(">");
+  if (close === -1) return `<${tag}>`;
+  return trimmed.slice(0, close + 1);
+}
+
+/**
+ * Mid-line attribute-XML detection. Mirrors `detectMidLineAttributeXml` in
+ * content-splitter-v2.ts so the streaming path doesn't miss `<decision …>`
+ * (and friends) when the model emits them inline (e.g.
+ * "Here's a question: <decision prompt='…'>…").
+ *
+ * Only attribute-bearing tags can appear mid-line — simple tags like
+ * `<flashcards>` are never emitted mid-sentence by models.
+ */
+function findMidLineAttrXml(rawLine: string): {
+  tagStart: number;
+  tag: string;
+  openingTagText: string;
+  attributes: Record<string, string>;
+} | null {
+  for (const tag of ATTR_XML_TAGS) {
+    const prefix = `<${tag}`;
+    const idx = rawLine.indexOf(prefix);
+    if (idx === -1) continue;
+    if (rawLine.trimStart().startsWith(prefix)) continue;
+    const after = rawLine[idx + prefix.length];
+    if (after !== " " && after !== ">") continue;
+    const close = rawLine.indexOf(">", idx);
+    if (close === -1) continue;
+    const openingTagText = rawLine.slice(idx, close + 1);
+    return {
+      tagStart: idx,
+      tag,
+      openingTagText,
+      attributes: parseXmlAttributes(openingTagText),
+    };
+  }
+  return null;
+}
+
+interface DecisionOption {
+  id: string;
+  label: string;
+  text: string;
+}
+
+interface DecisionData {
+  id: string;
+  prompt: string;
+  options: DecisionOption[];
+}
+
+/**
+ * Parses `<option label="...">…</option>` children out of a `<decision>` body.
+ * Only counts options whose closing `</option>` has streamed in — partial
+ * options are skipped so the renderer never shows a half-rendered choice.
+ * Mirrors the parsing in content-splitter-v2.ts:extractAttributeXmlBlock.
+ */
+function parseDecisionOptions(
+  blockSourceText: string,
+  decisionId: string,
+): DecisionOption[] {
+  const options: DecisionOption[] = [];
+  const optionRegex = /<option\s+label="([^"]*)">([\s\S]*?)<\/option>/g;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  while ((match = optionRegex.exec(blockSourceText)) !== null) {
+    options.push({
+      id: `${decisionId}-opt-${i}`,
+      label: match[1],
+      text: match[2].trim(),
+    });
+    i++;
+  }
+  return options;
 }
 
 // ============================================================================
@@ -237,18 +347,39 @@ export class StreamBlockAccumulator {
     ) {
       const tag = extractOpeningXmlTag(trimmed);
       if (tag) {
+        this.openXmlTagBlock(tag, rawLine, trimmed, dispatch);
+        return;
+      }
+    }
+
+    // ── Mid-line attribute XML (e.g. `Some text <decision …>`) ─────────
+    // Prefilter doesn't flag XML_ATTR unless the line starts with `<` after
+    // trim, so this branch is the streamer's mirror of step 5.5 in
+    // content-splitter-v2. Attribute-bearing tags only — simple tags are
+    // never emitted mid-sentence.
+    {
+      const midLine = findMidLineAttrXml(rawLine);
+      if (midLine) {
+        const before = rawLine.slice(0, midLine.tagStart);
+        const fromTag = rawLine.slice(midLine.tagStart);
+        if (before.trimEnd()) {
+          this.appendToCurrentBlock(before.trimEnd());
+        }
         this.closeCurrentBlock(dispatch);
-        const blockType = mapXmlTagToBlockType(tag);
+        const blockType = mapXmlTagToBlockType(midLine.tag);
         this.openBlock(blockType, dispatch);
         this.subState = {
           kind: "xml_tag",
-          tagName: tag,
-          closingTag: `</${tag}>`,
+          tagName: midLine.tag,
+          closingTag: `</${midLine.tag}>`,
+          openingTagText: midLine.openingTagText,
+          attributes: midLine.attributes,
+          isAttrXml: true,
         };
-        this.appendToCurrentBlock(rawLine);
-        if (trimmed.includes(`</${tag}>`)) {
-          this.subState = { kind: "none" };
+        this.appendToCurrentBlock(fromTag);
+        if (fromTag.includes(`</${midLine.tag}>`)) {
           this.closeCurrentBlock(dispatch);
+          this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
         }
         return;
@@ -434,6 +565,36 @@ export class StreamBlockAccumulator {
     }
   }
 
+  // ── XML opening helper ──────────────────────────────────────────────
+
+  private openXmlTagBlock(
+    tag: string,
+    rawLine: string,
+    trimmed: string,
+    dispatch: DispatchFn,
+  ): void {
+    this.closeCurrentBlock(dispatch);
+    const blockType = mapXmlTagToBlockType(tag);
+    this.openBlock(blockType, dispatch);
+    const isAttrXml = ATTR_XML_TAGS.has(tag);
+    const openingTagText = extractOpeningTagText(trimmed, tag);
+    const attributes = isAttrXml ? parseXmlAttributes(openingTagText) : {};
+    this.subState = {
+      kind: "xml_tag",
+      tagName: tag,
+      closingTag: `</${tag}>`,
+      openingTagText,
+      attributes,
+      isAttrXml,
+    };
+    this.appendToCurrentBlock(rawLine);
+    if (trimmed.includes(`</${tag}>`)) {
+      this.closeCurrentBlock(dispatch);
+      this.subState = { kind: "none" };
+      this.openBlock("text", dispatch);
+    }
+  }
+
   // ── Block lifecycle helpers ─────────────────────────────────────────
 
   private appendToCurrentBlock(line: string): void {
@@ -489,10 +650,80 @@ export class StreamBlockAccumulator {
       status,
       content: content || null,
       data: this.buildBlockData(),
-      metadata: undefined,
+      metadata: this.buildBlockMetadata(status, content),
     };
 
     dispatch(this.upsertAction({ requestId: this.requestId, block }));
+  }
+
+  /**
+   * Builds metadata for the block currently being emitted.
+   *
+   * Critical for attribute-XML tags (`<decision>`, `<artifact>`, `<editor_*>`):
+   * BlockRenderer reads `metadata.decision` / `metadata.artifactId` /
+   * `metadata.rawXml` etc. and falls back to raw-markdown rendering when those
+   * are missing — which is exactly the bug we're fixing (decision tags
+   * appearing as plain text mid-stream because metadata was hard-coded to
+   * `undefined` here previously).
+   *
+   * For simple XML tags we emit `{ isComplete, rawXml }` so consumers (loaders,
+   * inline-edit flows) can both gate on completion and round-trip the source.
+   */
+  private buildBlockMetadata(
+    status: "streaming" | "complete",
+    emittedContent: string,
+  ): Record<string, unknown> | undefined {
+    if (this.subState.kind !== "xml_tag") return undefined;
+
+    const { tagName, attributes, isAttrXml } = this.subState;
+    const isComplete = status === "complete";
+    // For streaming emits we use the visible content (which includes the
+    // pending line fragment), so partial `<option>` text is reflected in
+    // rawXml the moment it arrives.
+    const rawXml = emittedContent;
+
+    if (tagName === "decision") {
+      const decisionId = this.currentBlockId;
+      const prompt = attributes.prompt || "Make a selection";
+      const options = parseDecisionOptions(rawXml, decisionId);
+      const decision: DecisionData = { id: decisionId, prompt, options };
+      return { isComplete, decision, rawXml };
+    }
+
+    if (tagName === "artifact") {
+      const artifactId =
+        attributes.id || `artifact-client-${this.currentBlockIndex}`;
+      // Mirror content-splitter-v2: numeric suffix after `_` if present,
+      // otherwise the running block index.
+      const artifactIndex = artifactId.includes("_")
+        ? parseInt(artifactId.split("_").pop() || "0", 10) ||
+          this.currentBlockIndex
+        : this.currentBlockIndex;
+      return {
+        isComplete,
+        artifactId,
+        artifactIndex,
+        artifactType: attributes.type || "text",
+        artifactTitle: attributes.title || "",
+        rawXml,
+      };
+    }
+
+    if (tagName === "editor_error" || tagName === "editor_code_snippet") {
+      return {
+        isComplete,
+        ...attributes,
+        rawXml,
+      };
+    }
+
+    if (isAttrXml) {
+      // Future attribute-XML types — pass attributes through verbatim.
+      return { isComplete, ...attributes, rawXml };
+    }
+
+    // Simple XML — minimal metadata so loaders / consumers can still gate.
+    return { isComplete, rawXml };
   }
 
   private buildBlockData(): Record<string, unknown> | null {

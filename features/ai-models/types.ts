@@ -141,6 +141,16 @@ export type AiModel = Omit<
   pricing: PricingTier[] | null;
   endpoints: string[] | null;
   capabilities: Record<string, unknown> | string[] | null;
+  // Tier-fallback FKs (added in migration 0045 — guest_mode_and_model_tiers).
+  // When set, the aidream backend substitutes this model for the current one
+  // when the caller is at the matching tier:
+  //   - `mid_fallback_id`: paying user past soft limit (e.g., Opus → Sonnet)
+  //   - `guest_fallback_id`: anonymous guest user (e.g., Opus → Haiku)
+  // NULL = no swap; the agent's declared model is used as-is.
+  // Optional because database.types.ts hasn't been regenerated yet — these
+  // become required-but-nullable once `pnpm db:generate` runs.
+  mid_fallback_id?: string | null;
+  guest_fallback_id?: string | null;
 };
 
 export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {
@@ -164,6 +174,10 @@ export type AiModelFormData = {
   is_primary: boolean;
   is_premium: boolean;
   pricing: PricingTier[];
+  // Empty string = no swap (NULL in DB); otherwise the ai_model.id of the
+  // model to substitute when the caller is at that tier.
+  mid_fallback_id: string;
+  guest_fallback_id: string;
 };
 
 // =============================================================================

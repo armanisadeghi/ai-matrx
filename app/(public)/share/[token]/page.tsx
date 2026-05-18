@@ -13,7 +13,6 @@
 import Link from "next/link";
 import {
   AlertTriangle,
-  Download,
   ExternalLink,
   FileIcon as FileIconLucide,
 } from "lucide-react";
@@ -22,6 +21,10 @@ import {
   pythonShareResolveUrl,
   type ShareLinkResolveResponse,
 } from "@/features/files";
+
+function isImageMime(mime: string | null | undefined): boolean {
+  return Boolean(mime && mime.startsWith("image/"));
+}
 
 /**
  * Files we know render richly in the authenticated app's PreviewPane —
@@ -82,6 +85,8 @@ export default async function PublicSharePage({ params }: PageProps) {
   const remaining =
     maxUses != null ? Math.max(0, maxUses - (useCount ?? 0)) : null;
 
+  const showImagePreview = isImageMime(file.mime_type) && url;
+
   return (
     <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-sm">
@@ -103,6 +108,25 @@ export default async function PublicSharePage({ params }: PageProps) {
             ) : null}
           </div>
         </div>
+
+        {/*
+          Render the image inline for image mimes. Two reasons:
+          1. Users immediately see what they're saving instead of just
+             a generic file card.
+          2. On iOS Safari, native long-press on a real <img> exposes
+             "Save to Photos" as a system option — a perfect secondary
+             path alongside the Save Image button below.
+        */}
+        {showImagePreview ? (
+          <div className="mt-4 overflow-hidden rounded-lg bg-muted/30">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={file.file_name ?? "Shared image"}
+              className="block h-auto max-h-[60dvh] w-full object-contain"
+            />
+          </div>
+        ) : null}
 
         <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
           {file.size_bytes != null ? (
@@ -134,6 +158,7 @@ export default async function PublicSharePage({ params }: PageProps) {
             token={token}
             url={url}
             filename={file.file_name}
+            mimeType={file.mime_type}
           />
           {isDocumentishMime(file.mime_type) ? (
             <Link
@@ -148,9 +173,11 @@ export default async function PublicSharePage({ params }: PageProps) {
           ) : null}
           <p className="text-[11px] text-muted-foreground text-center">
             Shared via AI Matrx
-            {isDocumentishMime(file.mime_type)
-              ? " · viewable in-app for searchable document mode"
-              : ""}
+            {showImagePreview
+              ? " · long-press the image to save it to Photos"
+              : isDocumentishMime(file.mime_type)
+                ? " · viewable in-app for searchable document mode"
+                : ""}
           </p>
         </div>
       </div>

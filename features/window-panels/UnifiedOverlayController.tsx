@@ -14,6 +14,9 @@
  */
 
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
+import { OverlayErrorBoundary } from "@/features/window-panels/diagnostics/OverlayErrorBoundary";
+import { markUnifiedControllerMounted } from "@/lib/redux/middleware/overlayDiagnostics";
 
 const UnifiedOverlayControllerImpl = dynamic(
   () => import("./UnifiedOverlayControllerImpl"),
@@ -21,5 +24,25 @@ const UnifiedOverlayControllerImpl = dynamic(
 );
 
 export default function UnifiedOverlayController() {
-  return <UnifiedOverlayControllerImpl />;
+  // Outer-shell heartbeat: marks that the gate mounted us and the static
+  // outer chunk parsed successfully. If this fires but the Impl heartbeat
+  // does not, the next/dynamic chunk load is the failure (service worker,
+  // CSP, offline, etc.) — the diagnostic timeout report calls it out.
+  useEffect(() => {
+    markUnifiedControllerMounted();
+  }, []);
+
+  return (
+    // The error boundary catches dynamic-import rejections from the
+    // next/dynamic wrapper above. Before this, a failed Impl chunk load
+    // disappeared into the `loading: () => null` placeholder and only the
+    // middleware's 1.5s timeout would surface the failure (with no error
+    // captured). Now the error reaches the console with overlay context.
+    <OverlayErrorBoundary
+      overlayId="__unifiedController"
+      instanceId="__shell"
+    >
+      <UnifiedOverlayControllerImpl />
+    </OverlayErrorBoundary>
+  );
 }

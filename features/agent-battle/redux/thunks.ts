@@ -16,7 +16,7 @@ import {
   destroyInstance,
 } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { launchConversation } from "@/features/agents/redux/execution-system/thunks/launch-conversation.thunk";
+import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
@@ -27,8 +27,12 @@ import {
   setContextEntry,
   removeContextEntry,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import type { BuilderAdvancedSettings } from "@/features/agents/types/instance.types";
+import { MASTER_INPUT_TARGET } from "../types";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
-import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   addColumn,
@@ -40,6 +44,8 @@ import {
   submitAllFinished,
   setActiveSet,
   resetBattle,
+  addMasterField,
+  setMasterFieldMapping,
 } from "./battleSlice";
 import {
   createComparisonSet,
@@ -154,6 +160,9 @@ export const setColumnAgent = createAsyncThunk<
         },
       }),
     );
+
+    // Auto-grow master fields + auto-map variables by index.
+    await dispatch(reconcileMasterFieldMappings()).unwrap();
   },
 );
 
@@ -235,41 +244,51 @@ export const broadcastRemoveContextEntry = createAsyncThunk<
   },
 );
 
+/**
+ * Push a partial run-settings change to every configured column. Used by
+ * the Shared Run Settings window so a single edit applies to all agents
+ * being compared.
+ */
+export const broadcastRunSettings = createAsyncThunk<
+  void,
+  { changes: Partial<BuilderAdvancedSettings> },
+  ThunkApi
+>(
+  "agentBattle/broadcastRunSettings",
+  async ({ changes }, { dispatch, getState }) => {
+    const state = getState();
+    for (const col of state.agentBattle.columns) {
+      if (!col.agentId) continue;
+      dispatch(
+        setBuilderAdvancedSettings({
+          conversationId: col.conversationId,
+          changes,
+        }),
+      );
+    }
+  },
+);
+
 // =============================================================================
 // Submit All
 // =============================================================================
 
-function buildInvocation(col: BattleColumn, state: RootState): ConversationInvocation | null {
-  if (!col.agentId) return null;
+/**
+ * A column is submittable when:
+ *   - It has an agent (instance exists), AND
+ *   - Its per-instance input has text OR at least one user-edited variable
+ *
+ * Mirrors the per-column SmartAgentInput gate — Submit All should never
+ * fire a column the per-column send button itself would refuse.
+ */
+function shouldSubmitColumn(col: BattleColumn, state: RootState): boolean {
+  if (!col.agentId) return false;
   const variables =
     state.instanceVariableValues.byConversationId[col.conversationId]
       ?.userValues ?? {};
   const userText =
     state.instanceUserInput.byConversationId[col.conversationId]?.text ?? "";
-
-  // Skip columns with no input AT ALL — nothing to submit.
-  if (!userText && Object.keys(variables).length === 0) return null;
-
-  return {
-    identity: {
-      surfaceKey: BATTLE_SURFACE_KEY,
-    },
-    engine: {
-      kind: "agent",
-      agentId: col.agentId,
-    },
-    routing: {
-      apiEndpointMode: "agent",
-    },
-    origin: {
-      origin: "manual",
-      sourceFeature: BATTLE_SOURCE_FEATURE,
-    },
-    inputs: {
-      userInput: userText,
-      variables,
-    },
-  };
+  return Boolean(userText) || Object.keys(variables).length > 0;
 }
 
 export const submitAllBattleColumns = createAsyncThunk<
@@ -281,22 +300,31 @@ export const submitAllBattleColumns = createAsyncThunk<
   async (_arg, { dispatch, getState }) => {
     dispatch(submitAllStarted());
     try {
-      const state = getState();
-      const invocations: Array<{ col: BattleColumn; invocation: ConversationInvocation }> =
-        [];
-      let skipped = 0;
-      for (const col of state.agentBattle.columns) {
-        const invocation = buildInvocation(col, state);
-        if (!invocation) {
-          skipped += 1;
-          continue;
-        }
-        invocations.push({ col, invocation });
-      }
+      // Push master-field values into each column's instance state FIRST,
+      // so the wire payload reflects the latest centralized inputs even
+      // if the user typed in master fields without clicking Apply.
+      await dispatch(applyMasterFieldsToColumns()).unwrap();
 
+      const state = getState();
+      // Snapshot the column list up front — submissions mutate per-instance
+      // slices (autoclear etc.) so we don't want re-reads partway through.
+      const targets = state.agentBattle.columns.filter((col) =>
+        shouldSubmitColumn(col, state),
+      );
+      const skipped = state.agentBattle.columns.length - targets.length;
+
+      // Fire smartExecute on each column's existing instance — same path
+      // the per-column Send button uses. Each smartExecute returns
+      // immediately after kicking off the stream; we await all so the
+      // UI guard stays on while at least one is in flight.
       const results = await Promise.allSettled(
-        invocations.map(({ invocation }) =>
-          dispatch(launchConversation(invocation)).unwrap(),
+        targets.map((col) =>
+          dispatch(
+            smartExecute({
+              conversationId: col.conversationId,
+              surfaceKey: BATTLE_SURFACE_KEY,
+            }),
+          ).unwrap(),
         ),
       );
 
@@ -502,6 +530,168 @@ export const loadBattleSet = createAsyncThunk<
 
     dispatch(setColumns(nextColumns));
     dispatch(setActiveSet({ id: set.id, name: set.name }));
+    await dispatch(reconcileMasterFieldMappings()).unwrap();
+  },
+);
+
+// =============================================================================
+// Master fields → auto-map by variable count
+// =============================================================================
+
+/**
+ * Reconcile master fields with the columns' variable definitions.
+ *
+ * Strategy:
+ *   - Master message field is the first (always present, maps to "User message"
+ *     on every column).
+ *   - For the remaining custom fields, count the MAX number of variable
+ *     definitions across all configured columns. Ensure we have that many
+ *     custom fields; auto-map field[i] to each column's i-th variable
+ *     by position.
+ *   - Pre-existing user-set mappings are preserved; we only fill missing
+ *     mappings (and add missing fields).
+ *
+ * Called whenever a column's agent changes.
+ */
+export const reconcileMasterFieldMappings = createAsyncThunk<
+  void,
+  void,
+  ThunkApi
+>(
+  "agentBattle/reconcileMasterMappings",
+  async (_arg, { dispatch, getState }) => {
+    const state = getState();
+    const battle = state.agentBattle;
+    const columns = battle.columns;
+
+    // Resolve each column's variable definitions (by position).
+    const colVars = columns.map((col) => {
+      if (!col.agentId) return { columnId: col.columnId, varNames: [] as string[] };
+      const agent = state.agentDefinition.agents?.[col.agentId];
+      const varNames = (agent?.variableDefinitions ?? []).map((v) => v.name);
+      return { columnId: col.columnId, varNames };
+    });
+
+    const maxVars = colVars.reduce(
+      (m, c) => Math.max(m, c.varNames.length),
+      0,
+    );
+
+    // Ensure exactly `maxVars` CUSTOM fields exist (in addition to master).
+    const currentCustomFields = battle.masterFields.filter(
+      (f) => f.kind === "custom",
+    );
+    const need = maxVars - currentCustomFields.length;
+    for (let i = 0; i < need; i++) {
+      dispatch(
+        addMasterField({
+          fieldId: crypto.randomUUID(),
+          // Use a sensible label drawn from the longest column's variable name.
+          label: pickDefaultLabelForIndex(currentCustomFields.length + i, colVars),
+        }),
+      );
+    }
+
+    // Re-read state so the newly-added field ids are visible.
+    const post = getState().agentBattle;
+    const customFields = post.masterFields.filter((f) => f.kind === "custom");
+
+    // 1) Master field: ensure every configured column maps to User message
+    //    when no explicit mapping is present.
+    const master = post.masterFields.find((f) => f.kind === "master");
+    if (master) {
+      for (const col of columns) {
+        if (!col.agentId) continue;
+        if (master.mappings[col.columnId] !== undefined) continue;
+        dispatch(
+          setMasterFieldMapping({
+            fieldId: master.fieldId,
+            columnId: col.columnId,
+            target: MASTER_INPUT_TARGET,
+          }),
+        );
+      }
+    }
+
+    // 2) Custom fields: auto-map field[i] → varNames[i] for each column
+    //    where no explicit mapping is already set.
+    customFields.forEach((field, i) => {
+      for (const { columnId, varNames } of colVars) {
+        if (field.mappings[columnId] !== undefined) continue;
+        const target = varNames[i];
+        if (!target) continue;
+        dispatch(
+          setMasterFieldMapping({
+            fieldId: field.fieldId,
+            columnId,
+            target,
+          }),
+        );
+      }
+    });
+  },
+);
+
+/**
+ * Pick a sensible default label for the i-th custom field. We look for the
+ * first column whose variable list reaches index i and borrow that variable's
+ * name as a starting label — feels much better than "Field 2", "Field 3".
+ */
+function pickDefaultLabelForIndex(
+  i: number,
+  colVars: Array<{ columnId: string; varNames: string[] }>,
+): string {
+  for (const c of colVars) {
+    if (c.varNames[i]) return c.varNames[i];
+  }
+  return `Field ${i + 1}`;
+}
+
+// =============================================================================
+// Master fields → per-column dispatch
+// =============================================================================
+
+/**
+ * Push the master-fields values into each column's instance state per
+ * its mapping. Called from the master-input UI's "Apply to columns"
+ * button (and optionally on Submit All so the values are guaranteed
+ * fresh on the wire).
+ */
+export const applyMasterFieldsToColumns = createAsyncThunk<
+  void,
+  void,
+  ThunkApi
+>(
+  "agentBattle/applyMasterFields",
+  async (_arg, { dispatch, getState }) => {
+    const state = getState();
+    const columnsById = new Map(
+      state.agentBattle.columns.map((c) => [c.columnId, c]),
+    );
+
+    for (const field of state.agentBattle.masterFields) {
+      for (const [columnId, target] of Object.entries(field.mappings)) {
+        if (!target) continue;
+        const col = columnsById.get(columnId);
+        if (!col || !col.agentId) continue;
+
+        if (target === MASTER_INPUT_TARGET) {
+          dispatch(
+            setUserInputText({
+              conversationId: col.conversationId,
+              text: field.value,
+            }),
+          );
+        } else {
+          dispatch(
+            setUserVariableValues({
+              conversationId: col.conversationId,
+              values: { [target]: field.value },
+            }),
+          );
+        }
+      }
+    }
   },
 );
 
@@ -513,5 +703,37 @@ export const clearBattle = createAsyncThunk<void, void, ThunkApi>(
       if (col.agentId) dispatch(destroyInstance(col.conversationId));
     }
     dispatch(resetBattle());
+  },
+);
+
+/**
+ * Reset every column's conversation (responses + inputs + context) while
+ * keeping the column's agent + version selection intact. Used by the
+ * "Reset conversations" toolbar action — gives the user a fresh slate
+ * without forcing them to re-pick agents.
+ */
+export const resetAllBattleConversations = createAsyncThunk<
+  void,
+  void,
+  ThunkApi
+>(
+  "agentBattle/resetAllConversations",
+  async (_arg, { dispatch, getState }) => {
+    const state = getState();
+    for (const col of state.agentBattle.columns) {
+      if (!col.agentId) continue;
+      dispatch(destroyInstance(col.conversationId));
+      const conversationId = generateConversationId();
+      await dispatch(
+        createManualInstance({
+          agentId: col.agentId,
+          conversationId,
+          apiEndpointMode: "agent",
+          sourceFeature: BATTLE_SOURCE_FEATURE,
+          showVariablePanel: true,
+        }),
+      ).unwrap();
+      dispatch(replaceColumn({ columnId: col.columnId, next: { conversationId } }));
+    }
   },
 );

@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useAppStore } from "@/lib/redux/hooks";
 import {
   DndContext,
   PointerSensor,
@@ -35,34 +36,46 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { addBattleColumn } from "../redux/thunks";
-import {
-  selectBattleColumnIds,
-  selectBattleColumns,
-} from "../redux/selectors";
-import {
-  reorderColumns,
-  setColumnCollapsed,
-} from "../redux/battleSlice";
+import { selectBattleColumnIds, selectBattleColumns } from "../redux/selectors";
+import { reorderColumns, setColumnCollapsed } from "../redux/battleSlice";
 import { BattleToolbar } from "./BattleToolbar";
 import { BattleColumn } from "./BattleColumn";
 import { BattleAddColumnTile } from "./BattleAddColumnTile";
 import { SharedContextWindow } from "./SharedContextWindow";
 import { SharedRunsWindow } from "./SharedRunsWindow";
+import { SharedRunSettingsWindow } from "./SharedRunSettingsWindow";
+import { MasterInputWindow } from "./MasterInputWindow";
 import type { BattleColumn as BattleColumnType } from "../types";
 
 const SHARED_CONTEXT_WINDOW_ID = "agent-battle-shared-context";
 const SHARED_RUNS_WINDOW_ID = "agent-battle-shared-runs";
+const SHARED_RUN_SETTINGS_WINDOW_ID = "agent-battle-shared-run-settings";
+const MASTER_INPUT_WINDOW_ID = "agent-battle-master-input";
 
 export function BattlePage() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const columns = useAppSelector(selectBattleColumns);
   const columnIds = useAppSelector(selectBattleColumnIds);
 
   const [contextWindowOpen, setContextWindowOpen] = useState(false);
   const [runsWindowOpen, setRunsWindowOpen] = useState(false);
+  const [runSettingsWindowOpen, setRunSettingsWindowOpen] = useState(false);
+  const [masterInputWindowOpen, setMasterInputWindowOpen] = useState(false);
+
+  // A battle has no meaning with a single column — always seed two columns
+  // when the page is empty AND no saved set is active. Also re-seeds after
+  // Clear, which matches the "fresh start" intent of that button.
+  // Reads the live store inside the effect so we don't race with loadBattleSet
+  // (which transiently empties columns mid-thunk before populating them).
+  useEffect(() => {
+    if (columns.length !== 0) return;
+    const state = store.getState();
+    if (state.agentBattle.activeSetId !== null) return;
+    dispatch(addBattleColumn());
+    dispatch(addBattleColumn());
+  }, [columns.length, dispatch, store]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -87,23 +100,23 @@ export function BattlePage() {
         onToggleContextWindow={() => setContextWindowOpen((v) => !v)}
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
+        runSettingsWindowOpen={runSettingsWindowOpen}
+        onToggleRunSettingsWindow={() => setRunSettingsWindowOpen((v) => !v)}
+        masterInputWindowOpen={masterInputWindowOpen}
+        onToggleMasterInputWindow={() => setMasterInputWindowOpen((v) => !v)}
       />
 
       <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <SortableContext
-              items={columnIds}
-              strategy={horizontalListSortingStrategy}
-            >
-              <div className="flex-1 min-w-0">
-                <ColumnGroup columns={columns} />
-              </div>
-            </SortableContext>
-          </DndContext>
-        )}
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={columnIds}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex-1 min-w-0">
+              {columns.length > 0 && <ColumnGroup columns={columns} />}
+            </div>
+          </SortableContext>
+        </DndContext>
         <BattleAddColumnTile />
       </div>
 
@@ -118,6 +131,20 @@ export function BattlePage() {
         <SharedRunsWindow
           id={SHARED_RUNS_WINDOW_ID}
           onClose={() => setRunsWindowOpen(false)}
+        />
+      )}
+
+      {masterInputWindowOpen && (
+        <MasterInputWindow
+          id={MASTER_INPUT_WINDOW_ID}
+          onClose={() => setMasterInputWindowOpen(false)}
+        />
+      )}
+
+      {runSettingsWindowOpen && (
+        <SharedRunSettingsWindow
+          id={SHARED_RUN_SETTINGS_WINDOW_ID}
+          onClose={() => setRunSettingsWindowOpen(false)}
         />
       )}
     </div>
@@ -195,38 +222,8 @@ function ColumnSegment({
         collapsedSize="0%"
         style={{ overflow: "hidden" }}
       >
-        <BattleColumn
-          column={column}
-          onToggleCollapse={handleToggleCollapse}
-        />
+        <BattleColumn column={column} onToggleCollapse={handleToggleCollapse} />
       </ResizablePanel>
     </>
-  );
-}
-
-// =============================================================================
-// Empty state
-// =============================================================================
-
-function EmptyState() {
-  const dispatch = useAppDispatch();
-  return (
-    <div className="flex-1 flex items-center justify-center text-center p-8">
-      <div className="max-w-md space-y-4">
-        <div className="text-base font-medium">No columns yet</div>
-        <p className="text-sm text-muted-foreground">
-          Add a column for each agent (or version) you want to compare. Each
-          column has its own variables, input, and response. Submit them
-          individually, or all at once.
-        </p>
-        <Button
-          size="sm"
-          onClick={() => dispatch(addBattleColumn())}
-        >
-          <Plus className="w-4 h-4" />
-          Add the first column
-        </Button>
-      </div>
-    </div>
   );
 }

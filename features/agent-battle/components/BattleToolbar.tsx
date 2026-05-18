@@ -16,11 +16,16 @@ import { useState } from "react";
 import {
   Loader2,
   Play,
+  Plus,
   Save,
   Library,
   Sparkles,
   Activity,
   Eraser,
+  RotateCcw,
+  ChevronDown,
+  Wand2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -28,11 +33,20 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import {
+  addBattleColumn,
   clearBattle,
+  resetAllBattleConversations,
   saveBattle,
   saveBattleAs,
   submitAllBattleColumns,
 } from "../redux/thunks";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   selectActiveBattleSetId,
   selectActiveBattleSetName,
@@ -47,6 +61,10 @@ interface BattleToolbarProps {
   onToggleContextWindow: () => void;
   runsWindowOpen: boolean;
   onToggleRunsWindow: () => void;
+  runSettingsWindowOpen: boolean;
+  onToggleRunSettingsWindow: () => void;
+  masterInputWindowOpen: boolean;
+  onToggleMasterInputWindow: () => void;
 }
 
 export function BattleToolbar({
@@ -54,6 +72,10 @@ export function BattleToolbar({
   onToggleContextWindow,
   runsWindowOpen,
   onToggleRunsWindow,
+  runSettingsWindowOpen,
+  onToggleRunSettingsWindow,
+  masterInputWindowOpen,
+  onToggleMasterInputWindow,
 }: BattleToolbarProps) {
   const dispatch = useAppDispatch();
 
@@ -67,6 +89,7 @@ export function BattleToolbar({
   const [saveAsBusy, setSaveAsBusy] = useState(false);
   const [loaderOpen, setLoaderOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
 
   const handleSubmitAll = async () => {
     if (submittable.length === 0) {
@@ -132,6 +155,18 @@ export function BattleToolbar({
     }
   };
 
+  const handleResetConversations = async () => {
+    setResetConfirm(false);
+    try {
+      await dispatch(resetAllBattleConversations()).unwrap();
+      toast.success("Conversations reset");
+    } catch (err) {
+      toast.error(
+        `Couldn't reset: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  };
+
   return (
     <>
       <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border bg-card shrink-0">
@@ -149,7 +184,28 @@ export function BattleToolbar({
           </span>
         </div>
 
+        <Button
+          size="sm"
+          variant="default"
+          onClick={() => dispatch(addBattleColumn())}
+          className="h-7 ml-1"
+          title="Add a new column"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add agent
+        </Button>
+
         <div className="flex-1" />
+
+        <Button
+          size="sm"
+          variant={masterInputWindowOpen ? "default" : "outline"}
+          onClick={onToggleMasterInputWindow}
+          className="h-7"
+        >
+          <Wand2 className="w-3.5 h-3.5" />
+          Master input
+        </Button>
 
         <Button
           size="sm"
@@ -159,6 +215,17 @@ export function BattleToolbar({
         >
           <Sparkles className="w-3.5 h-3.5" />
           Context
+        </Button>
+
+        <Button
+          size="sm"
+          variant={runSettingsWindowOpen ? "default" : "outline"}
+          onClick={onToggleRunSettingsWindow}
+          className="h-7"
+          title="Server-side run caps + flags applied to every column"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          Run settings
         </Button>
 
         <Button
@@ -194,16 +261,41 @@ export function BattleToolbar({
           {activeSetId ? "Save" : "Save as..."}
         </Button>
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setClearConfirm(true)}
-          className="h-7"
-          disabled={columns.length === 0}
-        >
-          <Eraser className="w-3.5 h-3.5" />
-          Clear
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              disabled={columns.length === 0}
+            >
+              <Eraser className="w-3.5 h-3.5" />
+              Clear
+              <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuItem onClick={() => setResetConfirm(true)}>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <div className="flex flex-col">
+                <span>Reset conversations</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Clear responses + inputs; keep agents.
+                </span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setClearConfirm(true)}>
+              <Eraser className="w-3.5 h-3.5" />
+              <div className="flex flex-col">
+                <span>Clear all columns</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Empty the page; remove agents too.
+                </span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
 
@@ -249,6 +341,18 @@ export function BattleToolbar({
         confirmLabel="Clear"
         variant="destructive"
         onConfirm={handleClear}
+      />
+
+      <ConfirmDialog
+        open={resetConfirm}
+        onOpenChange={(o) => {
+          if (!o) setResetConfirm(false);
+        }}
+        title="Reset all conversations?"
+        description="Discards every column's typed inputs and streamed responses, and starts a fresh conversation for each agent. The agent + version selections stay in place. The previous conversations remain in your chat history."
+        confirmLabel="Reset"
+        variant="destructive"
+        onConfirm={handleResetConversations}
       />
     </>
   );

@@ -51,6 +51,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
+import { EditHistoryDialog } from "../message-options/EditHistoryDialog";
 import { extractErrorMessage } from "@/utils/errors";
 
 function serializeSaveError(error: unknown): {
@@ -140,6 +141,7 @@ export function AssistantActionBar({
   const [isDisliked, setIsDisliked] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editHistoryOpen, setEditHistoryOpen] = useState(false);
   const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
 
   // Single subscription to the message record. Everything below derives.
@@ -156,6 +158,12 @@ export function AssistantActionBar({
   );
 
   const content = useMemo(() => extractFlatText(record), [record]);
+  // Count of archived versions on this message — surfaces the "Edit
+  // history (N)" item only when there's something recoverable.
+  const contentHistoryCount = useMemo(() => {
+    const raw = record?.contentHistory;
+    return Array.isArray(raw) ? raw.length : 0;
+  }, [record?.contentHistory]);
   const metadata = useMemo<Record<string, unknown> | null>(
     () =>
       record?.metadata ? (record.metadata as Record<string, unknown>) : null,
@@ -399,6 +407,8 @@ export function AssistantActionBar({
             isCapturing={isCapturing}
             surfaceKey={surfaceKey}
             onRequestDelete={() => setDeleteDialogOpen(true)}
+            onRequestEditHistory={() => setEditHistoryOpen(true)}
+            contentHistoryCount={contentHistoryCount}
           />
         </Suspense>
       )}
@@ -410,6 +420,13 @@ export function AssistantActionBar({
         canFork={canFork}
         onConfirmDelete={handleConfirmDelete}
         onConfirmFork={handleConfirmDeleteFork}
+      />
+
+      <EditHistoryDialog
+        open={editHistoryOpen}
+        onOpenChange={setEditHistoryOpen}
+        conversationId={conversationId}
+        messageId={messageId}
       />
     </>
   );

@@ -46,6 +46,7 @@ import { AssistantError } from "../../run/AssistantError";
 import { AssistantActionBar } from "./AssistantActionBar";
 import { RetryConfirmDialog } from "@/features/agents/components/messages-display/message-options/RetryConfirmDialog";
 import { atomicRetry } from "@/features/agents/redux/execution-system/message-crud/atomic-retry.thunk";
+import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { Button } from "@/components/ui/button";
 import { Loader2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
@@ -134,6 +135,36 @@ export function AgentAssistantMessage({
     if (mediaBlocks.length === 0) return undefined;
     return normalizeContentBlocks(mediaBlocks);
   }, [record]);
+
+  // Inline edits inside the body (inline-decision resolve, code-block save,
+  // table edits, broker updates, inline-replace flows) emit the full
+  // updated message text via `onContentChange`. Forward to the thunk that:
+  //   1. patches `activeRequests.editedText` so the renderer reflects the
+  //      change in the current frame (otherwise the lifetime rule means
+  //      display stays bound to the original server-derived render blocks);
+  //   2. optimistically updates `messages.byId.content`;
+  //   3. debounces a `cx_message_edit` RPC so the DB write happens once per
+  //      logical edit session — `content_history` gets ONE archive entry
+  //      per session, not per keystroke (Monaco fires onChange per stroke).
+  //
+  // Gated on a committed `messageId` because pre-commit there's nothing to
+  // persist to. The inline-decision Apply button is disabled while
+  // `isStreamActive` is true, which is the only window without a messageId,
+  // so in practice this branch is always taken when an edit fires.
+  const handleInlineContentChange = useCallback(
+    (newContent: string) => {
+      if (!messageId) return;
+      dispatch(
+        commitInlineContentEdit({
+          conversationId,
+          messageId,
+          requestId,
+          newText: newContent,
+        }),
+      );
+    },
+    [dispatch, conversationId, messageId, requestId],
+  );
 
   const canRetry = Boolean(messageId);
 
@@ -238,6 +269,7 @@ export function AgentAssistantMessage({
           hideCopyButton={true}
           allowFullScreenEditor={false}
           serverProcessedBlocks={serverProcessedBlocks}
+          onContentChange={handleInlineContentChange}
         />
       )}
       {messageId && (

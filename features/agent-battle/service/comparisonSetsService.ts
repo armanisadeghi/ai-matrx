@@ -4,12 +4,6 @@
  *
  * Per CLAUDE.md, no Next.js API route sits in front of this. RLS on the
  * tables restricts access to the owner.
- *
- * The new tables aren't yet in the generated `database.types.ts`. We use
- * `from(... as never)` to bypass the typed-table check on this surface
- * and lift the raw rows through our own `ComparisonSetRow` /
- * `ComparisonEntryRow` types. When the types are regenerated, drop the
- * `as never` casts.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -38,14 +32,12 @@ export interface UpsertEntryInput {
 }
 
 const supabase = () => createClient();
-const SETS = "cmp_comparison_sets" as never;
-const ENTRIES = "cmp_comparison_entries" as never;
 
 export async function createComparisonSet(
   input: CreateComparisonSetInput,
 ): Promise<ComparisonSetRow> {
   const { data, error } = await supabase()
-    .from(SETS)
+    .from("cmp_comparison_sets")
     .insert({
       name: input.name,
       user_id: input.userId,
@@ -53,12 +45,12 @@ export async function createComparisonSet(
       project_id: input.projectId ?? null,
       task_id: input.taskId ?? null,
       metadata: input.metadata ?? {},
-    } as never)
+    })
     .select("*")
     .single();
 
   if (error) throw error;
-  return data as unknown as ComparisonSetRow;
+  return data as ComparisonSetRow;
 }
 
 export async function renameComparisonSet(
@@ -66,8 +58,8 @@ export async function renameComparisonSet(
   name: string,
 ): Promise<void> {
   const { error } = await supabase()
-    .from(SETS)
-    .update({ name } as never)
+    .from("cmp_comparison_sets")
+    .update({ name })
     .eq("id", setId);
   if (error) throw error;
 }
@@ -77,14 +69,14 @@ export async function listComparisonSets(
   limit = 50,
 ): Promise<ComparisonSetRow[]> {
   const { data, error } = await supabase()
-    .from(SETS)
+    .from("cmp_comparison_sets")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw error;
-  return (data ?? []) as unknown as ComparisonSetRow[];
+  return (data ?? []) as ComparisonSetRow[];
 }
 
 export async function loadComparisonSet(
@@ -93,9 +85,13 @@ export async function loadComparisonSet(
   const client = supabase();
 
   const [setRes, entriesRes] = await Promise.all([
-    client.from(SETS).select("*").eq("id", setId).single(),
     client
-      .from(ENTRIES)
+      .from("cmp_comparison_sets")
+      .select("*")
+      .eq("id", setId)
+      .single(),
+    client
+      .from("cmp_comparison_entries")
       .select("*")
       .eq("comparison_set_id", setId)
       .order("display_order", { ascending: true }),
@@ -105,13 +101,16 @@ export async function loadComparisonSet(
   if (entriesRes.error) throw entriesRes.error;
 
   return {
-    set: setRes.data as unknown as ComparisonSetRow,
-    entries: (entriesRes.data ?? []) as unknown as ComparisonEntryRow[],
+    set: setRes.data as ComparisonSetRow,
+    entries: (entriesRes.data ?? []) as ComparisonEntryRow[],
   };
 }
 
 export async function deleteComparisonSet(setId: string): Promise<void> {
-  const { error } = await supabase().from(SETS).delete().eq("id", setId);
+  const { error } = await supabase()
+    .from("cmp_comparison_sets")
+    .delete()
+    .eq("id", setId);
   if (error) throw error;
 }
 
@@ -126,7 +125,7 @@ export async function replaceEntries(
   const client = supabase();
 
   const { error: delErr } = await client
-    .from(ENTRIES)
+    .from("cmp_comparison_entries")
     .delete()
     .eq("comparison_set_id", setId);
   if (delErr) throw delErr;
@@ -144,10 +143,10 @@ export async function replaceEntries(
   }));
 
   const { data, error } = await client
-    .from(ENTRIES)
-    .insert(rows as never)
+    .from("cmp_comparison_entries")
+    .insert(rows)
     .select("*");
 
   if (error) throw error;
-  return (data ?? []) as unknown as ComparisonEntryRow[];
+  return (data ?? []) as ComparisonEntryRow[];
 }

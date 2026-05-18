@@ -102,6 +102,33 @@ export default function AiModelForm({
         return [...new Set(names)].sort();
     }, [allModels]);
 
+    // Fallback target options — every non-deprecated, non-self model grouped
+    // by provider for easy scanning. Used by the Mid + Guest fallback Selects.
+    const fallbackGroups = React.useMemo(() => {
+        const groups: Record<string, AiModel[]> = {};
+        for (const m of allModels) {
+            // Exclude self (no point pointing a row at itself) + deprecated rows
+            if (m.name === data.name) continue;
+            if (m.is_deprecated) continue;
+            const key = m.provider || "Other";
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(m);
+        }
+        for (const key of Object.keys(groups)) {
+            groups[key].sort((a, b) =>
+                (a.common_name || a.name || "").localeCompare(b.common_name || b.name || ""),
+            );
+        }
+        return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+    }, [allModels, data.name]);
+
+    const fallbackTargetLabel = (id: string): string => {
+        if (!id) return "";
+        const m = allModels.find((x) => x.id === id);
+        if (!m) return id;
+        return m.common_name || m.name || id;
+    };
+
     return (
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -282,6 +309,109 @@ export default function AiModelForm({
                             Premium
                         </Label>
                     </div>
+                </div>
+            </div>
+
+            {/* Tier fallbacks — quota/guest-tier model substitution.
+                When set, the aidream backend substitutes this model when the
+                caller is at the matching tier. Leave at "no swap" for entry-
+                level / mid-tier models that don't need to step down. */}
+            <div className="border rounded-md p-3 space-y-3">
+                <div className="flex items-baseline justify-between">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Tier Fallbacks
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                        Backend swaps this model out when the caller is at the matching tier.
+                    </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                        label="Mid-tier Fallback"
+                        description="Used when an authenticated user is past their soft limit (e.g. Opus → Sonnet)."
+                    >
+                        <Select
+                            value={data.mid_fallback_id || "__none__"}
+                            onValueChange={(v) =>
+                                onChange({ ...data, mid_fallback_id: v === "__none__" ? "" : v })
+                            }
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Choose mid-tier fallback…">
+                                    {data.mid_fallback_id
+                                        ? fallbackTargetLabel(data.mid_fallback_id)
+                                        : "— no swap —"}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="max-h-72">
+                                <SelectItem
+                                    value="__none__"
+                                    className="font-normal italic text-muted-foreground"
+                                >
+                                    — no swap —
+                                </SelectItem>
+                                {fallbackGroups.map(([provider, models]) => (
+                                    <div key={provider}>
+                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t mt-1 first:border-t-0 first:mt-0">
+                                            {provider}
+                                        </div>
+                                        {models.map((m) => (
+                                            <SelectItem
+                                                key={m.id}
+                                                value={m.id}
+                                                className="text-xs"
+                                            >
+                                                {m.common_name || m.name}
+                                            </SelectItem>
+                                        ))}
+                                    </div>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+                    <FormField
+                        label="Guest Fallback"
+                        description="Used when the caller is an anonymous guest (X-Fingerprint-ID, no Bearer)."
+                    >
+                        <Select
+                            value={data.guest_fallback_id || "__none__"}
+                            onValueChange={(v) =>
+                                onChange({ ...data, guest_fallback_id: v === "__none__" ? "" : v })
+                            }
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Choose guest fallback…">
+                                    {data.guest_fallback_id
+                                        ? fallbackTargetLabel(data.guest_fallback_id)
+                                        : "— no swap —"}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="max-h-72">
+                                <SelectItem
+                                    value="__none__"
+                                    className="font-normal italic text-muted-foreground"
+                                >
+                                    — no swap —
+                                </SelectItem>
+                                {fallbackGroups.map(([provider, models]) => (
+                                    <div key={provider}>
+                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t mt-1 first:border-t-0 first:mt-0">
+                                            {provider}
+                                        </div>
+                                        {models.map((m) => (
+                                            <SelectItem
+                                                key={m.id}
+                                                value={m.id}
+                                                className="text-xs"
+                                            >
+                                                {m.common_name || m.name}
+                                            </SelectItem>
+                                        ))}
+                                    </div>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
                 </div>
             </div>
 

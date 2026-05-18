@@ -268,7 +268,13 @@ export const UnifiedImageBlockRenderer: React.FC<
       <DrawerSep />
       <DrawerRow
         icon={<Download />}
-        label={actions.isDownloading ? "Downloading…" : "Download"}
+        // Label matches the iOS native share sheet — `actions.download`
+        // calls `navigator.share({ files })` on mobile, which surfaces
+        // "Save Image" → Photos as the first option. On unsupported
+        // browsers it falls back to a regular file download, which still
+        // reads correctly as "Save image".
+        label={actions.isDownloading ? "Saving…" : "Save image"}
+        sublabel="Save to Photos, AirDrop, or share"
         onClick={actions.download}
         disabled={actions.isDownloading}
       />

@@ -40,6 +40,7 @@ import {
   type ImageVariantFormat,
   type ImageVariantSpec,
 } from "./utils/render-image-variant";
+import { saveImageFile } from "./utils/save-image-file";
 import type { UnifiedImageBlock } from "./types";
 
 export interface ImageActionsApi {
@@ -206,6 +207,17 @@ export function useImageActions({
   // fall through to the currently-rendered src.
   const matrxDownloadUrl = block.origin === "matrx" ? block.downloadUrl : null;
 
+  /**
+   * "Save" the image. On mobile (iOS Safari, Android Chrome) this opens
+   * the native share sheet via `navigator.share({ files })` — iOS shows
+   * "Save Image" → Photos as the first option, which is what users
+   * actually want when they tap a save button on their phone. On
+   * desktop / non-capable browsers it falls back to the classic anchor
+   * download (file lands in Downloads). One button, right behavior
+   * everywhere, no platform branching at the call site.
+   *
+   * See `utils/save-image-file.ts` for the capability gating.
+   */
   const download = useCallback(async () => {
     if (isDownloading) return;
     const url = matrxDownloadUrl ?? currentSrc;
@@ -215,9 +227,14 @@ export function useImageActions({
     }
     setIsDownloading(true);
     try {
-      await downloadUrlAsFile(url, downloadName);
+      await saveImageFile({
+        url,
+        filename: downloadName,
+        mimeType: block.mimeType ?? null,
+        title: block.fileName ?? downloadName,
+      });
     } catch {
-      toast.error("Download failed");
+      toast.error("Could not save image");
     } finally {
       setIsDownloading(false);
     }
@@ -226,7 +243,8 @@ export function useImageActions({
     matrxDownloadUrl,
     currentSrc,
     downloadName,
-    downloadUrlAsFile,
+    block.mimeType,
+    block.fileName,
   ]);
 
   const print = useCallback(async () => {

@@ -1,5 +1,31 @@
 # Markdown / content edit paths — analysis from `AgentAssistantMessage`
 
+> **Status (2026-05-17):** Two gaps closed in this round.
+>
+> 1. **`onContentChange` propagation** — Inline edits now route through
+>    `commitInlineContentEdit` → `setRequestEditedText` (active-requests,
+>    in-session) + optimistic `updateMessageRecord` + debounced
+>    `cx_message_edit` RPC (DB + auto-archive to
+>    `cx_message.content_history`). Recovery surfaces in
+>    `AssistantActionBar` via the "Edit history" menu item +
+>    `EditHistoryDialog`.
+> 2. **Stream-parser gap with static splitter** — The streaming
+>    accumulator (`stream-block-accumulator.ts`) previously emitted
+>    `metadata: undefined` for every block, so `<decision>`,
+>    `<artifact>`, `<editor_error>`, `<editor_code_snippet>` rendered as
+>    raw text mid-stream and only "snapped in" after a refresh (when the
+>    static splitter ran). Now the accumulator parses opening-tag
+>    attributes, captures `rawXml`, and re-parses closed `<option>` tags
+>    on every emit so the renderer's `metadata.decision` / `metadata.artifactId` /
+>    `metadata.rawXml` / `metadata.isComplete` requirements are satisfied
+>    live. Also added: `editor_error` + `editor_code_snippet` to the
+>    attribute-XML tag set, and mid-line attribute-XML detection
+>    mirroring `detectMidLineAttributeXml` in `content-splitter-v2`.
+>
+> The §5 and §10 gaps below remain accurate for paths that don't go
+> through `replaceBlockContent` (CSV cells, nested previews, task-list
+> checkboxes).
+
 This document traces every route by which assistant message **content** can be viewed, transformed, or edited, from the agent run UI entry point through nested renderers. It flags **local component state** that does not propagate to a single upstream source (today: Redux conversation history + overlay slices).
 
 **Scope entry:** [`AgentAssistantMessage.tsx`](./AgentAssistantMessage.tsx)

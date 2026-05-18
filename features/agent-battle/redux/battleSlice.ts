@@ -12,13 +12,24 @@ import type {
   BattleAgentVersion,
   BattleColumn,
   BattleState,
+  MasterField,
 } from "../types";
+import { MASTER_INPUT_TARGET } from "../types";
 
 const initialState: BattleState = {
   columns: [],
   activeSetId: null,
   activeSetName: null,
   isSubmittingAll: false,
+  masterFields: [
+    {
+      fieldId: "master",
+      kind: "master",
+      label: "Master message",
+      value: "",
+      mappings: {},
+    },
+  ],
 };
 
 const battleSlice = createSlice({
@@ -131,8 +142,67 @@ const battleSlice = createSlice({
       state.activeSetId = action.payload?.id ?? null;
       state.activeSetName = action.payload?.name ?? null;
     },
+
+    // ── Master fields (central data mapping) ─────────────────────
+    addMasterField(state, action: PayloadAction<{ fieldId: string; label: string }>) {
+      state.masterFields.push({
+        fieldId: action.payload.fieldId,
+        kind: "custom",
+        label: action.payload.label,
+        value: "",
+        mappings: {},
+      });
+    },
+    removeMasterField(state, action: PayloadAction<{ fieldId: string }>) {
+      const field = state.masterFields.find(
+        (f) => f.fieldId === action.payload.fieldId,
+      );
+      if (field?.kind === "master") return; // master is permanent
+      state.masterFields = state.masterFields.filter(
+        (f) => f.fieldId !== action.payload.fieldId,
+      );
+    },
+    setMasterFieldValue(
+      state,
+      action: PayloadAction<{ fieldId: string; value: string }>,
+    ) {
+      const field = state.masterFields.find(
+        (f) => f.fieldId === action.payload.fieldId,
+      );
+      if (field) field.value = action.payload.value;
+    },
+    setMasterFieldLabel(
+      state,
+      action: PayloadAction<{ fieldId: string; label: string }>,
+    ) {
+      const field = state.masterFields.find(
+        (f) => f.fieldId === action.payload.fieldId,
+      );
+      if (field && field.kind !== "master") field.label = action.payload.label;
+    },
+    setMasterFieldMapping(
+      state,
+      action: PayloadAction<{
+        fieldId: string;
+        columnId: string;
+        target: string | undefined;
+      }>,
+    ) {
+      const field = state.masterFields.find(
+        (f) => f.fieldId === action.payload.fieldId,
+      );
+      if (!field) return;
+      if (action.payload.target === undefined) {
+        delete field.mappings[action.payload.columnId];
+      } else {
+        field.mappings[action.payload.columnId] = action.payload.target;
+      }
+    },
   },
 });
+
+export { MASTER_INPUT_TARGET };
+export type { MasterField };
 
 export const {
   addColumn,
@@ -146,6 +216,11 @@ export const {
   submitAllStarted,
   submitAllFinished,
   setActiveSet,
+  addMasterField,
+  removeMasterField,
+  setMasterFieldValue,
+  setMasterFieldLabel,
+  setMasterFieldMapping,
 } = battleSlice.actions;
 
 export default battleSlice.reducer;

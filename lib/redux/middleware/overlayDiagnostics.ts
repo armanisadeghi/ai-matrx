@@ -55,6 +55,37 @@ interface PendingRender {
 const pendingRenders = new Map<string, PendingRender>();
 const warnedKeyMismatches = new Set<string>();
 
+// Module-level heartbeat flags — set by probes at each level of the overlay
+// render tree. When the middleware times out without a `markRendered` call,
+// it reports which level last reported alive so the failure can be pinpointed.
+//
+//   1. controllerGateMountedAt      — DeferredSingletons rendered (idle ready)
+//   2. unifiedControllerMountedAt   — outer next/dynamic shell mounted
+//   3. unifiedImplMountedAt         — inner Impl committed (registry-mapping render started)
+//   4. surfaceMountedFor[overlayId] — that specific OverlaySurface mounted at least once
+//
+// A null value means the layer never reported, so the timeout report can
+// say "stuck before layer N — that's where to look."
+let controllerGateMountedAt: number | null = null;
+let unifiedControllerMountedAt: number | null = null;
+let unifiedImplMountedAt: number | null = null;
+const surfaceMountedFor = new Map<string, number>();
+
+export function markControllerGateMounted(): void {
+  if (controllerGateMountedAt === null) controllerGateMountedAt = Date.now();
+}
+export function markUnifiedControllerMounted(): void {
+  if (unifiedControllerMountedAt === null)
+    unifiedControllerMountedAt = Date.now();
+}
+export function markUnifiedImplMounted(): void {
+  if (unifiedImplMountedAt === null) unifiedImplMountedAt = Date.now();
+}
+export function markSurfaceMounted(overlayId: string): void {
+  if (!surfaceMountedFor.has(overlayId))
+    surfaceMountedFor.set(overlayId, Date.now());
+}
+
 const keyOf = (overlayId: string, instanceId: string) =>
   `${overlayId}::${instanceId}`;
 
@@ -139,6 +170,11 @@ function maybeWarnKeyMismatch(
   );
 }
 
+function describeAt(at: number | null, baseline: number): string {
+  if (at === null) return "never";
+  return `${at - baseline}ms after dispatch`;
+}
+
 function buildTimeoutReport(pending: PendingRender): string {
   const entry = getStaticEntryByOverlayId(pending.overlayId);
   const defaults = entry?.defaultData ?? {};
@@ -170,6 +206,32 @@ function buildTimeoutReport(pending: PendingRender): string {
   } else {
     lines.push(`  lazy-load error: <none captured>`);
   }
+
+  // Render-tree heartbeat — tells us at which layer the chain broke.
+  const baseline = pending.dispatchedAt;
+  const gate = describeAt(controllerGateMountedAt, baseline);
+  const outer = describeAt(unifiedControllerMountedAt, baseline);
+  const impl = describeAt(unifiedImplMountedAt, baseline);
+  const surfaceAt = surfaceMountedFor.get(pending.overlayId) ?? null;
+  const surface = describeAt(surfaceAt, baseline);
+  lines.push(`  render-tree heartbeat:`);
+  lines.push(`    1. DeferredSingletons (gate)         : ${gate}`);
+  lines.push(`    2. UnifiedOverlayController          : ${outer}`);
+  lines.push(`    3. UnifiedOverlayControllerImpl      : ${impl}`);
+  lines.push(`    4. OverlaySurface for ${pending.overlayId.padEnd(28, " ")}: ${surface}`);
+  // Identify the first "never" layer — that's the failure point.
+  const stuck =
+    controllerGateMountedAt === null
+      ? "DeferredSingletons gate (idle ready never resolved, or DeferredSingletons unmounted)"
+      : unifiedControllerMountedAt === null
+        ? "UnifiedOverlayController outer shell (component import for UnifiedOverlayController.tsx failed?)"
+        : unifiedImplMountedAt === null
+          ? "UnifiedOverlayControllerImpl (next/dynamic chunk failed to load — likely service-worker / network / CSP)"
+          : surfaceAt === null
+            ? `OverlaySurface for ${pending.overlayId} (registry iteration missed this entry — check ALL_WINDOW_REGISTRY_ENTRIES)`
+            : "Component lazy chunk (OverlaySurface mounted but the registered import never resolved — usually a chunk-load failure caught silently)";
+  lines.push(`  → stuck at: ${stuck}`);
+
   if (pending.stack) {
     lines.push(`  dispatch call site (stack):\n${pending.stack}`);
   }

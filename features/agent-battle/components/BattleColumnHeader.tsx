@@ -193,6 +193,7 @@ export function BattleColumnHeader({
               : "Version..."
           }
           searchPlaceholder="Search versions..."
+          className="!h-7 !py-0 !px-2 !border !text-xs !font-medium !bg-background"
         />
       </div>
 

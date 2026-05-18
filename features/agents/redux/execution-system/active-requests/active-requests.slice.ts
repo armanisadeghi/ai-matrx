@@ -97,6 +97,7 @@ const activeRequestsSlice = createSlice({
         parentConversationId,
         status: "pending",
         chunkCount: 0,
+        editedText: null,
         reasoningChunks: [],
         accumulatedReasoning: "",
         isReasoningStreaming: false,
@@ -316,6 +317,38 @@ const activeRequestsSlice = createSlice({
       };
 
       delete request.activeOperations[action.payload.operationId];
+    },
+
+    // ── Edited Text Override ──────────────────────────────────
+    //
+    // Set by inline-edit flows (inline decision resolve, code-block save,
+    // table edit, inline broker update, full-screen save) so the renderer
+    // stays in sync with what we just persisted via `cx_message_edit`,
+    // without having to swap the renderer's data source mid-session.
+    //
+    // Per the AgentAssistantMessage lifetime rule, the renderer keeps
+    // reading from `activeRequests.byRequestId[reqId]` for as long as the
+    // conversation instance is mounted — so a successful DB write alone
+    // isn't enough to update the display. This field bridges that gap.
+
+    setRequestEditedText(
+      state,
+      action: PayloadAction<{ requestId: string; text: string }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (request) {
+        request.editedText = action.payload.text;
+      }
+    },
+
+    clearRequestEditedText(
+      state,
+      action: PayloadAction<{ requestId: string }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (request) {
+        request.editedText = null;
+      }
     },
 
     // ── Render Blocks ─────────────────────────────────────────
@@ -763,6 +796,8 @@ export const {
   trackOperationInit,
   trackOperationCompletion,
   upsertRenderBlock,
+  setRequestEditedText,
+  clearRequestEditedText,
   upsertToolLifecycle,
   addPendingToolCall,
   resolveToolCall,

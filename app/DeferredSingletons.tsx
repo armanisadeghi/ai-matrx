@@ -32,9 +32,11 @@
 import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import { useIdleReady, useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
+import { markControllerGateMounted } from "@/lib/redux/middleware/overlayDiagnostics";
 import {
   selectUser,
   selectIsSuperAdmin,
@@ -83,6 +85,13 @@ function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
  * actually open.
  */
 function OverlayControllerGate() {
+  // Heartbeat: tells the diagnostics middleware that DeferredSingletons
+  // committed and the gate is actively subscribed to overlay state. If a
+  // dispatch fires while this is unmounted (e.g. idle never resolved, the
+  // route's layout doesn't include Providers), the timeout report says so.
+  useEffect(() => {
+    markControllerGateMounted();
+  }, []);
   const hasAny = useAppSelector(selectAnyOverlayOpen);
   if (!hasAny) return null;
   return <UnifiedOverlayController />;

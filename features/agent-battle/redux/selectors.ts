@@ -7,10 +7,11 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { BattleColumn } from "../types";
+import type { BattleColumn, MasterField } from "../types";
 
 const EMPTY_COLUMNS: BattleColumn[] = [];
 const EMPTY_IDS: string[] = [];
+const EMPTY_FIELDS: MasterField[] = [];
 
 const selectBattleRoot = (state: RootState) =>
   state.agentBattle ?? {
@@ -18,6 +19,7 @@ const selectBattleRoot = (state: RootState) =>
     activeSetId: null,
     activeSetName: null,
     isSubmittingAll: false,
+    masterFields: EMPTY_FIELDS,
   };
 
 export const selectBattleColumns = createSelector(
@@ -61,4 +63,9 @@ export const selectBattleConversationIds = createSelector(
 export const selectSubmittableBattleColumns = createSelector(
   [selectBattleColumns],
   (columns) => columns.filter((c) => c.agentId != null),
+);
+
+export const selectMasterFields = createSelector(
+  [selectBattleRoot],
+  (root) => root.masterFields ?? EMPTY_FIELDS,
 );

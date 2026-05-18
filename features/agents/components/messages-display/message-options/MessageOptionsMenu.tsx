@@ -55,6 +55,13 @@ export interface MessageOptionsMenuProps {
    * destructive-vs-fork dialog state. Omit to hide the item.
    */
   onRequestDelete?: () => void;
+  /**
+   * Called when the user picks "Edit history". The host owns the dialog
+   * state so it survives this menu closing. Omit to hide the item.
+   */
+  onRequestEditHistory?: () => void;
+  /** Number of archived versions on this message. */
+  contentHistoryCount?: number;
 }
 
 export function MessageOptionsMenu({
@@ -71,6 +78,8 @@ export function MessageOptionsMenu({
   isCapturing = false,
   surfaceKey,
   onRequestDelete,
+  onRequestEditHistory,
+  contentHistoryCount = 0,
 }: MessageOptionsMenuProps) {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
@@ -123,6 +132,8 @@ export function MessageOptionsMenu({
     streamRequestId,
     surfaceKey: surfaceKey ?? null,
     onRequestDelete,
+    onRequestEditHistory,
+    contentHistoryCount,
     isAdmin,
   };
 

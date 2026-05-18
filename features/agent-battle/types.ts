@@ -21,6 +21,34 @@ export interface BattleColumn {
   collapsed: boolean;
 }
 
+/**
+ * MasterField — one logical input (the user's master message, or any
+ * additional user-defined field) plus a per-column mapping from this
+ * field to a specific agent variable name (or "userInput" sentinel for
+ * the chat message body).
+ *
+ * Mapping value semantics:
+ *   - "userInput" → the field's text flows into each mapped column's
+ *     SmartAgentInput message body.
+ *   - any other string → the field's value is written to
+ *     `instanceVariableValues.byConversationId[col].userValues[varName]`.
+ *   - undefined / missing → field is NOT applied to that column.
+ */
+export interface MasterFieldMapping {
+  [columnId: string]: string | undefined;
+}
+
+export interface MasterField {
+  fieldId: string;
+  /** "master" is the built-in user-message field; others are user-added. */
+  kind: "master" | "custom";
+  label: string;
+  value: string;
+  mappings: MasterFieldMapping;
+}
+
+export const MASTER_INPUT_TARGET = "__user_input__" as const;
+
 export interface BattleState {
   /** Ordered list of columns. Reorder mutates this. */
   columns: BattleColumn[];
@@ -30,6 +58,8 @@ export interface BattleState {
   activeSetName: string | null;
   /** Async guard for the unified "Submit All" action. */
   isSubmittingAll: boolean;
+  /** Centralized mapping fields — master input + user-defined extras. */
+  masterFields: MasterField[];
 }
 
 // =============================================================================

@@ -76,6 +76,8 @@ function rowToFormData(row: AiModel): AiModelFormData {
     is_primary: row.is_primary ?? false,
     is_premium: row.is_premium ?? false,
     pricing: row.pricing ?? [],
+    mid_fallback_id: row.mid_fallback_id ?? "",
+    guest_fallback_id: row.guest_fallback_id ?? "",
   };
 }
 
@@ -92,6 +94,8 @@ const EMPTY_FORM: AiModelFormData = {
   is_primary: false,
   is_premium: false,
   pricing: [],
+  mid_fallback_id: "",
+  guest_fallback_id: "",
 };
 
 // ─── Provider Data tab components ─────────────────────────────────────────
@@ -444,6 +448,8 @@ const AI_MODEL_COLUMNS = new Set([
   "capabilities",
   "controls",
   "constraints",
+  "mid_fallback_id",
+  "guest_fallback_id",
 ]);
 
 /** Strip any keys not in AI_MODEL_COLUMNS and return { cleaned, unknownKeys } */
@@ -900,12 +906,23 @@ export default function AiModelDetailPanel({
           capabilities: model?.capabilities ?? null,
           controls: pendingControls ?? model?.controls ?? null,
           constraints: pendingConstraints ?? model?.constraints ?? null,
+          mid_fallback_id: formData.mid_fallback_id || null,
+          guest_fallback_id: formData.guest_fallback_id || null,
         };
 
+        // Cast through unknown — mid_fallback_id / guest_fallback_id aren't
+        // in the generated Supabase types yet. Drop the cast after running
+        // `pnpm db:generate` to refresh database.types.ts from the live
+        // schema (added by aidream migration 0045).
         if (isNew) {
-          saved = await aiModelService.create(payload);
+          saved = await aiModelService.create(
+            payload as unknown as Parameters<typeof aiModelService.create>[0],
+          );
         } else if (model) {
-          saved = await aiModelService.update(model.id, payload);
+          saved = await aiModelService.update(
+            model.id,
+            payload as unknown as Partial<AiModel>,
+          );
         } else {
           return null;
         }
