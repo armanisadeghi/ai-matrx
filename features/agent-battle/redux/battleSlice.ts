@@ -12,6 +12,7 @@ import type {
   BattleAgentVersion,
   BattleColumn,
   BattleState,
+  FeedbackSnapshot,
   MasterField,
 } from "../types";
 import { MASTER_INPUT_TARGET } from "../types";
@@ -30,6 +31,8 @@ const initialState: BattleState = {
       mappings: {},
     },
   ],
+  feedbackRanks: {},
+  feedbackByConversation: {},
 };
 
 const battleSlice = createSlice({
@@ -124,6 +127,8 @@ const battleSlice = createSlice({
       state.activeSetId = null;
       state.activeSetName = null;
       state.isSubmittingAll = false;
+      state.feedbackRanks = {};
+      state.feedbackByConversation = {};
     },
 
     // ── Submit-all guard ─────────────────────────────────────────
@@ -198,6 +203,39 @@ const battleSlice = createSlice({
         field.mappings[action.payload.columnId] = action.payload.target;
       }
     },
+
+    // ── Feedback rank cache (mirrored from DB) ───────────────────
+    setFeedbackRank(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        rank: number | null;
+      }>,
+    ) {
+      if (action.payload.rank == null) {
+        delete state.feedbackRanks[action.payload.conversationId];
+      } else {
+        state.feedbackRanks[action.payload.conversationId] = action.payload.rank;
+      }
+    },
+    clearAllFeedbackRanks(state) {
+      state.feedbackRanks = {};
+    },
+
+    setFeedbackSnapshot(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        snapshot: FeedbackSnapshot | null;
+      }>,
+    ) {
+      if (action.payload.snapshot == null) {
+        delete state.feedbackByConversation[action.payload.conversationId];
+      } else {
+        state.feedbackByConversation[action.payload.conversationId] =
+          action.payload.snapshot;
+      }
+    },
   },
 });
 
@@ -221,6 +259,9 @@ export const {
   setMasterFieldValue,
   setMasterFieldLabel,
   setMasterFieldMapping,
+  setFeedbackRank,
+  clearAllFeedbackRanks,
+  setFeedbackSnapshot,
 } = battleSlice.actions;
 
 export default battleSlice.reducer;

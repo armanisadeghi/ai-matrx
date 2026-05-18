@@ -60,6 +60,29 @@ export interface BattleState {
   isSubmittingAll: boolean;
   /** Centralized mapping fields — master input + user-defined extras. */
   masterFields: MasterField[];
+  /**
+   * Per-column live mirror of the latest-feedback `rank` for the active
+   * request. Lets the rank picker grey out ranks already taken on other
+   * columns without every bar fetching every other bar's data on render.
+   * Keyed by conversationId. Source of truth is the DB; this is a cache
+   * updated by ResponseFeedbackBar on hydrate + save.
+   */
+  feedbackRanks: Record<string, number>;
+  /**
+   * Per-column full feedback snapshot (latest request only). Mirrored
+   * from the DB by ResponseFeedbackBar. Consumed by the comparison table
+   * so it can surface overall + rank + per-metric scores alongside the
+   * server-side telemetry.
+   */
+  feedbackByConversation: Record<string, FeedbackSnapshot>;
+}
+
+export interface FeedbackSnapshot {
+  rating: "up" | "down" | null;
+  overall: number | null;
+  rank: number | null;
+  scores: Record<string, number>;
+  comment: string | null;
 }
 
 // =============================================================================

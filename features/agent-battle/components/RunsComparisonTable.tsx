@@ -42,6 +42,17 @@ interface ColumnStats {
   versionLabel: string;
   status: string;
 
+  // Feedback (from cmp_response_feedback, mirrored into the slice)
+  fbOverall: number | null;
+  fbRank: number | null;
+  fbAccuracy: number | null;
+  fbRelevance: number | null;
+  fbCompleteness: number | null;
+  fbInstructionFollowing: number | null;
+  fbReasoning: number | null;
+  fbClarity: number | null;
+  fbConciseness: number | null;
+
   // Token usage
   tokensInput: number | null;
   tokensCached: number | null;
@@ -99,6 +110,15 @@ interface ColumnStats {
 }
 
 const NULL_STATS = (): Omit<ColumnStats, "columnId" | "agentName" | "versionLabel" | "status"> => ({
+  fbOverall: null,
+  fbRank: null,
+  fbAccuracy: null,
+  fbRelevance: null,
+  fbCompleteness: null,
+  fbInstructionFollowing: null,
+  fbReasoning: null,
+  fbClarity: null,
+  fbConciseness: null,
   tokensInput: null,
   tokensCached: null,
   tokensOutput: null,
@@ -174,6 +194,8 @@ function buildStatsForColumn(
         .map((id) => state.activeRequests.byRequestId[id])
         .filter((r): r is ActiveRequest => Boolean(r))
     : [];
+
+  fillFeedback(base, state, col.conversationId);
 
   if (requests.length === 0) {
     // No runs yet — still surface context-state if present (cold-start fetch).
@@ -260,6 +282,25 @@ function buildStatsForColumn(
 const CHARS_PER_TOKEN_ESTIMATE = 4;
 const DEFAULT_CONTEXT_WINDOW_TOKENS = 200_000;
 
+function fillFeedback(
+  out: ColumnStats,
+  state: RootState,
+  conversationId: string,
+) {
+  const fb = state.agentBattle?.feedbackByConversation?.[conversationId];
+  if (!fb) return;
+  out.fbOverall = fb.overall ?? null;
+  out.fbRank = fb.rank ?? null;
+  const s = fb.scores ?? {};
+  out.fbAccuracy = s.accuracy ?? null;
+  out.fbRelevance = s.relevance ?? null;
+  out.fbCompleteness = s.completeness ?? null;
+  out.fbInstructionFollowing = s.instruction_following ?? null;
+  out.fbReasoning = s.reasoning ?? null;
+  out.fbClarity = s.clarity ?? null;
+  out.fbConciseness = s.conciseness ?? null;
+}
+
 function fillContextState(
   out: ColumnStats,
   state: RootState,
@@ -302,7 +343,36 @@ interface MetricSection {
   rows: MetricRow[];
 }
 
+const fmtScore = (v: number | null) => (v == null ? "—" : `${v} / 5`);
+const fmtRank = (v: number | null) => (v == null ? "—" : `#${v}`);
+
 const SECTIONS: MetricSection[] = [
+  {
+    title: "Your evaluation",
+    rows: [
+      {
+        label: "Rank",
+        pick: (s) => s.fbRank,
+        format: fmtRank,
+        direction: "lower", // rank 1 is best
+        emphasized: true,
+      },
+      {
+        label: "Overall",
+        pick: (s) => s.fbOverall,
+        format: fmtScore,
+        direction: "higher",
+        emphasized: true,
+      },
+      { label: "Accuracy", pick: (s) => s.fbAccuracy, format: fmtScore, direction: "higher" },
+      { label: "Relevance", pick: (s) => s.fbRelevance, format: fmtScore, direction: "higher" },
+      { label: "Completeness", pick: (s) => s.fbCompleteness, format: fmtScore, direction: "higher" },
+      { label: "Instruction following", pick: (s) => s.fbInstructionFollowing, format: fmtScore, direction: "higher" },
+      { label: "Reasoning", pick: (s) => s.fbReasoning, format: fmtScore, direction: "higher" },
+      { label: "Clarity", pick: (s) => s.fbClarity, format: fmtScore, direction: "higher" },
+      { label: "Conciseness", pick: (s) => s.fbConciseness, format: fmtScore, direction: "higher" },
+    ],
+  },
   {
     title: "Summary",
     rows: [
