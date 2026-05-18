@@ -509,7 +509,11 @@ export const saveBattleAs = createAsyncThunk<
     const userId = selectUserId(state);
     if (!userId) throw new Error("Not signed in");
 
-    const set = await createComparisonSet({ name, userId });
+    const set = await createComparisonSet({
+      name,
+      userId,
+      metadata: { mode: "open" },
+    });
     const entries = buildPersistEntries(state.agentComparison.columns, state);
     if (entries.length > 0) {
       await replaceEntries(set.id, entries);

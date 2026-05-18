@@ -1,101 +1,92 @@
 "use client";
 
 /**
- * BattleToolbar
+ * SettingsToolbar
  *
- * Single bar at the top of the battle page.
- *  - Active set name + Save / Save As
- *  - Open shared Context window
- *  - Open shared Runs window
- *  - Submit All
- *  - Load a saved set
- *  - Clear page
+ * Mode-2 toolbar. Mirrors Mode-1's layout but the actions reflect the
+ * locked-axis model:
+ *   - Add variant       — adds a settings column under the locked agent
+ *   - Runs              — shared runs comparison window (reusable)
+ *   - Open / Save as    — comparison-set persistence (settings-mode aware)
+ *   - Clear (dropdown)  — Clear responses (keep settings + locked input)
+ *                       / Reset variants (drop overrides + responses)
+ *                       / Clear all (also drop locked input)
+ *   - Submit all        — broadcasts locked input + runs every variant
+ *
+ * The Master input + Run settings windows from Mode 1 don't fit here —
+ * Settings mode is BUILT around per-column run settings (each column is
+ * a settings variant) and the input is shared by design, not optional.
  */
 
 import { useState } from "react";
 import {
+  Activity,
+  ChevronDown,
+  Eraser,
+  EyeOff,
+  Library,
   Loader2,
   Play,
   Plus,
-  Save,
-  Library,
-  Sparkles,
-  Activity,
-  Eraser,
   RotateCcw,
-  ChevronDown,
-  Wand2,
-  SlidersHorizontal,
-  EyeOff,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import {
-  addBattleColumn,
-  broadcastFollowUpToEmpty,
-  clearBattle,
-  expandAllBattleColumns,
-  resetAllBattleConversations,
-  saveBattle,
-  saveBattleAs,
-  selectBattleReadiness,
-  submitAllBattleColumns,
-  type BattleColumnReadiness,
-} from "../redux/thunks";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
+import { PresetMenu } from "./PresetMenu";
 import {
-  selectActiveBattleSetId,
-  selectActiveBattleSetName,
-  selectBattleColumns,
-  selectCollapsedBattleColumnCount,
-  selectIsSubmittingAllBattle,
-  selectSubmittableBattleColumns,
+  setSettingsColumnCollapsed,
+} from "../redux/slice";
+import {
+  addColumnToSettingsBattle,
+  clearSettingsBattle,
+  loadSettingsBattleSet,
+  resetAllSettingsConversations,
+  saveSettingsBattle,
+  saveSettingsBattleAs,
+  submitAllSettings,
+} from "../redux/thunks";
+import {
+  selectActiveSettingsSetId,
+  selectActiveSettingsSetName,
+  selectCanSubmitSettings,
+  selectCollapsedSettingsColumnCount,
+  selectIsSubmittingAllSettings,
+  selectLockedAgentId,
+  selectLockedSetup,
+  selectSettingsColumns,
 } from "../redux/selectors";
-import { ComparisonSetLoaderDialog } from "./ComparisonSetLoaderDialog";
-import {
-  SubmitAllPreflightDialog,
-  type ColumnReadiness,
-} from "./SubmitAllPreflightDialog";
 
-interface BattleToolbarProps {
-  contextWindowOpen: boolean;
-  onToggleContextWindow: () => void;
+interface Props {
   runsWindowOpen: boolean;
   onToggleRunsWindow: () => void;
-  runSettingsWindowOpen: boolean;
-  onToggleRunSettingsWindow: () => void;
-  masterInputWindowOpen: boolean;
-  onToggleMasterInputWindow: () => void;
 }
 
-export function BattleToolbar({
-  contextWindowOpen,
-  onToggleContextWindow,
+export function SettingsToolbar({
   runsWindowOpen,
   onToggleRunsWindow,
-  runSettingsWindowOpen,
-  onToggleRunSettingsWindow,
-  masterInputWindowOpen,
-  onToggleMasterInputWindow,
-}: BattleToolbarProps) {
+}: Props) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
 
-  const activeSetId = useAppSelector(selectActiveBattleSetId);
-  const activeSetName = useAppSelector(selectActiveBattleSetName);
-  const isSubmittingAll = useAppSelector(selectIsSubmittingAllBattle);
-  const columns = useAppSelector(selectBattleColumns);
-  const submittable = useAppSelector(selectSubmittableBattleColumns);
-  const collapsedCount = useAppSelector(selectCollapsedBattleColumnCount);
+  const lockedAgentId = useAppSelector(selectLockedAgentId);
+  const lockedSetup = useAppSelector(selectLockedSetup);
+  const activeSetId = useAppSelector(selectActiveSettingsSetId);
+  const activeSetName = useAppSelector(selectActiveSettingsSetName);
+  const isSubmittingAll = useAppSelector(selectIsSubmittingAllSettings);
+  const canSubmit = useAppSelector(selectCanSubmitSettings);
+  const columns = useAppSelector(selectSettingsColumns);
+  const collapsedCount = useAppSelector(selectCollapsedSettingsColumnCount);
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -103,12 +94,40 @@ export function BattleToolbar({
   const [clearConfirm, setClearConfirm] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetKeepInputsConfirm, setResetKeepInputsConfirm] = useState(false);
-  const [preflightOpen, setPreflightOpen] = useState(false);
-  const [preflightReadiness, setPreflightReadiness] = useState<ColumnReadiness[]>([]);
 
-  const runSubmit = async () => {
+  const handleSubmitAll = async () => {
+    // Preflight: walk the locked setup and surface SPECIFIC missing
+    // pieces rather than a generic "fill it in" message. The locked
+    // input is a single page-level form so the user can fix it inline
+    // immediately — no dialog needed.
+    if (!lockedAgentId) {
+      toast.error("Pick an agent in the Locked input section first.");
+      return;
+    }
+    if (columns.length === 0) {
+      toast.error(
+        "Add at least one variant. Click the 'Add variant' button to start.",
+      );
+      return;
+    }
+    if (!lockedSetup.userMessage.trim()) {
+      // Variables may be filled but no message — the agent still needs
+      // something to act on for most use cases. Allow it with a warning
+      // if at least one variable is set; otherwise hard-block.
+      const hasVars = Object.values(lockedSetup.variables).some((v) => {
+        if (v == null) return false;
+        if (typeof v === "string") return v.trim().length > 0;
+        return true;
+      });
+      if (!hasVars) {
+        toast.error(
+          "Add a user message in the Locked input section before submitting.",
+        );
+        return;
+      }
+    }
     try {
-      const res = await dispatch(submitAllBattleColumns()).unwrap();
+      const res = await dispatch(submitAllSettings()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
       if (res.skipped > 0) parts.push(`${res.skipped} skipped`);
@@ -125,51 +144,13 @@ export function BattleToolbar({
     }
   };
 
-  const handleSubmitAll = () => {
-    if (submittable.length === 0) {
-      toast.info("Pick at least one agent before submitting.");
-      return;
-    }
-    // Preflight: compute per-column readiness. If any column is empty,
-    // open the dialog so the user can add a shared message or choose
-    // to submit only the ready columns.
-    // Snapshot via store so we don't have to subscribe at the toolbar
-    // level just to evaluate this once on click.
-    const readiness: BattleColumnReadiness[] = selectBattleReadiness(
-      store.getState(),
-    );
-    const allReady = readiness.every((r) => r.hasMessage);
-    if (readiness.length > 0 && !allReady) {
-      setPreflightReadiness(
-        readiness.map((r) => ({
-          column: columns.find((c) => c.columnId === r.columnId)!,
-          agentName: r.agentName,
-          hasMessage: r.hasMessage,
-          phase: r.phase,
-        })),
-      );
-      setPreflightOpen(true);
-      return;
-    }
-    void runSubmit();
-  };
-
-  const handlePreflightSubmitWithSharedMessage = async (message: string) => {
-    await dispatch(broadcastFollowUpToEmpty({ text: message })).unwrap();
-    await runSubmit();
-  };
-
-  const handlePreflightSubmitOnlyReady = async () => {
-    await runSubmit();
-  };
-
   const handleSave = async () => {
     if (!activeSetId) {
       setSaveAsOpen(true);
       return;
     }
     try {
-      await dispatch(saveBattle()).unwrap();
+      await dispatch(saveSettingsBattle()).unwrap();
       toast.success(`Saved "${activeSetName}"`);
     } catch (err) {
       toast.error(
@@ -181,7 +162,7 @@ export function BattleToolbar({
   const handleSaveAsConfirm = async (name: string) => {
     setSaveAsBusy(true);
     try {
-      await dispatch(saveBattleAs({ name })).unwrap();
+      await dispatch(saveSettingsBattleAs({ name })).unwrap();
       setSaveAsOpen(false);
       toast.success(`Saved as "${name}"`);
     } catch (err) {
@@ -196,7 +177,7 @@ export function BattleToolbar({
   const handleClear = async () => {
     setClearConfirm(false);
     try {
-      await dispatch(clearBattle()).unwrap();
+      await dispatch(clearSettingsBattle()).unwrap();
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -207,8 +188,10 @@ export function BattleToolbar({
   const handleResetConversations = async () => {
     setResetConfirm(false);
     try {
-      await dispatch(resetAllBattleConversations(undefined)).unwrap();
-      toast.success("Conversations reset");
+      await dispatch(
+        resetAllSettingsConversations({ preserveInputs: false }),
+      ).unwrap();
+      toast.success("Variants reset (overrides cleared)");
     } catch (err) {
       toast.error(
         `Couldn't reset: ${err instanceof Error ? err.message : err}`,
@@ -220,13 +203,23 @@ export function BattleToolbar({
     setResetKeepInputsConfirm(false);
     try {
       await dispatch(
-        resetAllBattleConversations({ preserveInputs: true }),
+        resetAllSettingsConversations({ preserveInputs: true }),
       ).unwrap();
-      toast.success("Responses cleared · inputs preserved");
+      toast.success("Responses cleared · variants + locked input preserved");
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
       );
+    }
+  };
+
+  const handleExpandAll = () => {
+    for (const col of columns) {
+      if (col.collapsed) {
+        dispatch(
+          setSettingsColumnCollapsed({ columnId: col.columnId, collapsed: false }),
+        );
+      }
     }
   };
 
@@ -235,7 +228,7 @@ export function BattleToolbar({
       <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Battle
+            Settings battle
           </span>
           {activeSetName && (
             <span className="text-xs text-foreground truncate max-w-[200px]">
@@ -243,13 +236,13 @@ export function BattleToolbar({
             </span>
           )}
           <span className="text-[11px] text-muted-foreground/70 shrink-0">
-            ({columns.length} column{columns.length === 1 ? "" : "s"})
+            ({columns.length} variant{columns.length === 1 ? "" : "s"})
           </span>
           {collapsedCount > 0 && (
             <button
               type="button"
-              onClick={() => dispatch(expandAllBattleColumns())}
-              title={`Click to expand all ${collapsedCount} collapsed column${
+              onClick={handleExpandAll}
+              title={`Click to expand all ${collapsedCount} collapsed variant${
                 collapsedCount === 1 ? "" : "s"
               }`}
               className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-semibold uppercase tracking-wider hover:bg-amber-500/25 transition-colors shrink-0"
@@ -266,46 +259,22 @@ export function BattleToolbar({
         <Button
           size="sm"
           variant="default"
-          onClick={() => dispatch(addBattleColumn())}
+          onClick={() => dispatch(addColumnToSettingsBattle(undefined))}
           className="h-7 ml-1"
-          title="Add a new column"
+          disabled={!lockedAgentId}
+          title={
+            lockedAgentId
+              ? "Add a new variant"
+              : "Pick a locked agent first, then add variants"
+          }
         >
           <Plus className="w-3.5 h-3.5" />
-          Add agent
+          Add variant
         </Button>
+
+        <PresetMenu />
 
         <div className="flex-1" />
-
-        <Button
-          size="sm"
-          variant={masterInputWindowOpen ? "default" : "outline"}
-          onClick={onToggleMasterInputWindow}
-          className="h-7"
-        >
-          <Wand2 className="w-3.5 h-3.5" />
-          Master input
-        </Button>
-
-        <Button
-          size="sm"
-          variant={contextWindowOpen ? "default" : "outline"}
-          onClick={onToggleContextWindow}
-          className="h-7"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Context
-        </Button>
-
-        <Button
-          size="sm"
-          variant={runSettingsWindowOpen ? "default" : "outline"}
-          onClick={onToggleRunSettingsWindow}
-          className="h-7"
-          title="Server-side run caps + flags applied to every column"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          Run settings
-        </Button>
 
         <Button
           size="sm"
@@ -334,7 +303,7 @@ export function BattleToolbar({
           variant="outline"
           onClick={handleSave}
           className="h-7"
-          disabled={columns.length === 0}
+          disabled={columns.length === 0 || !lockedAgentId}
         >
           <Save className="w-3.5 h-3.5" />
           {activeSetId ? "Save" : "Save as..."}
@@ -346,20 +315,20 @@ export function BattleToolbar({
               size="sm"
               variant="outline"
               className="h-7"
-              disabled={columns.length === 0}
+              disabled={columns.length === 0 && !lockedAgentId}
             >
               <Eraser className="w-3.5 h-3.5" />
               Clear
               <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuItem onClick={() => setResetKeepInputsConfirm(true)}>
               <RotateCcw className="w-3.5 h-3.5" />
               <div className="flex flex-col">
                 <span>Clear responses only</span>
                 <span className="text-[10px] text-muted-foreground">
-                  Wipe responses + context; keep agents AND inputs.
+                  Wipe responses; keep variants + locked input.
                 </span>
               </div>
             </DropdownMenuItem>
@@ -367,9 +336,9 @@ export function BattleToolbar({
             <DropdownMenuItem onClick={() => setResetConfirm(true)}>
               <RotateCcw className="w-3.5 h-3.5" />
               <div className="flex flex-col">
-                <span>Reset conversations</span>
+                <span>Reset variants</span>
                 <span className="text-[10px] text-muted-foreground">
-                  Clear responses + inputs; keep agents.
+                  Drop per-column overrides + responses. Keep agent + inputs.
                 </span>
               </div>
             </DropdownMenuItem>
@@ -377,9 +346,9 @@ export function BattleToolbar({
             <DropdownMenuItem onClick={() => setClearConfirm(true)}>
               <Eraser className="w-3.5 h-3.5" />
               <div className="flex flex-col">
-                <span>Clear all columns</span>
+                <span>Clear all</span>
                 <span className="text-[10px] text-muted-foreground">
-                  Empty the page; remove agents too.
+                  Empty the page; reset the locked agent + inputs too.
                 </span>
               </div>
             </DropdownMenuItem>
@@ -392,7 +361,7 @@ export function BattleToolbar({
           size="sm"
           variant="default"
           onClick={handleSubmitAll}
-          disabled={isSubmittingAll || submittable.length === 0}
+          disabled={isSubmittingAll || !canSubmit}
           className="h-7"
         >
           {isSubmittingAll ? (
@@ -407,9 +376,9 @@ export function BattleToolbar({
       <TextInputDialog
         open={saveAsOpen}
         onOpenChange={(o) => !saveAsBusy && setSaveAsOpen(o)}
-        title="Save comparison set"
-        description="Give this comparison a name. The underlying conversations are saved automatically as part of normal chat history."
-        placeholder="My comparison"
+        title="Save settings comparison"
+        description="Give this comparison a name. The locked agent + variables + user message are saved as part of the set; per-column settings are saved per entry."
+        placeholder="My settings comparison"
         confirmLabel="Save"
         busy={saveAsBusy}
         onConfirm={handleSaveAsConfirm}
@@ -418,7 +387,10 @@ export function BattleToolbar({
       <ComparisonSetLoaderDialog
         open={loaderOpen}
         onOpenChange={setLoaderOpen}
-        modeFilter="open"
+        modeFilter="settings"
+        loadFn={async (setId) => {
+          await dispatch(loadSettingsBattleSet({ setId })).unwrap();
+        }}
       />
 
       <ConfirmDialog
@@ -426,8 +398,8 @@ export function BattleToolbar({
         onOpenChange={(o) => {
           if (!o) setClearConfirm(false);
         }}
-        title="Clear all columns?"
-        description="This empties the page. The underlying conversations are not deleted; reopen them via your chat history. If a comparison set is active, the link to it will be cleared."
+        title="Clear all?"
+        description="Empties the page entirely — variants, locked agent, locked inputs. Conversations remain in your chat history."
         confirmLabel="Clear"
         variant="destructive"
         onConfirm={handleClear}
@@ -438,8 +410,8 @@ export function BattleToolbar({
         onOpenChange={(o) => {
           if (!o) setResetConfirm(false);
         }}
-        title="Reset all conversations?"
-        description="Discards every column's typed inputs and streamed responses, and starts a fresh conversation for each agent. The agent + version selections stay in place. The previous conversations remain in your chat history."
+        title="Reset all variants?"
+        description="Drops every variant's per-column LLM overrides and streamed responses. The locked agent + variables + user message are preserved."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -450,19 +422,11 @@ export function BattleToolbar({
         onOpenChange={(o) => {
           if (!o) setResetKeepInputsConfirm(false);
         }}
-        title="Clear responses, keep inputs?"
-        description="Discards every column's streamed responses + context entries, but restores the current user message and variable values into a fresh conversation. Useful when you want to re-run the same setup against a clean slate."
+        title="Clear responses, keep everything else?"
+        description="Discards streamed responses on every variant, but preserves the per-column overrides AND the locked input. Useful when you want to re-run the same configuration against a clean slate."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}
-      />
-
-      <SubmitAllPreflightDialog
-        open={preflightOpen}
-        onOpenChange={setPreflightOpen}
-        readiness={preflightReadiness}
-        onSubmitWithSharedMessage={handlePreflightSubmitWithSharedMessage}
-        onSubmitOnlyReady={handlePreflightSubmitOnlyReady}
       />
     </>
   );

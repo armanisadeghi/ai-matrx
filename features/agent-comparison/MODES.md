@@ -11,11 +11,34 @@ conversations + telemetry + feedback for whatever the mode hands it.
 
 | Mode | Locked | Free per column | Route | Slice |
 |---|---|---|---|---|
-| **Open** ("anything goes") | nothing | agent, version, variables, message, settings, context, tools | `/agents/battle` | `agentComparison` |
-| Settings _(next)_ | agent, version, variables, message | model, thinking level, temperature, max tokens, etc. | `/agents/battle/settings` | `agentComparisonSettings` |
-| Tools _(future)_ | agent, version, variables, message, settings | tools list | `/agents/battle/tools` | `agentComparisonTools` |
-| System Prompt _(future)_ | agent, version, variables, message, settings, tools | system prompt override | `/agents/battle/system-prompt` | `agentComparisonSystemPrompt` |
-| Request Modification _(future)_ | agent, base setup | request shape (pre/post fixes, transformations) | `/agents/battle/request-mod` | `agentComparisonRequestMod` |
+| **Open** ("anything goes") ✅ | nothing | agent, version, variables, message, settings, context, tools | `/agents/battle` | `agentComparison` |
+| **Settings** ✅ | agent, version, variables, message | model, temperature, top_p, max output tokens, reasoning effort, thinking level | `/agents/battle/settings` | `agentComparisonSettings` |
+| Tools _(deferred — needs executor support)_ | agent, version, variables, message, settings | tools list | `/agents/battle/tools` | `agentComparisonTools` |
+| System Prompt _(deferred — needs executor support)_ | agent, version, variables, message, settings, tools | system prompt override | `/agents/battle/system-prompt` | `agentComparisonSystemPrompt` |
+| Request Modification _(deferred — needs executor support)_ | agent, base setup | request shape (pre/post fixes, transformations) | `/agents/battle/request-mod` | `agentComparisonRequestMod` |
+
+The deferred modes need backend cooperation to land:
+- **Tools**: the agent's `tools[]` is read server-side from the agent record;
+  a per-request override array would need to be honored by the executor.
+- **System Prompt**: same story — the system message lives on the agent
+  record. The structured-instruction path (`useStructuredSystemInstruction`)
+  is the most likely seam but needs end-to-end testing.
+- **Request Modification**: needs a clear contract for what transformations
+  are allowed (pre/postfix? template rewriting? full body override?) plus
+  executor + server support.
+
+Cross-mode UX shipped in addition to the modes:
+- **ModePicker** (`shared/ModePicker.tsx`) — mounted at the top of every
+  comparison page; click-to-switch nav across all modes. Active mode is
+  highlighted; deferred modes render as disabled chips with a "soon" tag.
+- **PresetMenu** (`modes/settings/components/PresetMenu.tsx`) — one-click
+  templates for the most common Settings-mode comparisons (reasoning
+  effort sweep, thinking level sweep, temperature sweep, top-p sweep, max
+  tokens sweep). Loading a preset replaces the variant list; locked input
+  is preserved.
+- **Mode badges** in `ComparisonSetLoaderDialog` — every saved set
+  displays its mode (open/settings/tools/...) as a colored badge so the
+  user can identify cross-mode sets at a glance.
 
 The slice can be **shared** across simpler modes that have the same
 column shape (a `conversationId` + some mode-specific overrides). Modes
@@ -105,3 +128,59 @@ The slice key is still `agentComparison` (shared) and the legacy `Battle*`
 component names persist because they're already in production paths and
 renaming them buys nothing. The directory itself is `agent-comparison/`
 to reflect the broader scope.
+
+---
+
+## Mode 2 — Settings (reference implementation)
+
+Mode 2 shipped first as the locked-axis canonical example. Its file tree:
+
+```
+features/agent-comparison/modes/settings/
+├── types.ts                              SettingsColumn, SettingsLockedSetup
+├── redux/
+│   ├── slice.ts                          agentComparisonSettings — columns + lockedSetup
+│   ├── selectors.ts
+│   └── thunks.ts                         setLockedAgent, setLockedVersion,
+│                                         addColumnToSettingsBattle, submitAllSettings,
+│                                         saveSettingsBattleAs, loadSettingsBattleSet, etc.
+└── components/
+    ├── SettingsBattlePage.tsx            page shell
+    ├── SettingsToolbar.tsx
+    ├── LockedInputSection.tsx            top section — agent + variables + user message
+    ├── SettingsColumn.tsx                wraps BoundColumn(hideInput) + header
+    ├── SettingsColumnHeader.tsx          settings chip + label + collapse/remove
+    └── ColumnOverridesEditor.tsx         popover — model + temperature + top-p +
+                                          max tokens + reasoning effort + thinking level
+```
+
+Reuses imported directly from the agent-comparison core:
+- `shared/BoundColumn` (with `hideInput` since the input is page-level locked)
+- `components/ResponseFeedbackBar` (mounted inside BoundColumn)
+- `components/SharedRunsWindow` + `components/RunsComparisonTable`
+- `components/ComparisonSetLoaderDialog` (with `modeFilter="settings"` +
+  `loadFn={dispatch(loadSettingsBattleSet)}`)
+- `service/comparisonSetsService` + `service/responseFeedbackService`
+
+Per-column overrides are persisted in the shared `instanceModelOverrides`
+slice keyed by `conversationId` — same source of truth the executor reads,
+so no new wire format. On save, the column entry's `metadata.overrides`
+captures the per-column override map; on load, those overrides are
+re-applied to the recreated instance via `setOverrides`.
+
+The set row's `metadata` stores `{ mode: "settings", locked: {...} }` —
+that's what the loader dialog's `modeFilter` keys off.
+
+### Pattern to follow for Mode 3+
+
+1. **Create `modes/<your-mode>/` mirroring Mode 2's tree.**
+2. **Slice**: track per-column metadata for whatever the mode varies +
+   the page-level locked setup.
+3. **Thunks**: write a `submitAll<Mode>` that broadcasts the locked
+   inputs to each column's instance, then `smartExecute` per column.
+4. **Save/load**: write `metadata: { mode: "<your-mode>", locked: {...} }`
+   on the set row and per-column variant data in entry `metadata`.
+5. **Page**: pair a `LockedInputSection` (whatever's frozen at the top)
+   with N columns each running `BoundColumn` and a mode-specific header
+   chip.
+6. **Toolbar's loader**: pass `modeFilter="<your-mode>"` + a `loadFn`.

@@ -46,6 +46,7 @@ import { SharedContextWindow } from "./SharedContextWindow";
 import { SharedRunsWindow } from "./SharedRunsWindow";
 import { SharedRunSettingsWindow } from "./SharedRunSettingsWindow";
 import { MasterInputWindow } from "./MasterInputWindow";
+import { ModePicker } from "../shared/ModePicker";
 import type { BattleColumn as BattleColumnType } from "../types";
 
 const SHARED_CONTEXT_WINDOW_ID = "agent-comparison-shared-context";
@@ -95,6 +96,7 @@ export function BattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
+      <ModePicker />
       <BattleToolbar
         contextWindowOpen={contextWindowOpen}
         onToggleContextWindow={() => setContextWindowOpen((v) => !v)}

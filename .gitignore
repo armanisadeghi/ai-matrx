@@ -97,3 +97,7 @@ features/sms/API_FIXES.md
 # pdfjs worker mirrored from node_modules by scripts/copy-pdfjs-worker.ts
 # Regenerated on every install (postinstall) and on every build.
 public/pdfjs/
+
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
