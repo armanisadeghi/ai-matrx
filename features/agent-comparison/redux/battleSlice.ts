@@ -36,7 +36,7 @@ const initialState: BattleState = {
 };
 
 const battleSlice = createSlice({
-  name: "agentBattle",
+  name: "agentComparison",
   initialState,
   reducers: {
     addColumn(

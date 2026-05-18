@@ -39,6 +39,7 @@ import {
   removeColumn,
   replaceColumn,
   setColumnAgentVersion,
+  setColumnCollapsed,
   setColumns,
   submitAllStarted,
   submitAllFinished,
@@ -61,8 +62,8 @@ import type { BattleAgentVersion, BattleColumn } from "../types";
 // Page-wide constants
 // =============================================================================
 
-export const BATTLE_SURFACE_KEY = "agent-battle";
-const BATTLE_SOURCE_FEATURE = "agent-battle" as const;
+export const BATTLE_SURFACE_KEY = "agent-comparison";
+const BATTLE_SOURCE_FEATURE = "agent-comparison" as const;
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -78,7 +79,7 @@ interface ThunkApi {
  * an agent — there's nothing to bind to yet.
  */
 export const addBattleColumn = createAsyncThunk<string, void, ThunkApi>(
-  "agentBattle/addColumn",
+  "agentComparison/addColumn",
   async (_arg, { dispatch }) => {
     const columnId = crypto.randomUUID();
     const conversationId = generateConversationId();
@@ -96,10 +97,10 @@ export const removeBattleColumn = createAsyncThunk<
   { columnId: string },
   ThunkApi
 >(
-  "agentBattle/removeColumn",
+  "agentComparison/removeColumn",
   async ({ columnId }, { dispatch, getState }) => {
     const state = getState();
-    const col = state.agentBattle.columns.find((c) => c.columnId === columnId);
+    const col = state.agentComparison.columns.find((c) => c.columnId === columnId);
     if (col && col.agentId) {
       dispatch(destroyInstance(col.conversationId));
     }
@@ -118,10 +119,10 @@ export const setColumnAgent = createAsyncThunk<
   { columnId: string; agentId: string },
   ThunkApi
 >(
-  "agentBattle/setColumnAgent",
+  "agentComparison/setColumnAgent",
   async ({ columnId, agentId }, { dispatch, getState }) => {
     const state = getState();
-    const col = state.agentBattle.columns.find((c) => c.columnId === columnId);
+    const col = state.agentComparison.columns.find((c) => c.columnId === columnId);
     if (!col) return;
 
     // Destroy the prior instance (if any) and mint a new conversation id.
@@ -167,28 +168,75 @@ export const setColumnAgent = createAsyncThunk<
 );
 
 /**
- * Pick a version for a column. "current" requires no fetch; a numbered
- * version triggers a snapshot fetch so the dropdown label can stay
- * accurate. Execution itself still routes through the live agent record
- * in this phase — version-pinned execution lands with the surface path.
+ * Pick a version for a column.
+ *
+ * Switching the version is a real instance change — the executor reads
+ * `instance.initialAgentVersionId` and routes the API call to the frozen
+ * agx_version row when set, falling back to the live agent when null
+ * (the "Current" pointer). To honor that, we destroy the prior instance
+ * and create a new one with the correct pin.
+ *
+ * `versionId` is the agx_version.id from the version-history list. The
+ * caller (BattleColumnHeader) already has it locally — passing it in
+ * avoids a redundant snapshot fetch on the thunk side.
  */
 export const setColumnVersion = createAsyncThunk<
   void,
-  { columnId: string; version: BattleAgentVersion },
+  {
+    columnId: string;
+    version: BattleAgentVersion;
+    /** Required when `version` is a number. */
+    versionId?: string;
+  },
   ThunkApi
 >(
-  "agentBattle/setColumnVersion",
-  async ({ columnId, version }, { dispatch, getState }) => {
+  "agentComparison/setColumnVersion",
+  async ({ columnId, version, versionId }, { dispatch, getState }) => {
     const state = getState();
-    const col = state.agentBattle.columns.find((c) => c.columnId === columnId);
+    const col = state.agentComparison.columns.find((c) => c.columnId === columnId);
     if (!col || !col.agentId) return;
 
+    // No-op if the user re-picked the same version.
+    if (col.agentVersion === version) return;
+
+    // Optionally hydrate the snapshot so labels + diffs work locally.
     if (version !== "current") {
-      await dispatch(
-        fetchAgentVersionSnapshot({ agentId: col.agentId, version }),
-      ).unwrap();
+      try {
+        await dispatch(
+          fetchAgentVersionSnapshot({ agentId: col.agentId, version }),
+        ).unwrap();
+      } catch {
+        // non-fatal; execution still works
+      }
     }
-    dispatch(setColumnAgentVersion({ columnId, agentVersion: version }));
+
+    // Recreate the instance so the new pin lands on the executor.
+    dispatch(destroyInstance(col.conversationId));
+    const conversationId = generateConversationId();
+    await dispatch(
+      createManualInstance({
+        agentId: col.agentId,
+        conversationId,
+        // null for "current" → routes to live agent; uuid → routes to version
+        initialAgentVersionId: version === "current" ? null : versionId ?? null,
+        apiEndpointMode: "agent",
+        sourceFeature: BATTLE_SOURCE_FEATURE,
+        showVariablePanel: true,
+      }),
+    ).unwrap();
+
+    dispatch(
+      replaceColumn({
+        columnId,
+        next: {
+          conversationId,
+          agentVersion: version,
+        },
+      }),
+    );
+
+    // Variable count for the version may differ — re-run auto-map.
+    await dispatch(reconcileMasterFieldMappings()).unwrap();
   },
 );
 
@@ -209,10 +257,10 @@ export const broadcastContextEntry = createAsyncThunk<
   BroadcastContextEntryArgs,
   ThunkApi
 >(
-  "agentBattle/broadcastContextEntry",
+  "agentComparison/broadcastContextEntry",
   async (entry, { dispatch, getState }) => {
     const state = getState();
-    for (const col of state.agentBattle.columns) {
+    for (const col of state.agentComparison.columns) {
       // Only push to columns that have an initialized instance.
       if (!col.agentId) continue;
       dispatch(
@@ -234,10 +282,10 @@ export const broadcastRemoveContextEntry = createAsyncThunk<
   { key: string },
   ThunkApi
 >(
-  "agentBattle/broadcastRemoveContextEntry",
+  "agentComparison/broadcastRemoveContextEntry",
   async ({ key }, { dispatch, getState }) => {
     const state = getState();
-    for (const col of state.agentBattle.columns) {
+    for (const col of state.agentComparison.columns) {
       if (!col.agentId) continue;
       dispatch(removeContextEntry({ conversationId: col.conversationId, key }));
     }
@@ -254,10 +302,10 @@ export const broadcastRunSettings = createAsyncThunk<
   { changes: Partial<BuilderAdvancedSettings> },
   ThunkApi
 >(
-  "agentBattle/broadcastRunSettings",
+  "agentComparison/broadcastRunSettings",
   async ({ changes }, { dispatch, getState }) => {
     const state = getState();
-    for (const col of state.agentBattle.columns) {
+    for (const col of state.agentComparison.columns) {
       if (!col.agentId) continue;
       dispatch(
         setBuilderAdvancedSettings({
@@ -276,27 +324,92 @@ export const broadcastRunSettings = createAsyncThunk<
 /**
  * A column is submittable when:
  *   - It has an agent (instance exists), AND
- *   - Its per-instance input has text OR at least one user-edited variable
+ *   - Its per-instance input has text OR (only on its very first turn)
+ *     at least one user-edited variable.
+ *
+ * After the first turn, agent variables are no longer part of the wire
+ * payload — only the user message matters for continuing the chat — so
+ * we tighten the gate accordingly.
  *
  * Mirrors the per-column SmartAgentInput gate — Submit All should never
  * fire a column the per-column send button itself would refuse.
  */
 function shouldSubmitColumn(col: BattleColumn, state: RootState): boolean {
   if (!col.agentId) return false;
+  const userText =
+    state.instanceUserInput.byConversationId[col.conversationId]?.text ?? "";
+  if (userText) return true;
+  // First-turn fallback: variables count as input.
+  const messageCount =
+    state.messages.byConversationId[col.conversationId]?.orderedIds?.length ?? 0;
+  if (messageCount > 0) return false;
   const variables =
     state.instanceVariableValues.byConversationId[col.conversationId]
       ?.userValues ?? {};
-  const userText =
-    state.instanceUserInput.byConversationId[col.conversationId]?.text ?? "";
-  return Boolean(userText) || Object.keys(variables).length > 0;
+  return Object.keys(variables).length > 0;
 }
+
+/**
+ * Returns whether each configured column has a message (or first-turn
+ * variables) ready for submit. Used by the preflight dialog to render
+ * the per-column readiness list.
+ */
+export interface BattleColumnReadiness {
+  columnId: string;
+  conversationId: string;
+  agentId: string;
+  agentName: string;
+  hasMessage: boolean;
+  phase: "first-turn" | "continuation";
+}
+
+export function selectBattleReadiness(state: RootState): BattleColumnReadiness[] {
+  const out: BattleColumnReadiness[] = [];
+  for (const col of state.agentComparison.columns) {
+    if (!col.agentId) continue;
+    const agent = state.agentDefinition.agents?.[col.agentId];
+    const messageCount =
+      state.messages.byConversationId[col.conversationId]?.orderedIds
+        ?.length ?? 0;
+    out.push({
+      columnId: col.columnId,
+      conversationId: col.conversationId,
+      agentId: col.agentId,
+      agentName: agent?.name ?? "Unconfigured",
+      hasMessage: shouldSubmitColumn(col, state),
+      phase: messageCount > 0 ? "continuation" : "first-turn",
+    });
+  }
+  return out;
+}
+
+/**
+ * Broadcast a follow-up text to every EMPTY configured column (one whose
+ * `shouldSubmitColumn` currently returns false). Columns that already have
+ * input are left alone — the user explicitly typed something there.
+ */
+export const broadcastFollowUpToEmpty = createAsyncThunk<
+  void,
+  { text: string },
+  ThunkApi
+>(
+  "agentComparison/broadcastFollowUpToEmpty",
+  async ({ text }, { dispatch, getState }) => {
+    const state = getState();
+    for (const col of state.agentComparison.columns) {
+      if (!col.agentId) continue;
+      if (shouldSubmitColumn(col, state)) continue;
+      dispatch(setUserInputText({ conversationId: col.conversationId, text }));
+    }
+  },
+);
 
 export const submitAllBattleColumns = createAsyncThunk<
   { launched: number; skipped: number; failed: number },
   void,
   ThunkApi
 >(
-  "agentBattle/submitAll",
+  "agentComparison/submitAll",
   async (_arg, { dispatch, getState }) => {
     dispatch(submitAllStarted());
     try {
@@ -308,10 +421,10 @@ export const submitAllBattleColumns = createAsyncThunk<
       const state = getState();
       // Snapshot the column list up front — submissions mutate per-instance
       // slices (autoclear etc.) so we don't want re-reads partway through.
-      const targets = state.agentBattle.columns.filter((col) =>
+      const targets = state.agentComparison.columns.filter((col) =>
         shouldSubmitColumn(col, state),
       );
-      const skipped = state.agentBattle.columns.length - targets.length;
+      const skipped = state.agentComparison.columns.length - targets.length;
 
       // Fire smartExecute on each column's existing instance — same path
       // the per-column Send button uses. Each smartExecute returns
@@ -334,16 +447,16 @@ export const submitAllBattleColumns = createAsyncThunk<
       // If a set is active, persist the entries now that everything was
       // launched (their cx_conversation rows exist server-side).
       const post = getState();
-      const activeSetId = post.agentBattle.activeSetId;
+      const activeSetId = post.agentComparison.activeSetId;
       if (activeSetId) {
-        const entries = buildPersistEntries(post.agentBattle.columns);
+        const entries = buildPersistEntries(post.agentComparison.columns, post);
         if (entries.length > 0) {
           try {
             await replaceEntries(activeSetId, entries);
           } catch (err) {
             // eslint-disable-next-line no-console
             console.error(
-              "[agentBattle] failed to persist comparison entries:",
+              "[agentComparison] failed to persist comparison entries:",
               err,
             );
           }
@@ -361,10 +474,16 @@ export const submitAllBattleColumns = createAsyncThunk<
 // Save / Load comparison sets
 // =============================================================================
 
-function buildPersistEntries(columns: BattleColumn[]): UpsertEntryInput[] {
+function buildPersistEntries(
+  columns: BattleColumn[],
+  state: RootState,
+): UpsertEntryInput[] {
   const out: UpsertEntryInput[] = [];
   columns.forEach((col, idx) => {
     if (!col.agentId) return;
+    const versionId =
+      state.conversations.byConversationId[col.conversationId]
+        ?.initialAgentVersionId ?? null;
     out.push({
       conversationId: col.conversationId,
       displayOrder: idx,
@@ -373,7 +492,7 @@ function buildPersistEntries(columns: BattleColumn[]): UpsertEntryInput[] {
         col.agentVersion === "current" || col.agentVersion == null
           ? null
           : col.agentVersion,
-      agentVersionSnapshotId: null,
+      agentVersionSnapshotId: versionId,
     });
   });
   return out;
@@ -384,14 +503,14 @@ export const saveBattleAs = createAsyncThunk<
   { name: string },
   ThunkApi
 >(
-  "agentBattle/saveAs",
+  "agentComparison/saveAs",
   async ({ name }, { dispatch, getState }) => {
     const state = getState();
     const userId = selectUserId(state);
     if (!userId) throw new Error("Not signed in");
 
     const set = await createComparisonSet({ name, userId });
-    const entries = buildPersistEntries(state.agentBattle.columns);
+    const entries = buildPersistEntries(state.agentComparison.columns, state);
     if (entries.length > 0) {
       await replaceEntries(set.id, entries);
     }
@@ -401,12 +520,12 @@ export const saveBattleAs = createAsyncThunk<
 );
 
 export const saveBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentBattle/save",
+  "agentComparison/save",
   async (_arg, { getState }) => {
     const state = getState();
-    const setId = state.agentBattle.activeSetId;
+    const setId = state.agentComparison.activeSetId;
     if (!setId) throw new Error("No active comparison set");
-    const entries = buildPersistEntries(state.agentBattle.columns);
+    const entries = buildPersistEntries(state.agentComparison.columns, state);
     await replaceEntries(setId, entries);
   },
 );
@@ -416,10 +535,10 @@ export const renameActiveBattleSet = createAsyncThunk<
   { name: string },
   ThunkApi
 >(
-  "agentBattle/rename",
+  "agentComparison/rename",
   async ({ name }, { dispatch, getState }) => {
     const state = getState();
-    const setId = state.agentBattle.activeSetId;
+    const setId = state.agentComparison.activeSetId;
     if (!setId) throw new Error("No active comparison set");
     await renameComparisonSet(setId, name);
     dispatch(setActiveSet({ id: setId, name }));
@@ -431,7 +550,7 @@ export const listMyBattleSets = createAsyncThunk<
   void,
   ThunkApi
 >(
-  "agentBattle/listMine",
+  "agentComparison/listMine",
   async (_arg, { getState }) => {
     const state = getState();
     const userId = selectUserId(state);
@@ -445,11 +564,11 @@ export const loadBattleSet = createAsyncThunk<
   { setId: string },
   ThunkApi
 >(
-  "agentBattle/loadSet",
+  "agentComparison/loadSet",
   async ({ setId }, { dispatch, getState }) => {
     // Wipe current columns + destroy their instances.
     const before = getState();
-    for (const col of before.agentBattle.columns) {
+    for (const col of before.agentComparison.columns) {
       if (col.agentId) dispatch(destroyInstance(col.conversationId));
     }
     dispatch(resetBattle());
@@ -480,6 +599,7 @@ export const loadBattleSet = createAsyncThunk<
           createManualInstance({
             agentId: entry.agent_id,
             conversationId: entry.conversation_id,
+            initialAgentVersionId: entry.agent_version_snapshot_id ?? null,
             apiEndpointMode: "agent",
             sourceFeature: BATTLE_SOURCE_FEATURE,
             showVariablePanel: true,
@@ -489,7 +609,7 @@ export const loadBattleSet = createAsyncThunk<
         // Already exists — that's fine.
         // eslint-disable-next-line no-console
         console.warn(
-          "[agentBattle] createManualInstance (load) returned:",
+          "[agentComparison] createManualInstance (load) returned:",
           err,
         );
         // Fall back to a direct slice insert so subsequent slice initialisers
@@ -515,7 +635,7 @@ export const loadBattleSet = createAsyncThunk<
         ).unwrap();
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn("[agentBattle] loadConversation (load) failed:", err);
+        console.warn("[agentComparison] loadConversation (load) failed:", err);
       }
 
       nextColumns.push({
@@ -558,10 +678,10 @@ export const reconcileMasterFieldMappings = createAsyncThunk<
   void,
   ThunkApi
 >(
-  "agentBattle/reconcileMasterMappings",
+  "agentComparison/reconcileMasterMappings",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
-    const battle = state.agentBattle;
+    const battle = state.agentComparison;
     const columns = battle.columns;
 
     // Resolve each column's variable definitions (by position).
@@ -593,7 +713,7 @@ export const reconcileMasterFieldMappings = createAsyncThunk<
     }
 
     // Re-read state so the newly-added field ids are visible.
-    const post = getState().agentBattle;
+    const post = getState().agentComparison;
     const customFields = post.masterFields.filter((f) => f.kind === "custom");
 
     // 1) Master field: ensure every configured column maps to User message
@@ -662,14 +782,14 @@ export const applyMasterFieldsToColumns = createAsyncThunk<
   void,
   ThunkApi
 >(
-  "agentBattle/applyMasterFields",
+  "agentComparison/applyMasterFields",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
     const columnsById = new Map(
-      state.agentBattle.columns.map((c) => [c.columnId, c]),
+      state.agentComparison.columns.map((c) => [c.columnId, c]),
     );
 
-    for (const field of state.agentBattle.masterFields) {
+    for (const field of state.agentComparison.masterFields) {
       for (const [columnId, target] of Object.entries(field.mappings)) {
         if (!target) continue;
         const col = columnsById.get(columnId);
@@ -695,11 +815,28 @@ export const applyMasterFieldsToColumns = createAsyncThunk<
   },
 );
 
-export const clearBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentBattle/clear",
+/**
+ * Expand every collapsed column. Used by the toolbar "collapsed badge"
+ * so the user can recover hidden columns in one click instead of finding
+ * each rotated slice and clicking individually.
+ */
+export const expandAllBattleColumns = createAsyncThunk<void, void, ThunkApi>(
+  "agentComparison/expandAll",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
-    for (const col of state.agentBattle.columns) {
+    for (const col of state.agentComparison.columns) {
+      if (col.collapsed) {
+        dispatch(setColumnCollapsed({ columnId: col.columnId, collapsed: false }));
+      }
+    }
+  },
+);
+
+export const clearBattle = createAsyncThunk<void, void, ThunkApi>(
+  "agentComparison/clear",
+  async (_arg, { dispatch, getState }) => {
+    const state = getState();
+    for (const col of state.agentComparison.columns) {
       if (col.agentId) dispatch(destroyInstance(col.conversationId));
     }
     dispatch(resetBattle());
@@ -707,32 +844,70 @@ export const clearBattle = createAsyncThunk<void, void, ThunkApi>(
 );
 
 /**
- * Reset every column's conversation (responses + inputs + context) while
- * keeping the column's agent + version selection intact. Used by the
- * "Reset conversations" toolbar action — gives the user a fresh slate
- * without forcing them to re-pick agents.
+ * Reset every column's conversation. The `preserveInputs` flag controls
+ * whether the user's current text + variable values are carried into the
+ * fresh conversation:
+ *   - false (default) → full wipe: responses + inputs + context all gone
+ *   - true → wipe responses + context only; restore text + variables
+ *
+ * Either way: agent + version selections + the column itself stay.
  */
 export const resetAllBattleConversations = createAsyncThunk<
   void,
-  void,
+  { preserveInputs?: boolean } | undefined,
   ThunkApi
 >(
-  "agentBattle/resetAllConversations",
-  async (_arg, { dispatch, getState }) => {
+  "agentComparison/resetAllConversations",
+  async (arg, { dispatch, getState }) => {
+    const preserveInputs = arg?.preserveInputs ?? false;
     const state = getState();
-    for (const col of state.agentBattle.columns) {
+
+    for (const col of state.agentComparison.columns) {
       if (!col.agentId) continue;
+
+      // Snapshot inputs BEFORE destroying so we can restore them.
+      const savedText = preserveInputs
+        ? state.instanceUserInput.byConversationId[col.conversationId]?.text ?? ""
+        : "";
+      const savedValues = preserveInputs
+        ? state.instanceVariableValues.byConversationId[col.conversationId]
+            ?.userValues ?? {}
+        : {};
+
+      // Snapshot the version pin so the fresh instance still targets the
+      // right version row.
+      const savedVersionId =
+        state.conversations.byConversationId[col.conversationId]
+          ?.initialAgentVersionId ?? null;
+
       dispatch(destroyInstance(col.conversationId));
       const conversationId = generateConversationId();
       await dispatch(
         createManualInstance({
           agentId: col.agentId,
           conversationId,
+          initialAgentVersionId: savedVersionId,
           apiEndpointMode: "agent",
           sourceFeature: BATTLE_SOURCE_FEATURE,
           showVariablePanel: true,
         }),
       ).unwrap();
+
+      // Restore the user-facing inputs into the fresh conversation.
+      if (preserveInputs) {
+        if (Object.keys(savedValues).length > 0) {
+          dispatch(
+            setUserVariableValues({
+              conversationId,
+              values: savedValues,
+            }),
+          );
+        }
+        if (savedText) {
+          dispatch(setUserInputText({ conversationId, text: savedText }));
+        }
+      }
+
       dispatch(replaceColumn({ columnId: col.columnId, next: { conversationId } }));
     }
   },

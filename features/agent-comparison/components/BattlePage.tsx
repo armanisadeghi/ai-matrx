@@ -48,10 +48,10 @@ import { SharedRunSettingsWindow } from "./SharedRunSettingsWindow";
 import { MasterInputWindow } from "./MasterInputWindow";
 import type { BattleColumn as BattleColumnType } from "../types";
 
-const SHARED_CONTEXT_WINDOW_ID = "agent-battle-shared-context";
-const SHARED_RUNS_WINDOW_ID = "agent-battle-shared-runs";
-const SHARED_RUN_SETTINGS_WINDOW_ID = "agent-battle-shared-run-settings";
-const MASTER_INPUT_WINDOW_ID = "agent-battle-master-input";
+const SHARED_CONTEXT_WINDOW_ID = "agent-comparison-shared-context";
+const SHARED_RUNS_WINDOW_ID = "agent-comparison-shared-runs";
+const SHARED_RUN_SETTINGS_WINDOW_ID = "agent-comparison-shared-run-settings";
+const MASTER_INPUT_WINDOW_ID = "agent-comparison-master-input";
 
 export function BattlePage() {
   const dispatch = useAppDispatch();
@@ -72,7 +72,7 @@ export function BattlePage() {
   useEffect(() => {
     if (columns.length !== 0) return;
     const state = store.getState();
-    if (state.agentBattle.activeSetId !== null) return;
+    if (state.agentComparison.activeSetId !== null) return;
     dispatch(addBattleColumn());
     dispatch(addBattleColumn());
   }, [columns.length, dispatch, store]);
@@ -164,7 +164,7 @@ function ColumnGroup({ columns }: { columns: BattleColumnType[] }) {
   return (
     <ResizablePanelGroup
       key={groupKey}
-      id="agent-battle-columns"
+      id="agent-comparison-columns"
       orientation="horizontal"
       className="h-full w-full"
     >
@@ -219,8 +219,16 @@ function ColumnSegment({
         defaultSize={defaultSize}
         minSize="8%"
         collapsible
-        collapsedSize="0%"
-        style={{ overflow: "hidden" }}
+        // Visible slice — never let the column vanish entirely. The
+        // BattleColumn body switches to its compact "rotated-name + expand"
+        // affordance when it detects this size.
+        collapsedSize="44px"
+        // Smoothly animate the flex-grow + flex-basis the library writes
+        // inline. ~220ms feels right at typical column counts (2-5).
+        style={{
+          overflow: "hidden",
+          transition: "flex-grow 220ms ease, flex-basis 220ms ease",
+        }}
       >
         <BattleColumn column={column} onToggleCollapse={handleToggleCollapse} />
       </ResizablePanel>

@@ -125,9 +125,24 @@ export function BattleColumnHeader({
   };
 
   const handleVersionChange = (opt: Option) => {
-    const version = opt.value === "current" ? "current" : parseInt(opt.value, 10);
+    if (opt.value === "current") {
+      dispatch(
+        setColumnVersion({ columnId: column.columnId, version: "current" }),
+      );
+      return;
+    }
+    const version = parseInt(opt.value, 10);
+    const historyRow = versionHistory.find((v) => v.version_number === version);
+    if (!historyRow) return;
     dispatch(
-      setColumnVersion({ columnId: column.columnId, version: version as "current" | number }),
+      setColumnVersion({
+        columnId: column.columnId,
+        version,
+        // The agx_version.id — load into the new instance's
+        // initialAgentVersionId so executeInstance routes to the frozen
+        // version row (POST /ai/agents/{versionId} with is_version:true).
+        versionId: historyRow.version_id,
+      }),
     );
   };
 
@@ -205,7 +220,12 @@ export function BattleColumnHeader({
         type="button"
         onClick={onToggleCollapse}
         className="p-1 text-muted-foreground hover:text-foreground shrink-0"
-        title={column.collapsed ? "Expand column" : "Collapse column"}
+        title={
+          column.collapsed
+            ? "Expand this column"
+            : "Collapse this column — it'll shrink to a thin slice you can click to bring back"
+        }
+        aria-label={column.collapsed ? "Expand column" : "Collapse column"}
       >
         {column.collapsed ? (
           <ChevronsLeftRight className="w-3.5 h-3.5" />

@@ -90,7 +90,7 @@ export type SourceFeature =
   /** AI Describe runs from the Image Studio (`/image-studio/convert`). */
   | "image-studio"
   /** Multi-agent side-by-side comparison page (`/agents/battle`). */
-  | "agent-battle";
+  | "agent-comparison";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

@@ -18,10 +18,12 @@
 
 import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, ChevronsLeftRight } from "lucide-react";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "@/features/agents/components/shared/OlderMessagesSentinel";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 import { BattleColumnHeader } from "./BattleColumnHeader";
 import { ResponseFeedbackBar } from "./ResponseFeedbackBar";
@@ -44,6 +46,14 @@ interface BattleColumnProps {
 }
 
 export function BattleColumn({ column, onToggleCollapse }: BattleColumnProps) {
+  // When collapsed, the resizable panel is forced down to 44px wide. The
+  // full UI doesn't fit (and would jitter on every animation tick anyway),
+  // so we swap to a vertical-rail "click to expand" affordance.
+  if (column.collapsed) {
+    return (
+      <CollapsedColumnView column={column} onExpand={onToggleCollapse} />
+    );
+  }
   return (
     <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
       <BattleColumnHeader
@@ -58,6 +68,54 @@ export function BattleColumn({ column, onToggleCollapse }: BattleColumnProps) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Compact view rendered inside a collapsed (44px) panel. Vertical agent
+ * name + a prominent expand button so the user never loses track of the
+ * fact that a column exists there.
+ */
+function CollapsedColumnView({
+  column,
+  onExpand,
+}: {
+  column: BattleColumnType;
+  onExpand: () => void;
+}) {
+  const agentName = useAppSelector((s) =>
+    column.agentId ? selectAgentName(s, column.agentId) : null,
+  );
+  return (
+    <button
+      type="button"
+      onClick={onExpand}
+      title={`Expand column${agentName ? ` (${agentName})` : ""}`}
+      className={cn(
+        "h-full w-full flex flex-col items-center justify-between py-2",
+        "border-x border-dashed border-primary/40 bg-primary/5",
+        "hover:bg-primary/10 hover:border-primary transition-colors",
+        "group",
+      )}
+    >
+      <div className="w-6 h-6 rounded-full flex items-center justify-center bg-primary text-primary-foreground shadow-sm group-hover:scale-110 transition-transform">
+        <ChevronsLeftRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+      </div>
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden py-2">
+        <span
+          className={cn(
+            "text-[11px] font-semibold uppercase tracking-wider truncate max-h-full",
+            "[writing-mode:vertical-rl] rotate-180",
+            agentName ? "text-primary" : "text-muted-foreground/60",
+          )}
+        >
+          {agentName ?? "Empty column"}
+        </span>
+      </div>
+      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+        collapsed
+      </span>
+    </button>
   );
 }
 

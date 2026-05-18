@@ -96,7 +96,7 @@ function useOtherColumnRanks(currentConversationId: string): Record<string, numb
     const out: Record<string, number> = {};
     for (const col of columns) {
       if (col.conversationId === currentConversationId) continue;
-      const rank = state.agentBattle.feedbackRanks?.[col.conversationId];
+      const rank = state.agentComparison.feedbackRanks?.[col.conversationId];
       if (rank != null) out[col.conversationId] = rank;
     }
     return out;
@@ -226,9 +226,9 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
         })
         .catch(() => {});
     };
-    window.addEventListener("agent-battle:feedback-saved", handler);
+    window.addEventListener("agent-comparison:feedback-saved", handler);
     return () =>
-      window.removeEventListener("agent-battle:feedback-saved", handler);
+      window.removeEventListener("agent-comparison:feedback-saved", handler);
   }, [userId, conversationId, requestId, dispatch]);
 
   const persist = async (next: {
@@ -267,7 +267,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
       // notification rather than carrying a live Redux mirror of every
       // sibling's feedback row.
       window.dispatchEvent(
-        new CustomEvent("agent-battle:feedback-saved", {
+        new CustomEvent("agent-comparison:feedback-saved", {
           detail: { conversationId, requestId, setId },
         }),
       );
@@ -353,7 +353,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
         if (clearedConvs.length > 0) {
           // Notify the siblings that they lost their rank so they refresh.
           window.dispatchEvent(
-            new CustomEvent("agent-battle:feedback-saved", {
+            new CustomEvent("agent-comparison:feedback-saved", {
               detail: { conversationId: clearedConvs[0], setId },
             }),
           );

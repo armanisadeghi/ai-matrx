@@ -69,13 +69,15 @@ function IosAppIcon({ item }: { item: CardProps }) {
                             ring-1 ring-white/10 shadow-md flex items-center justify-center
                             active:opacity-70 transition-opacity`}
       >
-        {React.cloneElement(
-          item.icon as React.ReactElement<{
-            size?: number;
-            className?: string;
-          }>,
-          { className: "text-white", size: 36 },
-        )}
+        {React.isValidElement(item.icon)
+          ? React.cloneElement(
+              item.icon as React.ReactElement<{
+                size?: number;
+                className?: string;
+              }>,
+              { className: "text-white", size: 36 },
+            )
+          : null}
       </div>
       {/* Label sits below the squircle */}
       <span className="text-[10px] font-medium text-center leading-tight text-foreground w-[68px] truncate">

@@ -14,7 +14,7 @@ const EMPTY_IDS: string[] = [];
 const EMPTY_FIELDS: MasterField[] = [];
 
 const selectBattleRoot = (state: RootState) =>
-  state.agentBattle ?? {
+  state.agentComparison ?? {
     columns: EMPTY_COLUMNS,
     activeSetId: null,
     activeSetName: null,
@@ -63,6 +63,12 @@ export const selectBattleConversationIds = createSelector(
 export const selectSubmittableBattleColumns = createSelector(
   [selectBattleColumns],
   (columns) => columns.filter((c) => c.agentId != null),
+);
+
+/** How many columns are currently collapsed — drives the toolbar badge. */
+export const selectCollapsedBattleColumnCount = createSelector(
+  [selectBattleColumns],
+  (columns) => columns.filter((c) => c.collapsed).length,
 );
 
 export const selectMasterFields = createSelector(

@@ -287,7 +287,7 @@ function fillFeedback(
   state: RootState,
   conversationId: string,
 ) {
-  const fb = state.agentBattle?.feedbackByConversation?.[conversationId];
+  const fb = state.agentComparison?.feedbackByConversation?.[conversationId];
   if (!fb) return;
   out.fbOverall = fb.overall ?? null;
   out.fbRank = fb.rank ?? null;
