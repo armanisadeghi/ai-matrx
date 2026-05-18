@@ -14,7 +14,7 @@ import {
   removeTaskFromSlice,
   type TaskRecord,
 } from "@/features/agent-context/redux/tasksSlice";
-import { setEntityScopes } from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
+import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { adjustProjectTaskCount } from "@/features/agent-context/redux/projectsSlice";
 import {
   setIsCreatingProject,
@@ -214,9 +214,9 @@ export const createTaskThunk = createAsyncThunk<
     if (input.scopeIds && input.scopeIds.length > 0) {
       await dispatch(
         setEntityScopes({
-          entity_type: "task",
-          entity_id: created.id,
-          scope_ids: input.scopeIds,
+          entityType: "task",
+          entityId: created.id,
+          scopeIds: input.scopeIds,
         }),
       );
     }

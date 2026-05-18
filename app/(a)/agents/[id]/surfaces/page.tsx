@@ -1,7 +1,9 @@
 import { getAgent } from "@/lib/agents/data";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
-import { AgentSurfacesPanel } from "@/features/agents/components/surfaces/AgentSurfacesPanel";
+import { readLayoutCookie } from "@/app/(ssr)/ssr/demos/resizables/_lib/readLayoutCookie";
+import {
+  SurfacesAdminShell,
+  SURFACES_ADMIN_COOKIE,
+} from "@/features/surfaces/admin/SurfacesAdminShell";
 
 export const metadata = {
   title: "Agent Surfaces | AI Matrx",
@@ -15,14 +17,16 @@ export default async function AgentSurfacesRoute({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const agent = await getAgent(id);
+  const [agent, defaultLayout] = await Promise.all([
+    getAgent(id),
+    readLayoutCookie(SURFACES_ADMIN_COOKIE),
+  ]);
 
   return (
-    <>
-      <PageHeader>
-        <AgentHeader agentId={id} agentName={agent.name} />
-      </PageHeader>
-      <AgentSurfacesPanel agent={agent} />
-    </>
+    <SurfacesAdminShell
+      agent={agent}
+      backHref={`/agents/${id}`}
+      defaultLayout={defaultLayout}
+    />
   );
 }

@@ -1,6 +1,6 @@
 ---
 name: surface-authoring
-description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration, baseline-vs-specific values, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the CI drift check. Use whenever the task touches `features/tool-registry/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
+description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration, baseline-vs-specific values, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the CI drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
 ---
 
 # Surface authoring
@@ -12,7 +12,7 @@ Adding a surface to the matrx Surface Values system is **code-first, DB-mirror**
 ```
 1. Make sure ui_client row exists       (matrx-user / matrx-admin / matrx-public / chrome-extension)
 2. Make sure ui_surface row exists      (name = "<client>/<local-slug>", FK → ui_client)
-3. Add the manifest file + register     (features/tool-registry/surfaces/manifests/...)
+3. Add the manifest file + register     (features/surfaces/manifests/...)
 4. Sync the DB                          (POST /api/admin/surfaces/sync-manifests)
 ```
 
@@ -34,10 +34,10 @@ If the user asks for a surface name that doesn't match `^[a-z][a-z0-9-]*\/[a-z0-
 
 These are short — read them when the task is non-trivial:
 
-- `features/tool-registry/surfaces/types.ts` — `SurfaceValue`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
-- `features/tool-registry/surfaces/manifests/_baseline.manifest.ts` — `BASELINE_VALUES`, `pickBaseline`, `mergeBaselineValues`
-- `features/tool-registry/surfaces/manifests/registry.ts` — central `ALL_MANIFESTS` list (where you wire your new manifest)
-- `features/tool-registry/surfaces/manifests/notes-editor.manifest.ts` — canonical full example (mix of baseline + specific + scope helper)
+- `features/surfaces/types.ts` — `SurfaceValue`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
+- `features/surfaces/manifests/_baseline.manifest.ts` — `BASELINE_VALUES`, `pickBaseline`, `mergeBaselineValues`
+- `features/surfaces/manifests/registry.ts` — central `ALL_MANIFESTS` list (where you wire your new manifest)
+- `features/surfaces/manifests/notes-editor.manifest.ts` — canonical full example (mix of baseline + specific + scope helper)
 
 ## The `SurfaceValue` shape — every field matters
 
@@ -122,7 +122,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
-} from "@/features/tool-registry/surfaces/types";
+} from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -177,8 +177,8 @@ You can also pass `[]` as the first arg of `mergeBaselineValues` (or just set `v
 
 ## Wiring it up
 
-1. **Create the file** at `features/tool-registry/surfaces/manifests/<local-slug>.manifest.ts`.
-2. **Register** in `features/tool-registry/surfaces/manifests/registry.ts`:
+1. **Create the file** at `features/surfaces/manifests/<local-slug>.manifest.ts`.
+2. **Register** in `features/surfaces/manifests/registry.ts`:
    ```ts
    import { <localSlug>Manifest } from "./<local-slug>.manifest";
    // ...
@@ -207,7 +207,7 @@ If you're adding a brand-new surface (not just adding values to an existing one)
   INSERT INTO public.ui_surface (name, client_name, description, sort_order, is_active)
   VALUES ('<client>/<local>', '<client>', '<1-sentence description>', 300, true);
   ```
-- If the surface is in the curated candidates list (`features/tool-registry/surfaces/data/surface-candidates.ts`), the admin "Add from candidates" dialog seeds it in one click.
+- If the surface is in the curated candidates list (`features/surfaces/data/surface-candidates.ts`), the admin "Add from candidates" dialog seeds it in one click.
 
 ### Seeding a new `ui_client` row
 
@@ -223,7 +223,7 @@ VALUES ('<new-client>', '<description>', 200, true);
 In the surface's launching code (button, context menu, AgentGenerator, etc.):
 
 ```ts
-import { create<LocalSlug>Scope } from "@/features/tool-registry/surfaces/manifests/<local-slug>.manifest";
+import { create<LocalSlug>Scope } from "@/features/surfaces/manifests/<local-slug>.manifest";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 
 dispatch(
@@ -272,19 +272,19 @@ The thunk at `features/agents/redux/execution-system/thunks/launch-agent-executi
 
 | What | Where |
 |---|---|
-| `SurfaceManifest` / `SurfaceValue` / `ValueMapping` types | `features/tool-registry/surfaces/types.ts` |
-| Baseline values + helpers | `features/tool-registry/surfaces/manifests/_baseline.manifest.ts` |
-| Central registry (`ALL_MANIFESTS`) | `features/tool-registry/surfaces/manifests/registry.ts` |
-| Per-manifest README | `features/tool-registry/surfaces/manifests/README.md` |
-| Sync service (diff + upsert) | `features/tool-registry/surfaces/services/manifest-sync.service.ts` |
+| `SurfaceManifest` / `SurfaceValue` / `ValueMapping` types | `features/surfaces/types.ts` |
+| Baseline values + helpers | `features/surfaces/manifests/_baseline.manifest.ts` |
+| Central registry (`ALL_MANIFESTS`) | `features/surfaces/manifests/registry.ts` |
+| Per-manifest README | `features/surfaces/manifests/README.md` |
+| Sync service (diff + upsert) | `features/surfaces/services/manifest-sync.service.ts` |
 | Sync API (admin-gated) | `app/api/admin/surfaces/sync-manifests/route.ts` |
 | Drift API (admin-gated) | `app/api/admin/surfaces/drift-report/route.ts` |
-| Runtime resolver | `features/tool-registry/surfaces/utils/value-mapping-resolver.ts` |
+| Runtime resolver | `features/surfaces/utils/value-mapping-resolver.ts` |
 | Launch thunk integration | `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` |
 | Admin UI | `app/(authenticated)/(admin-auth)/administration/surfaces/` |
-| Agent-side binding UI | `app/(a)/agents/[id]/surfaces/page.tsx` + `features/agents/components/surfaces/AgentSurfacesPanel.tsx` |
+| Agent-side binding UI | `app/(a)/agents/[id]/surfaces/page.tsx` + `features/surfaces/components/AgentSurfacesPanel.tsx` |
 | CI drift check | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |
-| Candidate catalog (for the admin "add" dialog) | `features/tool-registry/surfaces/data/surface-candidates.ts` |
+| Candidate catalog (for the admin "add" dialog) | `features/surfaces/data/surface-candidates.ts` |
 
 ## Pre-flight checklist
 
@@ -292,7 +292,7 @@ Before you say a surface is added:
 
 - [ ] `ui_client` row exists for the client
 - [ ] `ui_surface` row exists with the exact `<client>/<local>` name
-- [ ] `<local-slug>.manifest.ts` created in `features/tool-registry/surfaces/manifests/`
+- [ ] `<local-slug>.manifest.ts` created in `features/surfaces/manifests/`
 - [ ] Manifest imported + included in `ALL_MANIFESTS` in `registry.ts`
 - [ ] Every `SurfaceValue` has: a snake_case `name`, a 2-4 word `label`, a 1-2 sentence `description` covering the empty case, a correct `valueType`, an honest `alwaysAvailable`, and a sensible `typicalCharCount`
 - [ ] `createXxxScope` helper exists and its required (no `?`) keys match every `alwaysAvailable: true` value

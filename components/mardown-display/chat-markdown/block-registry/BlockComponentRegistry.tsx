@@ -114,8 +114,10 @@ const MarkdownPreviewBlock = lazy(
 const AudioOutputBlock = lazy(
   () => import("../../blocks/audio/AudioOutputBlock"),
 );
-const ImageOutputBlock = lazy(
-  () => import("../../blocks/images/ImageOutputBlock"),
+const UnifiedImageBlockRenderer = lazy(() =>
+  import("@/features/files/blocks/image/UnifiedImageBlockRenderer").then(
+    (m) => ({ default: m.UnifiedImageBlockRenderer }),
+  ),
 );
 const VideoOutputBlock = lazy(
   () => import("../../blocks/videos/VideoOutputBlock"),
@@ -434,7 +436,7 @@ export const BlockComponents = {
   ),
   ImageOutputBlock: (props: any) => (
     <LazyBlockWrapper>
-      <ImageOutputBlock {...props} />
+      <UnifiedImageBlockRenderer {...props} />
     </LazyBlockWrapper>
   ),
   VideoOutputBlock: (props: any) => (

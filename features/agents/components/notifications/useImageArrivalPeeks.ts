@@ -22,6 +22,8 @@ import { useCallback, useEffect, useState } from "react";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
+import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
+import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,8 +32,8 @@ export interface PeekEntry {
   peekId: string;
   blockId: string;
   requestId: string;
-  url: string;
-  mimeType: string;
+  /** Canonical image block — every renderer in the app speaks this shape. */
+  block: UnifiedImageBlock;
 }
 
 // ─── Module-level announced set ────────────────────────────────────────────────
@@ -44,7 +46,8 @@ const announcedSet = new Set<string>();
 
 /**
  * Returns a flat, ordered list of every `image_output` render block across
- * all active requests.  Memoized — only recomputes when `byRequestId` changes.
+ * all active requests, each carrying a canonical `UnifiedImageBlock`.
+ * Memoized — only recomputes when `byRequestId` changes.
  */
 const selectAllImageOutputBlocks = createSelector(
   (state: RootState) => state.activeRequests.byRequestId,
@@ -55,17 +58,17 @@ const selectAllImageOutputBlocks = createSelector(
       for (const blockId of req.renderBlockOrder) {
         const block = req.renderBlocks[blockId];
         if (block?.type !== "image_output") continue;
-        const data = block.data as
-          | { url?: string; mime_type?: string }
-          | undefined;
-        const url = data?.url;
-        if (!url) continue;
+        // process-stream.ts converts every image data event to a
+        // UnifiedImageBlock before upserting, so block.data IS the
+        // canonical shape. Prove it with the guard rather than force-cast
+        // from the loose Redux storage shape — legacy payloads (no adapter
+        // run) silently fail the guard and are skipped.
+        if (!isUnifiedImageBlock(block.data)) continue;
         results.push({
           peekId: `${requestId}:${blockId}`,
           blockId,
           requestId,
-          url,
-          mimeType: data?.mime_type ?? "image/jpeg",
+          block: block.data,
         });
       }
     }

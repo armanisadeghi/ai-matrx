@@ -19,14 +19,14 @@ import type {
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import {
   resolveValueMappings,
   type PendingPrompt,
-} from "@/features/tool-registry/surfaces/utils/value-mapping-resolver";
+} from "@/features/surfaces/utils/value-mapping-resolver";
 
 export type { ApplicationScope } from "@/features/agents/types/scope.types";
-export type { PendingPrompt } from "@/features/tool-registry/surfaces/utils/value-mapping-resolver";
+export type { PendingPrompt } from "@/features/surfaces/utils/value-mapping-resolver";
 
 export interface ScopeMappingResult {
   variableValues: Record<string, unknown>;

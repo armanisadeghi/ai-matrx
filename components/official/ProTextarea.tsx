@@ -348,6 +348,12 @@ export const ProTextarea = React.forwardRef<
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Mirror the browser's "hide cursor while typing" behavior: any
+        // keypress hides the hover controls until the mouse moves again.
+        // Without this, the icons remain visible even though the OS cursor
+        // has vanished, which feels noisy mid-thought.
+        if (isHovered) setIsHovered(false);
+
         onKeyDown?.(e);
         if (e.defaultPrevented || !onSubmit || e.key !== "Enter") return;
 
@@ -362,15 +368,23 @@ export const ProTextarea = React.forwardRef<
           triggerSubmit();
         }
       },
-      [onKeyDown, onSubmit, cmdEnterEnabled, submitOnEnter, triggerSubmit],
+      [
+        isHovered,
+        onKeyDown,
+        onSubmit,
+        cmdEnterEnabled,
+        submitOnEnter,
+        triggerSubmit,
+      ],
     );
 
-    // Icons appear ONLY on mouse hover (or when recording/transcribing, so the
-    // user can see/stop an in-flight session). Focus does NOT reveal the
-    // controls — keeping the textarea visually clean while the user is typing
-    // and preventing the layout from feeling crowded mid-thought. Wrapper has
-    // static padding (driven by `showTopRightControls`/`onSubmit` props that
-    // don't change on hover), so no layout shift can occur here.
+    // Icons appear ONLY on active mouse presence (or when recording/
+    // transcribing, so the user can see/stop an in-flight session). Focus
+    // does NOT reveal the controls. `isHovered` is cleared on keydown and
+    // re-armed on mousemove — matching how the OS cursor auto-hides while
+    // typing and reappears on motion. Wrapper has static padding (driven by
+    // `showTopRightControls`/`onSubmit` props that don't change on hover),
+    // so no layout shift can occur here.
     const showControls =
       (isHovered || isRecording || isTranscribing) && !disabled;
     const isVoiceDisabled =
@@ -385,6 +399,11 @@ export const ProTextarea = React.forwardRef<
       <div
         className={cn("relative group", wrapperClassName)}
         onMouseEnter={() => setIsHovered(true)}
+        onMouseMove={() => {
+          // Re-arm controls on motion. React bails on identity-equal state,
+          // so this is effectively free when already hovered.
+          if (!isHovered) setIsHovered(true);
+        }}
         onMouseLeave={() => setIsHovered(false)}
       >
         <textarea

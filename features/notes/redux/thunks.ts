@@ -71,7 +71,9 @@ export const fetchNotesList = createAsyncThunk<void, void>(
 
     const { data, error } = await supabase
       .from("notes")
-      .select("id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version")
+      .select(
+        "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version",
+      )
       .eq("user_id", userId)
       .eq("is_deleted", false)
       .order("updated_at", { ascending: false });
@@ -113,6 +115,50 @@ export const fetchNoteContent = createAsyncThunk<Note | null, string>(
     const existing = state.notes?.notes?.[noteId];
     if (existing?._fetchStatus === "full") {
       return null; // Already have it — no network call
+    }
+
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .eq("id", noteId)
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error("Note not found");
+
+    dispatch(
+      upsertNoteFromServer({
+        note: data,
+        fetchStatus: "full",
+      }),
+    );
+
+    return data as Note;
+  },
+);
+
+// ---------------------------------------------------------------------------
+// 2b. refreshNoteContent
+// ---------------------------------------------------------------------------
+
+/**
+ * Force-refetch the full note from the server, bypassing the cache guard in
+ * fetchNoteContent. Used by the explicit "Refresh" action so users can pull
+ * the latest server state for currently-open tabs (e.g. after a sibling
+ * device edited the note).
+ *
+ * Skips notes that have unsaved local changes to avoid clobbering the user's
+ * work — the user must save or discard before the server copy overwrites them.
+ */
+export const refreshNoteContent = createAsyncThunk<Note | null, string>(
+  "notes/refreshNoteContent",
+  async (noteId, { dispatch, getState }) => {
+    const state = getState() as RootState;
+    const existing = state.notes?.notes?.[noteId] as NoteRecord | undefined;
+
+    // Guard: never overwrite dirty local state with a forced refresh.
+    if (existing?._dirty) {
+      return null;
     }
 
     const { data, error } = await supabase
@@ -272,51 +318,49 @@ async function resolveFolderId(
 export const createNewNote = createAsyncThunk<
   Note,
   CreateNoteInput | undefined
->(
-  "notes/createNewNote",
-  async (input = {}, { dispatch, getState }) => {
-    const userId = getUserId(getState);
-    const folderName = input.folder_name ?? "Draft";
+>("notes/createNewNote", async (input = {}, { dispatch, getState }) => {
+  const userId = getUserId(getState);
+  const folderName = input.folder_name ?? "Draft";
 
-    // Resolve folder_id from note_folders table
-    const folderId = input.folder_id ?? await resolveFolderId(userId, folderName);
+  // Resolve folder_id from note_folders table
+  const folderId =
+    input.folder_id ?? (await resolveFolderId(userId, folderName));
 
-    const { data, error } = await supabase
-      .from("notes")
-      .insert({
-        user_id: userId,
-        label: input.label ?? "New Note",
-        content: input.content ?? "",
-        folder_name: folderName,
-        folder_id: folderId,
-        tags: input.tags ?? [],
-        metadata: {},
-        position: 0,
-        ...(input.organization_id && { organization_id: input.organization_id }),
-        ...(input.project_id && { project_id: input.project_id }),
-        ...(input.task_id && { task_id: input.task_id }),
-      })
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from("notes")
+    .insert({
+      user_id: userId,
+      label: input.label ?? "New Note",
+      content: input.content ?? "",
+      folder_name: folderName,
+      folder_id: folderId,
+      tags: input.tags ?? [],
+      metadata: {},
+      position: 0,
+      ...(input.organization_id && { organization_id: input.organization_id }),
+      ...(input.project_id && { project_id: input.project_id }),
+      ...(input.task_id && { task_id: input.task_id }),
+    })
+    .select()
+    .single();
 
-    if (error) throw error;
-    if (!data) throw new Error("Failed to create note");
+  if (error) throw error;
+  if (!data) throw new Error("Failed to create note");
 
-    const note = data as Note;
+  const note = data as Note;
 
-    dispatch(
-      upsertNoteFromServer({
-        note,
-        fetchStatus: "full",
-      }),
-    );
+  dispatch(
+    upsertNoteFromServer({
+      note,
+      fetchStatus: "full",
+    }),
+  );
 
-    dispatch(addTab(note.id));
-    dispatch(setActiveNote(note.id));
+  dispatch(addTab(note.id));
+  dispatch(setActiveNote(note.id));
 
-    return note;
-  },
-);
+  return note;
+});
 
 // ---------------------------------------------------------------------------
 // 5. deleteNote
@@ -404,10 +448,7 @@ export const copyNote = createAsyncThunk<Note, string>(
  * Find an existing empty "New Note" in the given folder, or create one.
  * Returns the note and sets it active.
  */
-export const findOrCreateEmptyNote = createAsyncThunk<
-  Note,
-  string | undefined
->(
+export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
   "notes/findOrCreateEmptyNote",
   async (folder = "Draft", { dispatch, getState }) => {
     const state = getState() as RootState;
@@ -487,21 +528,22 @@ export const moveNoteToFolder = createAsyncThunk<
  */
 export const saveNoteField = createAsyncThunk<
   void,
-  { noteId: string; field: "content" | "label" | "folder_name" | "tags"; value: Note["content"] | Note["label"] | Note["folder_name"] | Note["tags"] }
->(
-  "notes/saveNoteField",
-  async ({ noteId, field, value }, { dispatch }) => {
-    dispatch(
-      setNoteField({
-        id: noteId,
-        field,
-        value,
-      }),
-    );
+  {
+    noteId: string;
+    field: "content" | "label" | "folder_name" | "tags";
+    value: Note["content"] | Note["label"] | Note["folder_name"] | Note["tags"];
+  }
+>("notes/saveNoteField", async ({ noteId, field, value }, { dispatch }) => {
+  dispatch(
+    setNoteField({
+      id: noteId,
+      field,
+      value,
+    }),
+  );
 
-    await dispatch(saveNote(noteId)).unwrap();
-  },
-);
+  await dispatch(saveNote(noteId)).unwrap();
+});
 
 // ---------------------------------------------------------------------------
 // 10. restoreNote
@@ -542,7 +584,9 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
 
     const { data, error } = await supabase
       .from("notes")
-      .select("id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, project_id, task_id, is_public, is_deleted, version")
+      .select(
+        "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, project_id, task_id, is_public, is_deleted, version",
+      )
       .eq("user_id", userId)
       .eq("is_deleted", true)
       .order("updated_at", { ascending: false });
@@ -573,11 +617,13 @@ export const fetchAllNoteScopes = createAsyncThunk<NoteScopeAssignment[], void>(
   async () => {
     const { data, error } = await supabase
       .from("ctx_scope_assignments")
-      .select(`
+      .select(
+        `
         entity_id,
         scope_id,
         scope:ctx_scopes!inner(name, scope_type:ctx_scope_types!inner(label_singular))
-      `)
+      `,
+      )
       .eq("entity_type", "note");
 
     if (error) throw error;

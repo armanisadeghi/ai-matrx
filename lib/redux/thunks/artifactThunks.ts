@@ -22,7 +22,7 @@ import {
   selectOrganizationId,
   selectProjectId,
   selectTaskId,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import type {
   CxArtifactRecord,
   CxArtifactRow,
@@ -89,8 +89,7 @@ export const registerArtifactThunk = createAsyncThunk<
     payload.thumbnailUrl !== undefined;
   if (!wantsUpdate) {
     const artifactsById = state.artifacts.artifacts;
-    const idsForMessage =
-      state.artifacts.byMessageId[payload.messageId] ?? [];
+    const idsForMessage = state.artifacts.byMessageId[payload.messageId] ?? [];
     const existing = idsForMessage
       .map((id) => artifactsById[id])
       .find(

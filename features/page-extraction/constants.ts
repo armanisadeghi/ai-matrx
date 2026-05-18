@@ -13,7 +13,7 @@ import type {
  * Surface name for this feature in the Surface Values system. Matches the
  * `matrx-user/content-extractor` row in `public.ui_surface` and the
  * `contentExtractorManifest` in
- * `features/tool-registry/surfaces/manifests/content-extractor.manifest.ts`.
+ * `features/surfaces/manifests/content-extractor.manifest.ts`.
  *
  * Used by the variable-mapping editor to pull the canonical list of values
  * an agent can be wired to. Also handed to `launchAgentExecution` as

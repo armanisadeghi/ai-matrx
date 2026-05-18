@@ -58,7 +58,7 @@ import { Button } from "@/components/ui/button";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
-import { uploadFile } from "@/features/files/api/files";
+import { fileHandler } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -416,12 +416,15 @@ async function saveAsCropDerivative(params: {
   });
   let fileId: string, storageUri: string;
   try {
-    const { data } = await uploadFile({
-      file,
-      filePath: `derivatives/${doc.id}/${result.filename}`,
-    });
-    fileId = data.file_id;
-    storageUri = data.storage_uri;
+    const normalized = await fileHandler.upload(
+      { kind: "file", file },
+      { folderPath: `derivatives/${doc.id}` },
+    );
+    if (!normalized.fileId || !normalized.fileUri) {
+      throw new Error("Upload returned no fileId/fileUri");
+    }
+    fileId = normalized.fileId;
+    storageUri = normalized.fileUri;
   } catch (err) {
     return {
       docId: null,
@@ -467,12 +470,15 @@ async function saveAsReorderDerivative(params: {
   });
   let fileId: string, storageUri: string;
   try {
-    const { data } = await uploadFile({
-      file,
-      filePath: `derivatives/${doc.id}/${result.filename}`,
-    });
-    fileId = data.file_id;
-    storageUri = data.storage_uri;
+    const normalized = await fileHandler.upload(
+      { kind: "file", file },
+      { folderPath: `derivatives/${doc.id}` },
+    );
+    if (!normalized.fileId || !normalized.fileUri) {
+      throw new Error("Upload returned no fileId/fileUri");
+    }
+    fileId = normalized.fileId;
+    storageUri = normalized.fileUri;
   } catch (err) {
     return {
       docId: null,

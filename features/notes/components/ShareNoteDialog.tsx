@@ -39,7 +39,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectOrganizationName,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 
 interface ShareNoteDialogProps {
   open: boolean;

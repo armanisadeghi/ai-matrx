@@ -75,6 +75,24 @@ Things that look wrong but are load-bearing. Things that break silently. Example
 
 ---
 
+## Doctrine compliance
+
+> Required by [PRINCIPLES.md](../../PRINCIPLES.md). The artifact is disposable; the platform is the product.
+
+**Primitives reused** — every type, component, slice, hook, and service this feature *consumes* from elsewhere. One bullet each.
+- Types: `<list canonical types imported from types/ or other features>`
+- Components: `<list components/official/, components/ui/, or feature-exported components used>`
+- Redux slices / selectors: `<existing slices this feature reads from or dispatches to>`
+- Hooks: `<existing hooks composed in>`
+
+**Primitives introduced** — every new type, component, slice, or hook this feature *added* to the platform. Each entry must justify why an existing primitive could not be extended.
+- `<NewType>` (`<path>`) — Why a new type: <one-line justification>. Considered extending: `<existing-candidate>`. Rejected because: <one-line>.
+- `<NewComponent>` (`<path>`) — Why a new component: <one-line>. Considered extending: `<existing-candidate>`. Rejected because: <one-line>.
+
+If this list is empty: good. If it has more than two entries: re-read [PRINCIPLES.md](../../PRINCIPLES.md) before merging.
+
+---
+
 ## Current work / migration state
 
 If actively being rebuilt, what's the target and what's the current phase? Point at migration docs by path.

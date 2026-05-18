@@ -215,7 +215,8 @@ const observabilitySlice = createSlice({
     upsertUserRequest(state, action: PayloadAction<CxUserRequestRecord>) {
       const record = action.payload;
       state.userRequests[record.id] = record;
-      const list = state.userRequestsByConversationId[record.conversationId] ?? [];
+      const list =
+        state.userRequestsByConversationId[record.conversationId] ?? [];
       if (!list.includes(record.id)) {
         list.push(record.id);
         state.userRequestsByConversationId[record.conversationId] = list;
@@ -224,7 +225,10 @@ const observabilitySlice = createSlice({
 
     patchUserRequest(
       state,
-      action: PayloadAction<{ id: string; patch: Partial<CxUserRequestRecord> }>,
+      action: PayloadAction<{
+        id: string;
+        patch: Partial<CxUserRequestRecord>;
+      }>,
     ) {
       const { id, patch } = action.payload;
       const existing = state.userRequests[id];
@@ -317,6 +321,40 @@ const observabilitySlice = createSlice({
     // ── Bulk hydration ────────────────────────────────────────────────────────
 
     /**
+     * Additive merge of tool-call rows. Used by `loadOlderMessages` when
+     * paging older conversation history in: the bundle's `tool_calls` are
+     * joined to the older page's `message_id`s and must be merged WITHOUT
+     * touching any tool_call already in state (which may be live-streaming).
+     *
+     * Rules:
+     *   - Skip every id already present in `byId` — never overwrite.
+     *   - Populate `toolCallsByCallId` for new ids only.
+     *   - Append to `toolCallsByUserRequestId` only when a userRequestId is
+     *     present and the id isn't already in that list.
+     */
+    mergeToolCalls(
+      state,
+      action: PayloadAction<{ toolCalls: CxToolCallRecord[] }>,
+    ) {
+      const { toolCalls } = action.payload;
+      for (const record of toolCalls) {
+        if (state.toolCalls[record.id]) continue;
+        state.toolCalls[record.id] = record;
+        if (record.callId && !state.toolCallsByCallId[record.callId]) {
+          state.toolCallsByCallId[record.callId] = record.id;
+        }
+        if (record.userRequestId) {
+          const list =
+            state.toolCallsByUserRequestId[record.userRequestId] ?? [];
+          if (!list.includes(record.id)) {
+            list.push(record.id);
+            state.toolCallsByUserRequestId[record.userRequestId] = list;
+          }
+        }
+      }
+    },
+
+    /**
      * Populate observability from `get_cx_conversation_bundle` RPC result.
      * Used by `loadConversation` (Phase 2).
      */
@@ -329,7 +367,8 @@ const observabilitySlice = createSlice({
         toolCalls: CxToolCallRecord[];
       }>,
     ) {
-      const { conversationId, userRequests, requests, toolCalls } = action.payload;
+      const { conversationId, userRequests, requests, toolCalls } =
+        action.payload;
 
       // user requests
       const userRequestIds: string[] = [];
@@ -397,6 +436,7 @@ export const {
   setTimeline,
   appendTimelineEntry,
   upsertReservation,
+  mergeToolCalls,
   hydrateObservability,
   clearForConversation,
 } = observabilitySlice.actions;

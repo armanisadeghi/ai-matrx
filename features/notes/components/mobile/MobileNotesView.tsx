@@ -1,39 +1,65 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
-import dynamic from 'next/dynamic';
-import { ChevronLeft, FileText, Eye, Save, Loader2, Check, FolderOpen, Layers, ChevronDown, Network } from 'lucide-react';
-import { useNotesRedux } from '../../hooks/useNotesRedux';
-import { useAppSelector } from '@/lib/redux/hooks';
-import { selectOrganizationId, selectOrganizationName } from '@/features/agent-context/redux/appContextSlice';
-import { PageSpecificHeader } from '@/components/layout/new-layout/PageSpecificHeader';
-import { BottomSheet, BottomSheetHeader, BottomSheetBody } from '@/components/official/bottom-sheet/BottomSheet';
-import { cn } from '@/lib/utils';
-import MobileNotesList from './MobileNotesList';
-import MobileNoteEditor, { type MobileEditorMode } from './MobileNoteEditor';
-import { DEFAULT_FILTER_STATE, type NotesFilterState } from './NotesFilterSheet';
-import type { Note } from '@/features/notes/types';
+import React, { useState, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
+import {
+  ChevronLeft,
+  FileText,
+  Eye,
+  Save,
+  Loader2,
+  Check,
+  FolderOpen,
+  Layers,
+  ChevronDown,
+  Network,
+} from "lucide-react";
+import { useNotesRedux } from "../../hooks/useNotesRedux";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectOrganizationId,
+  selectOrganizationName,
+} from "@/lib/redux/slices/appContextSlice";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import {
+  BottomSheet,
+  BottomSheetHeader,
+  BottomSheetBody,
+} from "@/components/official/bottom-sheet/BottomSheet";
+import { cn } from "@/lib/utils";
+import MobileNotesList from "./MobileNotesList";
+import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
+import {
+  DEFAULT_FILTER_STATE,
+  type NotesFilterState,
+} from "./NotesFilterSheet";
+import type { Note } from "@/features/notes/types";
 
 const DirectContextSelection = dynamic(
-  () => import('@/features/shell/components/sidebar/DirectContextSelection'),
+  () => import("@/features/shell/components/sidebar/DirectContextSelection"),
   { ssr: false },
 );
 
-type MobileView = 'list' | 'editor';
+type MobileView = "list" | "editor";
 
-const VIEW_MODES: { mode: MobileEditorMode; icon: React.ReactNode; label: string }[] = [
-  { mode: 'plain',   icon: <FileText size={13} />,    label: 'Text' },
-  { mode: 'preview', icon: <Eye size={13} />,          label: 'Preview' },
+const VIEW_MODES: {
+  mode: MobileEditorMode;
+  icon: React.ReactNode;
+  label: string;
+}[] = [
+  { mode: "plain", icon: <FileText size={13} />, label: "Text" },
+  { mode: "preview", icon: <Eye size={13} />, label: "Preview" },
 ];
 
 export default function MobileNotesView() {
   const { notes } = useNotesRedux();
 
-  const [currentView, setCurrentView] = useState<MobileView>('list');
+  const [currentView, setCurrentView] = useState<MobileView>("list");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [editorMode, setEditorMode] = useState<MobileEditorMode>('plain');
+  const [editorMode, setEditorMode] = useState<MobileEditorMode>("plain");
   // Shared filter state — owned here so header dropdown and list stay in sync
-  const [filters, setFilters] = useState<NotesFilterState>(DEFAULT_FILTER_STATE);
+  const [filters, setFilters] =
+    useState<NotesFilterState>(DEFAULT_FILTER_STATE);
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const [contextSheetOpen, setContextSheetOpen] = useState(false);
   const activeOrgName = useAppSelector(selectOrganizationName);
@@ -47,23 +73,23 @@ export default function MobileNotesView() {
   // Unique folder names derived from all notes
   const folderNames = useMemo(() => {
     const seen = new Set<string>();
-    notes.forEach(n => seen.add(n.folder_name || 'Draft'));
+    notes.forEach((n) => seen.add(n.folder_name || "Draft"));
     return Array.from(seen).sort();
   }, [notes]);
 
   const selectedNote = selectedNoteId
-    ? notes.find(n => n.id === selectedNoteId) ?? null
+    ? (notes.find((n) => n.id === selectedNoteId) ?? null)
     : null;
 
   const handleNoteSelect = (note: Note) => {
     setSelectedNoteId(note.id);
-    setCurrentView('editor');
+    setCurrentView("editor");
     setIsDirty(false);
     setJustSaved(false);
   };
 
   const handleBack = () => {
-    setCurrentView('list');
+    setCurrentView("list");
     setSelectedNoteId(null);
     setIsDirty(false);
   };
@@ -85,7 +111,7 @@ export default function MobileNotesView() {
 
   // Poll editor dirty state every 500ms when in editor view
   React.useEffect(() => {
-    if (currentView !== 'editor') return;
+    if (currentView !== "editor") return;
     const id = setInterval(() => {
       const editorState = (window as any).__mobileNoteEditorState;
       if (editorState) setIsDirty(editorState.isDirty ?? false);
@@ -96,28 +122,35 @@ export default function MobileNotesView() {
   return (
     <>
       {/* ── List header: "Notes" title + folder quick-filter dropdown ── */}
-      {currentView === 'list' && (
+      {currentView === "list" && (
         <PageSpecificHeader>
           <div className="flex items-center gap-2 h-full w-full">
             {/* Folder quick-filter pill */}
             <div className="relative">
               <button
-                onClick={() => setFolderDropdownOpen(v => !v)}
+                onClick={() => setFolderDropdownOpen((v) => !v)}
                 className={cn(
-                  'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors',
-                  filters.folder !== 'all'
-                    ? 'bg-primary/15 text-primary'
-                    : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted',
+                  "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
+                  filters.folder !== "all"
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
               >
-                {filters.folder === 'all'
-                  ? <Layers size={12} />
-                  : <FolderOpen size={12} />
-                }
+                {filters.folder === "all" ? (
+                  <Layers size={12} />
+                ) : (
+                  <FolderOpen size={12} />
+                )}
                 <span className="max-w-[90px] truncate">
-                  {filters.folder === 'all' ? 'All' : filters.folder}
+                  {filters.folder === "all" ? "All" : filters.folder}
                 </span>
-                <ChevronDown size={11} className={cn('transition-transform', folderDropdownOpen && 'rotate-180')} />
+                <ChevronDown
+                  size={11}
+                  className={cn(
+                    "transition-transform",
+                    folderDropdownOpen && "rotate-180",
+                  )}
+                />
               </button>
 
               {folderDropdownOpen && (
@@ -132,19 +165,24 @@ export default function MobileNotesView() {
                     {/* All Notes */}
                     <button
                       onClick={() => {
-                        setFilters(f => ({ ...f, folder: 'all' }));
+                        setFilters((f) => ({ ...f, folder: "all" }));
                         setFolderDropdownOpen(false);
                       }}
                       className={cn(
-                        'flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors',
-                        filters.folder === 'all'
-                          ? 'text-primary bg-primary/8'
-                          : 'text-foreground hover:bg-muted/60',
+                        "flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors",
+                        filters.folder === "all"
+                          ? "text-primary bg-primary/8"
+                          : "text-foreground hover:bg-muted/60",
                       )}
                     >
-                      <Layers size={14} className="flex-shrink-0 text-muted-foreground" />
-                      <span className="flex-1 text-left truncate">All Notes</span>
-                      {filters.folder === 'all' && (
+                      <Layers
+                        size={14}
+                        className="flex-shrink-0 text-muted-foreground"
+                      />
+                      <span className="flex-1 text-left truncate">
+                        All Notes
+                      </span>
+                      {filters.folder === "all" && (
                         <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                       )}
                     </button>
@@ -153,22 +191,27 @@ export default function MobileNotesView() {
                       <div className="h-px bg-border/40 mx-2 my-0.5" />
                     )}
 
-                    {folderNames.map(folder => (
+                    {folderNames.map((folder) => (
                       <button
                         key={folder}
                         onClick={() => {
-                          setFilters(f => ({ ...f, folder }));
+                          setFilters((f) => ({ ...f, folder }));
                           setFolderDropdownOpen(false);
                         }}
                         className={cn(
-                          'flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors',
+                          "flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors",
                           filters.folder === folder
-                            ? 'text-primary bg-primary/8'
-                            : 'text-foreground hover:bg-muted/60',
+                            ? "text-primary bg-primary/8"
+                            : "text-foreground hover:bg-muted/60",
                         )}
                       >
-                        <FolderOpen size={14} className="flex-shrink-0 text-muted-foreground" />
-                        <span className="flex-1 text-left truncate">{folder}</span>
+                        <FolderOpen
+                          size={14}
+                          className="flex-shrink-0 text-muted-foreground"
+                        />
+                        <span className="flex-1 text-left truncate">
+                          {folder}
+                        </span>
                         {filters.folder === folder && (
                           <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                         )}
@@ -183,15 +226,15 @@ export default function MobileNotesView() {
             <button
               onClick={() => setContextSheetOpen(true)}
               className={cn(
-                'relative flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors',
+                "relative flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
                 hasContextFilter
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted',
+                  ? "bg-primary/15 text-primary"
+                  : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
             >
               <Network size={12} />
               <span className="max-w-[70px] truncate">
-                {activeOrgName ?? 'Context'}
+                {activeOrgName ?? "Context"}
               </span>
               {hasContextFilter && (
                 <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
@@ -216,7 +259,7 @@ export default function MobileNotesView() {
       </BottomSheet>
 
       {/* ── Editor header: back + title + view toggle + save ── */}
-      {currentView === 'editor' && selectedNote && (
+      {currentView === "editor" && selectedNote && (
         <PageSpecificHeader>
           <div className="flex items-center gap-1.5 h-full w-full">
             {/* Back */}
@@ -230,7 +273,7 @@ export default function MobileNotesView() {
 
             {/* Title — truncated, small */}
             <span className="text-xs font-medium text-muted-foreground truncate min-w-0 flex-1 max-w-[100px]">
-              {selectedNote.label || 'Untitled Note'}
+              {selectedNote.label || "Untitled Note"}
             </span>
 
             {/* View mode toggle — 3 pill buttons */}
@@ -241,10 +284,10 @@ export default function MobileNotesView() {
                   onClick={() => setEditorMode(mode)}
                   title={label}
                   className={cn(
-                    'flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all',
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
                     editorMode === mode
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground',
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {icon}
@@ -255,8 +298,15 @@ export default function MobileNotesView() {
 
             {/* Save state */}
             <div className="flex-shrink-0 flex items-center relative">
-              {isSaving && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-              {justSaved && !isSaving && <Check size={14} className="text-green-500" />}
+              {isSaving && (
+                <Loader2
+                  size={14}
+                  className="animate-spin text-muted-foreground"
+                />
+              )}
+              {justSaved && !isSaving && (
+                <Check size={14} className="text-green-500" />
+              )}
               {isDirty && !isSaving && !justSaved && (
                 <>
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
@@ -279,20 +329,20 @@ export default function MobileNotesView() {
         {/* List view */}
         <div
           className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
-            currentView === 'list' ? 'translate-x-0' : '-translate-x-full'
+            currentView === "list" ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <MobileNotesList
-          onNoteSelect={handleNoteSelect}
-          filters={filters}
-          onFiltersChange={setFilters}
-        />
+            onNoteSelect={handleNoteSelect}
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
         </div>
 
         {/* Editor view — split into scrollable content + fixed dock outside transform */}
         <div
           className={`absolute inset-0 flex flex-col transition-transform duration-300 ease-in-out ${
-            currentView === 'editor' ? 'translate-x-0' : 'translate-x-full'
+            currentView === "editor" ? "translate-x-0" : "translate-x-full"
           }`}
         >
           {selectedNote && (

@@ -99,6 +99,7 @@ export function ChatRoomClient({
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
     ready: !isInitializing && !conversationIdProp,
+    config: { responseDensity: "compact" },
   });
 
   const [resolvedCid, setResolvedCid] = useState<string | null>(
@@ -134,6 +135,7 @@ export function ChatRoomClient({
               agentId,
               conversationId: conversationIdProp,
               apiEndpointMode: "agent",
+              responseDensity: "compact",
             }),
           ).unwrap();
         }

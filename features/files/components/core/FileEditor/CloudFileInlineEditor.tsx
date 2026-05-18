@@ -26,6 +26,8 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { uploadFiles as uploadFilesThunk } from "@/features/files/redux/thunks";
 import { extractErrorMessage } from "@/utils/errors";
+import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
+import type { StandaloneCodeEditor } from "@/features/code/editor/MonacoEditor";
 
 // Lazy — Monaco is ~600 KB. Only pulled in when the user actually opens
 // the Edit tab.
@@ -92,6 +94,32 @@ export function CloudFileInlineEditor({
   const dispatch = useAppDispatch();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const { blob, loading, error: loadError } = useFileBlob(fileId);
+  const controls = useFileViewerControls();
+  // Hold onto the Monaco instance so the rail-driven controls effect can
+  // forward `updateOptions` calls without bouncing through a remount.
+  const editorRef = useRef<StandaloneCodeEditor | null>(null);
+  const handleEditorMount = useCallback((editor: StandaloneCodeEditor) => {
+    editorRef.current = editor;
+  }, []);
+  // Push rail-driven options into Monaco whenever they change. Effect (not
+  // render) because `updateOptions` is an imperative API and the editor
+  // owns the source of truth — re-creating Monaco on prop change would
+  // wipe undo history, scroll position, and selection.
+  useEffect(() => {
+    if (!controls || !editorRef.current) return;
+    editorRef.current.updateOptions({
+      fontSize: controls.editorFontSize,
+      wordWrap: controls.editorWordWrap ? "on" : "off",
+      minimap: { enabled: controls.editorMinimap, renderCharacters: false },
+      tabSize: controls.editorTabSize,
+    });
+  }, [
+    controls,
+    controls?.editorFontSize,
+    controls?.editorWordWrap,
+    controls?.editorMinimap,
+    controls?.editorTabSize,
+  ]);
 
   const [text, setText] = useState<string | null>(null);
   const [original, setOriginal] = useState<string | null>(null);
@@ -288,6 +316,7 @@ export function CloudFileInlineEditor({
             path={`cloud-file:/${fileId}`}
             onChange={(next) => setText(next)}
             onSave={() => void handleSave()}
+            onEditorMount={handleEditorMount}
           />
         )}
       </div>

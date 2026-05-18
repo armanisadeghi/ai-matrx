@@ -19,6 +19,7 @@ import {
 } from "@/features/window-panels/registry/windowRegistry";
 import { OverlaySurface } from "./OverlaySurface";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { markUnifiedImplMounted } from "@/lib/redux/middleware/overlayDiagnostics";
 
 let _integrityChecked = false;
 
@@ -26,6 +27,7 @@ export default function UnifiedOverlayControllerImpl() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    markUnifiedImplMounted();
     setMounted(true);
     if (process.env.NODE_ENV !== "production" && !_integrityChecked) {
       _integrityChecked = true;

@@ -42,6 +42,8 @@ import {
   isCxToolCallReservation,
   isContextAnalysisEvent,
   isStructuredOutputEvent,
+  isContextStateEvent,
+  isContextTrimmedEvent,
   type ConversationIdData,
   type ConversationLabeledData,
   type MemoryBufferSpawnedData,
@@ -80,6 +82,10 @@ import { confirmServerSync } from "../conversations/conversations.slice";
 import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
 import { invalidateActiveTools } from "../active-tools/active-tools.slice";
 import {
+  applyContextState,
+  applyContextTrimmed,
+} from "../context-state/context-state.slice";
+import {
   recordBufferSpawned,
   recordContextInjected,
   recordMemoryError,
@@ -96,6 +102,19 @@ import {
   updateMessageRecord,
   promoteMessageId,
 } from "../messages/messages.slice";
+import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
+import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
+import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
+import {
+  fromMediaBlock,
+  isMediaBlockData,
+} from "@/features/files/blocks/adapters/from-media-block";
+import type {
+  ImageOutputData,
+  PartialImageData,
+} from "@/types/python-generated/stream-events";
+import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
+import type { UnifiedMediaBlock } from "@/features/files/blocks/types";
 import {
   upsertUserRequest,
   patchUserRequest,
@@ -263,7 +282,7 @@ export async function processStream({
   // messageId. Single-reservation streams trivially collapse to one entry.
   const reservedAssistantTurns: Array<{ messageId: string; position: number }> =
     [];
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   let reservedUserRequestId: string | null = null;
 
   // Maps the provider's opaque `call_id` (used by activeRequests.toolLifecycle)
@@ -602,6 +621,63 @@ export async function processStream({
             data: d as MemoryErrorData,
           }),
         );
+      } else if (isMediaBlockData(d)) {
+        // ── Phase 0 canonical path ─────────────────────────────────────────
+        // Python's new `media_block` event carries the full
+        // `UnifiedMediaBlock` shape on `data.block`. Lift to our domain
+        // shape via the single canonical adapter and route by `kind`.
+        //
+        // Each kind maps to the same legacy render-block type the FE
+        // already consumed (`image_output` / `audio_output` / `video_output`)
+        // so existing renderers and selectors keep working without churn.
+        // When `kind: "document"` or `kind: "youtube"` arrives we use the
+        // generic `media_block` type and rely on the renderer to dispatch
+        // on `block.data.kind`.
+        //
+        // See docs/PYTHON_UPDATES.md §2 for the wire contract.
+        const unified: UnifiedMediaBlock = fromMediaBlock(d.block);
+        const isStreamingPartial = unified.status === "streaming";
+
+        const renderBlockType =
+          unified.kind === "image"
+            ? "image_output"
+            : unified.kind === "audio"
+              ? "audio_output"
+              : unified.kind === "video"
+                ? "video_output"
+                : "media_block";
+
+        // Partials + finals collapse onto one render block per stream
+        // so the renderer never sees flicker. Image keeps the legacy
+        // `image_block_current` key so it shares state with the
+        // `image_output` / `partial_image` legacy adapters during the
+        // transition window. Other kinds use a kind-keyed stable id so
+        // multiple in-flight audio/video clips can stream side by side.
+        const stableKey =
+          unified.kind === "image"
+            ? "image_block_current"
+            : `media_block_${unified.kind}_current`;
+
+        dispatch(
+          upsertRenderBlock({
+            requestId,
+            block: {
+              blockId: stableKey,
+              blockIndex: renderBlockEvents,
+              type: renderBlockType,
+              status: isStreamingPartial ? "streaming" : "complete",
+              content: null,
+              data: unified as unknown as Record<string, unknown>,
+            },
+          }),
+        );
+
+        // Open the image peek overlay on a FINAL image arrival. Skip on
+        // streaming partials (would flash too early) and on non-image kinds
+        // (the peek host is image-only today).
+        if (unified.kind === "image" && !isStreamingPartial) {
+          dispatch(openOverlay({ overlayId: "imagePeekHost" }));
+        }
       } else {
         const blockType = [
           "audio_output",
@@ -622,29 +698,60 @@ export async function processStream({
           ? dataType
           : "unknown_data_event";
 
-        const blockData: Record<string, unknown> =
-          blockType === "unknown_data_event"
-            ? { ...(d as UntypedDataPayload), _dataType: dataType }
-            : (d as unknown as Record<string, unknown>);
+        // ── Legacy fallback path ──────────────────────────────────────────
+        // Backed by `image_output` / `partial_image` / `audio_output` /
+        // `video_output` events from un-redeployed services. Will retire
+        // once Python's `media_block` rollout completes (~one release
+        // cycle after deploy).
+        let blockData: Record<string, unknown>;
+        if (dataType === "image_output") {
+          const unified: UnifiedImageBlock = fromImageOutputData(
+            d as ImageOutputData,
+            ((d as unknown as Record<string, unknown>).metadata as
+              | Record<string, unknown>
+              | undefined) ?? null,
+          );
+          blockData = unified as unknown as Record<string, unknown>;
+        } else if (dataType === "partial_image") {
+          const unified: UnifiedImageBlock = fromPartialImageData(
+            d as PartialImageData,
+          );
+          blockData = unified as unknown as Record<string, unknown>;
+        } else if (blockType === "unknown_data_event") {
+          blockData = { ...(d as UntypedDataPayload), _dataType: dataType };
+        } else {
+          blockData = d as unknown as Record<string, unknown>;
+        }
+
+        // Partial images share the blockId with the eventual final image_output
+        // so the upsert collapses partial + complete into one entry. The final
+        // event lands with status "complete" and the URL fields populated; the
+        // partial leaves only base64 + status "streaming".
+        const partialKey =
+          dataType === "partial_image" || dataType === "image_output"
+            ? "image_block_current"
+            : undefined;
+        const blockId = partialKey ?? `data_${dataType}_${totalEvents}`;
+        const finalBlockType =
+          dataType === "partial_image" ? "image_output" : blockType;
 
         dispatch(
           upsertRenderBlock({
             requestId,
             block: {
-              blockId: `data_${dataType}_${totalEvents}`,
+              blockId,
               blockIndex: renderBlockEvents,
-              type: blockType,
-              status: "complete",
+              type: finalBlockType,
+              status: dataType === "partial_image" ? "streaming" : "complete",
               content: null,
               data: blockData,
             },
           }),
         );
 
-        // Open the image peek notification overlay when an image arrives.
-        // The overlay loads lazily via the window registry — no bundle cost.
-        // ImageArrivalPeekHost self-closes when all cards are dismissed.
-        if (blockType === "image_output") {
+        // Open the image peek notification overlay when a FINAL image arrives.
+        // Skip on partials — the overlay would flash too early.
+        if (dataType === "image_output") {
           dispatch(openOverlay({ overlayId: "imagePeekHost" }));
         }
       }
@@ -752,10 +859,24 @@ export async function processStream({
       );
     } else if (isRenderBlockEvent(event)) {
       renderBlockEvents++;
+      // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
+      // canonical UnifiedImageBlock adapter so the rest of the system sees
+      // the same shape as data-event image_output blocks. The adapter takes
+      // the loose `RenderBlockPayload` directly and validates internally —
+      // no force-cast to `ImageRenderBlock` needed.
+      let block = event.data;
+      if (block.type === "image") {
+        const unified = fromRenderBlock(block);
+        block = {
+          ...block,
+          type: "image_output",
+          data: unified as unknown as Record<string, unknown>,
+        };
+      }
       dispatch(
         upsertRenderBlock({
           requestId,
-          block: event.data,
+          block,
         }),
       );
       dispatch(
@@ -1289,6 +1410,16 @@ export async function processStream({
           },
         }),
       );
+    } else if (isContextStateEvent(event)) {
+      otherEvents++;
+      // Wire payload is snake_case + uses Record<string, unknown> for
+      // JSONB-shaped fields (matches generated stream-events.ts). The
+      // slice's ContextStateWirePayload accepts that shape directly and
+      // narrows to typed fields inside the reducer — no cast needed here.
+      dispatch(applyContextState(event.data));
+    } else if (isContextTrimmedEvent(event)) {
+      otherEvents++;
+      dispatch(applyContextTrimmed(event.data));
     } else {
       const _exhaustive: never = event;
       const unhandled = _exhaustive as { event?: string; data?: unknown };

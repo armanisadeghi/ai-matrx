@@ -71,7 +71,7 @@ interface AgentShortcut {
 }
 ```
 
-**Scope columns** (`userId` / `organizationId` / `projectId` / `taskId`) are how the same table backs System, Organization, and Personal shortcuts. See [`features/scope-system/FEATURE.md`](../scope-system/FEATURE.md).
+**Scope columns** (`userId` / `organizationId` / `projectId` / `taskId`) are how the same table backs System, Organization, and Personal shortcuts. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 ---
 

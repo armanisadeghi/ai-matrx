@@ -76,6 +76,11 @@ const ORPHAN_EXCLUDE_PATTERNS: RegExp[] = [
   /\/window-panels\/mobile\//,
   // Legacy file (orphan dead code, deletion handled separately).
   /\/components\/overlays\/OverlayController\.tsx$/,
+  // Agent-comparison (formerly agent-battle) uses its own internal
+  // WindowPanel surfaces — they're not meant to be in the overlay
+  // registry; the feature renders them directly. Excluded so they don't
+  // show up as orphan-window warnings on every build log.
+  /\/features\/agent-(?:battle|comparison)\//,
 ];
 
 interface RegistryEntry {
@@ -484,11 +489,16 @@ function main(): void {
     if (registeredImportPaths.has(file)) continue;
     const marker = readRegistryStatusMarker(file);
     if (marker === "sub-component" || marker === "inline-window") continue;
+    // Loud-but-non-blocking: orphan windows are usually feature-local
+    // surfaces that haven't (yet) been brought into the registry. We want
+    // them visible in every build log so they're not invisible debt, but
+    // they should never gate a deploy — a real registry mismatch (broken
+    // componentImport path, missing slug, etc.) still surfaces as `error`.
     failures.push({
-      level: "error",
+      level: "warn",
       msg: `orphan window: ${toRel(
         file,
-      )} imports <WindowPanel> but is not registered and lacks a @registry-status marker`,
+      )} imports <WindowPanel> but is not registered and lacks a @registry-status marker — add the marker or register the entry`,
     });
     orphanCount++;
   }

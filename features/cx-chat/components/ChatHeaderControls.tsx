@@ -29,6 +29,7 @@ import {
   setUseSnapshot,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { usePathname, useSearchParams } from "next/navigation";
+import { ContextGaugeWidget } from "./ContextGaugeWidget";
 
 const ShareModal = dynamic(
   () => import("@/features/sharing").then((m) => ({ default: m.ShareModal })),
@@ -54,12 +55,19 @@ export default function ChatHeaderControls() {
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   const showShare = isAuthenticated && !!conversationId;
-  if (!showShare && !isAdmin) return null;
+  // Gauge renders for any authenticated user inside a conversation —
+  // not gated behind admin like the block/snapshot toggles. The widget
+  // self-hides until the slice has a real measurement.
+  const showGauge = isAuthenticated && !!conversationId;
+  if (!showShare && !isAdmin && !showGauge) return null;
 
   return (
     <>
       <PageHeaderPortal>
         <div className="hidden lg:flex items-center justify-end w-full gap-1">
+          {showGauge && conversationId && (
+            <ContextGaugeWidget conversationId={conversationId} />
+          )}
           {isAdmin && (
             <>
               <button

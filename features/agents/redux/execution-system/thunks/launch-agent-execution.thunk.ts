@@ -30,8 +30,8 @@ import {
 } from "@/features/agents/utils/scope-mapping";
 import { createClient as createBrowserSupabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
-import { isValueMappingMap } from "@/features/tool-registry/surfaces/types";
-import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
+import { isValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";

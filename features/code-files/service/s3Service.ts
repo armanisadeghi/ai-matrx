@@ -57,9 +57,11 @@ export interface S3DownloadArgs {
 export async function downloadCodeFileFromS3(
   args: S3DownloadArgs,
 ): Promise<string> {
-  const blob = await fileHandler.use({ kind: "file_id", fileId: args.s3_key }).as({
-    kind: "blob",
-  });
+  const blob = await fileHandler
+    .use({ kind: "file_id", fileId: args.s3_key })
+    .as({
+      kind: "blob",
+    });
   return blob.text();
 }
 
@@ -69,8 +71,11 @@ export interface S3DeleteArgs {
 }
 
 export async function deleteCodeFileFromS3(args: S3DeleteArgs): Promise<void> {
-  const Files = await import("@/features/files/api/files");
-  await Files.deleteFile(args.s3_key, { hardDelete: true }).catch((err) => {
+  // Route through fileHandler.remove (which dispatches the deleteFile thunk)
+  // so the Redux slice is updated atomically with the REST DELETE. Calling
+  // Files.deleteFile directly leaves the slice waiting on the realtime echo
+  // and produces a race window where stale rows are visible.
+  await fileHandler.remove(args.s3_key, { hard: true }).catch((err) => {
     // eslint-disable-next-line no-console
     console.warn("[s3Service] delete failed (non-fatal)", err);
   });

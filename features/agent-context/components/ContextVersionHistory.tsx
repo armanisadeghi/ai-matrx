@@ -29,7 +29,10 @@ function restoredValueJson(
 
 export function ContextVersionHistory({ itemId, scope }: Props) {
   const { data: item } = useContextItem(itemId);
-  const { data: versions, isLoading } = useContextVersionHistory(itemId);
+  const { data: versions, isLoading } = useContextVersionHistory(
+    itemId,
+    scope.scopeId,
+  );
   const createValue = useCreateContextValue(scope.scopeType, scope.scopeId);
   const [selectedVersion, setSelectedVersion] = useState<ContextItemValue | null>(null);
 

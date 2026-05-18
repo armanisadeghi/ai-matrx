@@ -175,8 +175,8 @@ export function QuickNoteSaveCore({
             overlayId: "notesWindow",
             data: {
               singleNoteId: savedNote.id,
-              openTabs: [savedNote.id],
-              activeTabId: savedNote.id,
+              initialTabs: [savedNote.id],
+              initialActiveTab: savedNote.id,
             },
           }),
         );

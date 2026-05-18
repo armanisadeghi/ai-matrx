@@ -42,7 +42,7 @@ import {
 import * as taskService from "@/features/tasks/services/taskService";
 import { ScopePicker } from "@/features/agent-context/components/ScopePicker";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 interface MobileTaskDetailsProps {
   task: any;

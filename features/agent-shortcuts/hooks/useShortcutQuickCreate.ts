@@ -280,8 +280,10 @@ export function useShortcutQuickCreate({
         contextSlots: agent?.contextSlots ?? [],
         // Surfaces & scope routing
         enabledFeatures: finalSurfaces,
+        surfaceName: null,
         scopeMappings:
           Object.keys(scopeMappings).length > 0 ? scopeMappings : null,
+        valueMappings: null,
         contextMappings: null,
         // AgentExecutionConfig — defaults first, explicit overrides after
         ...DEFAULT_AGENT_EXECUTION_CONFIG,

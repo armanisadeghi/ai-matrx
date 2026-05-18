@@ -23,6 +23,7 @@
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  EMPTY_TREE_CHILDREN,
   selectAllFilesMap,
   selectAllFoldersMap,
   selectIsFolderFullyLoaded,
@@ -30,7 +31,10 @@ import {
   selectSortedRootChildren,
 } from "@/features/files/redux/selectors";
 import { loadFolderContents } from "@/features/files/redux/thunks";
-import type { CloudFileRecord, CloudFolderRecord } from "@/features/files/types";
+import type {
+  CloudFileRecord,
+  CloudFolderRecord,
+} from "@/features/files/types";
 
 export interface UseFolderContentsResult {
   files: CloudFileRecord[];
@@ -92,9 +96,7 @@ export function useFolderContents(
   // Fetch sorted children; when folderId is null, use root.
   const rootSorted = useAppSelector(selectSortedRootChildren);
   const folderSorted = useAppSelector((s) =>
-    folderId
-      ? selectSortedChildrenOfFolder(s, folderId)
-      : { folderIds: [], fileIds: [] },
+    folderId ? selectSortedChildrenOfFolder(s, folderId) : EMPTY_TREE_CHILDREN,
   );
   const children = folderId ? folderSorted : rootSorted;
 

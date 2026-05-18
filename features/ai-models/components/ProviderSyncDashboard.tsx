@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ModelDetailSheet, { OpenDetailButton } from "../audit/ModelDetailSheet";
+import AddProviderModelDialog from "./AddProviderModelDialog";
 import type { AiModel, AiProvider, ProviderModelEntry } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -227,10 +228,12 @@ function ProviderEntryDetail({
   comparison,
   onClose,
   onOpenModel,
+  onAddMissing,
 }: {
   comparison: ModelComparison;
   onClose: () => void;
   onOpenModel: (id: string) => void;
+  onAddMissing: (c: ModelComparison) => void;
 }) {
   const pe = comparison.providerEntry;
   const le = comparison.localEntry;
@@ -252,6 +255,17 @@ function ProviderEntryDetail({
           <StatusBadge status={comparison.status} />
           {comparison.status === "matched" && le && (
             <OpenDetailButton onClick={() => onOpenModel(le.id)} />
+          )}
+          {comparison.status === "missing_local" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px] gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              onClick={() => onAddMissing(comparison)}
+            >
+              <Plus className="h-3 w-3" />
+              Add to DB
+            </Button>
           )}
           <button
             onClick={onClose}
@@ -485,11 +499,13 @@ function ComparisonTable({
   selectedId,
   onSelect,
   onOpenModel,
+  onAddMissing,
 }: {
   comparisons: ModelComparison[];
   selectedId: string | null;
   onSelect: (c: ModelComparison | null) => void;
   onOpenModel: (id: string) => void;
+  onAddMissing: (c: ModelComparison) => void;
 }) {
   if (comparisons.length === 0) {
     return (
@@ -602,9 +618,9 @@ function ComparisonTable({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-5 px-1.5 text-[10px] gap-0.5 text-amber-600"
-                        disabled
-                        title="Coming soon"
+                        className="h-5 px-1.5 text-[10px] gap-0.5 text-amber-600 hover:text-amber-700"
+                        onClick={() => onAddMissing(c)}
+                        title="Add this provider model to the database"
                       >
                         <Plus className="h-2.5 w-2.5" />
                         Add
@@ -630,7 +646,8 @@ function ProviderSection({
   onSync,
   syncing,
   onOpenModel,
-  onModelsChanged,
+  onAddMissing,
+  onModelsChanged: _onModelsChanged,
 }: {
   summary: ProviderSummary;
   provider: AiProvider | undefined;
@@ -638,6 +655,7 @@ function ProviderSection({
   onSync: (s: ProviderSummary) => void;
   syncing: boolean;
   onOpenModel: (id: string) => void;
+  onAddMissing: (c: ModelComparison, summary: ProviderSummary) => void;
   onModelsChanged?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -808,6 +826,7 @@ function ProviderSection({
               selectedId={selectedComparison?.id ?? null}
               onSelect={setSelectedComparison}
               onOpenModel={onOpenModel}
+              onAddMissing={(c) => onAddMissing(c, summary)}
             />
           </div>
           {selectedComparison && (
@@ -819,6 +838,7 @@ function ProviderSection({
                 comparison={selectedComparison}
                 onClose={() => setSelectedComparison(null)}
                 onOpenModel={onOpenModel}
+                onAddMissing={(c) => onAddMissing(c, summary)}
               />
             </div>
           )}
@@ -841,6 +861,10 @@ export default function ProviderSyncDashboard({
   const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sheetModelId, setSheetModelId] = useState<string | null>(null);
+  const [addTarget, setAddTarget] = useState<{
+    comparison: ModelComparison;
+    summary: ProviderSummary;
+  } | null>(null);
 
   const loadSummaries = useCallback(async () => {
     setLoading(true);
@@ -1007,6 +1031,9 @@ export default function ProviderSyncDashboard({
                 onSync={handleSync}
                 syncing={syncingId === summary.id}
                 onOpenModel={setSheetModelId}
+                onAddMissing={(comparison, s) =>
+                  setAddTarget({ comparison, summary: s })
+                }
                 onModelsChanged={onModelsChanged}
               />
             ))
@@ -1021,6 +1048,25 @@ export default function ProviderSyncDashboard({
         onSaved={() => {
           onModelsChanged?.();
           setSheetModelId(null);
+        }}
+      />
+
+      <AddProviderModelDialog
+        open={!!addTarget}
+        onOpenChange={(o) => {
+          if (!o) setAddTarget(null);
+        }}
+        providerEntry={addTarget?.comparison.providerEntry ?? null}
+        providerId={addTarget?.summary.id ?? ""}
+        providerName={addTarget?.summary.name ?? null}
+        provider={addTarget ? providerMap.get(addTarget.summary.id) : undefined}
+        localModels={localModels}
+        onCreated={(created, openEditor) => {
+          setSyncSuccess(
+            `Added "${created.common_name ?? created.name}" to database`,
+          );
+          onModelsChanged?.();
+          if (openEditor) setSheetModelId(created.id);
         }}
       />
     </div>

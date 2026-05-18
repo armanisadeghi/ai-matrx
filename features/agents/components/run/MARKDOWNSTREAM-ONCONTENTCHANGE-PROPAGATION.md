@@ -6,6 +6,18 @@
 
 **Answer:** **No** — propagation is **patchy**. The callback is threaded through many layers, but several modes and block types never call it, or only receive **partial** document updates.
 
+> **Update (2026-05-17):** `AgentAssistantMessage` now **does** pass
+> `onContentChange` to `MarkdownStream` (it dispatches
+> `commitInlineContentEdit`, which patches `activeRequests.editedText`,
+> applies an optimistic `updateMessageRecord`, and debounces a
+> `cx_message_edit` RPC so `content_history` archives once per edit
+> session — not once per keystroke). Recoverable versions are exposed via
+> `AssistantActionBar` → "Edit history" → `EditHistoryDialog`. The block
+> types still listed as "No" below (CSV cells, nested previews,
+> diff/search-replace fallbacks) remain unwired — they don't call
+> `replaceBlockContent` at all, so the new top-level wiring doesn't reach
+> them.
+
 ---
 
 ## Propagation table

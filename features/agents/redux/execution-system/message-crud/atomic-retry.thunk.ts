@@ -16,29 +16,36 @@
  *   1. Find the failed assistant message (caller provides its id).
  *   2. Walk back through `orderedIds` to the most recent user message at
  *      a position less than the failed message — that's what we'll resend.
- *   3. Truncate every message from the failed message onward (atomic RPC
+ *   3. Split that user message's `MessagePart[]` content back into the two
+ *      shapes the input slice understands: a flat text string (joined from
+ *      every `text` part) and a non-text `MessagePart[]` (everything else —
+ *      media, input_*, etc.). Multimodal turns retry the same way text
+ *      turns do.
+ *   4. Truncate every message from the failed message onward (atomic RPC
  *      if available, fallback to per-message soft-delete otherwise — same
  *      pattern as overwriteAndResend).
- *   4. Mark cache-bypass + invalidate server cache so the next call rebuilds
+ *   5. Mark cache-bypass + invalidate server cache so the next call rebuilds
  *      cleanly.
- *   5. Reload the conversation bundle so the messages slice mirrors DB.
- *   6. Set the input bar text to the original user message and dispatch
+ *   6. Reload the conversation bundle so the messages slice mirrors DB.
+ *   7. Seed the input slice with the extracted text + parts and dispatch
  *      `executeInstance`. Stream begins.
  *
  * Edge cases:
  *   • No prior user message (system-only conversation): rejects. Caller
  *     should disable the Retry button when this would happen.
- *   • Assistant message has multimodal user input upstream: we currently
- *     re-extract flat text only. Multimodal resubmit is a follow-up.
+ *   • User message has zero content blocks (should be impossible): rejects.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { extractFlatText } from "../messages/messages.selectors";
+import type { MessagePart } from "@/types/python-generated/stream-events";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
-import { setUserInputText } from "../instance-user-input/instance-user-input.slice";
+import {
+  setUserInputText,
+  setUserInputMessageParts,
+} from "../instance-user-input/instance-user-input.slice";
 import { executeInstance } from "../thunks/execute-instance.thunk";
 import { loadConversation } from "../thunks/load-conversation.thunk";
 
@@ -109,11 +116,50 @@ export const atomicRetry = createAsyncThunk<
       });
     }
 
-    const userText = extractFlatText(triggeringUserMessage);
-    if (!userText) {
+    // Split the user message's content blocks back into the two shapes
+    // the input slice expects:
+    //   • `userText`   — joined `text` from every `text` part (newline-
+    //                    separated when there are multiple, matching how
+    //                    we assemble the optimistic bubble on first send).
+    //   • `userParts`  — every non-text MessagePart (media, input_webpage,
+    //                    input_notes, etc.). assembleRequest concatenates
+    //                    these onto `user_input` exactly the same way it
+    //                    does for a brand new turn, so multimodal retries
+    //                    behave identically to multimodal first sends.
+    //
+    // Defensive: `cx_message.content` is typed `Json` at the slice level,
+    // so we narrow through `unknown` and tolerate non-array values by
+    // treating them as empty. Tool-shaped parts (`tool_call`, `tool_result`,
+    // `thinking`) can never appear on a user message but we drop them
+    // anyway to keep the resubmit payload clean if data ever drifts.
+    const rawBlocks = Array.isArray(triggeringUserMessage.content)
+      ? (triggeringUserMessage.content as unknown as MessagePart[])
+      : [];
+
+    let userText = "";
+    const userParts: MessagePart[] = [];
+    const ASSISTANT_ONLY_TYPES = new Set([
+      "tool_call",
+      "tool_result",
+      "thinking",
+    ]);
+    for (const block of rawBlocks) {
+      const type = (block as { type?: string }).type ?? "";
+      if (ASSISTANT_ONLY_TYPES.has(type)) continue;
+      if (type === "text") {
+        const text = (block as { text?: unknown }).text;
+        if (typeof text === "string" && text.length > 0) {
+          userText = userText ? `${userText}\n${text}` : text;
+        }
+        continue;
+      }
+      userParts.push(block);
+    }
+
+    if (!userText && userParts.length === 0) {
       return rejectWithValue({
         message:
-          "Triggering user message has no text content — atomic retry can only resubmit text turns. Use Edit & Resubmit for multimodal content.",
+          "Triggering user message has no content blocks to resubmit. Edit the message or send a new one.",
       });
     }
 
@@ -154,8 +200,7 @@ export const atomicRetry = createAsyncThunk<
         );
         return rejectWithValue({
           message:
-            truncErr.message ??
-            "Failed to clear the failed turn before retry",
+            truncErr.message ?? "Failed to clear the failed turn before retry",
         });
       }
 
@@ -171,11 +216,7 @@ export const atomicRetry = createAsyncThunk<
         );
         if (error) {
           // eslint-disable-next-line no-console
-          console.error(
-            "[atomicRetry] fallback delete failed",
-            { id },
-            error,
-          );
+          console.error("[atomicRetry] fallback delete failed", { id }, error);
           return rejectWithValue({
             message: `Failed to soft-delete message ${id} during retry cleanup`,
           });
@@ -204,12 +245,24 @@ export const atomicRetry = createAsyncThunk<
     }
 
     // ── Resubmit the original user input ──────────────────────────────────
+    // Seed the input slice with both halves of the message. executeInstance
+    // reads from instanceUserInput.text + instanceUserInput.messageParts and
+    // assembleRequest merges them into `user_input` — so dispatching both
+    // here recreates the same payload the original send produced.
     dispatch(
       setUserInputText({
         conversationId,
         text: userText,
       }),
     );
+    if (userParts.length > 0) {
+      dispatch(
+        setUserInputMessageParts({
+          conversationId,
+          parts: userParts,
+        }),
+      );
+    }
     void dispatch(executeInstance({ conversationId }));
 
     return {

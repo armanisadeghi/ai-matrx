@@ -11,10 +11,6 @@
 // - Sort controls (field cycle + order toggle)
 // - Expand/collapse all folders
 // - Folder context menu (right-click: New Note, Rename, Delete All)
-import { selectAllAssignments } from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
-import { selectScopeNameMap } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeLabelMap } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-
 // - Note context menu (right-click: Open, Duplicate, Export, Move, Delete)
 // - Auto-scroll to active note
 // - Auto-expand folder of active note
@@ -67,8 +63,8 @@ import {
   selectProjectName,
   selectTaskId,
   selectTaskName,
-} from "@/features/agent-context/redux/appContextSlice";
-import { fetchEntitiesByScopes } from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
+} from "@/lib/redux/slices/appContextSlice";
+import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
 import {
   setInstanceActiveTab,
   addInstanceTab,
@@ -171,31 +167,11 @@ export function NoteSidebar({
     () => Object.values(scopeSelections).filter(Boolean) as string[],
     [scopeSelections],
   );
-  const [scopeFilteredNoteIds, setScopeFilteredNoteIds] =
-    useState<Set<string> | null>(null);
-  const lastScopeKey = useRef("");
-
-  useEffect(() => {
-    const key = [...activeScopeIds].sort().join(",");
-    if (key === lastScopeKey.current) return;
-    lastScopeKey.current = key;
-    if (activeScopeIds.length === 0) {
-      setScopeFilteredNoteIds(null);
-      return;
-    }
-    dispatch(
-      fetchEntitiesByScopes({
-        scope_ids: activeScopeIds,
-        entity_type: "note",
-        match_all: false,
-      }),
-    )
-      .unwrap()
-      .then((entities) =>
-        setScopeFilteredNoteIds(new Set(entities.map((e) => e.entity_id))),
-      )
-      .catch(() => setScopeFilteredNoteIds(null));
-  }, [dispatch, activeScopeIds]);
+  const { entityIds: scopeFilteredNoteIds } = useEntitiesByScopes({
+    scopeIds: activeScopeIds,
+    entityType: "note",
+    matchAll: false,
+  });
 
   // ── Filter notes by active context (org + scopes + project + task) ─
   const contextFiltered = useMemo(() => {

@@ -45,7 +45,7 @@ import {
   selectSubtasksByParent,
   upsertTaskWithLevel,
 } from "@/features/agent-context/redux/tasksSlice";
-import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";

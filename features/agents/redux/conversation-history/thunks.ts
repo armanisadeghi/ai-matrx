@@ -39,7 +39,7 @@ export interface FetchConversationHistoryResult {
 
 /** Columns we project from `cx_conversation` — enough for sidebar rendering. */
 const HISTORY_COLUMNS =
-  "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at";
+  "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, is_favorite";
 
 /**
  * Fetches a page of conversations for `scopeId`. If the scope doesn't yet
@@ -124,6 +124,7 @@ export const fetchConversationHistory = createAsyncThunk<
       createdAt: row.created_at as string,
       status: row.status as string,
       messageCount: (row.message_count ?? 0) as number,
+      isFavorite: (row.is_favorite ?? false) as boolean,
       agentId: (row.initial_agent_id ?? null) as string | null,
       lastModelId: (row.last_model_id ?? null) as string | null,
       sourceApp: (row.source_app ?? undefined) as string | undefined,

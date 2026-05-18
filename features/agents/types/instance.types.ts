@@ -89,7 +89,9 @@ export type SourceFeature =
   /** Triggered directly from application code (hook / helper / automation). */
   | "programmatic"
   /** AI Describe runs from the Image Studio (`/image-studio/convert`). */
-  | "image-studio";
+  | "image-studio"
+  /** Multi-agent side-by-side comparison page (`/agents/battle`). */
+  | "agent-comparison";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

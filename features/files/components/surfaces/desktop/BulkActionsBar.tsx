@@ -6,11 +6,11 @@
  * with a clear count, a few high-signal actions, and a way to dismiss the
  * selection without firing anything.
  *
- * Backend caveat: the Python backend doesn't expose bulk endpoints yet
- * (logged in PYTHON_TEAM_COMMS.md). We fan out per-file with a small
- * concurrency limit so we don't hammer the server. Folder deletion isn't
- * exposed as a bulk operation yet either, so this bar operates on file IDs
- * only — selected folders are skipped with a transient note.
+ * Bulk delete and bulk move shipped 2026-04-26 (`DELETE /files/bulk`,
+ * `POST /files/bulk/move`, `POST /folders/bulk/move`). Download is still
+ * fanned out per-file with a small concurrency limit so we don't hammer
+ * the signed-URL endpoint. Folder deletion has no bulk variant yet, so
+ * mixed file+folder selections still skip folders with a transient note.
  */
 
 "use client";

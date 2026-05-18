@@ -75,7 +75,7 @@ const InitialCropWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 import { useAppStore } from "@/lib/redux/hooks";
-import { getSignedUrl } from "@/features/files/api/files";
+import { fileHandler } from "@/features/files/handler/handler";
 
 // ── Public surface ───────────────────────────────────────────────────────
 
@@ -428,16 +428,17 @@ export function EmbeddedImageStudio({
         toast.error("Could not load that file");
         return;
       }
-      // Prefer the permanent CDN URL — fall back to a fresh signed
-      // URL if the file is private (still good for ~1h, host-side
-      // copy will paste it as-is).
+      // Prefer the permanent CDN URL — fall back to a signed URL from
+      // the universal handler (lazy cache, good for ~1h) if the file
+      // is private. Host-side copy will paste it as-is.
       let url = cloudFile.publicUrl;
       if (!url) {
         try {
-          const signed = await getSignedUrl(fileId, {
-            expiresIn: 3600,
-          });
-          url = signed.data.url;
+          const resolved = await fileHandler
+            .use({ kind: "file_id", fileId })
+            .as({ kind: "html_src" });
+          if (!resolved) throw new Error("no URL");
+          url = resolved;
         } catch {
           toast.error("Could not generate URL for that file");
           return;
@@ -514,11 +515,11 @@ export function EmbeddedImageStudio({
           onOpenLibrary={handlePickFromLibrary}
           disabled={disabled}
         />
-                <InitialCropWindow
-                    files={pendingFiles}
-                    onComplete={handleCropComplete}
-                    onCancel={handleCropCancel}
-                />
+        <InitialCropWindow
+          files={pendingFiles}
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
         {filePicker.element}
       </Wrapper>
     );

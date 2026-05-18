@@ -73,7 +73,11 @@ export function AgentComparisonPage() {
     dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
       .unwrap()
       .then((data) => {
-        setter((prev) => ({ ...prev, versionHistory: data, versionsLoading: false }));
+        setter((prev) => ({
+          ...prev,
+          versionHistory: data,
+          versionsLoading: false,
+        }));
       })
       .catch(() => {
         setter((prev) => ({ ...prev, versionsLoading: false }));
@@ -93,35 +97,52 @@ export function AgentComparisonPage() {
     setter((prev) => ({ ...prev, version: versionNum, snapshotLoading: true }));
 
     if (state.agentId) {
-      dispatch(fetchAgentVersionSnapshot({ agentId: state.agentId, version: versionNum }))
+      dispatch(
+        fetchAgentVersionSnapshot({
+          agentId: state.agentId,
+          version: versionNum,
+        }),
+      )
         .unwrap()
         .finally(() => setter((prev) => ({ ...prev, snapshotLoading: false })));
     }
   };
 
-  const leftAgent = useAppSelector((s) => (left.agentId ? selectAgentById(s, left.agentId) : undefined));
-  const rightAgent = useAppSelector((s) => (right.agentId ? selectAgentById(s, right.agentId) : undefined));
-  const leftVersions = useAppSelector((s) => (left.agentId ? selectVersionsByParentAgentId(s, left.agentId) : []));
-  const rightVersions = useAppSelector((s) => (right.agentId ? selectVersionsByParentAgentId(s, right.agentId) : []));
+  const leftAgent = useAppSelector((s) =>
+    left.agentId ? selectAgentById(s, left.agentId) : undefined,
+  );
+  const rightAgent = useAppSelector((s) =>
+    right.agentId ? selectAgentById(s, right.agentId) : undefined,
+  );
+  const leftVersions = useAppSelector((s) =>
+    left.agentId ? selectVersionsByParentAgentId(s, left.agentId) : undefined,
+  );
+  const rightVersions = useAppSelector((s) =>
+    right.agentId ? selectVersionsByParentAgentId(s, right.agentId) : undefined,
+  );
 
-  const resolvedLeft = left.version === "current"
-    ? leftAgent
-    : leftVersions.find((v) => v.version === left.version);
-  const resolvedRight = right.version === "current"
-    ? rightAgent
-    : rightVersions.find((v) => v.version === right.version);
+  const resolvedLeft =
+    left.version === "current"
+      ? leftAgent
+      : (leftVersions ?? []).find((v) => v.version === left.version);
+  const resolvedRight =
+    right.version === "current"
+      ? rightAgent
+      : (rightVersions ?? []).find((v) => v.version === right.version);
 
-  const leftLabel = left.agentId && resolvedLeft
-    ? left.version === "current"
-      ? `${leftAgent?.name ?? "Agent"} — Current${leftAgent?.version != null ? ` (v${leftAgent.version})` : ""}`
-      : `${leftAgent?.name ?? "Agent"} — Version ${left.version}`
-    : "Select left side";
+  const leftLabel =
+    left.agentId && resolvedLeft
+      ? left.version === "current"
+        ? `${leftAgent?.name ?? "Agent"} — Current${leftAgent?.version != null ? ` (v${leftAgent.version})` : ""}`
+        : `${leftAgent?.name ?? "Agent"} — Version ${left.version}`
+      : "Select left side";
 
-  const rightLabel = right.agentId && resolvedRight
-    ? right.version === "current"
-      ? `${rightAgent?.name ?? "Agent"} — Current${rightAgent?.version != null ? ` (v${rightAgent.version})` : ""}`
-      : `${rightAgent?.name ?? "Agent"} — Version ${right.version}`
-    : "Select right side";
+  const rightLabel =
+    right.agentId && resolvedRight
+      ? right.version === "current"
+        ? `${rightAgent?.name ?? "Agent"} — Current${rightAgent?.version != null ? ` (v${rightAgent.version})` : ""}`
+        : `${rightAgent?.name ?? "Agent"} — Version ${right.version}`
+      : "Select right side";
 
   if (agentsLoading) {
     return (
@@ -133,7 +154,10 @@ export function AgentComparisonPage() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ paddingTop: "var(--shell-header-h)" }}>
+    <div
+      className="h-full flex flex-col overflow-hidden"
+      style={{ paddingTop: "var(--shell-header-h)" }}
+    >
       {/* Selector toolbar */}
       <div className="shrink-0 border-b border-border bg-card/50">
         <div className="grid grid-cols-2 divide-x divide-border">
@@ -142,16 +166,24 @@ export function AgentComparisonPage() {
             selectedVersion={left.version}
             versionHistory={left.versionHistory}
             versionsLoading={left.versionsLoading}
-            onAgentSelect={(id) => startTransition(() => handleAgentChange("left", id))}
-            onVersionChange={(opt) => startTransition(() => handleVersionChange("left", opt))}
+            onAgentSelect={(id) =>
+              startTransition(() => handleAgentChange("left", id))
+            }
+            onVersionChange={(opt) =>
+              startTransition(() => handleVersionChange("left", opt))
+            }
           />
           <SideSelector
             selectedAgentName={rightAgent?.name ?? null}
             selectedVersion={right.version}
             versionHistory={right.versionHistory}
             versionsLoading={right.versionsLoading}
-            onAgentSelect={(id) => startTransition(() => handleAgentChange("right", id))}
-            onVersionChange={(opt) => startTransition(() => handleVersionChange("right", opt))}
+            onAgentSelect={(id) =>
+              startTransition(() => handleAgentChange("right", id))
+            }
+            onVersionChange={(opt) =>
+              startTransition(() => handleVersionChange("right", opt))
+            }
           />
         </div>
       </div>
@@ -219,9 +251,7 @@ function SideSelector({
               className={cn(
                 "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium w-full",
                 "border border-border bg-background hover:bg-muted/50 transition-colors",
-                selectedAgentName
-                  ? "text-foreground"
-                  : "text-muted-foreground",
+                selectedAgentName ? "text-foreground" : "text-muted-foreground",
               )}
             >
               <span className="truncate flex-1 text-left">

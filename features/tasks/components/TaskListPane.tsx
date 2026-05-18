@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -25,7 +25,7 @@ import {
   setSelectedTaskId,
   setNewTaskTitle,
 } from "@/features/tasks/redux/taskUiSlice";
-import { selectScopeNameMap } from "@/features/agent-context/redux/scope/scopesSlice";
+import { makeSelectScopeNameMapForOrg } from "@/features/scopes/redux/selectors/tree";
 import {
   createTaskThunk,
   toggleTaskCompleteThunk,
@@ -33,7 +33,7 @@ import {
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
@@ -50,8 +50,12 @@ export default function TaskListPane() {
   const loading = useAppSelector(selectTasksLoading);
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
+  const selectScopeNameMapForOrg = useMemo(
+    () => makeSelectScopeNameMapForOrg(),
+    [],
+  );
   const scopeNameMap = useAppSelector((state) =>
-    selectScopeNameMap(state, orgId ?? ""),
+    selectScopeNameMapForOrg(state, orgId),
   );
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());

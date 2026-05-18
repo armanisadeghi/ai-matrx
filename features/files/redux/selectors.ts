@@ -9,7 +9,10 @@
 "use client";
 
 import { createSelector } from "reselect";
-import { sortChildren as sortChildrenUtil } from "./tree-utils";
+import {
+  EMPTY_TREE_CHILDREN,
+  sortChildren as sortChildrenUtil,
+} from "./tree-utils";
 import type { CloudFilesState } from "@/features/files/types";
 
 // Minimal local state shape — avoids importing from store.ts (which imports
@@ -34,6 +37,9 @@ import type {
 /** Stable empties — never use `?? []` in selector outputs (new ref every run → Reselect stability warnings). */
 export const EMPTY_CLOUD_FILE_PERMISSIONS: CloudFilePermission[] = [];
 export const EMPTY_CLOUD_SHARE_LINKS: CloudShareLink[] = [];
+
+/** Re-export for consumers that import cloud-files selectors from one module. */
+export { EMPTY_TREE_CHILDREN };
 
 // ---------------------------------------------------------------------------
 // Slice root
@@ -202,8 +208,7 @@ export const selectChildrenOfFolder = createSelector(
     selectChildrenByFolderId,
     (_state: StateWithCloudFiles, folderId: string) => folderId,
   ],
-  (byId, folderId): TreeChildren =>
-    byId[folderId] ?? { folderIds: [], fileIds: [] },
+  (byId, folderId): TreeChildren => byId[folderId] ?? EMPTY_TREE_CHILDREN,
 );
 
 export const selectIsFolderFullyLoaded = createSelector(
@@ -225,10 +230,18 @@ export const selectViewMode = createSelector(
   (ui) => ui.viewMode,
 );
 
-export const selectSort = createSelector([selectUiSlice], (ui) => ({
-  sortBy: ui.sortBy,
-  sortDir: ui.sortDir,
-}));
+/** Primitive sort inputs — prefer these inside other selectors over `selectSort`'s object. */
+export const selectSortBy = createSelector([selectUiSlice], (ui) => ui.sortBy);
+
+export const selectSortDir = createSelector(
+  [selectUiSlice],
+  (ui) => ui.sortDir,
+);
+
+export const selectSort = createSelector(
+  [selectSortBy, selectSortDir],
+  (sortBy, sortDir) => ({ sortBy, sortDir }),
+);
 
 export const selectKindFilter = createSelector(
   [selectUiSlice],
@@ -307,15 +320,15 @@ export const selectFocusedId = createSelector(
 );
 
 export const selectSortedChildrenOfFolder = createSelector(
-  [selectChildrenOfFolder, selectAllFilesMap, selectAllFoldersMap, selectSort],
-  (children, filesById, foldersById, sort): TreeChildren =>
-    sortChildrenUtil(
-      children,
-      filesById,
-      foldersById,
-      sort.sortBy,
-      sort.sortDir,
-    ),
+  [
+    selectChildrenOfFolder,
+    selectAllFilesMap,
+    selectAllFoldersMap,
+    selectSortBy,
+    selectSortDir,
+  ],
+  (children, filesById, foldersById, sortBy, sortDir): TreeChildren =>
+    sortChildrenUtil(children, filesById, foldersById, sortBy, sortDir),
 );
 
 export const selectSortedRootChildren = createSelector(
@@ -324,15 +337,16 @@ export const selectSortedRootChildren = createSelector(
     selectRootFileIds,
     selectAllFilesMap,
     selectAllFoldersMap,
-    selectSort,
+    selectSortBy,
+    selectSortDir,
   ],
-  (folderIds, fileIds, filesById, foldersById, sort): TreeChildren =>
+  (folderIds, fileIds, filesById, foldersById, sortBy, sortDir): TreeChildren =>
     sortChildrenUtil(
       { folderIds, fileIds },
       filesById,
       foldersById,
-      sort.sortBy,
-      sort.sortDir,
+      sortBy,
+      sortDir,
     ),
 );
 

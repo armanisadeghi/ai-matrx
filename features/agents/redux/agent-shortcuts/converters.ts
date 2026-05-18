@@ -35,6 +35,10 @@ import {
   type AgentExecutionConfig,
   DEFAULT_AGENT_EXECUTION_CONFIG,
 } from "@/features/agents/types/agent-execution-config.types";
+import {
+  isValueMappingMap,
+  type ValueMappingMap,
+} from "@/features/surfaces/types";
 
 // ---------------------------------------------------------------------------
 // Supabase row types
@@ -85,6 +89,11 @@ function rJsonObject<T>(row: LooseRow, key: string): T | null {
   return null;
 }
 
+export function parseValueMappings(raw: unknown): ValueMappingMap | null {
+  if (raw === null || raw === undefined) return null;
+  return isValueMappingMap(raw) ? raw : null;
+}
+
 // ---------------------------------------------------------------------------
 // DB → Frontend
 // ---------------------------------------------------------------------------
@@ -125,8 +134,10 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
     enabledFeatures:
       ((loose.enabled_features ??
         loose.enabled_contexts) as unknown as ShortcutContext[]) ?? [],
+    surfaceName: rString(loose, "surface_name"),
     scopeMappings:
       (row.scope_mappings as unknown as Record<string, string>) ?? null,
+    valueMappings: parseValueMappings(loose.value_mappings),
     contextMappings: rJsonObject<Record<string, string>>(
       loose,
       "context_mappings",
@@ -271,7 +282,9 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
     use_latest: shortcut.useLatest,
 
     enabled_features: shortcut.enabledFeatures,
+    surface_name: shortcut.surfaceName,
     scope_mappings: shortcut.scopeMappings,
+    value_mappings: shortcut.valueMappings,
     context_mappings: shortcut.contextMappings,
 
     display_mode: shortcut.displayMode,
@@ -329,8 +342,12 @@ export function agentShortcutToUpdate(
 
   if (partial.enabledFeatures !== undefined)
     update.enabled_features = partial.enabledFeatures;
+  if (partial.surfaceName !== undefined)
+    update.surface_name = partial.surfaceName;
   if (partial.scopeMappings !== undefined)
     update.scope_mappings = partial.scopeMappings;
+  if (partial.valueMappings !== undefined)
+    update.value_mappings = partial.valueMappings;
   if (partial.contextMappings !== undefined)
     update.context_mappings = partial.contextMappings;
 

@@ -30,7 +30,7 @@ import {
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";

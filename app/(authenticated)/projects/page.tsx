@@ -12,7 +12,7 @@ import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-
 import { useHierarchyReduxBridge } from "@/features/agent-context/components/hierarchy-selection/useReduxBridge";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 /**
  * Standalone Projects Hub

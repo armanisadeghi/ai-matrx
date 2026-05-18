@@ -20,18 +20,15 @@
  * TaskScopeTags. No more flat-FK-only shortcut.
  */
 
-import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useMemo } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import type { HierarchySelection } from "@/features/agent-context/components/hierarchy-selection/types";
-import {
-  fetchEntityScopes,
-  setEntityScopes,
-  selectScopeIdsForEntity,
-} from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
-import { selectAllScopes } from "@/features/agent-context/redux/scope/scopesSlice";
+import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
+import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
+import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
 
-const ENTITY_TYPE = "agent_app";
+const ENTITY_TYPE: ScopeAssignmentEntityType = "agent_app";
 
 interface AgentAppHierarchyCascadeProps {
   appId: string;
@@ -54,23 +51,16 @@ export function AgentAppHierarchyCascade({
   onTaskChange,
   disabled,
 }: AgentAppHierarchyCascadeProps) {
-  const dispatch = useAppDispatch();
-
-  // ── Hydrate this app's scope assignments once on mount ─────────────
-  const fetchedRef = useRef(false);
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    dispatch(
-      fetchEntityScopes({ entity_type: ENTITY_TYPE, entity_id: appId }),
-    );
-  }, [dispatch, appId]);
-
-  // ── Read the current assignments + scope catalogue ─────────────────
-  const assignedScopeIds = useAppSelector((state) =>
-    selectScopeIdsForEntity(state, ENTITY_TYPE, appId),
-  );
-  const allScopes = useAppSelector(selectAllScopes);
+  // ── Hydrate this app's scope assignments via the canonical hook ───
+  // `useEntityScopes` lazy-fetches on mount, dedupes in-flight requests,
+  // and exposes `setScopes` which writes through `scopesService` and
+  // patches the per-entity cache + project tree in one shot.
+  const { scopeIds: assignedScopeIds, setScopes } = useEntityScopes({
+    entityType: ENTITY_TYPE,
+    entityId: appId,
+    organizationId,
+  });
+  const allScopes = useAppSelector(selectAllScopesFlat);
 
   // ── Derive the {typeId → scopeId} shape the cascade wants ──────────
   // The cascade enforces one selection per scope-type. If multiple
@@ -125,13 +115,7 @@ export function AgentAppHierarchyCascade({
       nextScopeIds.length === assignedScopeIds.length &&
       nextScopeIds.every((id) => assignedScopeIds.includes(id));
     if (!sameSet) {
-      dispatch(
-        setEntityScopes({
-          entity_type: ENTITY_TYPE,
-          entity_id: appId,
-          scope_ids: nextScopeIds,
-        }),
-      );
+      void setScopes(nextScopeIds);
     }
   };
 

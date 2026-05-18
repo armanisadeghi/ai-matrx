@@ -62,6 +62,17 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
     [file?.fileName],
   );
 
+  const metadataPretty = useMemo(() => {
+    if (!file) return null;
+    try {
+      const keys = Object.keys(file.metadata ?? {});
+      if (keys.length === 0) return null;
+      return JSON.stringify(file.metadata, null, 2);
+    } catch {
+      return null;
+    }
+  }, [file]);
+
   if (!file) {
     return (
       <div
@@ -86,16 +97,6 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
         })
       : "—";
 
-  const metadataPretty = useMemo(() => {
-    try {
-      const keys = Object.keys(file.metadata ?? {});
-      if (keys.length === 0) return null;
-      return JSON.stringify(file.metadata, null, 2);
-    } catch {
-      return null;
-    }
-  }, [file.metadata]);
-
   return (
     <div
       className={cn(
@@ -111,10 +112,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
         </Section>
 
         <Section title="Location">
-          <Row
-            label="Folder"
-            value={parentFolder?.folderPath ?? "(root)"}
-          />
+          <Row label="Folder" value={parentFolder?.folderPath ?? "(root)"} />
           <CopyableRow
             label="Full path"
             value={file.filePath || "—"}
@@ -189,10 +187,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
             mono
           />
           {file.deletedAt ? (
-            <Row
-              label="Soft-deleted"
-              value={formatTs(file.deletedAt)}
-            />
+            <Row label="Soft-deleted" value={formatTs(file.deletedAt)} />
           ) : null}
         </Section>
 

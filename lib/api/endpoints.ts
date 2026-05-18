@@ -127,6 +127,18 @@ export const ENDPOINTS = {
     processStream: "/utilities/block-processing/process/stream" as const,
   },
 
+  /** CX-data endpoints — conversation/message data (Authenticated) */
+  cx: {
+    /**
+     * GET — Snapshot of "what the model is currently seeing" for a conversation.
+     * GET /cx/conversations/{conversationId}/context-state
+     * Initial hydration for the Model Context tab; live updates come via
+     * CONTEXT_STATE / CONTEXT_TRIMMED stream events after each turn.
+     */
+    contextState: (conversationId: string) =>
+      `/cx/conversations/${conversationId}/context-state` as const,
+  },
+
   /** Tool testing endpoints — Authenticated */
   tools: {
     /** GET — List available tools (?category=) */

@@ -65,7 +65,7 @@ import {
   mapScopeToInstance,
   mapScopeToInstanceWithSurface,
 } from "@/features/agents/utils/scope-mapping";
-import type { ValueMappingMap } from "@/features/tool-registry/surfaces/types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.
@@ -100,6 +100,13 @@ interface CreateManualInstanceArgs {
   /** When provided, uses this UUID instead of generating a new one. Useful for
    *  creating an instance keyed by a known server conversation UUID. */
   conversationId?: string;
+  /**
+   * Pin execution to a specific agx_version row id. When set, executeInstance
+   * targets `/ai/agents/{versionId}` with `is_version: true` instead of
+   * routing to the live agent. Used by surfaces (agent-comparison, future modes)
+   * that let the user freeze a version per column.
+   */
+  initialAgentVersionId?: string | null;
   agentType?: AgentType;
   autoClearConversation?: boolean;
   showAutoClearToggle?: boolean;
@@ -135,6 +142,7 @@ export const createManualInstance = createAsyncThunk<
   const {
     agentId,
     conversationId: providedConversationId,
+    initialAgentVersionId = null,
     agentType,
     autoClearConversation = false,
     showAutoClearToggle,
@@ -168,6 +176,7 @@ export const createManualInstance = createAsyncThunk<
     createInstance({
       conversationId,
       agentId,
+      ...(initialAgentVersionId ? { initialAgentVersionId } : {}),
       agentType: resolvedAgentType,
       origin: "manual" as InstanceOrigin,
       sourceFeature,

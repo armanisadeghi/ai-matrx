@@ -83,6 +83,7 @@ export function mapRpcRowToConversationListItem(
     updatedAt: row.updated_at,
     status: row.status,
     messageCount: row.message_count,
+    isFavorite: row.is_favorite ?? false,
     agentVersionNumber: row.agent_version_number,
     initialAgentVersionId: row.initial_agent_version_id,
     lastModelId: row.last_model_id,
@@ -112,9 +113,7 @@ export const fetchAgentConversationsNormalized = createAsyncThunk<
     const rpcArgs: Database["public"]["Functions"]["get_agent_conversations"]["Args"] =
       {
         p_agent_id: agentId,
-        ...(versionFilter !== null
-          ? { p_version_number: versionFilter }
-          : {}),
+        ...(versionFilter !== null ? { p_version_number: versionFilter } : {}),
       };
 
     const { data, error } = await supabase.rpc(
@@ -211,7 +210,7 @@ export const fetchGlobalConversations = createAsyncThunk<
     const { data, error } = await supabase
       .from("cx_conversation")
       .select(
-        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at",
+        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, is_favorite",
       )
       .is("deleted_at", null)
       .eq("is_ephemeral", false)
@@ -232,6 +231,7 @@ export const fetchGlobalConversations = createAsyncThunk<
       createdAt: row.created_at as string,
       status: row.status as string,
       messageCount: (row.message_count ?? 0) as number,
+      isFavorite: (row.is_favorite ?? false) as boolean,
       agentId: (row.initial_agent_id ?? null) as string | null,
       lastModelId: (row.last_model_id ?? null) as string | null,
       sourceApp: (row.source_app ?? undefined) as string | undefined,

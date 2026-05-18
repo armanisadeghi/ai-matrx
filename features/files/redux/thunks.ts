@@ -30,6 +30,7 @@ import * as Folders from "@/features/files/api/folders";
 import * as Permissions from "@/features/files/api/permissions";
 import * as ShareLinks from "@/features/files/api/share-links";
 import * as Versions from "@/features/files/api/versions";
+import { fileHandler } from "@/features/files/handler/handler";
 import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -43,6 +44,7 @@ import {
 } from "./converters";
 import { registerRequest, releaseRequest } from "./request-ledger";
 import { buildTreeState } from "./tree-utils";
+import { isSystemPath } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import {
   addFilePendingRequest,
@@ -111,6 +113,16 @@ type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
  * Loads the full tree for the current user via the cld_get_user_file_tree
  * RPC. Normalizes into filesById / foldersById / tree.
  */
+// `cld_get_user_file_tree` server-side cap (`p_limit := LEAST(GREATEST(p_limit, 1), 5000);`).
+// Passing anything > 5000 silently clamps. The FE pages via `p_offset`
+// to recover the full tree for power users (users with >5k files).
+const TREE_PAGE_SIZE = 5000;
+
+// Sanity cap on the pagination loop — prevents an infinite loop if the
+// RPC ever returns a full page on the page that should be the last.
+// 20 * 5000 = 100,000 rows, well above any realistic user.
+const TREE_MAX_PAGES = 20;
+
 export const loadUserFileTree = createAsyncThunk<
   void,
   { userId: string },
@@ -118,71 +130,40 @@ export const loadUserFileTree = createAsyncThunk<
 >("cloudFiles/loadUserFileTree", async ({ userId }, { dispatch }) => {
   dispatch(setTreeStatus({ status: "loading" }));
 
-  // The DB has TWO overloads of this function:
-  //   cld_get_user_file_tree(p_user_id uuid)
-  //   cld_get_user_file_tree(p_user_id uuid, p_limit int, p_offset int,
-  //                          p_include_folders boolean, p_include_deleted boolean)
+  // RPC contract (migration 014, 2026-05-17): identity-locked to
+  // `auth.uid()`, returns owner OR explicit-grant rows only (no public
+  // leak), excludes `parent_file_id IS NOT NULL` + `system-files/%`
+  // paths. So we can consume the response raw — no FE-side ownership
+  // or system-path filtering needed. See from_python/UPDATES.md §9
+  // (2026-05-17 "Phase 1d.5" entry).
   //
-  // A 1-arg call (only `p_user_id`) is AMBIGUOUS — Postgres can't pick a
-  // best candidate and PostgREST returns `42725: function ... is not
-  // unique`. Passing one of the new params forces resolution to the
-  // 5-arg overload (which is also the one we want — it returns folders
-  // and the unified `{ kind, path, name, parent_id, size_bytes, ... }`
-  // row shape). We pass the safest defaults explicitly here so the
-  // intent is on the wire and the call is overload-stable.
-  //
-  // Logged for the Python team in for_python/REQUESTS.md — they should
-  // drop the legacy 1-arg overload so this ambiguity can't bite again.
-  const { data, error } = await supabase.rpc("cld_get_user_file_tree", {
-    p_user_id: userId,
-    p_limit: 5000,
-    p_offset: 0,
-    p_include_folders: true,
-    p_include_deleted: false,
-  });
+  // Pagination: server caps p_limit at 5000. We loop on `p_offset`
+  // until a partial page comes back. Sequential pages — Postgres
+  // handles them fast and parallelism would just contend for the
+  // same connection.
+  const rows: ReturnType<typeof parseCloudTreeRows> = [];
+  for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
+    const { data, error } = await supabase.rpc("cld_get_user_file_tree", {
+      p_user_id: userId,
+      p_limit: TREE_PAGE_SIZE,
+      p_offset: page * TREE_PAGE_SIZE,
+      p_include_folders: true,
+      p_include_deleted: false,
+    });
 
-  if (error) {
-    dispatch(setTreeStatus({ status: "error", error: error.message }));
-    throw error;
+    if (error) {
+      dispatch(setTreeStatus({ status: "error", error: error.message }));
+      throw error;
+    }
+
+    const pageRows = parseCloudTreeRows(data);
+    rows.push(...pageRows);
+    if (pageRows.length < TREE_PAGE_SIZE) break;
   }
-
-  const rows = parseCloudTreeRows(data);
-
-  // Defensive ownership filter — DO NOT REMOVE without coordinating with the
-  // Python team. The 5-arg overload of `cld_get_user_file_tree` has a bug in
-  // its WHERE clause for files:
-  //
-  //   WHERE (...)
-  //     AND (
-  //         f.owner_id = p_user_id
-  //         OR f.visibility = 'public'        -- <-- leaks ALL public files
-  //         OR cld_get_effective_permission(f.id, p_user_id) IS NOT NULL
-  //     )
-  //
-  // That `OR f.visibility = 'public'` makes EVERY public file in the system
-  // appear in EVERY user's tree. A `visibility = 'public'` flag is supposed
-  // to mean "anyone with the link can read" — it's NOT supposed to mean
-  // "show in every user's My Files". Folders correctly scope to
-  // `d.owner_id = p_user_id` in the same function; files do not.
-  //
-  // Until the Python team patches the RPC, we filter on the client: keep a
-  // file row only if the user owns it OR has been explicitly granted a
-  // permission (`effective_permission` is non-null when the row was returned
-  // because of `cld_get_effective_permission`). Public-but-not-granted rows
-  // are dropped — those should only surface via direct share links, not the
-  // user's tree.
-  //
-  // Tracked in for_python/REQUESTS.md (item 0a).
-  const ownedOrSharedRows = rows.filter((row) => {
-    if (row.kind === "folder") return true; // already owner-scoped server-side
-    if (row.owner_id === userId) return true;
-    if (row.effective_permission != null) return true;
-    return false;
-  });
 
   const files: Partial<CloudFile>[] = [];
   const folders: Partial<CloudFolder>[] = [];
-  for (const row of ownedOrSharedRows) {
+  for (const row of rows) {
     if (row.kind === "file") {
       files.push({
         id: row.id,
@@ -191,7 +172,10 @@ export const loadUserFileTree = createAsyncThunk<
         fileName: row.file_name,
         parentFolderId: row.parent_folder_id,
         mimeType: row.mime_type,
-        fileSize: row.file_size,
+        // Phase 0 rename: `file_size` → `size_bytes`. The
+        // `CloudTreeFileRow` shape and Supabase row both carry the new
+        // name now. See docs/PYTHON_UPDATES.md §3.
+        fileSize: row.size_bytes,
         visibility: row.visibility,
         currentVersion: row.current_version,
         createdAt: row.created_at,
@@ -242,10 +226,13 @@ export const loadUserFileTree = createAsyncThunk<
           createdAt: f.createdAt ?? "",
           updatedAt: f.updatedAt ?? "",
           deletedAt: f.deletedAt ?? null,
-          // Tree-spine reconstruction is internal — public_url is only
-          // populated when records arrive via the API. Default to null
-          // here; surfaces that need a CDN URL fetch via useFileSrc.
+          // Tree-spine reconstruction is internal — public_url and the
+          // Phase-1b backend thumbnail_url are only populated when records
+          // arrive via the REST API. Default both to null here; the file
+          // grid (`MediaThumbnail`) falls through to `useFileAsset` →
+          // `Asset.variants["thumbnail_url"]` when these are absent.
           publicUrl: null,
+          thumbnailUrl: null,
           source: { kind: "real" },
           _dirty: false,
           _dirtyFields: {},
@@ -331,10 +318,21 @@ export const loadFolderContents = createAsyncThunk<
   if (filesRes.error) throw filesRes.error;
   if (foldersRes.error) throw foldersRes.error;
 
-  dispatch(upsertFiles((filesRes.data ?? []).map(dbRowToCloudFile)));
-  dispatch(upsertFolders((foldersRes.data ?? []).map(dbRowToCloudFolder)));
+  // Drop backend-owned variant rows. Unlike `cld_get_user_file_tree`
+  // which excludes them server-side (migration 012), this codepath
+  // queries `cld_files` / `cld_folders` directly so we filter on the
+  // wire. See `isSystemPath` in `utils/folder-conventions.ts`.
+  const visibleFiles = (filesRes.data ?? []).filter(
+    (r) => !isSystemPath(r.file_path),
+  );
+  const visibleFolders = (foldersRes.data ?? []).filter(
+    (r) => !isSystemPath(r.folder_path),
+  );
 
-  for (const f of filesRes.data ?? []) {
+  dispatch(upsertFiles(visibleFiles.map(dbRowToCloudFile)));
+  dispatch(upsertFolders(visibleFolders.map(dbRowToCloudFolder)));
+
+  for (const f of visibleFiles) {
     dispatch(
       attachChildToFolder({
         parentFolderId: folderId,
@@ -343,7 +341,7 @@ export const loadFolderContents = createAsyncThunk<
       }),
     );
   }
-  for (const f of foldersRes.data ?? []) {
+  for (const f of visibleFolders) {
     dispatch(
       attachChildToFolder({
         parentFolderId: folderId,
@@ -419,11 +417,9 @@ export const loadShareLinks = createAsyncThunk<
 // Writes — folders
 // ---------------------------------------------------------------------------
 //
-// NOTE: The Python backend doesn't expose dedicated folder-CRUD endpoints
-// per the current contract (see PYTHON_TEAM_COMMS.md). Folders are cheap,
-// rows-only entities with RLS, so we write directly via supabase-js. If the
-// Python team ships a REST endpoint later, these thunks can be swapped to
-// hit it without changing callers.
+// Folder-CRUD endpoints (`POST /folders`, `PATCH /folders/{id}`,
+// `DELETE /folders/{id}`) shipped 2026-04-26. These thunks now hit
+// the REST surface; legacy direct supabase-js writes were retired.
 
 /**
  * Create a folder via the Python REST contract. We hit `POST /folders` with
@@ -927,7 +923,8 @@ export const uploadFiles = createAsyncThunk<
               storage_uri: data.storage_uri,
               file_name: data.file_path.split("/").pop() ?? targetName,
               mime_type: file.type || null,
-              file_size: data.file_size,
+              // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
+              size_bytes: data.size_bytes,
               checksum: data.checksum,
               visibility: arg.visibility ?? "private",
               current_version: data.version_number,
@@ -1439,6 +1436,13 @@ export const deactivateShareLink = createAsyncThunk<
 
 // ---------------------------------------------------------------------------
 // Utility — getSignedUrl (no slice state change; caller stores the URL).
+//
+// Routes through the universal handler so we hit the lazy signed-URL cache
+// instead of always firing a network request. For public files this returns
+// the permanent CDN URL with zero network cost; for private/shared files it
+// returns the cached signed URL if still valid, otherwise mints one once.
+// `expiresIn` in the return shape is informational and pinned to the handler
+// default (3600s); callers never read it (verified across the codebase).
 // ---------------------------------------------------------------------------
 
 export const getSignedUrl = createAsyncThunk<
@@ -1453,8 +1457,13 @@ export const getSignedUrl = createAsyncThunk<
     // for any remaining callers.
     throw new Error("Signed URLs aren't available for virtual sources");
   }
-  const { data } = await Files.getSignedUrl(fileId, { expiresIn });
-  return { url: data.url, expiresIn: data.expires_in };
+  const url = await fileHandler
+    .use({ kind: "file_id", fileId })
+    .as({ kind: "html_src" });
+  if (!url) {
+    throw new Error(`Could not resolve a URL for file ${fileId}`);
+  }
+  return { url, expiresIn: expiresIn ?? 3600 };
 });
 
 // ---------------------------------------------------------------------------

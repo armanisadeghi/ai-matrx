@@ -5,6 +5,7 @@ import { Hexagon, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SectionToolbar } from "../SectionToolbar";
+import { SectionFooter } from "../SectionFooter";
 import { ListRow } from "../ListRow";
 import { useAgents } from "../../hooks/useAgents";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
@@ -69,6 +70,11 @@ export function AgentsSection() {
           ))
         )}
       </div>
+      <SectionFooter
+        description="Agents define how AI behaves in your workspace — custom personas, tool access, and instructions for specific tasks."
+        learnMoreLabel="Learn more about agents"
+        learnMoreHref="#"
+      />
     </div>
   );
 }

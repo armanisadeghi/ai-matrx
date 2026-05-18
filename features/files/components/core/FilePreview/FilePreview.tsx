@@ -101,6 +101,13 @@ const CodePreview = dynamic(() => import("./previewers/CodePreview"), {
   ssr: false,
   loading: PreviewerSkeleton,
 });
+// HTML splits out from CodePreview — saved web pages get a sandboxed-iframe
+// Rendered view by default, with a Source toggle for the raw markup. Showing
+// the source was the wrong default for HTML files.
+const HtmlPreview = dynamic(() => import("./previewers/HtmlPreview"), {
+  ssr: false,
+  loading: PreviewerSkeleton,
+});
 
 // ---------------------------------------------------------------------------
 // DEBUG layering visualization — paired with the corresponding rings in
@@ -226,6 +233,21 @@ export function FilePreview({
         label: "Open in PDF Extractor",
         onClick: () =>
           dispatch(openOverlay({ overlayId: "pdfExtractorWindow" })),
+      };
+    }
+    // Image files get a shortcut to the full-screen Image Studio Edit mode.
+    // The Edit tab inside this viewer mounts the same Filerobot shell, but
+    // the full-page route gives the user dramatically more canvas + the
+    // AI sidecar gets the room it needs.
+    if (
+      !openInRoute &&
+      capability.previewKind === "image" &&
+      file.source.kind !== "virtual"
+    ) {
+      openInRoute = {
+        label: "Open in Image Studio",
+        onClick: () =>
+          router.push(`/images/edit?cloudFileId=${encodeURIComponent(fileId)}`),
       };
     }
     const previewActions = buildPreviewActions({
@@ -366,6 +388,9 @@ export function FilePreview({
       break;
     case "code":
       body = <CodePreview fileId={fileId} fileName={file.fileName} />;
+      break;
+    case "html":
+      body = <HtmlPreview url={url} fileId={fileId} fileName={file.fileName} />;
       break;
     case "text":
       body = <TextPreview fileId={fileId} />;

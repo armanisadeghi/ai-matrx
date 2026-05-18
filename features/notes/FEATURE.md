@@ -2,7 +2,7 @@
 
 **Status:** `active` — production, actively maintained
 **Tier:** `1`
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-05-15`
 
 > User-facing README at [`README.md`](./README.md). This doc is the agent-facing architecture view.
 
@@ -85,7 +85,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 - **Realtime is RLS-authorized.** Use Postgres Changes here (not Broadcast) so non-owners only see notes they have access to.
 - **The save-from-anywhere API is a public contract.** Agents and other features depend on it; don't break the signature silently.
 - **Rich text editor:** Notes currently uses its own editor — the legacy `features/rich-text-editor/` is deprecated (per CLAUDE.md) and must not be re-adopted. Verify the current editor before modifying content rendering.
-- **Scope columns** (`user_id`, `organization_id`, `project_id`) follow the project's multi-scope convention — see [`features/scope-system/FEATURE.md`](../scope-system/FEATURE.md).
+- **Scope columns** (`user_id`, `organization_id`, `project_id`) follow the project's multi-scope convention — see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 - **Folder tree operations are transactional.** Moving a folder with children must update all descendants' paths — don't optimize away the reparenting walk.
 
 ---
@@ -94,13 +94,14 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 - **Depends on:** `features/sharing/` (permissions), Supabase Realtime, the app's scope system
 - **Depended on by:** agents (save-to-notes), any feature offering a "save to notes" action
-- **Cross-links:** [`features/sharing/FEATURE.md`](../sharing/FEATURE.md), [`features/scope-system/FEATURE.md`](../scope-system/FEATURE.md), [`features/agents/FEATURE.md`](../agents/FEATURE.md)
+- **Cross-links:** [`features/sharing/FEATURE.md`](../sharing/FEATURE.md), [`features/scopes/FEATURE.md`](../scopes/FEATURE.md), [`features/agents/FEATURE.md`](../agents/FEATURE.md)
 
 ---
 
 ## Change log
 
-- `2026-05-15` — Notes now emits the `matrx-user/notes` surface scope when launching an agent shortcut from the context menu. Adds `hooks/useNotesSurfaceScope.ts` (the scope builder) and `utils/markdown-headings.ts` (heading-aware section slicing). The surface manifest at `features/tool-registry/surfaces/manifests/notes-editor.manifest.ts` declares 19 surface-specific values covering active-note metadata, selection/scope mirror, workspace context, and editor pane state.
+- `2026-05-15` — Added a Refresh button to the desktop notes header that mirrors the route-start fetches: `fetchNotesList()`, plus `fetchScopeTypes` / `fetchScopes` when an org is active, plus a forced refetch of every currently-open tab. Introduces `refreshNoteContent` thunk in `redux/thunks.ts` — a force-fetch sibling of `fetchNoteContent` that bypasses the `_fetchStatus === "full"` short-circuit but skips dirty notes to protect unsaved local edits.
+- `2026-05-15` — Notes now emits the `matrx-user/notes` surface scope when launching an agent shortcut from the context menu. Adds `hooks/useNotesSurfaceScope.ts` (the scope builder) and `utils/markdown-headings.ts` (heading-aware section slicing). The surface manifest at `features/surfaces/manifests/notes-editor.manifest.ts` declares 19 surface-specific values covering active-note metadata, selection/scope mirror, workspace context, and editor pane state.
 - `2026-04-25` — Removed `@/features/notes` barrel imports; consumers use `components/NotesLayout`, `service/notesApi`, `actions/CategoryNotesModal`, `types` (no new barrel file).
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.
 

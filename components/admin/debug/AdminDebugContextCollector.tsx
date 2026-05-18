@@ -23,6 +23,7 @@ import {
   appendConsoleError,
   type ConsoleErrorEntry,
 } from "@/lib/redux/slices/adminDebugSlice";
+import { isKnownThirdPartyNoise } from "@/lib/console-noise";
 import { v4 as uuidv4 } from "uuid";
 
 export function AdminDebugContextCollector() {
@@ -69,6 +70,12 @@ export function AdminDebugContextCollector() {
 
     console.error = (...args: unknown[]) => {
       originalError(...args);
+      // Drop documented third-party dev warnings (see lib/console-noise.ts)
+      // so the admin debug panel stays focused on signal. The same predicate
+      // is checked by the global console.error wrapper installed at the
+      // Filerobot loader, but we re-check here so the panel stays clean
+      // regardless of which wrapper landed on top of the other.
+      if (isKnownThirdPartyNoise(args)) return;
       const message = args
         .map((a) =>
           typeof a === "string"

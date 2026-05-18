@@ -231,6 +231,7 @@ import {
   dbRowToAgentShortcut,
   agentShortcutToInsert,
   agentShortcutToUpdate,
+  parseValueMappings,
 } from "./converters";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
@@ -317,7 +318,12 @@ export const buildAgentShortcutMenu = createAsyncThunk<
           contextSlots: parsedContextSlots,
 
           enabledFeatures: item.enabled_features as ShortcutContext[],
+          surfaceName:
+            (item as { surface_name?: string | null }).surface_name ?? null,
           scopeMappings: parseScopeMappings(item.scope_mappings),
+          valueMappings: parseValueMappings(
+            (item as { value_mappings?: unknown }).value_mappings,
+          ),
           contextMappings: parseScopeMappings(item.context_mappings),
 
           // AgentExecutionConfig bundle — read v2 columns with old-name fallback
@@ -427,7 +433,12 @@ export const fetchShortcutsForContext = createAsyncThunk<
         contextSlots: parseContextSlots(row.agent_context_slots),
 
         enabledFeatures: row.enabled_features as ShortcutContext[],
+        surfaceName:
+          (row as { surface_name?: string | null }).surface_name ?? null,
         scopeMappings: parseScopeMappings(row.scope_mappings),
+        valueMappings: parseValueMappings(
+          (row as { value_mappings?: unknown }).value_mappings,
+        ),
         contextMappings: parseScopeMappings(row.context_mappings),
 
         ...menuItemToConfigFields(row),
@@ -803,7 +814,9 @@ export const syncUserShortcutToSlice = createAsyncThunk<
       agentVersionId: item.agent_version_id,
       useLatest: item.use_latest,
       enabledFeatures: item.enabled_features as ShortcutContext[],
+      surfaceName: item.surface_name ?? null,
       scopeMappings: item.scope_mappings,
+      valueMappings: parseValueMappings(item.value_mappings),
       contextMappings: item.context_mappings,
       ...menuItemToConfigFields(item),
       isActive: item.is_active,
@@ -835,7 +848,9 @@ export interface ShortcutApiRow {
   agent_version_id: string | null;
   use_latest: boolean;
   enabled_features: unknown;
+  surface_name: string | null;
   scope_mappings: unknown;
+  value_mappings: unknown;
   context_mappings: unknown;
   is_active: boolean;
   user_id: string | null;
@@ -872,7 +887,9 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     variableDefinitions: [],
     contextSlots: [],
     enabledFeatures: (row.enabled_features as ShortcutContext[]) ?? [],
+    surfaceName: row.surface_name ?? null,
     scopeMappings: parseScopeMappings(row.scope_mappings),
+    valueMappings: parseValueMappings(row.value_mappings),
     contextMappings: parseScopeMappings(row.context_mappings),
     ...menuItemToConfigFields(row),
     isActive: row.is_active,
@@ -902,8 +919,11 @@ function shortcutToApiBody(
   if (patch.useLatest !== undefined) out.use_latest = patch.useLatest;
   if (patch.enabledFeatures !== undefined)
     out.enabled_features = patch.enabledFeatures as unknown;
+  if (patch.surfaceName !== undefined) out.surface_name = patch.surfaceName;
   if (patch.scopeMappings !== undefined)
     out.scope_mappings = patch.scopeMappings as unknown;
+  if (patch.valueMappings !== undefined)
+    out.value_mappings = patch.valueMappings as unknown;
   if (patch.contextMappings !== undefined)
     out.context_mappings = patch.contextMappings as unknown;
 

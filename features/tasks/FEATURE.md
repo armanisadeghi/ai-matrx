@@ -4,13 +4,13 @@
 **Tier:** `2`
 **Last updated:** `2026-04-25`
 
-> Combined doc. Tasks live under projects; they share the org-scoped architecture documented in `features/projects/CONCEPT-scope-system-redux-architecture.md`.
+> Combined doc. Tasks live under projects; they share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 ---
 
 ## Purpose
 
-Org-scoped project management. Projects group work within an organization; tasks are todos with metadata (status, assignment, timestamps, attached conversations, attached transcripts, etc.) belonging to a project. The scope chain `org → project → task` is a central axis of the [scope system](../scope-system/FEATURE.md).
+Org-scoped project management. Projects group work within an organization; tasks are todos with metadata (status, assignment, timestamps, attached conversations, attached transcripts, etc.) belonging to a project. The scope chain `org → project → task` is a central axis of the [scope system](../scopes/FEATURE.md).
 
 ---
 
@@ -23,7 +23,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 **Feature code — `features/projects/`**
 - `components/`, `hooks.ts`, `service.ts`, `types.ts`, `index.ts`
-- `CONCEPT-scope-system-redux-architecture.md` — the scope-architecture seed doc
+- [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — the canonical scope architecture (replaces the legacy seed doc)
 - `README.md` — user-facing guide
 
 **Feature code — `features/tasks/`**
@@ -42,7 +42,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 - `project_members` / `task_assignments` — M2M membership
 - `project_invitations` — invitations scoped to a specific project
 
-The scope columns `organization_id` on projects, `project_id` on tasks, plus derived `organization_id` on tasks (via join) make these first-class citizens in the [scope system](../scope-system/FEATURE.md).
+The scope columns `organization_id` on projects, `project_id` on tasks, plus derived `organization_id` on tasks (via join) make these first-class citizens in the [scope system](../scopes/FEATURE.md).
 
 ---
 
@@ -94,7 +94,7 @@ The scope columns `organization_id` on projects, `project_id` on tasks, plus der
 
 - **Depends on:** `features/organizations/` (parent scope), `features/scope-system/`, `features/sharing/` (share grants orthogonal to membership), `features/invitations/` (and its `project_invitations` extension)
 - **Depended on by:** `features/agents/` (task-scoped invocations), `features/transcripts/` (task-attached transcripts), `features/notes/` (project-scoped notes)
-- **Cross-links:** [`CONCEPT-scope-system-redux-architecture.md`](../projects/CONCEPT-scope-system-redux-architecture.md), [`../organizations/FEATURE.md`](../organizations/FEATURE.md), [`../scope-system/FEATURE.md`](../scope-system/FEATURE.md)
+- **Cross-links:** [`../scopes/FEATURE.md`](../scopes/FEATURE.md), [`../organizations/FEATURE.md`](../organizations/FEATURE.md)
 
 ---
 
@@ -105,4 +105,4 @@ The scope columns `organization_id` on projects, `project_id` on tasks, plus der
 
 ---
 
-> **Keep-docs-live:** schema changes to `projects` or `tasks`, widget system changes, or scope-column changes must update this doc and cross-check `features/scope-system/FEATURE.md`.
+> **Keep-docs-live:** schema changes to `projects` or `tasks`, widget system changes, or scope-column changes must update this doc and cross-check `features/scopes/FEATURE.md`.

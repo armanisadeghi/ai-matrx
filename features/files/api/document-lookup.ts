@@ -6,14 +6,13 @@
  * with the RAG team's document model without baking the doc id into
  * `cld_files`.
  *
- * Endpoint shape (specced in `for_python/REQUESTS.md` item 14):
+ * Endpoint (shipped 2026-05-05, Bundle C — see from_python/UPDATES.md):
  *
  *   GET /files/{file_id}/document
  *     200 → FileDocumentLookup       (latest processed_documents row)
  *     404 → "no_processed_document"  (file has not been ingested yet)
  *
- * Until the Python team lands the endpoint, this module degrades
- * gracefully: any non-404 failure is treated as "lookup unavailable"
+ * Non-404 failures (network / 5xx) are treated as "lookup unavailable"
  * (not "no document"), so a transient outage doesn't trick the UI
  * into hiding the Document tab forever.
  *
@@ -74,8 +73,7 @@ export async function lookupFileDocument(
       // Anything else — endpoint doesn't exist yet (Python ships item 14
       // and this gracefully starts working) or a transient backend
       // failure. Don't cache permanently; let a re-mount try again.
-      const reason =
-        err instanceof Error ? err.message : "Lookup unavailable";
+      const reason = err instanceof Error ? err.message : "Lookup unavailable";
       return { kind: "unavailable", reason };
     } finally {
       inflight.delete(fileId);

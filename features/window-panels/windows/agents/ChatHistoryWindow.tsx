@@ -13,7 +13,13 @@
  * `features/prompts/components/results-display/QuickChatHistorySheet.tsx`.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   SquareStack,
   ChevronDown,
@@ -23,6 +29,7 @@ import {
   History,
   Loader2,
   MessageSquare,
+  MoreHorizontal,
   Search,
   Flame,
   X,
@@ -58,6 +65,12 @@ import {
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
 
 const SURFACE_KEY = "ai-results-window";
 
@@ -125,6 +138,7 @@ interface ConversationGroupRowProps {
   defaultOpen: boolean;
   /** When true, render an agent name next to each conversation (date-grouping). */
   showAgentBadge: boolean;
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }
 
 function ConversationGroupRow({
@@ -134,6 +148,7 @@ function ConversationGroupRow({
   onSelect,
   defaultOpen,
   showAgentBadge,
+  onOpenMenu,
 }: ConversationGroupRowProps) {
   const [open, setOpen] = useState(defaultOpen);
   const hasActive = group.conversations.some(
@@ -166,54 +181,103 @@ function ConversationGroupRow({
 
       {open && (
         <div className="pl-2">
-          {group.conversations.map((conv) => {
-            const isActive = conv.conversationId === selectedId;
-            const date = formatRelative(conv.updatedAt);
-            const agentName = conv.agentId
-              ? (agentNameById.get(conv.agentId) ?? null)
-              : null;
-            return (
-              <button
-                key={conv.conversationId}
-                type="button"
-                onClick={() => onSelect(conv.conversationId)}
-                className={cn(
-                  "flex items-start gap-2 w-full px-2 py-1.5 text-left transition-colors border-l-2",
-                  isActive
-                    ? "border-primary bg-primary/8 text-primary"
-                    : "border-transparent hover:bg-muted/40 text-foreground",
-                )}
-              >
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={cn(
-                      "text-xs font-medium truncate leading-tight",
-                      isActive ? "text-primary" : "text-foreground",
-                    )}
-                  >
-                    {conv.title?.trim() || "Untitled"}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                    <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
-                    <span className="text-[10px] text-muted-foreground/70">
-                      {conv.messageCount}
-                      {date ? ` · ${date}` : ""}
-                    </span>
-                    {showAgentBadge && agentName && (
-                      <span className="text-[10px] text-muted-foreground/70 truncate">
-                        · {agentName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {isActive && (
-                  <ChevronRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-                )}
-              </button>
-            );
-          })}
+          {group.conversations.map((conv) => (
+            <ConversationRowItem
+              key={conv.conversationId}
+              conv={conv}
+              isActive={conv.conversationId === selectedId}
+              agentName={
+                conv.agentId ? (agentNameById.get(conv.agentId) ?? null) : null
+              }
+              showAgentBadge={showAgentBadge}
+              onSelect={onSelect}
+              onOpenMenu={onOpenMenu}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ConversationRowItem({
+  conv,
+  isActive,
+  agentName,
+  showAgentBadge,
+  onSelect,
+  onOpenMenu,
+}: {
+  conv: ConversationListItem;
+  isActive: boolean;
+  agentName: string | null;
+  showAgentBadge: boolean;
+  onSelect: (id: string) => void;
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
+}) {
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const date = formatRelative(conv.updatedAt);
+
+  return (
+    <div
+      className={cn(
+        "group flex items-start gap-2 w-full pr-1 transition-colors border-l-2",
+        isActive
+          ? "border-primary bg-primary/8 text-primary"
+          : "border-transparent hover:bg-muted/40 text-foreground",
+      )}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onOpenMenu(conv, e);
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onSelect(conv.conversationId)}
+        className="flex-1 min-w-0 flex items-start gap-2 px-2 py-1.5 text-left"
+      >
+        <div className="flex-1 min-w-0">
+          <p
+            className={cn(
+              "text-xs font-medium truncate leading-tight",
+              isActive ? "text-primary" : "text-foreground",
+            )}
+          >
+            {conv.title?.trim() || "Untitled"}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+            <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
+            <span className="text-[10px] text-muted-foreground/70">
+              {conv.messageCount}
+              {date ? ` · ${date}` : ""}
+            </span>
+            {showAgentBadge && agentName && (
+              <span className="text-[10px] text-muted-foreground/70 truncate">
+                · {agentName}
+              </span>
+            )}
+          </div>
+        </div>
+        {isActive && (
+          <ChevronRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+        )}
+      </button>
+      <button
+        ref={menuBtnRef}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
+        }}
+        className={cn(
+          "shrink-0 self-start mt-1.5 flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
+          "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+        )}
+        aria-label="More options"
+        title="More options"
+      >
+        <MoreHorizontal size={12} />
+      </button>
     </div>
   );
 }
@@ -343,6 +407,7 @@ interface SidebarProps {
   onAgentFilterChange: (next: Set<string>) => void;
   agentNameById: Map<string, string>;
   agentList: { id: string; name: string }[];
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }
 
 function ChatHistorySidebar({
@@ -359,6 +424,7 @@ function ChatHistorySidebar({
   onAgentFilterChange,
   agentNameById,
   agentList,
+  onOpenMenu,
 }: SidebarProps) {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -548,6 +614,7 @@ function ChatHistorySidebar({
             onSelect={onSelect}
             defaultOpen={i < 2}
             showAgentBadge={groupBy === "date"}
+            onOpenMenu={onOpenMenu}
           />
         ))}
       </div>
@@ -638,6 +705,25 @@ function ChatHistoryWindowInner({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [conversations, agentNameById]);
 
+  // Singleton row menu — one menu instance for the entire sidebar.
+  const rowMenu = useConversationRowMenu();
+  const openRowMenu = useCallback(
+    (conv: ConversationListItem, anchor: MenuAnchor) => {
+      const data: ConversationRowMenuData = {
+        conversationId: conv.conversationId,
+        title: conv.title,
+        isFavorite: conv.isFavorite ?? false,
+        isArchived: conv.status === "archived",
+        isOwner: true,
+        href: conv.agentId
+          ? `/agents/${conv.agentId}/run?conversationId=${conv.conversationId}`
+          : `/chat?conversationId=${conv.conversationId}`,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [rowMenu],
+  );
+
   const handleSelect = useCallback(
     async (conversationId: string) => {
       setSelectedId(conversationId);
@@ -718,6 +804,7 @@ function ChatHistoryWindowInner({
           onAgentFilterChange={setAgentFilter}
           agentNameById={agentNameById}
           agentList={agentsWithConversations}
+          onOpenMenu={openRowMenu}
         />
       }
     >
@@ -740,6 +827,8 @@ function ChatHistoryWindowInner({
           </div>
         )}
       </div>
+
+      <ConversationRowMenu {...rowMenu.menuProps} />
     </WindowPanel>
   );
 }

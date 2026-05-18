@@ -52,7 +52,10 @@ export function ContextItemDetail({ itemId, scope }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const { data: item, isLoading: itemLoading } = useContextItem(itemId);
-  const { data: value, isLoading: valueLoading } = useContextItemValue(itemId);
+  const { data: value, isLoading: valueLoading } = useContextItemValue(
+    itemId,
+    scope.scopeId,
+  );
   const { data: accessSummary } = useContextAccessSummary(itemId);
   const statusMutation = useUpdateContextStatus(scope.scopeType, scope.scopeId);
   const duplicateMutation = useDuplicateContextItem(

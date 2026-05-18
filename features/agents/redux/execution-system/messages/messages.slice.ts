@@ -83,6 +83,22 @@ export interface MessagesEntry {
   title: string | null;
   description: string | null;
   keywords: string[] | null;
+
+  // ── Pagination cursor for "load older" ───────────────────────────────────
+  /**
+   * Lowest `position` currently present in `orderedIds`. Used as the
+   * `p_before_position` cursor on the next `get_cx_conversation_bundle`
+   * call. `null` until the first hydrate completes or when the conversation
+   * is empty.
+   */
+  oldestPosition: number | null;
+  /**
+   * Server-reported flag from the bundle's `pagination.has_more`. When
+   * `false`, the scroll sentinel stops dispatching `loadOlderMessages`.
+   */
+  hasMoreOlder: boolean;
+  /** Re-entry guard for the older-page fetch. */
+  isLoadingOlder: boolean;
 }
 
 export interface MessagesState {
@@ -112,6 +128,9 @@ function getOrCreate(
       title: null,
       description: null,
       keywords: null,
+      oldestPosition: null,
+      hasMoreOlder: false,
+      isLoadingOlder: false,
     };
     state.byConversationId[conversationId] = entry;
   }
@@ -294,15 +313,22 @@ const messagesSlice = createSlice({
     /**
      * Replace (or seed) the records for a conversation from the DB bundle.
      * Called by `loadConversation` after `get_cx_conversation_bundle`.
+     *
+     * `pagination` seeds the older-page cursor so the scroll sentinel knows
+     * (a) where to resume from and (b) whether older history exists at all.
      */
     hydrateMessages(
       state,
       action: PayloadAction<{
         conversationId: string;
         messages: MessageRecord[];
+        pagination?: {
+          oldestPosition: number | null;
+          hasMoreOlder: boolean;
+        };
       }>,
     ) {
-      const { conversationId, messages } = action.payload;
+      const { conversationId, messages, pagination } = action.payload;
       const entry = getOrCreate(state, conversationId);
       const sorted = [...messages].sort((a, b) => a.position - b.position);
       entry.byId = {};
@@ -314,6 +340,80 @@ const messagesSlice = createSlice({
         };
         entry.orderedIds.push(msg.id);
       }
+      if (pagination) {
+        entry.oldestPosition = pagination.oldestPosition;
+        entry.hasMoreOlder = pagination.hasMoreOlder;
+      } else {
+        entry.oldestPosition = sorted[0]?.position ?? null;
+        entry.hasMoreOlder = false;
+      }
+      entry.isLoadingOlder = false;
+    },
+
+    /**
+     * Prepend an older page of messages to the transcript. **Strictly
+     * additive** — existing records in `byId` are never overwritten and
+     * existing entries in `orderedIds` keep their references. This is the
+     * critical invariant: components subscribed to per-message selectors
+     * (`selectMessageById`, `selectMessageContent`, etc.) for already-loaded
+     * messages MUST NOT re-render when the user pages older history in.
+     *
+     * Duplicate IDs in the incoming page are silently dropped so we never
+     * clobber a streaming bubble that happens to share an id (defensive —
+     * the RPC's `position < cursor` clause makes this unreachable in
+     * practice).
+     */
+    prependMessages(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        messages: MessageRecord[];
+        pagination: {
+          oldestPosition: number | null;
+          hasMoreOlder: boolean;
+        };
+      }>,
+    ) {
+      const { conversationId, messages, pagination } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+
+      const sorted = [...messages].sort((a, b) => a.position - b.position);
+      const newIds: string[] = [];
+      for (const msg of sorted) {
+        if (entry.byId[msg.id]) continue; // never overwrite
+        entry.byId[msg.id] = {
+          ...msg,
+          _clientStatus: "complete",
+        };
+        newIds.push(msg.id);
+      }
+      if (newIds.length > 0) {
+        // Prepend the new IDs in position order. We deliberately rebuild
+        // orderedIds in a single assignment so React sees one structural
+        // change rather than N. Existing IDs keep their array index relative
+        // to one another; only their absolute index shifts, which keyed
+        // reconciliation handles without remounting child components.
+        const existing = entry.orderedIds.filter((id) => !newIds.includes(id));
+        entry.orderedIds = [...newIds, ...existing];
+      }
+      entry.oldestPosition = pagination.oldestPosition;
+      entry.hasMoreOlder = pagination.hasMoreOlder;
+      entry.isLoadingOlder = false;
+    },
+
+    /** Toggle the older-page re-entry guard. */
+    setOlderLoading(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        loading: boolean;
+      }>,
+    ) {
+      const { conversationId, loading } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      entry.isLoadingOlder = loading;
     },
 
     /** Remove a message from the transcript (e.g. after soft-delete). */
@@ -358,6 +458,9 @@ const messagesSlice = createSlice({
       entry.title = null;
       entry.description = null;
       entry.keywords = null;
+      entry.oldestPosition = null;
+      entry.hasMoreOlder = false;
+      entry.isLoadingOlder = false;
     },
   },
 
@@ -375,6 +478,8 @@ export const {
   reserveMessage,
   updateMessageRecord,
   hydrateMessages,
+  prependMessages,
+  setOlderLoading,
   removeMessage,
   setConversationLabel,
   clearMessages,

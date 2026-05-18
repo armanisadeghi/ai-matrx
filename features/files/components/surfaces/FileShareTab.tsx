@@ -44,7 +44,7 @@ import {
   selectFileById,
 } from "@/features/files/redux/selectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationName } from "@/features/agent-context/redux/appContextSlice";
+import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { ShareLinkDialogBody } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { PermissionsDialogBody } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";

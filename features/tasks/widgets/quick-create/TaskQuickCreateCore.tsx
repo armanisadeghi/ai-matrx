@@ -41,14 +41,17 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAssociateTask } from "@/features/tasks/hooks/useAssociateTask";
 import { selectProjects } from "@/features/tasks/redux/selectors";
 import { setSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
+import { setQuickTasksSelectedTaskId } from "@/features/tasks/redux/quickTasksWindowSlice";
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
   selectProjectId,
   selectProjectName,
-} from "@/features/agent-context/redux/appContextSlice";
-import { selectAllScopes } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectAllScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+} from "@/lib/redux/slices/appContextSlice";
+import {
+  selectAllScopesFlat,
+  selectAllScopeTypesFlat,
+} from "@/features/scopes/redux/selectors/tree";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
 import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
@@ -121,8 +124,8 @@ export function TaskQuickCreateCore({
   const appProjectName = useAppSelector(selectProjectName);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const projects = useAppSelector(selectProjects);
-  const allScopes = useAppSelector(selectAllScopes);
-  const allScopeTypes = useAppSelector(selectAllScopeTypes);
+  const allScopes = useAppSelector(selectAllScopesFlat);
+  const allScopeTypes = useAppSelector(selectAllScopeTypesFlat);
 
   const initialScopeIds = useMemo(
     () =>
@@ -299,12 +302,12 @@ export function TaskQuickCreateCore({
       } else if (action === "navigate") {
         router.push(`/tasks?task=${savedTaskId}`);
       } else if (action === "openWindow") {
-        dispatch(
-          openOverlay({
-            overlayId: "quickTasksWindow",
-            data: { taskId: savedTaskId },
-          }),
-        );
+        // QuickTasksWindow reads its selected task from quickTasksWindowSlice
+        // rather than overlay data, so seed the slice first then open. The
+        // overlay's `data` payload stays empty; previously this site passed
+        // `{ taskId }` which the window silently ignored.
+        dispatch(setQuickTasksSelectedTaskId(savedTaskId));
+        dispatch(openOverlay({ overlayId: "quickTasksWindow" }));
       }
       onSaved?.(savedTaskId, action);
     },

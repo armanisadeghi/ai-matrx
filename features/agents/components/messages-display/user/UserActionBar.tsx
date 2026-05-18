@@ -29,17 +29,13 @@ import {
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  openOverlay,
-  closeOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { Json } from "@/types/database.types";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toast } from "sonner";
 import { EditResubmitOutcomeDialog } from "../message-options/EditResubmitOutcomeDialog";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
-import { showForkOutcomeToast } from "../message-options/ForkOutcomeToast";
 import { extractErrorMessage } from "@/utils/errors";
 
 function serializeSaveError(error: unknown): {
@@ -75,7 +71,10 @@ function serializeSaveError(error: unknown): {
       message,
     };
   }
-  return { logPayload: { raw: extractErrorMessage(error) }, message: "Save failed" };
+  return {
+    logPayload: { raw: extractErrorMessage(error) },
+    message: "Save failed",
+  };
 }
 
 const MessageOptionsMenu = lazy(() =>
@@ -181,7 +180,9 @@ export function UserActionBar({
               );
               toast.error(message);
             }
-            dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
+            dispatch(
+              closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
+            );
           },
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
@@ -212,7 +213,9 @@ export function UserActionBar({
           onSave: (newContent: string) => {
             setPendingResubmitContent(newContent);
             setResubmitDialogOpen(true);
-            dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
+            dispatch(
+              closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
+            );
           },
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
@@ -279,7 +282,12 @@ export function UserActionBar({
       ).unwrap();
 
       // Surface the new conversation BEFORE firing the turn so the
-      // streaming bubble lands in the right place.
+      // streaming bubble lands in the right place. The user edited
+      // a message and explicitly chose "fork and resubmit", so we
+      // auto-navigate — no extra prompt. If we're embedded without a
+      // registered surface (rare), `requestSurfaceNavigation` no-ops
+      // and we drop a passive toast so the user can still find the
+      // new branch from the conversation sidebar.
       if (surfaceKey) {
         const { requestSurfaceNavigation } =
           await import("@/features/agents/redux/surfaces/request-surface-navigation.thunk");
@@ -291,13 +299,7 @@ export function UserActionBar({
           }),
         );
       } else {
-        // Embedded without a registered surface — fall back to a toast
-        // so the user can still navigate manually.
-        showForkOutcomeToast({
-          dispatch,
-          surfaceKey: "",
-          newConversationId,
-        });
+        toast.success("Branch created — open it from the conversation sidebar");
       }
 
       dispatch(
@@ -462,7 +464,9 @@ export function UserActionBar({
             <TapTargetButtonForGroup
               onClick={() => setShowOptionsMenu(true)}
               ariaLabel="More options"
-              icon={<MoreHorizontal className="w-4 h-4 text-muted-foreground" />}
+              icon={
+                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+              }
             />
           </div>
         )}

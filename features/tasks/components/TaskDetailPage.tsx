@@ -67,7 +67,7 @@ import {
   type HierarchySelection,
 } from "@/features/agent-context/components/hierarchy-selection/types";
 import { ScopePicker } from "@/features/agent-context/components/ScopePicker";
-import { selectOrganizationId } from "@/features/agent-context/redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 interface TaskDetailPageProps {
   task: TaskWithProject;

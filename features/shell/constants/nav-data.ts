@@ -248,13 +248,24 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "purple",
   },
   {
+    label: "Scopes",
+    href: "/scopes",
+    iconName: "Layers",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description:
+      "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
+    color: "emerald",
+  },
+  {
     label: "Context",
     href: "/agent-context",
     iconName: "BookOpen",
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description: "Manage context items, templates, and knowledge",
+    description: "Manage context items, templates, and knowledge (legacy)",
     color: "cyan",
   },
   {

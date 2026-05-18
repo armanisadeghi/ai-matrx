@@ -16,7 +16,7 @@ import {
   selectProjectName,
   selectOrganizationId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import {
   selectProjects,
   selectFilteredTasks,

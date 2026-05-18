@@ -2,7 +2,7 @@
 
 **Status:** ✅ Phase 11 complete. Legacy system deleted, cloud-files is the only file system in the app.
 **Owner:** Files migration team.
-**Last updated:** 2026-05-08.
+**Last updated:** 2026-05-16.
 
 This is the live architecture doc for the new file management system under `features/files/`. It supersedes the legacy Supabase-Storage-based system progressively over 12 phases ([migration/MASTER-PLAN.md](migration/MASTER-PLAN.md)).
 
@@ -154,7 +154,7 @@ Subscribed tables:
 
 Reconnection: on `SUBSCRIBED` after any disconnect, dispatch `reconcileTree()` — a thunk that re-runs the RPC and reconciles against current state.
 
-**Dedup rule:** every realtime payload is checked against the request ledger. If `payload.new.metadata?.request_id` matches a pending ledger entry (or timestamp-fuzzy-matches within 2s of a recent own write to the same file_id — fallback), skip the dispatch. The record is already optimistic.
+**Dedup rule:** every realtime payload is checked against the request ledger. If `payload.new.metadata?.request_id` matches a pending ledger entry, the record is our own echo — skip the dispatch (we already applied the change optimistically). Backend reliably stamps `metadata.request_id` on every cloud_sync write since 2026-05-17 (commit `d647c143`).
 
 ---
 
@@ -187,7 +187,136 @@ components/
     ├── FilePicker.tsx
     ├── FolderPicker.tsx
     └── SaveAsDialog.tsx
+
+blocks/                   # canonical message-block renderers (one shape per type)
+├── types.ts              # Umbrella UnifiedMediaBlock (image | video | audio | document | youtube)
+│                         # + MediaGenerationMetadata + parseGenerationMetadata
+├── guards.ts             # isUnifiedMediaBlock + per-kind / per-origin guards
+├── adapters/
+│   └── from-media-block.ts # PRIMARY inbound adapter — WireMediaBlock → UnifiedMediaBlock
+│                           # (Phase 2 path; snake_case → camelCase only)
+└── image/                # UnifiedImageBlock — the only image renderer in the app
+    ├── types.ts                            # re-exports the image discriminant of UnifiedMediaBlock
+    ├── guards.ts                           # isUnifiedImageBlock() — runtime narrowing at boundaries
+    ├── UnifiedImageBlockRenderer.tsx       # THE renderer — inline + compact variants (pure view)
+    ├── useUnifiedImageUrl.ts               # THE URL hook — central expiry + refresh
+    ├── useImageActions.ts                  # ALL action callbacks (download / print / share / variants)
+    ├── ImageSharePopover.tsx               # Cross-platform share surface (popover desktop, drawer mobile)
+    ├── helpers/
+    │   ├── derive-viewer-url.ts            # (block) → /files/f/{fileId}
+    │   ├── extract-file-id-from-url.ts     # UUID-from-S3 fallback
+    │   ├── parse-filename-from-url.ts      # AI-named filename from `response-content-disposition`
+    │   └── parse-signed-url-expiry.ts      # AWS SigV4 X-Amz-Date + X-Amz-Expires
+    ├── utils/
+    │   ├── render-image-variant.ts         # `addAssetVariants` wrapper — server-side resize / format conversion
+    │   └── print-image.ts                  # Hidden-iframe print without popup-blocker hits
+    ├── adapters/                           # legacy / image-specific boundary translation
+    │   ├── from-image-output-data.ts       # legacy image_output event → UnifiedImageBlock (fallback path)
+    │   ├── from-partial-image-data.ts      # legacy partial_image event → streaming UnifiedImageBlock (fallback)
+    │   ├── from-render-block.ts            # markdown render_block:image → UnifiedImageBlock
+    │   ├── from-cx-media-part.ts           # DB cx_message media part → UnifiedImageBlock
+    │   ├── from-cld-files-row.ts           # raw cld_files row → MatrxImageBlock (fallback)
+    │   └── to-cx-media-part.ts             # UnifiedImageBlock → CxMediaContent (persistence)
+    └── UNIFIED_IMAGE_BLOCK.md              # Python-team handoff doc + phase plan
 ```
+
+### Blocks subsystem — one canonical shape per media type
+
+`blocks/` is where the canonical message-block renderers live. Each subdirectory
+owns a single content-block type with **one** typed shape (`UnifiedImageBlock`),
+**one** renderer (`UnifiedImageBlockRenderer`), **one** URL/expiry hook
+(`useUnifiedImageUrl`), and a thin set of **adapters** that funnel every inbound
+source (Python stream events, DB-stored messages, partial-image events, external
+URLs, raw `cld_files` rows) into that canonical shape at the earliest boundary.
+
+```
+Sources (any path)
+  │
+  ▼
+adapters/from-*.ts ──►  UnifiedImageBlock  ──►  Redux state
+                              │
+                              ├─►  UnifiedImageBlockRenderer  (inline message body)
+                              ├─►  UnifiedImageBlockRenderer  (compact — peek toast)
+                              ├─►  ImageViewerWindow          (fullscreen)
+                              └─►  adapters/to-cx-media-part.ts  ──►  cx_message.content[]
+```
+
+**Why this exists:** before this subsystem, every consumer (inline renderer,
+peek popover, action bar, viewer) had its own ad-hoc reading of `block.data`
+fields. Streaming images and DB-loaded images carried different shapes;
+signed-URL expiry was handled inconsistently or not at all. The canonical
+shape collapses every consumer onto a single contract, and the
+`useUnifiedImageUrl` hook is the **only** place expiry detection and re-mint
+logic lives in the entire app.
+
+**Boundary wiring (where adapters are called today):**
+
+| Boundary | File | Adapter |
+|---|---|---|
+| Stream — canonical `media_block` event (Phase 2 primary) | [`process-stream.ts`](../agents/redux/execution-system/thunks/process-stream.ts) | [`fromMediaBlock`](blocks/adapters/from-media-block.ts) |
+| Stream — typed data event (legacy fallback) | [`process-stream.ts`](../agents/redux/execution-system/thunks/process-stream.ts) | `fromImageOutputData` / `fromPartialImageData` |
+| Stream — markdown render_block | [`process-stream.ts`](../agents/redux/execution-system/thunks/process-stream.ts) | `fromRenderBlock` |
+| DB load (message normalize) | [`normalize-content-blocks.ts`](../agents/redux/execution-system/utils/normalize-content-blocks.ts) | `fromCxMediaPart` |
+| DB write (message assemble) | [`assemble-cx-content-blocks.ts`](../agents/redux/execution-system/utils/assemble-cx-content-blocks.ts) | `toCxMediaPart` |
+| Fallback re-hydrate | (on-demand) | `fromCldFilesRow` |
+
+Phase 2 ingestion is **wire-shape ready on the frontend** and awaiting the
+Python deploy (see [`docs/PYTHON_UPDATES.md`](../../docs/PYTHON_UPDATES.md);
+backend code landed on `main` as commit `96f7ff7b` 2026-05-16 but isn't
+deployed yet at the time of writing). When Python rolls out, it will
+emit the canonical `UnifiedMediaBlock` shape directly via the new
+`data: media_block` stream event. The frontend already mirrors that
+shape — owned by [`blocks/types.ts`](blocks/types.ts) — and the inbound
+`fromMediaBlock` adapter is a near-passthrough that only converts
+`snake_case` → `camelCase`. The legacy `image_output` / `partial_image` /
+`audio_output` / `video_output` event handlers stay in place as the
+current carrier path; they become fallback once Python deploys and will
+be deleted in the cleanup PR one release cycle after that. The outbound
+`toCxMediaPart` and the DB-load `fromCxMediaPart` remain until
+`cx_message.content[]` storage adopts `UnifiedMediaBlock` directly
+(Phase 3).
+
+**Downstream rendering — current coverage:**
+
+| Kind | Inbound (Phase 2) | Renderer | Status |
+|---|---|---|---|
+| `image` | `media_block` → `image_output` render block | `UnifiedImageBlockRenderer` | end-to-end ✅ |
+| `audio` | `media_block` → `audio_output` render block | legacy `AudioOutputBlock` (dual-shape tolerant) | end-to-end ✅ |
+| `video` | `media_block` → `video_output` render block | legacy `VideoOutputBlock` (dual-shape tolerant) | end-to-end ✅ |
+| `document` | `media_block` → `media_block` render block | _none yet — renders null_ | TODO |
+| `youtube` | `media_block` → `media_block` render block | _none yet — renders null_ | TODO |
+
+`audio_output` and `video_output` `BlockRenderer` cases read both the
+canonical camelCase shape (`cdnUrl` / `signedUrl` / `externalUrl` /
+`mimeType`) and the legacy snake_case shape (`url` / `mime_type`), so
+they work for both the Phase 2 `media_block` path and the legacy event
+path. `document` and `youtube` `media_block` events store correctly but
+have no renderer yet (placeholder `BlockRenderer` case returns null).
+Adding a `UnifiedDocumentBlockRenderer` / `UnifiedYouTubeBlockRenderer`
+unblocks them.
+
+The umbrella `UnifiedMediaBlock` covers `image | video | audio | document
+| youtube`. Image-specific code keeps importing `UnifiedImageBlock` from
+[`blocks/image/types.ts`](blocks/image/types.ts), which now re-exports
+the image discriminant of the union; the shared guards live at
+[`blocks/guards.ts`](blocks/guards.ts) (`isUnifiedMediaBlock`,
+`isImageBlock`, `isVideoBlock`, …).
+
+**Adding a new media type (audio, video, document):** with Phase 2 the
+inbound path is already generic — `fromMediaBlock` switches on
+`block.kind`, lifts the right wire variant, and emits the matching
+domain block. To light up a new kind end-to-end:
+1. Extend `UnifiedMediaBlock` in [`blocks/types.ts`](blocks/types.ts)
+   if a new `kind` is needed.
+2. Add a per-kind `liftX` arm inside
+   [`fromMediaBlock`](blocks/adapters/from-media-block.ts).
+3. If the kind needs its own renderer (it usually does), create
+   `blocks/{kind}/` with `{Kind}BlockRenderer.tsx`, `use{Kind}Url.ts`,
+   and any kind-specific helpers. Image is the reference implementation
+   — keep drift to zero so the template stays valid.
+4. Wire the renderer into `BlockRenderer` so the existing
+   `audio_output` / `video_output` / `media_block` render-block types
+   pick it up.
 
 **Contract for core components:**
 - `fileId` (never path) is the stable identity.
@@ -315,6 +444,29 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-05-16** — **Image + PDF Edit tabs.** The Edit tab in `FileTabsBody` was a `<ComingSoon>` placeholder for every non-text kind; this change wires the two highest-leverage ones to existing platform primitives. **Image:** new [`ImageEditTab`](components/surfaces/single-file/ImageEditTab.tsx) mounts the canonical Image Studio Edit shell ([`EditModeShell`](../image-studio/modes/edit/EditModeShell.tsx)) inside the tab — full Filerobot (crop / rotate / flip / resize / fine-tune / filters / annotate / watermark) plus the AI toolbar (Remove BG, Upscale 2× / 4×, AI edit by prompt). URL resolved via `useFileSrc({ kind: "file_id", fileId })`; the `cloudFileId` is plumbed alongside the resolved URL through a new optional `cloudFileId?` prop on [`ModeShellProps`](../image-studio/modes/shared/types.ts) so the AI sidecar stays functional even when `source.kind === "url"`. Saves default to the **source file's parent folder** (with `-edited` suffix on filename) instead of a generic `Images/Edited/` bucket — edits live next to originals. Action bar gains "**Open in Image Studio**" (`/images/edit?cloudFileId=…`) for the full-screen workspace. **PDF:** new [`PdfEditTab`](components/surfaces/single-file/PdfEditTab.tsx) mounts the same three-pane workshop the `/files/f/{id}/studio` route uses — `ThumbnailStrip` (left, server-rendered page thumbs with annotation-count badges) + `AnnotatablePdfCanvas` (center, draw-to-annotate with snap-bbox + label picker, three modes: View / Select / Draw) + filtered `InspectorRail` (right, **only** the action panels: Pages / Doc Ops / Notes / Findings / Redact / Search — content panels live in the Analysis tab next door so Edit is for mutating, Analysis is for reading). [`InspectorRail`](../file-analysis/studio/InspectorRail.tsx) gained an optional `allowedTabs?: readonly StudioInspectorTab[]` prop for this; default behaviour unchanged. Annotations created in the Edit tab persist through the same `useAnnotations(fileId)` cache the Analysis tab and the standalone Studio use — instantly visible across all three surfaces via the shared Realtime channel. Action bar gains "**Open in Studio**" inside the Edit tab body (`/files/f/{id}/studio` for the full unfiltered inspector). Both `"image"` and `"pdf"` added to `EDITABLE_KINDS` in [`preview-actions.ts`](components/core/FilePreview/preview-actions.ts) so the action bar's Edit button surfaces on these kinds. Image gets an `openInRoute` (`/images/edit?cloudFileId=…`) in [`FilePreview.tsx`](components/core/FilePreview/FilePreview.tsx) matching the existing PDF Extractor handoff. No new state — every primitive (Filerobot wrapper, annotation canvas, thumbnail strip, inspector, annotation cache) is reused, not rebuilt. Inventory + capability matrix updated in [FILE_TYPE_INVENTORY.md](components/surfaces/FILE_TYPE_INVENTORY.md) — Image wishlist #5 ("Inline image editor") and PDF wishlist #1 ("Edit tab content") both struck, capability slot #27 ("Per-type non-text editor") now ✅ for image + pdf, 🔴 for csv / spreadsheet / video / audio.
+
+- **2026-05-16** — Phase 1b / 1c / 1d / 1d.1 alignment: Python shipped universal server-rendered thumbnails for **every** mime kind plus full-res `page1_url` (PDFs) and `poster_url` (videos), and dropped the legacy `cld_files.thumbnail_url` + `cld_files.thumbnail_storage_uri` columns from the DB. The wire-shape changes are described in [docs/PYTHON_UPDATES.md](../../docs/PYTHON_UPDATES.md) under "Phase 1b". Frontend changes:
+  - **Removed `thumbnailUrl` / `thumbnailUri` from `MatrxOriginFields`** in [`blocks/types.ts`](blocks/types.ts). The fields are no longer on the wire — `Asset.variants["thumbnail_url"].url` is the canonical thumbnail source going forward (via `useFileAsset`).
+  - **Adapter cleanup.** [`from-media-block.ts`](blocks/adapters/from-media-block.ts) drops the thumbnail fields from `WireMediaBlockBase` and `matrxFields`. [`from-image-output-data.ts`](blocks/image/adapters/from-image-output-data.ts), [`to-cx-media-part.ts`](blocks/image/adapters/to-cx-media-part.ts), and [`from-cld-files-row.ts`](blocks/image/adapters/from-cld-files-row.ts) all drop their thumbnail reads / writes. `from-cld-files-row.ts` now reads `row.width` / `row.height` as first-class columns (Phase 1d.1) with a metadata fallback for pre-rollout rows.
+  - **`useUnifiedImageUrl` simplified.** Removed the `block.thumbnailUrl` placeholder branch since the field is gone; the `base64` streaming-partial branch remains.
+  - **New `CloudFile.thumbnailUrl` field.** Lifted from `FileRecord.thumbnail_url` (still on the REST response — resolved server-side from the variants store now that the column is dropped). [`apiFileRecordToCloudFile`](redux/converters.ts) populates it; the direct-DB-read path ([`dbRowToCloudFile`](redux/converters.ts), tree-spine reconstruction in [`thunks.ts`](redux/thunks.ts), and the slice's `emptyFileRecord` in [`slice.ts`](redux/slice.ts), plus the handler-side [`cloudFileFromRecord`](handler/resolver.ts)) all set it to `null` — `MediaThumbnail` falls back to `useFileAsset` in that case.
+  - **`MediaThumbnail` rewritten around a four-source priority.** Source 1 (universal): `file.thumbnailUrl`. Source 2 (per-file): `Asset.variants["thumbnail_url"].url` via `useFileAsset` for rows that lack source 1. Source 3 (live render): `<img>` for image masters / `<video preload="metadata">` for video masters, used in the brief window between upload and variant render. Source 4: category icon. This means **every file kind now gets a real thumbnail in grids** — PDFs show page 1, videos show a frame, audio shows a waveform, archives / unknown mimes show a server-rendered mime-family icon. The strategy registry in [`utils/file-types.ts`](utils/file-types.ts) is now mostly informational; only `image` / `video-poster` control whether source 3 runs.
+  - **`VideoOutputBlock` picks up `posterUrl`.** Phase 1c populated `VideoBlock.posterUrl` (extracted frame at 10% of the timeline). [`VideoOutputBlock`](../../components/mardown-display/blocks/videos/VideoOutputBlock.tsx) now binds `<video poster={posterUrl}>` so the user sees a real frame instead of a black square before play. [`BlockRenderer.tsx`](../../components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx) reads `serverData.posterUrl` (camelCase) or `poster_url` (snake_case) and threads it through.
+  - **Streaming partials verified end-to-end.** `media_block` events with `status: "streaming"` + `base64` flow through `fromMediaBlock` → `ExternalImageBlock` (matrx invariant requires `fileId`; the lifter falls through cleanly) → `process-stream.ts` upsert under `stableKey="image_block_current"` → `useUnifiedImageUrl` renders the `data:` URI with `isPlaceholder: true`. When the final lands the same render block is replaced in place. No flicker, no new code.
+  - Phase 1d.1's first-class `width` / `height` / `duration_ms` / `page_count` columns flow through `from-cld-files-row.ts` automatically; `liftVideo` / `liftAudio` / `liftDocument` in [`from-media-block.ts`](blocks/adapters/from-media-block.ts) already propagated these from Phase 0, so blocks now carry real dimensions / durations / page counts where Python populated them.
+- **2026-05-16** — Phase 2 frontend landing for Python's `UnifiedMediaBlock` rollout (Python commit `96f7ff7b` on `main`, not deployed yet at the time of writing — see [docs/PYTHON_UPDATES.md](../../docs/PYTHON_UPDATES.md)). Once deployed, Python emits the canonical media shape directly via a new `data: media_block` stream event covering image / video / audio / document / youtube. Frontend changes shipped this PR:
+  - Owns the umbrella discriminated union at [`blocks/types.ts`](blocks/types.ts) (`UnifiedMediaBlock`) plus the matching guards at [`blocks/guards.ts`](blocks/guards.ts). `UnifiedImageBlock` becomes the image discriminant of this union — backwards-compatible alias preserved at [`blocks/image/types.ts`](blocks/image/types.ts). Adds typed `MediaGenerationMetadata` + `parseGenerationMetadata` for AI-generated images.
+  - New primary inbound adapter at [`blocks/adapters/from-media-block.ts`](blocks/adapters/from-media-block.ts) handles `media_block` events. It's a near-passthrough — snake_case → camelCase only — because the wire shape now mirrors the domain shape one-for-one. `pickVisibility` defaults unknown values to `"private"` to match `dbRowToCloudFile` and `from-cld-files-row.ts`.
+  - [`process-stream.ts`](../agents/redux/execution-system/thunks/process-stream.ts) routes `media_block` events through the new adapter first; legacy `image_output` / `partial_image` / `audio_output` / `video_output` event branches remain as the current carrier path and become fallback once Python deploys.
+  - Downstream rendering: image renders via `UnifiedImageBlockRenderer` end-to-end. The `audio_output` and `video_output` cases in [`BlockRenderer.tsx`](../../components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx) now read both the canonical camelCase shape (`cdnUrl` / `signedUrl` / `externalUrl` / `mimeType`) AND the legacy snake_case shape (`url` / `mime_type`), so they work for both the `media_block` path and the legacy event path. A new explicit `media_block` case is in place for `document` and `youtube` kinds — currently no-op pending dedicated renderers.
+  - Wire rename `file_size` → `size_bytes` propagated through every reader: `cld_files` rows ([`dbRowToCloudFile`](redux/converters.ts), [`dbRowToCloudFileVersion`](redux/converters.ts), [`parseCloudTreeRow`](redux/converters.ts), [`useDocumentLineage`](../pdf-extractor/hooks/useDocumentLineage.ts)); `FileRecord` ([`apiFileRecordToCloudFile`](redux/converters.ts)); `FileUploadResponse` ([`cloudUpload.ts`](upload/cloudUpload.ts) and the `FileRecordApi` constructor in [`thunks.ts`](redux/thunks.ts)); `RichDataStoreMember` ([`useDataStores.ts`](../rag/hooks/useDataStores.ts)); the public share page ([`app/(public)/share/[token]/page.tsx`](../../app/(public)/share/[token]/page.tsx)). `parseCloudTreeRow` keeps `file_size` as a defensive fallback for in-flight services; `dbRowTo*` converters read only `size_bytes` since the Supabase-generated row type was regenerated.
+  - [`CloudTreeFileRow`](types.ts) and [`AssetVariant`](types.ts) renamed `file_size` → `size_bytes`. `AssetVariant` also gained `file_uri` and `signed_url_expires_at` first-class fields. The `file_size` alias is preserved as `?:` on the hand-typed `AssetVariant` so old API responses still validate.
+  - [`useUnifiedImageUrl`](blocks/image/useUnifiedImageUrl.ts) verified — it already preferred server-supplied `signedUrlExpiresAt` over URL parsing. No code change.
+  - Asset consumers verified — all bind to `asset.primary_url` (never `primary_key === "original"`), so Python's new `primary_key = "thumbnail_url"` for non-image masters (PDFs / videos) flows through transparently. No code change.
+- **2026-05-16** — Image block: rich action surface + truthful sharing. Added [`useImageActions`](blocks/image/useImageActions.ts) as the single source of truth for every image-block callback (download, copy, copy link, copy image, print, view original, plus the two new server-side variants below). Renderer ([`UnifiedImageBlockRenderer`](blocks/image/UnifiedImageBlockRenderer.tsx)) is now pure view code that renders the toolbar / dropdown / context menu / drawer from this hook. **Sharing no longer lies:** replaced the old "set visibility=public then copy the 1-hour signed URL" path with [`ImageSharePopover`](blocks/image/ImageSharePopover.tsx) — a cross-platform popover (Drawer on mobile) that copies the file's CDN URL when it's already public, or creates / reuses a no-expiry read-only `cld_share_links` row and copies its `/share/{token}` URL. Pasting the link gets you a URL that still works in a week. Advanced settings open the existing [`ShareLinkDialog`](components/core/ShareLinkDialog/ShareLinkDialog.tsx) for per-link expiry / permission / max-uses. **Download as JPEG / PNG / WebP / AVIF** and **Resize and download (2048 / 1024 / 512 / 256 px)** submenus go through the new [`renderImageVariant`](blocks/image/utils/render-image-variant.ts) helper which calls `getAssetForFile` (idempotent promote) + `addAssetVariants` (idempotent on key) so the converted variant PERSISTS on the asset envelope and the next click is a cache hit. Filename fix: the AI-chosen name baked into the signed URL's `response-content-disposition` query param is now extracted by [`parseFilenameFromUrl`](blocks/image/helpers/parse-filename-from-url.ts) and surfaces on `block.fileName`, so downloads land with the right name instead of `image.png`. **Print** action via hidden-iframe [`printImage`](blocks/image/utils/print-image.ts) — no popup-blocker hit, image-only print doc with edge-to-edge layout.
+- **2026-05-16** — Unified Image Block subsystem shipped. New canonical shape `UnifiedImageBlock` (matrx | external variants) lives in [blocks/image/types.ts](blocks/image/types.ts) with full inbound adapters ([from-image-output-data](blocks/image/adapters/from-image-output-data.ts), [from-partial-image-data](blocks/image/adapters/from-partial-image-data.ts), [from-render-block](blocks/image/adapters/from-render-block.ts), [from-cx-media-part](blocks/image/adapters/from-cx-media-part.ts), [from-cld-files-row](blocks/image/adapters/from-cld-files-row.ts)) + outbound [to-cx-media-part](blocks/image/adapters/to-cx-media-part.ts). [`useUnifiedImageUrl`](blocks/image/useUnifiedImageUrl.ts) is now the only place expiry detection and signed-URL re-mint live — it bridges into the existing handler's expiry-wheel via `useFileAs`. [`UnifiedImageBlockRenderer`](blocks/image/UnifiedImageBlockRenderer.tsx) replaces the legacy `ImageOutputBlock` (deleted) and ships both `inline` and `compact` variants powering chat messages, the bottom-right peek toast ([`ImageArrivalPeek`](../agents/components/notifications/ImageArrivalPeek.tsx)), and the lightbox. Boundary wiring: [process-stream.ts](../agents/redux/execution-system/thunks/process-stream.ts) converts every stream event to `UnifiedImageBlock` before upsert, [normalize-content-blocks.ts](../agents/redux/execution-system/utils/normalize-content-blocks.ts) converts every DB-loaded media:image part on hydrate, [assemble-cx-content-blocks.ts](../agents/redux/execution-system/utils/assemble-cx-content-blocks.ts) round-trips via `toCxMediaPart` on persist. Fixes the streaming-image render gap: [`selectUnifiedSlots`](../agents/redux/execution-system/active-requests/active-requests.selectors.ts) now emits slots for `image_output` / `audio_output` / `video_output` data events, and [EnhancedChatMarkdown](../../components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx) no longer drops content-less media render blocks. Python-team handoff: [blocks/image/UNIFIED_IMAGE_BLOCK.md](blocks/image/UNIFIED_IMAGE_BLOCK.md) describes the canonical shape, the on-disk mapping, and the deletion plan for the inbound adapters as Python adopts the shape natively (Phases 1–3). Audio / video / document follow the same template in subsequent passes.
+- **2026-05-15** — Redux selector stability for tree children: canonical [`EMPTY_TREE_CHILDREN`](redux/tree-utils.ts) replaces inline `{ folderIds: [], fileIds: [] }` in [`selectChildrenOfFolder`](redux/selectors.ts), [`sortChildren`](redux/tree-utils.ts) (empty in/out), and pickers/hooks that previously returned fresh objects from `useAppSelector` when no folder was active ([`PickerShell`](components/surfaces/PickerShell.tsx), [`useFolderContents`](hooks/useFolderContents.ts), [`MobileStack`](components/surfaces/MobileStack.tsx)). [`selectSortedRootChildren`](redux/selectors.ts) / [`selectSortedChildrenOfFolder`](redux/selectors.ts) now key off [`selectSortBy`](redux/selectors.ts) + [`selectSortDir`](redux/selectors.ts) instead of building `{ sortBy, sortDir }` from `selectUiSlice` on every `cloudFiles` root replacement — fewer avoidable recomputes. [`CloudFilesTab`](../../components/image/cloud/CloudFilesTab.tsx) and [`FilesResourcePicker`](../resource-manager/resource-picker/FilesResourcePicker.tsx) use the same stable empty constant where applicable.
 - **2026-05-11** — SVG promoted to a first-class `PreviewKind`. Previously `.svg` was lumped into the generic `image` kind, which (a) showed the same lucide `Image` icon as PNG/JPG (visually indistinguishable from raster), (b) routed through `ImagePreview`'s plain `<img>` (no transparency-grid background, no way to inspect markup), and (c) was hidden from the Edit button because `image` isn't in `EDITABLE_KINDS` — even though SVG is just XML. The fix touches the full path: [file-types.ts](utils/file-types.ts) adds `"svg"` to `PreviewKind`, swaps the SVG entry's icon to `PenTool` (amber) and `previewKind` to `"svg"`, and the `getFilePreviewProfile` MIME-override block now explicitly preserves `"svg"` instead of clobbering `image/svg+xml` to `"image"`. New [previewers/SvgPreview.tsx](components/core/FilePreview/previewers/SvgPreview.tsx) renders on the `bg-checkerboard` utility with a Rendered/Source toggle (Source lazily fetches bytes via `useFileBlob` only when the user opens it). [FilePreview.tsx](components/core/FilePreview/FilePreview.tsx) switch routes `"svg"` to it. [preview-actions.ts](components/core/FilePreview/preview-actions.ts) adds `"svg"` to `EDITABLE_KINDS` so the Edit button surfaces. [PreviewPane.tsx](components/surfaces/PreviewPane.tsx) `EditTabContent` falls through `"svg"` into `CloudFileInlineEditor` (Monaco) with `xml` language. [CloudFileInlineEditor.tsx](components/core/FileEditor/CloudFileInlineEditor.tsx) `LANGUAGE_BY_EXT` and code-workspace [`languageFromFilename`](../code/styles/file-icon.tsx) both learn `svg → xml`. Code workspace's [`useOpenFile`](../code/hooks/useOpenFile.ts) intentionally does NOT add `"svg"` to `isBinary` — SVGs now open directly in Monaco for editing. [`BinaryFileViewer`](../code/editor/BinaryFileViewer.tsx) keeps a defensive `case "svg"` falling through to `ImagePreview` for the rare path where an SVG arrives as a binary tab anyway.
 - **2026-05-08** — Central renderable image URL resolver added at [utils/resolveRenderableImageUrl.ts](utils/resolveRenderableImageUrl.ts). It accepts public URLs, cloud file records, file ids, and image-source metadata; caches signed URL results by cloud file id; reuses valid signed URLs; and refreshes expired known cloud-file URLs. `useSignedUrl()` and Image Manager cloud-file resolution now delegate through this path.
 - **2026-05-07** — Image Manager upload boundary clarified. `/images/upload` now uses `components/official/ImageAssetUploader` in `mode="cloud"` for the image-first dropzone while still calling the Cloud Files `useFileUpload` pipeline. `FileUploadDropzone` remains the generic file-manager uploader for `/files`, embedded files surfaces, mobile stack, and overlay upload flows.
@@ -564,7 +716,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 - **2026-04-28** — RAG / processed-document integration. The RAG team landed Phase 4A/4B server-side (migrations `0006_cld_files_lineage` / `0007_processed_documents` / `0008_kg_chunks_processed_doc_fk`, the `/api/document/*` read endpoints, `/rag/ingest` + `/rag/ingest/stream`, `/rag/admin/*`, AI-tool surface for data stores). FE side already had `features/documents/` scaffolding (typed client, hooks, `DocumentViewer` 4-pane viewer, `LineageBreadcrumbs`, `/rag/viewer/[id]` route). This pass wires the cloud-files surfaces into all of it.
 
   **New API + hooks.**
-  - [api/document-lookup.ts](api/document-lookup.ts) — `lookupFileDocument(fileId)` probes `GET /files/{id}/document` (specced in `for_python/REQUESTS.md` item 14a) and resolves to `found | absent | unavailable`. Memoised at module scope; `clearFileDocumentCache(fileId)` invalidates after a `/rag/ingest`. Until the Python team ships the endpoint, the lookup degrades gracefully to `unavailable` and the Document tab shows a soft message rather than crashing.
+  - [api/document-lookup.ts](api/document-lookup.ts) — `lookupFileDocument(fileId)` probes `GET /files/{id}/document` (shipped 2026-05-05, Bundle C — see `from_python/UPDATES.md`) and resolves to `found | absent | unavailable`. Memoised at module scope; `clearFileDocumentCache(fileId)` invalidates after a `/rag/ingest`. Transient failures resolve to `unavailable` so the Document tab degrades gracefully instead of crashing.
   - [hooks/useFileDocument.ts](hooks/useFileDocument.ts) — `{ status: "idle" | "loading" | "found" | "absent" | "unavailable"; refresh }`. Skips the probe entirely for synthetic ids (virtual sources don't have a binary `cld_files.id`).
   - [api/rag-ingest.ts](api/rag-ingest.ts) — `ingestFile(fileId, { force })` (single round-trip) and `ingestFileStream(fileId, …)` (NDJSON stream over `/rag/ingest/stream` for live progress events). Reuses `buildHeaders` from `api/client.ts` (now exported) so auth, fingerprint, request-id, idempotency are identical to every other cloud-files call. Returns typed events `rag.ingest.progress | complete | error`.
   - [hooks/useFileIngest.ts](hooks/useFileIngest.ts) — `{ status, progress, result, error, run, runOnce, cancel, reset }`. Streaming `run()` is the recommended path; `runOnce()` is the non-streaming fallback. On `complete` the hook clears the document-lookup cache and dispatches `cloud-files:document-processed` so any open `<DocumentTab/>` re-probes without manual reload.
@@ -585,7 +737,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
   **Lineage chip.** [components/surfaces/FileLineageChip.tsx](components/surfaces/FileLineageChip.tsx) renders a compact "derived" + "RAG" indicator next to the filename in the PreviewPane header. The "derived" chip clicks through to the binary parent file (opens it in the same preview pane); the "RAG" chip is informational. Silent when the file has neither parent nor processed-document. To support this, [types.ts](types.ts) `CloudFile` gained optional `parentFileId` / `derivationKind` / `derivationMetadata` fields — they are nullable and back-compat with existing rows that don't carry them; the API layer surfaces them when present.
 
-  **Python team.** New [for_python/REQUESTS.md](for_python/REQUESTS.md) item 14 details the five backend deliverables we still need: (a) `GET /files/{id}/document` lookup, (b) `POST /files/{id}/ingest` convenience wrapper, (c) `GET /files/{id}/lineage-summary`, (d) public REST surface for data stores (mirroring the AI tools), (e) realtime events on `processed_documents` row mutations. The FE works without (a)–(e) — the Document tab degrades gracefully — but ships much better with them.
+  **Python team — all five deliverables shipped 2026-05-05** (Bundle C, see [from_python/UPDATES.md §9](from_python/UPDATES.md)): (a) `GET /files/{id}/document` lookup, (b) `POST /files/{id}/ingest` + `/ingest/stream` convenience wrappers, (c) `GET /files/{id}/lineage-summary`, (d) `/rag/data-stores/*` REST surface (mirrors the AI tools), (e) `processed_documents` added to the realtime publication.
 
   **Verifiable.** Right-click a PDF / DOCX / TXT in `/files` → "Reprocess for RAG" jumps to the Document tab and shows live extract → clean → chunk → embed → upsert progress. After completion the tab transitions to the embedded viewer with cleaned-text and chunks panes. Citation deep-links from chat/search land directly on the right page. Virtual files (Notes, Agent Apps, code snippets) skip the probe and show "absent" — the RAG ingest for those is via `source_kind: "note"` / `"code_file"` (not `"cld_file"`), which is a separate flow surfaced by the editors themselves rather than by `/files`.
 
@@ -629,10 +781,10 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
   - **Notes parity:** notes have their own "Process for RAG" toolbar button → same backend, different `source_kind`.
   - **Citation deep-links:** any chat / search hit with a `cld_file` source routes through PreviewPane → Document tab with `?chunk=&page=` honoured.
 
-  **What's still gated on Python work** (REQUESTS.md item 14):
-  - `GET /files/{id}/document` — until shipped, the badges + Info section + Document tab show "lookup unavailable" for already-ingested files. No regression; just no positive signal.
-  - Realtime push on `processed_documents` writes — until shipped, ingest completion auto-refreshes via FE event dispatch (works fine within one tab) but doesn't propagate to other browser tabs / users.
-  - Public REST for data stores — the curation UI ("Add this file to data store X") is still gated on the Python team exposing the AI tools as REST.
+  **All five Python dependencies are live (2026-05-05, Bundle C).** The FE picks up the positive signals automatically:
+  - `GET /files/{id}/document` — RAG badges + Info section + Document tab now light up for already-ingested files (was "lookup unavailable" pre-ship).
+  - Realtime on `processed_documents` writes — ingest completion now propagates cross-tab/cross-user via Supabase Realtime in addition to the FE event dispatch.
+  - `/rag/data-stores/*` REST — the curation UI ("Add this file to data store X") can be built on top of this surface.
 
   **Verifiable.**
   - Bulk: select 3 PDFs + 1 image, hit Reprocess → 3 succeed, 1 silent skip noted in transient bar.

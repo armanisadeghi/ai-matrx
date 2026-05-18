@@ -35,6 +35,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useCloudTree, useFileMutation } from "@/features/files";
 import {
+  EMPTY_TREE_CHILDREN,
   selectAllFilesMap,
   selectAllFoldersMap,
   selectChildrenByFolderId,
@@ -42,10 +43,7 @@ import {
   selectRootFolderIds,
   selectTreeStatus,
 } from "@/features/files/redux/selectors";
-import type {
-  CloudFileRecord,
-  CloudFolderRecord,
-} from "@/features/files";
+import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
 
 // ---------------------------------------------------------------------------
 // Types (preserve the legacy surface)
@@ -126,7 +124,7 @@ function FolderNode({
   const rootFileIds = useAppSelector(selectRootFileIds);
 
   const children = folderId
-    ? (childrenByFolderId[folderId] ?? { folderIds: [], fileIds: [] })
+    ? (childrenByFolderId[folderId] ?? EMPTY_TREE_CHILDREN)
     : { folderIds: rootFolderIds, fileIds: rootFileIds };
 
   const paddingLeft = level * 1.25;

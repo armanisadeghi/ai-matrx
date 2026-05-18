@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import {
+  EMPTY_TREE_CHILDREN,
   selectAllFilesMap,
   selectAllFoldersMap,
   selectSortedChildrenOfFolder,
@@ -208,9 +209,7 @@ function FolderFrameBody({
   const filesById = useAppSelector(selectAllFilesMap);
   const rootSorted = useAppSelector(selectSortedRootChildren);
   const folderSorted = useAppSelector((s) =>
-    folderId
-      ? selectSortedChildrenOfFolder(s, folderId)
-      : { folderIds: [], fileIds: [] },
+    folderId ? selectSortedChildrenOfFolder(s, folderId) : EMPTY_TREE_CHILDREN,
   );
   const children = folderId ? folderSorted : rootSorted;
 
@@ -624,9 +623,8 @@ function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
             // Routes through the upload guard so the user gets the
             // duplicate-detection pre-flight + dialog (same UX as
             // the desktop drag-drop / FAB).
-            const { requestUpload } = await import(
-              "@/features/files/upload/UploadGuardHost"
-            );
+            const { requestUpload } =
+              await import("@/features/files/upload/UploadGuardHost");
             void requestUpload({
               files,
               parentFolderId,

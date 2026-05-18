@@ -35,11 +35,17 @@ import {
   Megaphone,
   Settings,
   GitBranch,
+  GitFork,
   Send,
   FileType,
   Activity,
   BarChart3,
   Trash2,
+  EyeOff,
+  Scissors,
+  Undo2,
+  ListFilter,
+  History,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
@@ -52,10 +58,7 @@ import {
   setPendingSource,
 } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "sonner";
-import {
-  openOverlay,
-  closeOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -114,6 +117,23 @@ export interface MessageActionContext {
    * actions fall through to a direct delete with no fork option.
    */
   onRequestDelete?: () => void;
+  /**
+   * Optional callback fired when the user wants to view + restore prior
+   * versions of this message (cx_message.content_history). Owned by the
+   * host action bar so the dialog survives `MessageOptionsMenu` close.
+   * When omitted, the menu item is hidden.
+   */
+  onRequestEditHistory?: () => void;
+  /** Number of archived versions in cx_message.content_history. */
+  contentHistoryCount: number;
+  /**
+   * True when the viewer is a super admin. Gates the "Server API (test)"
+   * section that exposes the new Python-backed conversation endpoints
+   * (`/cx/conversations/{id}/fork`, `.../messages/delete`, etc.) as
+   * one-click items so we can A/B them against the legacy Supabase RPCs
+   * before consolidating. Hidden for everyone else.
+   */
+  isAdmin: boolean;
 }
 
 // ============================================================================
@@ -309,7 +329,8 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
               messageId: messageId ?? undefined,
               conversationId: conversationId ?? undefined,
               title: "HTML Preview & Publishing",
-              description: "Edit markdown, preview HTML, and publish your content",
+              description:
+                "Edit markdown, preview HTML, and publish your content",
               onSave: async (newContent: string) => {
                 if (conversationId && messageId) {
                   try {
@@ -327,7 +348,9 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
                     console.error("[html-preview] save failed", err);
                   }
                 }
-                dispatch(closeOverlay({ overlayId: "htmlPreview", instanceId }));
+                dispatch(
+                  closeOverlay({ overlayId: "htmlPreview", instanceId }),
+                );
               },
               showSaveButton: Boolean(conversationId && messageId),
               isAgentSystem: true,
@@ -781,6 +804,36 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
 }
 
 /**
+ * View archived versions of this message from `cx_message.content_history`
+ * and restore any of them. The dialog itself is owned by the host action
+ * bar (`AssistantActionBar`) so it stays mounted after the menu closes —
+ * this factory only wires the click into the host callback.
+ *
+ * Hidden when there is no history yet or the host didn't provide a
+ * callback (older surfaces). The label includes the version count so
+ * users can see at a glance whether anything is recoverable.
+ */
+function editHistoryItem(ctx: MessageActionContext): MenuItem {
+  const { onRequestEditHistory, onClose, contentHistoryCount } = ctx;
+  return {
+    key: "edit-history",
+    icon: History,
+    iconColor: "text-amber-500 dark:text-amber-400",
+    label:
+      contentHistoryCount > 0
+        ? `Edit history (${contentHistoryCount})`
+        : "Edit history",
+    action: () => {
+      onRequestEditHistory?.();
+      onClose();
+    },
+    category: "Edit",
+    showToast: false,
+    hidden: !onRequestEditHistory || contentHistoryCount === 0,
+  };
+}
+
+/**
  * USER MESSAGES ONLY — edit the user's prompt AND resubmit from that point.
  *
  * As of the surface-aware refactor, the canonical entry point for this
@@ -822,7 +875,10 @@ function editAndResubmitItem(ctx: MessageActionContext): MenuItem {
                 // Read position from state right before firing. Fork at
                 // (position - 1) so the user's new message becomes the next
                 // turn on the branch, replacing whatever originally came after.
-                const positionThunk = (_: unknown, getState: () => RootState) => {
+                const positionThunk = (
+                  _: unknown,
+                  getState: () => RootState,
+                ) => {
                   const entry =
                     getState().messages.byConversationId[conversationId];
                   const msg = entry?.byId?.[messageId];
@@ -895,10 +951,14 @@ function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
     iconColor: "text-violet-500 dark:text-violet-400",
     label: "Fork at this message",
     action: async () => {
-      if (!conversationId || !messageId) {
-        onClose();
-        return;
-      }
+      // Close the menu immediately. The fork RPC + the post-fork
+      // "Branch created" modal both run after this point, and the
+      // menu and the dialog share z-index 9999 — leaving the menu
+      // mounted causes the dialog to render behind it (depending on
+      // portal order, often unclickable). The dispatch / confirm
+      // host are global, so unmounting the menu is safe.
+      onClose();
+      if (!conversationId || !messageId) return;
       try {
         const { forkConversation } =
           await import("@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk");
@@ -914,13 +974,15 @@ function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
           conversationId: string;
         };
 
-        // Post-fork affordance: offer the user a one-click jump to the new
-        // branch. They can also "Stay here" — the new branch is reachable
-        // from the conversation sidebar either way. Toast (not modal)
-        // because forking is reversible and we don't want to break flow.
+        // Post-fork affordance: explicitly ask the user where to go
+        // next. The previous toast-based version was easy to miss;
+        // forking only has two sensible follow-ups (stay or jump) so
+        // a modal prompt is the right tool here. The branch is also
+        // reachable from the conversation sidebar regardless of which
+        // option they pick.
         if (surfaceKey && result?.conversationId) {
-          const { showForkOutcomeToast } = await import("./ForkOutcomeToast");
-          showForkOutcomeToast({
+          const { promptForkOutcome } = await import("./promptForkOutcome");
+          await promptForkOutcome({
             dispatch,
             surfaceKey,
             newConversationId: result.conversationId,
@@ -929,8 +991,6 @@ function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("[fork-at-message] failed", err);
-      } finally {
-        onClose();
       }
     },
     category: "Edit",
@@ -1021,7 +1081,7 @@ function creatorItems(ctx: MessageActionContext): MenuItem[] {
             overlayId: "streamDebug",
             data: {
               conversationId,
-              requestId: streamRequestId ?? null,
+              requestIdOverride: streamRequestId ?? undefined,
             },
           }),
         );
@@ -1093,6 +1153,339 @@ function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
 }
 
 // ============================================================================
+// SERVER API (TEST) ITEMS — admin-gated, opt-in test surface for the new
+// Python-backed conversation endpoints. Lives next to the legacy
+// Supabase-RPC items in the same menu so an admin can A/B the two paths
+// on real messages without scaffolding a separate test page.
+//
+// Endpoint → thunk mapping:
+//   • POST /cx/conversations/{id}/fork              → forkConversationServer
+//   • POST /cx/conversations/{id}/messages/delete   → batchDeleteMessages
+//   • POST /cx/conversations/{id}/messages/hide     → hideMessages
+//   • POST /cx/conversations/{id}/messages/replace  → replaceMessages
+//   • POST /cx/conversations/{id}/messages/restore  → restoreCompaction
+//
+// Two endpoints are intentionally NOT exposed in this menu because they
+// need a richer payload than a single message gives us:
+//   • /ai/conversations/{id}/fork-and-run — needs the full RunRequest
+//     body (tools, client context, writable variables…). Wire it into
+//     the UserActionBar Send button after assembling via
+//     `selectAssembledRequest`, not here.
+//   • /cx/conversations/{id}/turns/compact — turn-range driven; better
+//     surfaced from the conversation header / settings, not a single
+//     message menu.
+// ============================================================================
+
+function getCompactionAnchor(
+  metadata: Record<string, unknown> | null,
+): { compactionGroupId?: string; summaryMessageId?: string } | null {
+  if (!metadata) return null;
+  const groupId =
+    typeof metadata.compaction_group_id === "string"
+      ? metadata.compaction_group_id
+      : null;
+  const isSummary =
+    metadata.compaction_summary === true ||
+    metadata.is_compaction_summary === true ||
+    typeof metadata.compaction_archive === "object";
+  if (!groupId && !isSummary) return null;
+  return {
+    compactionGroupId: groupId ?? undefined,
+    summaryMessageId: undefined, // resolved by caller from ctx.messageId
+  };
+}
+
+function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
+  const { isAdmin, conversationId, messageId, metadata, dispatch, onClose } =
+    ctx;
+  if (!isAdmin) return [];
+  if (!conversationId || !messageId) return [];
+
+  const compactionAnchor = getCompactionAnchor(metadata);
+
+  const items: MenuItem[] = [
+    {
+      key: "srv-fork-at",
+      icon: GitFork,
+      iconColor: "text-violet-500 dark:text-violet-400",
+      label: "Fork at this message (server)",
+      action: async () => {
+        // Close menu before the fork RPC / post-fork modal — they
+        // share z-index 9999 with the menu and end up unclickable
+        // behind it otherwise. See `forkAtMessageItem` for the
+        // same pattern.
+        onClose();
+        const { forkConversationServer } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk");
+        const result = await dispatch(
+          forkConversationServer({
+            conversationId,
+            selector: { fromMessageId: messageId, exclusive: false },
+          }),
+        ).unwrap();
+        if (ctx.surfaceKey && result?.conversationId) {
+          const { promptForkOutcome } = await import("./promptForkOutcome");
+          await promptForkOutcome({
+            dispatch,
+            surfaceKey: ctx.surfaceKey,
+            newConversationId: result.conversationId,
+          });
+        }
+      },
+      category: "Server API (test)",
+      showToast: false,
+      errorMessage: "Server fork failed",
+    },
+    {
+      key: "srv-fork-before",
+      icon: GitFork,
+      iconColor: "text-violet-400 dark:text-violet-300",
+      label: "Fork BEFORE this message (server)",
+      action: async () => {
+        onClose();
+        const { forkConversationServer } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk");
+        const result = await dispatch(
+          forkConversationServer({
+            conversationId,
+            selector: { fromMessageId: messageId, exclusive: true },
+          }),
+        ).unwrap();
+        if (ctx.surfaceKey && result?.conversationId) {
+          const { promptForkOutcome } = await import("./promptForkOutcome");
+          await promptForkOutcome({
+            dispatch,
+            surfaceKey: ctx.surfaceKey,
+            newConversationId: result.conversationId,
+          });
+        }
+      },
+      category: "Server API (test)",
+      showToast: false,
+      errorMessage: "Server fork (exclusive) failed",
+    },
+    {
+      key: "srv-hide-from-model",
+      icon: EyeOff,
+      iconColor: "text-amber-500 dark:text-amber-400",
+      label: "Hide this from model (server)",
+      action: async () => {
+        const { hideMessages } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/hide-messages.thunk");
+        await dispatch(
+          hideMessages({
+            conversationId,
+            selector: { message_ids: [messageId], inclusive: true },
+          }),
+        ).unwrap();
+        onClose();
+      },
+      category: "Server API (test)",
+      successMessage: "Hidden from model",
+      errorMessage: "Hide failed",
+    },
+    {
+      key: "srv-delete-this",
+      icon: Trash2,
+      iconColor: "text-red-500 dark:text-red-400",
+      label: "Delete this message (server)",
+      action: async () => {
+        // Close menu first — the imperative confirm() host renders
+        // at z-index 9999 and the menu sits at the same layer.
+        onClose();
+        const { confirm } =
+          await import("@/components/dialogs/confirm/confirmDialogOpener");
+        const ok = await confirm({
+          title: "Delete this message?",
+          description:
+            "Hard delete via the new server endpoint. Tool pairs cascade automatically. Reload follows.",
+          variant: "destructive",
+          confirmLabel: "Delete",
+        });
+        if (!ok) return;
+        const { batchDeleteMessages } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk");
+        await dispatch(
+          batchDeleteMessages({
+            conversationId,
+            selector: { message_ids: [messageId], inclusive: true },
+          }),
+        ).unwrap();
+      },
+      category: "Server API (test)",
+      successMessage: "Message deleted (server)",
+      errorMessage: "Server delete failed",
+    },
+    {
+      key: "srv-delete-from-here",
+      icon: Trash2,
+      iconColor: "text-red-600 dark:text-red-500",
+      label: "Delete this + everything after (server)",
+      action: async () => {
+        onClose();
+        const { confirm } =
+          await import("@/components/dialogs/confirm/confirmDialogOpener");
+        const ok = await confirm({
+          title: "Truncate conversation from here?",
+          description:
+            "Hard deletes this message and every message that comes after it. Cannot be undone.",
+          variant: "destructive",
+          confirmLabel: "Delete forward",
+        });
+        if (!ok) return;
+        const { batchDeleteMessages } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk");
+        await dispatch(
+          batchDeleteMessages({
+            conversationId,
+            selector: { from_message_id: messageId, inclusive: true },
+          }),
+        ).unwrap();
+      },
+      category: "Server API (test)",
+      successMessage: "Truncated from here (server)",
+      errorMessage: "Server truncate failed",
+    },
+    {
+      key: "srv-delete-dryrun",
+      icon: ListFilter,
+      iconColor: "text-slate-500 dark:text-slate-400",
+      label: "Dry-run: delete this + after (server)",
+      action: async () => {
+        const { batchDeleteMessages } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk");
+        const result = await dispatch(
+          batchDeleteMessages({
+            conversationId,
+            selector: { from_message_id: messageId, inclusive: true },
+            dryRun: true,
+          }),
+        ).unwrap();
+        const directIds = result.deleted_ids ?? [];
+        const cascadedIds = result.cascaded_ids ?? [];
+        const allIds = [...directIds, ...cascadedIds];
+        const cascadeNote =
+          cascadedIds.length > 0
+            ? ` (incl. ${cascadedIds.length} cascaded tool row${cascadedIds.length === 1 ? "" : "s"})`
+            : "";
+        toast.info(
+          `Would delete ${allIds.length} message${allIds.length === 1 ? "" : "s"}${cascadeNote}`,
+          {
+            description:
+              allIds.length > 0
+                ? `IDs: ${allIds.slice(0, 5).join(", ")}${allIds.length > 5 ? ` (+${allIds.length - 5} more)` : ""}`
+                : "Empty selector resolved to no rows.",
+          },
+        );
+        onClose();
+      },
+      category: "Server API (test)",
+      showToast: false,
+      errorMessage: "Dry-run failed",
+    },
+    {
+      key: "srv-replace-with-summary",
+      icon: Scissors,
+      iconColor: "text-blue-500 dark:text-blue-400",
+      label: "Replace this with a summary… (server)",
+      action: () => {
+        const instanceId = `srv-replace-${messageId}`;
+        dispatch(
+          openOverlay({
+            overlayId: "fullScreenEditor",
+            instanceId,
+            data: {
+              content: "",
+              mode: "free",
+              conversationId: undefined,
+              messageId: messageId ?? undefined,
+              onSave: async (newContent: string) => {
+                const trimmed = newContent.trim();
+                if (!trimmed) {
+                  toast.error("Summary text required");
+                  return;
+                }
+                try {
+                  const { replaceMessages } =
+                    await import("@/features/agents/redux/execution-system/message-crud/server/replace-messages.thunk");
+                  await dispatch(
+                    replaceMessages({
+                      conversationId,
+                      selector: {
+                        message_ids: [messageId],
+                        inclusive: true,
+                      },
+                      summaryContent: [{ type: "text", text: trimmed }],
+                    }),
+                  ).unwrap();
+                  toast.success("Replaced with summary (server)");
+                } catch (err) {
+                  toast.error(
+                    getErrorMessage(err, "Replace-with-summary failed"),
+                  );
+                } finally {
+                  dispatch(
+                    closeOverlay({
+                      overlayId: "fullScreenEditor",
+                      instanceId,
+                    }),
+                  );
+                }
+              },
+              tabs: ["write", "matrx_split", "markdown", "preview"],
+              initialTab: "write",
+              title: "Summary content",
+              showSaveButton: true,
+              showCopyButton: false,
+            },
+          }),
+        );
+        onClose();
+      },
+      category: "Server API (test)",
+      showToast: false,
+    },
+  ];
+
+  // Restore is only meaningful when this row IS a compaction summary —
+  // either tagged in metadata, or carrying the `compaction_archive` it
+  // would need to restore from.
+  if (compactionAnchor) {
+    items.push({
+      key: "srv-restore-compaction",
+      icon: Undo2,
+      iconColor: "text-emerald-500 dark:text-emerald-400",
+      label: "Restore compaction (server)",
+      action: async () => {
+        const { restoreCompaction } =
+          await import("@/features/agents/redux/execution-system/message-crud/server/restore-compaction.thunk");
+        await dispatch(
+          restoreCompaction({
+            conversationId,
+            // Prefer the group id when we have it; fall back to using the
+            // summary message id itself (server accepts either).
+            compactionGroupId: compactionAnchor.compactionGroupId,
+            summaryMessageId: compactionAnchor.compactionGroupId
+              ? undefined
+              : messageId,
+            deleteSummary: true,
+          }),
+        ).unwrap();
+        onClose();
+      },
+      category: "Server API (test)",
+      successMessage: "Compaction restored",
+      errorMessage: "Restore failed",
+    });
+  }
+
+  // AdvancedMenu prints the `category` string as the section heading,
+  // so "Server API (test)" already labels the block — no synthetic
+  // header item needed.
+  return items;
+}
+
+// ============================================================================
 // PUBLIC REGISTRIES
 // ============================================================================
 
@@ -1112,6 +1505,7 @@ export function getAssistantMessageActions(
 ): MenuItem[] {
   return [
     editContentItem(ctx),
+    editHistoryItem(ctx),
     forkAtMessageItem(ctx),
     deleteMessageItem(ctx),
     ...creatorItems(ctx),
@@ -1119,6 +1513,7 @@ export function getAssistantMessageActions(
     ...assistantOnlyItems(ctx),
     ...exportItems(ctx),
     ...saveItems(ctx),
+    ...serverApiTestItems(ctx),
     ...appItems(ctx),
   ];
 }
@@ -1140,12 +1535,14 @@ export function getUserMessageActions(ctx: MessageActionContext): MenuItem[] {
   // state. Keeping it out of this menu eliminates the duplicate flow.
   return [
     editContentItem(ctx),
+    editHistoryItem(ctx),
     forkAtMessageItem(ctx),
     deleteMessageItem(ctx),
     ...creatorItems(ctx),
     ...copyItems(ctx),
     ...exportItems(ctx),
     ...saveItems(ctx),
+    ...serverApiTestItems(ctx),
     ...appItems(ctx),
   ];
 }

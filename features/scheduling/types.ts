@@ -74,6 +74,14 @@ export interface SchTaskRow {
   tags: string[];
   next_due_at: string | null;
   last_run_at: string | null;
+  /**
+   * Non-null when the user soft-deleted this task. All user-facing read
+   * paths (`listAgentTasks`, `getAgentTask`, the aidream `/scheduler/*`
+   * router) filter `deleted_at IS NULL`. The column is kept on the row
+   * shape so admin tooling (which goes direct to Supabase) can observe
+   * the tombstone.
+   */
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }

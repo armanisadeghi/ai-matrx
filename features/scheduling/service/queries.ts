@@ -146,10 +146,16 @@ export function taskDetailToAgendaTask(detail: TaskDetailResponse): AgendaTask {
 // ── Reads ──────────────────────────────────────────────────────────────────
 
 export async function listAgentTasks(): Promise<AgendaTask[]> {
+  // Excludes soft-deleted rows (deleted_at IS NOT NULL). Paused tasks
+  // (enabled=false but deleted_at=NULL) remain visible -- pause is a
+  // reversible UI state, delete is gone-from-user-view. Matches the
+  // aidream /scheduler/tasks router and the partial index
+  // sch_task_user_id_active_idx.
   const { data, error } = await supabase
     .from("sch_task")
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) throw pgErrorToError(error);
@@ -157,11 +163,15 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
 }
 
 export async function getAgentTask(id: string): Promise<AgendaTask | null> {
+  // Returns null on soft-deleted rows so the edit/detail pages render
+  // their "not found" branch instead of letting users re-edit a row
+  // they've already deleted.
   const { data, error } = await supabase
     .from("sch_task")
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) throw pgErrorToError(error);

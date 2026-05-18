@@ -34,7 +34,7 @@ import {
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 
 /**
  * Thin Provider-less wrapper: seeds the Quick Tasks window's org/project

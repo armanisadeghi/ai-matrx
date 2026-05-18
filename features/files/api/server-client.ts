@@ -39,7 +39,6 @@ import type {
   FilePatchRequest,
   FileRecordApi,
   FileUploadResponse,
-  SignedUrlResponse,
   Visibility,
   PermissionLevel,
   CreateShareLinkRequest,
@@ -217,18 +216,6 @@ export async function deleteFile(
 ): Promise<void> {
   const q = hardDelete ? "?hard_delete=true" : "";
   await fetchJson<null>(ctx, "DELETE", `/files/${fileId}${q}`);
-}
-
-export function getSignedUrl(
-  ctx: ServerCloudFilesContext,
-  fileId: string,
-  expiresIn = 3600,
-): Promise<SignedUrlResponse> {
-  return fetchJson<SignedUrlResponse>(
-    ctx,
-    "GET",
-    `/files/${fileId}/url?expires_in=${expiresIn}`,
-  );
 }
 
 // ---------------------------------------------------------------------------

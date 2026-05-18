@@ -1553,6 +1553,108 @@
         }
       }
     },
+    "/ai/conversation/{conversation_id}/fork-and-run": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Fork And Run",
+        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched.",
+        "operationId": "fork_and_run_ai_conversation__conversation_id__fork_and_run_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkAndRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversations/{conversation_id}/fork-and-run": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Fork And Run",
+        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched.",
+        "operationId": "fork_and_run_ai_conversations__conversation_id__fork_and_run_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkAndRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/conversation/{conversation_id}/tool_results": {
       "post": {
         "tags": [
@@ -7512,6 +7614,332 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/debug-traces/files": {
+      "get": {
+        "tags": [
+          "Admin / Debug Traces"
+        ],
+        "summary": "List Trace Files",
+        "description": "List all tool-trace files on the server's local filesystem.\n\nFiles ≤100 bytes are flagged ``is_header_only=True`` — they mark\nprocesses that started but never dispatched a tool. Use the\n``/files/{name}`` endpoint to stream contents.",
+        "operationId": "list_trace_files_admin_debug_traces_files_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraceFileListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/debug-traces/files/{filename}": {
+      "get": {
+        "tags": [
+          "Admin / Debug Traces"
+        ],
+        "summary": "Get Trace File",
+        "description": "Stream the raw contents of one trace file. Plain text/plain.\n\nFilename is sanitized — only basenames matching ``tool-trace-*.log``\nare accepted, defending against ``../`` traversal even though the\nadmin gate already limits exposure.",
+        "operationId": "get_trace_file_admin_debug_traces_files__filename__get",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Filename"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/debug-traces/recent": {
+      "get": {
+        "tags": [
+          "Admin / Debug Traces"
+        ],
+        "summary": "Recent Events",
+        "description": "Most-recent cx_tool_trace rows, newest first.\n\nEquivalent to ``SELECT * FROM cx_tool_trace WHERE ts > $since\n[AND event = $event] [AND tool_name = $tool_name] ORDER BY ts DESC\nLIMIT $limit``.",
+        "operationId": "recent_events_admin_debug_traces_recent_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound on ts. Defaults to 1 hour ago.",
+              "title": "Since"
+            },
+            "description": "ISO-8601 lower bound on ts. Defaults to 1 hour ago."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "event",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK).",
+              "title": "Event"
+            },
+            "description": "Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK)."
+          },
+          {
+            "name": "tool_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional tool name filter.",
+              "title": "Tool Name"
+            },
+            "description": "Optional tool name filter."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraceEventListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/debug-traces/failures-since/{iso_ts}": {
+      "get": {
+        "tags": [
+          "Admin / Debug Traces"
+        ],
+        "summary": "Failures Since",
+        "description": "Convenience wrapper — all FAIL events since ``iso_ts``.\n\nUseful as the input to the scheduled triage agent (Phase 5).\nEquivalent to ``/recent?since={iso_ts}&event=FAIL&limit=1000``.",
+        "operationId": "failures_since_admin_debug_traces_failures_since__iso_ts__get",
+        "parameters": [
+          {
+            "name": "iso_ts",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Iso Ts"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraceEventListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/debug-traces/by-conv/{conversation_id}": {
+      "get": {
+        "tags": [
+          "Admin / Debug Traces"
+        ],
+        "summary": "By Conversation",
+        "description": "Full event timeline for one conversation, oldest-first.\n\nOldest-first because reading a conversation forensically follows\nits causal order — different from ``/recent`` which is reverse-\nchronological for \"what just happened\" queries.",
+        "operationId": "by_conversation_admin_debug_traces_by_conv__conversation_id__get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraceEventListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/debug-traces/by-call/{call_id}": {
+      "get": {
+        "tags": [
+          "Admin / Debug Traces"
+        ],
+        "summary": "By Call",
+        "description": "Forensic deep-dive for one ``call_id`` — both trace events AND the\ncx_tl_call row joined together.\n\nPre-flight rejects (SURFACE_REJECT, NO_EXECUTOR, LOOP_BLOCK) have\ntrace events but no cx_tl_call row; in that case ``tool_call`` is\n``null`` and the caller relies on the events list alone.",
+        "operationId": "by_call_admin_debug_traces_by_call__call_id__get",
+        "parameters": [
+          {
+            "name": "call_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Call Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallTimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp/debug-traces": {
+      "post": {
+        "tags": [
+          "MCP / Debug Traces"
+        ],
+        "summary": "Jsonrpc Endpoint",
+        "description": "JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.",
+        "operationId": "jsonrpc_endpoint_mcp_debug_traces_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
                 }
               }
             }
@@ -17291,6 +17719,49 @@
         }
       }
     },
+    "/cx/conversations/{conversation_id}/context-state": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Get Context State",
+        "description": "Return the current Model Context snapshot for a conversation.\n\nAggregates the rolled-up fields written by ``persist_completed_request``\nplus the most-recent ``cx_request`` (last_request_* and last_raw_usage)\nand the most-recent trim audit (last_trim_summary). All fields default\nto zero / empty so a freshly-created conversation still returns a valid\nresponse — the FE just sees \"no measurements yet\".",
+        "operationId": "get_context_state_cx_conversations__conversation_id__context_state_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/cx/conversations/{conversation_id}/invalidate-cache": {
       "post": {
         "tags": [
@@ -17495,7 +17966,7 @@
           "Conversations"
         ],
         "summary": "Fork Conversation",
-        "description": "Create a new conversation branched from an existing one.\n\nCopies the source ``cx_conversation`` (as a new row with a fresh UUID\nand ``forked_from_id`` pointing back) and every ``cx_message`` up to\n``up_to_position``. The source is left untouched. Message IDs on the\nfork are freshly generated so the two conversations remain\nindependently editable.",
+        "description": "Create a new conversation branched from an existing one.\n\nCopies the source ``cx_conversation`` (as a new row with a fresh UUID\nand ``forked_from_id`` pointing back) and every ``cx_message`` up to\nthe chosen fork point. The source is left untouched. Message IDs on\nthe fork are freshly generated so the two conversations remain\nindependently editable.",
         "operationId": "fork_conversation_cx_conversations__conversation_id__fork_post",
         "parameters": [
           {
@@ -17532,6 +18003,271 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ForkConversationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/delete": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Batch Delete Messages",
+        "description": "Hard-delete a set of messages with optional tool-pair cascading.\n\nMirrors the existing single-row ``DELETE`` endpoint but takes a\nflexible selector so the client can pass an explicit list of IDs, a\nposition range, or a \"truncate after X\" anchor. When\n``cascade_tool_pairs=True`` (default) the operation is \"smart\" — it\nextends the resolved set to keep ``tool_use ↔ tool_result`` adjacent\nrows together, so the next provider call never sees an orphan tool\nblock. ``dry_run=true`` resolves the set and returns it without\ndeleting anything.",
+        "operationId": "batch_delete_messages_cx_conversations__conversation_id__messages_delete_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchDeleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/replace": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Replace Messages",
+        "description": "User-initiated compaction: soft-delete a range and insert a summary.\n\nStashes the selected rows (moves their position to a negative slot,\nsets ``deleted_at`` / ``status=\"compacted_hidden\"`` / both visibility\nflags false) and inserts a new ``assistant`` message at the original\nfirst-replaced position carrying the caller-supplied summary\ncontent. Reversible via ``POST /messages/restore`` using the\n``compaction_group_id`` from the response.\n\nThe summary row's metadata carries a ``compaction_summary`` block\nlisting every replaced message and its original position so the UI\ncan render an \"N messages compacted — view originals\" affordance.",
+        "operationId": "replace_messages_cx_conversations__conversation_id__messages_replace_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplaceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/hide": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Hide Messages From Model",
+        "description": "System-initiated compaction: hide messages from the model only.\n\nFlips ``is_visible_to_model=False`` on the selected rows. The user\nstill sees them in the UI (``is_visible_to_user`` unchanged), the\nrows stay at their original positions, and nothing is soft-deleted.\nThe original visibility flags are stashed in\n``metadata.compaction_archive`` so ``POST /messages/restore`` can\nreverse the operation.\n\nUse this when an automated system (background memory, context\noptimizer) wants to shrink what the model reads without disrupting\nthe user's view of the conversation. Pair it with an\nout-of-band summary injection (system prompt, recent-context note)\nif the model needs to know what it can no longer see.",
+        "operationId": "hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HideResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/messages/restore": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Restore Compaction",
+        "description": "Reverse a previous /messages/replace or /messages/hide call.\n\nIdentify the operation via ``compaction_group_id`` OR\n``summary_message_id`` (replace operations only; hide operations\nhave no summary row). Restores every archived row's original\nposition, status, deleted_at, and visibility from its\n``metadata.compaction_archive`` snapshot, then hard-deletes the\nsummary row (if any, and ``delete_summary=True``).",
+        "operationId": "restore_compaction_cx_conversations__conversation_id__messages_restore_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__cx_data__RestoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cx/conversations/{conversation_id}/turns/compact": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Compact Turns",
+        "description": "Compact one or more whole turns.\n\nA turn = ``role=\"user\"`` message → next ``role=\"user\"`` message\n(exclusive). The endpoint resolves the turn boundary from the live\nconversation, then delegates to /messages/replace (``mode=\"user\"``)\nor /messages/hide (``mode=\"system\"``) under the hood. The caller\nsupplies the summary content; this endpoint does not run an LLM —\nuse whatever summarization agent you like upstream, or invoke the\nchat endpoints separately and pass the result here.",
+        "operationId": "compact_turns_cx_conversations__conversation_id__turns_compact_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompactTurnsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompactTurnsResponse"
                 }
               }
             }
@@ -24084,7 +24820,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScannerStatusResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__scheduling__ScannerStatusResponse"
                 }
               }
             }
@@ -24127,6 +24863,783 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/tasks": {
+      "post": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Create Task",
+        "description": "Create a task, optionally with an attached agent_task and trigger.\n\nAll three rows live in one logical creation, but each is its own\nSupabase insert. If a downstream insert fails, the task row is\nrolled back (best effort -- a hard crash between inserts is\npossible; the FE should treat orphan tasks as benign and cleanable).",
+        "operationId": "create_task_scheduler_tasks_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "List Tasks",
+        "description": "List the caller's tasks (RLS-scoped).",
+        "operationId": "list_tasks_scheduler_tasks_get",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "enabled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Enabled"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/tasks/{task_id}": {
+      "get": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Get Task",
+        "description": "Fetch a single task with its agent_task, triggers, and recent runs.\nEach piece is loaded with its own query so the failure mode for any\none is isolated.",
+        "operationId": "get_task_scheduler_tasks__task_id__get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "runs_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 0,
+              "default": 10,
+              "title": "Runs Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Patch Task",
+        "description": "Patch a subset of task fields. Only non-None fields are written.",
+        "operationId": "patch_task_scheduler_tasks__task_id__patch",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Delete Task",
+        "description": "Soft-delete (set enabled=false). Hard-delete is not exposed --\nsch_run references task_id, so cascading deletes would lose run\nhistory. To permanently remove a task, an admin route or a manual\nDB op is required.",
+        "operationId": "delete_task_scheduler_tasks__task_id__delete",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/tasks/{task_id}/run-now": {
+      "post": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Run Now",
+        "description": "Enqueue a manual run via the sch_enqueue_manual_run RPC. The RPC\nenforces task ownership inside Postgres -- a misbehaving FE cannot\nfire someone else's task.",
+        "operationId": "run_now_scheduler_tasks__task_id__run_now_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunNowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/triggers": {
+      "get": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "List Triggers",
+        "description": "List triggers belonging to a specific task (RLS-scoped).",
+        "operationId": "list_triggers_scheduler_triggers_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "parent task id",
+              "title": "Task Id"
+            },
+            "description": "parent task id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Create Trigger",
+        "description": "Create a trigger attached to an existing task.",
+        "operationId": "create_trigger_scheduler_triggers_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/triggers/{trigger_id}": {
+      "patch": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Patch Trigger",
+        "description": "Patch a trigger. If type or config changed, recomputes next_due_at.",
+        "operationId": "patch_trigger_scheduler_triggers__trigger_id__patch",
+        "parameters": [
+          {
+            "name": "trigger_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trigger Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Delete Trigger",
+        "description": "Hard-delete a trigger.",
+        "operationId": "delete_trigger_scheduler_triggers__trigger_id__delete",
+        "parameters": [
+          {
+            "name": "trigger_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trigger Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/runs": {
+      "get": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "List Runs",
+        "description": "List run history (RLS-scoped). Filter by task_id and/or status.",
+        "operationId": "list_runs_scheduler_runs_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Get Run",
+        "operationId": "get_run_scheduler_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/cron/validate": {
+      "post": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Validate Cron",
+        "description": "Validate a cron expression and preview the next N fires.",
+        "operationId": "validate_cron_scheduler_cron_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateCronRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateCronResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/cron/preview-fires": {
+      "post": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Preview Fires",
+        "description": "Preview next-fire times for any trigger config (cron, interval,\nheartbeat, one-shot). Event-driven triggers (manual, dependency,\nevent, context-match) return an empty list with event_driven=True.",
+        "operationId": "preview_fires_scheduler_cron_preview_fires_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewFiresRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewFiresResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/compute-next-due-at": {
+      "post": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Compute Next Due At",
+        "description": "Compute next_due_at for a trigger config (single value).",
+        "operationId": "compute_next_due_at_scheduler_compute_next_due_at_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComputeNextDueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComputeNextDueResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduler/status": {
+      "get": {
+        "tags": [
+          "scheduler"
+        ],
+        "summary": "Get Status",
+        "description": "Scanner health. Admin-only -- non-admins receive 403. The error\nmessage is truncated to 200 chars to avoid leaking internal detail\nto clients that can see this endpoint.",
+        "operationId": "get_status_scheduler_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/matrx_scheduler__api__schemas__ScannerStatusResponse"
                 }
               }
             }
@@ -24604,7 +26117,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RestoreResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__file_analysis__RestoreResponse"
                 }
               }
             }
@@ -27242,6 +28755,132 @@
         "type": "object",
         "title": "AgentStartRequest"
       },
+      "AgentTaskCreate": {
+        "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "default": ""
+          },
+          "variables": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Variables"
+          },
+          "persistent_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persistent Conversation Id"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "auto"
+            ],
+            "title": "Auth Mode",
+            "default": "ask"
+          },
+          "max_runtime_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 1,
+            "title": "Max Runtime Seconds",
+            "default": 600
+          },
+          "max_concurrent": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Max Concurrent",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "title": "AgentTaskCreate",
+        "description": "Child sch_agent_task row payload (used for kind=agent/tool)."
+      },
+      "AgentTaskResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "variables": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Variables"
+          },
+          "persistent_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persistent Conversation Id"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "auto"
+            ],
+            "title": "Auth Mode",
+            "default": "ask"
+          },
+          "max_runtime_seconds": {
+            "type": "integer",
+            "title": "Max Runtime Seconds"
+          },
+          "max_concurrent": {
+            "type": "integer",
+            "title": "Max Concurrent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "prompt",
+          "max_runtime_seconds",
+          "max_concurrent"
+        ],
+        "title": "AgentTaskResponse"
+      },
       "AgentToolSpec": {
         "properties": {
           "kind": {
@@ -28836,6 +30475,18 @@
             "type": "string",
             "title": "File Path"
           },
+          "file_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Uri",
+            "description": "Native cloud storage URI (s3://bucket/key). Same value as the underlying cld_files row's storage_uri — surfaced here so the FE wire contract carries the canonical native URI alongside the logical file_path."
+          },
           "width": {
             "anyOf": [
               {
@@ -28869,7 +30520,7 @@
             ],
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -28878,7 +30529,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "url": {
             "anyOf": [
@@ -28923,6 +30574,17 @@
               }
             ],
             "title": "Download Url"
+          },
+          "signed_url_expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url Expires At"
           },
           "metadata": {
             "additionalProperties": true,
@@ -29026,6 +30688,63 @@
           "created_at"
         ],
         "title": "AuditRow"
+      },
+      "BatchDeleteRequest": {
+        "properties": {
+          "selector": {
+            "$ref": "#/components/schemas/MessageSelector"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "BatchDeleteRequest"
+      },
+      "BatchDeleteResponse": {
+        "properties": {
+          "deleted_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Ids"
+          },
+          "cascaded_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cascaded Ids"
+          },
+          "remaining_count": {
+            "type": "integer",
+            "title": "Remaining Count"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted_ids",
+          "cascaded_ids",
+          "remaining_count",
+          "dry_run"
+        ],
+        "title": "BatchDeleteResponse"
       },
       "BatchScrapeRequest": {
         "properties": {
@@ -29579,7 +31298,7 @@
             ],
             "title": "File Path"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -29588,7 +31307,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "mime_type": {
             "anyOf": [
@@ -30272,6 +31991,219 @@
         "type": "object",
         "title": "CacheBypass",
         "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tl_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Flush ``AgxAgent`` and ``AgxVersion`` caches in the ORM\n    ``StateManager``. Required after the agent definition has been\n    edited.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``AiModel`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
+      },
+      "CallTimelineResponse": {
+        "properties": {
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/TraceEventRecord"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "tool_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CallToolDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "call_id",
+          "events"
+        ],
+        "title": "CallTimelineResponse",
+        "description": "Full forensic dump for one ``call_id`` — trace events + cx_tl_call row."
+      },
+      "CallToolDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success"
+          },
+          "is_error": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Error"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          },
+          "output_chars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Chars"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "iteration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iteration"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "tool_name",
+          "call_id"
+        ],
+        "title": "CallToolDetail",
+        "description": "One row from cx_tl_call — the per-call record. Only present when the\ncall made it past pre-flight; pre-flight rejects (SURFACE_REJECT,\nNO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tl_call row."
       },
       "CategorizeRequest": {
         "properties": {
@@ -33029,6 +34961,107 @@
         ],
         "title": "CommittedVariant"
       },
+      "CompactTurnsRequest": {
+        "properties": {
+          "range": {
+            "$ref": "#/components/schemas/TurnRange"
+          },
+          "summary_content": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Summary Content"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "user",
+              "system"
+            ],
+            "title": "Mode",
+            "default": "user"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          },
+          "summary_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "range",
+          "summary_content"
+        ],
+        "title": "CompactTurnsRequest"
+      },
+      "CompactTurnsResponse": {
+        "properties": {
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          },
+          "summary_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Message Id"
+          },
+          "compacted_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Compacted Message Ids"
+          },
+          "turn_count": {
+            "type": "integer",
+            "title": "Turn Count"
+          },
+          "position_range": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Position Range"
+          }
+        },
+        "type": "object",
+        "required": [
+          "compaction_group_id",
+          "summary_message_id",
+          "compacted_message_ids",
+          "turn_count",
+          "position_range"
+        ],
+        "title": "CompactTurnsResponse"
+      },
       "CompensationOut": {
         "properties": {
           "compensation": {
@@ -33240,6 +35273,87 @@
           "content"
         ],
         "title": "ContentSaveRequest"
+      },
+      "ContextStateResponse": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "last_request_input_tokens": {
+            "type": "integer",
+            "title": "Last Request Input Tokens",
+            "default": 0
+          },
+          "last_request_cached_tokens": {
+            "type": "integer",
+            "title": "Last Request Cached Tokens",
+            "default": 0
+          },
+          "last_request_output_tokens": {
+            "type": "integer",
+            "title": "Last Request Output Tokens",
+            "default": 0
+          },
+          "total_chars_visible_to_model": {
+            "type": "integer",
+            "title": "Total Chars Visible To Model",
+            "default": 0
+          },
+          "message_count_visible": {
+            "type": "integer",
+            "title": "Message Count Visible",
+            "default": 0
+          },
+          "cache_state": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Cache State",
+            "default": {}
+          },
+          "last_trim_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Trim Summary"
+          },
+          "last_raw_usage": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Raw Usage"
+          },
+          "measured_at": {
+            "type": "string",
+            "title": "Measured At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "measured_at"
+        ],
+        "title": "ContextStateResponse",
+        "description": "Same shape as the CONTEXT_STATE stream event payload.\n\nThe FE Model Context tab hydrates from this endpoint on conversation\nopen, then receives live updates from the CONTEXT_STATE stream events\nafter each turn — no polling needed once the stream is connected."
       },
       "ConversationContinueRequest": {
         "properties": {
@@ -34906,11 +37020,6 @@
             "title": "Is Public",
             "default": false
           },
-          "authenticated_read": {
-            "type": "boolean",
-            "title": "Authenticated Read",
-            "default": false
-          },
           "fields": {
             "anyOf": [
               {
@@ -34998,17 +37107,6 @@
               }
             ],
             "title": "Is Public"
-          },
-          "authenticated_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Authenticated Read"
           },
           "row_count": {
             "type": "integer",
@@ -35139,17 +37237,6 @@
               }
             ],
             "title": "Is Public"
-          },
-          "authenticated_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Authenticated Read"
           },
           "row_count": {
             "type": "integer",
@@ -35545,6 +37632,24 @@
           "deleted"
         ],
         "title": "DeleteTriggerResponse"
+      },
+      "DeletedResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "soft": {
+            "type": "boolean",
+            "title": "Soft",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "DeletedResponse"
       },
       "DerivativeRequest": {
         "properties": {
@@ -38695,7 +40800,7 @@
             ],
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -38704,7 +40809,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "checksum": {
             "anyOf": [
@@ -38873,7 +40978,7 @@
             "type": "integer",
             "title": "Version Number"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -38882,7 +40987,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "checksum": {
             "anyOf": [
@@ -38928,7 +41033,7 @@
           "file_path",
           "storage_uri",
           "version_number",
-          "file_size",
+          "size_bytes",
           "checksum",
           "url",
           "is_new"
@@ -39415,6 +41520,309 @@
         ],
         "title": "ForceDisableResponse"
       },
+      "ForkAndRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "default": true
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "User Input"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": true
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          },
+          "tools": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RegisteredToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/InlineToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/AgentToolSpec"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "agent": "#/components/schemas/AgentToolSpec",
+                  "inline": "#/components/schemas/InlineToolSpec",
+                  "registered": "#/components/schemas/RegisteredToolSpec"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Tools",
+            "default": []
+          },
+          "tools_replace": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RegisteredToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InlineToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AgentToolSpec"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {
+                      "agent": "#/components/schemas/AgentToolSpec",
+                      "inline": "#/components/schemas/InlineToolSpec",
+                      "registered": "#/components/schemas/RegisteredToolSpec"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Replace"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Client Tools",
+            "default": []
+          },
+          "custom_tools": {
+            "items": {
+              "$ref": "#/components/schemas/LegacyCustomTool"
+            },
+            "type": "array",
+            "title": "Custom Tools",
+            "default": []
+          },
+          "ide_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdeState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "default": {}
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "default": []
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "default": false
+          },
+          "block_mode": {
+            "type": "boolean",
+            "title": "Block Mode",
+            "default": false
+          },
+          "snapshot": {
+            "type": "boolean",
+            "title": "Snapshot",
+            "default": false
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory"
+          },
+          "memory_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Model"
+          },
+          "memory_scope": {
+            "type": "string",
+            "title": "Memory Scope",
+            "default": "thread"
+          },
+          "cache_bypass": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CacheBypass"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "up_to_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To Position"
+          },
+          "from_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Message Id"
+          },
+          "exclusive": {
+            "type": "boolean",
+            "title": "Exclusive",
+            "default": false
+          },
+          "fork_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fork Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_input"
+        ],
+        "title": "ForkAndRunRequest",
+        "description": "Fork an existing conversation, then run a new turn on the fork.\n\nAll fields from ``ConversationContinueRequest`` apply (user_input,\ntools, client, config_overrides, etc.) — they drive the new turn\nexactly as if the caller had hit ``POST /conversations/{new_id}``.\n\nSelectors (provide at most one — default copies every live message):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy up to and including this message. Set\n  ``exclusive=True`` to fork *before* it (the natural shape for\n  \"edit this message\" — message N is dropped, the new turn replaces it).\n\n``fork_title`` overrides the auto-generated ``\"Fork: <source>\"``\ntitle on the new conversation."
+      },
       "ForkConversationResponse": {
         "properties": {
           "conversation_id": {
@@ -39462,6 +41870,22 @@
             ],
             "title": "Up To Position"
           },
+          "from_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Message Id"
+          },
+          "exclusive": {
+            "type": "boolean",
+            "title": "Exclusive",
+            "default": false
+          },
           "title": {
             "anyOf": [
               {
@@ -39476,7 +41900,7 @@
         },
         "type": "object",
         "title": "ForkRequest",
-        "description": "Payload for forking a conversation.\n\n``up_to_position`` — when set, only messages with ``position`` less\nthan or equal to this value are copied to the fork. Callers use this\nto branch mid-conversation. ``None`` copies every message.\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
+        "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
       },
       "GetConversationResponse": {
         "properties": {
@@ -39746,6 +42170,45 @@
           "distinct_sources"
         ],
         "title": "HealthResponse"
+      },
+      "HideRequest": {
+        "properties": {
+          "selector": {
+            "$ref": "#/components/schemas/MessageSelector"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector"
+        ],
+        "title": "HideRequest"
+      },
+      "HideResponse": {
+        "properties": {
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          },
+          "hidden_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hidden Message Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "compaction_group_id",
+          "hidden_message_ids"
+        ],
+        "title": "HideResponse"
       },
       "IdeDiagnostic": {
         "properties": {
@@ -41148,6 +43611,56 @@
         ],
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
+      },
+      "JsonRpcResponse": {
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "title": "Jsonrpc",
+            "default": "2.0"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "JsonRpcResponse"
       },
       "JsonValue": {},
       "KeyFindingEntry": {
@@ -44355,6 +46868,88 @@
         ],
         "title": "MergePdfsRequest"
       },
+      "MessageSelector": {
+        "properties": {
+          "message_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ids"
+          },
+          "from_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Position"
+          },
+          "to_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Position"
+          },
+          "from_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Message Id"
+          },
+          "to_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Message Id"
+          },
+          "after_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After Message Id"
+          },
+          "inclusive": {
+            "type": "boolean",
+            "title": "Inclusive",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MessageSelector",
+        "description": "Reusable selection grammar for batch message operations.\n\nProvide EXACTLY ONE selection form. Mixed forms raise 422."
+      },
       "MessageUpdate": {
         "properties": {
           "content": {
@@ -46266,11 +48861,6 @@
             "title": "Is Public",
             "default": false
           },
-          "authenticated_read": {
-            "type": "boolean",
-            "title": "Authenticated Read",
-            "default": true
-          },
           "public_read": {
             "type": "boolean",
             "title": "Public Read",
@@ -46363,17 +48953,6 @@
               }
             ],
             "title": "Is Public"
-          },
-          "authenticated_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Authenticated Read"
           },
           "public_read": {
             "anyOf": [
@@ -46568,11 +49147,6 @@
             "title": "Is Public",
             "default": false
           },
-          "authenticated_read": {
-            "type": "boolean",
-            "title": "Authenticated Read",
-            "default": true
-          },
           "public_read": {
             "type": "boolean",
             "title": "Public Read",
@@ -46653,17 +49227,6 @@
             ],
             "title": "Is Public"
           },
-          "authenticated_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Authenticated Read"
-          },
           "public_read": {
             "anyOf": [
               {
@@ -46717,17 +49280,6 @@
               }
             ],
             "title": "Is Public"
-          },
-          "authenticated_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Authenticated Read"
           },
           "public_read": {
             "anyOf": [
@@ -46807,17 +49359,6 @@
               }
             ],
             "title": "Is Public"
-          },
-          "authenticated_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Authenticated Read"
           },
           "public_read": {
             "anyOf": [
@@ -47262,6 +49803,60 @@
           "storage_uri"
         ],
         "title": "PresignedUploadResponse"
+      },
+      "PreviewFiresRequest": {
+        "properties": {
+          "trigger_type": {
+            "type": "string",
+            "enum": [
+              "one-shot",
+              "interval",
+              "cron",
+              "heartbeat",
+              "context-match",
+              "event",
+              "manual",
+              "dependency"
+            ],
+            "title": "Trigger Type"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "n": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "N",
+            "default": 5
+          }
+        },
+        "type": "object",
+        "required": [
+          "trigger_type"
+        ],
+        "title": "PreviewFiresRequest",
+        "description": "Preview next-fire times for any trigger config, not just cron."
+      },
+      "PreviewFiresResponse": {
+        "properties": {
+          "next_fires_utc": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Next Fires Utc"
+          },
+          "event_driven": {
+            "type": "boolean",
+            "title": "Event Driven",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "PreviewFiresResponse"
       },
       "PreviewRequest": {
         "properties": {
@@ -49217,6 +51812,76 @@
         ],
         "title": "RepeatedRegionsReport"
       },
+      "ReplaceRequest": {
+        "properties": {
+          "selector": {
+            "$ref": "#/components/schemas/MessageSelector"
+          },
+          "summary_content": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Summary Content"
+          },
+          "cascade_tool_pairs": {
+            "type": "boolean",
+            "title": "Cascade Tool Pairs",
+            "default": true
+          },
+          "summary_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector",
+          "summary_content"
+        ],
+        "title": "ReplaceRequest"
+      },
+      "ReplaceResponse": {
+        "properties": {
+          "summary_message_id": {
+            "type": "string",
+            "title": "Summary Message Id"
+          },
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          },
+          "stashed_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stashed Message Ids"
+          },
+          "summary_position": {
+            "type": "integer",
+            "title": "Summary Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary_message_id",
+          "compaction_group_id",
+          "stashed_message_ids",
+          "summary_position"
+        ],
+        "title": "ReplaceResponse"
+      },
       "RepositoriesListResponse": {
         "properties": {
           "repositories": {
@@ -49427,6 +52092,40 @@
         ],
         "title": "ResolvedPath"
       },
+      "RestoreRequest": {
+        "properties": {
+          "compaction_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compaction Group Id"
+          },
+          "summary_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Message Id"
+          },
+          "delete_summary": {
+            "type": "boolean",
+            "title": "Delete Summary",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RestoreRequest"
+      },
       "RestoreRequestBody": {
         "properties": {
           "session_id": {
@@ -49449,24 +52148,6 @@
           "text"
         ],
         "title": "RestoreRequestBody"
-      },
-      "RestoreResponse": {
-        "properties": {
-          "session_id": {
-            "type": "string",
-            "title": "Session Id"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "session_id",
-          "text"
-        ],
-        "title": "RestoreResponse"
       },
       "ResumeRequest": {
         "properties": {
@@ -49749,7 +52430,7 @@
             ],
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -49758,7 +52439,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "processed_document_id": {
             "anyOf": [
@@ -49796,7 +52477,7 @@
           "notes",
           "name",
           "mime_type",
-          "file_size",
+          "size_bytes",
           "processed_document_id",
           "pages",
           "chunks",
@@ -50032,6 +52713,22 @@
         ],
         "title": "RunExtractionRequest"
       },
+      "RunListResponse": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunResponse"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runs"
+        ],
+        "title": "RunListResponse"
+      },
       "RunNowResponse": {
         "properties": {
           "run_id": {
@@ -50056,6 +52753,176 @@
         },
         "type": "object",
         "title": "RunPipelineRequest"
+      },
+      "RunResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "trigger_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "claimed",
+              "running",
+              "success",
+              "failed",
+              "cancelled",
+              "skipped"
+            ],
+            "title": "Status"
+          },
+          "surface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface"
+          },
+          "queue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue"
+          },
+          "output_ref": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Ref"
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due At"
+          },
+          "claimed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claimed At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "result_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Summary"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "result_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Metadata"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "task_id",
+          "user_id",
+          "status",
+          "due_at"
+        ],
+        "title": "RunResponse"
       },
       "RunWorkflowRequest": {
         "properties": {
@@ -50272,83 +53139,6 @@
         },
         "type": "object",
         "title": "SavedViewUpdate"
-      },
-      "ScannerStatusResponse": {
-        "properties": {
-          "running": {
-            "type": "boolean",
-            "title": "Running"
-          },
-          "started_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At"
-          },
-          "last_tick_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Tick At"
-          },
-          "last_tick_duration_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Tick Duration Ms"
-          },
-          "last_tick_claimed": {
-            "type": "integer",
-            "title": "Last Tick Claimed",
-            "default": 0
-          },
-          "last_tick_expired_sweeps": {
-            "type": "integer",
-            "title": "Last Tick Expired Sweeps",
-            "default": 0
-          },
-          "total_runs_dispatched": {
-            "type": "integer",
-            "title": "Total Runs Dispatched",
-            "default": 0
-          },
-          "consecutive_errors": {
-            "type": "integer",
-            "title": "Consecutive Errors",
-            "default": 0
-          },
-          "error_message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "running"
-        ],
-        "title": "ScannerStatusResponse"
       },
       "ScheduleSaveRequest": {
         "properties": {
@@ -53227,6 +56017,374 @@
         "type": "object",
         "title": "TagUpdate"
       },
+      "TaskCreateRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "'agent', 'tool', or 'ping'"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "queue": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Queue",
+            "default": "default"
+          },
+          "surfaces": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Surfaces"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "agent_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTaskCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TriggerCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "title"
+        ],
+        "title": "TaskCreateRequest",
+        "description": "Create a new sch_task (plus optional agent_task and trigger)."
+      },
+      "TaskDetailResponse": {
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/TaskResponse"
+          },
+          "agent_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentTaskResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "triggers": {
+            "items": {
+              "$ref": "#/components/schemas/TriggerResponse"
+            },
+            "type": "array",
+            "title": "Triggers"
+          },
+          "recent_runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunResponse"
+            },
+            "type": "array",
+            "title": "Recent Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task"
+        ],
+        "title": "TaskDetailResponse",
+        "description": "Task hydrated with agent_task, triggers, and recent runs."
+      },
+      "TaskListResponse": {
+        "properties": {
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tasks",
+          "total"
+        ],
+        "title": "TaskListResponse"
+      },
+      "TaskPatchRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "queue": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue"
+          },
+          "surfaces": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surfaces"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "title": "TaskPatchRequest",
+        "description": "Update a subset of sch_task fields."
+      },
+      "TaskResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "queue": {
+            "type": "string",
+            "title": "Queue"
+          },
+          "surfaces": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Surfaces"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "kind",
+          "title",
+          "queue",
+          "surfaces",
+          "enabled",
+          "tags"
+        ],
+        "title": "TaskResponse",
+        "description": "Single sch_task row (plain, without children)."
+      },
       "TemplateCreate": {
         "properties": {
           "name": {
@@ -53767,6 +56925,264 @@
         "type": "object",
         "title": "TopicUpdate"
       },
+      "TraceEventListResponse": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/TraceEventRecord"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "filter_summary": {
+            "type": "string",
+            "title": "Filter Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "events",
+          "count",
+          "filter_summary"
+        ],
+        "title": "TraceEventListResponse"
+      },
+      "TraceEventRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts"
+          },
+          "event": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "FAIL",
+              "SURFACE_REJECT",
+              "NO_EXECUTOR",
+              "LOOP_BLOCK"
+            ],
+            "title": "Event"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "SERVER",
+                  "DELEGATE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "args": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Preview"
+          },
+          "err_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Err Type"
+          },
+          "err_msg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Err Msg"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "process_pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Process Pid"
+          },
+          "process_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Process Started At"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "ts",
+          "event",
+          "tool_name"
+        ],
+        "title": "TraceEventRecord",
+        "description": "One row from cx_tool_trace, projected for the admin UI / agent.\n\nMirrors the table schema in [db/migrations/0044_cx_tool_trace.sql](../../../db/migrations/0044_cx_tool_trace.sql)"
+      },
+      "TraceFileListResponse": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/TraceFileSummary"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "log_dir": {
+            "type": "string",
+            "title": "Log Dir"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "files",
+          "count",
+          "log_dir"
+        ],
+        "title": "TraceFileListResponse"
+      },
+      "TraceFileSummary": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "modified_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Modified At"
+          },
+          "is_header_only": {
+            "type": "boolean",
+            "title": "Is Header Only"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "size_bytes",
+          "modified_at",
+          "is_header_only"
+        ],
+        "title": "TraceFileSummary",
+        "description": "One entry in the ``GET /admin/debug-traces/files`` listing."
+      },
       "TrashFileEntry": {
         "properties": {
           "id": {
@@ -53802,7 +57218,7 @@
             ],
             "title": "File Name"
           },
-          "file_size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -53811,7 +57227,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "mime_type": {
             "anyOf": [
@@ -54005,6 +57421,145 @@
         ],
         "title": "TrashListResponse"
       },
+      "TriggerCreate": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "one-shot",
+              "interval",
+              "cron",
+              "heartbeat",
+              "context-match",
+              "event",
+              "manual",
+              "dependency"
+            ],
+            "title": "Type"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "TriggerCreate",
+        "description": "Child sch_trigger row payload."
+      },
+      "TriggerCreateRequest": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "one-shot",
+              "interval",
+              "cron",
+              "heartbeat",
+              "context-match",
+              "event",
+              "manual",
+              "dependency"
+            ],
+            "title": "Type"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "type"
+        ],
+        "title": "TriggerCreateRequest",
+        "description": "Create a sch_trigger row attached to an existing task."
+      },
+      "TriggerListResponse": {
+        "properties": {
+          "triggers": {
+            "items": {
+              "$ref": "#/components/schemas/TriggerResponse"
+            },
+            "type": "array",
+            "title": "Triggers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "triggers"
+        ],
+        "title": "TriggerListResponse"
+      },
+      "TriggerPatchRequest": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "one-shot",
+                  "interval",
+                  "cron",
+                  "heartbeat",
+                  "context-match",
+                  "event",
+                  "manual",
+                  "dependency"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "title": "TriggerPatchRequest"
+      },
       "TriggerRecord": {
         "properties": {
           "id": {
@@ -54166,6 +57721,128 @@
         "type": "object",
         "title": "TriggerRecord",
         "description": "Trigger row as returned by ``TriggerStore``'s Pydantic model.\n\nThe TriggerStore returns a typed Pydantic model that we previously\n``model_dump(mode=\"json\")``-ed into a free dict. Here we keep the\nwire surface backward-compatible by accepting any extra keys the\nupstream model adds; the explicit subset documents the contract."
+      },
+      "TriggerResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "one-shot",
+              "interval",
+              "cron",
+              "heartbeat",
+              "context-match",
+              "event",
+              "manual",
+              "dependency"
+            ],
+            "title": "Type"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "last_fired_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Fired At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "task_id",
+          "user_id",
+          "type",
+          "enabled"
+        ],
+        "title": "TriggerResponse"
+      },
+      "TurnRange": {
+        "properties": {
+          "from_user_message_id": {
+            "type": "string",
+            "title": "From User Message Id"
+          },
+          "to_user_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To User Message Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "from_user_message_id"
+        ],
+        "title": "TurnRange",
+        "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
       },
       "UpdateMessageResponse": {
         "properties": {
@@ -55470,9 +59147,9 @@
             "type": "string",
             "title": "Mime Type"
           },
-          "file_size": {
+          "size_bytes": {
             "type": "integer",
-            "title": "File Size"
+            "title": "Size Bytes"
           },
           "master_url": {
             "anyOf": [
@@ -55531,7 +59208,7 @@
           "storage_uri",
           "file_path",
           "mime_type",
-          "file_size"
+          "size_bytes"
         ],
         "title": "VisionMediaUploadResponse",
         "description": "Response payload for ``POST /media/upload``."
@@ -56341,6 +60018,57 @@
         "type": "object",
         "title": "WarmRequest"
       },
+      "aidream__api__routers__cx_data__RestoreResponse": {
+        "properties": {
+          "restored_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Restored Message Ids"
+          },
+          "deleted_summary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted Summary Id"
+          },
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "restored_message_ids",
+          "deleted_summary_id",
+          "compaction_group_id"
+        ],
+        "title": "RestoreResponse"
+      },
+      "aidream__api__routers__file_analysis__RestoreResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "text"
+        ],
+        "title": "RestoreResponse"
+      },
       "aidream__api__routers__file_search__SearchHitOut": {
         "properties": {
           "page_number": {
@@ -56677,6 +60405,170 @@
           "query"
         ],
         "title": "SearchRequest"
+      },
+      "aidream__api__routers__scheduling__ScannerStatusResponse": {
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "title": "Running"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "last_tick_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick At"
+          },
+          "last_tick_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick Duration Ms"
+          },
+          "last_tick_claimed": {
+            "type": "integer",
+            "title": "Last Tick Claimed",
+            "default": 0
+          },
+          "last_tick_expired_sweeps": {
+            "type": "integer",
+            "title": "Last Tick Expired Sweeps",
+            "default": 0
+          },
+          "total_runs_dispatched": {
+            "type": "integer",
+            "title": "Total Runs Dispatched",
+            "default": 0
+          },
+          "consecutive_errors": {
+            "type": "integer",
+            "title": "Consecutive Errors",
+            "default": 0
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "running"
+        ],
+        "title": "ScannerStatusResponse"
+      },
+      "matrx_scheduler__api__schemas__ScannerStatusResponse": {
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "title": "Running"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "last_tick_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick At"
+          },
+          "last_tick_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick Duration Ms"
+          },
+          "last_tick_claimed": {
+            "type": "integer",
+            "title": "Last Tick Claimed",
+            "default": 0
+          },
+          "last_tick_expired_sweeps": {
+            "type": "integer",
+            "title": "Last Tick Expired Sweeps",
+            "default": 0
+          },
+          "last_tick_manual_claimed": {
+            "type": "integer",
+            "title": "Last Tick Manual Claimed",
+            "default": 0
+          },
+          "total_runs_dispatched": {
+            "type": "integer",
+            "title": "Total Runs Dispatched",
+            "default": 0
+          },
+          "in_flight_count": {
+            "type": "integer",
+            "title": "In Flight Count",
+            "default": 0
+          },
+          "consecutive_errors": {
+            "type": "integer",
+            "title": "Consecutive Errors",
+            "default": 0
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "running"
+        ],
+        "title": "ScannerStatusResponse"
       },
       "matrx_utils__file_handling__asset_envelope__FocalPoint": {
         "properties": {

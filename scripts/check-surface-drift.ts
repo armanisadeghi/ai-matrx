@@ -47,7 +47,7 @@ async function main() {
     resolve(
       __dirname,
       "..",
-      "features/tool-registry/surfaces/manifests/registry",
+      "features/surfaces/manifests/registry",
     )
   );
   const ALL_MANIFESTS: ReadonlyArray<{

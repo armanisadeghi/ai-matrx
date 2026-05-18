@@ -16,8 +16,8 @@ import type { RefObject } from "react";
 
 import { useTranscriptsContext } from "@/features/transcripts/context/TranscriptsContext";
 import type { TranscriptSegment } from "@/features/transcripts/types";
-import { createTranscriptsScope } from "@/features/tool-registry/surfaces/manifests/transcripts.manifest";
-import type { SurfaceScopePayload } from "@/features/tool-registry/surfaces/types";
+import { createTranscriptsScope } from "@/features/surfaces/manifests/transcripts.manifest";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
 export interface UseTranscriptsSurfaceScopeParams {
   /**

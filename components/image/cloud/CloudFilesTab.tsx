@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserId } from "@/lib/redux/selectors/userSelectors";
 import {
+  EMPTY_TREE_CHILDREN,
   selectAllFilesMap,
   selectAllFoldersMap,
   selectSortedChildrenOfFolder,
@@ -41,14 +42,8 @@ import {
 } from "@/features/files/redux/selectors";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
 import { useFolderContents } from "@/features/files";
-import {
-  isImageMime,
-  resolveMime,
-} from "@/features/files";
-import type {
-  CloudFileRecord,
-  CloudFolderRecord,
-} from "@/features/files";
+import { isImageMime, resolveMime } from "@/features/files";
+import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
 import {
   useSelectedImages,
   type ImageSource,
@@ -126,7 +121,7 @@ export function CloudFilesTab({
   const folderSorted = useAppSelector((s) =>
     currentFolderId
       ? selectSortedChildrenOfFolder(s, currentFolderId)
-      : { folderIds: [], fileIds: [] },
+      : EMPTY_TREE_CHILDREN,
   );
   const sorted = currentFolderId ? folderSorted : rootSorted;
   const currentFolder = currentFolderId

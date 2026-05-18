@@ -1000,10 +1000,12 @@ export type Database = {
           show_pre_execution_gate: boolean | null
           show_variable_panel: boolean
           sort_order: number
+          surface_name: string | null
           task_id: string | null
           updated_at: string
           use_latest: boolean
           user_id: string | null
+          value_mappings: Json | null
           variables_panel_style: string
         }
         Insert: {
@@ -1040,10 +1042,12 @@ export type Database = {
           show_pre_execution_gate?: boolean | null
           show_variable_panel?: boolean
           sort_order?: number
+          surface_name?: string | null
           task_id?: string | null
           updated_at?: string
           use_latest?: boolean
           user_id?: string | null
+          value_mappings?: Json | null
           variables_panel_style?: string
         }
         Update: {
@@ -1080,10 +1084,12 @@ export type Database = {
           show_pre_execution_gate?: boolean | null
           show_variable_panel?: boolean
           sort_order?: number
+          surface_name?: string | null
           task_id?: string | null
           updated_at?: string
           use_latest?: boolean
           user_id?: string | null
+          value_mappings?: Json | null
           variables_panel_style?: string
         }
         Relationships: [
@@ -1121,6 +1127,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agx_shortcut_surface_fk"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
           },
           {
             foreignKeyName: "agx_shortcut_task_fk"
@@ -1313,11 +1326,13 @@ export type Database = {
           context_window: number | null
           controls: Json | null
           endpoints: Json | null
+          guest_fallback_id: string | null
           id: string
           is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
           max_tokens: number | null
+          mid_fallback_id: string | null
           model_class: string
           model_provider: string | null
           name: string
@@ -1332,11 +1347,13 @@ export type Database = {
           context_window?: number | null
           controls?: Json | null
           endpoints?: Json | null
+          guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
           is_premium?: boolean | null
           is_primary?: boolean | null
           max_tokens?: number | null
+          mid_fallback_id?: string | null
           model_class: string
           model_provider?: string | null
           name: string
@@ -1351,11 +1368,13 @@ export type Database = {
           context_window?: number | null
           controls?: Json | null
           endpoints?: Json | null
+          guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
           is_premium?: boolean | null
           is_primary?: boolean | null
           max_tokens?: number | null
+          mid_fallback_id?: string | null
           model_class?: string
           model_provider?: string | null
           name?: string
@@ -1363,6 +1382,20 @@ export type Database = {
           provider?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_model_model_provider_fkey"
             columns: ["model_provider"]
@@ -3383,9 +3416,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           file_id: string
-          file_size: number | null
           id: string
           organization_id: string | null
+          size_bytes: number | null
           storage_uri: string
           version_number: number
         }
@@ -3395,9 +3428,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           file_id: string
-          file_size?: number | null
           id?: string
           organization_id?: string | null
+          size_bytes?: number | null
           storage_uri: string
           version_number: number
         }
@@ -3407,9 +3440,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           file_id?: string
-          file_size?: number | null
           id?: string
           organization_id?: string | null
+          size_bytes?: number | null
           storage_uri?: string
           version_number?: number
         }
@@ -3434,9 +3467,10 @@ export type Database = {
           derivation_kind: string | null
           derivation_metadata: Json
           duplicate_of_file_id: string | null
+          duration_ms: number | null
           file_name: string
           file_path: string
-          file_size: number | null
+          height: number | null
           id: string
           metadata: Json
           mime_type: string | null
@@ -3444,11 +3478,11 @@ export type Database = {
           owner_id: string
           parent_file_id: string | null
           parent_folder_id: string | null
+          size_bytes: number | null
           storage_uri: string
-          thumbnail_storage_uri: string | null
-          thumbnail_url: string | null
           updated_at: string
           visibility: string
+          width: number | null
         }
         Insert: {
           canonical_processed_document_id?: string | null
@@ -3460,9 +3494,10 @@ export type Database = {
           derivation_kind?: string | null
           derivation_metadata?: Json
           duplicate_of_file_id?: string | null
+          duration_ms?: number | null
           file_name: string
           file_path: string
-          file_size?: number | null
+          height?: number | null
           id?: string
           metadata?: Json
           mime_type?: string | null
@@ -3470,11 +3505,11 @@ export type Database = {
           owner_id: string
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          size_bytes?: number | null
           storage_uri: string
-          thumbnail_storage_uri?: string | null
-          thumbnail_url?: string | null
           updated_at?: string
           visibility?: string
+          width?: number | null
         }
         Update: {
           canonical_processed_document_id?: string | null
@@ -3486,9 +3521,10 @@ export type Database = {
           derivation_kind?: string | null
           derivation_metadata?: Json
           duplicate_of_file_id?: string | null
+          duration_ms?: number | null
           file_name?: string
           file_path?: string
-          file_size?: number | null
+          height?: number | null
           id?: string
           metadata?: Json
           mime_type?: string | null
@@ -3496,11 +3532,11 @@ export type Database = {
           owner_id?: string
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          size_bytes?: number | null
           storage_uri?: string
-          thumbnail_storage_uri?: string | null
-          thumbnail_url?: string | null
           updated_at?: string
           visibility?: string
+          width?: number | null
         }
         Relationships: [
           {
@@ -3986,6 +4022,139 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      cmp_comparison_entries: {
+        Row: {
+          agent_id: string
+          agent_version: number | null
+          agent_version_snapshot_id: string | null
+          comparison_set_id: string
+          conversation_id: string
+          created_at: string
+          display_order: number
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          agent_id: string
+          agent_version?: number | null
+          agent_version_snapshot_id?: string | null
+          comparison_set_id: string
+          conversation_id: string
+          created_at?: string
+          display_order: number
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          agent_id?: string
+          agent_version?: number | null
+          agent_version_snapshot_id?: string | null
+          comparison_set_id?: string
+          conversation_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmp_comparison_entries_comparison_set_id_fkey"
+            columns: ["comparison_set_id"]
+            isOneToOne: false
+            referencedRelation: "cmp_comparison_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmp_comparison_sets: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string | null
+          project_id: string | null
+          task_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cmp_response_feedback: {
+        Row: {
+          comment: string | null
+          comparison_set_id: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          overall: number | null
+          rank: number | null
+          rating: string | null
+          request_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          comparison_set_id?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          overall?: number | null
+          rank?: number | null
+          rating?: string | null
+          request_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          comparison_set_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          overall?: number | null
+          rank?: number | null
+          rating?: string | null
+          request_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmp_response_feedback_comparison_set_id_fkey"
+            columns: ["comparison_set_id"]
+            isOneToOne: false
+            referencedRelation: "cmp_comparison_sets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       code_file_folders: {
         Row: {
@@ -6259,6 +6428,7 @@ export type Database = {
       }
       cx_conversation: {
         Row: {
+          cache_state: Json
           config: Json
           created_at: string
           deleted_at: string | null
@@ -6269,8 +6439,10 @@ export type Database = {
           initial_agent_id: string | null
           initial_agent_version_id: string | null
           is_ephemeral: boolean
+          is_favorite: boolean
           is_public: boolean
           keywords: string[] | null
+          last_context_breakdown: Json | null
           last_model_id: string | null
           message_count: number
           metadata: Json
@@ -6289,6 +6461,7 @@ export type Database = {
           variables: Json
         }
         Insert: {
+          cache_state?: Json
           config?: Json
           created_at?: string
           deleted_at?: string | null
@@ -6299,8 +6472,10 @@ export type Database = {
           initial_agent_id?: string | null
           initial_agent_version_id?: string | null
           is_ephemeral?: boolean
+          is_favorite?: boolean
           is_public?: boolean
           keywords?: string[] | null
+          last_context_breakdown?: Json | null
           last_model_id?: string | null
           message_count?: number
           metadata?: Json
@@ -6319,6 +6494,7 @@ export type Database = {
           variables?: Json
         }
         Update: {
+          cache_state?: Json
           config?: Json
           created_at?: string
           deleted_at?: string | null
@@ -6329,8 +6505,10 @@ export type Database = {
           initial_agent_id?: string | null
           initial_agent_version_id?: string | null
           is_ephemeral?: boolean
+          is_favorite?: boolean
           is_public?: boolean
           keywords?: string[] | null
+          last_context_breakdown?: Json | null
           last_model_id?: string | null
           message_count?: number
           metadata?: Json
@@ -6461,6 +6639,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           content: Json
+          content_chars: number
           content_history: Json | null
           conversation_id: string
           created_at: string
@@ -6473,11 +6652,13 @@ export type Database = {
           role: string
           source: string
           status: string
+          tool_results_chars: number
           user_content: Json | null
         }
         Insert: {
           agent_id?: string | null
           content?: Json
+          content_chars?: number
           content_history?: Json | null
           conversation_id: string
           created_at?: string
@@ -6490,11 +6671,13 @@ export type Database = {
           role: string
           source?: string
           status?: string
+          tool_results_chars?: number
           user_content?: Json | null
         }
         Update: {
           agent_id?: string | null
           content?: Json
+          content_chars?: number
           content_history?: Json | null
           conversation_id?: string
           created_at?: string
@@ -6507,6 +6690,7 @@ export type Database = {
           role?: string
           source?: string
           status?: string
+          tool_results_chars?: number
           user_content?: Json | null
         }
         Relationships: [
@@ -6711,12 +6895,14 @@ export type Database = {
           iteration: number
           metadata: Json
           output_tokens: number | null
+          raw_usage: Json | null
           response_id: string | null
           tool_calls_count: number | null
           tool_calls_details: Json | null
           tool_duration_ms: number | null
           total_duration_ms: number | null
           total_tokens: number | null
+          trim_summary: Json | null
           user_request_id: string
         }
         Insert: {
@@ -6734,12 +6920,14 @@ export type Database = {
           iteration?: number
           metadata?: Json
           output_tokens?: number | null
+          raw_usage?: Json | null
           response_id?: string | null
           tool_calls_count?: number | null
           tool_calls_details?: Json | null
           tool_duration_ms?: number | null
           total_duration_ms?: number | null
           total_tokens?: number | null
+          trim_summary?: Json | null
           user_request_id: string
         }
         Update: {
@@ -6757,12 +6945,14 @@ export type Database = {
           iteration?: number
           metadata?: Json
           output_tokens?: number | null
+          raw_usage?: Json | null
           response_id?: string | null
           tool_calls_count?: number | null
           tool_calls_details?: Json | null
           tool_duration_ms?: number | null
           total_duration_ms?: number | null
           total_tokens?: number | null
+          trim_summary?: Json | null
           user_request_id?: string
         }
         Relationships: [
@@ -6802,6 +6992,7 @@ export type Database = {
           response_message_id: string | null
           response_payload: Json | null
           trigger_message_id: string | null
+          unified_payload: Json | null
           user_request_id: string | null
         }
         Insert: {
@@ -6816,6 +7007,7 @@ export type Database = {
           response_message_id?: string | null
           response_payload?: Json | null
           trigger_message_id?: string | null
+          unified_payload?: Json | null
           user_request_id?: string | null
         }
         Update: {
@@ -6830,6 +7022,7 @@ export type Database = {
           response_message_id?: string | null
           response_payload?: Json | null
           trigger_message_id?: string | null
+          unified_payload?: Json | null
           user_request_id?: string | null
         }
         Relationships: []
@@ -6989,6 +7182,66 @@ export type Database = {
           },
         ]
       }
+      cx_tool_trace: {
+        Row: {
+          args: Json | null
+          call_id: string | null
+          conversation_id: string | null
+          created_at: string
+          duration_ms: number | null
+          err_msg: string | null
+          err_type: string | null
+          event: string
+          id: string
+          kind: string | null
+          metadata: Json
+          process_pid: number | null
+          process_started_at: string | null
+          result_preview: string | null
+          tool_name: string
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          args?: Json | null
+          call_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          err_msg?: string | null
+          err_type?: string | null
+          event: string
+          id?: string
+          kind?: string | null
+          metadata?: Json
+          process_pid?: number | null
+          process_started_at?: string | null
+          result_preview?: string | null
+          tool_name: string
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          args?: Json | null
+          call_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          err_msg?: string | null
+          err_type?: string | null
+          event?: string
+          id?: string
+          kind?: string | null
+          metadata?: Json
+          process_pid?: number | null
+          process_started_at?: string | null
+          result_preview?: string | null
+          tool_name?: string
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cx_user_request: {
         Row: {
           agent_id: string | null
@@ -7100,6 +7353,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cx_user_usage_summary: {
+        Row: {
+          auth_type: string
+          blocked_reason: string | null
+          cost_24h_mcents: number
+          cost_6h_mcents: number
+          daily_blocked: boolean
+          last_request_at: string | null
+          requests_24h: number
+          requests_6h: number
+          tokens_24h: number
+          tokens_6h: number
+          updated_at: string
+          user_id: string
+          window_24h_starts_at: string | null
+          window_6h_starts_at: string | null
+          window_blocked: boolean
+        }
+        Insert: {
+          auth_type?: string
+          blocked_reason?: string | null
+          cost_24h_mcents?: number
+          cost_6h_mcents?: number
+          daily_blocked?: boolean
+          last_request_at?: string | null
+          requests_24h?: number
+          requests_6h?: number
+          tokens_24h?: number
+          tokens_6h?: number
+          updated_at?: string
+          user_id: string
+          window_24h_starts_at?: string | null
+          window_6h_starts_at?: string | null
+          window_blocked?: boolean
+        }
+        Update: {
+          auth_type?: string
+          blocked_reason?: string | null
+          cost_24h_mcents?: number
+          cost_6h_mcents?: number
+          daily_blocked?: boolean
+          last_request_at?: string | null
+          requests_24h?: number
+          requests_6h?: number
+          tokens_24h?: number
+          tokens_6h?: number
+          updated_at?: string
+          user_id?: string
+          window_24h_starts_at?: string | null
+          window_6h_starts_at?: string | null
+          window_blocked?: boolean
+        }
+        Relationships: []
       }
       dashboard_saved_views: {
         Row: {
@@ -13599,6 +13906,7 @@ export type Database = {
       sch_task: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           enabled: boolean
           expires_at: string | null
@@ -13615,6 +13923,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           enabled?: boolean
           expires_at?: string | null
@@ -13631,6 +13940,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           enabled?: boolean
           expires_at?: string | null
@@ -16877,6 +17187,63 @@ export type Database = {
           },
         ]
       }
+      system_write_failure: {
+        Row: {
+          conversation_id: string | null
+          depends_on: Json | null
+          error_text: string
+          failed_at: string
+          id: string
+          op_id: string
+          op_type: string
+          payload: Json
+          primary_key: Json
+          recovered_at: string | null
+          recovery_op_id: string | null
+          request_id: string | null
+          retry_count: number
+          table_target: string
+          traceback: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          depends_on?: Json | null
+          error_text: string
+          failed_at?: string
+          id?: string
+          op_id: string
+          op_type: string
+          payload: Json
+          primary_key: Json
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number
+          table_target: string
+          traceback?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          depends_on?: Json | null
+          error_text?: string
+          failed_at?: string
+          id?: string
+          op_id?: string
+          op_type?: string
+          payload?: Json
+          primary_key?: Json
+          recovered_at?: string | null
+          recovery_op_id?: string | null
+          request_id?: string | null
+          retry_count?: number
+          table_target?: string
+          traceback?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tl_bundle: {
         Row: {
           created_at: string
@@ -16998,7 +17365,7 @@ export type Database = {
           deactivated_at?: string | null
           dedupe_exempt?: boolean
           description: string
-          function_path: string
+          function_path?: string
           gating?: Json
           icon?: string | null
           id?: string
@@ -18229,6 +18596,7 @@ export type Database = {
           name: string
           sort_order: number
           updated_at: string
+          url_pattern: string | null
         }
         Insert: {
           client_name: string
@@ -18238,6 +18606,7 @@ export type Database = {
           name: string
           sort_order?: number
           updated_at?: string
+          url_pattern?: string | null
         }
         Update: {
           client_name?: string
@@ -18247,6 +18616,7 @@ export type Database = {
           name?: string
           sort_order?: number
           updated_at?: string
+          url_pattern?: string | null
         }
         Relationships: [
           {
@@ -22366,6 +22736,14 @@ export type Database = {
         Returns: Json
       }
       cld_consume_share_link: { Args: { p_token: string }; Returns: Json }
+      cld_count_user_files: {
+        Args: {
+          p_include_deleted?: boolean
+          p_include_folders?: boolean
+          p_user_id: string
+        }
+        Returns: Json
+      }
       cld_ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
         Returns: string
@@ -22384,6 +22762,7 @@ export type Database = {
           p_include_folders?: boolean
           p_limit?: number
           p_offset?: number
+          p_order_by?: string
           p_user_id: string
         }
         Returns: Json
@@ -22734,6 +23113,18 @@ export type Database = {
           p_sort_order?: number
         }
         Returns: Json
+      }
+      create_shortcut_from_agent_surface: {
+        Args: {
+          p_agent_surface_id: string
+          p_category_id: string
+          p_organization_id?: string
+          p_overrides?: Json
+          p_project_id?: string
+          p_task_id?: string
+          p_user_id?: string
+        }
+        Returns: string
       }
       create_task_with_association: {
         Args: {
@@ -23138,6 +23529,7 @@ export type Database = {
         Returns: {
           agent_id: string | null
           content: Json
+          content_chars: number
           content_history: Json | null
           conversation_id: string
           created_at: string
@@ -23150,6 +23542,7 @@ export type Database = {
           role: string
           source: string
           status: string
+          tool_results_chars: number
           user_content: Json | null
         }
         SetofOptions: {
@@ -23949,6 +24342,23 @@ export type Database = {
           related_table_name: string
         }[]
       }
+      fn_get_user_usage_snapshot: {
+        Args: { p_user_id: string }
+        Returns: {
+          auth_type: string
+          blocked_reason: string
+          cost_24h_mcents: number
+          cost_6h_mcents: number
+          daily_blocked: boolean
+          requests_24h: number
+          requests_6h: number
+          tokens_24h: number
+          tokens_6h: number
+          window_24h_starts_at: string
+          window_6h_starts_at: string
+          window_blocked: boolean
+        }[]
+      }
       generate_canvas_content_hash: {
         Args: { content_data: Json }
         Returns: string
@@ -24004,6 +24414,7 @@ export type Database = {
           created_at: string
           description: string
           initial_agent_version_id: string
+          is_favorite: boolean
           last_model_id: string
           message_count: number
           source_app: string

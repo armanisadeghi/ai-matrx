@@ -12,7 +12,7 @@ import {
   selectOrganizationId,
   selectProjectId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 
 export interface TaskSource {
   entity_type: string;

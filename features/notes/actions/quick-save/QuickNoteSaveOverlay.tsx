@@ -1,7 +1,11 @@
 "use client";
 
 import type { Note } from "@/features/notes/types";
-import { QuickNoteSaveCore, type PostSaveAction } from "./QuickNoteSaveCore";
+import {
+  QuickNoteSaveCore,
+  type PostSaveAction,
+} from "./QuickNoteSaveCore";
+import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import FullScreenOverlay from "@/components/official/FullScreenOverlay";
 
 export interface QuickNoteSaveOverlayProps {
@@ -10,6 +14,12 @@ export interface QuickNoteSaveOverlayProps {
   initialContent: string;
   defaultFolder?: string;
   title?: string;
+  /**
+   * Forwards to `QuickNoteSaveCore.initialEditorMode`. Numerous call sites
+   * dispatch this through `openOverlay({ overlayId: "saveToNotes" })`; the
+   * overlay used to hardcode "split", silently dropping the value.
+   */
+  initialEditorMode?: EditorMode;
   onSaved?: (note?: Note, action?: PostSaveAction) => void;
 }
 
@@ -19,6 +29,7 @@ export function QuickNoteSaveOverlay({
   initialContent,
   defaultFolder = "Scratch",
   title = "Quick Save",
+  initialEditorMode = "split",
   onSaved,
 }: QuickNoteSaveOverlayProps) {
   const handleSaved = (note: Note, action: PostSaveAction) => {
@@ -41,7 +52,7 @@ export function QuickNoteSaveOverlay({
               <QuickNoteSaveCore
                 initialContent={initialContent}
                 defaultFolder={defaultFolder}
-                initialEditorMode="split"
+                initialEditorMode={initialEditorMode}
                 onSaved={handleSaved}
                 onCancel={onClose}
               />

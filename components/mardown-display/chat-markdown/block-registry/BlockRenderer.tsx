@@ -12,6 +12,7 @@ import {
   selectHideReasoning,
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -190,17 +191,28 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
   switch (block.type) {
     case "audio_output": {
-      // Python sends: { url: string; mime_type: string }
-      // Component wants: { url: string; mimeType?: string }
-      // TODO(python): rename mime_type → mimeType in the Python AudioOutputData schema.
-      const sd = block.serverData ?? {};
-      const url = sd.url as string | undefined;
+      // Two inbound shapes during the Phase 0/2 transition:
+      //  - Legacy `audio_output` event       → snake_case `{ url, mime_type }`
+      //  - Canonical `media_block(kind=audio)` → camelCase `UnifiedMediaBlock`
+      //    with `cdnUrl` / `signedUrl` / `externalUrl` (no `url`).
+      // Read both; prefer the canonical fields when present.
+      // TODO: collapse onto `UnifiedMediaBlock` end-to-end when audio gets
+      // an `UnifiedAudioBlockRenderer` matching the image one.
+      const sd = (block.serverData ?? {}) as Record<string, unknown>;
+      const url =
+        (sd.cdnUrl as string | undefined) ??
+        (sd.signedUrl as string | undefined) ??
+        (sd.externalUrl as string | undefined) ??
+        (sd.url as string | undefined);
       if (!url) return null;
       return (
         <BlockComponents.AudioOutputBlock
           key={index}
           url={url}
-          mimeType={sd.mime_type as string | undefined}
+          mimeType={
+            (sd.mimeType as string | undefined) ??
+            (sd.mime_type as string | undefined)
+          }
         />
       );
     }
@@ -232,37 +244,69 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
 
     case "image_output": {
-      const sd = block.serverData ?? {};
-      const url =
-        (sd.url as string | undefined) ?? (sd.signed_url as string | undefined);
-      if (!url) return null;
+      // block.serverData IS the UnifiedImageBlock — every inbound path
+      // (process-stream.ts, normalize-content-blocks.ts) converts to the
+      // canonical shape before storing. See features/files/blocks/image/types.ts.
+      // Use the guard to prove the shape rather than force-casting from
+      // `Record<string, unknown>` — anything that doesn't pass the guard is
+      // a stale entry from before the migration and gets silently skipped.
+      if (!isUnifiedImageBlock(block.serverData)) return null;
       return (
         <BlockComponents.ImageOutputBlock
           key={index}
-          url={url}
-          mimeType={sd.mime_type as string | undefined}
-          fileId={sd.file_id as string | null | undefined}
-          cdnUrl={sd.cdn_url as string | null | undefined}
-          signedUrl={sd.signed_url as string | null | undefined}
-          downloadUrl={sd.download_url as string | null | undefined}
+          block={block.serverData}
         />
       );
     }
 
     case "video_output": {
-      // Python sends: { url: string; mime_type: string }
-      // Component wants: { url: string; mimeType?: string }
-      // TODO(python): rename mime_type → mimeType in the Python VideoOutputData schema.
-      const sd = block.serverData ?? {};
-      const url = sd.url as string | undefined;
+      // Same dual-shape handling as `audio_output`. See that case.
+      // Phase 1c: matrx-owned videos now carry `posterUrl` — the
+      // browser displays a real frame as the `<video>` poster before
+      // playback instead of a black square.
+      const sd = (block.serverData ?? {}) as Record<string, unknown>;
+      const url =
+        (sd.cdnUrl as string | undefined) ??
+        (sd.signedUrl as string | undefined) ??
+        (sd.externalUrl as string | undefined) ??
+        (sd.url as string | undefined);
       if (!url) return null;
       return (
         <BlockComponents.VideoOutputBlock
           key={index}
           url={url}
-          mimeType={sd.mime_type as string | undefined}
+          mimeType={
+            (sd.mimeType as string | undefined) ??
+            (sd.mime_type as string | undefined)
+          }
+          posterUrl={
+            (sd.posterUrl as string | undefined) ??
+            (sd.poster_url as string | undefined)
+          }
         />
       );
+    }
+
+    case "media_block": {
+      // Document and YouTube kinds land here via the `media_block`
+      // stream-event branch in process-stream.ts. We don't have a
+      // unified renderer for those kinds yet (image gets the dedicated
+      // UnifiedImageBlockRenderer; audio/video reuse the legacy
+      // BlockComponents above). For now we no-op to avoid flashing a
+      // broken card — the data is preserved on the render block and a
+      // dedicated renderer can pick it up when it ships.
+      //
+      // Phase 1c provides:
+      //   - DocumentBlock.page1Url — full-res page 1 JPEG (~1200×1700)
+      //     for PDF previews. A future <DocumentBlockInline> can bind
+      //     this directly via <img> for a real reading preview.
+      //   - VideoBlock.posterUrl — wired through the video_output case
+      //     above for AI-generated videos.
+      //
+      // TODO: route to a UnifiedMediaBlockRenderer that dispatches on
+      // `block.serverData.kind` (document → DocumentPreview using
+      // `page1Url`, youtube → YouTubeEmbed using `videoId`).
+      return null;
     }
 
     case "search_results": {

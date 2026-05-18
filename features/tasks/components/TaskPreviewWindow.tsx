@@ -36,9 +36,9 @@ import {
   selectOrganizationId,
   selectProjectId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { selectProjects } from "@/features/tasks/redux/selectors";
-import { selectAllScopes } from "@/features/agent-context/redux/scope/scopesSlice";
+import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import { cn } from "@/utils/cn";
 
@@ -52,12 +52,12 @@ import { cn } from "@/utils/cn";
  * "section" items act as group headers only (not real tasks).
  */
 export interface DraftTaskRow {
-  key: string;            // stable UI key
+  key: string; // stable UI key
   include: boolean;
   title: string;
   priority: "low" | "medium" | "high" | "";
-  due_date: string;       // yyyy-mm-dd or ""
-  description: string;    // currently unused, reserved
+  due_date: string; // yyyy-mm-dd or ""
+  description: string; // currently unused, reserved
   type: "section" | "task" | "subtask";
   indent: number;
   parentKey: string | null;
@@ -65,7 +65,11 @@ export interface DraftTaskRow {
 
 export function flattenChecklist(items: TaskItemType[]): DraftTaskRow[] {
   const rows: DraftTaskRow[] = [];
-  const walk = (arr: TaskItemType[], depth: number, parentKey: string | null) => {
+  const walk = (
+    arr: TaskItemType[],
+    depth: number,
+    parentKey: string | null,
+  ) => {
     for (const item of arr) {
       const key = item.id || `${item.title}-${rows.length}`;
       rows.push({
@@ -124,12 +128,14 @@ export default function TaskPreviewWindow({
   const appProjectId = useAppSelector(selectProjectId);
   const appOrgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
-  const allScopes = useAppSelector(selectAllScopes);
+  const allScopes = useAppSelector(selectAllScopesFlat);
   const { createBulk, isBusy } = useAssociateTask();
 
   const [rows, setRows] = useState<DraftTaskRow[]>([]);
   const [projectId, setProjectId] = useState<string>("");
-  const [defaultPriority, setDefaultPriority] = useState<"" | "low" | "medium" | "high">("");
+  const [defaultPriority, setDefaultPriority] = useState<
+    "" | "low" | "medium" | "high"
+  >("");
 
   useEffect(() => {
     if (open) {
@@ -339,7 +345,9 @@ export default function TaskPreviewWindow({
                 <input
                   type="date"
                   value={row.due_date}
-                  onChange={(e) => patchRow(row.key, "due_date", e.target.value)}
+                  onChange={(e) =>
+                    patchRow(row.key, "due_date", e.target.value)
+                  }
                   disabled={!row.include}
                   className="h-7 bg-card border border-border rounded px-1 text-[11px] outline-none"
                 />

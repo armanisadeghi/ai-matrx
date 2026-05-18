@@ -60,9 +60,9 @@ This feature is the **single source of resistance** for file flows: direct const
 2. `normalize()` returns a partial `NormalizedFile` with `fileId` set.
 3. `resolve()` hydrates: `selectFileById(state, fileId)` → if missing, `Files.getFile(fileId)` → `apiFileRecordToCloudFile(...)`.
 4. `decideForOwnedFile` chooses `origin` and `capabilities` using owner / visibility / `cld_file_permissions`.
-5. If the file is public and has `publicUrl` (CDN), use it. Otherwise mint a signed URL via `mintSignedUrl(fileId)` and register expiry with the global `expiry-wheel`.
+5. If the file is public and has `publicUrl` (CDN), use it. Otherwise call `getOrMintSignedUrl(fileId)` — returns the cached URL if one is still valid, otherwise mints one and caches it. No background timers.
 6. Output adapter `toHtmlSrc` returns the chosen URL.
-7. `<img src>` renders. Thirty seconds before the signed URL expires, the wheel re-mints; React subscribers re-render automatically.
+7. `<img src>` renders. Once the bytes are in the browser's HTTP cache the URL string's expiry is irrelevant — the image stays on screen indefinitely. If a later action needs a fresh URL (download, edit, re-mount), the cache hands out the still-valid one or lazily re-mints in the same call. No re-render is forced unless the consumer explicitly remounts.
 
 ### Flow 2 — submit a freshly-pasted image to the agent
 
@@ -75,10 +75,13 @@ This feature is the **single source of resistance** for file flows: direct const
 
 ### Flow 3 — signed URL expires while user is browsing
 
-1. `expiry-wheel` fires ~30s before `expiresAt`.
-2. Refresher calls `mintSignedUrl(fileId)` which hits `GET /files/{id}/url`.
-3. Backend re-validates owner / permissions; returns fresh URL or 403.
-4. On success: wheel `bumpExpiry`. On 403: `isS3ExpiredError` distinguishes "S3 said expired" (refetch) from "backend said access denied" (throw `FileAccessDeniedError`, surface to UI).
+There is no background refresh. The policy is **lazy mint on demand**:
+
+1. While the file's bytes are already loaded into the `<img>` / `<video>` / `<audio>`, the URL string's expiry does not matter — the browser is not re-requesting it.
+2. The next time *anything* asks for the URL (a download, an edit, a remount, a share action), the resolver routes through `getOrMintSignedUrl(fileId)`. If the cached URL is still valid (with a 60s safety margin), it's returned as-is. If not, a fresh URL is minted in that call and cached.
+3. Concurrent callers for the same fileId share one in-flight mint via the cache's request-dedup map — 20 components loading the same file produce 1 network call, not 20.
+4. The 403 retry path: if the browser ever does refetch a stale URL (e.g. memory-pressure cache eviction with the tab still open), an `<img onError>` handler can call `invalidateSignedUrl(fileId)` and force the consumer to remount with a fresh URL. Most consumers don't bother — a manual reload is acceptable for this rare edge case.
+5. Backend errors: on a permissions change, `mintSignedUrl` will surface `FileAccessDeniedError`; the cache won't store the failed mint, so the next call re-tries.
 
 ### Flow 4 — share link viewer
 
@@ -115,9 +118,18 @@ This feature is the **single source of resistance** for file flows: direct const
 
 When uploading, `inheritActiveScope: true` (default) reads `selectOrganizationId / selectProjectId / selectTaskId` from `appContext` and stamps them into `metadata.scope`. The Python backend reads this and writes the column counterparts.
 
-### Single global expiry wheel
+### Lazy signed-URL cache
 
-`intelligence/expiry-wheel.ts` keeps one timer for the entire app, sorted by next-due `expiresAt`. Centralizes signed-URL refresh so each renderer doesn't mount its own `setTimeout`. Watching is opt-in: `watchExpiry(fileId, expiresAt, refresher)`.
+`intelligence/signed-url-cache.ts` is an in-memory map of `fileId → { url, expiresAt }`, shared by every consumer in the app for the lifetime of the page. The policy is "mint on demand, never preemptively":
+
+- **No background timers.** Nothing runs in the background to refresh URLs. Once the browser has loaded the bytes the URL is a sunk cost.
+- **Cache hit → return.** If the cached URL is still valid (with a 60s safety margin so a download started right at the boundary still completes), it's returned as-is.
+- **Cache miss → mint + cache.** A single `mintSignedUrl` call populates the cache and resolves the caller.
+- **In-flight dedup.** Concurrent callers asking for the same `fileId` share one `Promise`. A grid of 50 thumbnails for the same file produces one `GET /files/{id}/url`, not 50.
+- **`invalidateSignedUrl(fileId)`** lets a 403-retry path force a re-mint.
+- **`clearSignedUrlCache()`** is called on sign-out so a previous user's URLs don't leak to a new session.
+
+The previous "expiry wheel" — a global timer that preemptively re-minted every URL ~30s before expiry — has been removed. It caused a runaway loop the moment a refresher failed to update its `expiresAt` (see Change Log, 2026-05-17). The lazy model is what AWS, Drive, Dropbox, and Slack do in production: it's simpler, cheaper, and structurally cannot loop.
 
 ### CORS-aware transport
 
@@ -183,6 +195,26 @@ These are tracked in `features/files/migration/INVENTORY.md`.
 
 ## Change log
 
+- **2026-05-17** — Second consolidation pass — kill every remaining bypass of the centralized file flows beyond signed URLs. Three parallel audits (write path, read path, mutation path) plus follow-up fixes:
+  - **Fixed two state-desync bugs.** `features/code-files/service/s3Service.ts:deleteCodeFileFromS3` and `features/transcripts/service/audioStorageService.ts:deleteAudioFromStorage` both called `Files.deleteFile` directly — REST succeeded but the Redux slice waited on the realtime echo, producing a stale-row race window. Both now route through `fileHandler.remove(fileId, { hard: true })` which dispatches the canonical `deleteFile` thunk (REST + slice removal in one).
+  - **Fixed three PDF-extractor upload bypasses.** `features/pdf-extractor/components/ManipulationPanel.tsx` (1 call-site) and `features/pdf-extractor/studio/PdfStudioReader.tsx` (2 call-sites) imported raw `uploadFile` from `@/features/files/api/files` to save crop/reorder PDF derivatives — skipping optimistic Redux updates, duplicate-detection, the upload guard, progress instrumentation, and `attachChildToFolder` wiring. All three now use `fileHandler.upload({ kind: "file", file }, { folderPath })` and read `fileId` / `fileUri` from the returned `NormalizedFile`.
+  - **Killed parallel MediaRef builder.** `features/agents/redux/execution-system/instance-resources/resource-source.ts:resourceDataToSource` was constructing a `MediaRef` inline ("kept synchronous because the slice reducer needs it inline") — exact duplication of `output/target.ts:toMediaRef`. Exported `toMediaRef` from the handler's output module and from the public `@/features/files` surface; the agent slice now calls it directly. One builder, one source of truth.
+  - **Fixed handler URL-stitching bug.** `upload.ts` post-share-link URL chain used `?? ""` for the app-share-URL fallback, which produced an empty string that defeated subsequent `??` fallbacks. Rewrote to use `||` and added `pythonShareUrl(result.shareToken)` as the canonical terminal fallback — now `normalized.url` is guaranteed non-empty whenever `createShareLink: true` succeeds. Removed the consumer-side `pythonShareUrl` fallback from `features/image-studio/modes/shared/save-edited-image.ts` that existed because of this bug.
+  - **Consolidated three hand-built share URLs.** `app/(public)/share/[token]/page.tsx` (server-side resolve), `app/(public)/share/[token]/_components/PublicDownloadButton.tsx` (download fallback), and the image-studio save fallback (above) were all assembling `${BACKEND_URL}/share/{token}/...` strings inline. All three now use the canonical `pythonShareResolveUrl(token)` / `pythonShareUrl(token)` helpers from `@/features/files`.
+  - **Known exceptions documented (not fixed).** `features/podcasts/components/admin/AssetUploader.tsx` posts raw `FormData` to `/media/podcast/upload-video` — that endpoint is a server-side transcoding + frame-extraction composite, not a generic upload. The right fix is on the Python side (return a `cld_files` UUID alongside the URLs); deferred. `features/research/hooks/useResearchApi.ts` similarly uploads to a research-sources endpoint with its own pipeline. Both are explicit "separate API surface" rather than handler bypasses.
+  - **Remaining smell cluster: direct write-thunk dispatches.** ~15 surfaces (`BulkActionsBar`, `FileContextMenu`, `RowContextMenu`, `RenameDialog`, `FileVersionsList`, `PermissionsDialog`, `ShareLinkDialog`, `ImageSharePopover`, `CloudFileInlineEditor`, `CloudFileEditor`, `NewMenu`, `useImageStudio`, `useFileShortcuts`, `CloudImagesTab`, `FileList`) dispatch `deleteFile` / `renameFile` / `moveFile` / `updateFileMetadata` / `updateFolder` / `createFolder` / `createShareLink` / `deactivateShareLink` / `grantPermission` / `revokePermission` / `restoreVersion` / `uploadFiles` thunks directly from `useAppDispatch()` instead of going through `useFileMutation` / `useSharing` / `useFolderMutation`. The thunks still keep state consistent (so these are smells, not bugs), but they're the exact pattern that, when extended, produced last night's loop. Next step: add an ESLint `no-restricted-imports` rule barring `@/features/files/redux/thunks` outside the canonical wrappers, and extend `useFolderMutation` with `.create({ parentId, name })` to close the only legitimate gap (`NewMenu` / `useImageStudio` use of `createFolder` + `ensureFolderPath`).
+
+- **2026-05-17** — Consolidated every signed-URL path through the handler. `Files.getSignedUrl()` is now called from exactly one place — `intelligence/refresh.ts` — which is invoked only by the lazy cache. Concrete changes:
+  - **`features/files/redux/thunks.ts:getSignedUrl` thunk** now routes through `fileHandler.use(...).as({ kind: "html_src" })` instead of calling `Files.getSignedUrl` directly. This single edit fans out to ~13 consumers (FileContextMenu, BulkActionsBar, useFileShortcuts, useFileMutation, useFileActions, PreviewErrorBoundary, CloudImagesTab) — every download / copy-URL / open-in-new-tab action now hits the cache.
+  - **`features/image-studio/components/StudioVariantTile.tsx`** and **`features/image-studio/components/EmbeddedImageStudio.tsx`** migrated off direct `Files.getSignedUrl` calls and onto the handler.
+  - **`features/files/api/server-client.ts`** — removed the dead `getSignedUrl` server-side wrapper (no callers; was a duplicate path that could re-introduce the bypass).
+  - Net effect: a copy-URL action on a file that was just viewed in the same session is now a zero-network operation (cache hit). Multiple components asking for the same file's URL share one in-flight request via the cache's dedup map.
+- **2026-05-17** — Switched signed-URL strategy from "global expiry wheel re-mints proactively" to "lazy mint on demand, cache while valid". This is the pattern AWS / Drive / Dropbox / Slack use in production. Concrete changes:
+  - **Deleted `intelligence/expiry-wheel.ts`.** The wheel was the source of a runaway loop: once any refresher resolved without updating its entry's `expiresAt` (which the resolver's refresher never did), `reschedule()` computed `wait = 0` and `setTimeout(tick, 0)` re-fired immediately, burning ~3 requests/second per open file. A single file left open overnight produced tens of thousands of `GET /files/{id}/url` calls. The class of failure no longer exists because the timer no longer exists.
+  - **Added `intelligence/signed-url-cache.ts`.** Module-level map keyed by `fileId` storing `{ url, expiresAt }`, with in-flight request dedup so N concurrent consumers of the same file produce one network call. Exposes `getOrMintSignedUrl`, `invalidateSignedUrl` (for `<img onError>` retries), and `clearSignedUrlCache` (for sign-out).
+  - **Rewrote `resolver.ensureSignedUrl`** to route through `getOrMintSignedUrl`. No more `watchExpiry` registration. The previously known follow-up — "freshly minted URL not propagated back to React consumers" — is now obviated: there is no automatic re-mint to propagate. The next consumer that asks for the URL gets a fresh one synchronously through the same code path.
+  - **`hooks/useFile.ts`** dropped its `unwatchExpiry` cleanup effect (no longer needed).
+  - Rationale: once the browser has the bytes in its HTTP cache the URL string's expiry doesn't matter — the `<img>` keeps rendering. URLs only need to be fresh at the moment something actively asks for them (download, edit, remount), and the cache + lazy mint handles that in one synchronous code path. Net effect: zero requests when idle, one request per (fileId × hour) when active, structurally immune to loop bugs.
 - **2026-05-07** — Direct-to-Python doctrine + obliteration round.
   - Removed the entire telemetry module and all `recordTelemetry` calls (Python owns telemetry).
   - All output URLs now point directly at Python (`{BACKEND}/files/{id}/download`, `{BACKEND}/share/{token}`). No Next.js hops.

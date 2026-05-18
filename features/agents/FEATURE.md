@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-04-29`
+**Last updated:** `2026-05-15`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -156,7 +156,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 
 - **Depends on:** `features/agent-context/` + `features/brokers/` (variable/context resolution), `features/api-integrations/` (MCP + external tools), `features/artifacts/` (rendering output), `features/tool-call-visualization/` (tool UI)
 - **Depended on by:** `features/agent-shortcuts/`, `features/agent-apps/`, `features/conversation/`, almost every user-facing surface
-- **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, `features/scope-system/FEATURE.md`
+- **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ---
 
@@ -187,8 +187,163 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 
 ---
 
+## Conversation row context menu (cross-surface)
+
+Every conversation-list surface in the app uses the **same** singleton context menu — one menu instance per list, opened by either a hover-revealed `⋯` button or a right-click `onContextMenu`. The menu is built declaratively from a single registry and dispatches optimistic thunks against shared slices, so a Rename / Pin / Archive / Delete fired from any surface immediately updates every other surface that's listing the same conversation (no re-fetch).
+
+### Anatomy (`features/agents/components/conversation-actions/`)
+
+| File | Role |
+|---|---|
+| `conversationActionRegistry.tsx` | Pure factory `(ctx) => MenuItem[]`. Items: Rename, Pin/Unpin, Open in new tab, Copy link, Duplicate, Share…, Archive/Unarchive, Delete. Every action calls `ctx.onCloseMenu()` **before** opening a modal so the menu closes and z-index doesn't fight the dialog. |
+| `useConversationRowMenu.ts` | Singleton hook. Manages `isOpen` / `data` / `anchorElement`. Anchor accepts an `HTMLElement` (for `⋯` clicks), a `React.MouseEvent` (for right-click), or `{ x, y }` (programmatic) — synthesizes a zero-size anchor element at the coordinates so `AdvancedMenu`'s positioner Just Works. |
+| `ConversationRowMenu.tsx` | Thin wrapper around `AdvancedMenu` + the Rename `TextInputDialog`. Consumes the hook's `menuProps` spread. |
+
+### Data + thunks
+
+The menu is fully DB-backed:
+
+- `cx_conversation.is_favorite` — boolean column, partial index on `(user_id, updated_at desc) where is_favorite = true and deleted_at is null`. RLS lets the owner write directly; no RPC needed.
+- `get_agent_conversations` RPC returns `is_favorite` in its row shape; `fetchGlobalConversations` selects it too. The mapping helpers (`mapRpcRowToConversationListItem`, `buildConversationListItemFromExecution`) populate `ConversationListItem.isFavorite`.
+- All actions live in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts`:
+  - `renameConversation` — optimistic against `conversationList` + `conversationHistory` slices, direct Supabase update, reverts on failure.
+  - `setConversationFavorite` — same pattern, writes `is_favorite`.
+  - `setConversationArchived` — same pattern, writes `status`.
+  - `duplicateConversation` — wraps the **server** `forkConversationServer` with no selector + `Copy of <title>`.
+- `softDeleteConversation` (existing thunk in `execution-system/message-crud/`) was enhanced to dispatch `removeConversationFromScopes({ conversationId })` so every `ConversationHistorySidebar` consumer drops the row without a re-fetch.
+
+### Wired consumers (single source of truth — every conversation list)
+
+| Surface | File |
+|---|---|
+| Chat / Code / Agent-apps history | `features/agents/components/conversation-history/ConversationHistorySidebar.tsx` |
+| Runner shell sidebar (large route) | `features/agents/components/shell/AgentRunSidebarMenu.tsx` |
+| Runner in-page sidebar (legacy) | `features/agents/components/run/run-sidebar/AgentRunsSidebar.tsx` |
+| Agent chat assistant widget | `features/agents/components/agent-widgets/AgentChatHistorySidebar.tsx` |
+| Quick chat history window | `features/window-panels/windows/agents/ChatHistoryWindow.tsx` |
+| Per-agent run history window | `features/window-panels/windows/agents/AgentRunHistoryWindow.tsx` |
+| Agent-run-as-window | `features/window-panels/windows/agents/AgentRunWindow.tsx` |
+| Builder "History" tab | `features/window-panels/windows/agents/AgentContentHistoryPanel.tsx` |
+| Code editor history panel | `features/code-editor/agent-code-editor/components/parts/CodeEditorHistoryPanel.tsx` (DRAFT rows still use Trash2; real conversations get the menu) |
+
+### How to add the menu to a new conversation list (5-minute drop-in)
+
+```tsx
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { MoreHorizontal } from "lucide-react";
+
+function MyList(/* ... */) {
+  const rowMenu = useConversationRowMenu();
+  const openRowMenu = useCallback(
+    (conv: ConversationListItem, anchor: MenuAnchor) => {
+      const data: ConversationRowMenuData = {
+        conversationId: conv.conversationId,
+        title: conv.title,
+        isFavorite: conv.isFavorite ?? false,
+        isArchived: conv.status === "archived",
+        isOwner: true,
+        // Canonical link for "Open in new tab" / "Copy link":
+        href: `/agents/${conv.agentId}/run?conversationId=${conv.conversationId}`,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [rowMenu],
+  );
+
+  return (
+    <>
+      {conversations.map((conv) => (
+        <Row
+          key={conv.conversationId}
+          conv={conv}
+          onOpenMenu={openRowMenu}      // wire to ⋯ button (anchor = button ref)
+                                         // and onContextMenu (anchor = MouseEvent)
+        />
+      ))}
+      {/* mount once per list */}
+      <ConversationRowMenu {...rowMenu.menuProps} />
+    </>
+  );
+}
+```
+
+The row component must:
+1. Render a `MoreHorizontal` button — `opacity-100 md:opacity-0 md:group-hover:opacity-100` (always visible on mobile, hover-revealed on desktop).
+2. Wire `onContextMenu={(e) => { e.preventDefault(); onOpenMenu(conv, e); }}` on its outer wrapper.
+3. `e.stopPropagation()` on the menu button's `onClick` so it doesn't also fire row selection.
+
+That's it — Rename / Pin / Archive / Delete / Duplicate / Share / Open in new tab / Copy link all light up automatically and stay consistent across every surface.
+
+---
+
+## Conversation transcript: logical turn grouping
+
+The agent backend reserves a **new `cx_message` per server iteration** (one for each thinking step / tool_call / final text emission inside a single agentic turn). So a tool-heavy answer becomes 10–100+ adjacent `assistant` rows in `messages.byId` — even though, conceptually, the user asked **one** question and got **one** answer that happened to include a multi-step trace.
+
+Rendering each iteration as its own visual unit fragmented the answer: every iteration got its own `space-y-6` gap and its own AssistantActionBar, scattering controls across the transcript. The fix is a render-layer **logical turn grouping** that collapses contiguous assistant messages between two user messages into a single visual unit.
+
+### Anatomy (`features/agents/components/messages-display/`)
+
+| File | Role |
+|---|---|
+| `AgentConversationDisplay.tsx` | Builds the existing per-entry `displayEntries[]` (streaming-bubble detection unchanged), then runs a grouping pass that emits `DisplayGroup[]` — `{ kind: "user", messageId }` or `{ kind: "assistant", members: AssistantTurnGroupMember[] }`. Outer `space-y-6` lives BETWEEN groups; inside groups is flush. |
+| `assistant/AssistantTurnGroup.tsx` | Renders N child `AgentAssistantMessage`s with `hideActionBar={true}` and emits **one** trailing `AssistantActionBar` anchored to the latest assistant `messageId` in the group. Owns the DOM-capture `<div>` so "Print" covers the whole turn. |
+| `assistant/AgentAssistantMessage.tsx` | Accepts `hideActionBar?: boolean`. When true: skips its internal `AssistantActionBar` *and* skips wrapping itself in `captureRef` (parent owns capture). Content rendering (`MarkdownStream`, files strip, error UI) is unchanged. |
+| `assistant/AssistantActionBar.tsx` | Accepts `groupMessageIds?: string[]`. When set with >1 ids: `Copy` and `Speak` aggregate `extractFlatText` across every member of the group (joined with blank lines). `Edit` / `Like` / `Delete` / overflow-menu stay anchored to the single `messageId` (the latest in the group — the "answer"). |
+
+### Visual rules
+
+- **Zero added chrome between sub-messages.** No card, no left rail, no iteration badges, no extra spacing. The natural content (tool cards, thinking blocks, text) already provides all the visual rhythm a multi-step turn needs.
+- **One action bar per group**, anchored to the **last** assistant message. Intermediate iterations carry no bar at all.
+- **Compact-density behaviour carries over for free.** `selectIsLatestAssistantMessage` returns true only for the conversation-wide latest assistant — which is the group bar's anchor only for the newest turn. Older groups' bars hover-reveal exactly as before.
+- **Streaming gate is unchanged.** The group bar renders only when the group's last member has `isStreamActive === false` AND resolves to a real `messageId` — same gate as the pre-grouping per-message path.
+
+### Action semantics on the group bar
+
+| Action | Anchor |
+|---|---|
+| Copy | Aggregated across every member (`groupMessageIds`) |
+| Speak (TTS) | Aggregated across every member |
+| Print (full DOM capture → PDF) | The group's outer `<div>` — covers every iteration's DOM + files strip |
+| Like / Dislike | Latest `messageId` (the answer) |
+| Edit (full-screen editor) | Latest `messageId` |
+| Retry (atomic) | Latest `messageId` → `atomicRetry` walks back to the preceding user turn → naturally retries the whole logical turn |
+| Fork / Delete / overflow menu | Latest `messageId` (single-iteration semantics preserved; future work may extend Delete to cascade across the group) |
+
+### Single-iteration turns are unchanged
+
+A turn with exactly one assistant `cx_message` becomes a one-member group. Visually and behaviourally identical to the pre-grouping render: same content, same bar, same single-message `Copy` / `Speak` text (aggregation is skipped when `groupMessageIds.length <= 1`).
+
+---
+
 ## Change log
 
+- `2026-05-15` — **Logical turn grouping in the transcript.** Multi-iteration agentic flows (each iteration = one server-side `cx_message` reservation) used to render as N adjacent assistant blocks, each with its own `space-y-6` gap and its own AssistantActionBar, fragmenting the answer and scattering controls. Introduced a render-layer grouping pass in `AgentConversationDisplay`: contiguous assistant entries between two user messages collapse into a single `AssistantTurnGroup` that renders sub-messages flush (zero added chrome between iterations) and emits ONE trailing `AssistantActionBar` anchored to the latest member. `AgentAssistantMessage` gained `hideActionBar?: boolean` (suppresses per-member bar + lifts capture-ref to the group). `AssistantActionBar` gained `groupMessageIds?: string[]` — when set, `Copy` and `Speak` aggregate flat text across every iteration; `Edit` / `Like` / `Delete` / overflow stay anchored to the latest `messageId` (the answer). Print / DOM capture now covers the whole logical turn. **Zero data-model changes** — purely a display-layer derivation; `messages.byId` and the streaming-bubble detection are untouched. Single-iteration turns render identically to before. See "Conversation transcript: logical turn grouping" above.
+
+- `2026-05-15` — **Unified conversation row context menu** wired into every conversation list in the app (9 surfaces). Single registry + singleton hook + `ConversationRowMenu` component — see the "Conversation row context menu" section above. DB-backed via new `cx_conversation.is_favorite` column + updated `get_agent_conversations` RPC; new thunks in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts` apply optimistic updates across both the `conversationList` and `conversationHistory` slices and revert on failure. `softDeleteConversation` was extended to dispatch `removeConversationFromScopes` so deleted rows disappear from every sidebar without a re-fetch. Rename / Pin / Archive / Delete / Duplicate / Share / Open-in-new-tab / Copy-link now behave identically whether triggered from the chat sidebar, runner sidebar, floating widget, quick-chat-history window, per-agent run history window, builder History tab, or the code editor history panel. The CodeEditorHistoryPanel keeps its existing `Trash2` button for DRAFT rows (still local-only, calls `destroyInstanceIfAllowed`) and adds the new menu for real conversations. Z-index discipline: every action calls `onCloseMenu()` **before** opening a dialog so the AdvancedMenu and confirm/text-input dialogs never overlap.
+- `2026-05-15` — `atomicRetry` now handles multimodal user turns. The thunk used to call `extractFlatText(triggeringUserMessage)` and reject with "atomic retry can only resubmit text turns" whenever the user message had no `text` part — which happens any time the original input was an image, an attached webpage/notes/table resource, or any other non-text MessagePart. Fixed by splitting the triggering user message's `MessagePart[]` content into a joined text string (every `text` part) and a non-text remainder (everything else, with assistant-only types `tool_call` / `tool_result` / `thinking` filtered out defensively), then seeding **both** `setUserInputText` and `setUserInputMessageParts`. `assembleRequest` already concatenates them onto `user_input` for a brand-new turn, so multimodal retries now produce the same payload the original send did. The only remaining reject path is a user message with literally zero content blocks, which should be unreachable. Both `/agents/[id]/build` and `/agents/[id]/run` share this thunk, so the fix lands in one place.
+- `2026-05-15` — **Server-side conversation API: opt-in parallel paths wired.** The Python team shipped a batch of new HTTP endpoints that overlap with existing direct-Supabase RPC thunks (fork, delete, edit-and-fork) and add a whole new compaction capability (replace / hide / restore / turns-compact). Spec lives at [`docs/FE_CONVERSATION_API_CHANGES.md`](../../docs/FE_CONVERSATION_API_CHANGES.md); request/response types are in the auto-generated `types/python-generated/api-types.ts`. We wired every new endpoint **additively** — none of the existing thunks were touched, and no call site was changed:
+  - **`lib/api/call-api.ts`** — added 7 typed wrappers: `callConversationFork`, `callConversationForkAndRun` (streaming), `callBatchDeleteMessages`, `callReplaceMessages`, `callHideMessages`, `callRestoreCompaction`, `callCompactTurns`. Body / response shapes are all inferred from the generated OpenAPI types — passing the wrong shape is a compile-time error.
+  - **`features/agents/types/conversation-stream-events.ts`** — manual mirror of `ConversationForkedEvent`, the first-event-on-stream payload from `/ai/conversations/{id}/fork-and-run`. Not in `api-types.ts` because stream-event payloads aren't OpenAPI-shaped (same pattern as the scraper's `page_extraction` events).
+  - **`features/agents/redux/execution-system/message-crud/server/`** — new directory holding one thunk per endpoint: `forkConversationServer`, `forkAndRunServer`, `batchDeleteMessages`, `replaceMessages`, `hideMessages`, `restoreCompaction`, `compactTurns`. Each calls the matching wrapper, runs `loadConversation` after a successful write so the messages/observability/variables slices mirror the new DB state, and fires the standard cache-bypass + invalidate. `README.md` in the same directory carries the pairing table — which legacy RPC thunk each one parallels, and which are net-new capabilities (compaction has no legacy equivalent).
+  - **`forkAndRunServer` integration scope.** The thunk fires the stream, captures the `conversation.forked` first event, optionally navigates the surface via `setFocus`, and hydrates the new conversation via `loadConversation` after the stream completes. It does NOT yet route subsequent stream events into `processStream` for live token-by-token rendering into the fork's slice entries — that's a deliberate follow-up so the wire-up is testable first. The thunk's docstring calls this out explicitly.
+  - **`zero-replacement guarantee.`** Existing `forkConversation`, `editMessage`, `deleteMessage`, `overwriteAndResend`, `atomicRetry`, `softDeleteConversation`, `invalidateConversationCache` thunks and their callers are unchanged. Surfaces opt in to the server-backed path one at a time; once a surface is validated end-to-end we consolidate.
+- `2026-05-15` — Fork: RPC perf fix + explicit "Stay here / Go to new branch" prompt. Two bugs were ganged together; fixing them in one pass:
+  - **Backend.** `cx_fork_conversation` was timing out on real conversations. Two causes: (1) a row-by-row PL/pgSQL loop over `cx_message` that rebuilt the `v_msg_map` JSONB on every iteration — O(N²) memory copies; (2) both `cx_tl_call` queries (the id-map loop and the bulk INSERT) omitted `conversation_id` from their WHERE clause, so the only usable predicate was `v_msg_map ? message_id::text` (a JSONB containment check with no index support), forcing a full table scan. Rewrote the RPC set-based: `jsonb_object_agg` builds both `v_msg_map` and `v_tc_map` in single passes, then single bulk INSERTs copy the rows. Every `cx_tl_call` query now filters by `conversation_id` first so `idx_ctc_conversation` drives the scan. Measured fork-at-position-215 on a 216-message / 89-tool-call conversation: **32 ms end-to-end**, down from statement-timeout (≥8 s). Behavior and return shape are unchanged — still returns the `get_cx_conversation_bundle` payload.
+  - **Frontend.** The post-fork "where do you want to go?" affordance was a sonner toast that auto-dismissed after 8 s — easy to miss, made the action feel like a no-op. Replaced with the global imperative `confirm()` modal so the user is explicitly prompted to **Go to new branch** vs **Stay here**, with `requestSurfaceNavigation` firing on confirm. Renamed `ForkOutcomeToast.tsx` → `promptForkOutcome.ts` because the file no longer renders a toast. The other consumer (`UserActionBar` edit-and-resubmit) auto-navigates (the new branch is already streaming a response — user already chose), and its surface-less fallback is now a simple success toast instead of a button that silently no-ops.
+- `2026-05-15` — Older-message pagination wired into `AgentConversationColumn` (used by `/agents/[id]/run` and `/chat/[conversationId]`). The bundle RPC always supported `p_before_position`, but no client trigger existed and `hydrateMessages` was clobbering everything. New pieces:
+  - `features/agents/redux/execution-system/thunks/conversation-bundle.ts` — extracted the bundle fetcher + row converters out of `load-conversation.thunk.ts` so both initial-load and older-page fetches share one path.
+  - `load-older-messages.thunk.ts` — re-entry-guarded, calls `get_cx_conversation_bundle` with the slice's `oldestPosition` cursor, dispatches `prependMessages` + `mergeToolCalls` only. Skips `cx_user_request` / `cx_request` fallback queries on the pagination path.
+  - `messages.slice.ts` — `MessagesEntry` now carries `oldestPosition`, `hasMoreOlder`, `isLoadingOlder`. New `prependMessages` reducer is strictly additive (never overwrites existing `byId` entries — preserves references so per-message subscribers don't re-render). `hydrateMessages` seeds the cursor from `bundle.pagination`.
+  - `observability.slice.ts` — new `mergeToolCalls` reducer mirrors the additive contract for the tool-call map so older tool turns hydrate without touching streaming tool calls.
+  - `OlderMessagesSentinel.tsx` — invisible 1px sentinel at the top of the scroll container. Owns the `IntersectionObserver`, dispatches the older-page thunk with a 200px rootMargin prefetch, and uses a `useLayoutEffect` to restore visual scroll position after each prepend (shift `scrollTop` by the `scrollHeight` delta). Subscribes only to `hasMoreOlder` / `isLoadingOlder` / `firstMessageId` so its re-renders never reach the message tree.
+  - `AgentConversationDisplay.tsx` — fixed a pre-existing auto-scroll bug where any length growth (including prepend) yanked the user to the bottom. Now only scrolls when the LAST message id changes AND the count grew.
+  - **Stream-safety invariant:** prepend and merge writes touch only NEW ids — existing message and tool-call records keep their object references, so streaming bubbles and previously-rendered messages do not re-render when older history pages in.
 - `2026-05-02` — AgentViewContent cleanup: hero block (name, copyable ID, description, status pills, tags), stat strip, reordered sections (settings → variables → context slots → tools → MCP → output schema → separator → messages), per-message MD/Plain toggle, JsonInspector for JSON view and output schema, admin-only Pretty/JSON page toggle. Variable rendering extended into inline code and fenced code blocks (`InlineCodeSnippet.renderVariables`, `BasicMarkdownContent` inline `code` handler). JsonInspector convention added to FEATURE.md.
 - `2026-04-29` — Convert-to-system flow (`ConvertAgentToSystemBody`): when existing system agents are listed, each row has an external-link control that opens `/agents/{id}` in a new tab so admins can review before update.
 - `2026-04-25` — Barrel import cleanup: external and core callers no longer import `conversation-list`, `message-crud`, `surfaces`, `mcp-client`, or execution-system index folders without a file — use `*.slice`, `*.thunks`, `*.selectors`, `mcp-client/client`, etc. (includes `lib/redux/rootReducer`, `cx-chat/ConversationInput` → `types/instance.types`, MCP API routes, window panels, `packages/matrx-agents` re-exports, and related).

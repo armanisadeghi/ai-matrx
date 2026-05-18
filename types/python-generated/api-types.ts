@@ -811,6 +811,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/conversation/{conversation_id}/fork-and-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork And Run
+         * @description Fork a conversation and immediately run a new turn on the fork.
+         *
+         *     Equivalent to calling ``POST /conversations/{id}/fork`` followed by
+         *     ``POST /conversations/{new_id}`` — but in one request, on one
+         *     streaming response. The first event on the stream is a
+         *     ``conversation.forked`` payload carrying the new ``conversation_id``
+         *     so the client can switch context before any agent output arrives.
+         *
+         *     Use this for "regenerate from here" / "edit this message and
+         *     re-ask" flows. The source conversation is left untouched.
+         */
+        post: operations["fork_and_run_ai_conversation__conversation_id__fork_and_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/conversations/{conversation_id}/fork-and-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork And Run
+         * @description Fork a conversation and immediately run a new turn on the fork.
+         *
+         *     Equivalent to calling ``POST /conversations/{id}/fork`` followed by
+         *     ``POST /conversations/{new_id}`` — but in one request, on one
+         *     streaming response. The first event on the stream is a
+         *     ``conversation.forked`` payload carrying the new ``conversation_id``
+         *     so the client can switch context before any agent output arrives.
+         *
+         *     Use this for "regenerate from here" / "edit this message and
+         *     re-ask" flows. The source conversation is left untouched.
+         */
+        post: operations["fork_and_run_ai_conversations__conversation_id__fork_and_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/conversation/{conversation_id}/tool_results": {
         parameters: {
             query?: never;
@@ -3073,6 +3131,170 @@ export interface paths {
          * @description Pin a site to a specific credential. Pass credential_id=null to clear.
          */
         post: operations["set_site_credential_endpoint_scraper_admin_sites__site_id__credential_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/debug-traces/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Trace Files
+         * @description List all tool-trace files on the server's local filesystem.
+         *
+         *     Files ≤100 bytes are flagged ``is_header_only=True`` — they mark
+         *     processes that started but never dispatched a tool. Use the
+         *     ``/files/{name}`` endpoint to stream contents.
+         */
+        get: operations["list_trace_files_admin_debug_traces_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/debug-traces/files/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trace File
+         * @description Stream the raw contents of one trace file. Plain text/plain.
+         *
+         *     Filename is sanitized — only basenames matching ``tool-trace-*.log``
+         *     are accepted, defending against ``../`` traversal even though the
+         *     admin gate already limits exposure.
+         */
+        get: operations["get_trace_file_admin_debug_traces_files__filename__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/debug-traces/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent Events
+         * @description Most-recent cx_tool_trace rows, newest first.
+         *
+         *     Equivalent to ``SELECT * FROM cx_tool_trace WHERE ts > $since
+         *     [AND event = $event] [AND tool_name = $tool_name] ORDER BY ts DESC
+         *     LIMIT $limit``.
+         */
+        get: operations["recent_events_admin_debug_traces_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/debug-traces/failures-since/{iso_ts}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Failures Since
+         * @description Convenience wrapper — all FAIL events since ``iso_ts``.
+         *
+         *     Useful as the input to the scheduled triage agent (Phase 5).
+         *     Equivalent to ``/recent?since={iso_ts}&event=FAIL&limit=1000``.
+         */
+        get: operations["failures_since_admin_debug_traces_failures_since__iso_ts__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/debug-traces/by-conv/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * By Conversation
+         * @description Full event timeline for one conversation, oldest-first.
+         *
+         *     Oldest-first because reading a conversation forensically follows
+         *     its causal order — different from ``/recent`` which is reverse-
+         *     chronological for "what just happened" queries.
+         */
+        get: operations["by_conversation_admin_debug_traces_by_conv__conversation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/debug-traces/by-call/{call_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * By Call
+         * @description Forensic deep-dive for one ``call_id`` — both trace events AND the
+         *     cx_tl_call row joined together.
+         *
+         *     Pre-flight rejects (SURFACE_REJECT, NO_EXECUTOR, LOOP_BLOCK) have
+         *     trace events but no cx_tl_call row; in that case ``tool_call`` is
+         *     ``null`` and the caller relies on the events list alone.
+         */
+        get: operations["by_call_admin_debug_traces_by_call__call_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp/debug-traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Jsonrpc Endpoint
+         * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
+         */
+        post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6368,6 +6590,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cx/conversations/{conversation_id}/context-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Context State
+         * @description Return the current Model Context snapshot for a conversation.
+         *
+         *     Aggregates the rolled-up fields written by ``persist_completed_request``
+         *     plus the most-recent ``cx_request`` (last_request_* and last_raw_usage)
+         *     and the most-recent trim audit (last_trim_summary). All fields default
+         *     to zero / empty so a freshly-created conversation still returns a valid
+         *     response — the FE just sees "no measurements yet".
+         */
+        get: operations["get_context_state_cx_conversations__conversation_id__context_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cx/conversations/{conversation_id}/invalidate-cache": {
         parameters: {
             query?: never;
@@ -6465,11 +6713,159 @@ export interface paths {
          *
          *     Copies the source ``cx_conversation`` (as a new row with a fresh UUID
          *     and ``forked_from_id`` pointing back) and every ``cx_message`` up to
-         *     ``up_to_position``. The source is left untouched. Message IDs on the
-         *     fork are freshly generated so the two conversations remain
+         *     the chosen fork point. The source is left untouched. Message IDs on
+         *     the fork are freshly generated so the two conversations remain
          *     independently editable.
          */
         post: operations["fork_conversation_cx_conversations__conversation_id__fork_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Delete Messages
+         * @description Hard-delete a set of messages with optional tool-pair cascading.
+         *
+         *     Mirrors the existing single-row ``DELETE`` endpoint but takes a
+         *     flexible selector so the client can pass an explicit list of IDs, a
+         *     position range, or a "truncate after X" anchor. When
+         *     ``cascade_tool_pairs=True`` (default) the operation is "smart" — it
+         *     extends the resolved set to keep ``tool_use ↔ tool_result`` adjacent
+         *     rows together, so the next provider call never sees an orphan tool
+         *     block. ``dry_run=true`` resolves the set and returns it without
+         *     deleting anything.
+         */
+        post: operations["batch_delete_messages_cx_conversations__conversation_id__messages_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Messages
+         * @description User-initiated compaction: soft-delete a range and insert a summary.
+         *
+         *     Stashes the selected rows (moves their position to a negative slot,
+         *     sets ``deleted_at`` / ``status="compacted_hidden"`` / both visibility
+         *     flags false) and inserts a new ``assistant`` message at the original
+         *     first-replaced position carrying the caller-supplied summary
+         *     content. Reversible via ``POST /messages/restore`` using the
+         *     ``compaction_group_id`` from the response.
+         *
+         *     The summary row's metadata carries a ``compaction_summary`` block
+         *     listing every replaced message and its original position so the UI
+         *     can render an "N messages compacted — view originals" affordance.
+         */
+        post: operations["replace_messages_cx_conversations__conversation_id__messages_replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide Messages From Model
+         * @description System-initiated compaction: hide messages from the model only.
+         *
+         *     Flips ``is_visible_to_model=False`` on the selected rows. The user
+         *     still sees them in the UI (``is_visible_to_user`` unchanged), the
+         *     rows stay at their original positions, and nothing is soft-deleted.
+         *     The original visibility flags are stashed in
+         *     ``metadata.compaction_archive`` so ``POST /messages/restore`` can
+         *     reverse the operation.
+         *
+         *     Use this when an automated system (background memory, context
+         *     optimizer) wants to shrink what the model reads without disrupting
+         *     the user's view of the conversation. Pair it with an
+         *     out-of-band summary injection (system prompt, recent-context note)
+         *     if the model needs to know what it can no longer see.
+         */
+        post: operations["hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/messages/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Compaction
+         * @description Reverse a previous /messages/replace or /messages/hide call.
+         *
+         *     Identify the operation via ``compaction_group_id`` OR
+         *     ``summary_message_id`` (replace operations only; hide operations
+         *     have no summary row). Restores every archived row's original
+         *     position, status, deleted_at, and visibility from its
+         *     ``metadata.compaction_archive`` snapshot, then hard-deletes the
+         *     summary row (if any, and ``delete_summary=True``).
+         */
+        post: operations["restore_compaction_cx_conversations__conversation_id__messages_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cx/conversations/{conversation_id}/turns/compact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compact Turns
+         * @description Compact one or more whole turns.
+         *
+         *     A turn = ``role="user"`` message → next ``role="user"`` message
+         *     (exclusive). The endpoint resolves the turn boundary from the live
+         *     conversation, then delegates to /messages/replace (``mode="user"``)
+         *     or /messages/hide (``mode="system"``) under the hood. The caller
+         *     supplies the summary content; this endpoint does not run an LLM —
+         *     use whatever summarization agent you like upstream, or invoke the
+         *     chat endpoints separately and pass the result here.
+         */
+        post: operations["compact_turns_cx_conversations__conversation_id__turns_compact_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8509,6 +8905,259 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scheduler/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tasks
+         * @description List the caller's tasks (RLS-scoped).
+         */
+        get: operations["list_tasks_scheduler_tasks_get"];
+        put?: never;
+        /**
+         * Create Task
+         * @description Create a task, optionally with an attached agent_task and trigger.
+         *
+         *     All three rows live in one logical creation, but each is its own
+         *     Supabase insert. If a downstream insert fails, the task row is
+         *     rolled back (best effort -- a hard crash between inserts is
+         *     possible; the FE should treat orphan tasks as benign and cleanable).
+         */
+        post: operations["create_task_scheduler_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Task
+         * @description Fetch a single task with its agent_task, triggers, and recent runs.
+         *     Each piece is loaded with its own query so the failure mode for any
+         *     one is isolated.
+         */
+        get: operations["get_task_scheduler_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Task
+         * @description Soft-delete (set enabled=false). Hard-delete is not exposed --
+         *     sch_run references task_id, so cascading deletes would lose run
+         *     history. To permanently remove a task, an admin route or a manual
+         *     DB op is required.
+         */
+        delete: operations["delete_task_scheduler_tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Patch Task
+         * @description Patch a subset of task fields. Only non-None fields are written.
+         */
+        patch: operations["patch_task_scheduler_tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/scheduler/tasks/{task_id}/run-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Now
+         * @description Enqueue a manual run via the sch_enqueue_manual_run RPC. The RPC
+         *     enforces task ownership inside Postgres -- a misbehaving FE cannot
+         *     fire someone else's task.
+         */
+        post: operations["run_now_scheduler_tasks__task_id__run_now_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/triggers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Triggers
+         * @description List triggers belonging to a specific task (RLS-scoped).
+         */
+        get: operations["list_triggers_scheduler_triggers_get"];
+        put?: never;
+        /**
+         * Create Trigger
+         * @description Create a trigger attached to an existing task.
+         */
+        post: operations["create_trigger_scheduler_triggers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/triggers/{trigger_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Trigger
+         * @description Hard-delete a trigger.
+         */
+        delete: operations["delete_trigger_scheduler_triggers__trigger_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Patch Trigger
+         * @description Patch a trigger. If type or config changed, recomputes next_due_at.
+         */
+        patch: operations["patch_trigger_scheduler_triggers__trigger_id__patch"];
+        trace?: never;
+    };
+    "/scheduler/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Runs
+         * @description List run history (RLS-scoped). Filter by task_id and/or status.
+         */
+        get: operations["list_runs_scheduler_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run */
+        get: operations["get_run_scheduler_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/cron/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Cron
+         * @description Validate a cron expression and preview the next N fires.
+         */
+        post: operations["validate_cron_scheduler_cron_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/cron/preview-fires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Fires
+         * @description Preview next-fire times for any trigger config (cron, interval,
+         *     heartbeat, one-shot). Event-driven triggers (manual, dependency,
+         *     event, context-match) return an empty list with event_driven=True.
+         */
+        post: operations["preview_fires_scheduler_cron_preview_fires_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/compute-next-due-at": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute Next Due At
+         * @description Compute next_due_at for a trigger config (single value).
+         */
+        post: operations["compute_next_due_at_scheduler_compute_next_due_at_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduler/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Status
+         * @description Scanner health. Admin-only -- non-admins receive 403. The error
+         *     message is truncated to 200 chars to avoid leaking internal detail
+         *     to clients that can see this endpoint.
+         */
+        get: operations["get_status_scheduler_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dedup/processed-documents/extract": {
         parameters: {
             query?: never;
@@ -9517,6 +10166,66 @@ export interface components {
              */
             max_retries_per_iteration: number;
         };
+        /**
+         * AgentTaskCreate
+         * @description Child sch_agent_task row payload (used for kind=agent/tool).
+         */
+        AgentTaskCreate: {
+            /** Agent Id */
+            agent_id?: string | null;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            };
+            /** Persistent Conversation Id */
+            persistent_conversation_id?: string | null;
+            /**
+             * Auth Mode
+             * @default ask
+             * @enum {string}
+             */
+            auth_mode: "ask" | "auto";
+            /**
+             * Max Runtime Seconds
+             * @default 600
+             */
+            max_runtime_seconds: number;
+            /**
+             * Max Concurrent
+             * @default 1
+             */
+            max_concurrent: number;
+        };
+        /** AgentTaskResponse */
+        AgentTaskResponse: {
+            /** Id */
+            id: string;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Prompt */
+            prompt: string;
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            };
+            /** Persistent Conversation Id */
+            persistent_conversation_id?: string | null;
+            /**
+             * Auth Mode
+             * @default ask
+             * @enum {string}
+             */
+            auth_mode: "ask" | "auto";
+            /** Max Runtime Seconds */
+            max_runtime_seconds: number;
+            /** Max Concurrent */
+            max_concurrent: number;
+        };
         /** AgentToolSpec */
         AgentToolSpec: {
             /**
@@ -10137,14 +10846,19 @@ export interface components {
             file_id: string;
             /** File Path */
             file_path: string;
+            /**
+             * File Uri
+             * @description Native cloud storage URI (s3://bucket/key). Same value as the underlying cld_files row's storage_uri — surfaced here so the FE wire contract carries the canonical native URI alongside the logical file_path.
+             */
+            file_uri?: string | null;
             /** Width */
             width?: number | null;
             /** Height */
             height?: number | null;
             /** Mime Type */
             mime_type?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Url */
             url?: string | null;
             /** Cdn Url */
@@ -10153,6 +10867,8 @@ export interface components {
             signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
+            /** Signed Url Expires At */
+            signed_url_expires_at?: number | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -10185,6 +10901,31 @@ export interface components {
             latency_ms: number | null;
             /** Created At */
             created_at: string;
+        };
+        /** BatchDeleteRequest */
+        BatchDeleteRequest: {
+            selector: components["schemas"]["MessageSelector"];
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /** BatchDeleteResponse */
+        BatchDeleteResponse: {
+            /** Deleted Ids */
+            deleted_ids: string[];
+            /** Cascaded Ids */
+            cascaded_ids: string[];
+            /** Remaining Count */
+            remaining_count: number;
+            /** Dry Run */
+            dry_run: boolean;
         };
         /** BatchScrapeRequest */
         BatchScrapeRequest: {
@@ -10428,8 +11169,8 @@ export interface components {
             id?: string | null;
             /** File Path */
             file_path?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Mime Type */
             mime_type?: string | null;
             /**
@@ -10711,6 +11452,60 @@ export interface components {
              * @default false
              */
             models: boolean;
+        };
+        /**
+         * CallTimelineResponse
+         * @description Full forensic dump for one ``call_id`` — trace events + cx_tl_call row.
+         */
+        CallTimelineResponse: {
+            /** Call Id */
+            call_id: string;
+            /** Events */
+            events: components["schemas"]["TraceEventRecord"][];
+            tool_call?: components["schemas"]["CallToolDetail"] | null;
+        };
+        /**
+         * CallToolDetail
+         * @description One row from cx_tl_call — the per-call record. Only present when the
+         *     call made it past pre-flight; pre-flight rejects (SURFACE_REJECT,
+         *     NO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tl_call row.
+         */
+        CallToolDetail: {
+            /** Id */
+            id: string;
+            /** Tool Name */
+            tool_name: string;
+            /** Call Id */
+            call_id: string;
+            /** Status */
+            status?: string | null;
+            /** Success */
+            success?: boolean | null;
+            /** Is Error */
+            is_error?: boolean | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            arguments?: components["schemas"]["JsonValue"] | null;
+            /** Output */
+            output?: string | null;
+            /** Output Chars */
+            output_chars?: number | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Iteration */
+            iteration?: number | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** CategorizeRequest */
         CategorizeRequest: {
@@ -11486,6 +12281,45 @@ export interface components {
             /** Public Url */
             public_url?: string | null;
         };
+        /** CompactTurnsRequest */
+        CompactTurnsRequest: {
+            range: components["schemas"]["TurnRange"];
+            /** Summary Content */
+            summary_content: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Mode
+             * @default user
+             * @enum {string}
+             */
+            mode: "user" | "system";
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+            /** Summary Metadata */
+            summary_metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** CompactTurnsResponse */
+        CompactTurnsResponse: {
+            /** Compaction Group Id */
+            compaction_group_id: string;
+            /** Summary Message Id */
+            summary_message_id: string | null;
+            /** Compacted Message Ids */
+            compacted_message_ids: string[];
+            /** Turn Count */
+            turn_count: number;
+            /** Position Range */
+            position_range: [
+                number,
+                number
+            ];
+        };
         /**
          * CompensationOut
          * @description Per-claim compensation block.
@@ -11568,6 +12402,60 @@ export interface components {
              * @default 0
              */
             char_count: number;
+        };
+        /**
+         * ContextStateResponse
+         * @description Same shape as the CONTEXT_STATE stream event payload.
+         *
+         *     The FE Model Context tab hydrates from this endpoint on conversation
+         *     open, then receives live updates from the CONTEXT_STATE stream events
+         *     after each turn — no polling needed once the stream is connected.
+         */
+        ContextStateResponse: {
+            /** Conversation Id */
+            conversation_id: string;
+            /**
+             * Last Request Input Tokens
+             * @default 0
+             */
+            last_request_input_tokens: number;
+            /**
+             * Last Request Cached Tokens
+             * @default 0
+             */
+            last_request_cached_tokens: number;
+            /**
+             * Last Request Output Tokens
+             * @default 0
+             */
+            last_request_output_tokens: number;
+            /**
+             * Total Chars Visible To Model
+             * @default 0
+             */
+            total_chars_visible_to_model: number;
+            /**
+             * Message Count Visible
+             * @default 0
+             */
+            message_count_visible: number;
+            /**
+             * Cache State
+             * @default {}
+             */
+            cache_state: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Last Trim Summary */
+            last_trim_summary?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Last Raw Usage */
+            last_raw_usage?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Measured At */
+            measured_at: string;
         };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
@@ -12186,11 +13074,6 @@ export interface components {
              */
             is_public: boolean;
             /**
-             * Authenticated Read
-             * @default false
-             */
-            authenticated_read: boolean;
-            /**
              * Fields
              * @description Explicit schema. Required when no rows are supplied.
              */
@@ -12215,8 +13098,6 @@ export interface components {
             version?: number | null;
             /** Is Public */
             is_public?: boolean | null;
-            /** Authenticated Read */
-            authenticated_read?: boolean | null;
             /**
              * Row Count
              * @default 0
@@ -12268,8 +13149,6 @@ export interface components {
             version?: number | null;
             /** Is Public */
             is_public?: boolean | null;
-            /** Authenticated Read */
-            authenticated_read?: boolean | null;
             /**
              * Row Count
              * @default 0
@@ -12427,6 +13306,16 @@ export interface components {
         DeleteTriggerResponse: {
             /** Deleted */
             deleted: boolean;
+        };
+        /** DeletedResponse */
+        DeletedResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /**
+             * Soft
+             * @default true
+             */
+            soft: boolean;
         };
         /** DerivativeRequest */
         DerivativeRequest: {
@@ -13553,8 +14442,8 @@ export interface components {
             file_name: string;
             /** Mime Type */
             mime_type?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Checksum */
             checksum?: string | null;
             /**
@@ -13602,8 +14491,8 @@ export interface components {
             storage_uri: string;
             /** Version Number */
             version_number: number;
-            /** File Size */
-            file_size: number | null;
+            /** Size Bytes */
+            size_bytes: number | null;
             /** Checksum */
             checksum: string | null;
             /** Url */
@@ -13806,6 +14695,122 @@ export interface components {
             /** Disabled */
             disabled: boolean;
         };
+        /**
+         * ForkAndRunRequest
+         * @description Fork an existing conversation, then run a new turn on the fork.
+         *
+         *     All fields from ``ConversationContinueRequest`` apply (user_input,
+         *     tools, client, config_overrides, etc.) — they drive the new turn
+         *     exactly as if the caller had hit ``POST /conversations/{new_id}``.
+         *
+         *     Selectors (provide at most one — default copies every live message):
+         *     - ``up_to_position`` — copy messages with ``position <= N``.
+         *     - ``from_message_id`` — copy up to and including this message. Set
+         *       ``exclusive=True`` to fork *before* it (the natural shape for
+         *       "edit this message" — message N is dropped, the new turn replaces it).
+         *
+         *     ``fork_title`` overrides the auto-generated ``"Fork: <source>"``
+         *     title on the new conversation.
+         */
+        ForkAndRunRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store: boolean;
+            /** User Input */
+            user_input: string | {
+                [key: string]: unknown;
+            }[];
+            config_overrides?: components["schemas"]["LLMParams"] | null;
+            /**
+             * Stream
+             * @default true
+             */
+            stream: boolean;
+            /**
+             * Debug
+             * @default false
+             */
+            debug: boolean;
+            /**
+             * Tools
+             * @default []
+             */
+            tools: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            /** Tools Replace */
+            tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
+            client?: components["schemas"]["ClientContext"] | null;
+            /**
+             * Client Tools
+             * @default []
+             */
+            client_tools: string[];
+            /**
+             * Custom Tools
+             * @default []
+             */
+            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            ide_state?: components["schemas"]["IdeState"] | null;
+            /**
+             * Context
+             * @default {}
+             */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Writable Variables
+             * @default []
+             */
+            writable_variables: string[];
+            /**
+             * Allow Context Create
+             * @default false
+             */
+            allow_context_create: boolean;
+            /**
+             * Block Mode
+             * @default false
+             */
+            block_mode: boolean;
+            /**
+             * Snapshot
+             * @default false
+             */
+            snapshot: boolean;
+            /** Memory */
+            memory?: boolean | null;
+            /** Memory Model */
+            memory_model?: string | null;
+            /**
+             * Memory Scope
+             * @default thread
+             */
+            memory_scope: string;
+            cache_bypass?: components["schemas"]["CacheBypass"] | null;
+            /** Up To Position */
+            up_to_position?: number | null;
+            /** From Message Id */
+            from_message_id?: string | null;
+            /**
+             * Exclusive
+             * @default false
+             */
+            exclusive: boolean;
+            /** Fork Title */
+            fork_title?: string | null;
+        };
         /** ForkConversationResponse */
         ForkConversationResponse: {
             /** Conversation Id */
@@ -13821,9 +14826,12 @@ export interface components {
          * ForkRequest
          * @description Payload for forking a conversation.
          *
-         *     ``up_to_position`` — when set, only messages with ``position`` less
-         *     than or equal to this value are copied to the fork. Callers use this
-         *     to branch mid-conversation. ``None`` copies every message.
+         *     Selectors (provide at most one; default copies everything):
+         *     - ``up_to_position`` — copy messages with ``position <= N``.
+         *     - ``from_message_id`` — copy messages up to and including this
+         *       message. Set ``exclusive=True`` to fork up to but NOT including it
+         *       (i.e. "fork the conversation before this message" — the natural
+         *       shape for "edit this message").
          *
          *     ``title`` — optional title for the forked conversation. Defaults to
          *     the source conversation's title prefixed with ``"Fork: "``.
@@ -13831,6 +14839,13 @@ export interface components {
         ForkRequest: {
             /** Up To Position */
             up_to_position?: number | null;
+            /** From Message Id */
+            from_message_id?: string | null;
+            /**
+             * Exclusive
+             * @default false
+             */
+            exclusive: boolean;
             /** Title */
             title?: string | null;
         };
@@ -13977,6 +14992,22 @@ export interface components {
             embeddings_in_scope: number;
             /** Distinct Sources */
             distinct_sources: number;
+        };
+        /** HideRequest */
+        HideRequest: {
+            selector: components["schemas"]["MessageSelector"];
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+        };
+        /** HideResponse */
+        HideResponse: {
+            /** Compaction Group Id */
+            compaction_group_id: string;
+            /** Hidden Message Ids */
+            hidden_message_ids: string[];
         };
         /** IdeDiagnostic */
         IdeDiagnostic: {
@@ -14504,6 +15535,21 @@ export interface components {
             current_version: number;
             /** Selected Version */
             selected_version?: number | null;
+        };
+        /** JsonRpcResponse */
+        JsonRpcResponse: {
+            /**
+             * Jsonrpc
+             * @default 2.0
+             */
+            jsonrpc: string;
+            /** Id */
+            id?: number | string | null;
+            result?: components["schemas"]["JsonValue"] | null;
+            /** Error */
+            error?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         JsonValue: unknown;
         /** KeyFindingEntry */
@@ -15496,6 +16542,31 @@ export interface components {
             filename: string;
         };
         /**
+         * MessageSelector
+         * @description Reusable selection grammar for batch message operations.
+         *
+         *     Provide EXACTLY ONE selection form. Mixed forms raise 422.
+         */
+        MessageSelector: {
+            /** Message Ids */
+            message_ids?: string[] | null;
+            /** From Position */
+            from_position?: number | null;
+            /** To Position */
+            to_position?: number | null;
+            /** From Message Id */
+            from_message_id?: string | null;
+            /** To Message Id */
+            to_message_id?: string | null;
+            /** After Message Id */
+            after_message_id?: string | null;
+            /**
+             * Inclusive
+             * @default true
+             */
+            inclusive: boolean;
+        };
+        /**
          * MessageUpdate
          * @description Fields the client can edit on an existing ``cx_message`` row.
          *
@@ -16258,11 +17329,6 @@ export interface components {
              */
             is_public: boolean;
             /**
-             * Authenticated Read
-             * @default true
-             */
-            authenticated_read: boolean;
-            /**
              * Public Read
              * @default false
              */
@@ -16293,8 +17359,6 @@ export interface components {
             description?: string | null;
             /** Is Public */
             is_public?: boolean | null;
-            /** Authenticated Read */
-            authenticated_read?: boolean | null;
             /** Public Read */
             public_read?: boolean | null;
             /**
@@ -16348,11 +17412,6 @@ export interface components {
              */
             is_public: boolean;
             /**
-             * Authenticated Read
-             * @default true
-             */
-            authenticated_read: boolean;
-            /**
              * Public Read
              * @default false
              */
@@ -16372,8 +17431,6 @@ export interface components {
             icon_name?: string | null;
             /** Is Public */
             is_public?: boolean | null;
-            /** Authenticated Read */
-            authenticated_read?: boolean | null;
             /** Public Read */
             public_read?: boolean | null;
         };
@@ -16387,8 +17444,6 @@ export interface components {
             description?: string | null;
             /** Is Public */
             is_public?: boolean | null;
-            /** Authenticated Read */
-            authenticated_read?: boolean | null;
             /** Public Read */
             public_read?: boolean | null;
             /**
@@ -16409,8 +17464,6 @@ export interface components {
             description?: string | null;
             /** Is Public */
             is_public?: boolean | null;
-            /** Authenticated Read */
-            authenticated_read?: boolean | null;
             /** Public Read */
             public_read?: boolean | null;
         };
@@ -16577,6 +17630,36 @@ export interface components {
             file_path: string;
             /** Storage Uri */
             storage_uri: string;
+        };
+        /**
+         * PreviewFiresRequest
+         * @description Preview next-fire times for any trigger config, not just cron.
+         */
+        PreviewFiresRequest: {
+            /**
+             * Trigger Type
+             * @enum {string}
+             */
+            trigger_type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * N
+             * @default 5
+             */
+            n: number;
+        };
+        /** PreviewFiresResponse */
+        PreviewFiresResponse: {
+            /** Next Fires Utc */
+            next_fires_utc?: string[];
+            /**
+             * Event Driven
+             * @default false
+             */
+            event_driven: boolean;
         };
         /** PreviewRequest */
         PreviewRequest: {
@@ -17383,6 +18466,34 @@ export interface components {
              */
             detector_version: string;
         };
+        /** ReplaceRequest */
+        ReplaceRequest: {
+            selector: components["schemas"]["MessageSelector"];
+            /** Summary Content */
+            summary_content: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Cascade Tool Pairs
+             * @default true
+             */
+            cascade_tool_pairs: boolean;
+            /** Summary Metadata */
+            summary_metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ReplaceResponse */
+        ReplaceResponse: {
+            /** Summary Message Id */
+            summary_message_id: string;
+            /** Compaction Group Id */
+            compaction_group_id: string;
+            /** Stashed Message Ids */
+            stashed_message_ids: string[];
+            /** Summary Position */
+            summary_position: number;
+        };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
             /** Repositories */
@@ -17452,19 +18563,24 @@ export interface components {
             /** Field Id */
             field_id?: string | null;
         };
+        /** RestoreRequest */
+        RestoreRequest: {
+            /** Compaction Group Id */
+            compaction_group_id?: string | null;
+            /** Summary Message Id */
+            summary_message_id?: string | null;
+            /**
+             * Delete Summary
+             * @default true
+             */
+            delete_summary: boolean;
+        };
         /** RestoreRequestBody */
         RestoreRequestBody: {
             /** Session Id */
             session_id: string;
             /** Session Key B64 */
             session_key_b64: string;
-            /** Text */
-            text: string;
-        };
-        /** RestoreResponse */
-        RestoreResponse: {
-            /** Session Id */
-            session_id: string;
             /** Text */
             text: string;
         };
@@ -17574,8 +18690,8 @@ export interface components {
             name: string;
             /** Mime Type */
             mime_type: string | null;
-            /** File Size */
-            file_size: number | null;
+            /** Size Bytes */
+            size_bytes: number | null;
             /** Processed Document Id */
             processed_document_id: string | null;
             /** Pages */
@@ -17653,6 +18769,11 @@ export interface components {
              */
             dry_run: boolean;
         };
+        /** RunListResponse */
+        RunListResponse: {
+            /** Runs */
+            runs: components["schemas"]["RunResponse"][];
+        };
         /** RunNowResponse */
         RunNowResponse: {
             /** Run Id */
@@ -17666,6 +18787,51 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides: boolean;
+        };
+        /** RunResponse */
+        RunResponse: {
+            /** Id */
+            id: string;
+            /** Task Id */
+            task_id: string;
+            /** Trigger Id */
+            trigger_id?: string | null;
+            /** User Id */
+            user_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "claimed" | "running" | "success" | "failed" | "cancelled" | "skipped";
+            /** Surface */
+            surface?: string | null;
+            /** Queue */
+            queue?: string | null;
+            /** Output Ref */
+            output_ref?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Result Summary */
+            result_summary?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Result Metadata */
+            result_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
         };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
@@ -17760,39 +18926,6 @@ export interface components {
             description?: string | null;
             /** Url Params */
             url_params?: string | null;
-        };
-        /** ScannerStatusResponse */
-        ScannerStatusResponse: {
-            /** Running */
-            running: boolean;
-            /** Started At */
-            started_at?: string | null;
-            /** Last Tick At */
-            last_tick_at?: string | null;
-            /** Last Tick Duration Ms */
-            last_tick_duration_ms?: number | null;
-            /**
-             * Last Tick Claimed
-             * @default 0
-             */
-            last_tick_claimed: number;
-            /**
-             * Last Tick Expired Sweeps
-             * @default 0
-             */
-            last_tick_expired_sweeps: number;
-            /**
-             * Total Runs Dispatched
-             * @default 0
-             */
-            total_runs_dispatched: number;
-            /**
-             * Consecutive Errors
-             * @default 0
-             */
-            consecutive_errors: number;
-            /** Error Message */
-            error_message?: string | null;
         };
         /** ScheduleSaveRequest */
         ScheduleSaveRequest: {
@@ -18858,6 +19991,112 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /**
+         * TaskCreateRequest
+         * @description Create a new sch_task (plus optional agent_task and trigger).
+         */
+        TaskCreateRequest: {
+            /**
+             * Kind
+             * @description 'agent', 'tool', or 'ping'
+             */
+            kind: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Queue
+             * @default default
+             */
+            queue: string;
+            /** Surfaces */
+            surfaces?: string[];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Tags */
+            tags?: string[];
+            agent_task?: components["schemas"]["AgentTaskCreate"] | null;
+            trigger?: components["schemas"]["TriggerCreate"] | null;
+        };
+        /**
+         * TaskDetailResponse
+         * @description Task hydrated with agent_task, triggers, and recent runs.
+         */
+        TaskDetailResponse: {
+            task: components["schemas"]["TaskResponse"];
+            agent_task?: components["schemas"]["AgentTaskResponse"] | null;
+            /** Triggers */
+            triggers?: components["schemas"]["TriggerResponse"][];
+            /** Recent Runs */
+            recent_runs?: components["schemas"]["RunResponse"][];
+        };
+        /** TaskListResponse */
+        TaskListResponse: {
+            /** Tasks */
+            tasks: components["schemas"]["TaskResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * TaskPatchRequest
+         * @description Update a subset of sch_task fields.
+         */
+        TaskPatchRequest: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Queue */
+            queue?: string | null;
+            /** Surfaces */
+            surfaces?: string[] | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+        };
+        /**
+         * TaskResponse
+         * @description Single sch_task row (plain, without children).
+         */
+        TaskResponse: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** Kind */
+            kind: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Queue */
+            queue: string;
+            /** Surfaces */
+            surfaces: string[];
+            /** Enabled */
+            enabled: boolean;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Tags */
+            tags: string[];
+            /** Next Due At */
+            next_due_at?: string | null;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
         /** TemplateCreate */
         TemplateCreate: {
             /** Name */
@@ -19062,6 +20301,87 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** TraceEventListResponse */
+        TraceEventListResponse: {
+            /** Events */
+            events: components["schemas"]["TraceEventRecord"][];
+            /** Count */
+            count: number;
+            /** Filter Summary */
+            filter_summary: string;
+        };
+        /**
+         * TraceEventRecord
+         * @description One row from cx_tool_trace, projected for the admin UI / agent.
+         *
+         *     Mirrors the table schema in [db/migrations/0044_cx_tool_trace.sql](../../../db/migrations/0044_cx_tool_trace.sql)
+         */
+        TraceEventRecord: {
+            /** Id */
+            id: string;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            /**
+             * Event
+             * @enum {string}
+             */
+            event: "OK" | "FAIL" | "SURFACE_REJECT" | "NO_EXECUTOR" | "LOOP_BLOCK";
+            /** Tool Name */
+            tool_name: string;
+            /** Kind */
+            kind?: ("SERVER" | "DELEGATE") | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            args?: components["schemas"]["JsonValue"] | null;
+            /** Result Preview */
+            result_preview?: string | null;
+            /** Err Type */
+            err_type?: string | null;
+            /** Err Msg */
+            err_msg?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Call Id */
+            call_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Process Pid */
+            process_pid?: number | null;
+            /** Process Started At */
+            process_started_at?: string | null;
+            metadata?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** TraceFileListResponse */
+        TraceFileListResponse: {
+            /** Files */
+            files: components["schemas"]["TraceFileSummary"][];
+            /** Count */
+            count: number;
+            /** Log Dir */
+            log_dir: string;
+        };
+        /**
+         * TraceFileSummary
+         * @description One entry in the ``GET /admin/debug-traces/files`` listing.
+         */
+        TraceFileSummary: {
+            /** Name */
+            name: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Modified At
+             * Format: date-time
+             */
+            modified_at: string;
+            /** Is Header Only */
+            is_header_only: boolean;
+        };
         /**
          * TrashFileEntry
          * @description Soft-deleted file as projected by the ``cld_list_trash`` RPC.
@@ -19077,8 +20397,8 @@ export interface components {
             file_path?: string | null;
             /** File Name */
             file_name?: string | null;
-            /** File Size */
-            file_size?: number | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Mime Type */
             mime_type?: string | null;
             /** Visibility */
@@ -19126,6 +20446,64 @@ export interface components {
             folders: components["schemas"]["TrashFolderEntry"][];
         };
         /**
+         * TriggerCreate
+         * @description Child sch_trigger row payload.
+         */
+        TriggerCreate: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * TriggerCreateRequest
+         * @description Create a sch_trigger row attached to an existing task.
+         */
+        TriggerCreateRequest: {
+            /** Task Id */
+            task_id: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /** TriggerListResponse */
+        TriggerListResponse: {
+            /** Triggers */
+            triggers: components["schemas"]["TriggerResponse"][];
+        };
+        /** TriggerPatchRequest */
+        TriggerPatchRequest: {
+            /** Type */
+            type?: ("one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency") | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Enabled */
+            enabled?: boolean | null;
+        };
+        /**
          * TriggerRecord
          * @description Trigger row as returned by ``TriggerStore``'s Pydantic model.
          *
@@ -19165,6 +20543,53 @@ export interface components {
             max_steps?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /** TriggerResponse */
+        TriggerResponse: {
+            /** Id */
+            id: string;
+            /** Task Id */
+            task_id: string;
+            /** User Id */
+            user_id: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "one-shot" | "interval" | "cron" | "heartbeat" | "context-match" | "event" | "manual" | "dependency";
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Enabled */
+            enabled: boolean;
+            /** Next Due At */
+            next_due_at?: string | null;
+            /** Last Fired At */
+            last_fired_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * TurnRange
+         * @description Identify one or more contiguous turns to compact.
+         *
+         *     ``from_user_message_id`` — the user message that starts the first
+         *     turn in the range. Required.
+         *
+         *     ``to_user_message_id`` — the user message that starts the FIRST turn
+         *     AFTER the range. The turn-range covers everything from
+         *     ``from_user_message_id`` up to but NOT including
+         *     ``to_user_message_id``. If omitted, the range extends to the end of
+         *     the conversation (inclusive of the final turn).
+         */
+        TurnRange: {
+            /** From User Message Id */
+            from_user_message_id: string;
+            /** To User Message Id */
+            to_user_message_id?: string | null;
         };
         /** UpdateMessageResponse */
         UpdateMessageResponse: {
@@ -19668,8 +21093,8 @@ export interface components {
             file_path: string;
             /** Mime Type */
             mime_type: string;
-            /** File Size */
-            file_size: number;
+            /** Size Bytes */
+            size_bytes: number;
             /**
              * Master Url
              * @description Signed URL for the master file (1 week TTL)
@@ -19889,6 +21314,22 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** RestoreResponse */
+        aidream__api__routers__cx_data__RestoreResponse: {
+            /** Restored Message Ids */
+            restored_message_ids: string[];
+            /** Deleted Summary Id */
+            deleted_summary_id: string | null;
+            /** Compaction Group Id */
+            compaction_group_id: string;
+        };
+        /** RestoreResponse */
+        aidream__api__routers__file_analysis__RestoreResponse: {
+            /** Session Id */
+            session_id: string;
+            /** Text */
+            text: string;
+        };
         /** SearchHitOut */
         aidream__api__routers__file_search__SearchHitOut: {
             /** Page Number */
@@ -20023,6 +21464,82 @@ export interface components {
              * @default true
              */
             use_mmr: boolean;
+        };
+        /** ScannerStatusResponse */
+        aidream__api__routers__scheduling__ScannerStatusResponse: {
+            /** Running */
+            running: boolean;
+            /** Started At */
+            started_at?: string | null;
+            /** Last Tick At */
+            last_tick_at?: string | null;
+            /** Last Tick Duration Ms */
+            last_tick_duration_ms?: number | null;
+            /**
+             * Last Tick Claimed
+             * @default 0
+             */
+            last_tick_claimed: number;
+            /**
+             * Last Tick Expired Sweeps
+             * @default 0
+             */
+            last_tick_expired_sweeps: number;
+            /**
+             * Total Runs Dispatched
+             * @default 0
+             */
+            total_runs_dispatched: number;
+            /**
+             * Consecutive Errors
+             * @default 0
+             */
+            consecutive_errors: number;
+            /** Error Message */
+            error_message?: string | null;
+        };
+        /** ScannerStatusResponse */
+        matrx_scheduler__api__schemas__ScannerStatusResponse: {
+            /** Running */
+            running: boolean;
+            /** Started At */
+            started_at?: string | null;
+            /** Last Tick At */
+            last_tick_at?: string | null;
+            /** Last Tick Duration Ms */
+            last_tick_duration_ms?: number | null;
+            /**
+             * Last Tick Claimed
+             * @default 0
+             */
+            last_tick_claimed: number;
+            /**
+             * Last Tick Expired Sweeps
+             * @default 0
+             */
+            last_tick_expired_sweeps: number;
+            /**
+             * Last Tick Manual Claimed
+             * @default 0
+             */
+            last_tick_manual_claimed: number;
+            /**
+             * Total Runs Dispatched
+             * @default 0
+             */
+            total_runs_dispatched: number;
+            /**
+             * In Flight Count
+             * @default 0
+             */
+            in_flight_count: number;
+            /**
+             * Consecutive Errors
+             * @default 0
+             */
+            consecutive_errors: number;
+            /** Error Message */
+            error_message?: string | null;
         };
         /**
          * FocalPoint
@@ -21171,6 +22688,76 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ConversationContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_and_run_ai_conversation__conversation_id__fork_and_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForkAndRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_and_run_ai_conversations__conversation_id__fork_and_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForkAndRunRequest"];
             };
         };
         responses: {
@@ -25184,6 +26771,209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trace_files_admin_debug_traces_files_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceFileListResponse"];
+                };
+            };
+        };
+    };
+    get_trace_file_admin_debug_traces_files__filename__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_events_admin_debug_traces_recent_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound on ts. Defaults to 1 hour ago. */
+                since?: string | null;
+                limit?: number;
+                /** @description Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK). */
+                event?: string | null;
+                /** @description Optional tool name filter. */
+                tool_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceEventListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    failures_since_admin_debug_traces_failures_since__iso_ts__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso_ts: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceEventListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    by_conversation_admin_debug_traces_by_conv__conversation_id__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceEventListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    by_call_admin_debug_traces_by_call__call_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallTimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    jsonrpc_endpoint_mcp_debug_traces_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JsonRpcResponse"];
                 };
             };
         };
@@ -31672,6 +33462,37 @@ export interface operations {
             };
         };
     };
+    get_context_state_cx_conversations__conversation_id__context_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     invalidate_conversation_cache_cx_conversations__conversation_id__invalidate_cache_post: {
         parameters: {
             query?: never;
@@ -31824,6 +33645,181 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForkConversationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_messages_cx_conversations__conversation_id__messages_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_messages_cx_conversations__conversation_id__messages_replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplaceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HideResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_compaction_cx_conversations__conversation_id__messages_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__cx_data__RestoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compact_turns_cx_conversations__conversation_id__turns_compact_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompactTurnsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompactTurnsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -35987,7 +37983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScannerStatusResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__scheduling__ScannerStatusResponse"];
                 };
             };
         };
@@ -36019,6 +38015,518 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_scheduler_tasks_get: {
+        parameters: {
+            query?: {
+                kind?: string | null;
+                enabled?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_task_scheduler_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_task_scheduler_tasks__task_id__get: {
+        parameters: {
+            query?: {
+                runs_limit?: number;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_task_scheduler_tasks__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_task_scheduler_tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_now_scheduler_tasks__task_id__run_now_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunNowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_triggers_scheduler_triggers_get: {
+        parameters: {
+            query: {
+                /** @description parent task id */
+                task_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_trigger_scheduler_triggers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriggerCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_trigger_scheduler_triggers__trigger_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trigger_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_trigger_scheduler_triggers__trigger_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trigger_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriggerPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_scheduler_runs_get: {
+        parameters: {
+            query?: {
+                task_id?: string | null;
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_scheduler_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_cron_scheduler_cron_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateCronRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidateCronResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_fires_scheduler_cron_preview_fires_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewFiresRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewFiresResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compute_next_due_at_scheduler_compute_next_due_at_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComputeNextDueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeNextDueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_status_scheduler_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["matrx_scheduler__api__schemas__ScannerStatusResponse"];
                 };
             };
         };
@@ -36351,7 +38859,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RestoreResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__file_analysis__RestoreResponse"];
                 };
             };
             /** @description Validation Error */

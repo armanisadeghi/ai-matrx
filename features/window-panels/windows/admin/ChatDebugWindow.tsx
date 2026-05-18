@@ -38,19 +38,21 @@ type ChatDebugSession = {
   apiMode?: string | null;
   status?: string | null;
 };
+const EMPTY_MESSAGES: unknown[] = [];
+const EMPTY_RESOURCES: unknown[] = [];
+const EMPTY_UI_STATE: ChatDebugUIState = {};
 const selectUIState = (
   _state: RootState,
   _sessionId: string,
-): ChatDebugUIState => ({});
+): ChatDebugUIState => EMPTY_UI_STATE;
 const selectSession = (
   _state: RootState,
   _sessionId: string,
 ): ChatDebugSession | undefined => undefined;
-const selectMessages = (_state: RootState, _sessionId: string): unknown[] => [];
-const selectResources = (
-  _state: RootState,
-  _sessionId: string,
-): unknown[] => [];
+const selectMessages = (_state: RootState, _sessionId: string): unknown[] =>
+  EMPTY_MESSAGES;
+const selectResources = (_state: RootState, _sessionId: string): unknown[] =>
+  EMPTY_RESOURCES;
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 // ─── Window inner ─────────────────────────────────────────────────────────────

@@ -656,7 +656,11 @@ const DYNAMIC: Record<string, DynamicAddition> = {
       })),
   },
   emailDialog: {
-    componentImport: () => import("@/components/dialogs/EmailInputDialog"),
+    // EmailDialogBridge subscribes to the overlay state itself, supplies the
+    // missing `onSubmit` callback that can't travel through Redux, and wraps
+    // the underlying EmailInputDialog. Going through this bridge is required
+    // for the unauthenticated "Email to me" flow to actually work.
+    componentImport: () => import("@/components/dialogs/EmailDialogBridge"),
   },
   shareModal: {
     componentImport: () =>

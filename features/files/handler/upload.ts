@@ -24,12 +24,13 @@ import {
   uploadAsset,
   uploadAssetWithProgress,
 } from "@/features/files/api/assets";
+import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import {
   selectOrganizationId,
   selectProjectId,
   selectTaskId,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { FileUploadError } from "./errors";
 import { fromCloudFile } from "./input/normalize";
 import type { FileSource, NormalizedFile, UploadOpts } from "./types";
@@ -49,9 +50,7 @@ export async function uploadInternal(
 
   const store = getStoreSingleton();
   if (!store) {
-    throw new FileUploadError(
-      "Cannot upload: redux store not yet initialized",
-    );
+    throw new FileUploadError("Cannot upload: redux store not yet initialized");
   }
   const dispatch = store.dispatch as AppDispatch;
 
@@ -125,16 +124,26 @@ export async function uploadInternal(
   const normalized = fromCloudFile(cloudFile, source);
 
   // Stitch on the share-link fields — cloudUpload created them in the
-  // same round-trip as the upload.
+  // same round-trip as the upload. Guarantee `url` is non-empty when a
+  // share token is present: prefer the directUrl, then the user-facing
+  // `/share/{token}` page (when an appOrigin is supplied), then the
+  // canonical Python `/share/{token}/download` URL. Never assign `""`
+  // — `??` does not short-circuit empty strings and downstream consumers
+  // depend on truthiness for the URL field.
   if (result.shareToken) {
-    const shareUrl =
-      opts.appOrigin && result.shareToken
-        ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
-        : result.shareUrl ?? "";
+    const appShareUrl = opts.appOrigin
+      ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
+      : undefined;
+    const url =
+      result.directUrl ||
+      appShareUrl ||
+      result.shareUrl ||
+      normalized.url ||
+      pythonShareUrl(result.shareToken);
     return {
       ...normalized,
       shareToken: result.shareToken,
-      url: result.directUrl ?? shareUrl ?? normalized.url,
+      url,
     };
   }
 
@@ -157,7 +166,8 @@ async function sourceToFile(
       return overrideName ? renameFile(source.file, overrideName) : source.file;
 
     case "blob": {
-      const name = overrideName ?? source.fileName ?? guessFilename(source.blob.type);
+      const name =
+        overrideName ?? source.fileName ?? guessFilename(source.blob.type);
       return new File([source.blob], name, {
         type: source.mime ?? source.blob.type ?? "application/octet-stream",
       });
@@ -165,7 +175,8 @@ async function sourceToFile(
 
     case "buffer": {
       const blob = bufferToBlob(source.buffer, source.mime);
-      const name = overrideName ?? source.fileName ?? guessFilename(source.mime);
+      const name =
+        overrideName ?? source.fileName ?? guessFilename(source.mime);
       return new File([blob], name, { type: source.mime });
     }
 
@@ -182,15 +193,17 @@ async function sourceToFile(
         }
       }
       const blob = new Blob(parts, { type: source.mime });
-      const name = overrideName ?? source.fileName ?? guessFilename(source.mime);
+      const name =
+        overrideName ?? source.fileName ?? guessFilename(source.mime);
       return new File([blob], name, { type: source.mime });
     }
 
     case "data_uri":
     case "base64": {
-      const dataUri = source.kind === "data_uri"
-        ? source.dataUri
-        : `data:${source.mime};base64,${source.base64}`;
+      const dataUri =
+        source.kind === "data_uri"
+          ? source.dataUri
+          : `data:${source.mime};base64,${source.base64}`;
       const blob = await dataUriToBlob(dataUri);
       const fallbackName =
         ("fileName" in source && source.fileName) || guessFilename(blob.type);
@@ -206,12 +219,15 @@ async function sourceToFile(
         );
       }
       const blob = await res.blob();
-      const name = overrideName ?? filenameFromUrl(source.url) ?? guessFilename(blob.type);
+      const name =
+        overrideName ?? filenameFromUrl(source.url) ?? guessFilename(blob.type);
       return new File([blob], name, { type: source.mime ?? blob.type });
     }
 
     case "youtube":
-      throw new FileUploadError("YouTube URLs cannot be uploaded — pass them as a source directly");
+      throw new FileUploadError(
+        "YouTube URLs cannot be uploaded — pass them as a source directly",
+      );
 
     default:
       return null;
@@ -239,7 +255,10 @@ function dataUriToBlob(dataUri: string): Promise<Blob> {
 }
 
 function renameFile(file: File, name: string): File {
-  return new File([file], name, { type: file.type, lastModified: file.lastModified });
+  return new File([file], name, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
 }
 
 function filenameFromUrl(url: string): string | undefined {
@@ -270,7 +289,8 @@ function stampScope(
   const projectId = selectProjectId(state);
   const taskId = selectTaskId(state);
   if (!organizationId && !projectId && !taskId) return metadata;
-  const existing = (metadata.scope as Record<string, unknown> | undefined) ?? {};
+  const existing =
+    (metadata.scope as Record<string, unknown> | undefined) ?? {};
   return {
     ...metadata,
     scope: {

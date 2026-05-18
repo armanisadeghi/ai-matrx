@@ -1,14 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  MessageSquare,
+  AlertCircle,
+  MoreHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { selectInstanceAgentId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
 import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import {
+  useConversationRowMenu,
+  type ConversationRowMenuData,
+  type MenuAnchor,
+} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
+import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
 
 interface AgentChatHistorySidebarProps {
   conversationId: string;
@@ -36,6 +47,24 @@ export function AgentChatHistorySidebar({
       dispatch(fetchAgentConversations({ agentId, versionFilter: null }));
     }
   }, [agentId, status, dispatch]);
+
+  // Singleton row menu — one per widget instance.
+  const rowMenu = useConversationRowMenu();
+  const openRowMenu = useCallback(
+    (conv: ConversationListItem, anchor: MenuAnchor) => {
+      if (!agentId) return;
+      const data: ConversationRowMenuData = {
+        conversationId: conv.conversationId,
+        title: conv.title,
+        isFavorite: conv.isFavorite ?? false,
+        isArchived: conv.status === "archived",
+        isOwner: true,
+        href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,
+      };
+      rowMenu.openForRow(data, anchor);
+    },
+    [agentId, rowMenu],
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -73,36 +102,71 @@ export function AgentChatHistorySidebar({
             )}
 
           {conversations.map((conv) => (
-            <ConversationRow key={conv.conversationId} conv={conv} />
+            <ConversationRow
+              key={conv.conversationId}
+              conv={conv}
+              onOpenMenu={openRowMenu}
+            />
           ))}
         </div>
       </ScrollArea>
+
+      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 }
 
-function ConversationRow({ conv }: { conv: ConversationListItem }) {
+function ConversationRow({
+  conv,
+  onOpenMenu,
+}: {
+  conv: ConversationListItem;
+  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
+}) {
   const date = conv.updatedAt
     ? new Date(conv.updatedAt).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
       })
     : null;
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <button
+    <div
       className={cn(
-        "w-full flex flex-col gap-0.5 px-3 py-2 text-left text-xs transition-colors",
+        "group w-full flex items-stretch px-3 py-2 text-xs transition-colors gap-2",
         "hover:bg-muted/50 hover:text-foreground text-muted-foreground",
       )}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onOpenMenu(conv, e);
+      }}
     >
-      <span className="truncate font-medium text-foreground/80">
-        {conv.title || "Untitled"}
-      </span>
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate">{conv.messageCount} messages</span>
-        {date && <span className="shrink-0 text-[10px]">{date}</span>}
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5 text-left">
+        <span className="truncate font-medium text-foreground/80">
+          {conv.title || "Untitled"}
+        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate">{conv.messageCount} messages</span>
+          {date && <span className="shrink-0 text-[10px]">{date}</span>}
+        </div>
       </div>
-    </button>
+      <button
+        ref={menuBtnRef}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
+        }}
+        className={cn(
+          "shrink-0 self-start flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
+          "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+        )}
+        aria-label="More options"
+        title="More options"
+      >
+        <MoreHorizontal size={12} />
+      </button>
+    </div>
   );
 }

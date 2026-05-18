@@ -162,6 +162,11 @@ const nextConfig = {
                 source: '/u/:slug*',
                 destination: '/apps/custom/:slug*',
             },
+            // Serve static HTML samples without the .html extension
+            {
+                source: '/samples/:name',
+                destination: '/samples/:name.html',
+            },
         ];
     },
     images: {

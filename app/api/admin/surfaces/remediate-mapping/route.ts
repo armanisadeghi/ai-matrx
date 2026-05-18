@@ -20,7 +20,7 @@ import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import {
   remediateBrokenMapping,
   type RemediateMappingArgs,
-} from "@/features/tool-registry/surfaces/services/manifest-sync.service";
+} from "@/features/surfaces/services/manifest-sync.service";
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";

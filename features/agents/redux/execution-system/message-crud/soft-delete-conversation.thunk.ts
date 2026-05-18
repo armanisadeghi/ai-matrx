@@ -20,6 +20,7 @@ import { destroyInstance } from "../conversations/conversations.slice";
 import { clearMessages } from "../messages/messages.slice";
 import { clearForConversation as clearObservabilityForConversation } from "../observability/observability.slice";
 import { removeConversation as removeFromConversationList } from "../../conversation-list/conversation-list.slice";
+import { removeConversationFromScopes } from "../../conversation-history/slice";
 import { clearCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
 
@@ -70,7 +71,15 @@ export const softDeleteConversation = createAsyncThunk<
 
     // Purge from every slice that holds this conversation's state. Each
     // action is a no-op if the slice has no entry for this id.
+    //
+    // `removeFromConversationList` drops the entity + every per-agent cache
+    // reference; `removeConversationFromScopes` drops the row from every
+    // mounted `conversation-history` scope (the data source for the
+    // ConversationHistorySidebar across /chat, /code, builder panels, and
+    // floating windows). Without the scope removal, deletions would leave
+    // ghost rows in those surfaces until the user navigated or refreshed.
     dispatch(removeFromConversationList(conversationId));
+    dispatch(removeConversationFromScopes({ conversationId }));
     dispatch(clearMessages(conversationId));
     dispatch(clearObservabilityForConversation(conversationId));
     dispatch(destroyInstance(conversationId));

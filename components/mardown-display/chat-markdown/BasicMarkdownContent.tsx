@@ -105,11 +105,17 @@ const ListItemComponent: React.FC<{
   // Check if this is a task list item (contains a checkbox)
   const isTaskItem = node?.properties?.className?.includes("task-list-item");
 
-  // For task items, just return the content without additional styling
+  // For task items, just return the content without additional styling.
+  // NOTE: do NOT use `display: flex` here — it turns every adjacent text/element
+  // (e.g. "Makes ", <strong>...</strong>, " before...") into separate flex items,
+  // and browsers discard whitespace at the edges of flex items. That collapses
+  // the spaces around bold text inside checklist lines. Inline flow preserves
+  // whitespace correctly, and the Checkbox is inline-block so it still aligns
+  // with the text baseline.
   if (isTaskItem) {
     return (
       <li
-        className={`mb-1 flex items-center ${getDirectionFontSize(itemDirection)} ${getDirectionClasses(itemDirection)}`}
+        className={`mb-1 ${getDirectionFontSize(itemDirection)} ${getDirectionClasses(itemDirection)}`}
         dir={itemDirection}
       >
         {children}

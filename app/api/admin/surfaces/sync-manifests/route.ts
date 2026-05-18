@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { applyManifestSync } from "@/features/tool-registry/surfaces/services/manifest-sync.service";
+import { applyManifestSync } from "@/features/surfaces/services/manifest-sync.service";
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";

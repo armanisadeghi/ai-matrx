@@ -38,7 +38,7 @@ import {
   selectOrganizationId,
   selectProjectId,
   selectTaskId,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { resolveBackendForConversation } from "./resolve-base-url";
 import {
   createRequest,
@@ -257,7 +257,8 @@ export const executeInstance = createAsyncThunk<
         mode: "additive",
       });
       if (injection.tools) payload.tools = injection.tools;
-      if (injection.tools_replace) payload.tools_replace = injection.tools_replace;
+      if (injection.tools_replace)
+        payload.tools_replace = injection.tools_replace;
       if (injection.client) payload.client = injection.client;
 
       // Observational Memory — if we emitted a `memory` signal this turn,
@@ -319,11 +320,11 @@ export const executeInstance = createAsyncThunk<
       // Pull the assembled text (with editor-resource XML appended) so the
       // optimistic bubble matches what the DB will serve back.
       const assembledUserText = Array.isArray(payload.user_input)
-        ? (
+        ? ((
             payload.user_input.find((b) => b.type === "text") as
               | (MessagePart & { text?: string })
               | undefined
-          )?.text ?? ""
+          )?.text ?? "")
         : typeof payload.user_input === "string"
           ? payload.user_input
           : "";
@@ -477,7 +478,9 @@ export const executeInstance = createAsyncThunk<
           //   • Validation errors — bad conversation id, schema mismatch.
           //     Throw as before.
           const lower =
-            typeof serverMessage === "string" ? serverMessage.toLowerCase() : "";
+            typeof serverMessage === "string"
+              ? serverMessage.toLowerCase()
+              : "";
           if (
             lower.startsWith("client capability") ||
             lower.includes("toolmergeerror") ||
@@ -485,7 +488,9 @@ export const executeInstance = createAsyncThunk<
             (lower.includes("tool") &&
               (lower.includes("merge") || lower.includes("capability")))
           ) {
-            toast.error("Tool injection failed", { description: serverMessage });
+            toast.error("Tool injection failed", {
+              description: serverMessage,
+            });
             throw new Error(`Tool injection failed: ${serverMessage}`);
           }
           throw new Error(`Invalid conversation ID: ${serverMessage}`);

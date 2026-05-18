@@ -170,8 +170,8 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                 onChange={(e) => handleUpdate("name", e.target.value)}
                 placeholder="Agent Name"
                 className="bg-background/50 focus-visible:ring-primary/20 resize-none min-h-[40px]"
-                minHeight={40}
-                maxHeight={40}
+                minHeight={45}
+                maxHeight={45}
                 appendTranscript={false}
               />
             </div>
@@ -238,9 +238,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                 step={5}
                 min={-50}
                 max={100}
-                value={
-                  draft.defaultRagBoost ?? agent.defaultRagBoost ?? 0
-                }
+                value={draft.defaultRagBoost ?? agent.defaultRagBoost ?? 0}
                 onChange={(e) => {
                   const raw = e.target.value;
                   // Treat empty as 0 — server has a NOT NULL default 0,
@@ -258,13 +256,12 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                 className="bg-background/50 focus-visible:ring-primary/20 font-mono"
               />
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Multiplier applied to this agent's extracted content in
-                RAG search. <span className="font-medium">0</span> = no
-                boost (default). <span className="font-medium">10–25</span>{" "}
-                = lift over raw extracts.{" "}
-                <span className="font-medium">50+</span> = pin near top.
-                Negative values demote. Page-extraction jobs can override
-                per-run.
+                Multiplier applied to this agent's extracted content in RAG
+                search. <span className="font-medium">0</span> = no boost
+                (default). <span className="font-medium">10–25</span> = lift
+                over raw extracts. <span className="font-medium">50+</span> =
+                pin near top. Negative values demote. Page-extraction jobs can
+                override per-run.
               </p>
             </div>
           </div>
@@ -273,6 +270,9 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
             <div className="flex flex-col lg:col-span-8">
               {/* Read-Only Info Space Block */}
               <div className="flex flex-col gap-6 p-5 bg-card/40 backdrop-blur-sm border border-border/60 rounded-xl shadow-sm relative overflow-hidden h-full group hover:border-primary/30 transition-all duration-300">
+                {/* L-edge V1: corner-fade (brightest at corner, fades to transparent) */}
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500/60 via-primary/30 to-transparent pointer-events-none"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/60 via-primary/30 to-transparent pointer-events-none"></div>
                 {/* Color splash */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
@@ -331,7 +331,9 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
 
             <div className="flex flex-col lg:col-span-4">
               <div className="p-5 rounded-xl bg-card/40 backdrop-blur-sm border border-border/60 shadow-sm flex flex-col justify-center gap-5 h-full relative overflow-hidden group hover:border-primary/30 transition-all duration-300">
-                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500/50 via-primary/50 to-purple-500/50 opacity-70"></div>
+                {/* L-edge V2: full symmetric multicolor (end-to-end, no fade) */}
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500/50 via-primary/50 to-purple-500/50 opacity-70 pointer-events-none"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/50 via-primary/50 to-purple-500/50 opacity-70 pointer-events-none"></div>
 
                 <div className="flex items-center justify-between pl-2">
                   <div className="flex items-center gap-2.5">
@@ -429,6 +431,9 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                 )
               }
             >
+              {/* L-edge V3: themed mono (blue), corner-fade, 4px */}
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500/70 via-blue-500/30 to-transparent pointer-events-none"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/70 via-blue-500/30 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-colors"></div>
               <span className="text-muted-foreground/80 uppercase tracking-wider text-[11px] font-bold mb-2 group-hover:text-primary transition-colors">
                 Messages
@@ -453,6 +458,9 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                 )
               }
             >
+              {/* L-edge V4: themed mono (purple), corner-fade, 6px thicker */}
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-purple-500/70 via-purple-500/30 to-transparent pointer-events-none"></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500/70 via-purple-500/30 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-500/20 transition-colors"></div>
               <span className="text-muted-foreground/80 uppercase tracking-wider text-[11px] font-bold mb-2 group-hover:text-primary transition-colors">
                 Variables
@@ -477,6 +485,9 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                 )
               }
             >
+              {/* L-edge V5: themed mono (emerald), corner-fade, 2px thin */}
+              <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-b from-emerald-500/80 via-emerald-500/40 to-transparent pointer-events-none"></div>
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500/80 via-emerald-500/40 to-transparent pointer-events-none"></div>
               <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/20 transition-colors"></div>
               <span className="text-muted-foreground/80 uppercase tracking-wider text-[11px] font-bold mb-2 group-hover:text-primary transition-colors">
                 Tools
@@ -504,7 +515,9 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
             </div>
 
             <div className="relative group rounded-xl bg-card/40 backdrop-blur-sm border border-border/60 p-5 shadow-sm overflow-hidden transition-all duration-300 hover:border-pink-500/30 hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500/40 via-purple-500/40 to-blue-500/40 opacity-70 group-hover:opacity-100 transition-opacity"></div>
+              {/* L-edge V6: full symmetric multicolor (pink→purple→blue, end-to-end, no fade) */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500/40 via-purple-500/40 to-blue-500/40 opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-pink-500/40 via-purple-500/40 to-blue-500/40 opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               <div className="pt-1">
                 <HierarchyCascade
                   levels={["organization", "scope", "project", "task"]}

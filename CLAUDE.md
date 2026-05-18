@@ -6,6 +6,28 @@ Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, m
 
 ---
 
+## Operating Principle: Build the platform, not the artifact.
+
+> **The artifact is disposable. The class of failure goes extinct.**
+
+Every task — feature, bug, or refactor — is a probe that exposes what the platform is missing. Your real job is to build (or extend) the missing capability and complete the task by consuming it. **Friction is the spec for your next primitive.**
+
+- **Forbidden:** code that only serves this one artifact and could not be reused.
+- **Required:** generic, named, documented platform primitives.
+
+**Three acceptance tests:**
+- *Feature:* "If I deleted what I just built, could I rebuild it in minutes using only existing platform capabilities?"
+- *Bug:* "Is this entire class of failure now structurally impossible — not just patched here?"
+- *Any change that adds a type / component / slice / hook:* "Did I prove (grep, file read, or `Explore` subagent) that no existing primitive could be extended instead?"
+
+If yes — done. If no — the remainder is your next infrastructure ticket. Extract it.
+
+The five frontend anti-patterns that violate this doctrine — local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap — each with concrete "look here first" anchors and a search algorithm scaled by feature size, are catalogued in **[PRINCIPLES.md](./PRINCIPLES.md)**. Read it once, internalize it, return when you hit friction.
+
+Enforcement: ESLint rules in [`eslint.config.mjs`](./eslint.config.mjs), the `pnpm check:doctrine` script ([`scripts/check-doctrine.ts`](./scripts/check-doctrine.ts)), and the pre-commit hook configured in `package.json`. Every `FEATURE.md` includes a Doctrine compliance section ([template](./features/_FEATURE_TEMPLATE.md)).
+
+---
+
 ## Web Access for Testing
 
 - User: `admin@admin.com` / `Password1234#`
@@ -94,6 +116,28 @@ Some tables are super-admin-only and the codebase is hostile territory — any c
 
 ---
 
+## Scopes and Context — Canonical Model
+
+Two words, two distinct concepts. Confusing them is what produced the worst code rot in the repo.
+
+- **Scope** = the user-authored dimensions inside an org (`Client`, `Department`, `Repo`, `Case`, `Patient`). Each scope holds context items (the columns) and values (the cells). The only piece of context users actually edit by hand.
+- **Context** = everything the LLM receives at invocation time. Assembled by the system from scopes + org + project + task + user + ambient. Users never edit "context" as a thing.
+
+Scope is the most important *part* of context, not its synonym. Read [`features/scopes/FEATURE.md`](./features/scopes/FEATURE.md) before touching any scope/context code.
+
+**Global vs Local context — the load-bearing invariant:**
+
+- **Global context** lives in `lib/redux/slices/appContextSlice.ts` — what the user is working on right now (active org, scope selections, project, task).
+- **Local context** lives on the entity being acted on — a note's tags, a task's tags, an agent's tags via `ctx_scope_assignments`.
+- **Global context is ONLY written by Surface A components** (`ActiveScopePicker` and friends, under `features/scopes/components/active-context/`). Every other picker — every "tag this with…" UI — writes to `ctx_scope_assignments`, never `appContextSlice`. ESLint enforces this at the import path.
+- **Resolution rule:** locally-triggered actions read local-first with global as fallback. Globally-triggered actions read global only. Contradictions (global vs local disagreeing on the same scope type) surface as a warning, never a block.
+
+If a picker is silently changing the sidebar's active context, **it's a bug — even if it "feels helpful."** That pattern is the #1 thing this module exists to kill.
+
+`features/agent-context/` is the thin consumer that fills declared variable and context slots at invocation time. It reads scopes from `features/scopes/`; it does not own scope data. See [`features/agent-context/FEATURE.md`](./features/agent-context/FEATURE.md) for the resolution mechanics.
+
+---
+
 ## File Handling — Single Entry Point
 
 Every file flow (`<img>`, AI media blocks, downloads, uploads, share links, mid-stream agent file references, RAG ingest, OG previews) funnels through `@/features/files` / `fileHandler`. Read [`features/files/handler/FEATURE.md`](./features/files/handler/FEATURE.md) before touching any code that loads, displays, uploads, or attaches a file.
@@ -122,14 +166,14 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 | Agent shortcuts | `features/agent-shortcuts/FEATURE.md` |
 | Agent apps | `features/agent-apps/FEATURE.md` |
 | Agent connections | `features/agent-connections/FEATURE.md` |
-| Agent context + Brokers | `features/agent-context/FEATURE.md` |
+| Scopes | `features/scopes/FEATURE.md` |
+| Agent context + Brokers | `features/agent-context/FEATURE.md` (narrowed: broker resolution + slot fill; scope CRUD lives in `features/scopes/`) |
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
 | Artifacts + Canvas | `features/artifacts/FEATURE.md` |
 | Chat + Conversation | `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |
 | Permissions & Sharing | `features/sharing/FEATURE.md` |
-| Scope system | `features/scope-system/FEATURE.md` |
 | Code editor | `features/code-editor/FEATURE.md` |
 | Window Panels (all overlays) | `features/window-panels/FEATURE.md` |
 | Settings system | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |
@@ -223,7 +267,7 @@ Chrome extension bridge for cross-surface workflows. Real bridge ships in Phase 
 
 Pre-existing dead references that *look* like extension scaffolding but are not — do not touch in unrelated PRs:
 
-- `features/tool-registry/surfaces/data/surface-candidates.ts:24` — `chrome-extension` in `client_name` union, no surface declared
+- `features/surfaces/data/surface-candidates.ts:24` — `chrome-extension` in `client_name` union, no surface declared
 - `utils/errorContext.ts:10` — defensive stack-frame filter
 
 ---

@@ -41,6 +41,14 @@ export interface SaveResult {
 
 export interface ModeShellProps {
   source: ImageSource | null;
+  /**
+   * Optional cloud-file id for AI ops, when the caller has already resolved
+   * `source` to a `url` (e.g. file-viewer Edit tab passes a `useFileSrc`-
+   * resolved URL but still wants Remove BG / Upscale / AI edit to work).
+   * The shell prefers this when set; otherwise it falls back to reading the
+   * id from `source.kind === "cloudFileId"`.
+   */
+  cloudFileId?: string | null;
   /** Where the result should be filed in the cloud library. */
   defaultFolder?: string;
   /** Page vs modal presentation. */

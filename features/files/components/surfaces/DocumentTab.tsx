@@ -322,9 +322,8 @@ function UnavailableCard({
         </h3>
         <p className="text-xs text-muted-foreground break-words">{reason}</p>
         <p className="text-[10px] text-muted-foreground/70">
-          The Python team is shipping `GET /files/&#123;id&#125;/document`
-          (REQUESTS.md item 14a). Until then, RAG features may not detect
-          existing processings.
+          Couldn't reach `GET /files/&#123;id&#125;/document`. Likely a
+          transient network or backend hiccup — try again.
         </p>
       </div>
       <button

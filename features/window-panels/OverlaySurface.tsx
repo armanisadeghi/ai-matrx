@@ -24,7 +24,14 @@ assertLazyLoaded("features/window-panels/OverlaySurface.tsx");
  * - "widget" | "sheet" | "modal" → component owns its own portal/positioning;
  *   we render it identically.
  */
-import { lazy, memo, Suspense, useMemo, type ComponentType } from "react";
+import {
+  lazy,
+  memo,
+  Suspense,
+  useEffect,
+  useMemo,
+  type ComponentType,
+} from "react";
 import {
   getRegistryEntryByOverlayId,
   type WindowRegistryEntry,
@@ -36,6 +43,10 @@ import {
   useOverlayOpen,
 } from "@/features/window-panels/hooks/useOverlay";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { DEFAULT_INSTANCE_ID } from "@/lib/redux/slices/overlaySlice";
+import { OverlayErrorBoundary } from "@/features/window-panels/diagnostics/OverlayErrorBoundary";
+import { OverlayRenderProbe } from "@/features/window-panels/diagnostics/OverlayRenderProbe";
+import { markSurfaceMounted } from "@/lib/redux/middleware/overlayDiagnostics";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyComponent = ComponentType<any>;
@@ -78,9 +89,15 @@ function SingletonSurface({ overlayId }: SurfaceProps) {
   const Component = getLazyComponent(entry);
 
   return (
-    <Suspense fallback={null}>
-      <Component isOpen={true} onClose={onClose} {...mergedProps} />
-    </Suspense>
+    <OverlayErrorBoundary overlayId={overlayId} instanceId={DEFAULT_INSTANCE_ID}>
+      <Suspense fallback={null}>
+        <Component isOpen={true} onClose={onClose} {...mergedProps} />
+        <OverlayRenderProbe
+          overlayId={overlayId}
+          instanceId={DEFAULT_INSTANCE_ID}
+        />
+      </Suspense>
+    </OverlayErrorBoundary>
   );
 }
 
@@ -93,18 +110,29 @@ function InstancedSurface({ overlayId }: SurfaceProps) {
   const defaults = entry.defaultData ?? {};
 
   return (
-    <Suspense fallback={null}>
+    <>
       {instances.map((inst) => (
-        <InstanceChild
+        <OverlayErrorBoundary
           key={inst.instanceId}
           overlayId={overlayId}
           instanceId={inst.instanceId}
-          Component={Component}
-          defaults={defaults}
-          data={inst.data}
-        />
+        >
+          <Suspense fallback={null}>
+            <InstanceChild
+              overlayId={overlayId}
+              instanceId={inst.instanceId}
+              Component={Component}
+              defaults={defaults}
+              data={inst.data}
+            />
+            <OverlayRenderProbe
+              overlayId={overlayId}
+              instanceId={inst.instanceId}
+            />
+          </Suspense>
+        </OverlayErrorBoundary>
       ))}
-    </Suspense>
+    </>
   );
 }
 
@@ -136,9 +164,16 @@ function InstanceChild({
   );
 }
 
+// The heartbeat effect must run unconditionally (before any conditional
+// return) so it fires once per OverlaySurface mount regardless of whether
+// the entry resolves. The middleware uses this to detect the "registry
+// iteration ran for this overlayId" layer of the render tree.
 export const OverlaySurface = memo(function OverlaySurface({
   overlayId,
 }: SurfaceProps) {
+  useEffect(() => {
+    markSurfaceMounted(overlayId);
+  }, [overlayId]);
   const entry = getRegistryEntryByOverlayId(overlayId);
   if (!entry) return null;
   if (entry.instanceMode === "multi") {

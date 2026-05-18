@@ -2,24 +2,29 @@
  * features/files/components/core/MediaThumbnail/MediaThumbnail.tsx
  *
  * The single component that renders thumbnails in any cloud-files surface
- * (FileGrid, FileTableRow, picker preview chips, etc.). Picks the strategy
- * dictated by the file-type registry and never hard-codes "is image"
- * checks — extending thumbnail support means adding a new
- * `ThumbnailStrategy` to `utils/file-types.ts`, not editing this file's
- * data.
+ * (FileGrid, FileTableRow, picker preview chips, etc.). Picks the best
+ * available source in a fixed priority order; strategy from the
+ * file-type registry is now mostly informational (Phase 1b made
+ * backend thumbnails universal across every MIME).
  *
- * Strategy → render path:
+ * Source priority (post Phase 1b universal thumbnails):
  *
- *   "image"          → `<img src={signedUrl}>`
- *   "video-poster"   → muted `<video preload="metadata">`; the browser
- *                       displays the first frame as a still poster
- *   "pdf-firstpage"  → reserved; falls back to icon today (pdfjs is too
- *                       heavy to load in folder listings without backend
- *                       prerendering — see for_python/REQUESTS.md)
- *   "backend-thumb"  → reads `metadata.thumbnail_url`. Fallback to icon
- *                       when missing (the field doesn't exist server-side
- *                       yet — Python team request logged)
- *   "icon"           → category icon at the requested size
+ *   1. `file.thumbnailUrl` (from `FileRecord.thumbnail_url`)
+ *      — Universal. Server-resolved from `Asset.variants["thumbnail_url"]`.
+ *        Available for **every** uploaded file: images (resized JPEG),
+ *        PDFs (page 1 @ 400² JPEG), videos (10%-mark frame), audio
+ *        (waveform PNG), archives/text/unknown (mime-family icon PNG).
+ *
+ *   2. `Asset.variants["thumbnail_url"].url` via `useFileAsset(fileId)`
+ *      — Used when `file.thumbnailUrl` is null (rows from direct DB
+ *        read path; not yet processed; older uploads).
+ *
+ *   3. Strategy-specific live render — `<img>` for images using the
+ *      master CDN URL, `<video preload="metadata">` for video posters.
+ *      Useful when the backend variant is still rendering (~5s after
+ *      upload) and we already have the master URL.
+ *
+ *   4. Category icon — final fallback (broken images, render failures).
  */
 
 "use client";
@@ -35,7 +40,13 @@ import type { CloudFile } from "@/features/files/types";
 export interface MediaThumbnailProps {
   file: Pick<
     CloudFile,
-    "id" | "fileName" | "mimeType" | "fileSize" | "metadata" | "publicUrl"
+    | "id"
+    | "fileName"
+    | "mimeType"
+    | "fileSize"
+    | "metadata"
+    | "publicUrl"
+    | "thumbnailUrl"
   >;
   /** Pixel size for the icon fallback. Image/video fill their container. */
   iconSize?: number;
@@ -44,11 +55,11 @@ export interface MediaThumbnailProps {
   /** Override the rounded corners of the container. */
   rounded?: string;
   /**
-   * When true (default), images consult `/files/{id}/asset` so we can
-   * render a small variant (thumbnail / tiny) when one exists — saves
-   * bandwidth vs. always serving the full-resolution master. Set false
-   * on surfaces where the asset round-trip isn't worth it (e.g. very
-   * tall lists where the master is already cached by the browser).
+   * When true (default), the component will consult `/files/{id}/asset`
+   * for a `thumbnail_url` variant if `file.thumbnailUrl` isn't already
+   * populated. Set false on surfaces where the asset round-trip isn't
+   * worth it (e.g. very tall lists, or where every record always has
+   * `thumbnailUrl` set).
    */
   preferAssetThumbnail?: boolean;
 }
@@ -92,50 +103,43 @@ export function MediaThumbnail({
 
   const strategy = profile.thumbnailStrategy;
 
-  // For strategies that need bytes (image / video), prefer the permanent
-  // CDN URL when the server marked the file public — saves a round-trip
-  // to /files/{id}/url AND the rendered URL is cacheable indefinitely
-  // by Cloudflare. Fall back to a signed URL when publicUrl is null
-  // (private/shared files, or rows from a direct DB read).
-  const needsBytes = strategy === "image" || strategy === "video-poster";
-  const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
+  // ── Source 1 — `FileRecord.thumbnail_url` lifted onto `CloudFile`. ──
+  // Phase 1b: universal — every file kind gets a backend-rendered
+  // thumbnail. We prefer this unconditionally when it's set: the
+  // server already picked the right strategy (waveform for audio,
+  // page 1 for PDF, frame for video, resized JPEG for images, mime
+  // icon for unknown) and the URL is CDN-cacheable.
+  const backendThumb = file.thumbnailUrl ?? null;
 
-  // Asset-thumbnail upgrade: for IMAGE files specifically, ask the
-  // `/files/{id}/asset` endpoint for a small variant (thumbnail_url /
-  // tiny_url) when one exists. This turns the per-row download into a
-  // ~400² render instead of the full master — typically 70%+ smaller.
-  // Gated to images only (video posters benefit less and the signed
-  // URL → <video preload="metadata"> path is already cheap) AND only
-  // when we don't already have a public CDN URL (the master CDN URL
-  // is cacheable indefinitely; no win from a separate variant lookup).
-  const isImage = (file.mimeType ?? "").startsWith("image/");
-  const useAssetThumb =
-    preferAssetThumbnail && strategy === "image" && isImage && !cdnUrl;
+  // ── Source 2 — Asset variants fetch (per-file). ─────────────────────
+  // Used when source 1 is null (rows from direct DB read path; tree-spine
+  // partials; very fresh uploads where the variant pipeline is still
+  // rendering). Gated by `preferAssetThumbnail` to allow surfaces to
+  // skip the round-trip.
+  const useAssetThumb = preferAssetThumbnail && !backendThumb;
   const { asset } = useFileAsset(useAssetThumb ? file.id : null, {
     signedUrlTtl: 3600,
   });
   const assetUrl = useAssetThumb ? pickThumbnailUrl(asset) : null;
 
-  // Final fallback: universal handler's signed-URL resolution via the
-  // expiry-wheel. Used for non-image strategies (video poster), or when
-  // the asset endpoint hasn't returned yet, or when no asset variants
-  // exist for this file.
-  const signedUrlEnabled = needsBytes && !cdnUrl && !assetUrl;
+  // ── Source 3 — Strategy-specific live render. ───────────────────────
+  // When we still don't have a usable thumbnail (sources 1 + 2 both
+  // failed), render the master directly for kinds where it's free:
+  //   image           → use the master CDN URL or a signed URL
+  //   video-poster    → `<video preload="metadata">` shows frame 1
+  // This handles the very first few seconds after upload before the
+  // backend renders the variant.
+  const needsBytes = strategy === "image" || strategy === "video-poster";
+  const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
+  const signedUrlEnabled = needsBytes && !backendThumb && !assetUrl && !cdnUrl;
   const signedUrl = useFileSrc(
     signedUrlEnabled ? { kind: "file_id", fileId: file.id } : null,
   );
-  const url = cdnUrl ?? assetUrl ?? signedUrl;
 
-  // Backend-thumbnail strategy reads the metadata field directly. The Python
-  // team's contract for this field is logged in for_python/REQUESTS.md — until it
-  // ships, this branch is dormant for every file.
-  const backendUrl =
-    strategy === "backend-thumb"
-      ? readMetadataString(file.metadata, "thumbnail_url")
-      : null;
+  // Best available URL for this file, in priority order.
+  const url = backendThumb ?? assetUrl ?? cdnUrl ?? signedUrl;
 
-  // Icon fallback — rendered as the default and revealed when an
-  // image/video fails to load (e.g. HEIC on Chrome, broken signed URL).
+  // ── Source 4 — Icon fallback. ────────────────────────────────────────
   const fallback = (
     <div className="flex h-full w-full items-center justify-center bg-muted/40">
       <FileIcon fileName={file.fileName} size={iconSize} />
@@ -144,29 +148,24 @@ export function MediaThumbnail({
 
   let body: React.ReactNode = fallback;
 
-  if (strategy === "image" && url) {
-    body = (
-      <ImageThumb
-        url={url}
-        alt={file.fileName}
-        fallback={fallback}
-      />
-    );
-  } else if (strategy === "video-poster" && url) {
-    body = <VideoPosterThumb url={url} fallback={fallback} />;
-  } else if (strategy === "backend-thumb" && backendUrl) {
-    body = (
-      <ImageThumb url={backendUrl} alt={file.fileName} fallback={fallback} />
-    );
+  if (url) {
+    if (strategy === "video-poster" && !backendThumb && !assetUrl) {
+      // Live render path (source 3): when the only URL we have is the
+      // master video URL, render via <video> so we get a real frame.
+      // Backend-rendered video thumbnails (source 1/2) are JPEG frames
+      // already and should go through the <img> path.
+      body = <VideoPosterThumb url={url} fallback={fallback} />;
+    } else {
+      // Backend thumbnails (any kind) + image master + non-video kinds
+      // all render via <img>. The backend ensures the URL points at
+      // image bytes (PNG/JPEG) regardless of the source MIME.
+      body = <ImageThumb url={url} alt={file.fileName} fallback={fallback} />;
+    }
   }
 
   return (
     <div
-      className={cn(
-        "relative overflow-hidden bg-muted/40",
-        rounded,
-        className,
-      )}
+      className={cn("relative overflow-hidden bg-muted/40", rounded, className)}
     >
       {body}
     </div>
@@ -248,15 +247,6 @@ function VideoPosterThumb({
       onError={() => setErrored(true)}
     />
   );
-}
-
-function readMetadataString(
-  metadata: Record<string, unknown> | undefined | null,
-  key: string,
-): string | null {
-  if (!metadata || typeof metadata !== "object") return null;
-  const v = (metadata as Record<string, unknown>)[key];
-  return typeof v === "string" && v.length > 0 ? v : null;
 }
 
 export default MediaThumbnail;

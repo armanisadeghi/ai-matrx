@@ -15,8 +15,10 @@ import {
   FileInput,
   FileText,
   FlaskConical,
+  Folder,
   FolderOpen,
   Globe,
+  Layers,
   LayoutDashboard,
   LayoutGrid,
   LayoutPanelLeft,
@@ -46,6 +48,7 @@ import {
   Webhook,
   Workflow,
   X,
+  Zap,
 } from "lucide-react";
 
 export const shellIconComponents: Record<string, LucideIcon> = {
@@ -61,8 +64,10 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   FileInput,
   FileText,
   FlaskConical,
+  Folder,
   FolderOpen,
   Globe,
+  Layers,
   LayoutDashboard,
   LayoutGrid,
   LayoutPanelLeft,
@@ -92,4 +97,5 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   Webhook,
   Workflow,
   X,
+  Zap,
 };

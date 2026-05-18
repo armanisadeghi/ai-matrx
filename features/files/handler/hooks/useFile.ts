@@ -9,9 +9,8 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fileHandler } from "../handler";
-import { unwatchExpiry } from "../intelligence/expiry-wheel";
 import type { FileSource, NormalizedFile } from "../types";
 
 export type FileStatus = "idle" | "resolving" | "ready" | "error";
@@ -28,7 +27,6 @@ export function useFile(source: FileSource | null | undefined): UseFileResult {
   const [status, setStatus] = useState<FileStatus>("idle");
   const [error, setError] = useState<Error | null>(null);
   const [tick, setTick] = useState(0);
-  const lastFileIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!source) {
@@ -48,7 +46,6 @@ export function useFile(source: FileSource | null | undefined): UseFileResult {
         if (cancelled) return;
         setFile(resolved);
         setStatus("ready");
-        lastFileIdRef.current = resolved.fileId ?? null;
       })
       .catch((err) => {
         if (cancelled) return;
@@ -61,13 +58,6 @@ export function useFile(source: FileSource | null | undefined): UseFileResult {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceKey(source), tick]);
-
-  useEffect(() => {
-    return () => {
-      const prev = lastFileIdRef.current;
-      if (prev) unwatchExpiry(prev);
-    };
-  }, []);
 
   return {
     file,

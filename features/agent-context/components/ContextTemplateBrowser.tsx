@@ -47,7 +47,7 @@ import {
   EMPTY_SCOPES_LIST,
   EMPTY_SCOPE_TYPES_LIST,
 } from "../redux/scope/selectors";
-import { selectOrganizationId } from "../redux/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   useContextTemplates,
   useApplyTemplate,

@@ -18,8 +18,10 @@
  * The Python `/files/{id}/download` endpoint streams the bytes through
  * FastAPI (which already has CORS configured for our origins). Routing
  * fetch-based previewers through it sidesteps the S3-CORS issue
- * entirely (see for_python/REQUESTS.md item P-8 for the bucket-policy
- * fix the Python team owes us).
+ * entirely. Note: S3 bucket CORS was applied 2026-05-05 (Bundle B4) so
+ * direct-`fetch` against signed URLs now works too — we keep this
+ * same-origin proxy as the default for the cached-bytes ergonomics, but
+ * callers can switch to direct fetch when latency matters.
  *
  * Caching
  * ───────
@@ -65,14 +67,12 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
   // re-opened file is already showing the blob — no `loading` flicker.
   const initialCached = fileId ? getCached(fileId) : null;
   const [url, setUrl] = useState<string | null>(initialCached?.url ?? null);
-  const [blob, setBlob] = useState<Blob | null>(
-    initialCached?.blob ?? null,
-  );
-  const [loading, setLoading] = useState<boolean>(
-    !!fileId && !initialCached,
-  );
+  const [blob, setBlob] = useState<Blob | null>(initialCached?.blob ?? null);
+  const [loading, setLoading] = useState<boolean>(!!fileId && !initialCached);
   const [error, setError] = useState<string | null>(null);
-  const [bytesLoaded, setBytesLoaded] = useState(initialCached ? initialCached.blob.size : 0);
+  const [bytesLoaded, setBytesLoaded] = useState(
+    initialCached ? initialCached.blob.size : 0,
+  );
   const [bytesTotal, setBytesTotal] = useState<number | null>(
     initialCached ? initialCached.blob.size : null,
   );
@@ -148,11 +148,14 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
 
       // 3. IDB miss — fetch with progress.
       try {
-        const { blob: b } = await Files.downloadFileWithProgress(fileId, (ev) => {
-          if (cancelled) return;
-          setBytesLoaded(ev.loaded);
-          if (ev.total !== null) setBytesTotal(ev.total);
-        });
+        const { blob: b } = await Files.downloadFileWithProgress(
+          fileId,
+          (ev) => {
+            if (cancelled) return;
+            setBytesLoaded(ev.loaded);
+            if (ev.total !== null) setBytesTotal(ev.total);
+          },
+        );
         if (cancelled) return;
         const objectUrl = URL.createObjectURL(b);
         // Insert into both cache tiers. From now on the cache owns the URL —

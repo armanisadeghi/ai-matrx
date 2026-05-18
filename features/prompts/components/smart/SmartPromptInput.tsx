@@ -62,6 +62,8 @@ import {
   removeResource,
   setExpandedVariable,
   setCreatorDebug,
+  EMPTY_ARRAY,
+  EMPTY_OBJECT,
 } from "@/lib/redux/prompt-execution/slice";
 import { executeMessage } from "@/lib/redux/prompt-execution/thunks/executeMessageThunk";
 import { selectPromptsPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
@@ -144,13 +146,13 @@ export function SmartPromptInput({
 
   // Instance-specific selectors (return stable defaults if runId undefined)
   const variableDefaults = useAppSelector((state) =>
-    runId ? selectVariableDefinitions(state, runId) : [],
+    runId ? selectVariableDefinitions(state, runId) : EMPTY_ARRAY,
   );
   const chatInput = useAppSelector((state) =>
     runId ? selectCurrentInput(state, runId) : "",
   );
   const resources = useAppSelector((state) =>
-    runId ? selectResources(state, runId) : [],
+    runId ? selectResources(state, runId) : EMPTY_ARRAY,
   );
   const expandedVariable = useAppSelector((state) =>
     runId ? selectExpandedVariable(state, runId) : null,
@@ -165,7 +167,7 @@ export function SmartPromptInput({
     runId ? selectShowVariables(state, runId) : false,
   );
   const variableValues = useAppSelector((state) =>
-    runId ? selectUserVariables(state, runId) : {},
+    runId ? selectUserVariables(state, runId) : EMPTY_OBJECT,
   );
 
   // Show resource debug indicator when debug mode is on and resources exist
@@ -181,9 +183,7 @@ export function SmartPromptInput({
   // `uploadFn(files): Promise<UploadResult[]>` signature consumed by
   // the prompt-execution `uploadAndAddFileResource` thunk.
   const uploadAdapter = useCallback(
-    async (
-      files: File[],
-    ): Promise<Array<{ fileId?: string; url: string }>> => {
+    async (files: File[]): Promise<Array<{ fileId?: string; url: string }>> => {
       const folderPath = uploadPath
         ? `${uploadBucket}/${uploadPath}`
         : uploadBucket;
@@ -278,9 +278,8 @@ export function SmartPromptInput({
       if (!runId) return;
 
       try {
-        const { uploadAndAddFileResource } = await import(
-          "@/lib/redux/prompt-execution/thunks/resourceThunks"
-        );
+        const { uploadAndAddFileResource } =
+          await import("@/lib/redux/prompt-execution/thunks/resourceThunks");
         await dispatch(
           uploadAndAddFileResource({
             runId,
@@ -291,8 +290,7 @@ export function SmartPromptInput({
           }),
         );
       } catch (error) {
-        const reason =
-          error instanceof Error ? error.message : "Upload failed";
+        const reason = error instanceof Error ? error.message : "Upload failed";
         console.error("Failed to upload pasted image:", error);
         toast.error(`Couldn't upload pasted image: ${reason}`);
       }

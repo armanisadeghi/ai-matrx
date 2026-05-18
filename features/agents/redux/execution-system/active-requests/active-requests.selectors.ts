@@ -102,6 +102,13 @@ export const selectRequestStatus = (requestId: string) => (state: RootState) =>
  * Derives accumulated text from render blocks (single source of truth).
  * Returns "" when no request exists — safe because "" is a string literal.
  * Memoized so consumers don't re-render unless render block content changes.
+ *
+ * When `editedText` is set on the request (by inline edit flows such as
+ * inline-decision resolve, code-block save, table edit, broker update, or
+ * full-screen save), it supersedes the render-block-derived text. This
+ * keeps the renderer in sync with what we already persisted via
+ * `cx_message_edit` without swapping the underlying data source mid-session
+ * (see AgentAssistantMessage's "lifetime rule").
  */
 export const selectAccumulatedText = (requestId: string) =>
   createSelector(
@@ -109,7 +116,10 @@ export const selectAccumulatedText = (requestId: string) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (order, blocks): string => {
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.editedText,
+    (order, blocks, editedText): string => {
+      if (editedText !== null && editedText !== undefined) return editedText;
       if (!order || !blocks || order.length === 0) return "";
       return order
         .map((id) => blocks[id]?.content ?? "")
@@ -444,7 +454,20 @@ export type ContentSegment =
 // =============================================================================
 
 export type UnifiedSlot =
-  | { kind: "render_block"; blockId: string; seq: number }
+  | {
+      kind: "render_block";
+      blockId: string;
+      /**
+       * The render block's type at the moment the slot was emitted. Lets
+       * consumers (e.g. `hasUnifiedSpecial`) decide whether the slot is
+       * "special" interleaved content (media, etc.) without re-looking it
+       * up in the blocks map. Optional because legacy callsites that build
+       * slots from a bare `renderBlockOrder` (no timeline / no blocks map)
+       * can't fill it.
+       */
+      blockType?: string;
+      seq: number;
+    }
   | { kind: "tool"; callId: string; seq: number }
   | {
       kind: "status";
@@ -452,6 +475,21 @@ export type UnifiedSlot =
       statusKind: "phase" | "info";
       seq: number;
     };
+
+/**
+ * Render-block types that need the unified-slot rendering path even when
+ * there's no text run / tool / status to interleave them with. A pure-image
+ * stream (no text_start, just a `data: image_output` event) emits a
+ * standalone render_block slot — without this set, `hasUnifiedSpecial`
+ * would mistake it for plain text content and skip the unified renderer.
+ *
+ * Re-exported so EnhancedChatMarkdown can share the canonical list.
+ */
+export const SPECIAL_RENDER_BLOCK_TYPES = new Set<string>([
+  "image_output",
+  "audio_output",
+  "video_output",
+]);
 
 const PHASE_LABELS: Record<string, string> = {
   connected: "Connected",
@@ -478,11 +516,29 @@ const PHASE_LABELS: Record<string, string> = {
  * Status slots are transient: each new status replaces the previous one,
  * and any "real" content event clears the pending status.
  */
+// Media data events emit standalone render-block slots (not inside a text
+// run). Forward-compatible with audio + video outputs; today only images
+// fire data events, but the wiring is identical.
+const MEDIA_DATA_TYPES = new Set([
+  "image_output",
+  "partial_image",
+  "audio_output",
+  "video_output",
+]);
+
+const MEDIA_BLOCK_TYPES = new Set([
+  "image_output",
+  "audio_output",
+  "video_output",
+]);
+
 export const selectUnifiedSlots = (requestId: string) =>
   createSelector(
     (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.isTextStreaming,
     (state: RootState) =>
@@ -490,26 +546,47 @@ export const selectUnifiedSlots = (requestId: string) =>
     (
       timeline,
       renderBlockOrder,
+      renderBlocks,
       isTextStreaming,
       isReasoningStreaming,
     ): UnifiedSlot[] => {
+      const blockOrder = renderBlockOrder ?? [];
+      const blocksMap = renderBlocks ?? {};
+
       if (!timeline || timeline.length === 0) {
-        if (!renderBlockOrder || renderBlockOrder.length === 0) return [];
-        return renderBlockOrder.map((blockId, i) => ({
+        if (blockOrder.length === 0) return [];
+        return blockOrder.map((blockId, i) => ({
           kind: "render_block" as const,
           blockId,
+          blockType: blocksMap[blockId]?.type,
           seq: i,
         }));
       }
 
-      const blockOrder = renderBlockOrder ?? [];
       const slots: UnifiedSlot[] = [];
       const seenTools = new Set<string>();
+      // Tracks every blockId already pushed as a slot (regardless of source
+      // — text_end range, reasoning_end trailing, or standalone media data
+      // event). Partials and final image_outputs share a blockId, so this
+      // also dedupes them: the final upsert updates the block in place and
+      // the existing slot picks up the new state via Redux subscription.
+      const emittedBlockIds = new Set<string>();
       let nextSeq = 0;
       let pendingStatus: UnifiedSlot | null = null;
       // Tracks how many blocks from renderBlockOrder have been emitted into slots.
       // Used by both text_end and reasoning_end to emit their respective blocks.
       let lastEmittedBlockIndex = 0;
+
+      const pushBlock = (blockId: string) => {
+        if (emittedBlockIds.has(blockId)) return;
+        emittedBlockIds.add(blockId);
+        slots.push({
+          kind: "render_block",
+          blockId,
+          blockType: blocksMap[blockId]?.type,
+          seq: nextSeq++,
+        });
+      };
 
       for (const entry of timeline) {
         if (entry.kind === "text_start") {
@@ -519,11 +596,7 @@ export const selectUnifiedSlots = (requestId: string) =>
           const start = entry.blockStartIndex;
           const end = entry.blockEndIndex;
           for (let i = start; i < end && i < blockOrder.length; i++) {
-            slots.push({
-              kind: "render_block",
-              blockId: blockOrder[i],
-              seq: nextSeq++,
-            });
+            pushBlock(blockOrder[i]);
           }
           lastEmittedBlockIndex = Math.max(lastEmittedBlockIndex, end);
         } else if (entry.kind === "reasoning_start") {
@@ -536,11 +609,7 @@ export const selectUnifiedSlots = (requestId: string) =>
           pendingStatus = null;
           const end = blockOrder.length;
           for (let i = lastEmittedBlockIndex; i < end; i++) {
-            slots.push({
-              kind: "render_block",
-              blockId: blockOrder[i],
-              seq: nextSeq++,
-            });
+            pushBlock(blockOrder[i]);
           }
           lastEmittedBlockIndex = end;
         } else if (
@@ -574,6 +643,26 @@ export const selectUnifiedSlots = (requestId: string) =>
             statusKind: "info",
             seq: nextSeq,
           };
+        } else if (entry.kind === "data") {
+          // Media data events (image_output / audio_output / video_output)
+          // create standalone render blocks that aren't covered by any
+          // text_end or reasoning_end range. Find the matching block in
+          // renderBlockOrder (latest, since partials and finals share the
+          // same blockId) and emit it as its own slot. Audio + video are
+          // forward-compat — today only images fire data events.
+          const dataType = entry.data.type;
+          if (dataType && MEDIA_DATA_TYPES.has(dataType)) {
+            pendingStatus = null;
+            for (let i = blockOrder.length - 1; i >= 0; i--) {
+              const candidateId = blockOrder[i];
+              if (emittedBlockIds.has(candidateId)) continue;
+              const candidate = blocksMap[candidateId];
+              if (candidate && MEDIA_BLOCK_TYPES.has(candidate.type)) {
+                pushBlock(candidateId);
+                break;
+              }
+            }
+          }
         } else if (
           entry.kind === "completion" ||
           entry.kind === "end" ||
@@ -587,11 +676,7 @@ export const selectUnifiedSlots = (requestId: string) =>
       // lastEmittedBlockIndex to the current end of renderBlockOrder
       if (isTextStreaming) {
         for (let i = lastEmittedBlockIndex; i < blockOrder.length; i++) {
-          slots.push({
-            kind: "render_block",
-            blockId: blockOrder[i],
-            seq: nextSeq++,
-          });
+          pushBlock(blockOrder[i]);
         }
       }
 
@@ -600,11 +685,7 @@ export const selectUnifiedSlots = (requestId: string) =>
       // reasoning run (e.g. type: "reasoning", blockId: "client_reasoning_1").
       if (isReasoningStreaming) {
         for (let i = lastEmittedBlockIndex; i < blockOrder.length; i++) {
-          slots.push({
-            kind: "render_block",
-            blockId: blockOrder[i],
-            seq: nextSeq++,
-          });
+          pushBlock(blockOrder[i]);
         }
       }
 
@@ -618,6 +699,7 @@ export const selectUnifiedSlots = (requestId: string) =>
         return blockOrder.map((blockId, i) => ({
           kind: "render_block" as const,
           blockId,
+          blockType: blocksMap[blockId]?.type,
           seq: i,
         }));
       }

@@ -24,6 +24,8 @@ export const EventType = {
   RESOURCE_CHANGED: "resource_changed",
   CONTEXT_ANALYSIS: "context_analysis",
   STRUCTURED_OUTPUT: "structured_output",
+  CONTEXT_STATE: "context_state",
+  CONTEXT_TRIMMED: "context_trimmed",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -205,6 +207,24 @@ export interface StructuredOutputPayload {
   match_count?: number;
   agent_name?: string | null;
   operation_id?: string | null;
+}
+
+export interface ContextStatePayload {
+  conversation_id: string;
+  last_request_input_tokens?: number;
+  last_request_cached_tokens?: number;
+  last_request_output_tokens?: number;
+  total_chars_visible_to_model?: number;
+  message_count_visible?: number;
+  cache_state?: Record<string, unknown>;
+  measured_at: string;
+}
+
+export interface ContextTrimmedPayload {
+  conversation_id: string;
+  request_id?: string | null;
+  trim_summary: Record<string, unknown>;
+  measured_at: string;
 }
 
 // --- Typed Record Reservation Variants (discriminated on `table`) ---
@@ -411,6 +431,146 @@ export interface ImageOutputData {
   download_url?: string | null;
 }
 
+export interface AudioBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "audio";
+  duration_ms?: number | null;
+  transcript?: string | null;
+}
+
+export interface DocumentBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "document";
+  page_count?: number | null;
+  page1_url?: string | null;
+}
+
+export interface ImageBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "image";
+  width?: number | null;
+  height?: number | null;
+  vision_class?: string | null;
+}
+
+export interface JsonValue {
+}
+
+export interface VideoBlock {
+  origin: "matrx" | "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "video";
+  width?: number | null;
+  height?: number | null;
+  duration_ms?: number | null;
+  poster_url?: string | null;
+}
+
+export interface YouTubeBlock {
+  origin?: "external";
+  file_id?: string | null;
+  file_uri?: string | null;
+  visibility?: "public" | "private" | "shared" | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: number | null;
+  parent_file_id?: string | null;
+  derivation_kind?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+  base64?: string | null;
+  mime_type?: string | null;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  status?: "complete" | "streaming" | "error";
+  progress?: number | null;
+  error_message?: string | null;
+  metadata?: Record<string, JsonValue>;
+  kind?: "youtube";
+  video_id?: string | null;
+}
+
+export interface MediaBlockData {
+  type?: "media_block";
+  block: ImageBlock | VideoBlock | AudioBlock | DocumentBlock | YouTubeBlock;
+}
+
 export interface MemoryBufferSpawnedData {
   type?: "memory_buffer_spawned";
   conversation_id: string;
@@ -539,6 +699,7 @@ export type TypedDataPayload =
   | FetchResultsData
   | FunctionResultData
   | ImageOutputData
+  | MediaBlockData
   | MemoryBufferSpawnedData
   | MemoryContextInjectedData
   | MemoryErrorData
@@ -2264,6 +2425,16 @@ export interface StructuredOutputEvent {
   data: StructuredOutputPayload;
 }
 
+export interface ContextStateEvent {
+  event: "context_state";
+  data: ContextStatePayload;
+}
+
+export interface ContextTrimmedEvent {
+  event: "context_trimmed";
+  data: ContextTrimmedPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -2284,7 +2455,9 @@ export type TypedStreamEvent =
   | RecordUpdateEvent
   | ResourceChangedEvent
   | ContextAnalysisEvent
-  | StructuredOutputEvent;
+  | StructuredOutputEvent
+  | ContextStateEvent
+  | ContextTrimmedEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -2394,6 +2567,14 @@ export function isContextAnalysisEvent(e: TypedStreamEvent): e is { event: "cont
 
 export function isStructuredOutputEvent(e: TypedStreamEvent): e is { event: "structured_output"; data: StructuredOutputPayload } {
   return e.event === "structured_output";
+}
+
+export function isContextStateEvent(e: TypedStreamEvent): e is { event: "context_state"; data: ContextStatePayload } {
+  return e.event === "context_state";
+}
+
+export function isContextTrimmedEvent(e: TypedStreamEvent): e is { event: "context_trimmed"; data: ContextTrimmedPayload } {
+  return e.event === "context_trimmed";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

@@ -78,6 +78,15 @@ export interface TriggerListResponse {
 }
 
 // ── Run ────────────────────────────────────────────────────────────────────
+//
+// HTTP wire shape for sch_run. Mirrors the package's Pydantic
+// `RunResponse` schema. The internal scanner-lease fields `claim_token`
+// and `claim_expires_at` are intentionally NOT exposed here — they are
+// private scheduler state, useful only for admin debugging, and the
+// admin orphan-leases page reads them direct from Supabase via the
+// scheduling-admin-service (where `SchRunRow` in `types.ts` does carry
+// them). Keeping them off the HTTP wire prevents accidental coupling
+// and keeps the user-facing surface minimal.
 
 export interface RunResponse {
   id: string;
@@ -92,8 +101,6 @@ export interface RunResponse {
   claimed_at: string | null;
   started_at: string | null;
   finished_at: string | null;
-  claim_token: string | null;
-  claim_expires_at: string | null;
   result_summary: string | null;
   error_message: string | null;
   result_metadata: Record<string, unknown> | null;

@@ -66,9 +66,7 @@ export function ScheduleRow({ task }: Props) {
         description: "An executor surface will pick it up.",
       });
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to queue run",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to queue run");
     } finally {
       setRunning(false);
     }
@@ -77,7 +75,7 @@ export function ScheduleRow({ task }: Props) {
   const handleDelete = async () => {
     const ok = await confirm({
       title: "Delete schedule",
-      description: `Permanently delete "${task.title}" and its run history. This cannot be undone.`,
+      description: `Delete "${task.title}". It will stop firing and disappear from your schedules. Past runs stay in your history. This cannot be undone.`,
       confirmLabel: "Delete",
       variant: "destructive",
     });
@@ -133,9 +131,7 @@ export function ScheduleRow({ task }: Props) {
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <TriggerChip trigger={trigger} />
           <SurfacesChips surfaces={task.surfaces} />
-          <span className="ml-1">
-            Next: {humanizeRelative(task.nextDueAt)}
-          </span>
+          <span className="ml-1">Next: {humanizeRelative(task.nextDueAt)}</span>
           <span>· Last: {humanizeRelative(task.lastRunAt)}</span>
         </div>
       </Link>

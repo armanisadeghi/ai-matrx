@@ -16,7 +16,8 @@ import type { AgendaTask, SchTaskRow } from "../types";
 
 function buildTaskPatch(row: Partial<SchTaskRow>): Partial<AgendaTask> | null {
   const patch: Partial<AgendaTask> = {};
-  if ("enabled" in row && row.enabled !== undefined) patch.enabled = row.enabled;
+  if ("enabled" in row && row.enabled !== undefined)
+    patch.enabled = row.enabled;
   if ("next_due_at" in row) patch.nextDueAt = row.next_due_at ?? null;
   if ("last_run_at" in row) patch.lastRunAt = row.last_run_at ?? null;
   if ("updated_at" in row && row.updated_at) patch.updatedAt = row.updated_at;
@@ -67,6 +68,13 @@ export function useTaskListStream() {
           const row = payload.new as Partial<SchTaskRow>;
           const id = row?.id;
           if (!id) return;
+          // A soft-delete fires as an UPDATE (deleted_at flips from null to
+          // a timestamp). Treat it as a removal so the list view drops the
+          // row immediately for any other session the user has open.
+          if ("deleted_at" in row && row.deleted_at) {
+            dispatch(removeTask(id));
+            return;
+          }
           const patch = buildTaskPatch(row);
           if (patch) dispatch(patchTask({ id, patch }));
         },

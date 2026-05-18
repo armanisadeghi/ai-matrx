@@ -1,14 +1,16 @@
 "use client";
 
-import { computeMatchingEntityIdsFromAssignments } from "@/features/agent-context/redux/scope/selectors";
-import { selectAllAssignments } from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
 import { createSelector } from "@reduxjs/toolkit";
 import { selectAllProjects } from "@/features/agent-context/redux/projectsSlice";
 import { selectAllTasks } from "@/features/agent-context/redux/tasksSlice";
 import {
+  makeSelectEntityIdsMatchingScopes,
+  selectAllEntityScopeAssignmentsFlat,
+} from "@/features/scopes/redux/selectors/tree";
+import {
   selectOrganizationId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import type { Task, TaskWithProject, Project, TaskSortConfig } from "../types";
 import { sortTasks } from "../utils/taskSorting";
 import { matchesSearch } from "@/utils/search-scoring";
@@ -121,16 +123,21 @@ export const selectAllTasksFlat = createSelector(
   },
 );
 
+const selectEntityIdsMatchingScopes = makeSelectEntityIdsMatchingScopes();
+
 export const selectTaskIdsMatchingScopeFilter = createSelector(
-  [selectFilterScopeIds, selectFilterScopeMatchAll, selectAllAssignments],
-  (scopeIds, matchAll, assignments): string[] | null => {
+  [
+    (state: import("@/lib/redux/rootReducer").RootState) => state,
+    selectFilterScopeIds,
+    selectFilterScopeMatchAll,
+  ],
+  (state, scopeIds, matchAll): string[] | null => {
     if (scopeIds.length === 0) return null;
-    return computeMatchingEntityIdsFromAssignments(
-      assignments,
-      "task",
+    return selectEntityIdsMatchingScopes(state, {
+      entityType: "task",
       scopeIds,
       matchAll,
-    );
+    });
   },
 );
 
@@ -144,18 +151,20 @@ export const selectTaskIdsMatchingScopeFilter = createSelector(
  * AND Department=SEO" should narrow to the intersection.
  */
 export const selectTaskIdsMatchingAppContextScopes = createSelector(
-  [selectScopeSelectionsContext, selectAllAssignments],
-  (scopeSelections, assignments): string[] | null => {
+  [
+    (state: import("@/lib/redux/rootReducer").RootState) => state,
+    selectScopeSelectionsContext,
+  ],
+  (state, scopeSelections): string[] | null => {
     const ids = Object.values(scopeSelections ?? {}).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     if (ids.length === 0) return null;
-    return computeMatchingEntityIdsFromAssignments(
-      assignments,
-      "task",
-      ids,
-      true,
-    );
+    return selectEntityIdsMatchingScopes(state, {
+      entityType: "task",
+      scopeIds: ids,
+      matchAll: true,
+    });
   },
 );
 
@@ -328,11 +337,12 @@ export const selectGroupedFilteredTasks = createSelector(
   [
     selectFilteredTasks,
     selectGroupBy,
-    selectAllAssignments,
+    selectAllEntityScopeAssignmentsFlat,
     selectAllProjects,
   ],
   (tasks, groupBy, assignments, projectRecords) => {
-    const groups: { key: string; label: string; tasks: TaskWithProject[] }[] = [];
+    const groups: { key: string; label: string; tasks: TaskWithProject[] }[] =
+      [];
 
     if (groupBy === "none") {
       groups.push({ key: "all", label: "All Tasks", tasks });

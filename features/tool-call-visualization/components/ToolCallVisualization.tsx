@@ -87,10 +87,13 @@ const ToolCallVisualizationInner: React.FC<{
   className,
 }) => {
   const density = useAppSelector(
-    conversationId ? selectResponseDensity(conversationId) : () => "comfortable",
+    conversationId
+      ? selectResponseDensity(conversationId)
+      : () => "comfortable",
   );
   const isCompact = density === "compact";
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  // Compact mode starts collapsed — every tool call is a single line until clicked.
+  const [isExpanded, setIsExpanded] = useState<boolean>(!isCompact);
   const [isOverlayOpen, setIsOverlayOpen] = useState<boolean>(false);
   const [initialOverlayTab, setInitialOverlayTab] = useState<
     string | undefined
@@ -123,7 +126,10 @@ const ToolCallVisualizationInner: React.FC<{
   const toolDisplayName = useMemo(() => {
     if (entries.length > 1) return `${entries.length} Tools`;
     if (!headerTool) return getToolDisplayName(null);
-    if (headerTool.displayName && headerTool.displayName !== headerTool.toolName) {
+    if (
+      headerTool.displayName &&
+      headerTool.displayName !== headerTool.toolName
+    ) {
       return headerTool.displayName;
     }
     return getToolDisplayName(headerTool.toolName);
@@ -141,18 +147,16 @@ const ToolCallVisualizationInner: React.FC<{
     return null;
   }, [headerTool]);
 
-  // Auto-collapse once the tool is done AND something after it has begun
-  // (next tool started, or text streaming began). Per-tool override:
-  // registry entries can opt out via `keepExpandedOnStream: true` (e.g.
-  // web search renderers may want to keep results visible). Defaults
-  // collapse when complete.
+  // Comfortable mode: auto-collapse once the tool is done AND content is streaming.
+  // Compact mode: auto-collapse as soon as the tool completes regardless of content.
   useEffect(() => {
-    if (!hasContent || phase !== "complete") return;
+    if (phase !== "complete") return;
     const anyStayExpanded = entries.some((e) =>
       shouldKeepExpandedOnStream(e.toolName),
     );
-    if (!anyStayExpanded) setIsExpanded(false);
-  }, [hasContent, phase, entries]);
+    if (anyStayExpanded) return;
+    if (isCompact || hasContent) setIsExpanded(false);
+  }, [hasContent, phase, entries, isCompact]);
 
   if (entries.length === 0) return null;
 
@@ -249,58 +253,60 @@ const ToolCallVisualizationInner: React.FC<{
           )}
         </div>
 
-        <div
-          className={cn(
-            "flex items-center gap-0.5 shrink-0 transition-opacity",
-            // In compact mode, controls only appear when the user actually
-            // hovers this card — keeps the rest of the transcript clean.
-            isCompact &&
-              "opacity-0 group-hover/toolcard:opacity-100 focus-within:opacity-100",
-          )}
-        >
-          {phase !== "complete" && !isCompact && (
-            <Gem className="w-3 h-3 mr-0.5 text-blue-500 dark:text-blue-400 animate-pulse" />
-          )}
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenWindowPanel();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
+        <div className="flex items-center gap-0.5 shrink-0">
+          {/* Action buttons — always visible in comfortable, hover-only in compact */}
+          <div
+            className={cn(
+              "flex items-center gap-0.5 transition-opacity",
+              isCompact &&
+                "opacity-0 group-hover/toolcard:opacity-100 focus-within:opacity-100",
+            )}
+          >
+            {phase !== "complete" && !isCompact && (
+              <Gem className="w-3 h-3 mr-0.5 text-blue-500 dark:text-blue-400 animate-pulse" />
+            )}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
                 e.stopPropagation();
                 handleOpenWindowPanel();
-              }
-            }}
-            className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Open in floating window"
-          >
-            <PanelRightOpen className="w-3 h-3" />
-          </span>
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              setInitialOverlayTab(undefined);
-              setIsOverlayOpen(true);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOpenWindowPanel();
+                }
+              }}
+              className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+              title="Open in floating window"
+            >
+              <PanelRightOpen className="w-3 h-3" />
+            </span>
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
                 e.stopPropagation();
                 setInitialOverlayTab(undefined);
                 setIsOverlayOpen(true);
-              }
-            }}
-            className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Open fullscreen overlay"
-          >
-            <Maximize2 className="w-3 h-3" />
-          </span>
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setInitialOverlayTab(undefined);
+                  setIsOverlayOpen(true);
+                }
+              }}
+              className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+              title="Open fullscreen overlay"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </span>
+          </div>
+          {/* Chevron — always visible so the user knows the row is expandable */}
           {isExpanded ? (
             <ChevronUp className="w-3 h-3 text-muted-foreground" />
           ) : (

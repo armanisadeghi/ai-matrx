@@ -27,11 +27,12 @@ import {
   selectLatestRequestId,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { AgentUserMessage } from "./user/AgentUserMessage";
+import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
 
-const AgentAssistantMessage = dynamic(
+const AssistantTurnGroup = dynamic(
   () =>
-    import("./assistant/AgentAssistantMessage").then((m) => ({
-      default: m.AgentAssistantMessage,
+    import("./assistant/AssistantTurnGroup").then((m) => ({
+      default: m.AssistantTurnGroup,
     })),
   { ssr: false },
 );
@@ -53,6 +54,20 @@ interface DisplayEntry {
   requestId: string | null;
   isStreamActive: boolean;
 }
+
+/**
+ * Output shape of the grouping pass: either a single user message, or a
+ * contiguous run of assistant messages (one logical agentic "turn"). Each
+ * group renders through AssistantTurnGroup, which collapses N sub-messages
+ * into one visual unit with one trailing action bar.
+ */
+type DisplayGroup =
+  | { kind: "user"; key: string; messageId: string }
+  | {
+      kind: "assistant";
+      key: string;
+      members: AssistantTurnGroupMember[];
+    };
 
 interface AgentConversationDisplayProps {
   conversationId: string;
@@ -146,50 +161,117 @@ export function AgentConversationDisplay({
     return entries;
   }, [messages, isActive, latestRequestId]);
 
+  // Group contiguous assistant entries into one logical turn each.
+  // Multi-iteration agentic flows produce many adjacent assistant
+  // cx_message rows (one per server-side iteration). Visually those are
+  // a SINGLE turn — one prompt, one answer that happens to include tool
+  // calls and intermediate thinking. The grouping pass collapses them
+  // into AssistantTurnGroup, which renders them flush with one trailing
+  // action bar. Single-iteration turns become a one-member group and
+  // render identically to the pre-grouping behavior.
+  const displayGroups = useMemo((): DisplayGroup[] => {
+    const groups: DisplayGroup[] = [];
+    let buffer: AssistantTurnGroupMember[] = [];
+    const flush = () => {
+      if (buffer.length === 0) return;
+      groups.push({
+        kind: "assistant",
+        // Stable key across re-renders: anchored on the first member's
+        // key — that id is stable for the life of the group (new
+        // iterations are APPENDED; the group never reshuffles its head).
+        key: `grp:${buffer[0].key}`,
+        members: buffer,
+      });
+      buffer = [];
+    };
+    for (const entry of displayEntries) {
+      if (entry.role === "assistant") {
+        buffer.push({
+          key: entry.key,
+          messageId: entry.messageId,
+          requestId: entry.requestId,
+          isStreamActive: entry.isStreamActive,
+        });
+        continue;
+      }
+      flush();
+      if (entry.role === "user" && entry.messageId) {
+        groups.push({
+          kind: "user",
+          key: entry.key,
+          messageId: entry.messageId,
+        });
+      }
+      // `system` entries are intentionally skipped — the previous
+      // single-message render loop also returned null for them.
+    }
+    flush();
+    return groups;
+  }, [displayEntries]);
+
+  // Auto-scroll to bottom — fires ONLY when a new message lands at the
+  // bottom of the transcript (the LAST entry's key changed AND the entry
+  // count grew). The bottom-key check is what distinguishes a normal
+  // append (new user/assistant turn → scroll) from an older-history
+  // prepend (`loadOlderMessages` adds messages at the TOP → the last
+  // key is unchanged → do not scroll). Without this guard, pagination
+  // would yank the user back to the bottom on every page.
+  //
+  // We track the LAST raw entry key (not the group key) because new
+  // iterations within an existing assistant group must also trigger an
+  // autoscroll — appending an iteration extends the group but the group's
+  // key (anchored to its first member) is unchanged. Watching the entry-
+  // level last-key preserves the original scroll-on-append behavior.
   const prevLengthRef = useRef(displayEntries.length);
+  const prevLastKeyRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (displayEntries.length > prevLengthRef.current) {
+    const count = displayEntries.length;
+    const lastKey = displayEntries[count - 1]?.key;
+    if (
+      count > prevLengthRef.current &&
+      lastKey &&
+      lastKey !== prevLastKeyRef.current
+    ) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    prevLengthRef.current = displayEntries.length;
-  }, [displayEntries.length]);
+    prevLengthRef.current = count;
+    prevLastKeyRef.current = lastKey;
+  }, [displayEntries]);
 
-  if (displayEntries.length === 0) {
+  if (displayGroups.length === 0) {
     return <AgentEmptyMessageDisplay conversationId={conversationId} />;
   }
 
+  // Outer spacing applies BETWEEN groups (between the user turn and the
+  // assistant turn that follows, or between two adjacent user turns).
+  // Inside a group, AssistantTurnGroup renders sub-messages flush — no
+  // additional spacing between iterations.
   const spacingClass = compact ? "space-y-2 pb-2" : "space-y-6 pb-24";
 
   return (
     <div className={`${spacingClass} p-2 scrollbar-hide`}>
-      {displayEntries.map((entry) => {
-        if (entry.role === "user" && entry.messageId) {
+      {displayGroups.map((group) => {
+        if (group.kind === "user") {
           return (
             <AgentUserMessage
-              key={entry.key}
+              key={group.key}
               conversationId={conversationId}
-              messageId={entry.messageId}
+              messageId={group.messageId}
               surfaceKey={surfaceKey}
               compact={compact}
             />
           );
         }
 
-        if (entry.role === "assistant") {
-          return (
-            <AgentAssistantMessage
-              key={entry.key}
-              conversationId={conversationId}
-              requestId={entry.requestId ?? undefined}
-              messageId={entry.messageId ?? undefined}
-              isStreamActive={entry.isStreamActive}
-              surfaceKey={surfaceKey}
-              compact={compact}
-            />
-          );
-        }
-
-        return null;
+        return (
+          <AssistantTurnGroup
+            key={group.key}
+            conversationId={conversationId}
+            surfaceKey={surfaceKey}
+            compact={compact}
+            members={group.members}
+          />
+        );
       })}
 
       <div ref={bottomRef} />

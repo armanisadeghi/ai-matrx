@@ -3,7 +3,10 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { selectProjects, selectFilteredTasks } from "@/features/tasks/redux/selectors";
+import {
+  selectProjects,
+  selectFilteredTasks,
+} from "@/features/tasks/redux/selectors";
 import {
   selectActiveProject,
   selectShowAllProjects,
@@ -22,11 +25,14 @@ import {
   setSortBy,
   setSearchQuery,
 } from "@/features/tasks/redux/taskUiSlice";
-import { createTaskThunk, toggleTaskCompleteThunk } from "@/features/tasks/redux/thunks";
+import {
+  createTaskThunk,
+  toggleTaskCompleteThunk,
+} from "@/features/tasks/redux/thunks";
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
-} from "@/features/agent-context/redux/appContextSlice";
+} from "@/lib/redux/slices/appContextSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -573,7 +579,9 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                           isSelected={false}
                           onSelect={() => setSelectedTaskId(task.id)}
                           onToggleComplete={() =>
-                            dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
+                            dispatch(
+                              toggleTaskCompleteThunk({ taskId: task.id }),
+                            )
                           }
                           hideProjectName={!showAllProjects}
                         />

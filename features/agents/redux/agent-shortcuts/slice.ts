@@ -40,7 +40,9 @@ function makeEmptyRecord(id: string): AgentShortcutRecord {
     contextSlots: [],
 
     enabledFeatures: [],
+    surfaceName: null,
     scopeMappings: null,
+    valueMappings: null,
     contextMappings: null,
 
     // AgentExecutionConfig bundle defaults — keep in sync with
@@ -256,6 +258,30 @@ export const agentShortcutSlice = createSlice({
       applyFieldEdit(record, "scopeMappings", action.payload.scopeMappings);
     },
 
+    setShortcutSurfaceName(
+      state,
+      action: PayloadAction<{
+        id: string;
+        surfaceName: AgentShortcut["surfaceName"];
+      }>,
+    ) {
+      const record = state.shortcuts[action.payload.id];
+      if (!record) return;
+      applyFieldEdit(record, "surfaceName", action.payload.surfaceName);
+    },
+
+    setShortcutValueMappings(
+      state,
+      action: PayloadAction<{
+        id: string;
+        valueMappings: AgentShortcut["valueMappings"];
+      }>,
+    ) {
+      const record = state.shortcuts[action.payload.id];
+      if (!record) return;
+      applyFieldEdit(record, "valueMappings", action.payload.valueMappings);
+    },
+
     setShortcutContextMappings(
       state,
       action: PayloadAction<{
@@ -417,6 +443,8 @@ export const {
   setShortcutField,
   setShortcutEnabledFeatures,
   setShortcutScopeMappings,
+  setShortcutSurfaceName,
+  setShortcutValueMappings,
   setShortcutContextMappings,
   resetShortcutField,
   resetAllShortcutFields,

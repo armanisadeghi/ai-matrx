@@ -185,7 +185,7 @@ If you find yourself editing `service.ts`, the share RPCs, `ShareModal.getShareU
 - **Depends on:** `utils/permissions/*` (lives outside `features/` — the core logic), `features/organizations/` (org-as-target for shares), `lib/email/*` (notification delivery)
 - **Depended on by:** `features/prompts/` (gold-standard integration), `features/agents/components/sharing/`, `features/notes/`, `features/canvas/`, `features/cx-chat/`, `features/cx-conversation/`, `features/tasks/`, `features/window-panels/windows/ShareModalWindow.tsx`, and every other resource type listed under `ResourceType`
 - **Cross-links:**
-  - `features/scope-system/FEATURE.md` (forthcoming) — the broader project/workspace/org hierarchy that `check_resource_access` evaluates on top of direct grants
+  - [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — the broader scope / project / org hierarchy that `check_resource_access` evaluates on top of direct grants
   - `features/invitations/` — org invitation flow; separate system, don't fold it in
   - `features/organizations/` — target source for org-level shares
   - Reference integration: `features/prompts/` — list page, shared cards, edit-page banner, save-warning modal

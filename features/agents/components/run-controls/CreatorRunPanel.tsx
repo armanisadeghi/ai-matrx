@@ -18,7 +18,7 @@
  * pattern (see ImageUploaderWindow for the model).
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -58,6 +58,7 @@ import { RequestStatsPanel } from "./panels/RequestStatsPanel";
 import { SessionStatsPanel } from "./panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "./panels/ClientMetricsPanel";
 import { BackendTargetPanel } from "./panels/BackendTargetPanel";
+import { ModelContextPanel } from "./panels/ModelContextPanel";
 import { cn } from "@/lib/utils";
 
 // =============================================================================
@@ -72,6 +73,7 @@ type TabId =
   | "settings"
   | "sysprompt"
   | "last"
+  | "model_context"
   | "session"
   | "client"
   | "backend";
@@ -114,7 +116,7 @@ function ActionsTab({
     dispatch(
       openOverlay({
         overlayId: "observationalMemoryWindow",
-        data: { selectedConversationId: conversationId },
+        data: { initialSelectedConversationId: conversationId },
       }),
     );
   }, [dispatch, conversationId]);
@@ -290,6 +292,7 @@ const ALL_TABS: TabId[] = [
   "settings",
   "sysprompt",
   "last",
+  "model_context",
   "session",
   "client",
   "backend",
@@ -403,6 +406,35 @@ export function CreatorRunPanel({
   const handleExpand = useCallback(() => setIsExpanded(true), []);
   const handleCollapse = useCallback(() => setIsExpanded(false), []);
 
+  // Deep-link from external triggers (e.g. the header ContextGaugeWidget):
+  // listen for ``matrx:openCreatorTab`` and switch tabs / expand. The custom
+  // event carries the target tab id so other surfaces can route to any tab.
+  // Gated on conversationId so unrelated panels (other open creator panels in
+  // a multi-pane layout) ignore the signal.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    type Detail = { tab?: TabId; conversationId?: string };
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<Detail>).detail ?? {};
+      if (
+        detail.conversationId &&
+        detail.conversationId !== conversationId &&
+        detail.conversationId !== displayId
+      ) {
+        return;
+      }
+      if (!detail.tab) return;
+      // Respect the optional ``tabs`` filter — if a parent restricted us, only
+      // open tabs that pass the filter.
+      const allowed = allowedTabs ?? ALL_TABS;
+      if (!allowed.includes(detail.tab)) return;
+      setActiveTab(detail.tab);
+      setIsExpanded(true);
+    };
+    window.addEventListener("matrx:openCreatorTab", handler);
+    return () => window.removeEventListener("matrx:openCreatorTab", handler);
+  }, [conversationId, displayId, allowedTabs]);
+
   // ── Window panels — rendered OUTSIDE the collapsed/expanded branches ───────
   // They must always stay mounted once opened so the hook's cleanup never fires
   // and the minimized tray chip keeps working. Only unmounted on explicit close.
@@ -486,6 +518,7 @@ export function CreatorRunPanel({
     { id: "settings", label: "Run" },
     { id: "sysprompt", label: "System" },
     { id: "last", label: "Request" },
+    { id: "model_context", label: "Model Context" },
     {
       id: "session",
       label:
@@ -559,6 +592,9 @@ export function CreatorRunPanel({
           {/* which lives on the display id (not the input one). */}
           {activeTab === "last" && (
             <RequestStatsPanel conversationId={displayId} />
+          )}
+          {activeTab === "model_context" && (
+            <ModelContextPanel conversationId={displayId} />
           )}
           {activeTab === "session" && (
             <SessionStatsPanel conversationId={displayId} />

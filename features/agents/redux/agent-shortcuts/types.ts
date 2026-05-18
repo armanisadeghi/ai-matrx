@@ -9,6 +9,7 @@ import { VariablesPanelStyle } from "@/features/agents/components/inputs/variabl
 import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
 import type { Database } from "@/types/database.types";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 
 export type { ResultDisplayMode, ShortcutContext };
 
@@ -62,8 +63,21 @@ export interface AgentShortcut {
   // ── Where the shortcut appears + scope→agent key routing ────────────
   /** App features/surfaces where this shortcut is available (chat, notes, code-editor, …). */
   enabledFeatures: ShortcutContext[];
+  /**
+   * Registered ui_surface.name this shortcut targets. Successor to
+   * `enabledFeatures` — points the resolver at a specific surface's
+   * declared values. Optional during the dual-system window.
+   */
+  surfaceName: string | null;
   /** UI scope key → agent variable name. */
   scopeMappings: Record<string, string> | null;
+  /**
+   * Successor to `scopeMappings`. Keyed by surface-value name; values are
+   * the rich ValueMapping DSL (surface_value | direct_value | prompt_user
+   * | unmapped). Reads should go through `resolveShortcutMappings()`,
+   * which prefers this and falls back to `scopeMappings`.
+   */
+  valueMappings: ValueMappingMap | null;
   /** UI scope key → agent context-slot key. Parity with scopeMappings. */
   contextMappings: Record<string, string> | null;
 
@@ -148,7 +162,9 @@ export interface AgentShortcutInitialRow {
 
   // Bindings — where the shortcut appears + UI-scope → agent key routing
   enabled_features: ShortcutContext[];
+  surface_name: string | null;
   scope_mappings: Record<string, string> | null;
+  value_mappings: ValueMappingMap | null;
   context_mappings: Record<string, string> | null;
 
   // Execution config bundle (persisted on the shortcut row)
@@ -243,7 +259,9 @@ export interface AgentShortcutMenuItem {
 
   // Bindings
   enabled_features: ShortcutContext[];
+  surface_name: string | null;
   scope_mappings: Record<string, string> | null;
+  value_mappings: ValueMappingMap | null;
   context_mappings: Record<string, string> | null;
 
   // Config bundle (persisted on the shortcut row)
@@ -308,7 +326,9 @@ export interface UserShortcutItem {
 
   // Bindings
   enabled_features: ShortcutContext[];
+  surface_name: string | null;
   scope_mappings: Record<string, string> | null;
+  value_mappings: ValueMappingMap | null;
   context_mappings: Record<string, string> | null;
 
   // Config bundle

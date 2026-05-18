@@ -46,6 +46,7 @@ import {
 } from "./converters";
 import { isOwnEcho } from "./request-ledger";
 import { reconcileTree } from "./thunks";
+import { isSystemPath } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import {
   attachChildToFolder,
@@ -110,8 +111,9 @@ function isDetachAction(a: unknown): a is DetachAction {
 // ---------------------------------------------------------------------------
 
 /**
- * Extract `request_id` from a realtime payload, if the backend embeds it in
- * the row's `metadata` jsonb (see PYTHON_TEAM_COMMS.md — requested).
+ * Extract `request_id` from a realtime payload. The Python backend
+ * reliably stamps `metadata.request_id` on every cloud_sync write
+ * (commit `d647c143`, 2026-05-17).
  */
 function extractRequestId(
   payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
@@ -284,6 +286,13 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
     const newRow = payload.new as unknown as CloudFileRow;
     if (!newRow?.id) return;
+    // Drop backend-owned variant rows. The backfill cascade was cleaned
+    // up server-side on 2026-05-16 (migrations 012/013) and all live
+    // variant rows now carry `parent_file_id` + `derivation_kind`, but
+    // realtime payloads still arrive for new variant writes — we filter
+    // at the boundary so they never appear in the user tree.
+    // See `isSystemPath` + from_python/UPDATES.md §9 (2026-05-16 entry).
+    if (isSystemPath(newRow.file_path)) return;
     const file = dbRowToCloudFile(newRow);
     const oldParent =
       (payload.old as { parent_folder_id?: string | null } | undefined)
@@ -350,6 +359,9 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
     const newRow = payload.new as unknown as CloudFolderRow;
     if (!newRow?.id) return;
+    // Same system-path guard as the file handler — the backfill also
+    // creates per-source-file folders under `system-files/variants/<id>/`.
+    if (isSystemPath(newRow.folder_path)) return;
     const folder = dbRowToCloudFolder(newRow);
     const oldParent =
       (payload.old as { parent_id?: string | null } | undefined)?.parent_id ??

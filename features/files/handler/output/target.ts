@@ -105,7 +105,14 @@ function toMediaBlock(file: NormalizedFile): MediaBlock {
   return block;
 }
 
-function toMediaRef(file: NormalizedFile): MediaRef {
+/**
+ * Build a `MediaRef` from a normalized file. Exported so the agent slice
+ * (and any other sync code path) can produce the SAME shape `as` produces,
+ * without going through the async `fileHandler.use(...).as(...)` chain.
+ * Anyone duplicating this logic is the doctrine violation that produced
+ * the worst bugs in the file system; consume this helper instead.
+ */
+export function toMediaRef(file: NormalizedFile): MediaRef {
   const locator = preferIdentityLocator(file);
   const ref: MediaRef = {};
   if (locator.file_id) ref.file_id = locator.file_id;
