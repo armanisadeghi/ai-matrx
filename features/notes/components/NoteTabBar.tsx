@@ -176,7 +176,10 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
     if (scrollBy !== 0) {
       container.scrollBy({ left: scrollBy, behavior: "smooth" });
     }
-  }, [activeTabId]);
+  // openTabs is included so the scroll also fires after moveActiveTabToFront —
+  // that action changes tab ORDER (not activeTabId), and without this the
+  // auto-moved tab would end up off-screen to the left.
+  }, [activeTabId, openTabs]);
 
   // ── Idle auto-move: active tab → position 0 ───────────────────────
   // Once the user has been quiet about tabs for `TAB_AUTO_MOVE_IDLE_MS`,
@@ -217,6 +220,15 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
       }}
       onDrop={handleDrop}
     >
+      {/* New note button — left of the scroll area, always visible */}
+      <button
+        className={cn(actionBtnClass, "shrink-0 self-center mx-1")}
+        onClick={handleNewTab}
+        title="New Note"
+      >
+        <Plus />
+      </button>
+
       <div
         ref={scrollRef}
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto h-full"
@@ -245,15 +257,6 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
             <NoteTabItem noteId={tabId} instanceId={instanceId} />
           </div>
         ))}
-
-        {/* New note tab button */}
-        <button
-          className={cn(actionBtnClass, "shrink-0 self-center ml-1")}
-          onClick={handleNewTab}
-          title="New Note"
-        >
-          <Plus />
-        </button>
 
         {/* Split view button */}
         {activeTabId && !splitNoteId && (
