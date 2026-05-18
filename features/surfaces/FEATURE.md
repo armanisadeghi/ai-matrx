@@ -133,6 +133,36 @@ After the user-requested "go all in" pass, the page picks up:
   Notes editor context menu now emits the surface scope and tags
   `runtime.surfaceName = "matrx-user/notes"` so `agx_agent_surface`
   bindings resolve at launch. See `features/notes/hooks/useNotesSurfaceScope.ts`.
+- **2026-05-15 (third pass)** — Bulk manifest publication: 4 new
+  surfaces + 1 expanded.
+  - `matrx-user/agent-builder` (new) — 18 surface-specific values covering
+    agent identity, system_instruction, user_message_draft, model,
+    tools, custom_tools, mcp_servers, context_slots,
+    variable_definitions, output_schema, settings, plus `agent_json`
+    for full-agent inputs and editor focus state. Existing
+    `UnifiedAgentContextMenu` mounts in `SystemMessage.tsx` and
+    `MessageItem.tsx` updated with `surfaceName="matrx-user/agent-builder"`.
+  - `matrx-user/chat` (new) — 16 values: active conversation, targeted
+    message (`current_message_*`), last user/assistant, full thread,
+    composer draft, streaming state.
+  - `matrx-user/agent-run` (new) — 20 values supporting "judge an
+    agent" use case: agent_definition + agent_json + user_request +
+    variable_values + agent_response + all_messages + tool_calls +
+    completion_stats.
+  - `matrx-user/scraper` (new) — 14 values: URL + title + content (text
+    / markdown / html) + metadata + main_image + links + status +
+    execution time.
+  - `matrx-user/code-editor` (expanded) — 6 → 12 values:
+    `current_file_modified`, `current_column_number`, `selection_range`,
+    `current_function_name`, `open_file_count`, `modified_file_paths`.
+    Existing `UnifiedAgentContextMenu` mounts in
+    `CodeEditorContextMenu.tsx` and `CodeWorkspaceContextMenu.tsx`
+    updated with `surfaceName="matrx-user/code-editor"`.
+
+  Total: 9 surfaces, 195 values registered (was 5 / 106). Drift check
+  passes. Emitter wiring deferred for chat / agent-run / scraper —
+  manifests publishable as-is; runtime emitters land when concrete
+  actions are built against each surface.
 - **2026-05-15 (later)** — `matrx-user/transcripts` manifest landed —
   24 surface-specific + 3 baseline values covering segment / playback
   mirror (`active_text`, `current_segment_*`, `current_playback_time`),
