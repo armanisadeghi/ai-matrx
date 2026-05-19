@@ -1591,6 +1591,42 @@
   display: none !important;
 }
 
+/* Compact Filerobot's internal chrome. Default heights are sized for a
+   standalone product; embedded in our shell they waste vertical space the
+   user explicitly called out. Shrink topbar + tabs sidebar + tool-options
+   bar so the canvas gets the breathing room. */
+[data-image-edit-shell] .FIE_topbar {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  min-height: 36px !important;
+}
+[data-image-edit-shell] .FIE_topbar button {
+  height: 28px !important;
+  min-height: 28px !important;
+}
+[data-image-edit-shell] .FIE_tabs {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+[data-image-edit-shell] .FIE_tab {
+  min-height: 56px !important;
+  padding: 6px 8px !important;
+}
+/* Tool-specific bottom bar (Crop, Rotate, Flip X, Flip Y, etc.) defaults to
+   ~52px tall with chunky buttons; compress to ~36px. */
+[data-image-edit-shell] .FIE_tools-bar-wrapper,
+[data-image-edit-shell] .FIE_tools-bar {
+  padding: 4px 8px !important;
+  min-height: 40px !important;
+}
+[data-image-edit-shell] .FIE_tools-bar button,
+[data-image-edit-shell] .FIE_tools-bar [role="button"] {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 12px !important;
+}
+
 .shell-active-pill .shell-nav-label {
   color: var(--shell-pill-text);
   font-weight: 600;

@@ -29,6 +29,7 @@ import {
   History,
   Layers,
   Loader2,
+  RotateCcw,
   Save,
   Sparkles,
 } from "lucide-react";
@@ -263,6 +264,43 @@ export function EditModeShell({
     }
   }, [triggerFilerobotSave]);
 
+  // Programmatically trigger Filerobot's "Reset/delete all operations"
+  // button. We hide it via CSS but keep it clickable so our floating
+  // Reset overlay can drive it without re-implementing the reset logic.
+  const triggerFilerobotReset = useCallback(() => {
+    if (!canvasAreaRef.current) return false;
+    const root = canvasAreaRef.current;
+    const candidates = [
+      root.querySelector<HTMLElement>('[data-tut="reset"] button'),
+      root.querySelector<HTMLElement>('[data-tut="reset"]'),
+      root.querySelector<HTMLElement>(".FIE_topbar-reset-button"),
+      root.querySelector<HTMLElement>(".FIE_topbar-history-buttons-wrapper button[title*='Reset' i]"),
+    ].filter(Boolean) as HTMLElement[];
+    let target: HTMLElement | null = candidates[0] ?? null;
+    if (!target) {
+      const buttons = root.querySelectorAll<HTMLElement>("button");
+      buttons.forEach((b) => {
+        if (!target && /Reset|delete all/i.test(b.getAttribute("title") ?? "")) {
+          target = b;
+        }
+      });
+    }
+    if (target) {
+      target.click();
+      return true;
+    }
+    return false;
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (!triggerFilerobotReset()) {
+      toast.info("Nothing to reset.");
+      return;
+    }
+    mask.clear();
+    toast.success("Reset to the saved state.");
+  }, [triggerFilerobotReset, mask]);
+
   const handleGenerateVariants = useCallback(
     async (preset: AssetPreset) => {
       if (!effectiveCloudFileId) {
@@ -314,37 +352,43 @@ export function EditModeShell({
         className="h-full min-h-0 flex flex-col bg-background"
         data-image-edit-shell
       >
-        {/* ── Header strip ─────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card/60 shrink-0">
+        {/* ── Header strip ─ compact h-8 row; the surrounding page layout
+            already provides a breadcrumb header, so this row is purpose-
+            built for editor actions only. Aggressively dense to claw back
+            vertical space for the canvas. ────────────────────────────── */}
+        <div className="flex items-center gap-1 px-2 h-8 border-b border-border bg-card/60 shrink-0">
           {presentation === "page" ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 shrink-0"
+                  className="h-7 w-7 shrink-0"
                   onClick={handleBack}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Back</TooltipContent>
+              <TooltipContent>Back to image picker</TooltipContent>
             </Tooltip>
           ) : null}
 
-          <div className="min-w-0 flex-1 flex items-baseline gap-2">
-            <span
-              className="text-sm font-medium truncate"
-              title={displayName}
-            >
-              {displayName}
-            </span>
-            {effectiveCloudFileId ? null : (
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
-                Unsaved
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className="text-xs font-medium truncate min-w-0 flex-1 cursor-default"
+                title={displayName}
+              >
+                {displayName}
               </span>
-            )}
-          </div>
+            </TooltipTrigger>
+            <TooltipContent>{displayName}</TooltipContent>
+          </Tooltip>
+          {effectiveCloudFileId ? null : (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
+              Unsaved
+            </span>
+          )}
 
           {/* Mask toggle — secondary (muted) when active so it doesn't fight
               the header's primary Save for attention. */}
@@ -353,7 +397,7 @@ export function EditModeShell({
               <Button
                 variant={mask.active ? "secondary" : "ghost"}
                 size="sm"
-                className="h-8 shrink-0 gap-1.5 text-foreground/80 hover:text-foreground"
+                className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
                 onClick={() => mask.toggle()}
               >
                 <Layers className="h-3.5 w-3.5" />
@@ -366,78 +410,88 @@ export function EditModeShell({
             <TooltipContent>
               {mask.active
                 ? "Mask painting on — click again to hide"
-                : "Paint a mask to constrain AI ops"}
+                : "Paint a mask to constrain AI ops to a specific region"}
             </TooltipContent>
           </Tooltip>
 
           {/* Generate sizes dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 shrink-0 gap-1.5 text-foreground/80 hover:text-foreground"
-                disabled={!effectiveCloudFileId || savingVariants !== null}
-              >
-                {savingVariants ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
-                )}
-                Sizes
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Generate sized variants</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {VARIANT_PRESETS.map((p) => (
-                <DropdownMenuItem
-                  key={p.id}
-                  onClick={() => void handleGenerateVariants(p.id)}
-                  disabled={savingVariants !== null}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{p.label}</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {p.blurb}
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
+                    disabled={!effectiveCloudFileId || savingVariants !== null}
+                  >
+                    {savingVariants ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    Sizes
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>Generate sized variants</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {VARIANT_PRESETS.map((p) => (
+                    <DropdownMenuItem
+                      key={p.id}
+                      onClick={() => void handleGenerateVariants(p.id)}
+                      disabled={savingVariants !== null}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{p.label}</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {p.blurb}
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>Generate Web / Social / Email / Avatar / Favicon variants</TooltipContent>
+          </Tooltip>
 
           {/* Save dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-8 shrink-0 gap-1.5"
-                disabled={saving}
-              >
-                {saving ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-                Save
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onClick={handleHeaderSave}
-                disabled={!effectiveCloudFileId}
-              >
-                <Save className="h-3.5 w-3.5 mr-2" />
-                Save as new version
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSaveAsDuplicate}>
-                <Copy className="h-3.5 w-3.5 mr-2" />
-                Save as duplicate
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1 text-xs"
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    Save
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem
+                    onClick={handleHeaderSave}
+                    disabled={!effectiveCloudFileId}
+                  >
+                    <Save className="h-3.5 w-3.5 mr-2" />
+                    Save as new version
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSaveAsDuplicate}>
+                    <Copy className="h-3.5 w-3.5 mr-2" />
+                    Save as duplicate
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>Save edits — choose new version or duplicate</TooltipContent>
+          </Tooltip>
 
           {/* History rail toggle — subtle "selected" state via accent. */}
           <Tooltip>
@@ -445,11 +499,11 @@ export function EditModeShell({
               <Button
                 variant={railOpen ? "secondary" : "ghost"}
                 size="icon"
-                className="h-8 w-8 shrink-0 text-foreground/80 hover:text-foreground"
+                className="h-7 w-7 shrink-0 text-foreground/80 hover:text-foreground"
                 onClick={() => setRailOpen((v) => !v)}
                 disabled={!effectiveCloudFileId}
               >
-                <History className="h-4 w-4" />
+                <History className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -504,6 +558,28 @@ export function EditModeShell({
               defaultToolId="Crop"
             />
             <MaskOverlay canvasAreaRef={canvasAreaRef} mask={mask} />
+
+            {/* Floating Reset — always visible top-left over the canvas so
+                the user knows escape is one click away. Triggers Filerobot's
+                hidden Reset button so the editor's undo stack is the source
+                of truth, not a duplicate state tree. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-3 left-3 z-30 h-8 gap-1.5 shadow-md backdrop-blur bg-card/95 border border-border"
+                  onClick={handleReset}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Discard all unsaved edits and return to the last saved state
+              </TooltipContent>
+            </Tooltip>
+
             {saving && (
               <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
