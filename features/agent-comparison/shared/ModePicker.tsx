@@ -56,7 +56,6 @@ const MODES: ModeEntry[] = [
     href: "/agents/battle/tools",
     icon: Wrench,
     hint: "Lock everything; vary the tools available per column",
-    comingSoon: true,
   },
   {
     id: "system-prompt",
@@ -64,15 +63,13 @@ const MODES: ModeEntry[] = [
     href: "/agents/battle/system-prompt",
     icon: FileText,
     hint: "Lock everything; vary the system prompt override per column",
-    comingSoon: true,
   },
   {
     id: "request-mod",
     label: "Request Mod",
     href: "/agents/battle/request-mod",
     icon: Workflow,
-    hint: "Lock the agent; vary how the request is built per column",
-    comingSoon: true,
+    hint: "Lock the agent; vary per-column variables and user message",
   },
 ];
 

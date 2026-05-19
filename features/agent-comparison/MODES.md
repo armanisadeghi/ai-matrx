@@ -13,19 +13,44 @@ conversations + telemetry + feedback for whatever the mode hands it.
 |---|---|---|---|---|
 | **Open** ("anything goes") ✅ | nothing | agent, version, variables, message, settings, context, tools | `/agents/battle` | `agentComparison` |
 | **Settings** ✅ | agent, version, variables, message | model, temperature, top_p, max output tokens, reasoning effort, thinking level | `/agents/battle/settings` | `agentComparisonSettings` |
-| Tools _(deferred — needs executor support)_ | agent, version, variables, message, settings | tools list | `/agents/battle/tools` | `agentComparisonTools` |
-| System Prompt _(deferred — needs executor support)_ | agent, version, variables, message, settings, tools | system prompt override | `/agents/battle/system-prompt` | `agentComparisonSystemPrompt` |
-| Request Modification _(deferred — needs executor support)_ | agent, base setup | request shape (pre/post fixes, transformations) | `/agents/battle/request-mod` | `agentComparisonRequestMod` |
+| **System Prompt** ✅ | source agent, version, variables, message, settings, tools | system prompt text | `/agents/battle/system-prompt` | `agentComparisonSystemPrompt` |
+| **Tools** ✅ | source agent, version, variables, message, system prompt, settings | tools list (built-in + custom + MCP) | `/agents/battle/tools` | `agentComparisonTools` |
+| **Request Modification** ✅ | agent, version | per-column variables + user message | `/agents/battle/request-mod` | `agentComparisonRequestMod` |
 
-The deferred modes need backend cooperation to land:
-- **Tools**: the agent's `tools[]` is read server-side from the agent record;
-  a per-request override array would need to be honored by the executor.
-- **System Prompt**: same story — the system message lives on the agent
-  record. The structured-instruction path (`useStructuredSystemInstruction`)
-  is the most likely seam but needs end-to-end testing.
-- **Request Modification**: needs a clear contract for what transformations
-  are allowed (pre/postfix? template rewriting? full body override?) plus
-  executor + server support.
+### The synthetic-agent pattern (used by System Prompt + Tools modes)
+
+System Prompt and Tools mode both vary properties of the *agent definition*
+(system message, tools[]). To avoid a per-request override channel, both
+modes use the existing manual API path — the same one the Agent Builder
+uses to test mid-edit agents — and "hijack" it by cloning the locked
+source agent into a per-column SYNTHETIC `AgentDefinition` record with
+a `cmp-<uuid>` id. The clone lives entirely in `state.agentDefinition.agents`
+(memory only — never persisted to the DB). The executor's manual path
+reads the agent definition LIVE from that slice via
+`state.agentDefinition.agents[sourceId]`, so per-column edits to the
+synthetic flow through with no special routing.
+
+Why `cmp-` prefix: every save thunk in the agent system rejects ids
+starting with `cmp-` (server-side, `agx_agent.id` is `uuid` only, so
+even if the gate slipped, PostgREST would reject the id format). Helper:
+`shared/forkAgentForVariant.ts` — `forkAgentForVariant(dispatch, state, sourceId)`
+returns a fresh synthetic id; `isSyntheticAgentId(id)` for the save-side guard.
+
+This is how the System Prompt mode "hijacks" the existing
+`SystemMessage` editor and the Tools mode "hijacks" the existing
+`AgentToolsManager` / `AgentToolsModal` — both take `agentId: string`
+as props and dispatch field-setter actions keyed by that id, so
+pointing them at the synthetic agent id just works.
+
+### Request Modification — no synthetic agent
+
+Request Mod is the simplest mode in the family because every column
+runs the SAME real agent. There's no synthetic clone — each column
+just owns its own `conversationId` with its own per-instance
+`instanceUserInput` + `instanceVariableValues`. SmartAgentInput already
+manages both, so the per-column body is just `BoundColumn` without
+`hideInput`. Submit All skips columns that are empty (no text and no
+filled vars) rather than failing them.
 
 Cross-mode UX shipped in addition to the modes:
 - **ModePicker** (`shared/ModePicker.tsx`) — mounted at the top of every
@@ -184,3 +209,33 @@ that's what the loader dialog's `modeFilter` keys off.
    with N columns each running `BoundColumn` and a mode-specific header
    chip.
 6. **Toolbar's loader**: pass `modeFilter="<your-mode>"` + a `loadFn`.
+
+---
+
+## Modes 3–5 (System Prompt, Tools, Request Mod)
+
+All three follow Mode 2's directory shape. Notable differences:
+
+- **System Prompt** (`modes/system-prompt/`) — column body is a vertical
+  `ResizablePanelGroup`: top = the existing `SystemMessage` editor
+  pointed at the column's synthetic agent id, bottom = `BoundColumn`
+  with `hideInput`. Persistence writes `metadata: { label, system_message }`
+  per entry; on load, the synthetic is re-forked and the saved system
+  message is written back via `setAgentMessages` before the conversation
+  is hydrated. `apiEndpointMode: "manual"`.
+- **Tools** (`modes/tools/`) — column body is a vertical split: top =
+  `ToolsSummaryPanel` (inline list of attached tools + the existing
+  `AgentToolsModal` for picking), bottom = `BoundColumn` with `hideInput`.
+  The summary panel triggers `fetchAvailableTools` on mount so the
+  picker is responsive. Persistence writes `metadata: { label, tools[],
+  custom_tools[], mcp_servers[] }` per entry; on load, the synthetic
+  is re-forked and the three tool fields are re-applied via
+  `setAgentTools` / `setAgentCustomTools` / `setAgentMcpServers`.
+  `apiEndpointMode: "manual"`.
+- **Request Mod** (`modes/request-mod/`) — simplest mode: no synthetic
+  agent. Page-level `LockedAgentSection` only picks the agent + version.
+  Each column shows `BoundColumn` WITHOUT `hideInput` so users can fill
+  per-column variables + user message directly. Submit All preflights
+  per column, skipping empties. Persistence captures
+  `metadata: { label, user_message, variables }` per entry.
+  `apiEndpointMode: "agent"`.

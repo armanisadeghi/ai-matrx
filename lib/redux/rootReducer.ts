@@ -79,6 +79,9 @@ import agentCacheReducer from "./slices/agentCacheSlice";
 import agentDefinitionReducer from "@/features/agents/redux/agent-definition/slice";
 import agentComparisonReducer from "@/features/agent-comparison/redux/battleSlice";
 import agentComparisonSettingsReducer from "@/features/agent-comparison/modes/settings/redux/slice";
+import agentComparisonSystemPromptReducer from "@/features/agent-comparison/modes/system-prompt/redux/slice";
+import agentComparisonToolsReducer from "@/features/agent-comparison/modes/tools/redux/slice";
+import agentComparisonRequestModReducer from "@/features/agent-comparison/modes/request-mod/redux/slice";
 import { conversationListReducer } from "@/features/agents/redux/conversation-list/conversation-list.slice";
 import { conversationHistoryReducer } from "@/features/agents/redux/conversation-history/slice";
 import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
@@ -369,6 +372,9 @@ export const slimReducerMap = {
 
   agentComparison: agentComparisonReducer,
   agentComparisonSettings: agentComparisonSettingsReducer,
+  agentComparisonSystemPrompt: agentComparisonSystemPromptReducer,
+  agentComparisonTools: agentComparisonToolsReducer,
+  agentComparisonRequestMod: agentComparisonRequestModReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);
