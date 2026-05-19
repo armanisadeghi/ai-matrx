@@ -6,6 +6,8 @@ import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
+import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
+import { TaskPanelChip } from "@/features/agents/ui-first-tools/ui/lists/TaskPanelChip";
 
 import { cn } from "@/lib/utils";
 
@@ -125,6 +127,15 @@ export function AgentConversationColumn({
         displayConversationId={displayId}
         surfaceKey={surfaceKey}
       />
+
+      {/* UI-first tools: chip surfaces plan/task/todo counts (hidden when
+          empty); zone surfaces pending ask cards directly above the input.
+          The chat input itself stays fully interactive — answering cards
+          and typing into the input are independent actions. */}
+      <div className="flex items-center justify-end mb-1">
+        <TaskPanelChip conversationId={displayId} />
+      </div>
+      <PendingAsksZone conversationId={displayId} />
 
       <SmartAgentInput
         conversationId={conversationId}

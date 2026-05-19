@@ -34,6 +34,7 @@ import {
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
+import { UI_FIRST_TOOL_NAMES } from "@/features/agents/ui-first-tools/tools/names";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -109,6 +110,26 @@ export async function buildToolInjection(
   }
   if (activeCapabilities.length > 0) {
     client = { capabilities: activeCapabilities, state: stateMap };
+  }
+
+  // ── 2b. UI-first tools — auto-merge when nextjs-surface is active ───────
+  //
+  // The seven UI-first tools (user / update_plan / request_user_takeover /
+  // tasks / user_todos / memory / storage) are declared client-delegated
+  // tools that ride alongside any agent's saved tool set. They become
+  // available whenever the `nextjs-surface` capability is active for the
+  // current request. Aidream's `load_nextjs_tools` discovery handler
+  // (when implemented) can lazy-load these based on `state.nextjs-surface`,
+  // but for v1 we send them all per request — the menu cost is one line
+  // per name and the model already knows when not to use them.
+  if (activeCapabilities.includes("nextjs-surface")) {
+    const declaredNames = new Set(
+      allTools.map((t) => ("name" in t ? (t.name as string) : "")),
+    );
+    for (const name of UI_FIRST_TOOL_NAMES) {
+      if (declaredNames.has(name)) continue;
+      allTools.push({ kind: "registered", name, delegate: true });
+    }
   }
 
   // ── 3. Assemble result — only include keys with content ─────────────────

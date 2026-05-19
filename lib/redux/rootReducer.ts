@@ -142,6 +142,8 @@ import taskAssociationsReducer from "@/features/tasks/redux/taskAssociationsSlic
 import { default as instanceUIStateReducer } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { default as instanceClientToolsReducer } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { default as instanceContextReducer } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { default as pendingAsksReducer } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { default as agentListsReducer } from "@/features/agents/ui-first-tools/redux/agent-lists.slice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import { activeToolsReducer } from "@/features/agents/redux/execution-system/active-tools/active-tools.slice";
 import { default as instanceModelOverridesReducer } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
@@ -341,6 +343,8 @@ export const slimReducerMap = {
   instanceContext: instanceContextReducer,
   instanceUserInput: instanceUserInputReducer,
   instanceClientTools: instanceClientToolsReducer,
+  pendingAsks: pendingAsksReducer,
+  agentLists: agentListsReducer,
   instanceUIState: instanceUIStateReducer,
   editorState: editorStateReducer,
   activeTools: activeToolsReducer,

@@ -24,7 +24,7 @@
 
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Clipboard,
@@ -216,6 +216,32 @@ export const UnifiedImageBlockRenderer: React.FC<
   const showError =
     (status === "error" && !src) || imgError || block.status === "error";
 
+  // Pre-size the wrapper to the image's natural aspect ratio so the
+  // skeleton box reserves the exact pixels the loaded image will occupy.
+  // Without this the img falls back to `min-w-[280px] min-h-[200px]`
+  // (set below), so every image briefly renders as a 280×200 placeholder
+  // and then "pops" to its real size. Python now ships `width`/`height`
+  // on the canonical UnifiedMediaBlock (and on `partial_image` streaming
+  // frames), so we have the dimensions before the bytes ever land.
+  //
+  // The width is capped to whatever would fit inside the `max-h-[28rem]`
+  // ceiling enforced on the img — for portrait images this prevents the
+  // wrapper from reserving a stupid amount of vertical room. The natural
+  // width is also an upper bound so we never *upscale* a small image.
+  const aspectStyle = useMemo<React.CSSProperties | undefined>(() => {
+    const w = block.width;
+    const h = block.height;
+    if (!w || !h || w <= 0 || h <= 0) return undefined;
+    // Matches `max-h-[28rem]` (28 × 16px = 448px) on the img.
+    const HEIGHT_CAP_PX = 448;
+    const cappedWidth = Math.min(w, HEIGHT_CAP_PX * (w / h));
+    return {
+      width: `${cappedWidth}px`,
+      aspectRatio: `${w} / ${h}`,
+    };
+  }, [block.width, block.height]);
+  const dimsKnown = aspectStyle !== undefined;
+
   const handleExpand = useCallback(() => setIsExpanded(true), []);
   const longPressHandlers = useLongPress(() => setDrawerOpen(true));
 
@@ -333,7 +359,12 @@ export const UnifiedImageBlockRenderer: React.FC<
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div
-            className="relative group my-2 w-fit max-w-full"
+            className={
+              dimsKnown
+                ? "relative group my-2 max-w-full"
+                : "relative group my-2 w-fit max-w-full"
+            }
+            style={aspectStyle}
             {...(isMobile ? longPressHandlers : {})}
           >
             {/* Skeleton */}
@@ -368,9 +399,19 @@ export const UnifiedImageBlockRenderer: React.FC<
               <img
                 src={src}
                 alt={block.fileName ?? "Image"}
+                width={block.width ?? undefined}
+                height={block.height ?? undefined}
                 className={[
-                  "block max-w-full h-auto max-h-[28rem] object-contain rounded-lg",
-                  "min-h-[200px] min-w-[280px]",
+                  // When dimensions are known, the wrapper has the exact
+                  // intrinsic size via aspect-ratio + capped width. The
+                  // img fills it so there's no layout shift on load. When
+                  // dimensions are unknown we fall back to the previous
+                  // behaviour (the img drives the wrapper via min-size +
+                  // h-auto) — there will be a small jump in that case,
+                  // but it's the best we can do without metadata.
+                  dimsKnown
+                    ? "block w-full h-full object-contain rounded-lg"
+                    : "block max-w-full h-auto max-h-[28rem] object-contain rounded-lg min-h-[200px] min-w-[280px]",
                   "transition-opacity duration-500 ease-in-out",
                   imageLoaded ? "opacity-100" : "opacity-0",
                 ].join(" ")}

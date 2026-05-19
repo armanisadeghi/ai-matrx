@@ -243,8 +243,21 @@ export const executeInstance = createAsyncThunk<
       // the user's raw prose; on reload from the DB the same message would
       // render as prose + chips — a visible mismatch during the first turn.
 
+      // Seed the ambient-context keys (user / client / route_brief /
+      // organization / project / task / active_scopes) before assembling.
+      // Idempotent: overwrites in place. Cheap — pure Redux reads.
+      // This is what makes `{{user.name}}` etc. just work in agent prompts.
+      const { seedAmbientContextKeys } = await import(
+        "@/features/agents/ui-first-tools/redux/seed-ambient-context.thunk"
+      );
+      dispatch(seedAmbientContextKeys(conversationId));
+
+      // Re-read state after the ambient seed so the assembled payload
+      // includes the newly-written keys.
+      const stateAfterSeed = getState() as RootState;
+
       // Assemble the request (sync — pure selector logic).
-      const payload = assembleRequest(state, conversationId);
+      const payload = assembleRequest(stateAfterSeed, conversationId);
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
       }
@@ -253,7 +266,7 @@ export const executeInstance = createAsyncThunk<
       // Layer the unified tool-injection envelope (`tools`, `tools_replace`,
       // `client`) onto the assembled payload. Async because capability
       // providers may need network calls (sandbox token mint).
-      const injection = await buildToolInjection(state, conversationId, {
+      const injection = await buildToolInjection(stateAfterSeed, conversationId, {
         mode: "additive",
       });
       if (injection.tools) payload.tools = injection.tools;

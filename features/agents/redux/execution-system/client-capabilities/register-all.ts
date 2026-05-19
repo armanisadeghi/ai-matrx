@@ -9,3 +9,4 @@
 
 import "./sandbox-fs.provider";
 import "./editor-state.provider";
+import "@/features/agents/ui-first-tools/capability/nextjs-surface.provider";

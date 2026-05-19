@@ -145,6 +145,8 @@ import {
 } from "@/features/agents/types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { dispatchWidgetAction } from "./dispatch-widget-action.thunk";
+import { isUiFirstToolName } from "@/features/agents/ui-first-tools/tools/names";
+import { dispatchUiFirstTool } from "@/features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk";
 
 // =============================================================================
 // Types
@@ -804,6 +806,24 @@ export async function processStream({
               requestId,
               callId: toolData.call_id,
               toolName: toolData.tool_name as WidgetActionName,
+              args:
+                ((toolData.data as Record<string, unknown>)
+                  ?.arguments as Record<string, unknown>) ?? {},
+            }),
+          );
+        } else if (isUiFirstToolName(toolData.tool_name)) {
+          // UI-first tools (user / update_plan / tasks / user_todos /
+          // request_user_takeover / memory / storage). The dispatcher
+          // validates args via Zod, runs the handler (which may await user
+          // input for ask-user-tier tools), and POSTs the result. We don't
+          // pause the instance — the server simply waits for tool_results
+          // before emitting more chunks.
+          dispatch(
+            dispatchUiFirstTool({
+              conversationId,
+              requestId,
+              callId: toolData.call_id,
+              toolName: toolData.tool_name,
               args:
                 ((toolData.data as Record<string, unknown>)
                   ?.arguments as Record<string, unknown>) ?? {},
