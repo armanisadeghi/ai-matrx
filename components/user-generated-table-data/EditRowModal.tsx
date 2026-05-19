@@ -29,11 +29,11 @@ import {
 import { format } from "date-fns";
 import {
   CalendarIcon,
-  Wand2,
+  Zap,
   ClipboardCopy,
   Download,
   CheckCircle,
-  MoreHorizontal,
+  MoreHorizontal
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
@@ -257,7 +257,7 @@ export default function EditRowModal({
                 onClick={() => handleFieldCleanup(field.field_name)}
                 title={`Clean up HTML formatting in ${field.display_name}`}
               >
-                <Wand2 className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
               </Button>
             )}
           </div>

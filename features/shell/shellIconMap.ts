@@ -41,14 +41,13 @@ import {
   Settings,
   Shield,
   ShieldCheck,
-  Sparkles,
   SquareMousePointer,
   Table,
   User,
   Webhook,
   Workflow,
   X,
-  Zap,
+  Zap
 } from "lucide-react";
 
 export const shellIconComponents: Record<string, LucideIcon> = {
@@ -90,7 +89,6 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   Settings,
   Shield,
   ShieldCheck,
-  Sparkles,
   SquareMousePointer,
   Table,
   User,

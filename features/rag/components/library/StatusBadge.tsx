@@ -6,7 +6,7 @@ import {
   Loader2,
   AlertTriangle,
   FileText,
-  Sparkles,
+  Stars
 } from "lucide-react";
 import type { DocStatus } from "@/features/rag/types/library";
 
@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<
   embedding: {
     label: "Embedding",
     variant: "info",
-    Icon: Sparkles,
+    Icon: Stars,
     title: "Chunks are generated; embeddings are still flowing in.",
   },
   chunking: {

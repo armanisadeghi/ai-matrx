@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Edit,
-  Wand2,
+  Zap,
   Bug,
   Calendar,
   Hash,
@@ -16,7 +16,7 @@ import {
   Info,
   Loader2,
   Copy,
-  Check,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -347,7 +347,7 @@ export function ToolViewPage({ tool }: Props) {
               disabled={isPending}
               className="h-8 gap-1.5 text-xs"
             >
-              <Wand2 className="h-3.5 w-3.5" />
+              <Zap className="h-3.5 w-3.5" />
               UI Component
             </Button>
             <Button

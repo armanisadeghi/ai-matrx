@@ -21,9 +21,8 @@ import {
   ArrowUp,
   Eraser,
   Loader2,
-  Sparkles,
-  Wand2,
-  ZapOff,
+  Zap,
+  ZapOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -129,7 +128,7 @@ export function EditAiToolbar({
     <TooltipProvider delayDuration={200}>
       <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
         <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
-          <Sparkles className="h-3 w-3" />
+          <Zap className="h-3 w-3" />
           AI assist
         </span>
 
@@ -145,7 +144,7 @@ export function EditAiToolbar({
               {busy === "suggest" ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
               ) : (
-                <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
               )}
               Suggest edits
             </Button>
@@ -267,7 +266,7 @@ export function EditAiToolbar({
                 onClick={() => setEditOpen(true)}
                 disabled={busy !== null}
               >
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
                 AI edit by prompt
               </Button>
             </TooltipTrigger>

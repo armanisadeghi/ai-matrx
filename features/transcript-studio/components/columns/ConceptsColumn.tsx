@@ -5,10 +5,10 @@ import {
   HelpCircle,
   Lightbulb,
   RefreshCw,
-  Sparkles,
+  Zap,
   Tag,
   Target,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -36,7 +36,7 @@ const KIND_ICON: Record<ConceptKind, LucideIcon> = {
   key_idea: Lightbulb,
   entity: Tag,
   question: HelpCircle,
-  other: Sparkles,
+  other: Zap,
 };
 
 const KIND_LABEL: Record<ConceptKind, string> = {

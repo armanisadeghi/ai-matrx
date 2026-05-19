@@ -21,12 +21,11 @@ import {
   FolderTree,
   ImageIcon,
   Library,
-  Sparkles,
+  Zap,
   Stamp,
   Upload,
   User,
-  Wand2,
-  Wrench,
+  Wrench
 } from "lucide-react";
 
 import { CloudImagesTab } from "@/components/image/cloud/CloudImagesTab";
@@ -158,7 +157,7 @@ export function buildImageManagerSections(
     primary.push({
       id: SECTION_IDS.imageStudio,
       label: "Studio Light",
-      icon: Wand2,
+      icon: Zap,
       iconColor: "text-fuchsia-400",
       group: "primary",
       hint: "Compact crop + variant flow, returns straight to your selection.",
@@ -182,7 +181,7 @@ export function buildImageManagerSections(
     primary.push({
       id: SECTION_IDS.aiGenerate,
       label: "AI Generate",
-      icon: Sparkles,
+      icon: Zap,
       iconColor: "text-rose-500",
       group: "primary",
       hint: "Describe an image and generate it.",

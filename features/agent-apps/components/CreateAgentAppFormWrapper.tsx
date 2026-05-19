@@ -29,8 +29,8 @@ import {
   MessageSquare,
   MousePointerClick,
   Rocket,
-  Sparkles,
-  Wrench,
+  Zap,
+  Wrench
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -402,7 +402,7 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-blue-500 to-purple-500"
           title="Customize Options"
           description="Choose from preset options to make it easier to guide the AI."
-          tag={{ icon: <Sparkles className="w-3.5 h-3.5" />, text: "Most popular", className: "text-primary" }}
+          tag={{ icon: <Zap className="w-3.5 h-3.5" />, text: "Most popular", className: "text-primary" }}
           onClick={() => handleCardClick("auto-select")}
           disabled={!selectedAgentId || agentRowLoading || submitting}
         />
@@ -420,7 +420,7 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-cyan-500 to-sky-500"
           title="Live Builder"
           description="Pick a layout and watch it render in real time. No code generation — just pick and ship."
-          tag={{ icon: <Sparkles className="w-3.5 h-3.5" />, text: "No code", className: "text-cyan-500" }}
+          tag={{ icon: <Zap className="w-3.5 h-3.5" />, text: "No code", className: "text-cyan-500" }}
           onClick={() => handleCardClick("live-builder")}
           disabled={!selectedAgentId || submitting}
         />

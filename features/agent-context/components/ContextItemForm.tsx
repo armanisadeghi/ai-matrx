@@ -2,8 +2,21 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  Type, Hash, ToggleLeft, Braces, List, FileText, Link as LinkIcon,
-  Plus, Trash2, Boxes, ChevronDown, ChevronUp, Info, Wand2, Globe,
+  Type,
+  Hash,
+  ToggleLeft,
+  Braces,
+  List,
+  FileText,
+  Link as LinkIcon,
+  Plus,
+  Trash2,
+  Boxes,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Zap,
+  Globe
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -291,7 +304,7 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
                 className="flex items-center gap-2 rounded-lg border border-purple-500/20 bg-purple-500/5 p-3 text-left hover:bg-purple-500/10 transition-colors"
               >
                 <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
-                  <Wand2 className="h-4 w-4 text-purple-500" />
+                  <Zap className="h-4 w-4 text-purple-500" />
                 </div>
                 <div>
                   <p className="text-xs font-medium">Let AI Interview Me</p>

@@ -10,8 +10,8 @@ import {
   Copy,
   ChevronDown,
   Code,
-  Wand2,
-  Brain,
+  Zap,
+  Brain
 } from "lucide-react";
 import {
   copyToClipboard,
@@ -313,7 +313,7 @@ export default function AppletPostActionButtons({
             onClick={() => setShowReviseModal(true)}
             className="flex items-center justify-center gap-2 flex-1 sm:flex-none sm:w-auto px-3 sm:px-4 py-3 sm:py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-600 text-sm"
           >
-            <Wand2 size={18} className="sm:w-[18px] sm:h-[18px]" />
+            <Zap size={18} className="sm:w-[18px] sm:h-[18px]" />
             <span className="hidden sm:inline">Revise</span>
           </button>
         </div>

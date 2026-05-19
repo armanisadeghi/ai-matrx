@@ -12,7 +12,6 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Wand2,
   RotateCcw,
   WrapText,
   Maximize2,
@@ -27,7 +26,7 @@ import {
   FileCode,
   SquareArrowOutUpRight,
   MoreHorizontal,
-  Globe,
+  Globe
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
@@ -374,7 +373,7 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   if (handleFormat) {
     menuItems.push({
       key: "format",
-      icon: Wand2,
+      icon: Zap,
       label: "Format code",
       description: isEditing ? "Shift+Alt+F" : "Only available in edit mode",
       disabled: !isEditing,

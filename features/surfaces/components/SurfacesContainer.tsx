@@ -8,8 +8,8 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  Sparkles,
-  UserPlus,
+  Zap,
+  UserPlus
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -256,7 +256,7 @@ export function SurfacesContainer() {
             className="h-7 gap-1.5 text-xs"
             title="Bulk-add from the curated candidate inventory"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Zap className="h-3.5 w-3.5" />
             Candidates
             {candidatesAvailable > 0 && (
               <Badge variant="default" className="ml-1 text-[10px] px-1 h-4">

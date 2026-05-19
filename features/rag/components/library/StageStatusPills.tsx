@@ -25,9 +25,9 @@ import {
   Layers,
   Loader2,
   Play,
-  Sparkles,
-  Wand2,
-  X as XIcon,
+  Stars,
+  Zap,
+  X as XIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -81,7 +81,7 @@ const PILLS: PillDef[] = [
   {
     pill: "clean_text",
     label: "Clean Text",
-    Icon: Wand2,
+    Icon: Zap,
     action: "clean",
     actionLabel: "Clean",
     unit: "page",
@@ -97,7 +97,7 @@ const PILLS: PillDef[] = [
   {
     pill: "vectors",
     label: "Vectors",
-    Icon: Sparkles,
+    Icon: Stars,
     action: "embed",
     actionLabel: "Embed",
     unit: "vector",

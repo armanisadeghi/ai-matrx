@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import {
-  Bot,
+  Compass,
   Boxes,
   Database,
   FileText,
   Info,
-  Variable,
+  Variable
 } from "lucide-react";
 import {
   Dialog,
@@ -49,7 +49,7 @@ export function AgentColumn({ agent }: { agent: AgentDefinition }) {
       <div className="shrink-0 mx-3 mt-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-2.5 mb-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Bot className="h-3.5 w-3.5" />
+            <Compass className="h-3.5 w-3.5" />
           </div>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
             Agent

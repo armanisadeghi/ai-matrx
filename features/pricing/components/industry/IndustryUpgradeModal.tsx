@@ -5,9 +5,9 @@ import {
   ArrowRight,
   Check,
   ShieldCheck,
-  Sparkles,
+  Crown,
   X,
-  Zap,
+  Zap
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ interface IndustryUpgradeModalProps {
 const TRUST_POINTS = [
   { icon: Zap, label: `${TRIAL_DAYS}-day trial` },
   { icon: ShieldCheck, label: "Cancel anytime" },
-  { icon: Sparkles, label: "All frontier models" },
+  { icon: Crown, label: "All frontier models" },
 ];
 
 export function IndustryUpgradeModal({

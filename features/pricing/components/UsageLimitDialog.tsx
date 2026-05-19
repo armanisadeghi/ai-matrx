@@ -6,8 +6,8 @@ import {
   ArrowRight,
   Check,
   Clock,
-  Sparkles,
-  X,
+  Crown,
+  X
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -170,7 +170,7 @@ export function UsageLimitDialog({
           <div className="px-7 pb-6">
             <div className="mb-3 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
+                <Crown className="h-3 w-3" />
                 Or skip the wait
               </span>
               <span className="text-xs text-muted-foreground">

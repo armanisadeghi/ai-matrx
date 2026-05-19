@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import {
-    Wand2,
+    Zap,
     FileText,
     Code,
     Palette,
@@ -128,7 +128,7 @@ export function QuickTemplateInsertButton({
             case 'formatting':
                 return <Palette className="w-3 h-3" />;
             case 'special':
-                return <Wand2 className="w-3 h-3" />;
+                return <Zap className="w-3 h-3" />;
             case 'ai-prompts':
                 return <Code className="w-3 h-3" />;
             default:
@@ -139,7 +139,7 @@ export function QuickTemplateInsertButton({
     if (loading) {
         return (
             <Button variant={variant} size={size} disabled className={className}>
-                <Wand2 className="w-4 h-4 mr-1 animate-pulse" />
+                <Zap className="w-4 h-4 mr-1 animate-pulse" />
                 Templates
             </Button>
         );
@@ -149,7 +149,7 @@ export function QuickTemplateInsertButton({
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant={variant} size={size} className={className}>
-                    <Wand2 className="w-4 h-4 mr-1" />
+                    <Zap className="w-4 h-4 mr-1" />
                     Templates
                 </Button>
             </DropdownMenuTrigger>
@@ -158,7 +158,7 @@ export function QuickTemplateInsertButton({
                 {suggestedTemplates.length > 0 && (
                     <>
                         <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                            <Wand2 className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                            <Zap className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                             Suggested for {messageRole} message
                         </DropdownMenuLabel>
                         {suggestedTemplates.map(template => (

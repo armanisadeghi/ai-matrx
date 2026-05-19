@@ -6,10 +6,10 @@ import {
   Plus,
   Copy,
   Check,
-  Wand2,
+  Zap,
   ChevronDown,
   ChevronUp,
-  ListFilter,
+  ListFilter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,7 +150,7 @@ const EntityUUIDArray = React.forwardRef<HTMLDivElement, EntityUUIDArrayProps>(
             onClick={generateUUID}
             disabled={disabled}
           >
-            <Wand2 className={densityConfig[density].icon} />
+            <Zap className={densityConfig[density].icon} />
           </Button>
           <Button
             type="button"

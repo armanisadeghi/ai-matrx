@@ -256,6 +256,8 @@ Whether opened via the controller or rendered inline on a page, this is what mak
 
 The critical clarification: **windows enter this system by mounting, not by being declared**. Any `<WindowPanel id="...">` anywhere — controller-driven or page-local — is a first-class window manager participant.
 
+> **Already half-built.** The current `lib/redux/slices/windowManagerSlice.ts` *is* the runtime registry, and `features/window-panels/WindowTray.tsx` + `WindowTraySync.tsx` are the centralized-controls primitives. They were never the conflated part — they got dragged into the same folder by association. The cleanup is moving them, ensuring `WindowPanel` registers itself unconditionally on mount, and keeping the tray/sync intact. **No behavior change.**
+
 ### Location
 
 ```
@@ -469,14 +471,14 @@ The blob-cache service worker is currently intercepting *all* fetches and breaki
 
 ---
 
-## Hard rules going forward (ESLint-enforced)
+## Hard rules going forward (ESLint-enforced as `warn`)
 
 1. **No prop spread** in `OverlayController.tsx`.
 2. **No `openOverlay`/`closeOverlay`/`toggleOverlay` import** outside `features/overlays/`.
-3. **No `WindowPanel` import** outside files that actually render windows; specifically not from non-window catalogue entries.
+3. **No `WindowPanel` import** outside files that actually render windows.
 4. **No registry/slice/controller imports** in `WindowPanel.tsx` itself.
 
-These four rules, written into the linter, are what make this stick.
+Land them as `warn` during the migration so existing dispatch sites don't block builds while they're being swept. Once Stage 3 finishes (every caller on its opener), bump to `error`.
 
 ---
 

@@ -10,7 +10,7 @@ import {
   Search,
   Image as ImageLucide,
   Shapes,
-  Sparkles,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -308,7 +308,7 @@ function IconsSection({ items, onToggleRelevance }: SectionProps) {
   return (
     <section className="space-y-2">
       <SectionHeader
-        icon={Sparkles}
+        icon={Zap}
         title="Icons & Favicons"
         count={items.length}
         description="Tiny graphics shown at native size"

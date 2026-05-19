@@ -42,11 +42,11 @@ import {
   FileText,
   Layers,
   Loader2,
-  Sparkle,
+  Stars,
   Upload,
   X as XIcon,
   AlertCircle,
-  RotateCw,
+  RotateCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -234,7 +234,7 @@ const NODE_SPECS: PipelineSpec[] = [
     pos: { x: COLUMN_X, y: NODE_DY * 5 },
     pipeline: {
       variant: "write",
-      icon: Sparkle,
+      icon: Stars,
       title: "Embeddings",
       subtitle: "1536-d vectors",
     },

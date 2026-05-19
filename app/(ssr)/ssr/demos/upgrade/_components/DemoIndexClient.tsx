@@ -10,9 +10,9 @@ import {
   Image as ImageIcon,
   Lock,
   Megaphone,
-  Sparkles,
+  Crown,
   Square,
-  Zap,
+  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,7 @@ const SECTIONS = [
   { id: "modals", label: "Blocking modals", icon: Square },
   { id: "industry-modals", label: "Industry modals", icon: Megaphone },
   { id: "usage", label: "Usage limit", icon: Activity },
-  { id: "grid", label: "Pricing grid", icon: Sparkles },
+  { id: "grid", label: "Pricing grid", icon: Crown },
   { id: "nudges", label: "Non-blocking nudges", icon: Bell },
   { id: "inline", label: "Inline upsells", icon: Lock },
   { id: "industries", label: "Industry pages", icon: Megaphone },
@@ -121,7 +121,7 @@ export function DemoIndexClient() {
             className="group flex flex-col items-start gap-3 rounded-2xl border border-border/70 bg-card p-6 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/40 hover:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)]"
           >
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/[0.06] ring-1 ring-foreground/10">
-              <Sparkles className="h-4 w-4" />
+              <Crown className="h-4 w-4" />
             </span>
             <div className="flex flex-col gap-1">
               <span className="text-base font-semibold tracking-tight">
@@ -335,7 +335,7 @@ export function DemoIndexClient() {
                     : "border-border/80 bg-background hover:bg-accent/40",
                 )}
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <Crown className="h-3.5 w-3.5" />
                 {showPill ? "Hide pill" : "Show floating pill"}
               </button>
             </div>

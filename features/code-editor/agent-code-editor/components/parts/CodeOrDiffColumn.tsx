@@ -25,10 +25,9 @@ import {
   Check,
   WrapText,
   Map as MapIcon,
-  Wand2,
   Loader2,
   CheckCircle2,
-  Zap,
+  Zap
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -185,7 +184,7 @@ export function CodeOrDiffColumn({
               disabled={!isEditing || state !== "input"}
               title="Format document"
             >
-              <Wand2 className="w-3.5 h-3.5" />
+              <Zap className="w-3.5 h-3.5" />
             </ActionBtn>
 
             <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />

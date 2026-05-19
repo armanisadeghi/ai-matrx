@@ -13,12 +13,12 @@ import {
   ShieldHalf,
   Search,
   FileStack,
-  Bot,
+  Compass,
   Eye,
   BookCheck,
   Network,
   Lock,
-  Quote,
+  Quote
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ const STATS = [
 
 const CORE_CAPABILITIES = [
   {
-    icon: Bot,
+    icon: Compass,
     title: "Agentic, not just generative",
     description:
       "Multi-step WC workflows run end to end — AOE/COE memos, QME review, deposition prep, settlement modeling, ratings. Procured as a digital workforce, not a chat box.",

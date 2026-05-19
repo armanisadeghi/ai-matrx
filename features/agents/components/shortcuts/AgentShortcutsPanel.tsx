@@ -21,8 +21,8 @@ import {
   Plus,
   Stars,
   UserRound,
-  Wand2,
-  Zap,
+  Rocket,
+  Zap
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -314,7 +314,7 @@ function EmptyState({
   return (
     <Card className="p-6 flex flex-col items-center text-center gap-3">
       <div className="rounded-full bg-primary/10 text-primary p-3">
-        <Wand2 className="h-5 w-5" />
+        <Rocket className="h-5 w-5" />
       </div>
       <div className="space-y-1">
         <div className="text-sm font-medium text-foreground">

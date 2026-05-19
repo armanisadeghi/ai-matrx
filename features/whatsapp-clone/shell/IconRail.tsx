@@ -7,9 +7,9 @@ import {
   MessageCircle,
   PhoneIncoming,
   Settings,
-  Sparkles,
+  Zap,
   Star,
-  Users,
+  Users
 } from "lucide-react";
 import { IconRailButton } from "./IconRailButton";
 import { WAAvatar } from "../shared/WAAvatar";
@@ -45,7 +45,7 @@ const TOP_ITEMS: Array<{
   { key: "chats", icon: MessageCircle, label: "Chats" },
   { key: "calls", icon: PhoneIncoming, label: "Calls" },
   { key: "status", icon: CircleDot, label: "Status" },
-  { key: "channels", icon: Sparkles, label: "Channels" },
+  { key: "channels", icon: Zap, label: "Channels" },
   { key: "communities", icon: Users, label: "Communities" },
 ];
 

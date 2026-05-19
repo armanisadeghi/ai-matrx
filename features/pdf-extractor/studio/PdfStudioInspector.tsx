@@ -14,7 +14,7 @@ import React, { useEffect, useState } from "react";
 import {
   Rocket,
   GitBranch,
-  Wand2,
+  Zap,
   Database,
   Wrench,
   SquareStack,
@@ -23,7 +23,7 @@ import {
   Layers,
   MousePointerClick,
   Repeat,
-  Plus,
+  Plus
 } from "lucide-react";
 import Link from "next/link";
 import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
@@ -49,7 +49,7 @@ const SECTIONS: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { key: "widgets", label: "Widgets", icon: Wand2 },
+  { key: "widgets", label: "Widgets", icon: Zap },
   { key: "chunked", label: "Chunked Runs", icon: Repeat },
   { key: "stores", label: "Data Stores", icon: Database },
   { key: "manipulate", label: "Manipulate", icon: Wrench },

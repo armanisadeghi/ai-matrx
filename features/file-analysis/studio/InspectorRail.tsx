@@ -28,9 +28,9 @@ import {
   ListTree,
   Shield,
   ShieldAlert,
-  Sparkles,
+  Zap,
   Table2,
-  Tag,
+  Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
@@ -112,7 +112,7 @@ const TABS: Array<{
   // ── Tools (act on the document) ──
   { id: "pages", label: "Pages", icon: Files, group: "tools" },
   { id: "docops", label: "Doc Ops", icon: FileCog, group: "tools" },
-  { id: "annotations", label: "Notes", icon: Sparkles, group: "tools" },
+  { id: "annotations", label: "Notes", icon: Zap, group: "tools" },
   { id: "findings", label: "Findings", icon: ListTree, group: "tools" },
   { id: "redact", label: "Redact", icon: Shield, group: "tools" },
   { id: "search", label: "Search", icon: FileSearch, group: "tools" },

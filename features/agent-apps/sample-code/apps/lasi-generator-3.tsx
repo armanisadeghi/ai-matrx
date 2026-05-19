@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Search,
-  Sparkles,
+  Zap,
   TrendingUp,
   GitBranch,
   Link2,
-  Layers,
+  Layers
 } from "lucide-react";
 
 export default function LSIKeywordGenerator({
@@ -152,7 +152,7 @@ export default function LSIKeywordGenerator({
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4 mr-2" />
+                        <Zap className="w-4 h-4 mr-2" />
                         Generate LSIs
                       </>
                     )}
@@ -336,7 +336,7 @@ export default function LSIKeywordGenerator({
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
+                <Zap className="w-5 h-5 text-primary" />
                 LSI Keywords
               </CardTitle>
             </CardHeader>

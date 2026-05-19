@@ -26,8 +26,8 @@ import {
   MessageSquare,
   Search,
   Settings,
-  Sparkles,
-  User as UserIcon,
+  Zap,
+  User as UserIcon
 } from "lucide-react";
 
 interface Props {
@@ -222,7 +222,7 @@ export function DraggableGlassWidget({
       <div className="glab-widget-section-title glab-muted">Quick access</div>
 
       <div className="glab-widget-row glab-text">
-        <Sparkles />
+        <Zap />
         <span>New conversation</span>
       </div>
       <div className="glab-widget-row glab-text">

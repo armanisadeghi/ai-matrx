@@ -37,11 +37,11 @@ import {
   ImageIcon,
   Link as LinkIcon,
   Loader2,
-  Sparkles,
+  Zap,
   Trash2,
   Upload,
   X,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -181,7 +181,7 @@ const TAB_DEFS: { id: SourceTab; label: string; Icon: LucideIcon }[] = [
   { id: "upload", label: "Upload", Icon: Upload },
   { id: "library", label: "Library", Icon: FolderOpen },
   { id: "url", label: "URL", Icon: LinkIcon },
-  { id: "generate", label: "Generate", Icon: Sparkles },
+  { id: "generate", label: "Generate", Icon: Zap },
 ];
 
 // ── Viewer payload helpers ────────────────────────────────────────────────────
@@ -734,7 +734,7 @@ function GenerateTabContent({
           </>
         ) : (
           <>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
             Generate
           </>
         )}

@@ -46,8 +46,8 @@ import {
   Loader2,
   Copy,
   AlertTriangle,
-  Wand2,
-  Bug,
+  Rocket,
+  Bug
 } from "lucide-react";
 import { toast } from "sonner";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -703,7 +703,7 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
                 </>
               ) : (
                 <>
-                  <Wand2 className="h-4 w-4 mr-2" />
+                  <Rocket className="h-4 w-4 mr-2" />
                   Generate
                 </>
               )}

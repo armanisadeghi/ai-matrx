@@ -5,10 +5,10 @@ import {
   Download,
   Brain,
   Cpu,
-  Wand2,
+  Zap,
   Gauge,
   DollarSign,
-  AlertTriangle,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -108,7 +108,7 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
         value={derived.uniqueModels.length}
       />
       <MetricChip
-        icon={Wand2}
+        icon={Zap}
         iconColor="text-cyan-500"
         label={`agent${derived.uniqueAgents.length === 1 ? "" : "s"}`}
         value={derived.uniqueAgents.length}

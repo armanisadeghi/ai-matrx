@@ -10,8 +10,7 @@ import {
   Palette,
   Atom,
   Upload,
-  Wand2,
-  Zap,
+  Zap
 } from "lucide-react";
 import { PresetCategoryLegend } from "./PresetCatalog";
 import {
@@ -112,7 +111,7 @@ export function StudioLandingHero() {
             body="Drag &amp; drop many images at once. Paste from clipboard. Every file gets every selected preset — in parallel, on the server."
           />
           <FeatureCard
-            icon={<Wand2 className="h-5 w-5" />}
+            icon={<Zap className="h-5 w-5" />}
             title="Smart bundles"
             body={`One click applies a curated set: "Share Everywhere", "Complete Favicon Set", "Full Avatar Set", and ${bundleCount - 3} more.`}
           />

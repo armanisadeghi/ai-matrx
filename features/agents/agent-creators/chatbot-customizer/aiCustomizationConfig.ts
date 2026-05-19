@@ -11,9 +11,9 @@ import {
   PanelTop,
   Code,
   Rocket,
-  Wand2,
+  Zap,
   Settings,
-  ListChecks,
+  ListChecks
 } from "lucide-react";
 import { AICustomizationConfig } from "./types";
 import {
@@ -109,7 +109,7 @@ export const aiCustomizationConfig: AICustomizationConfig = {
         {
           id: "interactive",
           title: "Interactive Features",
-          icon: Wand2,
+          icon: Zap,
           component: InteractiveFeaturesCard,
         },
       ],

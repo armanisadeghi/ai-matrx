@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from "react";
 import {
   Loader2,
-  Sparkles,
+  Zap,
   ShieldCheck,
   Edit2,
-  AlertCircle,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -176,7 +176,7 @@ export default function FactCheckerApp({
         <div className="bg-textured border-none shadow-none">
           <CardHeader className="pb-3 border-none shadow-none">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground border-none shadow-none">
-              <Sparkles className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              <Zap className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               Analysis
               {isStreaming && (
                 <span className="ml-auto flex items-center gap-1.5 text-xs font-normal text-muted-foreground">

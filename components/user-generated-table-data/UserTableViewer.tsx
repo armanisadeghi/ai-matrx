@@ -33,9 +33,9 @@ import {
   Loader,
   Expand,
   Link,
-  Wand2,
+  Zap,
   Eye,
-  AlertCircle,
+  AlertCircle
 } from "lucide-react";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useRouter } from "next/navigation";
@@ -1482,7 +1482,7 @@ const UserTableViewer = ({
                                         }
                                         title={`Clean up HTML formatting in ${field.display_name}`}
                                       >
-                                        <Wand2 className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                                        <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
                                       </Button>
                                     )}
                                     {cellData.isTruncated && (
@@ -1692,7 +1692,7 @@ const UserTableViewer = ({
                   title="Clean up HTML formatting"
                   disabled={savingExpandedText}
                 >
-                  <Wand2 className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+                  <Zap className="h-4 w-4 text-purple-500 dark:text-purple-400" />
                   <span className="text-sm">Clean HTML</span>
                 </Button>
               )}

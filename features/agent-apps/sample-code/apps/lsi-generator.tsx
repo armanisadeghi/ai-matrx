@@ -20,7 +20,7 @@ import {
   FileText,
   FileSpreadsheet,
   RefreshCw,
-  Sparkles,
+  Zap
 } from "lucide-react";
 
 export default function LSIMarkdownGenerator({
@@ -409,7 +409,7 @@ export default function LSIMarkdownGenerator({
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse" />
                       <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
-                        <Sparkles className="w-10 h-10 text-white animate-pulse" />
+                        <Zap className="w-10 h-10 text-white animate-pulse" />
                       </div>
                     </div>
 

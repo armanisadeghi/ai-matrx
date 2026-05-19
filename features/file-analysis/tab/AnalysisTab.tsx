@@ -33,9 +33,9 @@ import {
   Loader2,
   RefreshCw,
   Shield,
-  Sparkles,
+  Zap,
   Table2,
-  Tag,
+  Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -461,7 +461,7 @@ function SectionTabs({
     icon: React.ComponentType<{ className?: string }>;
     badge?: number | string;
   }> = [
-    { id: "overview", label: "Overview", icon: Sparkles },
+    { id: "overview", label: "Overview", icon: Zap },
     { id: "outline", label: "Outline", icon: ListTree, badge: counts.outline_count || undefined },
     { id: "text", label: "Text", icon: FileText, badge: counts.chars_total ? `${Math.round(counts.chars_total / 1000)}K` : undefined },
     { id: "pii", label: "PII", icon: Shield, badge: counts.pii_medium || undefined },

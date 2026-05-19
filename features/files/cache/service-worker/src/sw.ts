@@ -265,6 +265,58 @@ async function idbDeleteByIndex(
 const FILES_DOWNLOAD_RE = /^\/files\/([0-9a-f-]{36})\/download(?:\?|$)/i;
 const SHARE_DOWNLOAD_RE = /^\/share\/([^/]+)\/download(?:\?|$)/i;
 
+// ---------------------------------------------------------------------------
+// In-memory registered-URL cache
+// ---------------------------------------------------------------------------
+//
+// The fetch event listener has to decide *synchronously* whether to call
+// `event.respondWith()`. Once we call respondWith, the request is ours — we
+// have to produce a Response. If we say "we'll handle this" but then
+// asynchronously decide we shouldn't have, the browser can't unwind, and
+// any failure in our fallthrough `fetch(request)` surfaces as
+// `TypeError: Failed to fetch` to the page (this is the bug that was eating
+// next/dynamic chunk loads and causing overlay windows to silently never
+// render — heartbeat showed OverlaySurface mounted but the per-window chunk
+// never resolved).
+//
+// To fix this we keep an in-memory mirror of `STORE_URL_MAP` so the fetch
+// listener can do a synchronous lookup. Two write paths:
+//
+//   1. On SW activate, eagerly hydrate from IDB (covers warm-restart cases
+//      where the page already registered URLs in a prior session).
+//   2. The `register-url-mapping` message handler appends every newly
+//      registered URL.
+//
+// The fetch listener calls `isPotentiallyOurs(url)` synchronously. If it
+// returns false, we DO NOT call respondWith — the browser fetches normally,
+// the SW is invisible. This is the standard "passive" SW pattern.
+
+const registeredUrls = new Set<string>();
+
+// Note: the in-memory cache starts empty on each SW boot. URL-mapped
+// requests issued between SW activation and the next `register-url-mapping`
+// call from the page will skip the cache and go straight to the network —
+// a cache miss, not a failure. Backend `/files/.../download` and
+// `/share/.../download` requests are unaffected because they match the
+// synchronous regex in `isPotentiallyOurs` without needing the Set.
+// The IDB url-map store remains authoritative for the actual cache lookup.
+
+function isPotentiallyOurs(request: Request, parsed: URL): boolean {
+    if (request.method !== "GET") return false;
+    // Signed S3 URLs are never cached — they expire. Short-circuit before
+    // any other check so we never even hand them to the page.
+    if (parsed.searchParams.has("X-Amz-Signature")) return false;
+    // Backend file-download / share-download endpoints — synchronous match.
+    if (config.backendUrl && parsed.origin === config.backendUrl) {
+        if (FILES_DOWNLOAD_RE.test(parsed.pathname)) return true;
+        if (SHARE_DOWNLOAD_RE.test(parsed.pathname)) return true;
+    }
+    // URL-mapped public CDN / share-link URLs — page registered them via
+    // postMessage. Synchronous Set lookup.
+    if (registeredUrls.has(request.url)) return true;
+    return false;
+}
+
 interface RecognizedUrl {
     kind: "files-download" | "share-download" | "url-mapped";
     key: string;
@@ -273,20 +325,15 @@ interface RecognizedUrl {
     checksum?: string | null;
 }
 
-async function recognize(request: Request): Promise<RecognizedUrl | null> {
+async function recognize(
+    request: Request,
+    parsed: URL,
+): Promise<RecognizedUrl | null> {
+    // Cheap guards have already been done synchronously by `isPotentiallyOurs`
+    // before we got here. We re-check the user/backend config defensively in
+    // case the SW received this request between activate and `set-config`.
     if (!config.userId) return null;
     if (!config.backendUrl) return null;
-    if (request.method !== "GET") return null;
-
-    let parsed: URL;
-    try {
-        parsed = new URL(request.url);
-    } catch {
-        return null;
-    }
-
-    // Signed S3 URLs are never cached — they expire.
-    if (parsed.searchParams.has("X-Amz-Signature")) return null;
 
     // Backend `/files/{id}/download`
     if (parsed.origin === config.backendUrl) {
@@ -351,17 +398,38 @@ async function sha256Hex(input: string): Promise<string> {
 // ---------------------------------------------------------------------------
 
 self.addEventListener("fetch", (event) => {
-    // Wrap async work in an IIFE so we can hand the Promise to respondWith
-    // only when we intend to handle the request. Unmatched requests fall
-    // through to default browser fetch semantics.
-    const responsePromise = handleFetch(event.request);
+    // CRITICAL: only call event.respondWith() when this request is
+    // POTENTIALLY one of ours, determined SYNCHRONOUSLY. If we call
+    // respondWith() for every request and then asynchronously fall through
+    // to `fetch(event.request)`, the fallthrough fetch can fail (TypeError:
+    // Failed to fetch) — and we've already committed to producing a
+    // response, so the failure surfaces to the page. That was eating
+    // next/dynamic chunk loads (overlay windows silently never rendered).
+    //
+    // The passive-SW pattern: for everything we don't want to handle, DO
+    // NOTHING in the listener. The browser performs the normal fetch and
+    // the SW is invisible.
+    if (!config.userId || !config.backendUrl) return;
+    let parsed: URL;
+    try {
+        parsed = new URL(event.request.url);
+    } catch {
+        return;
+    }
+    if (!isPotentiallyOurs(event.request, parsed)) return;
+
     event.respondWith(
-        responsePromise.then((response) => response ?? fetch(event.request)),
+        handleFetch(event.request, parsed).then(
+            (response) => response ?? fetch(event.request),
+        ),
     );
 });
 
-async function handleFetch(request: Request): Promise<Response | null> {
-    const recognized = await recognize(request);
+async function handleFetch(
+    request: Request,
+    parsed: URL,
+): Promise<Response | null> {
+    const recognized = await recognize(request, parsed);
     if (!recognized) return null;
 
     const rangeHeader = request.headers.get("Range");
@@ -520,6 +588,10 @@ self.addEventListener("message", async (event) => {
             await idbDeleteByIndex(STORE_BLOBS, "userId", msg.userId);
             return;
         case "register-url-mapping": {
+            // The in-memory set is the synchronous source-of-truth used by
+            // the fetch listener's pre-check. Add it FIRST so a fetch that
+            // arrives moments later sees it.
+            registeredUrls.add(msg.url);
             const urlHash = await sha256Hex(msg.url);
             const db = await openDb();
             if (!db) return;

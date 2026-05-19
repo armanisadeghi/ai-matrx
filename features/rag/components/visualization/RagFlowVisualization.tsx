@@ -50,8 +50,8 @@ import {
   Layers,
   ScanText,
   Search,
-  Sparkle,
-  Upload,
+  Stars,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, RotateCcw, Gauge } from "lucide-react";
@@ -363,7 +363,7 @@ const NODE_SPECS: NodeSpec[] = [
     pos: { x: WRITE_X, y: WRITE_Y[5] },
     pipeline: {
       variant: "write",
-      icon: Sparkle,
+      icon: Stars,
       title: "Embeddings",
       subtitle: "1536-d vectors",
     },

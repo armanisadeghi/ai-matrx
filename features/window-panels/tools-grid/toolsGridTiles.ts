@@ -79,7 +79,7 @@ import {
   TestTube2,
   ToyBrick,
   Upload,
-  Wand2,
+  Zap
 } from "lucide-react";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -418,7 +418,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   {
     id: "tile.ai-results",
     label: "Chat History",
-    icon: Wand2,
+    icon: Zap,
     category: "agents",
     overlayId: "quickChatHistory",
   },
@@ -535,7 +535,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     // Route-navigation tile — escapes the overlay model entirely.
     id: "tile.image-studio",
     label: "Images",
-    icon: Wand2,
+    icon: Zap,
     category: "files-web",
     onActivate: ({ router }) => router.push("/images"),
   },

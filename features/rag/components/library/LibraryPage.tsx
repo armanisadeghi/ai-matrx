@@ -44,13 +44,13 @@ import {
   Layers,
   RefreshCw,
   Search,
-  Sparkles,
+  Zap,
   AlertTriangle,
   Trash2,
   Upload,
   Search as SearchAction,
   MoreHorizontal,
-  CheckCircle2,
+  CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { fileHandler } from "@/features/files";
@@ -435,7 +435,7 @@ export function LibraryPage() {
               tone="success"
             />
             <AnimatedKpiCard
-              icon={<Sparkles className="h-3.5 w-3.5" />}
+              icon={<Zap className="h-3.5 w-3.5" />}
               label="Embedding"
               value={headerStats.embedding}
               loading={summaryLoading}

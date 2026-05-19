@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import {
-  Bot,
+  Compass,
   Zap,
   Activity,
   MessageSquare,
@@ -28,7 +28,7 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -117,13 +117,13 @@ const TABLE_META: Record<string, TableMeta> = {
   },
   agx_agent: {
     label: "Agents",
-    icon: Bot,
+    icon: Compass,
     category: "AI",
     categoryColor: CATEGORY_COLORS.AI,
   },
   agx_agent_templates: {
     label: "Agent Templates",
-    icon: Bot,
+    icon: Compass,
     category: "AI",
     categoryColor: CATEGORY_COLORS.AI,
   },

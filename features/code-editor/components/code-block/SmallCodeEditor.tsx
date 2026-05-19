@@ -6,13 +6,13 @@ import Editor from "@monaco-editor/react";
 import { useMeasure } from "@uidotdev/usehooks";
 import { Button } from "@/components/ui/button";
 import {
-  Wand2,
+  Zap,
   Copy,
   RotateCcw,
   CheckCircle2,
   WrapText,
   Type,
-  Maximize2,
+  Maximize2
 } from "lucide-react";
 import {
   Tooltip,
@@ -383,7 +383,7 @@ const SmallCodeEditor = ({
                     onClick={handleFormatCode}
                     className="h-8 px-3"
                   >
-                    <Wand2 className="h-4 w-4 mr-2" />
+                    <Zap className="h-4 w-4 mr-2" />
                     Format
                   </Button>
                 </TooltipTrigger>

@@ -26,7 +26,7 @@ import {
   Loader2,
   Copy,
   AlertTriangle,
-  Wand2,
+  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -324,7 +324,7 @@ export function GeneratePromptForBuiltinModal({
       <DialogContent className="max-w-7xl h-[95dvh] flex flex-col p-0">
         <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+            <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
             Generate Prompt Builtin
             {shortcutData ? ` for "${shortcutData.label}"` : ""}
           </DialogTitle>

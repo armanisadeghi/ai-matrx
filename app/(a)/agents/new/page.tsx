@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   Plus,
-  Wand2,
+  Rocket,
   Wrench,
   Upload,
-  LayoutPanelTop,
+  LayoutPanelTop
 } from "lucide-react";
 
 const CREATION_OPTIONS = [
@@ -21,7 +21,7 @@ const CREATION_OPTIONS = [
   },
   {
     href: "/agents/new/generate",
-    icon: Wand2,
+    icon: Rocket,
     iconClass: "text-purple-600 dark:text-purple-400",
     title: "Generate with AI",
     description: "Let AI create an agent based on your exact requirements",

@@ -6,8 +6,8 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
-  Sparkles,
-  X,
+  Zap,
+  X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -302,7 +302,7 @@ function MappingRow({
           </div>
           {autoBindCandidate && (
             <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-              <Sparkles className="h-2.5 w-2.5" />
+              <Zap className="h-2.5 w-2.5" />
               Auto-binds to surface value{" "}
               <code className="font-mono">{autoBindCandidate.name}</code>
             </p>

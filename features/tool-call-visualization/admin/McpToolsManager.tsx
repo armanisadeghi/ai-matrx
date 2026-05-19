@@ -8,7 +8,7 @@ import {
     Filter,
     Edit,
     Trash2,
-    Wand2,
+    Zap,
     FlaskConical,
     Bug,
     Settings,
@@ -17,7 +17,7 @@ import {
     Tag,
     TestTube2,
     ListChecks,
-    ChevronDown,
+    ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -787,7 +787,7 @@ function ToolListItem({ tool, counts, isPending, onSelect, onEdit, onDelete, onT
                         <FlaskConical className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={onGenerateUi} title="UI Component" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
-                        <Wand2 className="h-3.5 w-3.5" />
+                        <Zap className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={onViewIncidents} title="Incidents" className="h-7 w-7 p-0 text-muted-foreground hover:text-warning">
                         <Bug className="h-3.5 w-3.5" />

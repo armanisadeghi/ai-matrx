@@ -10,14 +10,12 @@ import {
   Layers,
   Library,
   Pencil,
-  Sparkles,
+  Zap,
   Stamp,
   Upload,
   UserCircle,
-  Wand,
-  Wand2,
   Wrench,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 
 interface Tile {
@@ -78,7 +76,7 @@ const STUDIO_TILES: Tile[] = [
     href: "/images/studio-light",
     label: "Studio Light",
     description: "Compact crop + variant flow.",
-    Icon: Wand2,
+    Icon: Zap,
     accent: "text-fuchsia-400",
   },
   {
@@ -92,21 +90,21 @@ const STUDIO_TILES: Tile[] = [
     href: "/images/ai-generate",
     label: "AI Generate",
     description: "Describe an image and generate it.",
-    Icon: Sparkles,
+    Icon: Zap,
     accent: "text-rose-500",
   },
   {
     href: "/images/generate",
     label: "Generate",
     description: "Text → image, sized any way you want.",
-    Icon: Wand2,
+    Icon: Zap,
     accent: "text-violet-400",
   },
   {
     href: "/images/edit",
     label: "Edit",
     description: "Crop, filters, shapes, text, AI assists.",
-    Icon: Wand,
+    Icon: Zap,
     accent: "text-amber-400",
   },
   {

@@ -30,7 +30,7 @@ import {
   Loader2,
   AlertTriangle,
   FileText,
-  Bot,
+  Compass
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
@@ -185,7 +185,7 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
           {/* OUTPUT — only when the chunk has run (or is running) */}
           {pageRun && (
             <Section
-              icon={<Bot className="w-3 h-3" />}
+              icon={<Compass className="w-3 h-3" />}
               label={
                 isRunning
                   ? "Agent output (streaming)"

@@ -19,14 +19,13 @@ import {
   Plus,
   Save,
   Library,
-  Sparkles,
+  Zap,
   Activity,
   Eraser,
   RotateCcw,
   ChevronDown,
-  Wand2,
   SlidersHorizontal,
-  EyeOff,
+  EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -282,7 +281,7 @@ export function BattleToolbar({
           onClick={onToggleMasterInputWindow}
           className="h-7"
         >
-          <Wand2 className="w-3.5 h-3.5" />
+          <Zap className="w-3.5 h-3.5" />
           Master input
         </Button>
 
@@ -292,7 +291,7 @@ export function BattleToolbar({
           onClick={onToggleContextWindow}
           className="h-7"
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Zap className="w-3.5 h-3.5" />
           Context
         </Button>
 

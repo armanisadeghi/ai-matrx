@@ -3,7 +3,7 @@ import {
   Scale,
   Search,
   FileStack,
-  Bot,
+  Compass,
   Calculator,
   Eye,
   BookCheck,
@@ -13,14 +13,14 @@ import {
   Workflow,
   ArrowRight,
   CheckCircle2,
-  Sparkles,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const CAPABILITIES = [
   {
-    icon: Bot,
+    icon: Compass,
     title: "Agentic, not just generative",
     description:
       "Multi-step legal workflows run end to end — redlines, compliance audits, drafting, depositions, calculations. Procured as a digital workforce, not a chat box.",
@@ -334,7 +334,7 @@ export default function LegalLanding() {
                     )}
                   >
                     {area.status === "Live" ? (
-                      <Sparkles className="h-3 w-3" />
+                      <Zap className="h-3 w-3" />
                     ) : null}
                     {area.status}
                   </span>

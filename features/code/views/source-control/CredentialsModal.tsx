@@ -8,8 +8,8 @@ import {
   Loader2,
   ShieldCheck,
   Trash2,
-  Wand2,
-  X,
+  Zap,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
@@ -152,7 +152,7 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
                 {busy ? (
                   <Loader2 size={12} className="animate-spin" />
                 ) : (
-                  <Wand2 size={12} />
+                  <Zap size={12} />
                 )}
                 Use Matrx workspace token
               </button>

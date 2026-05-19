@@ -41,9 +41,9 @@ import {
   Check,
   WrapText,
   Map as MapIcon,
-  Wand2,
+  Zap,
   FolderOpen,
-  CircleDot,
+  CircleDot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -443,7 +443,7 @@ export function MultiFileSmartCodeEditorWindow({
                   disabled={!isEditing}
                   title="Format document"
                 >
-                  <Wand2 className="w-3.5 h-3.5" />
+                  <Zap className="w-3.5 h-3.5" />
                 </ActionBtn>
 
                 <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />

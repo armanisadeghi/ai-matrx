@@ -21,8 +21,8 @@ import {
   History,
   Plus,
   Trash2,
-  Wand2,
-  FolderOpen,
+  Zap,
+  FolderOpen
 } from "lucide-react";
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
@@ -404,7 +404,7 @@ export const EnhancedSQLEditor = ({
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800"
                   disabled={!replacementPairs.some((p) => p.find && p.replace)}
                 >
-                  <Wand2 className="h-4 w-4 mr-2" />
+                  <Zap className="h-4 w-4 mr-2" />
                   Apply Replacements to Query
                 </Button>
               </div>

@@ -14,8 +14,8 @@ import {
   ListChecks,
   LayoutDashboard,
   Loader2,
-  Wand2,
-  AlertTriangle,
+  Zap,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,7 @@ const NAV_ITEMS = [
   {
     label: "Cron tester",
     href: "/administration/scheduling/cron-tester",
-    icon: Wand2,
+    icon: Zap,
   },
   {
     label: "Scanner health",

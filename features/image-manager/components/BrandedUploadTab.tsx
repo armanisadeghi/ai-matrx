@@ -21,7 +21,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   type LucideIcon,
-  Sparkles,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -57,7 +57,7 @@ const PRESETS: PresetOption[] = [
     label: "Podcast",
     description:
       "3000² cover + 1400² SD + OG + thumbnail + social baseline (Apple Podcasts spec).",
-    icon: Sparkles,
+    icon: Zap,
     iconColor: "text-orange-500",
   },
   {
@@ -65,7 +65,7 @@ const PRESETS: PresetOption[] = [
     label: "Social",
     description:
       "1200×630 OG + 1080² square + portrait + story + YT thumb + baseline.",
-    icon: Sparkles,
+    icon: Zap,
     iconColor: "text-fuchsia-500",
   },
   {

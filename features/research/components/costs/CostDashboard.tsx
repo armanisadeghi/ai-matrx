@@ -7,7 +7,7 @@ import {
   Layers,
   FileText,
   Tags,
-  Wand2,
+  Zap
 } from "lucide-react";
 import { useCostSummary } from "../../hooks/useCostSummary";
 import { useTopicContext } from "../../context/ResearchContext";
@@ -28,7 +28,7 @@ const PHASE_LABELS: Array<{
   { key: "keyword_syntheses", icon: Layers },
   { key: "project_syntheses", icon: FileText },
   { key: "tag_consolidations", icon: Tags },
-  { key: "document_assembly", icon: Wand2 },
+  { key: "document_assembly", icon: Zap },
 ];
 
 function formatCost(usd: number): string {

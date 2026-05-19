@@ -13,13 +13,11 @@ import {
     NotebookPen,
     Save,
     ScrollText,
-    Sparkles,
     Tag,
     Upload,
     Users,
-    Wand2,
     Waves,
-    Zap,
+    Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,7 +36,7 @@ const STUDIO_PILLARS = [
             "Raw transcript, AI-cleaned transcript, extracted concepts, and a configurable module column — all locked to the same timeline with synchronized scrolling so you can jump anywhere and the rest follow.",
     },
     {
-        icon: Wand2,
+        icon: Zap,
         title: "Self-cleaning transcripts",
         description:
             "A dedicated cleaning agent rewrites the raw stream every ~30 seconds — fixing punctuation, attributing speakers, and stitching dropped words. Edit any segment inline; superseded versions stay in the audit trail.",
@@ -81,7 +79,7 @@ const MODULES = [
         description: "Capture every decision as it's made — the question, the options weighed, the choice landed on, and who drove it. Output as a structured decision tree.",
     },
     {
-        icon: Sparkles,
+        icon: Zap,
         title: "Quiz",
         description: "Test comprehension as you go. The quiz module builds graded questions from the live content so you can verify retention immediately afterward.",
     },
@@ -210,7 +208,7 @@ export default function TranscriptionLanding() {
                         <div aria-hidden className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/15 transition-colors" />
                         <div className="relative">
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-4 uppercase tracking-wider">
-                                <Sparkles className="h-3 w-3" />
+                                <Zap className="h-3 w-3" />
                                 Flagship
                             </div>
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-5">
@@ -287,7 +285,7 @@ export default function TranscriptionLanding() {
                 <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24">
                     <div className="text-center mb-12 sm:mb-16">
                         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-4">
-                            <Sparkles className="h-3.5 w-3.5" />
+                            <Zap className="h-3.5 w-3.5" />
                             The Studio
                         </div>
                         <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.75rem)] font-bold tracking-tight">

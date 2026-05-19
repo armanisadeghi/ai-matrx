@@ -41,7 +41,7 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
-  Wand2,
+  Zap,
   Upload,
   Crop,
   Download,
@@ -52,7 +52,7 @@ import {
   Check,
   RefreshCw,
   SquareStack,
-  Copy,
+  Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
@@ -1347,7 +1347,7 @@ function BlankPagesBanner({
                 </>
               ) : (
                 <>
-                  <Wand2 className="w-3 h-3" />
+                  <Zap className="w-3 h-3" />
                   Re-run pipeline
                 </>
               )}

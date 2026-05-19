@@ -24,10 +24,10 @@ import {
   FileText,
   Layers,
   Loader2,
-  Sparkles,
-  Wand2,
+  Stars,
+  Zap,
   X as XIcon,
-  XCircle,
+  XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ const STAGE_META: Record<ProcessingStageId, StageMeta> = {
   },
   clean: {
     label: "Clean",
-    Icon: Wand2,
+    Icon: Zap,
     gradient: "from-violet-500 to-violet-400",
     text: "text-violet-700 dark:text-violet-300",
   },
@@ -63,7 +63,7 @@ const STAGE_META: Record<ProcessingStageId, StageMeta> = {
   },
   embed: {
     label: "Embed",
-    Icon: Sparkles,
+    Icon: Stars,
     gradient: "from-emerald-500 to-emerald-400",
     text: "text-emerald-700 dark:text-emerald-300",
   },

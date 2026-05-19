@@ -33,12 +33,12 @@ import {
   WrapText,
   Map,
   AlignLeft,
-  Wand2,
+  Zap,
   FolderOpen,
   Save,
   Loader2,
   AlertCircle,
-  CircleDot,
+  CircleDot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -230,7 +230,7 @@ export function CodeEditorWindow({
                   disabled={!isEditing}
                   title="Format document"
                 >
-                  <Wand2 className="w-3.5 h-3.5" />
+                  <Zap className="w-3.5 h-3.5" />
                 </ActionBtn>
 
                 {/* Divider */}

@@ -14,7 +14,7 @@ import {
   FileText,
   FolderKanban,
   Settings as SettingsIcon,
-  Sparkles,
+  Zap
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +92,7 @@ export function ScopesHub() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <QuickLink href="/scopes/templates" icon={Sparkles}>
+          <QuickLink href="/scopes/templates" icon={Zap}>
             Templates
           </QuickLink>
           <QuickLink href="/scopes/settings" icon={SettingsIcon}>

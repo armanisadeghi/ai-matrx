@@ -49,8 +49,7 @@ import {
   RefreshCw,
   Trash2,
   Upload,
-  Wand2,
-  Zap,
+  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -1062,7 +1061,7 @@ function ReadyToGenerateBar({
   return (
     <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
       <div className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-        <Wand2 className="h-4 w-4" />
+        <Zap className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">Ready to generate</p>

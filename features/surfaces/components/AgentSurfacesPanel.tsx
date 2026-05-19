@@ -30,9 +30,9 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Sparkles,
+  Zap,
   Trash2,
-  User,
+  User
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -654,7 +654,7 @@ function BindingRow({
           className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
           aria-label="Create shortcut from this binding"
         >
-          <Sparkles className="h-3 w-3" />
+          <Zap className="h-3 w-3" />
           Shortcut
         </Button>
         <Button

@@ -7,9 +7,9 @@ import {
   ArrowRight,
   Check,
   ShieldCheck,
-  Sparkles,
+  Crown,
   X,
-  Zap,
+  Zap
 } from "lucide-react";
 import { BillingToggle } from "./BillingToggle";
 import {
@@ -34,7 +34,7 @@ interface UpgradeModalProps {
 const TRUST_POINTS = [
   { icon: Zap, label: `${TRIAL_DAYS}-day trial` },
   { icon: ShieldCheck, label: "Cancel anytime" },
-  { icon: Sparkles, label: "All frontier models" },
+  { icon: Crown, label: "All frontier models" },
 ];
 
 export function UpgradeModal({
@@ -103,7 +103,7 @@ export function UpgradeModal({
             <div className="relative flex items-center justify-between">
               <div className="inline-flex items-center gap-2">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-background/10 ring-1 ring-background/20">
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Crown className="h-3.5 w-3.5" />
                 </span>
                 <span className="text-sm font-medium tracking-tight">
                   AI Matrx

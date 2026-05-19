@@ -19,10 +19,10 @@ import {
   FileText,
   Layers,
   Search,
-  Sparkles,
+  Zap,
   Eye,
   AlertTriangle,
-  CheckCircle2,
+  CheckCircle2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -76,7 +76,7 @@ export function RagHomePage() {
               label="Embedding"
               value={summary?.documentsEmbedding}
               loading={loading}
-              icon={<Sparkles className="h-3.5 w-3.5 text-blue-500" />}
+              icon={<Zap className="h-3.5 w-3.5 text-blue-500" />}
             />
             <StatCard
               label="Extracted"

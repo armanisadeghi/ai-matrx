@@ -31,9 +31,9 @@ import {
   Maximize2,
   Minimize2,
   Pause,
-  Sparkles,
-  Wand2,
-  X as XIcon,
+  Stars,
+  Zap,
+  X as XIcon
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -157,7 +157,7 @@ const STAGES: {
   {
     id: "clean",
     label: "Clean",
-    Icon: Wand2,
+    Icon: Zap,
     description: "LLM cleanup + section classification",
   },
   {
@@ -169,7 +169,7 @@ const STAGES: {
   {
     id: "embed",
     label: "Embed",
-    Icon: Sparkles,
+    Icon: Stars,
     description: "Generating embedding vectors",
   },
 ];

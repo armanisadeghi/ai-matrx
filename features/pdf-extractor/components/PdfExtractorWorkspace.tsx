@@ -27,9 +27,9 @@ import {
   Plus,
   StickyNote,
   ExternalLink,
-  Wand2,
+  Zap,
   RefreshCw,
-  ClipboardList,
+  ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -218,7 +218,7 @@ export function PdfExtractorFloatingWorkspace({
           )}
           {defaultShortcut && activeTab.document.content && (
             <FooterButton
-              icon={<Wand2 className="w-2.5 h-2.5" />}
+              icon={<Zap className="w-2.5 h-2.5" />}
               label={defaultShortcut.label}
               onClick={() => handleRunShortcut(defaultShortcut.id)}
             />
@@ -730,7 +730,7 @@ function ExtractionTabContent({
         <SubTabBtn
           active={subTab === "ai"}
           onClick={() => setSubTab("ai")}
-          icon={<Wand2 className="w-3 h-3" />}
+          icon={<Zap className="w-3 h-3" />}
           label="AI Actions"
         />
         <SubTabBtn
@@ -825,7 +825,7 @@ function AiActionsView({
   return (
     <div className="p-3 space-y-2">
       <div className="flex items-center gap-1.5 mb-1">
-        <Wand2 className="w-3.5 h-3.5 text-primary" />
+        <Zap className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
           Run an Agent
         </span>
@@ -849,7 +849,7 @@ function AiActionsView({
               className="flex items-start gap-2 px-2.5 py-2 bg-card border border-border rounded-md"
             >
               <div className="shrink-0 w-6 h-6 rounded bg-primary/10 flex items-center justify-center mt-0.5">
-                <Wand2 className="w-3 h-3 text-primary" />
+                <Zap className="w-3 h-3 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium leading-tight">{s.label}</p>
@@ -978,7 +978,7 @@ function AiCleanView({
     return (
       <div className="p-3 space-y-2">
         <div className="flex items-center gap-1.5">
-          <Wand2 className="w-3.5 h-3.5 text-primary" />
+          <Zap className="w-3.5 h-3.5 text-primary" />
           <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
             AI Cleaned
           </span>
@@ -1028,7 +1028,7 @@ function AiCleanView({
           className="h-7 text-xs"
           onClick={() => onClean(tab.id)}
         >
-          <Wand2 className="w-3 h-3 mr-1.5" />
+          <Zap className="w-3 h-3 mr-1.5" />
           {hasError ? "Re-run Cleanup" : "Run AI Cleanup"}
         </Button>
         {hasError && (

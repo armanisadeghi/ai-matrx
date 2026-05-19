@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import {
-  Wand2,
+  Zap,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
@@ -21,7 +21,7 @@ import {
   ThumbsUp,
   Copy,
   ClipboardList,
-  HardDrive,
+  HardDrive
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1376,7 +1376,7 @@ export function ToolUiComponentGenerator({
                   disabled={selectedSampleIds.size === 0 || isFetchingData}
                   className={preselectedToolName ? "w-full" : ""}
                 >
-                  <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                  <Zap className="w-3.5 h-3.5 mr-1.5" />
                   Generate Component
                 </Button>
               </div>

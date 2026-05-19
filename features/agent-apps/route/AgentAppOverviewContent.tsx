@@ -35,11 +35,11 @@ import {
   Lock,
   Settings as SettingsIcon,
   ShieldCheck,
-  Sparkles,
+  Zap,
   Tag,
   Variable,
   Webhook,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -282,7 +282,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
         {/* ── Labeled pills — every value says what it is ─────────────── */}
         <div className="flex flex-wrap gap-2">
-          <LabeledPill label="Status" icon={Sparkles} accent="text-amber-500">
+          <LabeledPill label="Status" icon={Zap} accent="text-amber-500">
             {statusLabel}
           </LabeledPill>
           <LabeledPill
@@ -328,7 +328,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             </LabeledPill>
           )}
           {app.is_featured && (
-            <LabeledPill label="Featured" icon={Sparkles} accent="text-amber-500">
+            <LabeledPill label="Featured" icon={Zap} accent="text-amber-500">
               Yes
             </LabeledPill>
           )}
@@ -432,7 +432,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
           />
           {typeof app.total_cost === "number" && app.total_cost > 0 && (
             <StatChip
-              icon={Sparkles}
+              icon={Zap}
               label="cost"
               value={`$${app.total_cost.toFixed(2)}`}
               accent="text-amber-500"

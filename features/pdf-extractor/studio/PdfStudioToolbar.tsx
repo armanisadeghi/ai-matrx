@@ -19,13 +19,13 @@ import {
   ChevronRight,
   Layers,
   GitBranch,
-  Wand2,
+  Zap,
   ExternalLink,
   Loader2,
   Search,
   RefreshCw,
   PartyPopper,
-  ClipboardList,
+  ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -182,7 +182,7 @@ export function PdfStudioToolbar({
               </>
             ) : (
               <>
-                <Wand2 className="w-3 h-3" />
+                <Zap className="w-3 h-3" />
                 Pipeline
               </>
             )}

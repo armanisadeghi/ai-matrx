@@ -26,10 +26,10 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
-  Sparkles,
+  Zap,
   Trash2,
   X as XIcon,
-  XCircle,
+  XCircle
 } from "lucide-react";
 import {
   Sheet,
@@ -415,7 +415,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
       <div className="relative mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-        <Sparkles className="h-5 w-5 text-muted-foreground" />
+        <Zap className="h-5 w-5 text-muted-foreground" />
       </div>
       <h3 className="text-sm font-semibold">Nothing processing yet</h3>
       <p className="text-xs text-muted-foreground mt-1 max-w-xs">

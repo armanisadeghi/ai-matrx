@@ -8,9 +8,9 @@ import {
   Check,
   ExternalLink,
   Cpu,
-  Bot,
+  Compass,
   Code,
-  AlertCircle,
+  AlertCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -377,7 +377,7 @@ export function SurfaceDetailDrawer({ surface, onClose, onChanged }: Props) {
           {/* Usage: agents */}
           <section className="space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-              <Bot className="h-3.5 w-3.5" />
+              <Compass className="h-3.5 w-3.5" />
               Agents visible here
               <Badge variant="outline" className="text-[10px]">
                 {usage?.agents.length ?? "—"}

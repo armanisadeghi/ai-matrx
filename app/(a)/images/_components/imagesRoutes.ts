@@ -8,14 +8,12 @@ import {
   Layers,
   Library,
   Pencil,
-  Sparkles,
+  Zap,
   Stamp,
   Upload,
   UserCircle,
-  Wand2,
-  Wand,
   Wrench,
-  type LucideIcon,
+  type LucideIcon
 } from "lucide-react";
 
 /**
@@ -112,7 +110,7 @@ export const IMAGES_ROUTES: readonly ImagesRoute[] = [
   {
     path: "/images/studio-light",
     label: "Studio Light",
-    Icon: Wand2,
+    Icon: Zap,
     iconColor: "text-fuchsia-400",
     group: "studio",
   },
@@ -126,21 +124,21 @@ export const IMAGES_ROUTES: readonly ImagesRoute[] = [
   {
     path: "/images/ai-generate",
     label: "AI Generate",
-    Icon: Sparkles,
+    Icon: Zap,
     iconColor: "text-rose-500",
     group: "studio",
   },
   {
     path: "/images/generate",
     label: "Generate",
-    Icon: Wand2,
+    Icon: Zap,
     iconColor: "text-violet-400",
     group: "studio",
   },
   {
     path: "/images/edit",
     label: "Edit",
-    Icon: Wand,
+    Icon: Zap,
     iconColor: "text-amber-400",
     group: "studio",
   },

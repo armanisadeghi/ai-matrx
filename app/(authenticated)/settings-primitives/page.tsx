@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Wand2,
   Zap,
   Shield,
   ShieldCheck,
@@ -14,7 +13,7 @@ import {
   Code,
   Keyboard,
   Database,
-  Settings,
+  Settings
 } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
@@ -375,7 +374,7 @@ export default function SettingsPrimitivesDemoPage() {
           <SettingsReadOnlyValue
             label="App version"
             value="0.3.217"
-            icon={Wand2}
+            icon={Zap}
           />
           <SettingsReadOnlyValue
             label="Build ID"

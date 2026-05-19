@@ -24,13 +24,13 @@ import {
   Activity,
   Clock,
   BarChart3,
-  Wand2,
+  Zap,
   Copy,
   Check,
   Image,
   AlertCircle,
   ArrowDownToLine,
-  Upload,
+  Upload
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/utils/supabase/client";
@@ -520,7 +520,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
                 href={`/ai/prompts/edit/${app.prompt_id}`}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all group"
               >
-                <Wand2 className="w-4 h-4 text-primary shrink-0" />
+                <Zap className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm font-medium text-primary">
                   {promptName || "Loading prompt..."}
                 </span>
@@ -743,7 +743,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
                           Powered by Prompt
                         </label>
                         <div className="flex items-center gap-2">
-                          <Wand2 className="w-4 h-4 text-primary shrink-0" />
+                          <Zap className="w-4 h-4 text-primary shrink-0" />
                           <span className="text-sm font-medium text-foreground">
                             {promptName || "Loading prompt..."}
                           </span>

@@ -1,9 +1,9 @@
 // config/aiCustomizationConfig.ts
-import { 
-    SquareStack, 
-    MessageSquare, 
-    Brain, 
-    BookOpen, 
+import {
+    SquareStack,
+    MessageSquare,
+    Brain,
+    BookOpen,
     Clock,
     UserCircle,
     Sliders,
@@ -11,10 +11,10 @@ import {
     PanelTop,
     Code,
     MousePointerClick,
-    Wand2,
+    Zap,
     Settings,
     ListChecks
-  } from 'lucide-react';
+} from 'lucide-react';
   import { AICustomizationConfig } from './types';
   import {
     PersonalityCard,
@@ -109,7 +109,7 @@ import {
           {
             id: 'interactive',
             title: 'Interactive Features',
-            icon: Wand2,
+            icon: Zap,
             component: InteractiveFeaturesCard
           }
         ]
