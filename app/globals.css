@@ -1516,18 +1516,68 @@
 .shell-active-pill .shell-nav-icon {
   color: var(--shell-pill-text);
 }
-/* Image editor — suppress Filerobot's duplicate dimension readout.
-   The Resize tab already exposes width/height inputs in its side panel; the
-   topbar's secondary readout (first child of the center options group, an
-   element like "1408 × 768 px") is redundant and confuses the layout. Hide
-   it only inside our editor shell so other Filerobot mounts (Annotate,
-   Avatar) are unaffected. The first-child target survives Filerobot's
-   styled-component class hashing across versions. */
+/* ─────────────────────────────────────────────────────────────────────────
+   Image editor — Filerobot polish
+   ─────────────────────────────────────────────────────────────────────────
+   1) Suppress the duplicate dimension readout (Resize tab inputs are the
+      canonical source). The first-child target survives Filerobot's
+      styled-component class hashing across versions.
+   2) Hide Filerobot's internal Save / Close / Back buttons — our header
+      owns those actions. We still trigger Filerobot's save handler
+      programmatically via DOM click, so the actual <button> stays in the
+      DOM, just hidden via display:none on the wrapper.
+   3) Soften the active-state blue on tabs / tools so the editor doesn't
+      drown in a dozen primary-blue surfaces. The codebase reserves
+      primary blue for *one* prominent action (header Save).
+   Scoped to `[data-image-edit-shell]` so other Filerobot mounts
+   (Annotate, Avatar, Convert) are unaffected. */
+
 [data-image-edit-shell] .FIE_topbar-image-info,
 [data-image-edit-shell] .FIE_topbar-resize-info,
 [data-image-edit-shell] .FIE_resize-info,
 [data-image-edit-shell] .FIE_topbar-center-options > :first-child {
   display: none !important;
+}
+
+/* Filerobot's internal Save / Close — handled by our header Save / Back.
+   The save button class hash differs across builds; we target the
+   semantic class plus a data-tut fallback. Use `visibility: hidden`
+   instead of `display: none` so our header-Save can still
+   programmatically click it (display:none unmounts pointer handlers in
+   some browsers; visibility:hidden keeps them but removes the visual). */
+[data-image-edit-shell] .FIE_topbar-save-button,
+[data-image-edit-shell] .FIE_buttons-save-btn-wrapper,
+[data-image-edit-shell] .FIE_buttons-save-btn-button,
+[data-image-edit-shell] [data-tut="save"],
+[data-image-edit-shell] .FIE_topbar-close-button,
+[data-image-edit-shell] .FIE_topbar-reset-button {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: auto !important;
+}
+
+/* Soften active-tab + active-tool blue. Use the codebase --accent surface
+   (a muted neutral) instead of saturated --primary so a tab being active
+   reads as "selected" without screaming. White text stays put. */
+[data-image-edit-shell] .FIE_tab[aria-selected="true"],
+[data-image-edit-shell] .FIE_tab.FIE_tab-active,
+[data-image-edit-shell] .FIE_tools-bar-wrapper .FIE_tool-active {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+[data-image-edit-shell] .FIE_tab[aria-selected="true"] svg,
+[data-image-edit-shell] .FIE_tab.FIE_tab-active svg,
+[data-image-edit-shell] .FIE_tools-bar-wrapper .FIE_tool-active svg {
+  color: hsl(var(--accent-foreground)) !important;
+  stroke: hsl(var(--accent-foreground)) !important;
 }
 
 .shell-active-pill .shell-nav-label {

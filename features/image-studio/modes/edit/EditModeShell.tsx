@@ -342,19 +342,20 @@ export function EditModeShell({
             )}
           </div>
 
-          {/* Mask toggle */}
+          {/* Mask toggle — secondary (muted) when active so it doesn't fight
+              the header's primary Save for attention. */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={mask.active ? "default" : "ghost"}
+                variant={mask.active ? "secondary" : "ghost"}
                 size="sm"
-                className="h-8 shrink-0 gap-1.5"
+                className="h-8 shrink-0 gap-1.5 text-foreground/80 hover:text-foreground"
                 onClick={() => mask.toggle()}
               >
                 <Layers className="h-3.5 w-3.5" />
                 Mask
                 {mask.hasPixels ? (
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary-foreground/80" />
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                 ) : null}
               </Button>
             </TooltipTrigger>
@@ -371,7 +372,7 @@ export function EditModeShell({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 shrink-0 gap-1.5"
+                className="h-8 shrink-0 gap-1.5 text-foreground/80 hover:text-foreground"
                 disabled={!effectiveCloudFileId || savingVariants !== null}
               >
                 {savingVariants ? (
@@ -434,13 +435,13 @@ export function EditModeShell({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* History rail toggle */}
+          {/* History rail toggle — subtle "selected" state via accent. */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={railOpen ? "default" : "ghost"}
+                variant={railOpen ? "secondary" : "ghost"}
                 size="icon"
-                className="h-8 w-8 shrink-0"
+                className="h-8 w-8 shrink-0 text-foreground/80 hover:text-foreground"
                 onClick={() => setRailOpen((v) => !v)}
                 disabled={!effectiveCloudFileId}
               >
@@ -600,13 +601,17 @@ function labelForPreset(p: AssetPreset): string {
  * raw values), so we reify the HSL tokens to hex here.
  */
 
+// Active states use the muted --accent (zinc-150) rather than saturated
+// --primary blue. Filerobot active tabs/tools then read as "selected"
+// without screaming. Reserve true primary blue for the one prominent
+// header Save button.
 const lightTheme = {
   palette: {
     "bg-primary": "#ffffff",
-    "bg-primary-active": "#1773ce",
+    "bg-primary-active": "#efeff1", // muted, was saturated blue
     "bg-secondary": "#f4f4f6",
-    "accent-primary": "#1773ce",
-    "accent-primary-active": "#125ea8",
+    "accent-primary": "#27272a", // foreground for active-tab text
+    "accent-primary-active": "#27272a",
     "icons-primary": "#27272a",
     "icons-secondary": "#56565d",
     "borders-primary": "#d8d8db",
@@ -615,7 +620,7 @@ const lightTheme = {
     "light-shadow": "rgba(39, 39, 42, 0.08)",
     "warning-primary": "#f59e0b",
     "bg-stateless": "#ffffff",
-    "bg-active": "#1773ce",
+    "bg-active": "#efeff1", // muted
     "bg-hover": "#efeff1",
     "bg-base-light": "#f9f9fa",
     "bg-base-medium": "#efeff1",
@@ -623,14 +628,14 @@ const lightTheme = {
     "bg-tooltip": "#27272a",
     "txt-primary": "#27272a",
     "txt-secondary": "#56565d",
-    "txt-secondary-invert": "#ffffff",
+    "txt-secondary-invert": "#27272a",
     "txt-placeholder": "#a1a1a8",
     "icon-primary": "#27272a",
     "icons-placeholder": "#a1a1a8",
-    "icons-invert": "#ffffff",
+    "icons-invert": "#27272a",
     "icons-muted": "#d8d8db",
-    "btn-primary-text": "#ffffff",
-    "accent-primary-hover": "#125ea8",
+    "btn-primary-text": "#27272a",
+    "accent-primary-hover": "#e9e9ec",
   },
   typography: {
     fontFamily:
@@ -641,10 +646,10 @@ const lightTheme = {
 const darkTheme = {
   palette: {
     "bg-primary": "#313135",
-    "bg-primary-active": "#2563eb",
+    "bg-primary-active": "#3a3a3e", // muted, was saturated blue
     "bg-secondary": "#27272a",
-    "accent-primary": "#2563eb",
-    "accent-primary-active": "#1d4ed8",
+    "accent-primary": "#e4e4e7", // light text on active background
+    "accent-primary-active": "#e4e4e7",
     "icons-primary": "#e4e4e7",
     "icons-secondary": "#c9c9cd",
     "borders-primary": "#48484e",
@@ -661,14 +666,14 @@ const darkTheme = {
     "bg-tooltip": "#18181b",
     "txt-primary": "#e4e4e7",
     "txt-secondary": "#c9c9cd",
-    "txt-secondary-invert": "#27272a",
+    "txt-secondary-invert": "#e4e4e7",
     "txt-placeholder": "#7c7c84",
     "icon-primary": "#e4e4e7",
     "icons-placeholder": "#7c7c84",
-    "icons-invert": "#27272a",
+    "icons-invert": "#e4e4e7",
     "icons-muted": "#48484e",
-    "btn-primary-text": "#ffffff",
-    "accent-primary-hover": "#1d4ed8",
+    "btn-primary-text": "#e4e4e7",
+    "accent-primary-hover": "#48484e",
   },
   typography: {
     fontFamily:

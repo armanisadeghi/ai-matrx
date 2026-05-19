@@ -1,20 +1,47 @@
 "use client";
 
 /**
- * AI assists strip — Suggest edits, Background remove, Upscale (2× / 4×),
- * AI edit by prompt. Lives inside the editor frame.
+ * AI / pixel-op assists strip. Lives inside the editor frame, just below
+ * the header. Every action targets a saved cloud file (the /[id] route
+ * guarantees `sourceCloudFileId` is non-null by the time the user gets here).
  *
- * Each AI op consumes the canonical `sourceCloudFileId` (the editor is
- * always operating on a saved cloud file by the time we get here). When
- * the mask overlay has been painted, the mask is uploaded as its own
- * cloud file and the resulting id is passed as `mask_id` so the backend
- * can constrain the op to the painted region.
+ * Catalogue exposed:
+ *   • Adjust — popover with brightness / contrast / saturation / sharpness
+ *     sliders → op="adjust" on POST /images/edit
+ *   • Auto color — one-click → op="auto_color"
+ *   • Sharpen — one-click w/ defaults → op="sharpen"
+ *   • Denoise — one-click w/ defaults → op="denoise"
+ *   • Remove BG — POST /images/bg-remove (mask_id OR'd when mask is painted)
+ *   • Upscale 2× / 4× — POST /images/upscale (legacy; SR lands in Wave 2)
+ *   • Inpaint — POST /images/inpaint, mask required
+ *
+ * Visual hierarchy: every secondary action is a ghost button so the
+ * editor's primary "Save" in the header is the only prominent blue.
  */
 
 import { useCallback, useState } from "react";
-import { ArrowUp, Eraser, Loader2, Sparkles, Zap, ZapOff } from "lucide-react";
+import {
+  ArrowUpRight,
+  Brush,
+  Eraser,
+  Loader2,
+  PaintBucket,
+  Settings2,
+  Sliders,
+  Sparkles,
+  Sun,
+  Wand2,
+  Waves,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import {
   Tooltip,
   TooltipContent,
@@ -22,9 +49,14 @@ import {
 } from "@/components/ui/tooltip";
 import { fileHandler } from "@/features/files/handler/handler";
 import {
+  adjust,
+  autoColor,
+  denoise as denoiseOp,
+  inpaint,
   removeBackground,
+  sharpen as sharpenOp,
   upscaleImage,
-  editImage,
+  type AssetEnvelope,
 } from "../../api/python";
 import type { MaskState } from "./use-mask-state";
 
@@ -35,7 +67,16 @@ interface Props {
   mask: MaskState;
 }
 
-type Busy = null | "bg" | "up2" | "up4" | "edit" | "suggest";
+type Busy =
+  | null
+  | "adjust"
+  | "auto"
+  | "sharpen"
+  | "denoise"
+  | "bg"
+  | "up2"
+  | "up4"
+  | "inpaint";
 
 export function EditAiToolbar({
   sourceCloudFileId,
@@ -44,8 +85,16 @@ export function EditAiToolbar({
   mask,
 }: Props) {
   const [busy, setBusy] = useState<Busy>(null);
-  const [editPrompt, setEditPrompt] = useState("");
-  const [editOpen, setEditOpen] = useState(false);
+  const [adjustValues, setAdjustValues] = useState({
+    brightness: 1,
+    contrast: 1,
+    saturation: 1,
+    sharpness: 1,
+  });
+  const [adjustOpen, setAdjustOpen] = useState(false);
+
+  const idMissing = !sourceCloudFileId;
+  const anyBusy = busy !== null;
 
   const ensureId = (op: string): string | null => {
     if (sourceCloudFileId) return sourceCloudFileId;
@@ -53,9 +102,8 @@ export function EditAiToolbar({
     return null;
   };
 
-  // Upload the painted mask (if any) as its own cloud file and return the
-  // resulting id. Returns null when the mask is empty so callers can omit
-  // the parameter and the backend defaults to unmasked behavior.
+  // Upload the painted mask (if any) as its own cloud file. Empty mask
+  // returns null so callers can omit the parameter.
   const resolveMaskId = useCallback(
     async (sourceFileId: string): Promise<string | null> => {
       if (!mask.hasPixels) return null;
@@ -71,10 +119,7 @@ export function EditAiToolbar({
         {
           folderPath: "Images/Masks",
           visibility: "private",
-          metadata: {
-            kind: "mask",
-            source_file_id: sourceFileId,
-          },
+          metadata: { kind: "mask", source_file_id: sourceFileId },
         },
       );
       return normalized.fileId ?? null;
@@ -82,19 +127,114 @@ export function EditAiToolbar({
     [mask],
   );
 
+  // Pull the primary URL + a reasonable filename out of the new Asset envelope.
+  const consume = useCallback(
+    (asset: AssetEnvelope, fallbackName: string) => {
+      const url = asset.primary_url ?? asset.variants?.original?.url ?? null;
+      if (!url) {
+        toast.error("Op completed but returned no URL.");
+        return;
+      }
+      onResult(url, deriveName(url, fallbackName));
+    },
+    [onResult],
+  );
+
+  const handleAdjust = async () => {
+    const id = ensureId("Adjust");
+    if (!id) return;
+    setBusy("adjust");
+    try {
+      const { asset } = await adjust(id, adjustValues);
+      consume(asset, "adjusted.png");
+      setAdjustOpen(false);
+    } catch (err) {
+      handleApiError(err, "Adjust");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleAutoColor = async () => {
+    const id = ensureId("Auto color");
+    if (!id) return;
+    setBusy("auto");
+    try {
+      const { asset } = await autoColor(id);
+      consume(asset, "auto-color.png");
+    } catch (err) {
+      handleApiError(err, "Auto color");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleSharpen = async () => {
+    const id = ensureId("Sharpen");
+    if (!id) return;
+    setBusy("sharpen");
+    try {
+      const { asset } = await sharpenOp(id, { amount: 1.2 });
+      consume(asset, "sharpen.png");
+    } catch (err) {
+      handleApiError(err, "Sharpen");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDenoise = async () => {
+    const id = ensureId("Denoise");
+    if (!id) return;
+    setBusy("denoise");
+    try {
+      const { asset } = await denoiseOp(id, { strength: 2 });
+      consume(asset, "denoise.png");
+    } catch (err) {
+      handleApiError(err, "Denoise");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const handleBgRemove = async () => {
     const id = ensureId("Background remove");
     if (!id) return;
     setBusy("bg");
     try {
       const maskId = await resolveMaskId(id);
-      const { file } = await removeBackground({
+      const { asset } = await removeBackground({
         source_id: id,
         ...(maskId ? { mask_id: maskId } : {}),
       });
-      onResult(file.public_url, deriveName(file.public_url, "no-bg.png"));
+      consume(asset, "no-bg.png");
     } catch (err) {
       handleApiError(err, "Background remove");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleInpaint = async () => {
+    const id = ensureId("Inpaint");
+    if (!id) return;
+    if (!mask.hasPixels) {
+      toast.info(
+        "Inpaint needs a mask — paint over the region you want filled.",
+      );
+      return;
+    }
+    setBusy("inpaint");
+    try {
+      const maskId = await resolveMaskId(id);
+      if (!maskId) {
+        toast.error("Couldn't upload mask. Try again.");
+        return;
+      }
+      const { asset } = await inpaint({ source_id: id, mask_id: maskId });
+      consume(asset, "inpaint.png");
+    } catch (err) {
+      handleApiError(err, "Inpaint");
     } finally {
       setBusy(null);
     }
@@ -105,8 +245,8 @@ export function EditAiToolbar({
     if (!id) return;
     setBusy(factor === 2 ? "up2" : "up4");
     try {
-      const { file } = await upscaleImage({ source_id: id, factor });
-      onResult(file.public_url, deriveName(file.public_url, `${factor}x.png`));
+      const { asset } = await upscaleImage({ source_id: id, factor });
+      consume(asset, `${factor}x.png`);
     } catch (err) {
       handleApiError(err, `${factor}× upscale`);
     } finally {
@@ -114,107 +254,176 @@ export function EditAiToolbar({
     }
   };
 
-  const handleEditPrompt = async () => {
-    const id = ensureId("AI edit");
-    if (!id) return;
-    if (!editPrompt.trim()) {
-      toast.info("Type what you want changed.");
-      return;
-    }
-    setBusy("edit");
-    try {
-      const maskId = await resolveMaskId(id);
-      const { file } = await editImage({
-        source_id: id,
-        prompt: editPrompt.trim(),
-        ...(maskId ? { mask_id: maskId } : {}),
-      });
-      onResult(file.public_url, deriveName(file.public_url, "edited.png"));
-      setEditOpen(false);
-      setEditPrompt("");
-    } catch (err) {
-      handleApiError(err, "AI edit");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleSuggestEdits = () => {
-    toast.info(
-      "Suggest edits agent ships next wave — see features/image-studio/AI-AGENTS.md",
-    );
-  };
-
-  const idMissing = !sourceCloudFileId;
-
   return (
-    <div className="flex items-center gap-1 overflow-x-auto border-b border-border bg-card/40 px-2 py-1 shrink-0">
-      <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1 flex items-center gap-1 shrink-0">
+    <div className="flex items-center gap-0.5 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1 shrink-0">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 mr-2 ml-1 flex items-center gap-1 shrink-0">
         <Sparkles className="h-3 w-3" />
-        AI
+        Ops
       </span>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
+      {/* Adjust — popover with sliders */}
+      <Popover open={adjustOpen} onOpenChange={setAdjustOpen}>
+        <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 shrink-0 gap-1.5 text-xs"
-            onClick={handleSuggestEdits}
-            disabled={busy !== null}
+            className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+            disabled={anyBusy || idMissing}
           >
-            {busy === "suggest" ? (
+            {busy === "adjust" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Zap className="h-3.5 w-3.5" />
+              <Sliders className="h-3.5 w-3.5" />
             )}
-            Suggest
+            Adjust
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>Ask AI what edits this image needs</TooltipContent>
-      </Tooltip>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72">
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Live values applied when you press Apply.
+            </p>
+            <AdjustSlider
+              label="Brightness"
+              value={adjustValues.brightness}
+              onChange={(v) =>
+                setAdjustValues((s) => ({ ...s, brightness: v }))
+              }
+              min={0.2}
+              max={2}
+              step={0.05}
+            />
+            <AdjustSlider
+              label="Contrast"
+              value={adjustValues.contrast}
+              onChange={(v) => setAdjustValues((s) => ({ ...s, contrast: v }))}
+              min={0.2}
+              max={2}
+              step={0.05}
+            />
+            <AdjustSlider
+              label="Saturation"
+              value={adjustValues.saturation}
+              onChange={(v) =>
+                setAdjustValues((s) => ({ ...s, saturation: v }))
+              }
+              min={0}
+              max={2}
+              step={0.05}
+            />
+            <AdjustSlider
+              label="Sharpness"
+              value={adjustValues.sharpness}
+              onChange={(v) => setAdjustValues((s) => ({ ...s, sharpness: v }))}
+              min={0}
+              max={2}
+              step={0.05}
+            />
+            <div className="flex justify-between items-center pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() =>
+                  setAdjustValues({
+                    brightness: 1,
+                    contrast: 1,
+                    saturation: 1,
+                    sharpness: 1,
+                  })
+                }
+              >
+                Reset
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleAdjust}
+                disabled={anyBusy}
+              >
+                {busy === "adjust" ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Apply"
+                )}
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <ToolbarOpButton
+        label="Auto color"
+        icon={Wand2}
+        running={busy === "auto"}
+        disabled={anyBusy || idMissing}
+        onClick={handleAutoColor}
+        tooltip="Auto white-balance + contrast"
+      />
+
+      <ToolbarOpButton
+        label="Sharpen"
+        icon={Sun}
+        running={busy === "sharpen"}
+        disabled={anyBusy || idMissing}
+        onClick={handleSharpen}
+        tooltip="Light sharpen pass"
+      />
+
+      <ToolbarOpButton
+        label="Denoise"
+        icon={Waves}
+        running={busy === "denoise"}
+        disabled={anyBusy || idMissing}
+        onClick={handleDenoise}
+        tooltip="Median-filter denoise"
+      />
+
+      <div className="w-px h-5 bg-border/60 mx-1 shrink-0" />
+
+      <ToolbarOpButton
+        label="Remove BG"
+        icon={Eraser}
+        running={busy === "bg"}
+        disabled={anyBusy || idMissing}
+        onClick={handleBgRemove}
+        tooltip={
+          mask.hasPixels
+            ? "Remove background — keep masked pixels"
+            : "Remove background → transparent PNG"
+        }
+        badge={mask.hasPixels ? "masked" : null}
+      />
+
+      <ToolbarOpButton
+        label="Inpaint"
+        icon={Brush}
+        running={busy === "inpaint"}
+        disabled={anyBusy || idMissing || !mask.hasPixels}
+        onClick={handleInpaint}
+        tooltip={
+          mask.hasPixels
+            ? "Fill masked region with content-aware patching"
+            : "Paint a mask first, then Inpaint will fill it"
+        }
+        badge={mask.hasPixels ? "ready" : null}
+      />
+
+      <div className="w-px h-5 bg-border/60 mx-1 shrink-0" />
 
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 shrink-0 gap-1.5 text-xs"
-            onClick={handleBgRemove}
-            disabled={busy !== null || idMissing}
-          >
-            {busy === "bg" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Eraser className="h-3.5 w-3.5" />
-            )}
-            Remove BG
-            {mask.hasPixels ? (
-              <span className="text-[9px] uppercase tracking-wide text-primary/80">
-                masked
-              </span>
-            ) : null}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          Remove background → transparent PNG
-          {mask.hasPixels ? " (constrained to mask)" : ""}
-        </TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0 gap-1 text-xs"
+            className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
             onClick={() => handleUpscale(2)}
-            disabled={busy !== null || idMissing}
+            disabled={anyBusy || idMissing}
           >
             {busy === "up2" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <ArrowUp className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             )}
             2×
           </Button>
@@ -227,14 +436,14 @@ export function EditAiToolbar({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 shrink-0 gap-1 text-xs"
+            className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
             onClick={() => handleUpscale(4)}
-            disabled={busy !== null || idMissing}
+            disabled={anyBusy || idMissing}
           >
             {busy === "up4" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <ArrowUp className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             )}
             4×
           </Button>
@@ -244,73 +453,91 @@ export function EditAiToolbar({
 
       <div className="hidden md:block flex-1" />
 
-      {editOpen ? (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <input
-            autoFocus
-            value={editPrompt}
-            onChange={(e) => setEditPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void handleEditPrompt();
-              if (e.key === "Escape") {
-                setEditOpen(false);
-                setEditPrompt("");
-              }
-            }}
-            placeholder='e.g. "make it sunset", "change shirt to blue"'
-            className="h-7 w-56 md:w-72 rounded-md border border-border bg-background px-2 text-xs"
-            style={{ fontSize: "16px" }}
-            disabled={busy !== null}
-          />
-          <Button
-            size="sm"
-            className="h-7 shrink-0"
-            onClick={handleEditPrompt}
-            disabled={busy !== null || !editPrompt.trim() || idMissing}
-          >
-            {busy === "edit" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              "Apply"
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0"
-            onClick={() => {
-              setEditOpen(false);
-              setEditPrompt("");
-            }}
-          >
-            <ZapOff className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="default"
-              size="sm"
-              className="h-7 shrink-0 gap-1.5 text-xs"
-              onClick={() => setEditOpen(true)}
-              disabled={busy !== null || idMissing}
-            >
-              <Zap className="h-3.5 w-3.5" />
-              AI edit by prompt
-              {mask.hasPixels ? (
-                <span className="text-[9px] uppercase tracking-wide opacity-80">
-                  masked
-                </span>
-              ) : null}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Edit the image by typing what you want changed
-            {mask.hasPixels ? " (constrained to mask)" : ""}
-          </TooltipContent>
-        </Tooltip>
-      )}
+      {mask.hasPixels ? (
+        <span className="hidden md:inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary mr-1 shrink-0">
+          <PaintBucket className="h-3 w-3" />
+          mask active
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function ToolbarOpButton({
+  label,
+  icon: Icon,
+  running,
+  disabled,
+  onClick,
+  tooltip,
+  badge,
+}: {
+  label: string;
+  icon: typeof Settings2;
+  running: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  tooltip: string;
+  badge?: string | null;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+          onClick={onClick}
+          disabled={disabled}
+        >
+          {running ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Icon className="h-3.5 w-3.5" />
+          )}
+          {label}
+          {badge ? (
+            <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">
+              {badge}
+            </span>
+          ) : null}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function AdjustSlider({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <Label className="text-foreground/80">{label}</Label>
+        <span className="font-mono text-muted-foreground tabular-nums">
+          {value.toFixed(2)}×
+        </span>
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={(v) => onChange(v[0])}
+        min={min}
+        max={max}
+        step={step}
+      />
     </div>
   );
 }
@@ -318,10 +545,15 @@ export function EditAiToolbar({
 function handleApiError(err: unknown, opName: string) {
   const msg = err instanceof Error ? err.message : `${opName} failed`;
   const notImplemented =
-    /404|not.*found|not.*implement/i.test(msg) ||
+    /\b404\b|\bnot.found\b|not.implement/i.test(msg) ||
     msg.toLowerCase().includes("unavailable");
+  const missingBackend = /\b503\b|pip install/i.test(msg);
   if (notImplemented) {
     toast.info(`${opName} ships next wave.`);
+  } else if (missingBackend) {
+    toast.error(
+      `${opName}: backend not installed. ${msg.replace(/.*pip install/i, "pip install")}`,
+    );
   } else {
     toast.error(msg);
   }
