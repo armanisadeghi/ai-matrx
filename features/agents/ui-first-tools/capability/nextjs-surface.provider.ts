@@ -1,14 +1,19 @@
 /**
  * `nextjs-surface` capability provider.
  *
- * Always active for authenticated users on any Next.js surface (chat, agent
+ * Active for every authenticated user on any Next.js surface (chat, agent
  * build, agent run, agent app). Returns a `NextjsSurfaceState` orchestration
- * envelope that the aidream `load_nextjs_tools` discovery handler reads to
- * decide which UI-first tools to register.
+ * envelope that aidream stashes on `AppContext.metadata` for downstream
+ * discovery handlers to filter UI-first tool injection.
+ *
+ * The aidream backend registers the matching `NextjsSurfacePayload` /
+ * `NEXTJS_SURFACE` capability in `aidream/api/client_capabilities.py`. The
+ * two shapes must stay in sync — payload mismatches surface as a 422.
  *
  * Self-registers on import. Imported once from
- * `features/agents/ui-first-tools/capability/register.ts`, which is in turn
- * imported from `app/DeferredSingletons.tsx` for the side effect.
+ * `features/agents/redux/execution-system/client-capabilities/register-all.ts`,
+ * which is in turn imported from `app/DeferredSingletons.tsx` for the side
+ * effect.
  */
 
 import {
@@ -59,24 +64,9 @@ function classifyRouteKind(pathname: string | null): string | null {
   return "other";
 }
 
-/**
- * Toggle: keep the capability OUT of the wire envelope until aidream
- * registers `nextjs-surface` as a known capability. Until that lands,
- * declaring it would 422 the whole request. The seven UI-first tools
- * still ship via `build-tool-injection.ts` (gated on `state.userAuth?.id`,
- * not on this capability). The ambient context still rides through
- * `buildAmbientContext` (first-turn-only) into the `context` payload. The ONLY thing
- * disabling this loses is the orchestration envelope at
- * `client.state['nextjs-surface']` — which we don't need today.
- *
- * To re-enable after aidream adds the handler: flip this to true.
- */
-const ENABLE_NEXTJS_SURFACE_CAPABILITY = false;
-
 registerClientCapability({
   name: "nextjs-surface",
   selectPayload: (state, conversationId): NextjsSurfaceState | null => {
-    if (!ENABLE_NEXTJS_SURFACE_CAPABILITY) return null;
     // Authentication is required — the seven UI-first tools all hit RLS-gated
     // tables. If there's no user, the capability stays out of the envelope
     // entirely so aidream doesn't register a tool set that would just fail.

@@ -122,11 +122,8 @@ export async function buildToolInjection(
   // `kind: "registered"` with `delegate: true` so aidream short-circuits
   // dispatch and emits `tool_delegated` for our client to handle.
   //
-  // NOTE: this is INTENTIONALLY decoupled from the `nextjs-surface`
-  // capability. Aidream may not have a `load_nextjs_tools` discovery
-  // handler registered yet; in that case declaring the capability would
-  // 422 the entire request. As long as the user is signed in (which RLS
-  // requires for the handlers to write anything), ship the tools.
+  // Independently from this, the `nextjs-surface` capability ships the
+  // orchestration envelope (route, scope, admin, permission_mode, …).
   if (state.userAuth?.id) {
     const declaredNames = new Set(
       allTools.map((t) => ("name" in t ? (t.name as string) : "")),
