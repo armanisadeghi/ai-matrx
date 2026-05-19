@@ -39,7 +39,8 @@ import { useAllFolders } from "../utils/folderUtils";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 // import { UnifiedAgentContextMenu } from '@/features/context-menu-v2';
 
 // Dynamic imports for heavy components (only load when needed)
@@ -804,7 +805,16 @@ export function NoteEditor({
             <ScrollArea className="absolute inset-0 w-full h-full">
               <div className="p-6 pb-[50vh] bg-textured">
                 {localContent.trim() ? (
-                  <MarkdownStream content={localContent} />
+                  <RichDocument
+                    content={localContent}
+                    source={
+                      note?.id && note.id !== "__phantom__"
+                        ? ({ type: "note", noteId: note.id } as ContentSource)
+                        : ({ type: "raw" } as ContentSource)
+                    }
+                    actionsVariant="bar"
+                    actionsClassName="mb-3"
+                  />
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     No content to preview

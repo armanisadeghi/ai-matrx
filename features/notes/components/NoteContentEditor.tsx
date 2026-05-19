@@ -467,6 +467,7 @@ export function NoteContentEditor({ noteId }: NoteContentEditorProps) {
             placeholder="Start typing..."
             className="flex-1 min-h-0"
             resetKey={`${noteId}:${resetGen}`}
+            noteId={noteId}
             findOverlay={
               editorMode === "plain" || editorMode === "split" ? (
                 <>

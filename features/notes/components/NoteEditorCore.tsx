@@ -22,20 +22,9 @@ import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import type { MarkdownStreamProps } from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 import { cn } from "@/lib/utils";
-
-const MarkdownStream = dynamic<MarkdownStreamProps>(
-  () => import("@/components/MarkdownStream"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Loading preview...
-      </div>
-    ),
-  },
-);
 
 const TuiEditorContent = dynamic(
   () =>
@@ -113,6 +102,14 @@ export interface NoteEditorCoreProps {
    * register CSS highlight ranges, measure scroll, etc.
    */
   previewContainerRef?: React.Ref<HTMLDivElement | null>;
+  /**
+   * When provided, the preview mode wraps its rendered content in a
+   * RichDocument with source `{ type: "note", noteId }` so the action bar
+   * surfaces note-specific operations (copy, save-to-task, print, etc.).
+   * When omitted, the preview uses `{ type: "raw" }` — actions still
+   * appear but `save-to-task` won't link to a parent note row.
+   */
+  noteId?: string;
 }
 
 /**
@@ -140,6 +137,7 @@ export function NoteEditorCore({
   resetKey,
   findOverlay,
   previewContainerRef,
+  noteId,
 }: NoteEditorCoreProps) {
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const internalTuiRef = useRef<any>(null);
@@ -274,9 +272,16 @@ export function NoteEditorCore({
             previewClassName,
           )}
         >
-          <MarkdownStream
+          <RichDocument
             key={resetKey}
             content={content}
+            source={
+              noteId
+                ? ({ type: "note", noteId } as ContentSource)
+                : ({ type: "raw" } as ContentSource)
+            }
+            actionsVariant="bar"
+            actionsClassName="mb-2"
             isStreamActive={false}
             hideCopyButton={true}
             allowFullScreenEditor={true}

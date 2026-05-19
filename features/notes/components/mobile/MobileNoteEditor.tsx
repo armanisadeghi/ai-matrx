@@ -17,7 +17,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import MarkdownStream from '@/components/MarkdownStream';
+import { RichDocument } from '@/features/rich-document/RichDocument';
+import type { ContentSource } from '@/features/rich-document/types';
 import type { Note } from '@/features/notes/types';
 
 export type MobileEditorMode = 'plain' | 'wysiwyg' | 'preview';
@@ -262,7 +263,12 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
         {editorMode === 'preview' && (
           <div className="min-h-[calc(100dvh-200px)] prose prose-sm dark:prose-invert max-w-none">
             {localContent.trim() ? (
-              <MarkdownStream content={localContent} />
+              <RichDocument
+                content={localContent}
+                source={{ type: "note", noteId: note.id } as ContentSource}
+                actionsVariant="mini-bar"
+                actionsClassName="mb-2"
+              />
             ) : (
               <p className="text-muted-foreground text-sm">Nothing to preview yet.</p>
             )}
