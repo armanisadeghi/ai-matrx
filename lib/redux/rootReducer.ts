@@ -166,6 +166,7 @@ import { default as netRequestsReducer } from "@/lib/redux/net/netRequestsSlice"
 import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
 import markdownSamplesReducer from "@/lib/redux/slices/markdownSamples/slice";
 import userMarkdownSamplesReducer from "@/lib/redux/slices/userMarkdownSamples/slice";
+import richDocumentActionSurfacesReducer from "@/features/rich-document/redux/actionSurfacesSlice";
 
 const featureReducers = Object.keys(featureSchemas).reduce(
   (acc, featureName) => {
@@ -390,6 +391,12 @@ export const slimReducerMap = {
   markdownSamples: markdownSamplesReducer,
   // Markdown Studio — per-user samples (RLS scoped to auth.uid()).
   userMarkdownSamples: userMarkdownSamplesReducer,
+
+  // RichDocument remote-surface registry — maps surfaceId → stack of
+  // registered RichDocument providers so a <RichDocumentActionSurface/>
+  // can render actions for whichever document is currently on top.
+  // See features/rich-document/FEATURE.md.
+  richDocumentActionSurfaces: richDocumentActionSurfacesReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);
