@@ -41,8 +41,11 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { SpeakerGroup } from "@/features/tts/components/SpeakerGroup";
-import { useMarkdownSnippets } from "./markdown-tester/useMarkdownSnippets";
-import { SnippetManager } from "./markdown-tester/SnippetManager";
+import { useMarkdownAutosave } from "./markdown-tester/useMarkdownAutosave";
+import { SampleManager } from "./markdown-tester/SampleManager";
+import { BlockParserComparison } from "./markdown-tester/BlockParserComparison";
+import type { MarkdownSample } from "./markdown-tester/samples-service";
+import { GitCompare } from "lucide-react";
 import {
   extractAllJson,
   type ExtractedJson,
@@ -903,36 +906,32 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const isSyncingRef = useRef(false);
 
-  const snippetStore = useMarkdownSnippets(inputContent);
+  const [loadedSampleId, setLoadedSampleId] = useState<string | null>(null);
+  const { loadAutosave } = useMarkdownAutosave(inputContent);
 
   useEffect(() => {
-    snippetStore.loadAutosave().then((saved) => {
+    loadAutosave().then((saved) => {
       if (saved) {
         setInputContent(saved);
         setRenderedContent(saved);
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadAutosave]);
+
+  const handleLoadSample = useCallback((sample: MarkdownSample) => {
+    setInputContent(sample.content);
+    setRenderedContent(sample.content);
+    setLoadedSampleId(sample.id);
   }, []);
 
-  const handleLoadSnippet = useCallback(
-    async (id: string) => {
-      const content = await snippetStore.loadSnippet(id);
-      if (content !== null) {
-        setInputContent(content);
-        setRenderedContent(content);
-      }
-    },
-    [snippetStore],
-  );
-
   const handleLoadAutosave = useCallback(async () => {
-    const content = await snippetStore.loadAutosave();
+    const content = await loadAutosave();
     if (content !== null) {
       setInputContent(content);
       setRenderedContent(content);
+      setLoadedSampleId(null);
     }
-  }, [snippetStore]);
+  }, [loadAutosave]);
 
   // Block-processing API
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
@@ -1094,6 +1093,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
 
   const handleClear = useCallback(() => {
     setInputContent("");
+    setLoadedSampleId(null);
   }, []);
 
   const handleContentInserted = useCallback(() => {
@@ -1305,13 +1305,10 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
               Test Audio
             </Button>
 
-            <SnippetManager
-              snippets={snippetStore.snippets}
-              isLoading={snippetStore.isLoading}
-              hasContent={!!inputContent.trim()}
-              onSave={snippetStore.saveSnippet}
-              onLoad={handleLoadSnippet}
-              onDelete={snippetStore.deleteSnippet}
+            <SampleManager
+              currentContent={inputContent}
+              loadedSampleId={loadedSampleId}
+              onLoad={handleLoadSample}
               onLoadAutosave={handleLoadAutosave}
             />
 
@@ -1428,6 +1425,13 @@ Right-click for content block templates!"
                         >
                           <Braces className="h-3 w-3" />
                           JSON Extract
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="analysis"
+                          className="text-xs h-6 px-2.5 flex items-center gap-1"
+                        >
+                          <GitCompare className="h-3 w-3" />
+                          Analysis
                         </TabsTrigger>
                       </TabsList>
                       {(activeTab === "json" || activeTab === "stream") && (
@@ -1658,6 +1662,13 @@ Right-click for content block templates!"
 
                   {activeTab === "json-extract" && (
                     <JsonExtractionPanel content={renderedContent} />
+                  )}
+
+                  {activeTab === "analysis" && (
+                    <BlockParserComparison
+                      currentContent={renderedContent}
+                      loadedSampleId={loadedSampleId}
+                    />
                   )}
                 </div>
               </div>

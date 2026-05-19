@@ -16,6 +16,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _schema_migrations: {
+        Row: {
+          applied_at: string
+          checksum: string
+          duration_ms: number
+          filename: string
+          source: string
+        }
+        Insert: {
+          applied_at?: string
+          checksum: string
+          duration_ms: number
+          filename: string
+          source: string
+        }
+        Update: {
+          applied_at?: string
+          checksum?: string
+          duration_ms?: number
+          filename?: string
+          source?: string
+        }
+        Relationships: []
+      }
       action: {
         Row: {
           id: string
@@ -115,6 +139,39 @@ export type Database = {
           sent_by?: string
           subject?: string
           successful_count?: number | null
+        }
+        Relationships: []
+      }
+      admin_markdown_samples: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          description: string
+          detected_blocks: string[]
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          detected_blocks?: string[]
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          detected_blocks?: string[]
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -630,6 +687,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_user_kv: {
+        Row: {
+          key: string
+          updated_at: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          user_id: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: []
       }
       agx_agent: {
         Row: {
@@ -3074,6 +3152,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_items_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -6191,6 +6276,137 @@ export type Database = {
         }
         Relationships: []
       }
+      cx_agent_plan: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          domains: string[] | null
+          estimated_minutes: number | null
+          id: string
+          project_id: string | null
+          reasoning: string | null
+          status: Database["public"]["Enums"]["cx_plan_status"]
+          steps: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          domains?: string[] | null
+          estimated_minutes?: number | null
+          id?: string
+          project_id?: string | null
+          reasoning?: string | null
+          status?: Database["public"]["Enums"]["cx_plan_status"]
+          steps?: Json
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          domains?: string[] | null
+          estimated_minutes?: number | null
+          id?: string
+          project_id?: string | null
+          reasoning?: string | null
+          status?: Database["public"]["Enums"]["cx_plan_status"]
+          steps?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_agent_plan_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_plan_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_plan_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_agent_task: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          created_by: Database["public"]["Enums"]["cx_agent_task_creator"]
+          id: string
+          note: string | null
+          plan_id: string | null
+          position: number
+          status: Database["public"]["Enums"]["cx_agent_task_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          id?: string
+          note?: string | null
+          plan_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["cx_agent_task_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          id?: string
+          note?: string | null
+          plan_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["cx_agent_task_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_agent_task_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_task_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_task_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cx_agent_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cx_artifact: {
         Row: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
@@ -6264,6 +6480,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cx_artifact_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cx_artifact_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
@@ -6327,6 +6550,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_edit_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -6415,6 +6645,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_message_file_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -6535,6 +6772,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cx_conversation_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cx_conversation_initial_agent_fk"
             columns: ["initial_agent_id"]
             isOneToOne: false
@@ -6567,6 +6811,13 @@ export type Database = {
             columns: ["parent_conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_parent_conversation_id_fkey"
+            columns: ["parent_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -6631,6 +6882,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_media_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -6706,6 +6964,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_message_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -6804,6 +7069,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_observational_memory_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -6968,6 +7240,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -7157,6 +7436,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -7350,6 +7636,77 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_user_todo: {
+        Row: {
+          context: string | null
+          conversation_id: string
+          created_at: string
+          ctx_task_id: string | null
+          done: boolean
+          done_at: string | null
+          due: string | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: string | null
+          conversation_id: string
+          created_at?: string
+          ctx_task_id?: string | null
+          done?: boolean
+          done_at?: string | null
+          due?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: string | null
+          conversation_id?: string
+          created_at?: string
+          ctx_task_id?: string | null
+          done?: boolean
+          done_at?: string | null
+          due?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_user_todo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_todo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_todo_ctx_task_id_fkey"
+            columns: ["ctx_task_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -14248,27 +14605,42 @@ export type Database = {
       scrape_domain: {
         Row: {
           common_name: string | null
+          content_selector: string | null
           created_at: string | null
           id: string
           is_public: boolean | null
+          min_content_chars: number | null
+          min_real_content_chars: number | null
+          policy_action: string | null
+          policy_notes: string | null
           scrape_allowed: boolean | null
           updated_at: string | null
           url: string | null
         }
         Insert: {
           common_name?: string | null
+          content_selector?: string | null
           created_at?: string | null
           id?: string
           is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
+          policy_action?: string | null
+          policy_notes?: string | null
           scrape_allowed?: boolean | null
           updated_at?: string | null
           url?: string | null
         }
         Update: {
           common_name?: string | null
+          content_selector?: string | null
           created_at?: string | null
           id?: string
           is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
+          policy_action?: string | null
+          policy_notes?: string | null
           scrape_allowed?: boolean | null
           updated_at?: string | null
           url?: string | null
@@ -14840,26 +15212,41 @@ export type Database = {
       }
       scrape_path_pattern: {
         Row: {
+          content_selector: string | null
           created_at: string | null
           id: string
           is_public: boolean | null
+          min_content_chars: number | null
+          min_real_content_chars: number | null
           path_pattern: string | null
+          policy_action: string | null
+          policy_notes: string | null
           scrape_domain_id: string | null
           updated_at: string | null
         }
         Insert: {
+          content_selector?: string | null
           created_at?: string | null
           id?: string
           is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
           path_pattern?: string | null
+          policy_action?: string | null
+          policy_notes?: string | null
           scrape_domain_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          content_selector?: string | null
           created_at?: string | null
           id?: string
           is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
           path_pattern?: string | null
+          policy_action?: string | null
+          policy_notes?: string | null
           scrape_domain_id?: string | null
           updated_at?: string | null
         }
@@ -16840,6 +17227,113 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_source_chunk: {
+        Row: {
+          chunk_index: number
+          content: string
+          content_hash: string
+          created_at: string
+          embedding_model: string | null
+          embedding_pending: boolean
+          id: string
+          kind: string
+          owner_id: string
+          source_media_ref_id: string | null
+          source_metadata: Json
+          source_offset_end: number | null
+          source_offset_start: number | null
+          structured_section_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          content_hash: string
+          created_at?: string
+          embedding_model?: string | null
+          embedding_pending?: boolean
+          id?: string
+          kind: string
+          owner_id: string
+          source_media_ref_id?: string | null
+          source_metadata?: Json
+          source_offset_end?: number | null
+          source_offset_start?: number | null
+          structured_section_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          content_hash?: string
+          created_at?: string
+          embedding_model?: string | null
+          embedding_pending?: boolean
+          id?: string
+          kind?: string
+          owner_id?: string
+          source_media_ref_id?: string | null
+          source_metadata?: Json
+          source_offset_end?: number | null
+          source_offset_start?: number | null
+          structured_section_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_source_chunk_structured_section_id_fkey"
+            columns: ["structured_section_id"]
+            isOneToOne: false
+            referencedRelation: "study_structured_section"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_structured_section: {
+        Row: {
+          body: string
+          claims: Json
+          created_at: string
+          id: string
+          metadata: Json
+          organization_id: string | null
+          owner_id: string
+          project_id: string | null
+          summary: string | null
+          title: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          claims?: Json
+          created_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          owner_id: string
+          project_id?: string | null
+          summary?: string | null
+          title: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          claims?: Json
+          created_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          owner_id?: string
+          project_id?: string | null
+          summary?: string | null
+          title?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       subcategory: {
         Row: {
@@ -19095,6 +19589,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_flashcard_sets_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_flashcard_sets_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
@@ -19881,6 +20382,7 @@ export type Database = {
           is_archived: boolean
           is_favorite: boolean
           is_public: boolean
+          max_concurrent_runs: number | null
           metadata: Json
           name: string
           nodes: Json
@@ -19892,7 +20394,7 @@ export type Database = {
           tags: string[]
           task_id: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
           version: number
           viewport: Json
         }
@@ -19908,6 +20410,7 @@ export type Database = {
           is_archived?: boolean
           is_favorite?: boolean
           is_public?: boolean
+          max_concurrent_runs?: number | null
           metadata?: Json
           name: string
           nodes?: Json
@@ -19919,7 +20422,7 @@ export type Database = {
           tags?: string[]
           task_id?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           version?: number
           viewport?: Json
         }
@@ -19935,6 +20438,7 @@ export type Database = {
           is_archived?: boolean
           is_favorite?: boolean
           is_public?: boolean
+          max_concurrent_runs?: number | null
           metadata?: Json
           name?: string
           nodes?: Json
@@ -19946,7 +20450,7 @@ export type Database = {
           tags?: string[]
           task_id?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           version?: number
           viewport?: Json
         }
@@ -20019,6 +20523,44 @@ export type Database = {
             columns: ["definition_id"]
             isOneToOne: false
             referencedRelation: "wf_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wf_idempotency: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          route_path: string
+          run_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key: string
+          route_path: string
+          run_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string
+          route_path?: string
+          run_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wf_idempotency_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "wf_run"
             referencedColumns: ["id"]
           },
         ]
@@ -20159,6 +20701,7 @@ export type Database = {
           output: Json
           run_id: string
           sends: Json
+          source: string
           step: number
         }
         Insert: {
@@ -20172,6 +20715,7 @@ export type Database = {
           output?: Json
           run_id: string
           sends?: Json
+          source?: string
           step: number
         }
         Update: {
@@ -20185,6 +20729,7 @@ export type Database = {
           output?: Json
           run_id?: string
           sends?: Json
+          source?: string
           step?: number
         }
         Relationships: [
@@ -20193,6 +20738,66 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "wf_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wf_recovery_audit: {
+        Row: {
+          agent_confidence: number | null
+          agent_reasoning: string | null
+          created_at: string
+          id: string
+          proposal_action: string
+          proposal_payload: Json
+          run_id: string | null
+          surface: string
+          user_id: string
+          was_applied: boolean
+          was_overridden: boolean
+          workflow_id: string | null
+        }
+        Insert: {
+          agent_confidence?: number | null
+          agent_reasoning?: string | null
+          created_at?: string
+          id?: string
+          proposal_action: string
+          proposal_payload?: Json
+          run_id?: string | null
+          surface: string
+          user_id: string
+          was_applied?: boolean
+          was_overridden?: boolean
+          workflow_id?: string | null
+        }
+        Update: {
+          agent_confidence?: number | null
+          agent_reasoning?: string | null
+          created_at?: string
+          id?: string
+          proposal_action?: string
+          proposal_payload?: Json
+          run_id?: string | null
+          surface?: string
+          user_id?: string
+          was_applied?: boolean
+          was_overridden?: boolean
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wf_recovery_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "wf_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_recovery_audit_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "wf_definition"
             referencedColumns: ["id"]
           },
         ]
@@ -20212,17 +20817,19 @@ export type Database = {
           input: Json
           interrupt_payload: Json | null
           last_checkpoint_id: string | null
+          max_recovery_retries: number
           metadata: Json
           organization_id: string | null
           output: Json | null
           parent_run_id: string | null
           project_id: string | null
+          recovery_retry_count: number
           started_at: string | null
           status: string
           steps_executed: number
           task_id: string | null
           thread_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           agent_id?: string | null
@@ -20238,17 +20845,19 @@ export type Database = {
           input?: Json
           interrupt_payload?: Json | null
           last_checkpoint_id?: string | null
+          max_recovery_retries?: number
           metadata?: Json
           organization_id?: string | null
           output?: Json | null
           parent_run_id?: string | null
           project_id?: string | null
+          recovery_retry_count?: number
           started_at?: string | null
           status?: string
           steps_executed?: number
           task_id?: string | null
           thread_id: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           agent_id?: string | null
@@ -20264,17 +20873,19 @@ export type Database = {
           input?: Json
           interrupt_payload?: Json | null
           last_checkpoint_id?: string | null
+          max_recovery_retries?: number
           metadata?: Json
           organization_id?: string | null
           output?: Json | null
           parent_run_id?: string | null
           project_id?: string | null
+          recovery_retry_count?: number
           started_at?: string | null
           status?: string
           steps_executed?: number
           task_id?: string | null
           thread_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -20322,7 +20933,7 @@ export type Database = {
           task_id: string | null
           timezone: string
           updated_at: string
-          user_id: string | null
+          user_id: string
           webhook_secret: string | null
         }
         Insert: {
@@ -20346,7 +20957,7 @@ export type Database = {
           task_id?: string | null
           timezone?: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           webhook_secret?: string | null
         }
         Update: {
@@ -20370,7 +20981,7 @@ export type Database = {
           task_id?: string | null
           timezone?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           webhook_secret?: string | null
         }
         Relationships: [
@@ -21076,6 +21687,68 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      cx_conversation_summary: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          error_count: number | null
+          id: string | null
+          is_ephemeral: boolean | null
+          is_favorite: boolean | null
+          is_public: boolean | null
+          last_model_id: string | null
+          last_model_name: string | null
+          last_model_provider: string | null
+          last_request_at: string | null
+          last_request_status: string | null
+          message_count: number | null
+          organization_id: string | null
+          project_id: string | null
+          request_count: number | null
+          snapshot_count: number | null
+          source_app: string | null
+          source_feature: string | null
+          status: string | null
+          task_id: string | null
+          title: string | null
+          tool_call_count: number | null
+          total_cost: number | null
+          total_duration_ms: number | null
+          total_tokens: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_last_model_id_fkey"
+            columns: ["last_model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       extracted_documents: {
         Row: {
@@ -26848,6 +27521,14 @@ export type Database = {
         | "array"
         | "document"
         | "reference"
+      cx_agent_task_creator: "agent" | "user"
+      cx_agent_task_status:
+        | "pending"
+        | "in_progress"
+        | "done"
+        | "blocked"
+        | "skipped"
+      cx_plan_status: "proposed" | "approved" | "rejected" | "superseded"
       data_destination:
         | "user_output"
         | "database"
@@ -27582,6 +28263,15 @@ export const Constants = {
         "document",
         "reference",
       ],
+      cx_agent_task_creator: ["agent", "user"],
+      cx_agent_task_status: [
+        "pending",
+        "in_progress",
+        "done",
+        "blocked",
+        "skipped",
+      ],
+      cx_plan_status: ["proposed", "approved", "rejected", "superseded"],
       data_destination: [
         "user_output",
         "database",

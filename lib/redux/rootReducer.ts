@@ -164,6 +164,7 @@ import { agentSurfaceBindingsReducer } from "@/features/surfaces/redux/agentSurf
 import agentAssistantMarkdownDraftReducer from "@/features/agents/redux/agent-assistant-markdown-draft.slice";
 import { default as netRequestsReducer } from "@/lib/redux/net/netRequestsSlice";
 import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
+import markdownSamplesReducer from "@/lib/redux/slices/markdownSamples/slice";
 
 const featureReducers = Object.keys(featureSchemas).reduce(
   (acc, featureName) => {
@@ -383,6 +384,9 @@ export const slimReducerMap = {
   agentComparisonRequestMod: agentComparisonRequestModReducer,
   agentComparisonModel: agentComparisonModelReducer,
   agentComparisonTuning: agentComparisonTuningReducer,
+
+  // Admin Markdown Tester — saved test samples.
+  markdownSamples: markdownSamplesReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);
