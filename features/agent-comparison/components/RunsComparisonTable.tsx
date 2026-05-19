@@ -15,7 +15,7 @@
  * data suppress the highlight.
  */
 
-import { useMemo } from "react";
+import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import type { ActiveRequest } from "@/features/agents/types/request.types";
@@ -111,7 +111,10 @@ interface ColumnStats {
   ctxLastReqOutput: number | null;
 }
 
-const NULL_STATS = (): Omit<ColumnStats, "columnId" | "agentName" | "versionLabel" | "status"> => ({
+const NULL_STATS = (): Omit<
+  ColumnStats,
+  "columnId" | "agentName" | "versionLabel" | "status"
+> => ({
   fbOverall: null,
   fbRank: null,
   fbAccuracy: null,
@@ -170,17 +173,26 @@ function makeEmptyTotals(): MutableTotals {
   return { input: 0, output: 0, cached: 0, total: 0, cost: 0, requests: 0 };
 }
 
+interface ColumnStatsDeps {
+  agents: RootState["agentDefinition"]["agents"];
+  activeRequests: RootState["activeRequests"];
+  feedbackByConversation:
+    | RootState["agentComparison"]["feedbackByConversation"]
+    | undefined;
+  contextByConversation:
+    | RootState["contextState"]["byConversationId"]
+    | undefined;
+}
+
 function buildStatsForColumn(
-  state: RootState,
   col: BattleColumnDescriptor,
+  deps: ColumnStatsDeps,
 ): ColumnStats {
-  const agent = col.agentId
-    ? state.agentDefinition.agents?.[col.agentId]
-    : undefined;
+  const agent = col.agentId ? deps.agents?.[col.agentId] : undefined;
   const displayName =
     col.label && col.label.trim().length > 0
       ? col.label
-      : agent?.name ?? "Unconfigured";
+      : (agent?.name ?? "Unconfigured");
   const base = {
     columnId: col.columnId,
     agentName: displayName,
@@ -188,24 +200,24 @@ function buildStatsForColumn(
       col.agentVersion == null
         ? "—"
         : col.agentVersion === "current"
-        ? "current"
-        : `v${col.agentVersion}`,
+          ? "current"
+          : `v${col.agentVersion}`,
     status: "—",
     ...NULL_STATS(),
   };
 
-  const requestIds = state.activeRequests.byConversationId[col.conversationId];
+  const requestIds = deps.activeRequests.byConversationId[col.conversationId];
   const requests: ActiveRequest[] = requestIds
     ? requestIds
-        .map((id) => state.activeRequests.byRequestId[id])
+        .map((id) => deps.activeRequests.byRequestId[id])
         .filter((r): r is ActiveRequest => Boolean(r))
     : [];
 
-  fillFeedback(base, state, col.conversationId);
+  fillFeedback(base, deps.feedbackByConversation, col.conversationId);
 
   if (requests.length === 0) {
     // No runs yet — still surface context-state if present (cold-start fetch).
-    fillContextState(base, state, col.conversationId);
+    fillContextState(base, deps.contextByConversation, col.conversationId);
     return base;
   }
 
@@ -281,7 +293,7 @@ function buildStatsForColumn(
     base.evOther = m.otherEvents ?? null;
   }
 
-  fillContextState(base, state, col.conversationId);
+  fillContextState(base, deps.contextByConversation, col.conversationId);
   return base;
 }
 
@@ -290,10 +302,10 @@ const DEFAULT_CONTEXT_WINDOW_TOKENS = 200_000;
 
 function fillFeedback(
   out: ColumnStats,
-  state: RootState,
+  feedbackByConversation: ColumnStatsDeps["feedbackByConversation"],
   conversationId: string,
 ) {
-  const fb = state.agentComparison?.feedbackByConversation?.[conversationId];
+  const fb = feedbackByConversation?.[conversationId];
   if (!fb) return;
   out.fbOverall = fb.overall ?? null;
   out.fbRank = fb.rank ?? null;
@@ -309,10 +321,10 @@ function fillFeedback(
 
 function fillContextState(
   out: ColumnStats,
-  state: RootState,
+  contextByConversation: ColumnStatsDeps["contextByConversation"],
   conversationId: string,
 ) {
-  const ctx = state.contextState?.byConversationId?.[conversationId];
+  const ctx = contextByConversation?.[conversationId];
   if (!ctx) return;
   const est =
     ctx.lastRequestInputTokens > 0
@@ -370,13 +382,48 @@ const SECTIONS: MetricSection[] = [
         direction: "higher",
         emphasized: true,
       },
-      { label: "Accuracy", pick: (s) => s.fbAccuracy, format: fmtScore, direction: "higher" },
-      { label: "Relevance", pick: (s) => s.fbRelevance, format: fmtScore, direction: "higher" },
-      { label: "Completeness", pick: (s) => s.fbCompleteness, format: fmtScore, direction: "higher" },
-      { label: "Instruction following", pick: (s) => s.fbInstructionFollowing, format: fmtScore, direction: "higher" },
-      { label: "Reasoning", pick: (s) => s.fbReasoning, format: fmtScore, direction: "higher" },
-      { label: "Clarity", pick: (s) => s.fbClarity, format: fmtScore, direction: "higher" },
-      { label: "Conciseness", pick: (s) => s.fbConciseness, format: fmtScore, direction: "higher" },
+      {
+        label: "Accuracy",
+        pick: (s) => s.fbAccuracy,
+        format: fmtScore,
+        direction: "higher",
+      },
+      {
+        label: "Relevance",
+        pick: (s) => s.fbRelevance,
+        format: fmtScore,
+        direction: "higher",
+      },
+      {
+        label: "Completeness",
+        pick: (s) => s.fbCompleteness,
+        format: fmtScore,
+        direction: "higher",
+      },
+      {
+        label: "Instruction following",
+        pick: (s) => s.fbInstructionFollowing,
+        format: fmtScore,
+        direction: "higher",
+      },
+      {
+        label: "Reasoning",
+        pick: (s) => s.fbReasoning,
+        format: fmtScore,
+        direction: "higher",
+      },
+      {
+        label: "Clarity",
+        pick: (s) => s.fbClarity,
+        format: fmtScore,
+        direction: "higher",
+      },
+      {
+        label: "Conciseness",
+        pick: (s) => s.fbConciseness,
+        format: fmtScore,
+        direction: "higher",
+      },
     ],
   },
   {
@@ -421,38 +468,123 @@ const SECTIONS: MetricSection[] = [
   {
     title: "Token usage",
     rows: [
-      { label: "Input tokens", pick: (s) => s.tokensInput, format: fmtTokens, direction: "lower" },
-      { label: "Cached tokens", pick: (s) => s.tokensCached, format: fmtTokens, direction: "higher" },
-      { label: "Output tokens", pick: (s) => s.tokensOutput, format: fmtTokens, direction: "lower" },
-      { label: "Total tokens", pick: (s) => s.tokensTotal, format: fmtTokens, direction: "lower" },
+      {
+        label: "Input tokens",
+        pick: (s) => s.tokensInput,
+        format: fmtTokens,
+        direction: "lower",
+      },
+      {
+        label: "Cached tokens",
+        pick: (s) => s.tokensCached,
+        format: fmtTokens,
+        direction: "higher",
+      },
+      {
+        label: "Output tokens",
+        pick: (s) => s.tokensOutput,
+        format: fmtTokens,
+        direction: "lower",
+      },
+      {
+        label: "Total tokens",
+        pick: (s) => s.tokensTotal,
+        format: fmtTokens,
+        direction: "lower",
+      },
     ],
   },
   {
     title: "Server timing",
     rows: [
-      { label: "Total duration", pick: (s) => s.serverDurationTotal, format: fmtMs, direction: "lower" },
-      { label: "API duration", pick: (s) => s.serverDurationApi, format: fmtMs, direction: "lower" },
-      { label: "Tool duration", pick: (s) => s.serverDurationTool, format: fmtMs, direction: "lower" },
+      {
+        label: "Total duration",
+        pick: (s) => s.serverDurationTotal,
+        format: fmtMs,
+        direction: "lower",
+      },
+      {
+        label: "API duration",
+        pick: (s) => s.serverDurationApi,
+        format: fmtMs,
+        direction: "lower",
+      },
+      {
+        label: "Tool duration",
+        pick: (s) => s.serverDurationTool,
+        format: fmtMs,
+        direction: "lower",
+      },
     ],
   },
   {
     title: "Client timing (last run)",
     rows: [
-      { label: "TTFT", pick: (s) => s.clientTtftMs, format: fmtMs, direction: "lower" },
-      { label: "Internal latency", pick: (s) => s.clientInternalLatencyMs, format: fmtMs, direction: "lower" },
-      { label: "Stream duration", pick: (s) => s.clientStreamDurationMs, format: fmtMs, direction: "lower" },
-      { label: "Render delay", pick: (s) => s.clientRenderDelayMs, format: fmtMs, direction: "lower" },
-      { label: "Total client", pick: (s) => s.clientTotalDurationMs, format: fmtMs, direction: "lower" },
+      {
+        label: "TTFT",
+        pick: (s) => s.clientTtftMs,
+        format: fmtMs,
+        direction: "lower",
+      },
+      {
+        label: "Internal latency",
+        pick: (s) => s.clientInternalLatencyMs,
+        format: fmtMs,
+        direction: "lower",
+      },
+      {
+        label: "Stream duration",
+        pick: (s) => s.clientStreamDurationMs,
+        format: fmtMs,
+        direction: "lower",
+      },
+      {
+        label: "Render delay",
+        pick: (s) => s.clientRenderDelayMs,
+        format: fmtMs,
+        direction: "lower",
+      },
+      {
+        label: "Total client",
+        pick: (s) => s.clientTotalDurationMs,
+        format: fmtMs,
+        direction: "lower",
+      },
     ],
   },
   {
     title: "Operations",
     rows: [
-      { label: "LLM calls", pick: (s) => s.llmCalls, format: (v) => (v == null ? "—" : String(v)), direction: "lower" },
-      { label: "Tool calls", pick: (s) => s.toolCalls, format: (v) => (v == null ? "—" : String(v)), direction: "lower" },
-      { label: "Σ Iterations", pick: (s) => s.iterations, format: (v) => (v == null ? "—" : String(v)), direction: "lower" },
-      { label: "Completed rounds", pick: (s) => s.completedRounds || null, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Errored rounds", pick: (s) => s.erroredRounds || null, format: (v) => (v == null ? "—" : String(v)), direction: "lower" },
+      {
+        label: "LLM calls",
+        pick: (s) => s.llmCalls,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "lower",
+      },
+      {
+        label: "Tool calls",
+        pick: (s) => s.toolCalls,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "lower",
+      },
+      {
+        label: "Σ Iterations",
+        pick: (s) => s.iterations,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "lower",
+      },
+      {
+        label: "Completed rounds",
+        pick: (s) => s.completedRounds || null,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Errored rounds",
+        pick: (s) => s.erroredRounds || null,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "lower",
+      },
     ],
   },
   {
@@ -464,44 +596,159 @@ const SECTIONS: MetricSection[] = [
         format: (v) => (v == null ? "—" : `${v}%`),
         direction: "lower",
       },
-      { label: "Estimated tokens", pick: (s) => s.ctxEstimatedTokens, format: fmtTokens, direction: "lower" },
-      { label: "Last input tokens", pick: (s) => s.ctxLastReqInput, format: fmtTokens, direction: "lower" },
-      { label: "Last cached tokens", pick: (s) => s.ctxLastReqCached, format: fmtTokens, direction: "higher" },
-      { label: "Last output tokens", pick: (s) => s.ctxLastReqOutput, format: fmtTokens, direction: "lower" },
-      { label: "Visible chars", pick: (s) => s.ctxVisibleChars, format: fmtTokens, direction: "lower" },
-      { label: "Visible messages", pick: (s) => s.ctxVisibleMessages, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
+      {
+        label: "Estimated tokens",
+        pick: (s) => s.ctxEstimatedTokens,
+        format: fmtTokens,
+        direction: "lower",
+      },
+      {
+        label: "Last input tokens",
+        pick: (s) => s.ctxLastReqInput,
+        format: fmtTokens,
+        direction: "lower",
+      },
+      {
+        label: "Last cached tokens",
+        pick: (s) => s.ctxLastReqCached,
+        format: fmtTokens,
+        direction: "higher",
+      },
+      {
+        label: "Last output tokens",
+        pick: (s) => s.ctxLastReqOutput,
+        format: fmtTokens,
+        direction: "lower",
+      },
+      {
+        label: "Visible chars",
+        pick: (s) => s.ctxVisibleChars,
+        format: fmtTokens,
+        direction: "lower",
+      },
+      {
+        label: "Visible messages",
+        pick: (s) => s.ctxVisibleMessages,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
     ],
   },
   {
     title: "Payload (last run)",
     rows: [
-      { label: "Accumulated text", pick: (s) => s.clientAccumulatedBytes, format: fmtBytes, direction: "lower" },
-      { label: "Total payload", pick: (s) => s.clientTotalPayloadBytes, format: fmtBytes, direction: "lower" },
+      {
+        label: "Accumulated text",
+        pick: (s) => s.clientAccumulatedBytes,
+        format: fmtBytes,
+        direction: "lower",
+      },
+      {
+        label: "Total payload",
+        pick: (s) => s.clientTotalPayloadBytes,
+        format: fmtBytes,
+        direction: "lower",
+      },
     ],
   },
   {
     title: "Event counts (last run)",
     rows: [
-      { label: "Total events", pick: (s) => s.evTotal, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Chunks", pick: (s) => s.evChunks, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Reasoning chunks", pick: (s) => s.evReasoning, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Phases", pick: (s) => s.evPhases, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Tool events", pick: (s) => s.evTool, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Render blocks", pick: (s) => s.evRenderBlocks, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
+      {
+        label: "Total events",
+        pick: (s) => s.evTotal,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Chunks",
+        pick: (s) => s.evChunks,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Reasoning chunks",
+        pick: (s) => s.evReasoning,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Phases",
+        pick: (s) => s.evPhases,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Tool events",
+        pick: (s) => s.evTool,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Render blocks",
+        pick: (s) => s.evRenderBlocks,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
     ],
   },
   {
     title: "Records (last run)",
     rows: [
-      { label: "Init", pick: (s) => s.evInit, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Completion", pick: (s) => s.evCompletion, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Data", pick: (s) => s.evData, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Reserved", pick: (s) => s.evRecordReserved, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Updated", pick: (s) => s.evRecordUpdate, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "FS changes", pick: (s) => s.evResourceChanged, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Warnings", pick: (s) => s.evWarnings, format: (v) => (v == null ? "—" : String(v)), direction: "lower" },
-      { label: "Info", pick: (s) => s.evInfo, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
-      { label: "Other", pick: (s) => s.evOther, format: (v) => (v == null ? "—" : String(v)), direction: "none" },
+      {
+        label: "Init",
+        pick: (s) => s.evInit,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Completion",
+        pick: (s) => s.evCompletion,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Data",
+        pick: (s) => s.evData,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Reserved",
+        pick: (s) => s.evRecordReserved,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Updated",
+        pick: (s) => s.evRecordUpdate,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "FS changes",
+        pick: (s) => s.evResourceChanged,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Warnings",
+        pick: (s) => s.evWarnings,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "lower",
+      },
+      {
+        label: "Info",
+        pick: (s) => s.evInfo,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
+      {
+        label: "Other",
+        pick: (s) => s.evOther,
+        format: (v) => (v == null ? "—" : String(v)),
+        direction: "none",
+      },
     ],
   },
 ];
@@ -539,17 +786,49 @@ function computeRowHighlights(
   return out;
 }
 
+const EMPTY_COLUMN_STATS: ColumnStats[] = [];
+
+const selectActiveRequests = (state: RootState) => state.activeRequests;
+const selectAgentDefinitionAgents = (state: RootState) =>
+  state.agentDefinition.agents;
+const selectComparisonFeedbackByConversation = (state: RootState) =>
+  state.agentComparison?.feedbackByConversation;
+const selectContextByConversation = (state: RootState) =>
+  state.contextState?.byConversationId;
+
+/** Memoized per-column stats — recomputes only when columns or run data change. */
+const selectRunsComparisonColumnStats = createSelector(
+  [
+    selectActiveBattleColumns,
+    selectActiveRequests,
+    selectAgentDefinitionAgents,
+    selectComparisonFeedbackByConversation,
+    selectContextByConversation,
+  ],
+  (
+    columns,
+    activeRequests,
+    agents,
+    feedbackByConversation,
+    contextByConversation,
+  ): ColumnStats[] => {
+    if (columns.length === 0) return EMPTY_COLUMN_STATS;
+    const deps: ColumnStatsDeps = {
+      agents,
+      activeRequests,
+      feedbackByConversation,
+      contextByConversation,
+    };
+    return columns.map((col) => buildStatsForColumn(col, deps));
+  },
+);
+
 // =============================================================================
 // Component
 // =============================================================================
 
 export function RunsComparisonTable() {
-  const columns = useAppSelector(selectActiveBattleColumns);
-  // Broad subscription — recomputes on any active-request OR context-state
-  // change for any column. N is small (rarely > ~5) so cost is bounded.
-  const stats = useAppSelector((state) =>
-    columns.map((c) => buildStatsForColumn(state, c)),
-  );
+  const stats = useAppSelector(selectRunsComparisonColumnStats);
 
   if (stats.length === 0) return null;
 

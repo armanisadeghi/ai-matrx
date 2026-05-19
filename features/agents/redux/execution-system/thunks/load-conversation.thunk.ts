@@ -27,6 +27,7 @@ import {
 } from "../conversations/conversations.slice";
 import { hydrateMessages } from "../messages/messages.slice";
 import { hydrateObservability } from "../observability/observability.slice";
+import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
 import {
   initInstanceVariables,
   setUserVariableValues,
@@ -353,14 +354,46 @@ export const loadConversation = createAsyncThunk<
       );
     }
 
+    const userRequestRecords = rawUserRequests.map(userRequestRowToRecord);
     dispatch(
       hydrateObservability({
         conversationId,
-        userRequests: rawUserRequests.map(userRequestRowToRecord),
+        userRequests: userRequestRecords,
         requests: rawRequests.map(requestRowToRecord),
         toolCalls: rawToolCalls.map(toolCallRowToRecord),
       }),
     );
+
+    // Seed the in-memory activeRequests slice from those rows so the
+    // post-stream UI (ResponseFeedbackBar's inline usage strip, the
+    // Runs comparison table) keeps showing tokens / cost / timing
+    // after a page reload. Without this seed `byRequestId` would stay
+    // empty and the comparison UI would silently zero out — the
+    // numbers themselves are persisted on cx_user_request and just
+    // need to be replayed into the slice the UI reads from.
+    if (userRequestRecords.length > 0) {
+      dispatch(
+        hydrateRequestsFromObservability({
+          conversationId,
+          rows: userRequestRecords.map((r) => ({
+            id: r.id,
+            status: r.status,
+            iterations: r.iterations,
+            totalInputTokens: r.totalInputTokens,
+            totalOutputTokens: r.totalOutputTokens,
+            totalCachedTokens: r.totalCachedTokens,
+            totalTokens: r.totalTokens,
+            totalToolCalls: r.totalToolCalls,
+            totalCost: r.totalCost,
+            totalDurationMs: r.totalDurationMs,
+            apiDurationMs: r.apiDurationMs,
+            toolDurationMs: r.toolDurationMs,
+            createdAt: r.createdAt,
+            completedAt: r.completedAt,
+          })),
+        }),
+      );
+    }
 
     // ── 7. Focus (if a surface was given) ────────────────────────────────────
     if (surfaceKey) {

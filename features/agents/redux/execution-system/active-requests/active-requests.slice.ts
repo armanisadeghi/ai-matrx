@@ -62,6 +62,86 @@ export interface ActiveRequestsState {
   byConversationId: Record<string, string[]>;
 }
 
+// =============================================================================
+// DB-hydration helpers
+// =============================================================================
+
+/**
+ * The subset of `CxUserRequestRecord` we need to rebuild an
+ * `ActiveRequest` from after a reload. Mirrors the observability
+ * slice's record shape one-for-one — kept local to avoid a slice→slice
+ * dep cycle.
+ */
+export interface HydratedRequestRow {
+  id: string;
+  status: string;
+  iterations: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCachedTokens: number;
+  totalTokens: number;
+  totalToolCalls: number;
+  totalCost: number | null;
+  totalDurationMs: number | null;
+  apiDurationMs: number | null;
+  toolDurationMs: number | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+function mapHydratedStatus(raw: string): RequestStatus {
+  // cx_user_request.status uses the same vocabulary as RequestStatus —
+  // map defensively in case a new server value appears.
+  switch (raw) {
+    case "pending":
+    case "connecting":
+    case "streaming":
+    case "awaiting-tools":
+    case "complete":
+    case "error":
+    case "timeout":
+    case "cancelled":
+      return raw;
+    case "success":
+    case "completed":
+      return "complete";
+    case "failed":
+    case "errored":
+      return "error";
+    default:
+      // Unknown server status — treat as complete so the inline usage
+      // strip + Runs table render their numbers instead of hiding.
+      return "complete";
+  }
+}
+
+function buildHydratedResult(row: HydratedRequestRow): Record<string, unknown> {
+  return {
+    total_usage: {
+      total: {
+        input_tokens: row.totalInputTokens,
+        output_tokens: row.totalOutputTokens,
+        cached_input_tokens: row.totalCachedTokens,
+        total_tokens: row.totalTokens,
+        total_cost: row.totalCost ?? 0,
+        // total_requests isn't stored on cx_user_request; consumers
+        // surface this as the count of LLM calls (cx_request rows) when
+        // they need it. Zero is the safe display fallback.
+        total_requests: 0,
+      },
+    },
+    timing_stats: {
+      total_duration: row.totalDurationMs ?? 0,
+      api_duration: row.apiDurationMs ?? 0,
+      tool_duration: row.toolDurationMs ?? 0,
+    },
+    tool_call_stats: {
+      total_tool_calls: row.totalToolCalls,
+    },
+    iterations: row.iterations,
+  };
+}
+
 const initialState: ActiveRequestsState = {
   byRequestId: {},
   byConversationId: {},
@@ -770,6 +850,102 @@ const activeRequestsSlice = createSlice({
         delete state.byRequestId[action.payload];
       }
     },
+
+    /**
+     * Rebuild minimal `ActiveRequest` entries from the observability DB
+     * rows (one cx_user_request row per finished agent turn). This is
+     * how the inline UsageStrip and the Runs comparison table keep
+     * working after a page reload — without it both would show empty
+     * because `byRequestId` is purely in-memory streaming state.
+     *
+     * Only fields the post-stream UI actually reads get populated:
+     *   - `completion.result` (token totals / cost / timing / iterations
+     *     / tool_call_stats) — matches the shape `getUserRequestResult`
+     *     pulls out of a live stream's completion event
+     *   - top-level `status` / `startedAt` / `completedAt`
+     *
+     * `clientMetrics` (TTFT / total client duration) stays null because
+     * those numbers aren't persisted server-side — the UI shows "—" for
+     * those tiles after a reload, which is the correct affordance.
+     *
+     * Defensive: if a requestId already exists in `byRequestId` (live
+     * stream just completed and stayed mounted), we DO NOT overwrite —
+     * the live entry has richer data than the hydrated row.
+     */
+    hydrateRequestsFromObservability(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        rows: HydratedRequestRow[];
+      }>,
+    ) {
+      const { conversationId, rows } = action.payload;
+      const existingIds = new Set(
+        state.byConversationId[conversationId] ?? [],
+      );
+      const newIds: string[] = [];
+      for (const row of rows) {
+        if (state.byRequestId[row.id]) {
+          // Already in memory — live stream beat us to it. Keep live.
+          continue;
+        }
+        const status = mapHydratedStatus(row.status);
+        const result = buildHydratedResult(row);
+        state.byRequestId[row.id] = {
+          requestId: row.id,
+          conversationId,
+          parentConversationId: null,
+          status,
+          chunkCount: 0,
+          editedText: null,
+          reasoningChunks: [],
+          accumulatedReasoning: "",
+          isReasoningStreaming: false,
+          reasoningRunChunkStart: 0,
+          currentPhase: null,
+          phaseHistory: [],
+          activeOperations: {},
+          completedOperations: {},
+          renderBlocks: {},
+          renderBlockOrder: [],
+          toolLifecycle: {},
+          pendingToolCalls: [],
+          completion: {
+            operation: "user_request",
+            operation_id: row.id,
+            status: status === "complete" ? "success" : "failed",
+            result,
+          } as CompletionPayload,
+          error: null,
+          warnings: [],
+          infoEvents: [],
+          reservations: {},
+          dataPayloads: [],
+          timeline: [],
+          rawEvents: [],
+          isTextStreaming: false,
+          textRunBlockStart: 0,
+          currentTextRunRaw: "",
+          extractedJson: null,
+          jsonExtractionRevision: 0,
+          jsonExtractionComplete: false,
+          startedAt: row.createdAt,
+          firstChunkAt: null,
+          completedAt: row.completedAt,
+          clientMetrics: null,
+        };
+        if (!existingIds.has(row.id)) {
+          newIds.push(row.id);
+        }
+      }
+      if (newIds.length > 0) {
+        const merged = [
+          ...(state.byConversationId[conversationId] ?? []),
+          ...newIds,
+        ];
+        state.byConversationId[conversationId] = merged;
+      }
+    },
   },
 
   extraReducers: (builder) => {
@@ -813,6 +989,7 @@ export const {
   finalizeClientMetrics,
   updateExtractedJson,
   removeRequest,
+  hydrateRequestsFromObservability,
 } = activeRequestsSlice.actions;
 
 export default activeRequestsSlice.reducer;
