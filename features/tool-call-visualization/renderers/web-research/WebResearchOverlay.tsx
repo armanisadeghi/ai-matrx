@@ -26,7 +26,8 @@ import {
     getArg,
     resultAsString,
 } from "../_shared";
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -429,7 +430,12 @@ function AnalysisSectionCard({ section }: { section: AnalysisSection }) {
                 <CopyButton text={fullText} label="Copy section" size="xs" />
             </div>
             <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground/80">
-                <BasicMarkdownContent content={section.content} />
+                <RichDocument
+                    content={section.content}
+                    source={{ type: "raw" } as ContentSource}
+                    actionsVariant="hover-menu"
+                    actions={{ exclude: ["announcements", "preferences"] }}
+                />
             </div>
         </div>
     );
@@ -723,8 +729,12 @@ export const WebResearchOverlay: React.FC<ToolRendererProps> = ({
                     ) : parsed.aiAnalysis ? (
                         <div className="p-5 rounded-xl border border-border bg-card">
                             <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground/80">
-                                <BasicMarkdownContent
+                                <RichDocument
                                     content={parsed.aiAnalysis}
+                                    source={{ type: "raw" } as ContentSource}
+                                    actionsVariant="bar"
+                                    actionsClassName="mb-3"
+                                    actions={{ exclude: ["announcements", "preferences"] }}
                                 />
                             </div>
                         </div>

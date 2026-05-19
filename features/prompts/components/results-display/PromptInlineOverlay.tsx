@@ -5,7 +5,8 @@ import { useAppSelector } from '@/lib/redux/hooks';
 import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
 import { Check, X, CornerDownLeft, ArrowLeftToLine, ArrowRightFromLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import BasicMarkdownContent from '@/components/mardown-display/chat-markdown/BasicMarkdownContent';
+import { RichDocument } from '@/features/rich-document/RichDocument';
+import type { ContentSource } from '@/features/rich-document/types';
 
 interface PromptInlineOverlayProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export default function PromptInlineOverlay({
   result: initialResult,
   originalText,
   promptName,
+  runId,
   taskId,
   isStreaming: initialStreaming,
   onReplace,
@@ -108,9 +110,17 @@ export default function PromptInlineOverlay({
               </div>
             ) : result ? (
               <div className="text-sm leading-relaxed">
-                <BasicMarkdownContent 
+                <RichDocument
                   content={result}
-                  showCopyButton={false}
+                  source={
+                    runId
+                      ? ({ type: "prompt-result", executionId: runId } as ContentSource)
+                      : ({ type: "raw" } as ContentSource)
+                  }
+                  actionsVariant="mini-bar"
+                  actionsClassName="mt-1.5"
+                  actions={{ exclude: ["announcements", "preferences"] }}
+                  hideCopyButton
                 />
               </div>
             ) : (

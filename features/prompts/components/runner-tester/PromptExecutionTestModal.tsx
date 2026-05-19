@@ -10,7 +10,8 @@ import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { startPromptInstance } from '@/lib/redux/prompt-execution/thunks/startInstanceThunk';
 import { executeMessage } from '@/lib/redux/prompt-execution/thunks/executeMessageThunk';
 import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
-import BasicMarkdownContent from '@/components/mardown-display/chat-markdown/BasicMarkdownContent';
+import { RichDocument } from '@/features/rich-document/RichDocument';
+import type { ContentSource } from '@/features/rich-document/types';
 import type { PromptExecutionConfig } from '@/features/prompt-builtins/types/execution-modes';
 
 interface PromptExecutionTestModalProps {
@@ -306,7 +307,14 @@ export default function PromptExecutionTestModal({
           </div>
           <div className="p-4 bg-card border border-border rounded-lg max-h-[300px] overflow-y-auto">
             {(directResult || directStreamingText) ? (
-              <BasicMarkdownContent content={directResult || directStreamingText} showCopyButton={false} />
+              <RichDocument
+                content={directResult || directStreamingText}
+                source={{ type: "raw" } as ContentSource}
+                actionsVariant="mini-bar"
+                actionsClassName="mt-1.5"
+                actions={{ exclude: ["announcements", "preferences"] }}
+                hideCopyButton
+              />
             ) : (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -366,7 +374,14 @@ export default function PromptExecutionTestModal({
               {inlineResult && (
                 <>
                   <div className="max-h-[150px] overflow-y-auto text-sm p-2 bg-muted rounded">
-                    <BasicMarkdownContent content={inlineResult} showCopyButton={false} />
+                    <RichDocument
+                      content={inlineResult}
+                      source={{ type: "raw" } as ContentSource}
+                      actionsVariant="mini-bar"
+                      actionsClassName="mt-1"
+                      actions={{ exclude: ["announcements", "preferences"] }}
+                      hideCopyButton
+                    />
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -425,7 +440,13 @@ export default function PromptExecutionTestModal({
                   <span className="text-xs text-muted-foreground">{task.timestamp}</span>
                 </div>
                 <div className="text-xs p-2 bg-muted rounded max-h-[100px] overflow-y-auto">
-                  <BasicMarkdownContent content={task.result} showCopyButton={false} />
+                  <RichDocument
+                    content={task.result}
+                    source={{ type: "raw" } as ContentSource}
+                    actionsVariant="hover-menu"
+                    actions={{ exclude: ["announcements", "preferences"] }}
+                    hideCopyButton
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   ✓ Task completed and stored (ID: {task.id.substring(0, 8)}...)
