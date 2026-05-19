@@ -40,6 +40,8 @@ import { UserActionBar } from "./UserActionBar";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { FileResourceChip } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
+import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
+import type { RootState } from "@/lib/redux/store";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -514,6 +516,12 @@ export function AgentUserMessage({
   compact = false,
 }: AgentUserMessageProps) {
   const record = useAppSelector(selectMessageById(conversationId, messageId));
+  // The agent driving this conversation — used by ContextSlotChipStrip to
+  // resolve slot definitions for type/label/description on each chip.
+  const agentId = useAppSelector(
+    (state: RootState) =>
+      state.conversations.byConversationId[conversationId]?.agentId ?? null,
+  );
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [shouldBeCollapsible, setShouldBeCollapsible] = useState(false);
@@ -588,6 +596,16 @@ export function AgentUserMessage({
 
       <div className="bg-muted border border-border rounded-lg px-2 py-2">
         <div className="space-y-1.5">
+          {/* Context slot chips — live state of instanceContext for this
+              conversation. Note: until the request thunk stamps the per-turn
+              context snapshot onto message metadata, every user bubble in a
+              conversation shows the same (current) context. Acceptable for
+              an in-progress run; per-turn historical accuracy is a follow-up. */}
+          <ContextSlotChipStrip
+            conversationId={conversationId}
+            agentId={agentId}
+          />
+
           {/* Attachment chips */}
           {normalisedBlocks.length > 0 && (
             <div className="flex flex-wrap gap-1">

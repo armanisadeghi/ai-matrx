@@ -29,7 +29,11 @@ import type { AgentDefinitionMessage } from "@/features/agents/types/agent-messa
 
 // Module Shared Components
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
-import { SystemMessageButtons } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
+import {
+  SystemMessageButtons,
+  type SystemMessageViewMode,
+} from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
+import MarkdownStream from "@/components/MarkdownStream";
 import {
   BlockList,
   BlockType,
@@ -71,7 +75,20 @@ export function SystemMessage({
   onOpenFullScreenEditor,
   scrollContainerRef,
 }: SystemMessageProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [viewMode, setViewMode] = useState<SystemMessageViewMode>("plain");
+  const isEditing = viewMode === "edit";
+  const setIsEditing = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      setViewMode((prev) => {
+        const wasEditing = prev === "edit";
+        const nextEditing =
+          typeof next === "function" ? next(wasEditing) : next;
+        if (nextEditing === wasEditing) return prev;
+        return nextEditing ? "edit" : "plain";
+      });
+    },
+    [],
+  );
   const [cursorPositions, setCursorPositions] = useState<
     Record<number, number>
   >({});
@@ -648,7 +665,7 @@ export function SystemMessage({
           </Label>
           <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons
-              isEditing={isEditing}
+              viewMode={viewMode}
               hasVariableSupport={hasVariableSupport}
               hasFullScreenEditor={!!onOpenFullScreenEditor}
               variableNames={variableNames}
@@ -659,7 +676,7 @@ export function SystemMessage({
               onSaveTemplate={() => {}}
               onOptimize={() => setIsOptimizerOpen(true)}
               onOpenFullScreenEditor={onOpenFullScreenEditor}
-              onToggleEditing={() => setIsEditing((prev) => !prev)}
+              onSetViewMode={setViewMode}
               onClear={() => handleTextChange("")}
               onAddBlockType={(type) => setPendingAddType(type)}
               onVoiceTranscription={handleVoiceTranscription}
@@ -669,7 +686,25 @@ export function SystemMessage({
 
         {/* Content */}
         <div className="p-4">
-          {isEditing ? (
+          {viewMode === "preview" ? (
+            <div
+              className="min-h-[240px] cursor-text"
+              onClick={() => setViewMode("edit")}
+              title="Click to edit"
+            >
+              {developerMessage ? (
+                <MarkdownStream
+                  content={developerMessage}
+                  hideCopyButton
+                  className="text-sm"
+                />
+              ) : (
+                <span className="text-xs text-gray-500 dark:text-gray-500 italic">
+                  You&apos;re a very helpful assistant
+                </span>
+              )}
+            </div>
+          ) : isEditing ? (
             <UnifiedAgentContextMenu
               sourceFeature="agent-builder"
               getTextarea={() =>

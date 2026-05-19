@@ -72,8 +72,10 @@ const TYPE_OPTIONS: ContextObjectType[] = [
   "db_ref",
   "user",
   "org",
+  "workspace",
   "project",
   "task",
+  "variable",
 ];
 
 export const TYPE_COLORS: Record<ContextObjectType, string> = {
@@ -83,8 +85,10 @@ export const TYPE_COLORS: Record<ContextObjectType, string> = {
   db_ref: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   user: "bg-rose-500/10 text-rose-500 border-rose-500/20",
   org: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+  workspace: "bg-violet-500/10 text-violet-500 border-violet-500/20",
   project: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
   task: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+  variable: "bg-slate-500/10 text-slate-500 border-slate-500/20",
 };
 
 // =============================================================================

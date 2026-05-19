@@ -244,8 +244,10 @@ export type ContextObjectType =
   | "db_ref"
   | "user"
   | "org"
+  | "workspace"
   | "project"
-  | "task";
+  | "task"
+  | "variable";
 
 /**
  * Allowed content value shapes for the context dict.
@@ -487,21 +489,58 @@ export interface ToolResultsResponse {
  *
  * This type is exported for UIs that want to display an agent's expected context keys.
  */
+/**
+ * Where mutations to a mutable slot land. Only meaningful when `mutable=true`.
+ *   - "auto":   server writes back the underlying DB row via the dispatcher
+ *               keyed by `source.kind` (requires `source`).
+ *   - "never":  in-memory only — never persisted.
+ *   - "client": client owns persistence; server emits a `context_changed` event.
+ */
+export type ContextSlotPersist = "auto" | "never" | "client";
+
+/**
+ * Tells the server-side writeback dispatcher where the row lives for a
+ * mutable, auto-persisted slot. Schema is intentionally open — the dispatcher
+ * interprets `kind` and uses `id` / `field` / `extra` per handler.
+ */
+export interface ContextSlotSource {
+  kind: string;
+  id?: string;
+  field?: string;
+  extra?: Record<string, unknown>;
+}
+
 export interface ContextSlot {
   key: string;
   type: ContextObjectType;
   label?: string;
   description?: string;
   /**
-   * When set, content larger than this many characters is truncated in the
-   * Tier 2 manifest. Model calls ctx_get(key, mode="page") to read the rest.
+   * INLINE THRESHOLD — controls when content is rendered inline in the
+   * manifest block vs deferred behind `ctx_get`.
+   *
+   *   - `null` / omitted → system default (200 chars).
+   *   - positive integer N → inline when content ≤ min(N, 5000); else deferred.
+   *   - `0` → never inline; always require `ctx_get`.
+   *
+   * Hard cap of 5000 is enforced server-side regardless. The agent-author
+   * value is a **ceiling** a surface can lower but never raise.
    */
-  max_inline_chars?: number;
+  max_inline_chars?: number | null;
   /**
    * When set, ctx_get(key, mode="summary") is available.
    * Value is an agent_id. Sub-agent receives full content in {{content}}.
    */
   summary_agent_id?: string;
+  /**
+   * When `true`, the model may rewrite this slot via `ctx_patch`. Defaults to
+   * `false`. Persistence behaviour is controlled by `persist`.
+   */
+  mutable?: boolean;
+  /** Only meaningful when `mutable=true`. See `ContextSlotPersist`. */
+  persist?: ContextSlotPersist;
+  /** Required when `persist="auto"`. */
+  source?: ContextSlotSource;
 }
 
 /** Response from ctx_get(mode="full") */

@@ -6,7 +6,10 @@ import {
   Wand2,
   Eraser,
   FileText,
+  Sparkles,
 } from "lucide-react";
+
+export type SystemMessageViewMode = "edit" | "plain" | "preview";
 
 import {
   ResponsiveIconButtonGroup,
@@ -26,7 +29,7 @@ import { VariableSelector } from "@/features/agents/components/variables-managem
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 
 interface SystemMessageButtonsProps {
-  isEditing?: boolean;
+  viewMode?: SystemMessageViewMode;
   hasVariableSupport?: boolean;
   hasFullScreenEditor?: boolean;
   variableNames?: string[];
@@ -38,14 +41,14 @@ interface SystemMessageButtonsProps {
   onSaveTemplate?: (label: string, content: string, tags: string[]) => void;
   onOptimize?: () => void;
   onOpenFullScreenEditor?: () => void;
-  onToggleEditing?: () => void;
+  onSetViewMode?: (mode: SystemMessageViewMode) => void;
   onClear?: () => void;
   onAddBlockType?: (type: BlockType) => void;
   onVoiceTranscription?: (text: string) => void;
 }
 
 export function SystemMessageButtons({
-  isEditing = false,
+  viewMode = "plain",
   hasVariableSupport = false,
   hasFullScreenEditor = false,
   variableNames = [],
@@ -56,7 +59,7 @@ export function SystemMessageButtons({
   onSaveTemplate,
   onOptimize,
   onOpenFullScreenEditor,
-  onToggleEditing,
+  onSetViewMode,
   onClear,
   onAddBlockType,
   onVoiceTranscription,
@@ -167,14 +170,50 @@ export function SystemMessageButtons({
       },
     },
     {
-      id: "edit",
-      icon: isEditing ? Eye : Edit2,
-      tooltip: isEditing ? "View" : "Edit",
-      mobileLabel: isEditing ? "View" : "Edit",
-      hidden: !onToggleEditing,
+      id: "view-edit",
+      icon: Edit2,
+      tooltip: "Edit mode",
+      mobileLabel: "Edit",
+      hidden: !onSetViewMode,
+      className: viewMode === "edit" ? "bg-primary/10 text-primary" : undefined,
       onClick: (e) => {
         e?.stopPropagation();
-        onToggleEditing?.();
+        onSetViewMode?.("edit");
+      },
+      onMouseDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      },
+    },
+    {
+      id: "view-plain",
+      icon: Eye,
+      tooltip: "Plain view (highlights variables)",
+      mobileLabel: "Plain",
+      hidden: !onSetViewMode,
+      className:
+        viewMode === "plain" ? "bg-primary/10 text-primary" : undefined,
+      onClick: (e) => {
+        e?.stopPropagation();
+        onSetViewMode?.("plain");
+      },
+      onMouseDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      },
+    },
+    {
+      id: "view-preview",
+      icon: Sparkles,
+      tooltip: "Preview (renders markdown)",
+      mobileLabel: "Preview",
+      hidden: !onSetViewMode,
+      className:
+        viewMode === "preview" ? "bg-purple-500/10 text-purple-500" : undefined,
+      iconClassName: viewMode === "preview" ? "text-purple-400" : undefined,
+      onClick: (e) => {
+        e?.stopPropagation();
+        onSetViewMode?.("preview");
       },
       onMouseDown: (e) => {
         e.preventDefault();
