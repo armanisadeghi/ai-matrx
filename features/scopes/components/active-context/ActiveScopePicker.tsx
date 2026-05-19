@@ -51,9 +51,10 @@ import {
 import {
   makeSelectOrphanProjects,
   makeSelectProjectsForOrg,
-  makeSelectScopeTypesForOrg,
   makeSelectTaskBucket,
   makeSelectTasksForLevel,
+  selectAllScopeTypesFlat,
+  selectOrganizations,
   selectOrganizationsList,
   selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
@@ -66,6 +67,7 @@ import {
   type PickerOption,
 } from "@/features/agent-context/components/ContextPickerPrimitives";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import type { ScopeTypeNode } from "@/features/scopes/types";
 import { cn } from "@/utils/cn";
 
 export interface ActiveScopePickerProps {
@@ -98,15 +100,39 @@ export function ActiveScopePicker({
   const taskName = useAppSelector(selectTaskName);
   const scopeSelections = useAppSelector(selectActiveScopeSelections);
 
-  // ─── Tree selectors (per active org) ───────────────────────────────
+  // ─── Tree selectors ────────────────────────────────────────────────
+  // The picker surfaces scope items (the things users actually think
+  // about — "Ava", "Sara", clients, departments) at the TOP, flattened
+  // across every org the user belongs to. The org/project/task rows live
+  // below as drill-downs. When a user picks a scope from any org, we
+  // auto-promote that org into the active context (Surface A invariant
+  // — global context is only updated by Surface A actions, and this IS
+  // one). Org → scope_types are still the same group, but no longer
+  // gated on a selected org.
   const organizations = useAppSelector(selectOrganizationsList);
-  const selectScopeTypes = useMemo(() => makeSelectScopeTypesForOrg(), []);
+  const organizationsById = useAppSelector(selectOrganizations);
+  const allScopeTypes = useAppSelector(selectAllScopeTypesFlat);
   const selectProjectsForOrg = useMemo(() => makeSelectProjectsForOrg(), []);
   const selectOrphanProjects = useMemo(() => makeSelectOrphanProjects(), []);
-  const scopeTypes = useAppSelector((s) => selectScopeTypes(s, orgId));
   const projects = useAppSelector((s) => selectProjectsForOrg(s, orgId));
   const orphanProjectsBucket = useAppSelector((s) =>
     selectOrphanProjects(s, orgId),
+  );
+
+  // When there are multiple orgs, scope types from different orgs can
+  // share labels ("Project", "Client"). Disambiguate with the org name
+  // suffix only when needed.
+  const scopeTypeRowLabel = useCallback(
+    (st: ScopeTypeNode): string => {
+      if (organizations.length <= 1) return st.label_singular;
+      const collisions = allScopeTypes.filter(
+        (other) => other.label_singular === st.label_singular,
+      );
+      if (collisions.length <= 1) return st.label_singular;
+      const orgName = organizationsById[st.organization_id]?.name;
+      return orgName ? `${st.label_singular} · ${orgName}` : st.label_singular;
+    },
+    [allScopeTypes, organizations.length, organizationsById],
   );
 
   // ─── Task selectors (per drill-down level) ─────────────────────────
@@ -222,13 +248,21 @@ export function ActiveScopePicker({
   );
 
   const handleSelectScope = useCallback(
-    (typeId: string, scopeId: string | null) => {
+    (typeId: string, scopeId: string | null, scopeTypeOrgId?: string) => {
       const next: Record<string, string | null> = { ...scopeSelections };
       if (scopeId) next[typeId] = scopeId;
       else delete next[typeId];
       dispatch(setScopeSelections(next));
+      // Auto-promote the scope's org to active context when the user
+      // picks a scope from an org that isn't the current active org.
+      // This is the Surface A path so we're allowed to dispatch
+      // setOrganization here.
+      if (scopeId && scopeTypeOrgId && scopeTypeOrgId !== orgId) {
+        const org = organizationsById[scopeTypeOrgId];
+        if (org) dispatch(setOrganization({ id: org.id, name: org.name }));
+      }
     },
-    [dispatch, scopeSelections],
+    [dispatch, scopeSelections, orgId, organizationsById],
   );
 
   const handleSelectProject = useCallback(
@@ -271,14 +305,14 @@ export function ActiveScopePicker({
     if (projectName) return projectName;
     const firstScopeId = activeScopeIds[0];
     if (firstScopeId) {
-      for (const t of scopeTypes) {
+      for (const t of allScopeTypes) {
         const s = t.scopes.find((sc) => sc.id === firstScopeId);
         if (s) return s.name;
       }
     }
     if (orgName) return orgName;
     return null;
-  }, [taskName, projectName, activeScopeIds, scopeTypes, orgName]);
+  }, [taskName, projectName, activeScopeIds, allScopeTypes, orgName]);
 
   // Discriminated descriptor instead of a component-during-render — keeps
   // render-time identity stable and lets React Compiler optimize.
@@ -287,7 +321,7 @@ export function ActiveScopePicker({
     if (projectId) return { kind: "lucide", Component: FolderKanban };
     const firstScopeId = activeScopeIds[0];
     if (firstScopeId) {
-      for (const t of scopeTypes) {
+      for (const t of allScopeTypes) {
         const s = t.scopes.find((sc) => sc.id === firstScopeId);
         if (s) return { kind: "dynamic", iconName: t.icon };
       }
@@ -357,7 +391,7 @@ export function ActiveScopePicker({
 
       {reallyExpanded && (
         <div className="px-1.5 pb-1">
-          {treeStatus === "loading" && scopeTypes.length === 0 && (
+          {treeStatus === "loading" && allScopeTypes.length === 0 && (
             <>
               {[1, 2].map((i) => (
                 <div
@@ -378,18 +412,7 @@ export function ActiveScopePicker({
             </div>
           )}
 
-          <ContextRow
-            icon={Building}
-            label="Organization"
-            selectedName={orgName}
-            selectedId={orgId}
-            accentClass="text-violet-500"
-            options={orgOptions}
-            onSelect={handleSelectOrg}
-            emptyText="No organizations found"
-          />
-
-          {scopeTypes.map((scopeType) => {
+          {allScopeTypes.map((scopeType) => {
             const selectedScopeId = scopeSelections[scopeType.id] ?? null;
             const selectedScope = selectedScopeId
               ? scopeType.scopes.find((s) => s.id === selectedScopeId)
@@ -404,20 +427,33 @@ export function ActiveScopePicker({
                 icon={(props) => (
                   <DynamicIcon name={scopeType.icon} {...props} />
                 )}
-                label={scopeType.label_singular}
+                label={scopeTypeRowLabel(scopeType)}
                 selectedName={selectedScope?.name ?? null}
                 selectedId={selectedScopeId}
                 accentClass="text-emerald-500"
                 options={scopeOptions}
-                onSelect={(id) => handleSelectScope(scopeType.id, id)}
-                emptyText={`No ${scopeType.label_plural.toLowerCase()} found`}
+                onSelect={(id) =>
+                  handleSelectScope(scopeType.id, id, scopeType.organization_id)
+                }
+                emptyText={`No ${scopeType.label_plural.toLowerCase()} yet`}
               />
             );
           })}
 
-          {scopeTypes.length > 0 && (
+          {allScopeTypes.length > 0 && (
             <div className="mx-1 my-0.5 border-t border-border/40" />
           )}
+
+          <ContextRow
+            icon={Building}
+            label="Organization"
+            selectedName={orgName}
+            selectedId={orgId}
+            accentClass="text-violet-500"
+            options={orgOptions}
+            onSelect={handleSelectOrg}
+            emptyText="No organizations found"
+          />
 
           <ContextRow
             icon={FolderKanban}

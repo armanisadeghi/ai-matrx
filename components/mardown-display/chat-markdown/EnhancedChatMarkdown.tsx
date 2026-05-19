@@ -497,12 +497,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
   }
 
   // When requestId is present and unified slots have non-text content
-  // (tools, status), skip the generic loader and let the unified renderer
-  // handle it — even before any text arrives.
+  // (tools, status, OR a media render block — image_output / audio_output
+  // / video_output), skip the generic loader and let the unified renderer
+  // handle it — even before any text arrives. Without the media check, a
+  // pure-image-only turn (no text run at all) shows the "Working on it…"
+  // spinner forever because `hasReceivedNonTextContent` only sees text
+  // render blocks via the `client_` prefix.
   const hasPreTextSegments =
-    isWaitingForContent &&
-    requestId &&
-    unifiedSlots.some((s) => s.kind === "tool" || s.kind === "status");
+    isWaitingForContent && requestId && hasUnifiedSpecial;
 
   if (isWaitingForContent && !hasPreTextSegments) {
     try {
@@ -572,6 +574,21 @@ export const EnhancedChatMarkdownInternal: React.FC<
                         conversationId={conversationId ?? ""}
                       />
                     );
+                  }
+                  if (segment.type === "render_block") {
+                    // DB media parts (images / audio / video) routed
+                    // through the canonical BlockRenderer pipeline. Image
+                    // segments land on UnifiedImageBlockRenderer +
+                    // useUnifiedImageUrl, which re-mint expired signed
+                    // URLs from the persisted fileId, so old messages
+                    // keep working indefinitely.
+                    const block: RenderBlock = {
+                      type: segment.blockType,
+                      content: segment.content ?? "",
+                      serverData: segment.data ?? undefined,
+                      metadata: segment.metadata,
+                    };
+                    return renderBlock(block, segIdx * 1000);
                   }
                   if (segment.type === "thinking") {
                     const thinkBlocks = (() => {

@@ -16,13 +16,20 @@ import type {
   ContentSegmentText,
   ContentSegmentDbTool,
   ContentSegmentThinking,
+  ContentSegmentRenderBlock,
 } from "../active-requests/active-requests.selectors";
 import {
   parseMessageContent,
   type ToolCallPart,
   type ThinkingPart,
   type MessagePart,
+  type ImageMediaPart,
+  type AudioMediaPart,
+  type VideoMediaPart,
+  type DocumentMediaPart,
+  type YouTubeMediaPart,
 } from "@/types/python-generated/stream-events";
+import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
 const EMPTY_RECORDS: MessageRecord[] = [];
@@ -247,6 +254,86 @@ export function extractContentBlocks(
     : [];
 }
 
+type AnyMediaPart =
+  | ImageMediaPart
+  | AudioMediaPart
+  | VideoMediaPart
+  | DocumentMediaPart
+  | YouTubeMediaPart;
+
+/**
+ * Convert a persisted `media:*` `MessagePart` into a canonical
+ * `render_block` segment carrying the full UnifiedImageBlock (or, for
+ * audio/video, the matching `*_output` data shape). The renderer
+ * dispatches each segment through `BlockRenderer`, which routes images
+ * to `UnifiedImageBlockRenderer` — keeping the signed-URL refresh
+ * pipeline, copy/share/download action bar, lightbox, and rich preview
+ * all live for DB-loaded messages.
+ *
+ * Returns null when there's nothing renderable yet (e.g. an image part
+ * persisted with no canonical fields and no signed URL).
+ */
+function mediaPartToSegment(
+  raw: AnyMediaPart,
+): ContentSegmentRenderBlock | null {
+  switch (raw.kind) {
+    case "image": {
+      // `fromCxMediaPart` lifts fileId, cdn_url, signed_url, visibility,
+      // and every other canonical UnifiedImageBlock field back out of the
+      // persisted `metadata` blob. The downstream renderer + URL hook
+      // can then re-mint expired signed URLs from the fileId, so old
+      // persisted images keep working indefinitely.
+      const unified = fromCxMediaPart(raw);
+      return {
+        type: "render_block",
+        blockType: "image_output",
+        content: null,
+        data: unified as unknown as Record<string, unknown>,
+        metadata: raw.metadata as Record<string, unknown> | undefined,
+      };
+    }
+    case "audio":
+      return {
+        type: "render_block",
+        blockType: "audio_output",
+        content: null,
+        data: {
+          type: "audio_output",
+          url: raw.url ?? null,
+          file_uri: raw.file_uri ?? null,
+          mime_type: raw.mime_type ?? null,
+          transcription_result: raw.transcription_result ?? null,
+        },
+        metadata: raw.metadata as Record<string, unknown> | undefined,
+      };
+    case "video":
+      return {
+        type: "render_block",
+        blockType: "video_output",
+        content: null,
+        data: {
+          type: "video_output",
+          url: raw.url ?? null,
+          file_uri: raw.file_uri ?? null,
+          mime_type: raw.mime_type ?? null,
+        },
+        metadata: raw.metadata as Record<string, unknown> | undefined,
+      };
+    case "document":
+    case "youtube":
+    case undefined:
+      // No canonical render type yet — skip rather than emit a broken
+      // markdown link. When Python finalizes the document/youtube
+      // rendering contract these can be lifted into their own block types.
+      return null;
+    default: {
+      const _exhaustive: never = raw;
+      void _exhaustive;
+      return null;
+    }
+  }
+}
+
 /**
  * Projects a `MessageRecord.content` array into the `ContentSegment[]`
  * structure the renderers consume — interleaving text, thinking, and tool
@@ -394,39 +481,30 @@ export const selectMessageInterleavedContent = (
             break;
           }
           case "media": {
-            // Known case: Google Gemini File API returns assets with `file_uri`
-            // rather than a public `url`. Accept either.
-            const media = part as {
-              kind?: string;
-              url?: string | null;
-              file_uri?: string | null;
-              mime_type?: string | null;
-            };
-            const resolvedUrl = media.url ?? media.file_uri ?? null;
-            if (!resolvedUrl) break;
-
-            console.log(
-              "[selectMessageInterleavedContent] media part rendered as text",
-              {
-                conversationId,
-                messageId,
-                kind: media.kind,
-                viaFileUri: !media.url && !!media.file_uri,
-                mimeType: media.mime_type ?? null,
-              },
+            // Emit a canonical `render_block` segment so the renderer can
+            // dispatch through BlockRenderer (and, for images, the
+            // UnifiedImageBlockRenderer + useUnifiedImageUrl pipeline that
+            // re-mints expired signed URLs from the persisted file metadata).
+            //
+            // Previously this branch encoded media as `![label](url)`
+            // markdown text. That bypassed the canonical pipeline and
+            // embedded whatever URL was stored at persistence time — for
+            // matrx-origin images that fell back to a short-lived signed
+            // URL, the markdown image would 404 within an hour. The lossy
+            // path also dropped fileId / parentFileId / visibility / etc.,
+            // so the image action bar lost its rich features (copy
+            // public link, share popover, "view original", etc.) entirely
+            // when the surrounding message also had tool calls (the only
+            // path that routes through this selector).
+            const segment = mediaPartToSegment(
+              part as
+                | ImageMediaPart
+                | AudioMediaPart
+                | VideoMediaPart
+                | DocumentMediaPart
+                | YouTubeMediaPart,
             );
-
-            // Encode as markdown so the existing text-block renderer picks it
-            // up without needing a new ContentSegment variant.
-            const label = media.kind ?? "media";
-            const markdown =
-              media.kind === "image"
-                ? `![${label}](${resolvedUrl})`
-                : `[${label}](${resolvedUrl})`;
-            segments.push({
-              type: "text",
-              content: markdown,
-            } satisfies ContentSegmentText);
+            if (segment) segments.push(segment);
             break;
           }
           case "code_exec": {

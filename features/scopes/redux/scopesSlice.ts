@@ -79,7 +79,13 @@ const scopesSlice = createSlice({
       const { organizations, fetched_at } = action.payload;
       state.organizations = {};
       state.organizationIds = [];
+      const seen = new Set<string>();
       for (const org of organizations) {
+        // Defense in depth: even if upstream returns duplicates, never
+        // let them leak into `organizationIds` (caused 1+3+3=7 phantom
+        // rows in the picker flyout when RLS over-shared org_members).
+        if (seen.has(org.id)) continue;
+        seen.add(org.id);
         state.organizations[org.id] = org;
         state.organizationIds.push(org.id);
       }

@@ -84,14 +84,20 @@ export const scopesService = {
    */
   async getScopeTree(): Promise<ScopesRpcResult<ScopeTreeResponse>> {
     try {
-      requireUserId();
+      const userId = requireUserId();
 
+      // NOTE: `organization_members` has a permissive SELECT RLS policy
+      // (`true`) so any member of an org can read every other member row
+      // for that org. We MUST filter by user_id explicitly — without
+      // this, the join below produces one row per (user, org) member
+      // pair, duplicating each org in the result.
       const orgsP = supabase
         .from("organization_members")
         .select(
           `role,
            organizations!inner ( id, name, slug, is_personal )`,
         )
+        .eq("user_id", userId)
         .returns<
           Array<{
             role: string;

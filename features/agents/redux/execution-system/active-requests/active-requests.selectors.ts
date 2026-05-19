@@ -442,12 +442,32 @@ export type ContentSegmentThinking = {
   type: "thinking";
   content: string;
 };
+/**
+ * DB-loaded media (and other canonical render blocks) emitted inline in
+ * `selectMessageInterleavedContent`. Carries the same `RenderBlockPayload`
+ * shape the stream pipeline uses, so the renderer can dispatch through the
+ * canonical BlockRenderer (and, for images, the UnifiedImageBlockRenderer
+ * + useUnifiedImageUrl pipeline that handles signed-URL refresh).
+ *
+ * Previously these were lossily encoded as `![label](url)` markdown text,
+ * which (a) bypassed the canonical pipeline and (b) embedded whatever URL
+ * was stored at persistence time — short-lived signed URLs would expire
+ * and the image would 404 on later loads.
+ */
+export type ContentSegmentRenderBlock = {
+  type: "render_block";
+  blockType: string;
+  content: string | null;
+  data: Record<string, unknown> | null;
+  metadata?: Record<string, unknown>;
+};
 export type ContentSegment =
   | ContentSegmentText
   | ContentSegmentTool
   | ContentSegmentStatus
   | ContentSegmentDbTool
-  | ContentSegmentThinking;
+  | ContentSegmentThinking
+  | ContentSegmentRenderBlock;
 
 // =============================================================================
 // Unified Slot Rendering — single source of truth for stream content ordering
@@ -517,19 +537,27 @@ const PHASE_LABELS: Record<string, string> = {
  * and any "real" content event clears the pending status.
  */
 // Media data events emit standalone render-block slots (not inside a text
-// run). Forward-compatible with audio + video outputs; today only images
-// fire data events, but the wiring is identical.
+// run). Two wire shapes are accepted here:
+//   - Legacy per-kind events: `image_output` / `partial_image` /
+//     `audio_output` / `video_output` (older Python services).
+//   - Canonical `media_block` event (post-d20364212 Python rollout) —
+//     `process-stream.ts` lifts it into the matching `image_output` /
+//     `audio_output` / `video_output` render block via `fromMediaBlock`,
+//     but the timeline `data` entry still has `data.type === "media_block"`.
+//     Without it in this set the selector silently drops the slot.
 const MEDIA_DATA_TYPES = new Set([
   "image_output",
   "partial_image",
   "audio_output",
   "video_output",
+  "media_block",
 ]);
 
 const MEDIA_BLOCK_TYPES = new Set([
   "image_output",
   "audio_output",
   "video_output",
+  "media_block",
 ]);
 
 export const selectUnifiedSlots = (requestId: string) =>
