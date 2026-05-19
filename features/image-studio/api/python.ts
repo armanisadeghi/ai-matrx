@@ -70,10 +70,13 @@ export interface ImageResult {
   height: number;
 }
 
-export interface EditResponse {
-  /** Standard Asset envelope. */
-  asset: AssetEnvelope;
-}
+/**
+ * Per IMAGE_OPS.md every op returns "the standard Asset envelope" — the
+ * envelope IS the response body, not a wrapped `{ asset: … }`. Older
+ * versions of this client wrapped it; consumers should destructure
+ * `primary_url` / `variants` directly off the returned AssetEnvelope.
+ */
+export type EditResponse = AssetEnvelope;
 
 // ---------------------------------------------------------------------------
 // Prompt-based AI edit — stub for the natural-language image edit feature

@@ -33,7 +33,6 @@ import {
   Sun,
   Wand2,
   Waves,
-  X,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -61,7 +60,6 @@ import {
   sharpen as sharpenOp,
   suggestEdits,
   upscaleImage,
-  type AssetEnvelope,
 } from "../../api/python";
 import type { MaskState } from "./use-mask-state";
 
@@ -136,12 +134,28 @@ export function EditAiToolbar({
     [mask],
   );
 
-  // Pull the primary URL + a reasonable filename out of the new Asset envelope.
+  // Pull the primary URL out of whatever the backend sends back. New
+  // IMAGE_OPS endpoints return an AssetEnvelope (primary_url + variants);
+  // the legacy /images/upscale wrapper may still return {file: ImageResult}
+  // (public_url). We probe every known shape so a quiet contract change on
+  // the backend can never blow up the result-load path again.
   const consume = useCallback(
-    (asset: AssetEnvelope, fallbackName: string) => {
-      const url = asset.primary_url ?? asset.variants?.original?.url ?? null;
+    (response: unknown, fallbackName: string) => {
+      const r = response as Record<string, unknown> | null | undefined;
+      const variants = r?.variants as
+        | Record<string, { url?: string | null }>
+        | undefined;
+      const file = r?.file as { public_url?: string } | undefined;
+      const url =
+        (r?.primary_url as string | undefined) ??
+        variants?.original?.url ??
+        (r?.public_url as string | undefined) ??
+        file?.public_url ??
+        ((r?.asset as { primary_url?: string })?.primary_url ?? null);
       if (!url) {
         toast.error("Op completed but returned no URL.");
+        // eslint-disable-next-line no-console
+        console.warn("Unrecognized op response shape:", response);
         return;
       }
       onResult(url, deriveName(url, fallbackName));
@@ -154,7 +168,7 @@ export function EditAiToolbar({
     if (!id) return;
     setBusy("adjust");
     try {
-      const { asset } = await adjust(id, adjustValues);
+      const asset = await adjust(id, adjustValues);
       consume(asset, "adjusted.png");
       setAdjustOpen(false);
     } catch (err) {
@@ -169,7 +183,7 @@ export function EditAiToolbar({
     if (!id) return;
     setBusy("auto");
     try {
-      const { asset } = await autoColor(id);
+      const asset = await autoColor(id);
       consume(asset, "auto-color.png");
     } catch (err) {
       handleApiError(err, "Auto color");
@@ -183,7 +197,7 @@ export function EditAiToolbar({
     if (!id) return;
     setBusy("sharpen");
     try {
-      const { asset } = await sharpenOp(id, { amount: 1.2 });
+      const asset = await sharpenOp(id, { amount: 1.2 });
       consume(asset, "sharpen.png");
     } catch (err) {
       handleApiError(err, "Sharpen");
@@ -197,7 +211,7 @@ export function EditAiToolbar({
     if (!id) return;
     setBusy("denoise");
     try {
-      const { asset } = await denoiseOp(id, { strength: 2 });
+      const asset = await denoiseOp(id, { strength: 2 });
       consume(asset, "denoise.png");
     } catch (err) {
       handleApiError(err, "Denoise");
@@ -212,7 +226,7 @@ export function EditAiToolbar({
     setBusy("bg");
     try {
       const maskId = await resolveMaskId(id);
-      const { asset } = await removeBackground({
+      const asset = await removeBackground({
         source_id: id,
         ...(maskId ? { mask_id: maskId } : {}),
       });
@@ -240,7 +254,7 @@ export function EditAiToolbar({
         toast.error("Couldn't upload mask. Try again.");
         return;
       }
-      const { asset } = await inpaint({ source_id: id, mask_id: maskId });
+      const asset = await inpaint({ source_id: id, mask_id: maskId });
       consume(asset, "inpaint.png");
     } catch (err) {
       handleApiError(err, "Inpaint");
@@ -254,7 +268,7 @@ export function EditAiToolbar({
     if (!id) return;
     setBusy(factor === 2 ? "up2" : "up4");
     try {
-      const { asset } = await upscaleImage({ source_id: id, factor });
+      const asset = await upscaleImage({ source_id: id, factor });
       consume(asset, `${factor}x.png`);
     } catch (err) {
       handleApiError(err, `${factor}× upscale`);
@@ -296,7 +310,7 @@ export function EditAiToolbar({
     setBusy("prompt");
     try {
       const maskId = await resolveMaskId(id);
-      const { asset } = await editImageByPrompt({
+      const asset = await editImageByPrompt({
         source_id: id,
         prompt: promptText.trim(),
         ...(maskId ? { mask_id: maskId } : {}),
@@ -528,74 +542,81 @@ export function EditAiToolbar({
         tooltip="Ask AI what edits this image needs"
       />
 
-      {promptOpen ? (
-        <div className="flex items-center gap-1.5 shrink-0 pl-1">
-          <input
-            autoFocus
-            value={promptText}
-            onChange={(e) => setPromptText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void handlePrompt();
-              if (e.key === "Escape") {
-                setPromptOpen(false);
-                setPromptText("");
-              }
-            }}
-            placeholder='"make it sunset", "change shirt to blue"…'
-            className="h-7 w-56 md:w-72 rounded-md border border-border bg-background px-2 text-xs"
-            style={{ fontSize: "16px" }}
-            disabled={anyBusy}
-          />
+      {/* AI prompt input lives in a popover so the toolbar never reflows.
+          Constraining the toolbar to a stable layout is critical for the
+          editor — every layout shift is a usability papercut. */}
+      <Popover open={promptOpen} onOpenChange={setPromptOpen}>
+        <PopoverTrigger asChild>
           <Button
+            variant="ghost"
             size="sm"
-            className="h-7 shrink-0 text-xs"
-            onClick={handlePrompt}
-            disabled={anyBusy || !promptText.trim() || idMissing}
+            className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+            disabled={anyBusy || idMissing}
           >
             {busy === "prompt" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              "Apply"
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0"
-            onClick={() => {
-              setPromptOpen(false);
-              setPromptText("");
-            }}
-            title="Close"
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
-              onClick={() => setPromptOpen(true)}
-              disabled={anyBusy || idMissing}
-            >
               <Zap className="h-3.5 w-3.5" />
-              AI edit
-              {mask.hasPixels ? (
-                <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">
-                  masked
-                </span>
-              ) : null}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Edit the image by typing what you want changed
-            {mask.hasPixels ? " — constrained to your mask" : ""}
-          </TooltipContent>
-        </Tooltip>
-      )}
+            )}
+            AI edit
+            {mask.hasPixels ? (
+              <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">
+                masked
+              </span>
+            ) : null}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-80">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-foreground/80">
+                Describe the edit
+              </Label>
+              <p className="text-[11px] text-muted-foreground">
+                {mask.hasPixels
+                  ? "Constrained to the painted mask region."
+                  : "Applied to the entire image."}
+              </p>
+            </div>
+            <input
+              autoFocus
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handlePrompt();
+                if (e.key === "Escape") setPromptOpen(false);
+              }}
+              placeholder='"make it sunset", "change shirt to blue"…'
+              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+              style={{ fontSize: "16px" }}
+              disabled={anyBusy}
+            />
+            <div className="flex justify-between items-center pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setPromptText("")}
+                disabled={anyBusy || !promptText}
+              >
+                Clear
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handlePrompt}
+                disabled={anyBusy || !promptText.trim()}
+              >
+                {busy === "prompt" ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Apply"
+                )}
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

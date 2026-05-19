@@ -462,11 +462,16 @@ export function EditModeShell({
           mask={mask}
         />
 
-        {/* ── Editor area + versions rail ─────────────────────────────── */}
-        <div className="flex-1 min-h-0 flex">
+        {/* ── Editor area ─────────────────────────────────────────────
+            The canvas is the ONE size that matters: it never resizes
+            regardless of which side panels are toggled. The versions
+            rail floats over the right edge instead of pushing the
+            canvas — so the image never moves under the user's mouse.
+        */}
+        <div className="flex-1 min-h-0 relative">
           <div
             ref={canvasAreaRef}
-            className="flex-1 min-w-0 min-h-0 relative"
+            className="absolute inset-0"
           >
             <FilerobotImageEditor
               key={editorKey}
@@ -494,10 +499,7 @@ export function EditModeShell({
               defaultTabId="Adjust"
               defaultToolId="Crop"
             />
-            <MaskOverlay
-              canvasAreaRef={canvasAreaRef}
-              mask={mask}
-            />
+            <MaskOverlay canvasAreaRef={canvasAreaRef} mask={mask} />
             {saving && (
               <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
@@ -508,8 +510,17 @@ export function EditModeShell({
             )}
           </div>
 
-          {railOpen && effectiveCloudFileId ? (
-            <aside className="w-72 shrink-0 border-l border-border bg-card flex flex-col min-h-0">
+          {/* Versions rail — absolutely positioned overlay. Slides in from
+              the right when opened; closing slides it off without
+              affecting the canvas. */}
+          {effectiveCloudFileId ? (
+            <aside
+              className={cn(
+                "absolute top-0 right-0 bottom-0 w-72 border-l border-border bg-card flex flex-col min-h-0 shadow-xl z-30 transition-transform duration-200 ease-out",
+                railOpen ? "translate-x-0" : "translate-x-full",
+              )}
+              aria-hidden={!railOpen}
+            >
               <VersionsRail
                 fileId={effectiveCloudFileId}
                 onRestored={handleVersionRestored}
