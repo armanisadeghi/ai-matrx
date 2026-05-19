@@ -25,12 +25,12 @@ import { syncPolicies } from "@/lib/sync/registry";
 import type { IdentityKey } from "@/lib/sync/types";
 import { mapUserData, type UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
-import { defaultUserPreferences } from "@/lib/redux/slices/defaultPreferences";
-import { initializeUserPreferencesState } from "@/lib/redux/slices/userPreferencesSlice";
+import { defaultUserPreferences } from "@/lib/redux/preferences/defaultUserPreferences";
+import { initializeUserPreferencesState } from "@/lib/redux/preferences/userPreferencesSlice";
 import type {
   UserPreferences,
   UserPreferencesState,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 import type { UserProfileState } from "@/lib/redux/slices/userProfileSlice";
 import {
