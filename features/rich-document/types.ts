@@ -208,8 +208,15 @@ export interface RichDocumentActionContext {
 export interface RichDocumentAction {
   /** Unique ID. Built-ins use RichDocumentActionId; extras may use any string. */
   id: RichDocumentActionId | string;
-  label: string;
+  label: string | ((ctx: RichDocumentActionContext) => string);
   icon: LucideIcon;
+  /**
+   * Optional Tailwind color class(es) applied to the icon. Preserves the
+   * per-action visual variety from the legacy registry (text-blue-500
+   * dark:text-blue-400, etc.). Variant renderers may ignore this if they
+   * have a stricter visual system.
+   */
+  iconColor?: string;
   category: ActionCategory;
   /** Which source types this action operates on. "*" = all sources. */
   supportedSources: ContentSourceType[] | "*";

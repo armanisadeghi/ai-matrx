@@ -17,10 +17,9 @@
 
 import { memo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import {
-  getRegistryEntryByOverlayId,
-  type TrayPreviewContext,
-} from "../registry/windowRegistry";
+import { getStaticEntryByOverlayId } from "../registry/windowRegistryMetadata";
+import { getTrayPreviewEntry } from "../registry/trayPreviewRegistry";
+import type { TrayPreviewContext } from "../registry/windowRegistryTypes";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";
 import { getTraySnapshot, subscribeTraySnapshotMap } from "./traySnapshotMap";
@@ -41,33 +40,36 @@ export const TrayChipPreview = memo(function TrayChipPreview({
   windowId,
   title,
 }: TrayChipPreviewProps) {
-  const registryEntry = getRegistryEntryByOverlayId(windowId);
+  // Static metadata for label fallback. Tray-preview callbacks live in a
+  // SEPARATE registry (`trayPreviewRegistry`) so the chip render path doesn't
+  // pull in the dynamic-import graph that used to hang off `windowRegistry`.
+  const staticEntry = getStaticEntryByOverlayId(windowId);
+  const trayPreview = getTrayPreviewEntry(windowId);
 
   // Pull the persisted overlay data so renderTrayPreview can read window-
   // specific state (last note title, file name, message preview, etc.).
-  // selectOverlayData returns `data` (the JSON payload) or null when missing.
   const overlayData = useAppSelector((state) =>
-    registryEntry
+    staticEntry
       ? selectOverlayData(
           state as Parameters<typeof selectOverlayData>[0],
-          registryEntry.overlayId,
+          staticEntry.overlayId,
           DEFAULT_INSTANCE_ID,
         )
       : null,
   );
 
   // ── 1. Custom render mode ────────────────────────────────────────────────
-  if (registryEntry?.renderTrayPreview) {
+  if (trayPreview?.renderTrayPreview && staticEntry) {
     const ctx: TrayPreviewContext = {
       data: (overlayData as Record<string, unknown> | null) ?? {},
-      overlayId: registryEntry.overlayId,
+      overlayId: staticEntry.overlayId,
       instanceId: DEFAULT_INSTANCE_ID,
       title,
     };
     try {
       return (
         <div className="flex-1 px-3 py-1 overflow-hidden text-xs text-muted-foreground">
-          {registryEntry.renderTrayPreview(ctx)}
+          {trayPreview.renderTrayPreview(ctx)}
         </div>
       );
     } catch (err) {
@@ -84,12 +86,12 @@ export const TrayChipPreview = memo(function TrayChipPreview({
   }
 
   // ── 2. Snapshot mode ─────────────────────────────────────────────────────
-  if (registryEntry?.captureTraySnapshot) {
+  if (trayPreview?.captureTraySnapshot) {
     return <TraySnapshotImage windowId={windowId} title={title} />;
   }
 
   // ── 3. Default — muted label + subtle hint ───────────────────────────────
-  return <DefaultTrayChipBody registryLabel={registryEntry?.label ?? null} />;
+  return <DefaultTrayChipBody registryLabel={staticEntry?.label ?? null} />;
 });
 
 // ─── Default body ─────────────────────────────────────────────────────────────

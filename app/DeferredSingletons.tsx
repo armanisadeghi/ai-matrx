@@ -32,19 +32,15 @@
 import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
-import { useEffect } from "react";
 import { useIdleReady, useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
-import { markControllerGateMounted } from "@/lib/redux/middleware/overlayDiagnostics";
 import {
   selectUser,
   selectIsSuperAdmin,
 } from "@/lib/redux/selectors/userSelectors";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
-import UnifiedOverlayController from "@/features/window-panels/UnifiedOverlayController";
-import NewOverlayController from "@/features/overlays/OverlayController";
-import { readOverlayControllerFlag } from "@/features/overlays/featureFlag";
+import OverlayController from "@/features/overlays/OverlayController";
 import LegacyPromptOverlaysController from "@/features/prompts/components/results-display/LegacyPromptOverlaysController";
 import { AudioRecoveryToast } from "@/features/audio/components/AudioRecoveryToast";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
@@ -57,10 +53,10 @@ const LazyMessagingIsland = dynamic(
 );
 
 // Selector that returns true if ANY overlay instance is currently open.
-// Used by OverlayControllerGate below to defer mounting
-// UnifiedOverlayController (and its 100+ lazy chunk graph) until the user
-// actually opens their first overlay. The selector reads only the slice's
-// state, so it doesn't trigger any window-panel module to be parsed.
+// Used by OverlayControllerGate below to defer mounting OverlayController
+// (and its Impl chunk's 111-window lazy graph) until the user actually
+// opens their first overlay. The selector reads only the slice's state,
+// so it doesn't trigger any window-panel module to be parsed.
 function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
   const overlays = state.overlays?.overlays;
   if (!overlays) return false;
@@ -73,34 +69,21 @@ function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
 }
 
 /**
- * Mounts UnifiedOverlayController only when at least one overlay is
- * actually open. Combined with the React.lazy boundary inside the
- * controller's thin shell, this means the registry chunk + every window
- * component chunk stay out of the page entirely until the user opens
- * their first overlay (a tile click, a programmatic dispatch, or URL
- * hydration).
+ * Mounts the OverlayController shell only when at least one overlay is
+ * actually open. Combined with the `next/dynamic` boundary inside the
+ * shell (`features/overlays/OverlayController.tsx` → Impl chunk), this
+ * means the Impl's parse cost + every window-component chunk stay out
+ * of the page entirely until the user opens their first overlay.
  *
- * Why we need both the gate AND React.lazy: `next/dynamic` would
- * preload chunks via `loadableGenerated.modules` even before render. We
- * use React.lazy in UnifiedOverlayController.tsx to avoid that, and this
- * gate to avoid even initiating the lazy ref's read until something is
- * actually open.
+ * Why the gate matters: the shell is tiny and could be mounted
+ * unconditionally, but mounting it would cause `next/dynamic` to start
+ * preloading the Impl chunk on idle (loadableGenerated.modules). The
+ * gate prevents that prefetch until the first dispatch.
  */
 function OverlayControllerGate() {
-  // Heartbeat: tells the diagnostics middleware that DeferredSingletons
-  // committed and the gate is actively subscribed to overlay state. If a
-  // dispatch fires while this is unmounted (e.g. idle never resolved, the
-  // route's layout doesn't include Providers), the timeout report says so.
-  useEffect(() => {
-    markControllerGateMounted();
-  }, []);
   const hasAny = useAppSelector(selectAnyOverlayOpen);
-  // Flag read on every render is cheap (string compares); it lives in a
-  // shared module so the public-routes provider tree reads the same value
-  // from the same sources. See docs/OVERLAY_WINDOW_OVERHAUL.md.
-  const { useNew } = readOverlayControllerFlag();
   if (!hasAny) return null;
-  return useNew ? <NewOverlayController /> : <UnifiedOverlayController />;
+  return <OverlayController />;
 }
 
 // ─── Static system broker descriptors (data only) ─────────────────────────

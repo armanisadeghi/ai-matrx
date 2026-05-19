@@ -457,16 +457,13 @@ export default [
         },
     },
     {
-        // Overlay overhaul rule #1: no JSX prop spread inside the new
-        // OverlayController. The whole reason the controller exists is to
+        // Overlay overhaul rule #1: no JSX prop spread inside the
+        // OverlayController Impl. The whole reason the Impl exists is to
         // make prop wiring explicit so TypeScript catches dispatch /
         // component prop-shape drift at compile time — a single `{...spread}`
         // anywhere in here would defeat the point. See
         // docs/OVERLAY_WINDOW_OVERHAUL.md.
-        //
-        // Warn (not error) during stage 3 — bumped to error after the
-        // cutover is complete.
-        files: ['features/overlays/OverlayController.tsx'],
+        files: ['features/overlays/OverlayControllerImpl.tsx'],
         rules: {
             'no-restricted-syntax': [
                 'warn',
@@ -484,12 +481,14 @@ export default [
             'features/window-panels/UnifiedOverlayController.tsx',
             'features/window-panels/OverlaySurface.tsx',
             'components/overlays/OverlayController.tsx',
-            // The new explicit controller — by design, this file directly
-            // imports every window/overlay component (one `dynamic()` per
-            // entry). The "no direct windows/* import" rule exists to keep
-            // those imports inside the registry layer; this file IS the
-            // registry layer. Same exemption as windowRegistry.ts above.
-            'features/overlays/OverlayController.tsx',
+            // The new explicit controller's Impl — by design, this file
+            // directly imports every window/overlay component (one
+            // `dynamic()` per entry). The "no direct windows/* import" rule
+            // exists to keep those imports inside the registry layer; this
+            // file IS the registry layer. Same exemption as
+            // windowRegistry.ts above. The thin shell `OverlayController.tsx`
+            // does NOT need the exemption — it only imports its Impl.
+            'features/overlays/OverlayControllerImpl.tsx',
         ],
         rules: {
             'no-restricted-imports': 'off',

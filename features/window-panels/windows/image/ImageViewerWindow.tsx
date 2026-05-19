@@ -433,10 +433,7 @@ export function ImageViewerWindow({
 
 // `openImageViewer` + its payload type live in `./openImageViewer.ts` —
 // a separate light file with no window-panel-system imports. Route-level
-// consumers should import the helper from there to avoid pulling
-// <WindowPanel> into their bundle. Back-compat re-export kept here so
-// any straggler import path still resolves.
-export {
-  openImageViewer,
-  type OpenImageViewerPayload,
-} from "./openImageViewer";
+// consumers MUST import the helper from there. The back-compat re-export
+// that used to live here was a trap: it pulled this whole window component
+// (and its <WindowPanel> dependency graph) into any caller's bundle. Burn
+// the boats — direct imports of the helper file only.

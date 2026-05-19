@@ -6,9 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import StoreProvider from "@/providers/StoreProvider";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { PublicAuthSync } from "./PublicAuthSync";
-import UnifiedOverlayController from "@/features/window-panels/UnifiedOverlayController";
-import NewOverlayController from "@/features/overlays/OverlayController";
-import { readOverlayControllerFlag } from "@/features/overlays/featureFlag";
+import OverlayController from "@/features/overlays/OverlayController";
 import LegacyPromptOverlaysController from "@/features/prompts/components/results-display/LegacyPromptOverlaysController";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
@@ -36,16 +34,12 @@ export function PublicProviders({
   children,
   initialState,
 }: PublicProvidersProps) {
-  // Same controller-flag mechanism as DeferredSingletons. Public routes
-  // weren't gated before; this change brings them in line so the cutover
-  // env var promotes BOTH route trees at once.
-  const { useNew } = readOverlayControllerFlag();
   return (
     <ReactQueryProvider>
       <StoreProvider initialState={initialState}>
         <TooltipProvider delayDuration={200}>
           <PublicAuthSync />
-          {useNew ? <NewOverlayController /> : <UnifiedOverlayController />}
+          <OverlayController />
           <LegacyPromptOverlaysController />
           {/* See app/Providers.tsx for the rationale. */}
           <ConfirmDialogHost />

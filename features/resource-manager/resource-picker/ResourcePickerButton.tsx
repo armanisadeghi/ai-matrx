@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,8 +10,23 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ResourcePickerMenu } from "./ResourcePickerMenu";
-import { ResourcePickerWindow } from "@/features/window-panels/windows/ResourcePickerWindow";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
+
+// Lazy-loaded: the window component (with its WindowPanel chrome + every
+// resource-picker tab) is its own chunk, only fetched when `useWindowMode`
+// is true AND the user actually opens it. Was a static import — that
+// dragged the entire window-panel chunk graph into this button's bundle.
+// TODO(overlay-overhaul): once a callback-aware opener exists for
+// resourcePickerWindow (currently the generated opener passes
+// `onResourceSelected` through Redux as a function, which doesn't work),
+// migrate this to `useOpenResourcePickerWindow()` and delete this dynamic.
+const ResourcePickerWindow = dynamic(
+  () =>
+    import("@/features/window-panels/windows/ResourcePickerWindow").then(
+      (m) => ({ default: m.ResourcePickerWindow }),
+    ),
+  { ssr: false },
+);
 
 interface ResourcePickerButtonProps {
   onResourceSelected?: (resource: any) => void;

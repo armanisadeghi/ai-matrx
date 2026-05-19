@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,17 @@ import {
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import { ResourcePickerWindow } from "@/features/window-panels/windows/ResourcePickerWindow";
+
+// Lazy-loaded — see ResourcePickerButton.tsx for why. Static import was
+// dragging the entire window-panel chunk graph into every agent surface
+// that mounts this button.
+const ResourcePickerWindow = dynamic(
+  () =>
+    import("@/features/window-panels/windows/ResourcePickerWindow").then(
+      (m) => ({ default: m.ResourcePickerWindow }),
+    ),
+  { ssr: false },
+);
 import {
   refineBlockType,
   resourceDataToSource,

@@ -11,11 +11,9 @@
  *
  * Order (fastest first, so problems surface quickly):
  *
- *   1. check:registry          ~1s   window-panels registry integrity
- *   2. check:overlay-keys      ~1s   overlay dispatch ↔ defaultData ↔ component-props alignment
- *   3. check:surface-drift     ~1s   surface manifest invariants
- *   4. check:public-imports    ~1s   no-op legacy guard
- *   5. check:doctrine          ~1s   doctrine red flags (advisory, never fails the run)
+ *   1. check:overlay-keys      ~1s   overlay dispatch ↔ defaultData ↔ component-props alignment
+ *   2. check:surface-drift     ~1s   surface manifest invariants
+ *   3. check:doctrine          ~1s   doctrine red flags (advisory, never fails the run)
  *   6. sync-types step 1       ~5s   Supabase database types (pnpm db-types)        [skipped: --fast / --no-sync]
  *   7. sync-types step 2       ~3s   Python API types (paths/schemas)               [skipped: --fast / --no-sync]
  *   8. lint                    ~30s  eslint . (advisory — large pre-existing baseline)
@@ -77,11 +75,6 @@ function step({ id, title, command, skip, advisory = false }) {
 
 // ── Fast static checks (<2s each) ──────────────────────────────────────────
 step({
-  id: "registry",
-  title: "Window-panels registry integrity",
-  command: ["pnpm", "check:registry"],
-});
-step({
   id: "overlay-keys",
   title: "Overlay key alignment (dispatch ↔ defaultData ↔ props)",
   command: ["pnpm", "check:overlay-keys"],
@@ -90,11 +83,6 @@ step({
   id: "surface-drift",
   title: "Surface manifest invariants",
   command: ["pnpm", "check:surface-drift"],
-});
-step({
-  id: "public-imports",
-  title: "Public import guard",
-  command: ["pnpm", "check:public-imports"],
 });
 step({
   id: "doctrine",

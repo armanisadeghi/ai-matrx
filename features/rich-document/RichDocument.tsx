@@ -29,12 +29,20 @@ import { cn } from "@/lib/utils";
 import {
   registerProvider,
   unregisterProvider,
+  updateProviderSpecs,
 } from "./redux/actionSurfacesSlice";
 import { getSourceAdapter } from "./actions/sources";
 import { shortHash } from "./actions/sources/raw";
+import { resolveActions } from "./actions/registry";
+import { resolveActionLabel } from "./actions/utils";
+// Side-effect import — registers every built-in action handler at module load.
+// Without this, the registry is empty when resolveActions runs.
+import "./actions/handlers";
 import type {
   ContentSource,
+  RichDocumentAction,
   RichDocumentActionContext,
+  RichDocumentActionSpec,
   RichDocumentActionsProp,
   RichDocumentActionsVariant,
   SourceExtensions,
@@ -96,36 +104,78 @@ export interface RichDocumentProps {
 }
 
 /**
- * Build the live action context. Reads from refs so handlers always see
- * the freshest content / source / callbacks at invocation time, even though
- * the function itself is a pure factory.
- *
- * Exported (not just inlined) so Phase 2's variant renderers can call it
- * inside their own click handlers without duplicating the assembly logic.
+ * Convert a resolved action list into the pure-metadata spec snapshot
+ * that's safe to store in Redux. Strips functions, evaluates label/disabled
+ * callbacks against the live context, picks an iconName for the renderer
+ * to look up.
+ */
+function actionsToSpecs(
+  actions: RichDocumentAction[],
+  ctx: RichDocumentActionContext,
+): RichDocumentActionSpec[] {
+  return actions.map((action) => {
+    const disabledResult = action.disabled?.(ctx);
+    const isDisabled =
+      disabledResult === true ||
+      (typeof disabledResult === "object" && disabledResult !== null);
+    const disabledReason =
+      typeof disabledResult === "object" && disabledResult !== null
+        ? disabledResult.reason
+        : undefined;
+    return {
+      id: action.id,
+      label: resolveActionLabel(action.label, ctx),
+      iconName: action.icon.displayName ?? action.icon.name ?? "Circle",
+      category: action.category,
+      renderSlot: action.renderSlot ?? "overflow",
+      order: action.order ?? 0,
+      disabled: isDisabled,
+      disabledReason,
+    };
+  });
+}
+
+/**
+ * Cheap fingerprint of a spec list so we can detect "the action set
+ * actually changed" between renders and skip dispatch-thrash when nothing
+ * meaningful moved. Not cryptographic — just identity for diffing.
+ */
+function specsKey(specs: RichDocumentActionSpec[]): string {
+  return specs
+    .map(
+      (s) =>
+        `${s.id}|${s.label}|${s.disabled ? 1 : 0}|${s.disabledReason ?? ""}`,
+    )
+    .join(";");
+}
+
+/**
+ * Build the action context from plain values. Pure function — same inputs
+ * always produce the same context. Called both during render (with live
+ * props) and at handler-fire time (with ref values, from inside a callback
+ * closure where reading .current is legal).
  */
 function buildContext(args: {
-  contentRef: React.RefObject<string>;
-  sourceRef: React.RefObject<ContentSource>;
-  callbacksRef: React.RefObject<RichDocumentActionsProp["callbacks"] | undefined>;
-  extensionsRef: React.RefObject<SourceExtensions | undefined>;
+  content: string;
+  source: ContentSource;
+  callbacks: RichDocumentActionsProp["callbacks"] | undefined;
+  extensions: SourceExtensions | undefined;
   dispatch: ReturnType<typeof useAppDispatch>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }): RichDocumentActionContext {
-  const currentSource = args.sourceRef.current ?? { type: "raw" as const };
-  const currentContent = args.contentRef.current ?? "";
-  const adapter = getSourceAdapter(currentSource.type);
-  const prefix = adapter.instanceKeyPrefix(currentSource);
+  const adapter = getSourceAdapter(args.source.type);
+  const prefix = adapter.instanceKeyPrefix(args.source);
   // For raw sources, fold the content hash into the prefix so two raw
   // RichDocuments on the same page don't share overlay instance IDs.
   const instancePrefix =
-    currentSource.type === "raw"
-      ? `${prefix}-${shortHash(currentContent).slice(0, 8)}`
+    args.source.type === "raw"
+      ? `${prefix}-${shortHash(args.content).slice(0, 8)}`
       : prefix;
 
   return {
-    content: currentContent,
-    source: currentSource,
+    content: args.content,
+    source: args.source,
     metadata: null, // Phase 1 populates from source-specific selectors
     dispatch: args.dispatch,
     isAuthenticated: args.isAuthenticated,
@@ -137,8 +187,8 @@ function buildContext(args: {
     },
     instanceKey: (suffix: string) => `${instancePrefix}-${suffix}`,
     sourceAdapter: adapter,
-    callbacks: args.callbacksRef.current,
-    extensions: args.extensionsRef.current,
+    callbacks: args.callbacks,
+    extensions: args.extensions,
   };
 }
 
@@ -178,7 +228,10 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // Per-instance provider ID — stable across renders.
   const providerId = React.useId();
 
-  // Live refs — handlers always read latest values, never a frozen snapshot.
+  // Live refs — Phase 2 variant click handlers read these inside their
+  // closures so a button clicked seconds after a content edit operates on
+  // the new content. During render the values are read from props directly
+  // (refs are off-limits during render per react-hooks/refs).
   const contentRef = React.useRef(content ?? "");
   const sourceRef = React.useRef<ContentSource>(source);
   const callbacksRef = React.useRef(actionsProp?.callbacks);
@@ -191,14 +244,37 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     callbacksRef.current = actionsProp?.callbacks;
     extensionsRef.current = actionsProp?.extensions;
   });
+  // Reference the refs so Phase 1 lint doesn't drop them; Phase 2 variants
+  // import a `useRichDocumentContextFactory` hook that consumes them.
+  void contentRef;
+  void sourceRef;
+  void callbacksRef;
+  void extensionsRef;
 
-  // Mark refs as referenced so Phase 0 lint doesn't complain about unused
-  // factory utility. Phase 1 wires buildContext into the variant renderers.
-  void buildContext;
+  // Build the live context from props for render-time spec computation.
+  const ctx = buildContext({
+    content: content ?? "",
+    source,
+    callbacks: actionsProp?.callbacks,
+    extensions: actionsProp?.extensions,
+    dispatch,
+    isAuthenticated,
+    isAdmin,
+  });
+
+  // Resolve which actions are visible for this source + this consumer's
+  // exclude/extra config. Used both for inline variants (Phase 2) and to
+  // compute the spec snapshot stored in the remote-surface slice.
+  const resolvedActions = resolveActions(ctx, {
+    exclude: actionsProp?.exclude,
+    extra: actionsProp?.extra,
+  });
+  const specs = actionsToSpecs(resolvedActions, ctx);
 
   // Remote-surface registration — only when actionsVariant === "remote".
-  // Phase 0 registers an empty action-spec set just to prove the wiring
-  // round-trips. Phase 1 will compute real specs from the registry.
+  // Initial mount registers the provider; spec changes are pushed via
+  // updateProviderSpecs (no re-register, just a metadata refresh).
+  const lastSpecsKey = React.useRef<string>("");
   React.useEffect(() => {
     if (actionsVariant !== "remote" || !actionsSurfaceId) return;
     dispatch(
@@ -207,11 +283,12 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         registration: {
           providerId,
           registeredAt: Date.now(),
-          computedActionSpecs: [], // Phase 1 populates from resolveActions()
+          computedActionSpecs: specs,
           sourceType: source.type,
         },
       }),
     );
+    lastSpecsKey.current = specsKey(specs);
     return () => {
       dispatch(
         unregisterProvider({
@@ -220,13 +297,33 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         }),
       );
     };
-  }, [
-    actionsVariant,
-    actionsSurfaceId,
-    providerId,
-    dispatch,
-    source.type,
-  ]);
+    // Intentionally deps-light: registration is "once per mount". Spec
+    // updates happen via the separate effect below so we don't churn
+    // through register/unregister on every content change.
+     
+  }, [actionsVariant, actionsSurfaceId, providerId, dispatch, source.type]);
+
+  // Push spec updates without re-registering when the resolved set changes
+  // (e.g. content length flipped a `visible` predicate, or admin status
+  // changed). Cheap; only touches the one stack entry.
+  React.useEffect(() => {
+    if (actionsVariant !== "remote" || !actionsSurfaceId) return;
+    const key = specsKey(specs);
+    if (key === lastSpecsKey.current) return;
+    lastSpecsKey.current = key;
+    dispatch(
+      updateProviderSpecs({
+        surfaceId: actionsSurfaceId,
+        providerId,
+        computedActionSpecs: specs,
+      }),
+    );
+  }, [actionsVariant, actionsSurfaceId, providerId, dispatch, specs]);
+
+  // Phase 2 will switch on actionsVariant to render the variants; for now
+  // a non-"remote" / non-"none" value silently no-ops. The action engine
+  // is live and the remote surface works.
+  void resolvedActions;
 
   // PHASE 0: no inline variants yet — render only the engine. Phase 2
   // mounts <ActionBar/>, <MiniActionBar/>, <OverflowMenu/>, <HoverMenu/>.

@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
-import { openImageViewer } from "@/features/window-panels/windows/image/ImageViewerWindow";
+import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
