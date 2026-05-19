@@ -46,8 +46,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileName } from "@/features/files/redux/selectors";
+import { renameFile } from "@/features/files/redux/thunks";
 import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
 import { addAssetVariants } from "@/features/files/api/assets";
 import type { AssetPreset } from "@/features/files/types";
@@ -88,12 +89,79 @@ interface SavedImage {
 const EDIT_FOLDER = "Images/Edited";
 const RAIL_LS_KEY = "image-edit.versions-rail-open";
 
-const VARIANT_PRESETS: { id: AssetPreset; label: string; blurb: string }[] = [
-  { id: "web", label: "Web", blurb: "Hero, OG, card, touch icon, PWA, thumb" },
-  { id: "social", label: "Social", blurb: "OG, square, portrait, story, YT thumb" },
-  { id: "email", label: "Email", blurb: "1200×400 header + 1080² square" },
-  { id: "avatar", label: "Avatar", blurb: "400², 200², 96², 48², 24²" },
-  { id: "favicon", label: "Favicon", blurb: "192, 180, 32, 16 px favicons" },
+// Each preset advertises a few representative variants with rough aspect
+// ratios so the dropdown can render a visual diagram — users see WHAT
+// they're getting before clicking, instead of having to memorize what
+// "Web" or "Social" means. Aspects are illustrative, not the literal
+// pixel sizes; the actual variants come from the server-side preset.
+interface VariantSample {
+  label: string;
+  aspect: number; // width / height
+  sizeHint: string;
+}
+
+const VARIANT_PRESETS: {
+  id: AssetPreset;
+  label: string;
+  blurb: string;
+  samples: VariantSample[];
+}[] = [
+  {
+    id: "web",
+    label: "Web",
+    blurb: "Hero, OG card, touch icon, PWA, thumbnail",
+    samples: [
+      { label: "Hero", aspect: 16 / 9, sizeHint: "1920×1080" },
+      { label: "OG", aspect: 1200 / 630, sizeHint: "1200×630" },
+      { label: "Card", aspect: 3 / 2, sizeHint: "600×400" },
+      { label: "PWA", aspect: 1, sizeHint: "512²" },
+      { label: "Thumb", aspect: 1, sizeHint: "400²" },
+    ],
+  },
+  {
+    id: "social",
+    label: "Social",
+    blurb: "OG, square, portrait, story, YouTube thumb",
+    samples: [
+      { label: "OG", aspect: 1200 / 630, sizeHint: "1200×630" },
+      { label: "Square", aspect: 1, sizeHint: "1080²" },
+      { label: "Portrait", aspect: 1080 / 1350, sizeHint: "1080×1350" },
+      { label: "Story", aspect: 9 / 16, sizeHint: "1080×1920" },
+      { label: "YT", aspect: 16 / 9, sizeHint: "1280×720" },
+    ],
+  },
+  {
+    id: "email",
+    label: "Email",
+    blurb: "Newsletter header + square",
+    samples: [
+      { label: "Header", aspect: 3 / 1, sizeHint: "1200×400" },
+      { label: "Square", aspect: 1, sizeHint: "1080²" },
+    ],
+  },
+  {
+    id: "avatar",
+    label: "Avatar",
+    blurb: "Five circular sizes from xs to xl",
+    samples: [
+      { label: "XL", aspect: 1, sizeHint: "400²" },
+      { label: "L", aspect: 1, sizeHint: "200²" },
+      { label: "M", aspect: 1, sizeHint: "96²" },
+      { label: "S", aspect: 1, sizeHint: "48²" },
+      { label: "XS", aspect: 1, sizeHint: "24²" },
+    ],
+  },
+  {
+    id: "favicon",
+    label: "Favicon",
+    blurb: "Browser + Android + Apple touch icons",
+    samples: [
+      { label: "192", aspect: 1, sizeHint: "192²" },
+      { label: "180", aspect: 1, sizeHint: "180²" },
+      { label: "32", aspect: 1, sizeHint: "32²" },
+      { label: "16", aspect: 1, sizeHint: "16²" },
+    ],
+  },
 ];
 
 export function EditModeShell({
@@ -105,6 +173,7 @@ export function EditModeShell({
   onCancel,
 }: ModeShellProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { url, filename } = useImageSource(source);
   const themeMode = useThemeMode();
   const [saving, setSaving] = useState(false);
@@ -150,13 +219,57 @@ export function EditModeShell({
   // Editor canvas area ref — mask overlay positions itself over this.
   const canvasAreaRef = useRef<HTMLDivElement | null>(null);
 
-  const handleAiResult = useCallback((newUrl: string, newName: string) => {
-    setOverrideUrl(newUrl);
-    setOverrideFilename(newName);
-    setReloadKey((k) => k + 1);
-    mask.clear();
-    toast.success("AI result loaded into the editor.");
-  }, [mask]);
+  // Fold every AI/server-op result into the current file's version history.
+  // The backend creates a sibling cld_files row for the op result (with
+  // metadata.derived_from pointing at the source), but the user's mental
+  // model is "I edited THIS file" — so we additionally write the new bytes
+  // as a fresh version of the current file. That way Undo == Restore
+  // previous version, and the Versions rail captures the full editing
+  // arc, not just the manual Save points.
+  const handleAiResult = useCallback(
+    async (newUrl: string, newName: string) => {
+      setOverrideUrl(newUrl);
+      setOverrideFilename(newName);
+      setReloadKey((k) => k + 1);
+      mask.clear();
+
+      if (!effectiveCloudFileId) {
+        toast.success("AI result loaded into the editor.");
+        return;
+      }
+
+      // Fetch the AI result bytes and persist as a new version of the
+      // current file. Use the URL the backend already gave us — same-origin
+      // CORS rules apply, same as Filerobot's load.
+      try {
+        const res = await fetch(newUrl, { credentials: "omit", mode: "cors" });
+        if (!res.ok) {
+          throw new Error(`Fetch ${newUrl} → ${res.status}`);
+        }
+        const blob = await res.blob();
+        await saveEditedImage({
+          blob,
+          filename: newName,
+          folderPath: defaultFolder,
+          mime: blob.type || undefined,
+          fileId: effectiveCloudFileId,
+          changeSummary: deriveOpSummary(newName),
+          metadata: { kind: "ai-edit", source_url: newUrl },
+        });
+        toast.success("AI result saved as a new version.");
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[image-edit] auto-version of AI result failed", err);
+        toast.warning("AI result loaded — couldn't auto-save as a new version.", {
+          description:
+            err instanceof Error
+              ? err.message
+              : "Use the Save button to commit manually.",
+        });
+      }
+    },
+    [defaultFolder, effectiveCloudFileId, mask],
+  );
 
   const handleVersionRestored = useCallback(() => {
     setReloadKey((k) => k + 1);
@@ -301,6 +414,27 @@ export function EditModeShell({
     toast.success("Reset to the saved state.");
   }, [triggerFilerobotReset, mask]);
 
+  // Inline rename — fired from the header's FilenameField. The thunk
+  // optimistically updates the cloudFiles slice and rolls back on
+  // failure, so the header text refreshes immediately and the user
+  // sees a toast only if the server rejects the change.
+  const handleRename = useCallback(
+    async (newName: string) => {
+      if (!effectiveCloudFileId) return;
+      try {
+        await dispatch(
+          renameFile({ fileId: effectiveCloudFileId, newName }),
+        ).unwrap();
+        toast.success("Renamed.");
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? `Rename failed: ${err.message}` : "Rename failed.",
+        );
+      }
+    },
+    [dispatch, effectiveCloudFileId],
+  );
+
   const handleGenerateVariants = useCallback(
     async (preset: AssetPreset) => {
       if (!effectiveCloudFileId) {
@@ -373,17 +507,11 @@ export function EditModeShell({
             </Tooltip>
           ) : null}
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                className="text-xs font-medium truncate min-w-0 flex-1 cursor-default"
-                title={displayName}
-              >
-                {displayName}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{displayName}</TooltipContent>
-          </Tooltip>
+          <FilenameField
+            displayName={displayName}
+            cloudFileId={effectiveCloudFileId}
+            onRename={handleRename}
+          />
           {effectiveCloudFileId ? null : (
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
               Unsaved
@@ -433,7 +561,7 @@ export function EditModeShell({
                     Sizes
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuContent align="end" className="w-80">
                   <DropdownMenuLabel>Generate sized variants</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {VARIANT_PRESETS.map((p) => (
@@ -441,13 +569,22 @@ export function EditModeShell({
                       key={p.id}
                       onClick={() => void handleGenerateVariants(p.id)}
                       disabled={savingVariants !== null}
+                      className="flex flex-col items-stretch gap-1.5 py-2"
                     >
-                      <div className="flex flex-col">
+                      <div className="flex items-baseline justify-between">
                         <span className="text-sm font-medium">{p.label}</span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {p.blurb}
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {p.samples.length} sizes
                         </span>
                       </div>
+                      <div className="flex items-end gap-1 h-10">
+                        {p.samples.map((s) => (
+                          <VariantSampleSwatch key={s.label} sample={s} />
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        {p.blurb}
+                      </p>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -592,7 +729,8 @@ export function EditModeShell({
 
           {/* Versions rail — absolutely positioned overlay. Slides in from
               the right when opened; closing slides it off without
-              affecting the canvas. */}
+              affecting the canvas. The close X lives on the rail itself
+              so users can dismiss it without hunting up to the header. */}
           {effectiveCloudFileId ? (
             <aside
               className={cn(
@@ -601,6 +739,22 @@ export function EditModeShell({
               )}
               aria-hidden={!railOpen}
             >
+              <div className="flex items-center justify-end px-2 py-1 border-b border-border bg-muted/30 shrink-0">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={() => setRailOpen(false)}
+                      aria-label="Close version history"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Close version history</TooltipContent>
+                </Tooltip>
+              </div>
               <VersionsRail
                 fileId={effectiveCloudFileId}
                 onRestored={handleVersionRestored}
@@ -611,6 +765,161 @@ export function EditModeShell({
       </div>
     </TooltipProvider>
   );
+}
+
+/**
+ * Click the filename to rename it. The file EXTENSION is locked — the input
+ * shows only the stem and re-attaches the original ext on commit so the user
+ * can't accidentally save "photo.jpg" as "photo.png" via a typo. Enter or
+ * blur commits; Escape cancels.
+ */
+function FilenameField({
+  displayName,
+  cloudFileId,
+  onRename,
+}: {
+  displayName: string;
+  cloudFileId: string | null;
+  onRename: (newName: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const { stem, ext } = splitExt(displayName);
+  const [draft, setDraft] = useState(stem);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Keep the draft in sync if the underlying file is renamed elsewhere.
+  useEffect(() => {
+    if (!editing) setDraft(stem);
+  }, [stem, editing]);
+
+  const startEdit = () => {
+    if (!cloudFileId) return;
+    setDraft(stem);
+    setEditing(true);
+    // focus + select-all on next paint
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+  };
+
+  const commit = async () => {
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === stem) {
+      setEditing(false);
+      setDraft(stem);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onRename(ext ? `${trimmed}${ext}` : trimmed);
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  };
+
+  const cancel = () => {
+    setDraft(stem);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={startEdit}
+            disabled={!cloudFileId}
+            className="text-xs font-medium truncate min-w-0 flex-1 text-left hover:text-foreground hover:bg-accent/40 rounded px-1 py-0.5 -mx-1 -my-0.5 disabled:opacity-60 disabled:cursor-default"
+            title={displayName}
+          >
+            {displayName}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {cloudFileId ? "Click to rename — extension stays the same" : displayName}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <div className="flex-1 min-w-0 flex items-center gap-0.5">
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void commit();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            cancel();
+          }
+        }}
+        disabled={saving}
+        // Prevent iOS zoom; matches the AI prompt input convention.
+        style={{ fontSize: "16px" }}
+        className="h-7 min-w-0 flex-1 rounded-l-md border border-border bg-background px-2 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      <span className="h-7 inline-flex items-center px-1.5 text-xs font-medium text-muted-foreground bg-muted/60 border border-l-0 border-border rounded-r-md select-none">
+        {ext || ""}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Tiny visual swatch representing one variant of a sized-variants preset.
+ * Aspect ratio is real, the height is fixed to the dropdown row's strip;
+ * width is derived from aspect. The pixel-size hint (e.g. "1200×630")
+ * surfaces in a tooltip on hover so the dropdown stays clean.
+ */
+function VariantSampleSwatch({ sample }: { sample: VariantSample }) {
+  const MAX_HEIGHT = 32;
+  const MIN_HEIGHT = 14;
+  // Tall aspects (story 9:16) get pinned to height; wide aspects (header
+  // 3:1) get pinned to width via a max scaling factor so no single sample
+  // dominates the strip.
+  const h =
+    sample.aspect >= 1.5
+      ? Math.max(MIN_HEIGHT, MAX_HEIGHT / Math.max(sample.aspect / 1.5, 1))
+      : MAX_HEIGHT;
+  const w = Math.max(12, Math.min(72, h * sample.aspect));
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className="flex flex-col items-center gap-0.5 shrink-0"
+          style={{ width: w }}
+        >
+          <div
+            className="rounded-sm border border-border bg-muted/60"
+            style={{ width: w, height: h }}
+          />
+          <span className="text-[9px] text-muted-foreground leading-none">
+            {sample.label}
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {sample.label}: {sample.sizeHint}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function splitExt(filename: string): { stem: string; ext: string } {
+  const dot = filename.lastIndexOf(".");
+  if (dot <= 0 || dot === filename.length - 1) {
+    return { stem: filename, ext: "" };
+  }
+  return { stem: filename.slice(0, dot), ext: filename.slice(dot) };
 }
 
 function VersionsRail({
@@ -673,6 +982,22 @@ function base64ToBlob(base64DataUrl: string, mime: string): Blob {
 function labelForPreset(p: AssetPreset): string {
   const def = VARIANT_PRESETS.find((x) => x.id === p);
   return def?.label ?? String(p);
+}
+
+// Strip extension + try to derive a change-summary label from the AI op's
+// suggested filename ("no-bg.png" → "Background removed"). Falls back to
+// a generic "AI edit" so the versions rail always has something readable.
+function deriveOpSummary(filename: string): string {
+  const stem = filename.replace(/\.[^.]+$/, "").toLowerCase();
+  if (stem.includes("no-bg") || stem.includes("bg-remove")) return "Background removed";
+  if (stem.includes("inpaint")) return "Inpainted region";
+  if (stem.includes("upscale") || /\b[24]x\b/.test(stem)) return "Upscaled";
+  if (stem.includes("auto-color")) return "Auto color applied";
+  if (stem.includes("adjusted")) return "Adjustments applied";
+  if (stem.includes("sharpen")) return "Sharpened";
+  if (stem.includes("denoise")) return "Denoised";
+  if (stem.includes("ai-edit")) return "AI prompt edit";
+  return "AI edit";
 }
 
 /**

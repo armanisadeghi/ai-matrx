@@ -153,9 +153,12 @@ export function EditAiToolbar({
         file?.public_url ??
         ((r?.asset as { primary_url?: string })?.primary_url ?? null);
       if (!url) {
-        toast.error("Op completed but returned no URL.");
+        toast.error("Op completed but returned no URL.", {
+          description:
+            "Open the console — the full response payload is logged there.",
+        });
         // eslint-disable-next-line no-console
-        console.warn("Unrecognized op response shape:", response);
+        console.warn("[image-edit] unrecognized op response shape:", response);
         return;
       }
       onResult(url, deriveName(url, fallbackName));
@@ -163,18 +166,61 @@ export function EditAiToolbar({
     [onResult],
   );
 
+  /**
+   * Run an AI op with full visibility. Pinned-position toast walks the
+   * user through requesting → succeeded / failed, and the console logs
+   * the request + response so silent failures aren't possible. Returns
+   * the response or null on failure.
+   *
+   * Errors are categorised so the user sees actionable messages:
+   *   • 404 / "not found" → "ships next wave"
+   *   • 503 / "pip install" → "backend not installed: <command>"
+   *   • Network failure → "network error"
+   *   • Anything else → the server's actual message
+   */
+  const runOp = useCallback(
+    async <T,>(
+      label: string,
+      requestPreview: unknown,
+      op: () => Promise<T>,
+    ): Promise<T | null> => {
+      const toastId = toast.loading(`${label}…`, {
+        description: "Calling the image-ops backend",
+      });
+      // eslint-disable-next-line no-console
+      console.info(`[image-edit] ${label} → request`, requestPreview);
+      try {
+        const response = await op();
+        // eslint-disable-next-line no-console
+        console.info(`[image-edit] ${label} → response`, response);
+        toast.success(`${label} complete.`, { id: toastId });
+        return response;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(`[image-edit] ${label} → error`, err);
+        const detail = describeError(err);
+        toast.error(`${label} failed`, {
+          id: toastId,
+          description: detail.message,
+          duration: detail.duration,
+        });
+        return null;
+      }
+    },
+    [],
+  );
+
   const handleAdjust = async () => {
     const id = ensureId("Adjust");
     if (!id) return;
     setBusy("adjust");
-    try {
-      const asset = await adjust(id, adjustValues);
+    const asset = await runOp("Adjust", { source_id: id, ...adjustValues }, () =>
+      adjust(id, adjustValues),
+    );
+    setBusy(null);
+    if (asset) {
       consume(asset, "adjusted.png");
       setAdjustOpen(false);
-    } catch (err) {
-      handleApiError(err, "Adjust");
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -182,60 +228,49 @@ export function EditAiToolbar({
     const id = ensureId("Auto color");
     if (!id) return;
     setBusy("auto");
-    try {
-      const asset = await autoColor(id);
-      consume(asset, "auto-color.png");
-    } catch (err) {
-      handleApiError(err, "Auto color");
-    } finally {
-      setBusy(null);
-    }
+    const asset = await runOp("Auto color", { source_id: id }, () =>
+      autoColor(id),
+    );
+    setBusy(null);
+    if (asset) consume(asset, "auto-color.png");
   };
 
   const handleSharpen = async () => {
     const id = ensureId("Sharpen");
     if (!id) return;
     setBusy("sharpen");
-    try {
-      const asset = await sharpenOp(id, { amount: 1.2 });
-      consume(asset, "sharpen.png");
-    } catch (err) {
-      handleApiError(err, "Sharpen");
-    } finally {
-      setBusy(null);
-    }
+    const asset = await runOp("Sharpen", { source_id: id, amount: 1.2 }, () =>
+      sharpenOp(id, { amount: 1.2 }),
+    );
+    setBusy(null);
+    if (asset) consume(asset, "sharpen.png");
   };
 
   const handleDenoise = async () => {
     const id = ensureId("Denoise");
     if (!id) return;
     setBusy("denoise");
-    try {
-      const asset = await denoiseOp(id, { strength: 2 });
-      consume(asset, "denoise.png");
-    } catch (err) {
-      handleApiError(err, "Denoise");
-    } finally {
-      setBusy(null);
-    }
+    const asset = await runOp("Denoise", { source_id: id, strength: 2 }, () =>
+      denoiseOp(id, { strength: 2 }),
+    );
+    setBusy(null);
+    if (asset) consume(asset, "denoise.png");
   };
 
   const handleBgRemove = async () => {
     const id = ensureId("Background remove");
     if (!id) return;
     setBusy("bg");
-    try {
-      const maskId = await resolveMaskId(id);
-      const asset = await removeBackground({
-        source_id: id,
-        ...(maskId ? { mask_id: maskId } : {}),
-      });
-      consume(asset, "no-bg.png");
-    } catch (err) {
-      handleApiError(err, "Background remove");
-    } finally {
-      setBusy(null);
-    }
+    const maskId = await resolveMaskId(id);
+    const body = {
+      source_id: id,
+      ...(maskId ? { mask_id: maskId } : {}),
+    };
+    const asset = await runOp("Background remove", body, () =>
+      removeBackground(body),
+    );
+    setBusy(null);
+    if (asset) consume(asset, "no-bg.png");
   };
 
   const handleInpaint = async () => {
@@ -248,33 +283,28 @@ export function EditAiToolbar({
       return;
     }
     setBusy("inpaint");
-    try {
-      const maskId = await resolveMaskId(id);
-      if (!maskId) {
-        toast.error("Couldn't upload mask. Try again.");
-        return;
-      }
-      const asset = await inpaint({ source_id: id, mask_id: maskId });
-      consume(asset, "inpaint.png");
-    } catch (err) {
-      handleApiError(err, "Inpaint");
-    } finally {
+    const maskId = await resolveMaskId(id);
+    if (!maskId) {
+      toast.error("Couldn't upload mask. Try again.");
       setBusy(null);
+      return;
     }
+    const body = { source_id: id, mask_id: maskId };
+    const asset = await runOp("Inpaint", body, () => inpaint(body));
+    setBusy(null);
+    if (asset) consume(asset, "inpaint.png");
   };
 
   const handleUpscale = async (factor: 2 | 4) => {
     const id = ensureId("Upscale");
     if (!id) return;
     setBusy(factor === 2 ? "up2" : "up4");
-    try {
-      const asset = await upscaleImage({ source_id: id, factor });
-      consume(asset, `${factor}x.png`);
-    } catch (err) {
-      handleApiError(err, `${factor}× upscale`);
-    } finally {
-      setBusy(null);
-    }
+    const body = { source_id: id, factor };
+    const asset = await runOp(`${factor}× upscale`, body, () =>
+      upscaleImage(body),
+    );
+    setBusy(null);
+    if (asset) consume(asset, `${factor}x.png`);
   };
 
   // ── AI features (Wave 2 — endpoints live, UI ready) ─────────────────────
@@ -283,20 +313,16 @@ export function EditAiToolbar({
     const id = ensureId("Suggest edits");
     if (!id) return;
     setBusy("suggest");
-    try {
-      const { suggestions } = await suggestEdits({ source_id: id });
-      if (!suggestions?.length) {
+    const body = { source_id: id };
+    const response = await runOp("Suggest edits", body, () => suggestEdits(body));
+    setBusy(null);
+    if (response) {
+      if (!response.suggestions?.length) {
         toast.info("The image looks good — no edits suggested.");
         return;
       }
-      // Pluck the first suggestion as a quick taste; a richer dropdown UI
-      // lands when the agent ships with multiple ranked recommendations.
-      const first = suggestions[0];
+      const first = response.suggestions[0];
       toast.success(`Suggested: ${first.label} — coming soon as one-click.`);
-    } catch (err) {
-      handleApiError(err, "Suggest edits");
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -308,20 +334,18 @@ export function EditAiToolbar({
       return;
     }
     setBusy("prompt");
-    try {
-      const maskId = await resolveMaskId(id);
-      const asset = await editImageByPrompt({
-        source_id: id,
-        prompt: promptText.trim(),
-        ...(maskId ? { mask_id: maskId } : {}),
-      });
+    const maskId = await resolveMaskId(id);
+    const body = {
+      source_id: id,
+      prompt: promptText.trim(),
+      ...(maskId ? { mask_id: maskId } : {}),
+    };
+    const asset = await runOp("AI edit", body, () => editImageByPrompt(body));
+    setBusy(null);
+    if (asset) {
       consume(asset, "ai-edit.png");
       setPromptOpen(false);
       setPromptText("");
-    } catch (err) {
-      handleApiError(err, "AI edit by prompt");
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -700,21 +724,53 @@ function AdjustSlider({
   );
 }
 
-function handleApiError(err: unknown, opName: string) {
-  const msg = err instanceof Error ? err.message : `${opName} failed`;
-  const notImplemented =
-    /\b404\b|\bnot.found\b|not.implement/i.test(msg) ||
-    msg.toLowerCase().includes("unavailable");
-  const missingBackend = /\b503\b|pip install/i.test(msg);
-  if (notImplemented) {
-    toast.info(`${opName} ships next wave.`);
-  } else if (missingBackend) {
-    toast.error(
-      `${opName}: backend not installed. ${msg.replace(/.*pip install/i, "pip install")}`,
-    );
-  } else {
-    toast.error(msg);
+/**
+ * Categorise a thrown error from one of the image ops into a human-readable
+ * toast description. Visible during beta because silent failures got us
+ * here in the first place; every error tells the user what happened AND
+ * dumps the full Error to the console for inspection.
+ */
+function describeError(err: unknown): { message: string; duration?: number } {
+  const raw = err instanceof Error ? err.message : String(err ?? "");
+  const lower = raw.toLowerCase();
+
+  if (/\b404\b|not.?found|not.?implement/.test(lower) || lower.includes("unavailable")) {
+    return { message: "This op isn't implemented yet — ships next wave." };
   }
+
+  // matrx-utils' optional-backend 503: "pip install matrx-utils[...]"
+  const installMatch = raw.match(/pip install[^\n"]*/i);
+  if (/\b503\b/.test(raw) || installMatch) {
+    const cmd = installMatch?.[0]?.trim() ?? "pip install matrx-utils[image-segmentation]";
+    return {
+      message: `Backend isn't installed on the server. Have ops run: ${cmd}`,
+      duration: 12_000,
+    };
+  }
+
+  if (/network|fetch failed|failed to fetch|ECONN/i.test(raw)) {
+    return {
+      message: "Network error — can't reach the image-ops backend. Check connection or VPN.",
+      duration: 8_000,
+    };
+  }
+
+  if (/\b401\b|unauthor/i.test(raw)) {
+    return { message: "Not authorised — try refreshing the page to renew your session." };
+  }
+
+  if (/\b403\b|forbid/i.test(raw)) {
+    return { message: "Forbidden — you may not have access to this file." };
+  }
+
+  if (/\b5\d\d\b/.test(raw)) {
+    return {
+      message: `Server error: ${raw}. Check the console for the full payload.`,
+      duration: 10_000,
+    };
+  }
+
+  return { message: raw || "Unknown error — check the console for the full payload." };
 }
 
 function deriveName(url: string, fallback: string): string {

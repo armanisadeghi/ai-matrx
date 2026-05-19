@@ -128,15 +128,21 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
   }, [box, canvasRef]);
 
   const strokeAt = useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, overlayRect: DOMRect) => {
       const c = canvasRef.current;
       if (!c || !box) return;
       const ctx = c.getContext("2d");
       if (!ctx) return;
-      const scaleX = c.width / box.width;
-      const scaleY = c.height / box.height;
-      const localX = clientX - box.left;
-      const localY = clientY - box.top;
+      // Coords were broken: we used `clientX - box.left`, but box.left is
+      // measured RELATIVE to the canvas area container (rect.left -
+      // areaRect.left), while clientX is viewport-relative. The diff was
+      // off by areaRect.left → brush landed lower/right of the cursor.
+      // Using the overlay's own getBoundingClientRect gives us a clean
+      // viewport-aligned local origin no matter how the editor is nested.
+      const scaleX = c.width / overlayRect.width;
+      const scaleY = c.height / overlayRect.height;
+      const localX = clientX - overlayRect.left;
+      const localY = clientY - overlayRect.top;
       const x = localX * scaleX;
       const y = localY * scaleY;
       const radius = (brushSize / 2) * Math.max(scaleX, scaleY);
@@ -174,17 +180,19 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
     (e: React.PointerEvent) => {
       if (!active) return;
       e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      const el = e.currentTarget as HTMLElement;
+      el.setPointerCapture(e.pointerId);
       isDrawingRef.current = true;
       lastPointRef.current = null;
-      strokeAt(e.clientX, e.clientY);
+      strokeAt(e.clientX, e.clientY, el.getBoundingClientRect());
     },
     [active, strokeAt],
   );
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!active || !isDrawingRef.current) return;
-      strokeAt(e.clientX, e.clientY);
+      const el = e.currentTarget as HTMLElement;
+      strokeAt(e.clientX, e.clientY, el.getBoundingClientRect());
     },
     [active, strokeAt],
   );
