@@ -2,7 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { X, Check, Maximize2 } from 'lucide-react';
-import BasicMarkdownContent from '@/components/mardown-display/chat-markdown/BasicMarkdownContent';
+import { RichDocument } from '@/features/rich-document/RichDocument';
+import { RichDocumentActionSurface } from '@/features/rich-document/RichDocumentActionSurface';
+import type { ContentSource } from '@/features/rich-document/types';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { openCompactModal } from '@/lib/redux/slices/promptRunnerSlice';
 import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
@@ -181,7 +183,9 @@ export default function PromptToast({
           </button>
         </div>
 
-        {/* Content - Markdown rendered, line-clamped */}
+        {/* Content - Markdown rendered, line-clamped.
+            actionsSurfaceId = `prompt-toast-${toastId}` so two toasts on
+            screen don't share actions. */}
         <div className="text-sm leading-relaxed line-clamp-3 overflow-hidden">
           {isInThinking ? (
             <div className="flex items-start">
@@ -202,15 +206,42 @@ export default function PromptToast({
               </span>
             </div>
           ) : displayContent ? (
-            <BasicMarkdownContent 
-              content={displayContent} 
-              showCopyButton={false}
+            // RichDocument wraps the same engine BasicMarkdownContent uses.
+            // actionsVariant="remote" keeps the body chrome-free; the
+            // action bar renders below via <RichDocumentActionSurface/>
+            // (proves the remote-surface design end-to-end).
+            <RichDocument
+              content={displayContent}
+              source={
+                runId
+                  ? ({ type: "prompt-result", executionId: runId } as ContentSource)
+                  : ({ type: "raw" } as ContentSource)
+              }
+              actionsVariant="remote"
+              actionsSurfaceId={`prompt-toast-${toastId}`}
+              actions={{
+                // Trim app-level entries — toasts don't need announcements
+                // or preferences in their overflow.
+                exclude: ["announcements", "preferences"],
+              }}
+              hideCopyButton
             />
           ) : (
             <span className="text-muted-foreground italic">No response</span>
           )}
         </div>
-        
+
+        {/* Action bar — renders below the line-clamp via the remote
+            surface. Hidden during thinking/planning/loading. */}
+        {!isInThinking && !isInPlanning && !isStreaming && displayContent ? (
+          <div className="mt-1 -ml-1">
+            <RichDocumentActionSurface
+              surfaceId={`prompt-toast-${toastId}`}
+              variant="mini-bar"
+            />
+          </div>
+        ) : null}
+
         {/* Show More button for long content */}
         {isLongContent && (
           <button
