@@ -34,7 +34,6 @@ import {
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
-import { UI_FIRST_TOOL_NAMES } from "@/features/agents/ui-first-tools/tools/names";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -112,27 +111,16 @@ export async function buildToolInjection(
     client = { capabilities: activeCapabilities, state: stateMap };
   }
 
-  // ── 2b. UI-first tools — auto-merge for any authenticated user ─────────
-  //
   // The seven UI-first tools (user / update_plan / request_user_takeover /
-  // tasks / user_todos / memory / storage) are declared client-delegated
-  // tools that ride alongside any agent's saved tool set. They use the
-  // same tool names matrx-extend has been shipping for months — so the
-  // names already exist in aidream's `tl_def` registry. We ship them as
-  // `kind: "registered"` with `delegate: true` so aidream short-circuits
-  // dispatch and emits `tool_delegated` for our client to handle.
+  // tasks / user_todos / memory / storage) used to be hardcoded here for
+  // every authenticated user. They now ride into the request as
+  // ``enabled_tools`` on the ``nextjs-surface`` capability registered in
+  // aidream/api/client_capabilities.py — the server auto-injects them
+  // with ``delegate=True`` on every request that declares the capability.
+  // No frontend push needed.
   //
-  // Independently from this, the `nextjs-surface` capability ships the
-  // orchestration envelope (route, scope, admin, permission_mode, …).
-  if (state.userAuth?.id) {
-    const declaredNames = new Set(
-      allTools.map((t) => ("name" in t ? (t.name as string) : "")),
-    );
-    for (const name of UI_FIRST_TOOL_NAMES) {
-      if (declaredNames.has(name)) continue;
-      allTools.push({ kind: "registered", name, delegate: true });
-    }
-  }
+  // The capability also ships the orchestration envelope (route, scope,
+  // admin, permission_mode, …) via the provider in nextjs-surface.provider.ts.
 
   // ── 3. Assemble result — only include keys with content ─────────────────
   const result: ToolInjectionResult = {};
