@@ -23,6 +23,11 @@ const UnifiedOverlayControllerImpl = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Mount-time warning gate — fires exactly once per page session regardless
+// of how many times React might mount/unmount this controller (React 18+
+// strict-mode double-invoke, route remounts, etc.).
+let _warnedLegacyMount = false;
+
 export default function UnifiedOverlayController() {
   // Outer-shell heartbeat: marks that the gate mounted us and the static
   // outer chunk parsed successfully. If this fires but the Impl heartbeat
@@ -30,6 +35,24 @@ export default function UnifiedOverlayController() {
   // CSP, offline, etc.) — the diagnostic timeout report calls it out.
   useEffect(() => {
     markUnifiedControllerMounted();
+    // Loud, intentional, ships in production. The whole point of the
+    // overhaul (docs/OVERLAY_WINDOW_OVERHAUL.md) is to retire this
+    // controller; this log is how the team confirms the cutover took
+    // effect everywhere. If you see it on prod after flipping
+    // NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1, something is still
+    // routing through this legacy path — investigate which provider
+    // tree mounted us. Once the legacy code is deleted (post-cutover)
+    // this whole file goes with it.
+    if (!_warnedLegacyMount) {
+      _warnedLegacyMount = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[overlays] LEGACY UnifiedOverlayController is mounting — this is the OLD spread-render path. " +
+          "To use the new explicit controller, set localStorage.matrx_new_overlay_controller=\"1\" " +
+          "(per-tab override) or NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1 in env (preview/prod). " +
+          "See docs/OVERLAY_WINDOW_OVERHAUL.md.",
+      );
+    }
   }, []);
 
   return (

@@ -56,6 +56,24 @@ type AnyComponent = ComponentType<any>;
 // re-fetching the chunk when the overlay is reopened.
 const LAZY_CACHE = new Map<string, AnyComponent>();
 
+// Per-overlay-id warning gate. Each unique overlayId rendered through this
+// LEGACY surface prints once per page session so the team can see exactly
+// which overlays still flow through the old spread-render path during the
+// cutover. Once the legacy controller is deleted (post-cutover) this whole
+// file goes with it; until then the warning makes any "wait, that's still
+// going through OverlaySurface?" surprises visible.
+const _warnedLegacyRenders = new Set<string>();
+function warnLegacyOverlayRender(overlayId: string): void {
+  if (_warnedLegacyRenders.has(overlayId)) return;
+  _warnedLegacyRenders.add(overlayId);
+  // eslint-disable-next-line no-console
+  console.warn(
+    `[overlays] LEGACY OverlaySurface rendering "${overlayId}" — this overlay still flows through the old spread-render path. ` +
+      `If you expected the new explicit controller to handle it, your flag isn't taking effect for this provider tree. ` +
+      `See docs/OVERLAY_WINDOW_OVERHAUL.md.`,
+  );
+}
+
 function getLazyComponent(entry: WindowRegistryEntry): AnyComponent {
   const cached = LAZY_CACHE.get(entry.overlayId);
   if (cached) return cached;
@@ -86,6 +104,7 @@ function SingletonSurface({ overlayId }: SurfaceProps) {
   );
 
   if (!entry || !isOpen) return null;
+  warnLegacyOverlayRender(overlayId);
   const Component = getLazyComponent(entry);
 
   return (
@@ -106,6 +125,7 @@ function InstancedSurface({ overlayId }: SurfaceProps) {
   const instances = useOverlayInstances<Record<string, unknown>>(overlayId);
 
   if (!entry || instances.length === 0) return null;
+  warnLegacyOverlayRender(overlayId);
   const Component = getLazyComponent(entry);
   const defaults = entry.defaultData ?? {};
 

@@ -17,6 +17,7 @@
 
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   closeOverlay,
@@ -25,6 +26,13 @@ import {
   selectOpenInstances,
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
+
+// Module-level guard so the mount-confirmation log fires once per page
+// session regardless of strict-mode double-invokes or route remounts.
+// Companion to the LEGACY mount warn in UnifiedOverlayController.tsx — if
+// you see this and not the legacy warn, the new path is active. If you see
+// both, two provider trees are mounting different controllers (investigate).
+let _confirmedNewMount = false;
 
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
@@ -491,6 +499,17 @@ const WhatsAppShellWindow = dynamic(
 
 export default function OverlayController() {
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!_confirmedNewMount) {
+      _confirmedNewMount = true;
+      // eslint-disable-next-line no-console
+      console.info(
+        "[overlays] NEW OverlayController active — every overlay rendered via explicit, type-safe prop wiring. " +
+          "See docs/OVERLAY_WINDOW_OVERHAUL.md.",
+      );
+    }
+  }, []);
 
   // Per-overlay subscriptions. Each useAppSelector is its own subscription,
   // so a state change in overlay A doesn't re-run the JSX of overlay B beyond

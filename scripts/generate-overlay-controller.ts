@@ -919,6 +919,7 @@ function emit(entries: RegistryEntry[]): void {
   out.push(`"use client";`);
   out.push(``);
   out.push(`import dynamic from "next/dynamic";`);
+  out.push(`import { useEffect } from "react";`);
   out.push(`import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";`);
   out.push(`import {`);
   out.push(`  closeOverlay,`);
@@ -926,6 +927,11 @@ function emit(entries: RegistryEntry[]): void {
   out.push(`  selectOverlayData,`);
   out.push(`  selectOpenInstances,`);
   out.push(`} from "@/lib/redux/slices/overlaySlice";`);
+  out.push(``);
+  out.push(`// Module-level guard so the mount-confirmation log fires once per page`);
+  out.push(`// session regardless of strict-mode double-invokes or route remounts.`);
+  out.push(`// Companion to the LEGACY mount warn in UnifiedOverlayController.tsx.`);
+  out.push(`let _confirmedNewMount = false;`);
   out.push(``);
 
   // Dynamic imports — deduped by component identifier. Some components are
@@ -947,6 +953,17 @@ function emit(entries: RegistryEntry[]): void {
 
   out.push(`export default function OverlayController() {`);
   out.push(`  const dispatch = useAppDispatch();`);
+  out.push(``);
+  out.push(`  useEffect(() => {`);
+  out.push(`    if (!_confirmedNewMount) {`);
+  out.push(`      _confirmedNewMount = true;`);
+  out.push(`      // eslint-disable-next-line no-console`);
+  out.push(`      console.info(`);
+  out.push(`        "[overlays] NEW OverlayController active — every overlay rendered via explicit, type-safe prop wiring. " +`);
+  out.push(`          "See docs/OVERLAY_WINDOW_OVERHAUL.md.",`);
+  out.push(`      );`);
+  out.push(`    }`);
+  out.push(`  }, []);`);
   out.push(``);
   out.push(`  // Per-overlay subscriptions. Each useAppSelector is its own subscription,`);
   out.push(`  // so a state change in overlay A doesn't re-run the JSX of overlay B beyond`);

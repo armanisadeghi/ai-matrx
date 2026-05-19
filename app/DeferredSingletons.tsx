@@ -44,6 +44,7 @@ import {
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import UnifiedOverlayController from "@/features/window-panels/UnifiedOverlayController";
 import NewOverlayController from "@/features/overlays/OverlayController";
+import { readOverlayControllerFlag } from "@/features/overlays/featureFlag";
 import LegacyPromptOverlaysController from "@/features/prompts/components/results-display/LegacyPromptOverlaysController";
 import { AudioRecoveryToast } from "@/features/audio/components/AudioRecoveryToast";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
@@ -85,31 +86,6 @@ function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
  * gate to avoid even initiating the lazy ref's read until something is
  * actually open.
  */
-/**
- * Stage 1 of the overlay/window overhaul (see docs/OVERLAY_WINDOW_OVERHAUL.md).
- * The new controller renders every overlay with explicit prop wiring at the
- * top of the tree. It's mounted behind a flag while we validate per-overlay
- * behavior; the legacy `UnifiedOverlayController` stays default-on until the
- * cutover.
- *
- * Flag sources, in priority order (any one truthy enables the new path):
- *   - URL: `?newOverlayController=1`  (per-tab dev override)
- *   - localStorage: `matrx_new_overlay_controller = "1"` (sticky dev opt-in)
- *   - Env: `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1`  (preview/prod cutover)
- */
-function useNewOverlayControllerFlag(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("newOverlayController") === "1") return true;
-    if (window.localStorage?.getItem("matrx_new_overlay_controller") === "1")
-      return true;
-  } catch {
-    // ignore — defaults to false
-  }
-  return process.env.NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER === "1";
-}
-
 function OverlayControllerGate() {
   // Heartbeat: tells the diagnostics middleware that DeferredSingletons
   // committed and the gate is actively subscribed to overlay state. If a
@@ -119,7 +95,10 @@ function OverlayControllerGate() {
     markControllerGateMounted();
   }, []);
   const hasAny = useAppSelector(selectAnyOverlayOpen);
-  const useNew = useNewOverlayControllerFlag();
+  // Flag read on every render is cheap (string compares); it lives in a
+  // shared module so the public-routes provider tree reads the same value
+  // from the same sources. See docs/OVERLAY_WINDOW_OVERHAUL.md.
+  const { useNew } = readOverlayControllerFlag();
   if (!hasAny) return null;
   return useNew ? <NewOverlayController /> : <UnifiedOverlayController />;
 }
