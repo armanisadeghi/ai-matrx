@@ -153,26 +153,26 @@ function makeState(
 // ---------------------------------------------------------------------------
 
 describe("assembleManualRequest — live read contract", () => {
-  test("ai_model_id reflects the current agent.modelId", () => {
+  test("ai_model_id reflects the current agent.modelId", async () => {
     const state = makeState({ modelId: "model-XYZ" });
-    const payload = assembleManualRequest(state, CONVERSATION_ID);
+    const payload = await assembleManualRequest(state, CONVERSATION_ID);
     expect(payload).not.toBeNull();
     expect(payload!.ai_model_id).toBe("model-XYZ");
   });
 
-  test("returns null when modelId is missing — never silently sends without a model", () => {
+  test("returns null when modelId is missing — never silently sends without a model", async () => {
     const state = makeState({ modelId: null });
-    const payload = assembleManualRequest(state, CONVERSATION_ID);
+    const payload = await assembleManualRequest(state, CONVERSATION_ID);
     expect(payload).toBeNull();
   });
 
-  test("messages[] embeds agent.messages (priming) verbatim", () => {
+  test("messages[] embeds agent.messages (priming) verbatim", async () => {
     const priming = [
       { role: "system", content: [{ type: "text", text: "you are a test agent" }] },
       { role: "user", content: [{ type: "text", text: "example turn" }] },
     ];
     const state = makeState({ messages: priming });
-    const payload = assembleManualRequest(state, CONVERSATION_ID);
+    const payload = await assembleManualRequest(state, CONVERSATION_ID);
     expect(payload!.messages).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ role: "system" }),
@@ -182,7 +182,7 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload!.messages![0]).toEqual(priming[0]);
   });
 
-  test("messages[] appends prior committed history from the messages slice", () => {
+  test("messages[] appends prior committed history from the messages slice", async () => {
     const state = makeState({
       history: [
         {
@@ -198,7 +198,7 @@ describe("assembleManualRequest — live read contract", () => {
       ],
       userInput: "new turn",
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID);
+    const payload = await assembleManualRequest(state, CONVERSATION_ID);
     const roles = payload!.messages!.map((m: { role: string }) => m.role);
     expect(roles).toEqual(["user", "assistant", "user"]);
     expect(
@@ -207,7 +207,7 @@ describe("assembleManualRequest — live read contract", () => {
     ).toBe("new turn");
   });
 
-  test("agent.tools UUIDs map to tools_replace as RegisteredToolSpec wire shape", () => {
+  test("agent.tools UUIDs map to tools_replace as RegisteredToolSpec wire shape", async () => {
     // The Builder uses `tools_replace` (not `tools`) because (a) it is the
     // semantically correct "client owns the active tool set" field and (b)
     // the chat router's `_build_unified_config` dumps a populated `tools`
@@ -218,7 +218,7 @@ describe("assembleManualRequest — live read contract", () => {
       customTools: [{ name: "ct1", input_schema: {} }],
       mcpServers: ["mcp-uuid-1"],
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID)!;
+    const payload = (await assembleManualRequest(state, CONVERSATION_ID))!;
     expect(payload.tools_replace).toEqual([
       { kind: "registered", name: "tool-uuid-1", tool_id: "tool-uuid-1", delegate: false },
       { kind: "registered", name: "tool-uuid-2", tool_id: "tool-uuid-2", delegate: false },
@@ -229,25 +229,25 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload.mcp_servers).toEqual(["mcp-uuid-1"]);
   });
 
-  test("UI-only capability flags do NOT leak into tools_replace", () => {
+  test("UI-only capability flags do NOT leak into tools_replace", async () => {
     // The test below sets `tools: {allowed: true}` inside agent.settings.
     // The wire payload's tool list must come from agent.tools, not the UI flag.
     const state = makeState({
       tools: ["t1"],
       settings: { tools: { allowed: true } },
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID)!;
+    const payload = (await assembleManualRequest(state, CONVERSATION_ID))!;
     expect(payload.tools_replace).toEqual([
       { kind: "registered", name: "t1", tool_id: "t1", delegate: false },
     ]);
     expect(payload.tools).toBeUndefined();
   });
 
-  test("agent.settings spread FLAT at top level — no config_overrides", () => {
+  test("agent.settings spread FLAT at top level — no config_overrides", async () => {
     const state = makeState({
       settings: { temperature: 0.7, top_p: 0.95, max_output_tokens: 4096 },
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID) as Record<
+    const payload = (await assembleManualRequest(state, CONVERSATION_ID)) as Record<
       string,
       unknown
     >;
@@ -257,7 +257,7 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload.config_overrides).toBeUndefined();
   });
 
-  test("UI-only capability flags in agent.settings are stripped", () => {
+  test("UI-only capability flags in agent.settings are stripped", async () => {
     const state = makeState({
       settings: {
         temperature: 0.5,
@@ -267,7 +267,7 @@ describe("assembleManualRequest — live read contract", () => {
       },
       // No agent.tools, so payload.tools_replace should be undefined entirely.
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID) as Record<
+    const payload = (await assembleManualRequest(state, CONVERSATION_ID)) as Record<
       string,
       unknown
     >;
@@ -278,7 +278,7 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload.file_urls).toBeUndefined();
   });
 
-  test("omits conversation_id and sets is_new — server mints the id", () => {
+  test("omits conversation_id and sets is_new — server mints the id", async () => {
     // Sending a client-minted wire conversation_id with `is_new: true`
     // collides with cx_conversation rows the server creates on its own
     // (409 "conversation already exists"). The contract is: client sends
@@ -286,25 +286,25 @@ describe("assembleManualRequest — live read contract", () => {
     // a fresh id and echoes it back via X-Conversation-ID. The local
     // Redux conversationId stays stable for UI continuity (not on the wire).
     const state = makeState({});
-    const a = assembleManualRequest(state, CONVERSATION_ID)!;
-    const b = assembleManualRequest(state, CONVERSATION_ID)!;
+    const a = (await assembleManualRequest(state, CONVERSATION_ID))!;
+    const b = (await assembleManualRequest(state, CONVERSATION_ID))!;
     expect(a.conversation_id).toBeUndefined();
     expect(b.conversation_id).toBeUndefined();
     expect(a.is_new).toBe(true);
     expect(b.is_new).toBe(true);
   });
 
-  test("agent_id and is_version honor version pinning", () => {
+  test("agent_id and is_version honor version pinning", async () => {
     const state = makeState({
       parentAgentId: "parent-agent-uuid",
       isVersion: true,
     });
-    const payload = assembleManualRequest(state, CONVERSATION_ID)!;
+    const payload = (await assembleManualRequest(state, CONVERSATION_ID))!;
     expect(payload.agent_id).toBe("parent-agent-uuid");
     expect(payload.is_version).toBe(true);
   });
 
-  test("does NOT read state.instanceModelOverrides", () => {
+  test("does NOT read state.instanceModelOverrides", async () => {
     // The test fixture omits instanceModelOverrides entirely. If
     // assembleManualRequest tried to read it, the function would throw on
     // property access of `undefined`. The fact that the previous tests pass
@@ -312,6 +312,8 @@ describe("assembleManualRequest — live read contract", () => {
     // documents that contract explicitly.
     const state = makeState({ modelId: "m" });
     expect((state as Record<string, unknown>).instanceModelOverrides).toBeUndefined();
-    expect(() => assembleManualRequest(state, CONVERSATION_ID)).not.toThrow();
+    await expect(
+      assembleManualRequest(state, CONVERSATION_ID),
+    ).resolves.toBeDefined();
   });
 });

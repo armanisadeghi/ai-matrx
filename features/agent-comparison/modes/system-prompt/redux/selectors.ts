@@ -4,10 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type {
-  SystemPromptColumn,
-  SystemPromptLockedSetup,
-} from "../types";
+import type { SystemPromptColumn, SystemPromptLockedSetup } from "../types";
 
 const EMPTY_COLUMNS: SystemPromptColumn[] = [];
 const EMPTY_IDS: string[] = [];
@@ -19,14 +16,16 @@ const EMPTY_LOCKED: SystemPromptLockedSetup = {
   userMessage: "",
 };
 
+const DEFAULT_ROOT = {
+  locked: EMPTY_LOCKED,
+  columns: EMPTY_COLUMNS,
+  activeSetId: null,
+  activeSetName: null,
+  isSubmittingAll: false,
+} as const;
+
 const selectRoot = (state: RootState) =>
-  state.agentComparisonSystemPrompt ?? {
-    locked: EMPTY_LOCKED,
-    columns: EMPTY_COLUMNS,
-    activeSetId: null,
-    activeSetName: null,
-    isSubmittingAll: false,
-  };
+  state.agentComparisonSystemPrompt ?? DEFAULT_ROOT;
 
 export const selectLockedSetup = createSelector(
   [selectRoot],

@@ -7925,6 +7925,125 @@
         }
       }
     },
+    "/admin/cx-explorer/facets": {
+      "get": {
+        "tags": [
+          "Admin / CX Explorer"
+        ],
+        "summary": "Get Facets",
+        "operationId": "get_facets_admin_cx_explorer_facets_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Free-text filter across title/app/model/id",
+              "title": "Q"
+            },
+            "description": "Free-text filter across title/app/model/id"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to conversations whose latest status equals this",
+              "title": "Status"
+            },
+            "description": "Filter to conversations whose latest status equals this"
+          },
+          {
+            "name": "source_app",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to a single source_app",
+              "title": "Source App"
+            },
+            "description": "Filter to a single source_app"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to a single user_id",
+              "title": "User Id"
+            },
+            "description": "Filter to a single user_id"
+          },
+          {
+            "name": "facet_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Max entries per facet axis",
+              "default": 20,
+              "title": "Facet Limit"
+            },
+            "description": "Max entries per facet axis"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CxExplorerFacets"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp/debug-traces": {
       "post": {
         "tags": [
@@ -8097,6 +8216,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/surfaces/{name}/manifest": {
+      "get": {
+        "tags": [
+          "Tool Routing"
+        ],
+        "summary": "Get Surface Manifest",
+        "description": "Per TOOL_ROUTING_RULES.md §15 step 6 — surface authors hit this at\nboot to compare their local tool registrations against what the server\nsays they provide. Lookup is by capability name (which is the canonical\nsurface identifier in matrx-ai's registry).\n\nReturns 404 when the name isn't a registered capability.",
+        "operationId": "get_surface_manifest_api_surfaces__name__manifest_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurfaceManifest"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tool-routing/cache-bust": {
+      "post": {
+        "tags": [
+          "Admin / Tool Routing"
+        ],
+        "summary": "Cache Bust",
+        "description": "Force-reload the tool registry and capability factory caches from\nthe DB. Run after a migration adds/removes tools, edits tool\ndefinitions, or changes ``tl_executor`` bindings.\n\nAdmin-only.",
+        "operationId": "cache_bust_admin_tool_routing_cache_bust_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheBustResponse"
                 }
               }
             }
@@ -16224,8 +16408,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/NodeTypeDescriptor"
                   },
                   "type": "array",
                   "title": "Response List Node Types Workflow Node Types Get"
@@ -16251,8 +16434,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/NodeTypeDescriptor"
                   },
                   "type": "array",
                   "title": "Response List Actions Actions Get"
@@ -16286,9 +16468,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Workflow Workflows Post"
+                  "$ref": "#/components/schemas/DefinitionRecord"
                 }
               }
             }
@@ -16369,8 +16549,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/DefinitionRecord"
                   },
                   "title": "Response List Workflows Workflows Get"
                 }
@@ -16440,9 +16619,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Workflow Workflows  Definition Id  Get"
+                  "$ref": "#/components/schemas/DefinitionRecord"
                 }
               }
             }
@@ -16482,11 +16659,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Archive Workflow Workflows  Definition Id  Delete"
+                  "$ref": "#/components/schemas/ArchiveWorkflowResponse"
                 }
               }
             }
@@ -16530,8 +16703,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/DefinitionRecord"
                   },
                   "title": "Response List Workflow Versions Workflows  Definition Id  Versions Get"
                 }
@@ -16585,9 +16757,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Save Workflow Draft Workflows  Definition Id  Draft Patch"
+                  "$ref": "#/components/schemas/DefinitionRecord"
                 }
               }
             }
@@ -16639,9 +16809,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Publish Workflow Workflows  Definition Id  Publish Post"
+                  "$ref": "#/components/schemas/DefinitionRecord"
                 }
               }
             }
@@ -16701,6 +16869,68 @@
         }
       }
     },
+    "/workflows/{definition_id}/nodes/{node_id}/test": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Test Single Node",
+        "description": "Run ONE node in isolation against user-supplied inputs.\n\nNo run row, no checkpoint, no scheduler — just resolve the executor\nfrom the registry and call its ``execute()`` once with the supplied\ninputs and the node's saved (or overridden) config. Returns the\ntyped output, the duration, and any error.\n\nUseful for:\n  - Trying a different prompt / model / temperature without editing\n    and saving the whole workflow.\n  - Debugging a failing node by iterating on inputs.\n  - Smoke-testing a brand-new node config before wiring it into the\n    full graph.\n\nNever writes to wf_run / wf_checkpoint / wf_node_outcome. The\ninvocation IS logged to ``wf_node_events`` with run_id set to the\ntest marker so you can grep the audit trail if needed.",
+        "operationId": "test_single_node_workflows__definition_id__nodes__node_id__test_post",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestNodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflows/{definition_id}/runs": {
       "post": {
         "tags": [
@@ -16717,6 +16947,25 @@
               "type": "string",
               "title": "Definition Id"
             }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe.",
+              "title": "X-Idempotency-Key"
+            },
+            "description": "Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe."
           }
         ],
         "requestBody": {
@@ -16755,7 +17004,7 @@
           "Workflow"
         ],
         "summary": "List Runs For Workflow",
-        "description": "Runs for a specific workflow — used by the editor's run history tab.",
+        "description": "Runs for a specific workflow — used by the editor's run history tab.\n\nOwner-gated on the parent workflow (caller must own the definition),\nAND additionally filtered by user_id so this never returns runs\ntriggered by a different user even if cross-user sharing of a\nworkflow ever lands.",
         "operationId": "list_runs_for_workflow_workflows__definition_id__runs_get",
         "parameters": [
           {
@@ -16798,8 +17047,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/RunRecord"
                   },
                   "title": "Response List Runs For Workflow Workflows  Definition Id  Runs Get"
                 }
@@ -16939,8 +17187,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/RunRecord"
                   },
                   "title": "Response List Runs Runs Get"
                 }
@@ -16984,9 +17231,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Run Runs  Run Id  Get"
+                  "$ref": "#/components/schemas/RunRecord"
                 }
               }
             }
@@ -17010,8 +17255,65 @@
           "Workflow"
         ],
         "summary": "Cancel Run",
-        "description": "Request cancellation of an in-flight run.\n\nWrites ``wf_run.status = 'cancelling'``. Both the inline streaming task\nand worker-driven schedulers poll this status between super-steps and\nexit cleanly on the next poll — so cancellation is at-most-one-super-step\nlatent, but mid-node LLM calls finish cleanly (we don't kill them\nmid-flight). Idempotent: cancelling an already-terminal run is a no-op\nand returns ``cancelling: false``.",
+        "description": "Request cancellation of an in-flight run.\n\nTwo modes:\n\n- ``graceful`` (default): writes ``wf_run.status = 'cancelling'``. The\n  scheduler polls this status between super-steps and exits cleanly on\n  the next poll. Cancellation is at-most-one-super-step latent — a\n  30-second mid-node LLM call finishes before the run exits. Use this\n  when you want a clean checkpoint and can wait a moment.\n\n- ``immediate``: writes ``wf_run.status = 'cancelling'`` AND walks\n  ``_DETACHED_TASKS`` to ``task.cancel()`` the running scheduler. The\n  currently-executing node's await point raises ``CancelledError``,\n  which propagates through the scheduler. The detached-task wrapper's\n  CancelledError handler writes the terminal ``cancelled`` status.\n  Fast (typically <1s) but the failing node is recorded with a\n  ``CancelledError`` outcome, not a clean output. Use this for stuck\n  runs or when you need to free resources right now.\n\nIdempotent: cancelling an already-terminal run is a no-op and returns\n``cancelling: false``.",
         "operationId": "cancel_run_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "graceful",
+                "immediate"
+              ],
+              "type": "string",
+              "default": "graceful",
+              "title": "Mode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/pause": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Pause Run",
+        "description": "Request the run pause at the next super-step boundary.\n\nWrites ``wf_run.status = 'pausing'``. The scheduler polls this between\nsuper-steps and, on observing the flag, saves a checkpoint, emits\n``RunPausedEvent``, and exits with ``status='paused'``. The current\nin-flight node finishes cleanly — pause is not interruption.\n\nPause is non-terminal: the run can be resumed from where it stopped\nvia ``POST /runs/:id/resume-paused``. Upstream node outputs and channel\nstate are preserved.\n\nIdempotent: pausing a run that's already paused / cancelled / completed\nis a no-op and returns ``pausing: false``.",
+        "operationId": "pause_run_runs__run_id__pause_post",
         "parameters": [
           {
             "name": "run_id",
@@ -17029,10 +17331,66 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Cancel Run Runs  Run Id  Cancel Post"
+                  "$ref": "#/components/schemas/PauseRunResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/resume-paused": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Resume Paused Run",
+        "description": "Resume a paused run from its last checkpoint.\n\nShape matches ``/runs/:id/resume`` but takes no required body —\nresume-paused doesn't consume an interrupt payload, just picks up\nwhere the scheduler stopped. The optional body lets the caller override\n``initial_variables`` or ``initial_overrides`` for the resumed leg,\nsame as the interrupt-resume.\n\nReturns 409 if the run isn't in 'paused' state.",
+        "operationId": "resume_paused_run_runs__run_id__resume_paused_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ResumeRunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -17074,9 +17432,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Force Fail Run Runs  Run Id  Force Fail Post"
+                  "$ref": "#/components/schemas/ForceFailRunResponse"
                 }
               }
             }
@@ -17120,11 +17476,302 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/CheckpointRecord"
                   },
                   "title": "Response List Run Checkpoints Runs  Run Id  Checkpoints Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/retry": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Retry Node",
+        "description": "Retry a failed node. Streams the resumed run.",
+        "operationId": "retry_node_runs__run_id__nodes__node_id__retry_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RetryNodeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/skip": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Skip Node",
+        "description": "Skip a failed node and continue with empty (or user-supplied) output.",
+        "operationId": "skip_node_runs__run_id__nodes__node_id__skip_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SkipNodeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/manual-result": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Manual Result Node",
+        "description": "Provide a manual output for a failed node and continue.",
+        "operationId": "manual_result_node_runs__run_id__nodes__node_id__manual_result_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualResultRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/resume-errored": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Resume Errored Run",
+        "description": "Resume an errored run as-is — retries the failed node with the same\ninputs (attempt bumped so the prior failure stays as history).\n\nConvenience entry point when the user knows the failure was transient\nand just wants to re-run from where it stopped without modifying\nanything. Equivalent to calling /retry on every failed node, but\ntoday only the first failing node per super-step is captured.",
+        "operationId": "resume_errored_run_runs__run_id__resume_errored_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/events/stream": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Stream Run Events",
+        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\n\nPowers the canvas's push-based delivery path. On connect we replay any\nevents newer than ``Last-Event-ID`` (an ISO-8601 ts on reconnect), then\nsubscribe to the LISTEN/NOTIFY fan-out and forward each notification\nas a fresh SSE event with the event_ts as the SSE id (for resume).\n\nCloses the stream when the run reaches a terminal status so the FE\ncleanly stops the EventSource without retrying.",
+        "operationId": "stream_run_events_runs__run_id__events_stream_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -17147,8 +17794,112 @@
           "Workflow"
         ],
         "summary": "List Run Events",
-        "description": "Recorded scheduler events for a run, ordered by event_ts.\n\nPopulated by EventRecordingEmitter for both inline and queued runs —\nworkflows executed as worker jobs (no live stream) still leave a full\nhistory in wf_node_events.",
+        "description": "Recorded scheduler events for a run, ordered by event_ts ascending.\n\nPopulated by EventRecordingEmitter for both inline and queued runs —\nworkflows executed as worker jobs (no live stream) still leave a full\nhistory in wf_node_events.\n\nPagination + filtering (Phase 3.5): callers can pass ``after_event_ts``\nto fetch only the events they haven't seen, plus ``limit`` and\n``event_type`` to bound the response. The default unbounded response\nis preserved for backward compat.",
         "operationId": "list_run_events_runs__run_id__events_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 5000,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "after_event_ts",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 timestamp. Only events strictly newer than this are returned. Used by the canvas poller for delta fetches.",
+              "title": "After Event Ts"
+            },
+            "description": "ISO-8601 timestamp. Only events strictly newer than this are returned. Used by the canvas poller for delta fetches."
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored",
+              "title": "Event Type"
+            },
+            "description": "Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunEventRecord"
+                  },
+                  "title": "Response List Run Events Runs  Run Id  Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/cost": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Run Cost",
+        "description": "Per-run cost summary. Joins cx_request on the run's conversation_id.\n\nReturns zeros if the run has no associated LLM calls (e.g. a pure-\ndeterministic workflow). The cost field on cx_request is already in\nUSD; total_cost_usd is the straight sum.",
+        "operationId": "get_run_cost_runs__run_id__cost_get",
         "parameters": [
           {
             "name": "run_id",
@@ -17166,12 +17917,62 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "title": "Response List Run Events Runs  Run Id  Events Get"
+                  "$ref": "#/components/schemas/RunCostSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/cost-rollup": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Workflow Cost Rollup",
+        "description": "Time-windowed cost rollup for one workflow definition.\n\nAggregates cx_request rows across every run of the definition in the\nlast ``range`` days. Returns a per-day breakdown the UI can chart.",
+        "operationId": "get_workflow_cost_rollup_workflows__definition_id__cost_rollup_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 30,
+              "title": "Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowCostRollup"
                 }
               }
             }
@@ -17203,9 +18004,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Test Spawn Detached  Test Spawn Detached Post"
+                  "$ref": "#/components/schemas/DiagSpawnDetachedResponse"
                 }
               }
             }
@@ -17486,7 +18285,7 @@
           "Workflow Triggers"
         ],
         "summary": "Fire Trigger",
-        "description": "Fire a trigger on demand. Accepts webhook + manual kinds.\n\nWebhook triggers with a configured ``webhook_secret`` REQUIRE the\ncaller to pass it via ``X-Matrx-Trigger-Secret``. That's the auth\nboundary — no JWT needed (webhook callers are usually machines).\nManual triggers and webhook triggers without a secret are public;\nrate-limiting + tenant-scoped definitions are the operational\ncontrols (future: RLS policies).",
+        "description": "Fire a trigger on demand. Accepts webhook + manual kinds.\n\nAuth model:\n  - ``kind=\"webhook\"`` (must have a ``webhook_secret`` per the create\n    guard): caller provides the secret in ``X-Matrx-Trigger-Secret``.\n    No JWT required — webhook callers are usually machines that don't\n    have user identities.\n  - ``kind=\"manual\"``: requires a JWT and the caller must own the\n    trigger. There is no anonymous manual fire — that would let any\n    attacker who guessed a trigger UUID run the workflow on the\n    owner's account.\n  - ``kind=\"cron\"``: fires automatically; the /fire endpoint refuses.",
         "operationId": "fire_trigger_triggers__trigger_id__fire_post",
         "parameters": [
           {
@@ -17513,6 +18312,25 @@
               ],
               "title": "X-Matrx-Trigger-Secret"
             }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Stable client-supplied key to dedupe duplicate webhook / manual fires within 24h. Honored only when the trigger owner is the effective user_id (i.e. always for manual triggers; webhook callers inherit the trigger's owner).",
+              "title": "X-Idempotency-Key"
+            },
+            "description": "Stable client-supplied key to dedupe duplicate webhook / manual fires within 24h. Honored only when the trigger owner is the effective user_id (i.e. always for manual triggers; webhook callers inherit the trigger's owner)."
           }
         ],
         "requestBody": {
@@ -17539,6 +18357,160 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FireResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/triggers/{trigger_id}/fires": {
+      "get": {
+        "tags": [
+          "Workflow Triggers"
+        ],
+        "summary": "List Trigger Fires",
+        "description": "Owner-gated audit log for one trigger. Most-recent first.\n\nReturns rows from wf_trigger_fire — one per fire attempt regardless of\noutcome. status='queued' = run enqueued; status='failed' = an exception\nblew up before the enqueue completed.",
+        "operationId": "list_trigger_fires_triggers__trigger_id__fires_get",
+        "parameters": [
+          {
+            "name": "trigger_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trigger Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TriggerFireRecord"
+                  },
+                  "title": "Response List Trigger Fires Triggers  Trigger Id  Fires Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recovery/handle": {
+      "post": {
+        "tags": [
+          "Workflow Recovery"
+        ],
+        "summary": "Handle Recovery",
+        "description": "Run the recovery agent against an XML envelope, return a typed proposal.\n\nOwner-gated on both workflow_id and (if present) run_id. The LLM call\nis best-effort — on failure the response carries `fallback=true` with\na deterministic ForceFailProposal so the FE always renders something.",
+        "operationId": "handle_recovery_api_recovery_handle_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recovery/audit/{audit_id}/applied": {
+      "post": {
+        "tags": [
+          "Workflow Recovery"
+        ],
+        "summary": "Mark Recovery Applied",
+        "description": "Flag the audit row as applied / overridden so analytics on agent\nacceptance can run later. Caller-owned via auth.uid() RLS.",
+        "operationId": "mark_recovery_applied_api_recovery_audit__audit_id__applied_post",
+        "parameters": [
+          {
+            "name": "audit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Audit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryApplyAck"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryApplyAck"
                 }
               }
             }
@@ -22152,6 +23124,208 @@
         }
       }
     },
+    "/images/ops": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "List Image Ops",
+        "description": "Machine-readable catalog of every registered image edit op.\n\nThe FE renders the editor's op picker dynamically off this response.\n``backends`` reports whether the optional rembg / opencv backends are\ninstalled in the current deployment — the FE hides the corresponding\nops when a backend is missing.",
+        "operationId": "list_image_ops_images_ops_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageOpsCatalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/edit": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Edit Image",
+        "description": "Run any registered image op against a cloud file.\n\nProduces a NEW cld_files row tagged with derivation metadata. The\nsource row is never modified. Optional ``mask_id`` restricts the\nop's effect to the masked region (where supported).",
+        "operationId": "edit_image_images_edit_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/bg-remove": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Bg Remove",
+        "description": "Foreground extraction via rembg.\n\nWhen ``mask_id`` is supplied, the mask is OR'd into the rembg alpha\noutput — pixels marked in the mask stay opaque even if rembg would\nhave removed them (\"definitely foreground, never strip\").",
+        "operationId": "bg_remove_images_bg_remove_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageBgRemoveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/inpaint": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Inpaint",
+        "description": "Content-aware fill within the mask region (OpenCV Telea / NS).\n\nFor Wave 2 this endpoint will accept the same wire shape but route\ndiffusion-based inpainting to a GPU microservice when ``method`` is\nset to one of those backends.",
+        "operationId": "inpaint_images_inpaint_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageInpaintRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/virtual": {
       "get": {
         "tags": [
@@ -24489,6 +25663,411 @@
                   },
                   "type": "array",
                   "title": "Response List Providers Admin Ops Providers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/watchdog": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Get Watchdog Status",
+        "description": "Health snapshot of every registered watched-lifecycle table.\n\nRuns the same SELECT the sweeper would but doesn't transition anything\n— it's a read-only view. The dashboard polls this on a short interval\nso operators see the live state.",
+        "operationId": "get_watchdog_status_admin_persistence_watchdog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchdogStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/watchdog/{table}": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "List Stuck Rows",
+        "description": "List currently-stuck rows for one watched table.",
+        "operationId": "list_stuck_rows_admin_persistence_watchdog__table__get",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Table"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StuckRowsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/failures": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "List Failures",
+        "description": "Paginated list of failure rows. Default filter: unrecovered only.",
+        "operationId": "list_failures_admin_persistence_failures_get",
+        "parameters": [
+          {
+            "name": "recovered",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "any",
+                "yes",
+                "no"
+              ],
+              "type": "string",
+              "default": "no",
+              "title": "Recovered"
+            }
+          },
+          {
+            "name": "table_target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Table Target"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FailureListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/failures/{failure_id}": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Get Failure Detail",
+        "description": "Full payload + traceback for one failure row.",
+        "operationId": "get_failure_detail_admin_persistence_failures__failure_id__get",
+        "parameters": [
+          {
+            "name": "failure_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Failure Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FailureDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/failures/{failure_id}/replay": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Replay One",
+        "description": "Replay one failure row.",
+        "operationId": "replay_one_admin_persistence_failures__failure_id__replay_post",
+        "parameters": [
+          {
+            "name": "failure_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Failure Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/failures/replay-batch": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Replay Batch",
+        "description": "Replay every unrecovered row matching the filter.",
+        "operationId": "replay_batch_admin_persistence_failures_replay_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReplayBatchRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/failures/{failure_id}/dismiss": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Dismiss Failure",
+        "description": "Mark a failure ``recovered_at = now()`` without replaying.\n\nUse when the row is no longer relevant — stale data, manually\nfixed in SQL, or a known-unfixable bug whose row stays as a\nmonument.",
+        "operationId": "dismiss_failure_admin_persistence_failures__failure_id__dismiss_post",
+        "parameters": [
+          {
+            "name": "failure_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Failure Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DismissResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/summary": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Get Summary",
+        "description": "Single-shot top-level health snapshot for the dashboard home.",
+        "operationId": "get_summary_admin_persistence_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersistenceSummary"
                 }
               }
             }
@@ -28612,21 +30191,15 @@
               }
             ]
           },
-          "client_tools": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Client Tools",
-            "default": []
-          },
-          "custom_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyCustomTool"
-            },
-            "type": "array",
-            "title": "Custom Tools",
-            "default": []
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ide_state": {
             "anyOf": [
@@ -29947,6 +31520,19 @@
         ],
         "title": "ArchiveResponse"
       },
+      "ArchiveWorkflowResponse": {
+        "properties": {
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          }
+        },
+        "type": "object",
+        "required": [
+          "archived"
+        ],
+        "title": "ArchiveWorkflowResponse"
+      },
       "Asset": {
         "properties": {
           "file_id": {
@@ -30828,6 +32414,65 @@
           "y1"
         ],
         "title": "BboxInput"
+      },
+      "BgRemoveParams": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "u2net",
+              "u2netp",
+              "u2net_human_seg",
+              "u2net_cloth_seg",
+              "silueta",
+              "isnet-general-use",
+              "isnet-anime",
+              "birefnet-general",
+              "birefnet-portrait"
+            ],
+            "title": "Model",
+            "default": "u2net"
+          },
+          "alpha_matting": {
+            "type": "boolean",
+            "title": "Alpha Matting",
+            "default": false
+          },
+          "alpha_matting_foreground_threshold": {
+            "type": "integer",
+            "title": "Alpha Matting Foreground Threshold",
+            "default": 240
+          },
+          "alpha_matting_background_threshold": {
+            "type": "integer",
+            "title": "Alpha Matting Background Threshold",
+            "default": 10
+          },
+          "alpha_matting_erode_size": {
+            "type": "integer",
+            "title": "Alpha Matting Erode Size",
+            "default": 10
+          },
+          "background_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Color"
+          },
+          "post_process_mask": {
+            "type": "boolean",
+            "title": "Post Process Mask",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BgRemoveParams"
       },
       "Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post": {
         "properties": {
@@ -31965,6 +33610,32 @@
         ],
         "title": "BulkResultItem"
       },
+      "CacheBustResponse": {
+        "properties": {
+          "cleared": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cleared"
+          },
+          "tool_registry_count": {
+            "type": "integer",
+            "title": "Tool Registry Count"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cleared",
+          "tool_registry_count",
+          "timestamp"
+        ],
+        "title": "CacheBustResponse"
+      },
       "CacheBypass": {
         "properties": {
           "conversation": {
@@ -32204,6 +33875,43 @@
         ],
         "title": "CallToolDetail",
         "description": "One row from cx_tl_call — the per-call record. Only present when the\ncall made it past pre-flight; pre-flight rejects (SURFACE_REJECT,\nNO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tl_call row."
+      },
+      "CancelRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "cancelling": {
+            "type": "boolean",
+            "title": "Cancelling"
+          },
+          "previous_status": {
+            "type": "string",
+            "title": "Previous Status"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "graceful",
+              "immediate"
+            ],
+            "title": "Mode"
+          },
+          "task_cancelled": {
+            "type": "boolean",
+            "title": "Task Cancelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "cancelling",
+          "previous_status",
+          "mode",
+          "task_cancelled"
+        ],
+        "title": "CancelRunResponse"
       },
       "CategorizeRequest": {
         "properties": {
@@ -33080,12 +34788,16 @@
             "title": "Video Action"
           },
           "custom_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyCustomTool"
-            },
-            "type": "array",
-            "title": "Custom Tools",
-            "default": []
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Tools"
           },
           "mcp_servers": {
             "anyOf": [
@@ -33325,6 +35037,16 @@
               }
             ]
           },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "config_overrides": {
             "anyOf": [
               {
@@ -33346,14 +35068,6 @@
               }
             ],
             "title": "Variables"
-          },
-          "client_tools": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Client Tools",
-            "default": []
           },
           "ide_state": {
             "anyOf": [
@@ -33547,6 +35261,120 @@
         "type": "object",
         "title": "ChatToolCallInput",
         "description": "One tool-call entry inside an assistant message.\n\nDifferent providers carry slightly different keys (OpenAI uses\n``function.name`` + ``function.arguments``; Anthropic uses ``name`` +\n``input``). All keys are optional so either shape validates."
+      },
+      "CheckpointRecord": {
+        "properties": {
+          "checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "parent_checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Checkpoint Id"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "channel_values": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Values"
+          },
+          "pending_writes": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Writes"
+          },
+          "next_invocations": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Invocations"
+          },
+          "interrupt_payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interrupt Payload"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "CheckpointRecord",
+        "description": "``wf_checkpoint`` row — durable per-super-step snapshot."
       },
       "ChunkDetail": {
         "properties": {
@@ -34420,11 +36248,28 @@
             },
             "type": "object",
             "title": "State"
+          },
+          "amendments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceAmendments"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mcp": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mcp"
           }
         },
         "type": "object",
         "title": "ClientContext",
-        "description": "Request envelope describing the calling client's capabilities + state.\n\nReplaces per-feature fields like ``ide_state`` and ``sandbox``. A client\ndeclares what it can do via a set of capability names and carries typed\nstate keyed by capability name for tools that need to read it at\nexecution time.\n\nWire shape::\n\n    {\n      \"capabilities\": [\"editor-state\", \"sandbox-fs\"],\n      \"state\": {\n        \"editor-state\": {\"active_file\": {\"path\": \"...\", ...}, ...},\n        \"sandbox-fs\":   {\"sandbox_id\": \"...\", ...}\n      }\n    }\n\nA client that's both a coding IDE and a browser extension declares both\ncapabilities and supplies both payloads. No per-client field\nproliferation — adding a new client type is a registry entry, not a\nrequest schema change."
+        "description": "Request envelope describing the calling client's capabilities + state.\n\nA client declares what it can do via a set of capability names, carries\ntyped state keyed by capability name, may amend its declared manifest\nfor this specific request (see ``SurfaceAmendments``), and may declare\nadditional third-party MCP servers for this session.\n\nWire shape::\n\n    {\n      \"capabilities\": [\"editor-state\", \"sandbox-fs\"],\n      \"state\": {\n        \"editor-state\": {\"active_file\": {\"path\": \"...\", ...}, ...},\n        \"sandbox-fs\":   {\"sandbox_id\": \"...\", ...}\n      },\n      \"amendments\": {\n        \"add\":    [{\"kind\": \"registered\", \"name\": \"...\"}],\n        \"remove\": [\"matrx-extend:foo\"]\n      },\n      \"mcp\": [\"openai-tools\", \"stripe-mcp\"]\n    }\n\nThe ``mcp`` field lists slugs of pre-registered ``public.mcp_servers``\nrows the request wants active for this session in addition to whatever\nMCPs the agent definition already includes. Per TOOL_ROUTING_RULES.md\n§10, MCP tools obey the same name-uniqueness rule (§4) as everything\nelse."
       },
       "ClientToolResult": {
         "properties": {
@@ -35520,21 +37365,15 @@
               }
             ]
           },
-          "client_tools": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Client Tools",
-            "default": []
-          },
-          "custom_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyCustomTool"
-            },
-            "type": "array",
-            "title": "Custom Tools",
-            "default": []
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ide_state": {
             "anyOf": [
@@ -36673,6 +38512,136 @@
         "title": "CustomToolInputSchema",
         "description": "JSON Schema for a custom tool's input parameters.\n\nFollows the MCP / JSON Schema standard. The type must be \"object\" and\nproperties defines the named parameters. Required is the list of\nparameter names that must be present in every call."
       },
+      "CxExplorerFacetEntry": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "CxExplorerFacetEntry"
+      },
+      "CxExplorerFacets": {
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/CxExplorerTotals"
+          },
+          "status": {
+            "items": {
+              "$ref": "#/components/schemas/CxExplorerFacetEntry"
+            },
+            "type": "array",
+            "title": "Status",
+            "description": "Distinct (status, count) — uses last_request_status when present, otherwise the conversation's own status. Powers the status filter chips."
+          },
+          "source_app": {
+            "items": {
+              "$ref": "#/components/schemas/CxExplorerFacetEntry"
+            },
+            "type": "array",
+            "title": "Source App",
+            "description": "Distinct (source_app, count). Drives the app filter."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "totals",
+          "status",
+          "source_app"
+        ],
+        "title": "CxExplorerFacets"
+      },
+      "CxExplorerTotals": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens"
+          },
+          "total_cost": {
+            "type": "number",
+            "title": "Total Cost"
+          },
+          "total_duration_ms": {
+            "type": "integer",
+            "title": "Total Duration Ms"
+          },
+          "total_errors": {
+            "type": "integer",
+            "title": "Total Errors"
+          },
+          "total_tool_calls": {
+            "type": "integer",
+            "title": "Total Tool Calls"
+          },
+          "total_snapshots": {
+            "type": "integer",
+            "title": "Total Snapshots"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "count",
+          "total_tokens",
+          "total_cost",
+          "total_duration_ms",
+          "total_errors",
+          "total_tool_calls",
+          "total_snapshots"
+        ],
+        "title": "CxExplorerTotals",
+        "description": "Sums across every row matching the current filter — not just the\nvisible page. Drives the \"Showing 1–50 of 2,480 · 8.4M tokens · $1.20\"\nline in the landing-page footer."
+      },
+      "DailyCostBreakdown": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "runs",
+          "cost_usd",
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "DailyCostBreakdown",
+        "description": "One day's slice of the workflow cost rollup."
+      },
       "DataStoreAdminRow": {
         "properties": {
           "id": {
@@ -37419,6 +39388,182 @@
         "title": "Definition",
         "description": "The canonical workflow definition — ReactFlow-compatible, user-authored.\n\nThis shape matches what the XYFlow canvas posts directly. The backend\nvalidates it with Pydantic but NEVER rewrites the user's JSON. Compilation\nproduces a separate CompiledGraph; the Definition remains the source of\ntruth for the UI."
       },
+      "DefinitionRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "definition_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "is_version": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Version"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "is_archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Archived"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "DefinitionRecord",
+        "description": "``wf_definition`` (or ``wf_definition_version``) row as returned by\nthe matrx-graph DefinitionStore. Open shape — Pydantic models in\n``matrx_graph.db.definition_store`` are the source of truth."
+      },
       "DeleteAllMessagesResponse": {
         "properties": {
           "deleted": {
@@ -37880,6 +40025,29 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
+      "DiagSpawnDetachedResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "detached_tasks_in_set": {
+            "type": "integer",
+            "title": "Detached Tasks In Set"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "message",
+          "detached_tasks_in_set"
+        ],
+        "title": "DiagSpawnDetachedResponse"
+      },
       "DirectChatRequest": {
         "properties": {
           "chat_config": {
@@ -37926,6 +40094,26 @@
           "deleted"
         ],
         "title": "DiscardResponse"
+      },
+      "DismissResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "dismissed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Dismissed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "dismissed_at"
+        ],
+        "title": "DismissResponse"
       },
       "DistinctValuesResponse": {
         "properties": {
@@ -38487,6 +40675,71 @@
         ],
         "title": "EdgeDef",
         "description": "User-authored edge in a ReactFlow-compatible definition.\n\nThe edge's semantic `kind` (DATA / CONTROL / CONDITIONAL / ERROR / STREAM)\nlives under data.kind. `type` on ReactFlow is purely a visual style hint.\nConditional edges carry a predicate expression under data.condition that\nthe compiler validates."
+      },
+      "EditInputsRetryProposal": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "edit_inputs_retry",
+            "title": "Action",
+            "default": "edit_inputs_retry"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "inputs"
+        ],
+        "title": "EditInputsRetryProposal",
+        "description": "Replace the failed invocation's inputs and retry."
+      },
+      "EditWorkflowProposal": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "edit_workflow",
+            "title": "Action",
+            "default": "edit_workflow"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "suggested_diff": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Suggested Diff"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "suggested_diff",
+          "rationale"
+        ],
+        "title": "EditWorkflowProposal",
+        "description": "Suggest a graph edit (config / schema / structure). Cannot be applied\nautomatically — surfaced to the user as a recommendation."
       },
       "EntityCreateBody": {
         "properties": {
@@ -39675,6 +41928,298 @@
           "expression"
         ],
         "title": "ExtractorSaveRequest"
+      },
+      "FailureDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "op_id": {
+            "type": "string",
+            "title": "Op Id"
+          },
+          "table_target": {
+            "type": "string",
+            "title": "Table Target"
+          },
+          "op_type": {
+            "type": "string",
+            "enum": [
+              "insert",
+              "update",
+              "delete"
+            ],
+            "title": "Op Type"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "primary_key": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "depends_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_text": {
+            "type": "string",
+            "title": "Error Text"
+          },
+          "traceback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traceback"
+          },
+          "failed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Failed At"
+          },
+          "retry_count": {
+            "type": "integer",
+            "title": "Retry Count"
+          },
+          "recovered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovered At"
+          },
+          "recovery_op_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Op Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "op_id",
+          "table_target",
+          "op_type",
+          "request_id",
+          "user_id",
+          "conversation_id",
+          "primary_key",
+          "payload",
+          "depends_on",
+          "error_text",
+          "traceback",
+          "failed_at",
+          "retry_count",
+          "recovered_at",
+          "recovery_op_id"
+        ],
+        "title": "FailureDetail",
+        "description": "One ``system_write_failure`` row — detail view (full payload)."
+      },
+      "FailureListResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/FailureSummary"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "FailureListResponse"
+      },
+      "FailureSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "op_id": {
+            "type": "string",
+            "title": "Op Id"
+          },
+          "table_target": {
+            "type": "string",
+            "title": "Table Target"
+          },
+          "op_type": {
+            "type": "string",
+            "enum": [
+              "insert",
+              "update",
+              "delete"
+            ],
+            "title": "Op Type"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "error_text": {
+            "type": "string",
+            "title": "Error Text"
+          },
+          "failed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Failed At"
+          },
+          "retry_count": {
+            "type": "integer",
+            "title": "Retry Count"
+          },
+          "recovered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovered At"
+          },
+          "recovery_op_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Op Id"
+          },
+          "age_secs": {
+            "type": "number",
+            "title": "Age Secs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "op_id",
+          "table_target",
+          "op_type",
+          "request_id",
+          "user_id",
+          "conversation_id",
+          "error_text",
+          "failed_at",
+          "retry_count",
+          "recovered_at",
+          "recovery_op_id",
+          "age_secs"
+        ],
+        "title": "FailureSummary",
+        "description": "One ``system_write_failure`` row — list view (payload truncated)."
       },
       "FeedbackIterationRequest": {
         "properties": {
@@ -41520,6 +44065,61 @@
         ],
         "title": "ForceDisableResponse"
       },
+      "ForceFailProposal": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "force_fail",
+            "title": "Action",
+            "default": "force_fail"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rationale"
+        ],
+        "title": "ForceFailProposal",
+        "description": "The agent recommends giving up on this run."
+      },
+      "ForceFailRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "force_failed": {
+            "type": "boolean",
+            "title": "Force Failed"
+          },
+          "previous_status": {
+            "type": "string",
+            "title": "Previous Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "force_failed",
+          "previous_status"
+        ],
+        "title": "ForceFailRunResponse"
+      },
       "ForkAndRunRequest": {
         "properties": {
           "organization_id": {
@@ -41685,21 +44285,15 @@
               }
             ]
           },
-          "client_tools": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Client Tools",
-            "default": []
-          },
-          "custom_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyCustomTool"
-            },
-            "type": "array",
-            "title": "Custom Tools",
-            "default": []
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ide_state": {
             "anyOf": [
@@ -42363,6 +44957,272 @@
         ],
         "title": "IdeWorkspaceState"
       },
+      "ImageBgRemoveRequest": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "mask_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mask Id"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BgRemoveParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "$ref": "#/components/schemas/ImageEditOutput"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id"
+        ],
+        "title": "ImageBgRemoveRequest"
+      },
+      "ImageEditOutput": {
+        "properties": {
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "public",
+              "shared"
+            ],
+            "title": "Visibility",
+            "default": "private"
+          },
+          "folder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp",
+              "avif"
+            ],
+            "title": "Format",
+            "default": "png"
+          },
+          "quality": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Quality",
+            "default": 90
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ImageEditOutput"
+      },
+      "ImageEditRequest": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "mask_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mask Id"
+          },
+          "op": {
+            "type": "string",
+            "title": "Op"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "output": {
+            "$ref": "#/components/schemas/ImageEditOutput"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "op"
+        ],
+        "title": "ImageEditRequest",
+        "description": "Op-discriminated image edit. ``op`` selects which registered op runs;\n``params`` is the op-specific Pydantic body (validated by the dispatcher)."
+      },
+      "ImageInpaintRequest": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "mask_id": {
+            "type": "string",
+            "title": "Mask Id"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpaintParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "$ref": "#/components/schemas/ImageEditOutput"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "mask_id"
+        ],
+        "title": "ImageInpaintRequest"
+      },
+      "ImageOpDescriptor": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "requires_mask": {
+            "type": "boolean",
+            "title": "Requires Mask"
+          },
+          "supports_mask": {
+            "type": "boolean",
+            "title": "Supports Mask"
+          },
+          "preserves_alpha": {
+            "type": "boolean",
+            "title": "Preserves Alpha"
+          },
+          "params_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params Schema"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "description",
+          "requires_mask",
+          "supports_mask",
+          "preserves_alpha",
+          "params_schema"
+        ],
+        "title": "ImageOpDescriptor",
+        "description": "One entry in the ops catalog returned by GET /images/ops."
+      },
+      "ImageOpsCatalog": {
+        "properties": {
+          "ops": {
+            "items": {
+              "$ref": "#/components/schemas/ImageOpDescriptor"
+            },
+            "type": "array",
+            "title": "Ops"
+          },
+          "aspect_ratios": {
+            "additionalProperties": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "object",
+            "title": "Aspect Ratios"
+          },
+          "backends": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object",
+            "title": "Backends"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ops",
+          "aspect_ratios",
+          "backends"
+        ],
+        "title": "ImageOpsCatalog"
+      },
       "ImpairmentAvailableAttributes": {
         "properties": {
           "digit": {
@@ -42866,6 +45726,27 @@
           "name"
         ],
         "title": "InlineToolSpec"
+      },
+      "InpaintParams": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "telea",
+              "ns"
+            ],
+            "title": "Method",
+            "default": "telea"
+          },
+          "radius": {
+            "type": "integer",
+            "title": "Radius",
+            "default": 3
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "InpaintParams"
       },
       "InputDataType": {
         "type": "string",
@@ -44654,73 +47535,6 @@
         ],
         "title": "LayoutClassificationReport"
       },
-      "LegacyCustomTool": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description",
-            "default": ""
-          },
-          "input_schema": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LegacyCustomToolInputSchema"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "inputSchema": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LegacyCustomToolInputSchema"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "LegacyCustomTool",
-        "description": "Deprecated request-side custom-tool spec.\n\nNew code should send ``tools: [{\"kind\": \"inline\", ...}]`` (``ToolSpec``)\ninstead. The router translates this shape to ``InlineToolSpec`` via\n``apply_unified_tools``."
-      },
-      "LegacyCustomToolInputSchema": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "title": "Type",
-            "default": "object"
-          },
-          "properties": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Properties"
-          },
-          "required": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Required"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "title": "LegacyCustomToolInputSchema",
-        "description": "JSON Schema fragment describing a legacy custom tool's input.\n\nMirrors ``matrx_ai.tools.models.CustomToolInputSchema`` on the wire while\nstaying permissive — historical payloads sometimes include\n``additionalProperties``, ``description``, or other JSON Schema keywords\nthat this model lets through unchanged."
-      },
       "LegalSearchRequest": {
         "properties": {
           "query": {
@@ -46381,6 +49195,91 @@
         ],
         "title": "ManifestResponse"
       },
+      "ManifestToolEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "default",
+              "optional"
+            ],
+            "title": "Disposition"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "inline"
+            ],
+            "title": "Kind"
+          },
+          "delegate": {
+            "type": "boolean",
+            "title": "Delegate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "disposition",
+          "kind",
+          "delegate"
+        ],
+        "title": "ManifestToolEntry"
+      },
+      "ManualResultProposal": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "manual_result",
+            "title": "Action",
+            "default": "manual_result"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "output": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Output"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "output"
+        ],
+        "title": "ManualResultProposal",
+        "description": "User-supplied output for the failed node."
+      },
+      "ManualResultRequest": {
+        "properties": {
+          "output": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Output",
+            "description": "User-supplied output to record for the failed node. Should validate against the node's output_schema — downstream nodes consume this exactly as if the executor produced it."
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Max Steps",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "required": [
+          "output"
+        ],
+        "title": "ManualResultRequest"
+      },
       "MaskRequestBody": {
         "properties": {
           "spans": {
@@ -47067,6 +49966,41 @@
         "type": "object",
         "title": "MockStreamRequest"
       },
+      "ModelCostBreakdown": {
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model_name",
+          "request_count",
+          "input_tokens",
+          "output_tokens",
+          "cost_usd"
+        ],
+        "title": "ModelCostBreakdown",
+        "description": "Cost subtotal for one model within a run."
+      },
       "MoveArgs": {
         "properties": {
           "new_parent_id": {
@@ -47128,6 +50062,164 @@
         ],
         "title": "NodeDef",
         "description": "User-authored node in a ReactFlow-compatible definition.\n\nThe `data.config` payload is validated against the registered NodeSpec's\n`config_schema` at compile time — not at definition time — so the raw JSON\nround-trips cleanly regardless of whether the target NodeSpec is loaded."
+      },
+      "NodeTypeDescriptor": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "determinism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Determinism"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "emits_stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emits Stream"
+          },
+          "can_interrupt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Interrupt"
+          },
+          "input_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Schema"
+          },
+          "config_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Schema"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema"
+          },
+          "handles": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handles"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "NodeTypeDescriptor",
+        "description": "One palette item from ``GET /workflow/node-types`` /\n``GET /actions``. Shape varies per node — fields beyond the\ndocumented core are passed through verbatim."
       },
       "OccupationalCodesResponse": {
         "properties": {
@@ -47660,6 +50752,29 @@
         },
         "type": "object",
         "title": "PatchFolderRequest"
+      },
+      "PauseRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "pausing": {
+            "type": "boolean",
+            "title": "Pausing"
+          },
+          "previous_status": {
+            "type": "string",
+            "title": "Previous Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "pausing",
+          "previous_status"
+        ],
+        "title": "PauseRunResponse"
       },
       "PdfCropBox": {
         "properties": {
@@ -48836,6 +51951,61 @@
         "type": "object",
         "title": "PermissionRecord",
         "description": "A single permission grant row (``cld_permissions``).\n\nThe PermissionsManager DB layer returns raw row dicts; extra keys are\ntolerated so timestamps / audit fields can appear without a model bump."
+      },
+      "PersistenceSummary": {
+        "properties": {
+          "stuck_rows_total": {
+            "type": "integer",
+            "title": "Stuck Rows Total"
+          },
+          "tables_with_stuck_rows": {
+            "type": "integer",
+            "title": "Tables With Stuck Rows"
+          },
+          "tables_breaching_sla": {
+            "type": "integer",
+            "title": "Tables Breaching Sla"
+          },
+          "unrecovered_failures": {
+            "type": "integer",
+            "title": "Unrecovered Failures"
+          },
+          "oldest_unrecovered_failure_age_secs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Unrecovered Failure Age Secs"
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stuck_rows_total",
+          "tables_with_stuck_rows",
+          "tables_breaching_sla",
+          "unrecovered_failures",
+          "oldest_unrecovered_failure_age_secs",
+          "last_failure_at"
+        ],
+        "title": "PersistenceSummary",
+        "description": "Top-level dashboard signal."
       },
       "PicklistCreate": {
         "properties": {
@@ -50281,21 +53451,15 @@
               }
             ]
           },
-          "client_tools": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Client Tools",
-            "default": []
-          },
-          "custom_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyCustomTool"
-            },
-            "type": "array",
-            "title": "Custom Tools",
-            "default": []
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ide_state": {
             "anyOf": [
@@ -50558,6 +53722,171 @@
           "pages"
         ],
         "title": "ReadingOrderReport"
+      },
+      "RecoveryApplyAck": {
+        "properties": {
+          "audit_id": {
+            "type": "string",
+            "title": "Audit Id"
+          },
+          "was_applied": {
+            "type": "boolean",
+            "title": "Was Applied"
+          },
+          "was_overridden": {
+            "type": "boolean",
+            "title": "Was Overridden"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "audit_id",
+          "was_applied",
+          "was_overridden"
+        ],
+        "title": "RecoveryApplyAck",
+        "description": "Lightweight ack for POST /api/recovery/audit/{audit_id}/applied.\n\nThe FE pings this when the user clicks Apply (or chooses to override\nthe proposal). Updates was_applied / was_overridden on the audit row."
+      },
+      "RecoveryRequest": {
+        "properties": {
+          "envelope_xml": {
+            "type": "string",
+            "maxLength": 128000,
+            "minLength": 1,
+            "title": "Envelope Xml",
+            "description": "The XML envelope built by the studio's CopyMenu via lib/xml-envelope.ts. Carries workflow context + payload + available_actions so the agent can suggest a fix without follow-up questions."
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "node_error",
+              "node_output",
+              "node_inputs",
+              "checkpoint",
+              "run_summary",
+              "validation_issue",
+              "stream_log",
+              "raw_value"
+            ],
+            "title": "Surface",
+            "default": "node_error"
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "failed_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed Node Id",
+            "description": "Optional hint to the agent: which node the user wants the proposal to target. Falls back to the run's first failed node."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "envelope_xml",
+          "workflow_id"
+        ],
+        "title": "RecoveryRequest",
+        "description": "Body for POST /api/recovery/handle."
+      },
+      "RecoveryResponse": {
+        "properties": {
+          "audit_id": {
+            "type": "string",
+            "title": "Audit Id"
+          },
+          "proposal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RetryProposal"
+              },
+              {
+                "$ref": "#/components/schemas/SkipProposal"
+              },
+              {
+                "$ref": "#/components/schemas/ManualResultProposal"
+              },
+              {
+                "$ref": "#/components/schemas/EditInputsRetryProposal"
+              },
+              {
+                "$ref": "#/components/schemas/EditWorkflowProposal"
+              },
+              {
+                "$ref": "#/components/schemas/ForceFailProposal"
+              }
+            ],
+            "title": "Proposal",
+            "discriminator": {
+              "propertyName": "action",
+              "mapping": {
+                "edit_inputs_retry": "#/components/schemas/EditInputsRetryProposal",
+                "edit_workflow": "#/components/schemas/EditWorkflowProposal",
+                "force_fail": "#/components/schemas/ForceFailProposal",
+                "manual_result": "#/components/schemas/ManualResultProposal",
+                "retry": "#/components/schemas/RetryProposal",
+                "skip": "#/components/schemas/SkipProposal"
+              }
+            }
+          },
+          "agent_reasoning": {
+            "type": "string",
+            "title": "Agent Reasoning"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback",
+            "description": "True when the agent call failed and the response is a deterministic fallback (typically a force_fail with the error message in rationale). The UI should warn the user before applying a fallback proposal.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "audit_id",
+          "proposal",
+          "agent_reasoning",
+          "confidence"
+        ],
+        "title": "RecoveryResponse",
+        "description": "Returned by POST /api/recovery/handle."
       },
       "RedactPatternRequest": {
         "properties": {
@@ -51882,6 +55211,98 @@
         ],
         "title": "ReplaceResponse"
       },
+      "ReplayBatchRequest": {
+        "properties": {
+          "table_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Target"
+          },
+          "error_text_contains": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text Contains"
+          },
+          "max_age_secs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Age Secs",
+            "description": "Only retry rows whose failed_at is within this many seconds. Defaults to no time limit."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 100
+          },
+          "only_default_error_class": {
+            "type": "boolean",
+            "title": "Only Default Error Class",
+            "description": "If True, only retry the InterfaceError class that the original flush-sequentialization fix targeted. If False, retry all unrecovered rows regardless of cause.",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReplayBatchRequest",
+        "description": "Filter for batch replay. Empty body = retry every unrecovered row."
+      },
+      "ReplayResponse": {
+        "properties": {
+          "candidates": {
+            "type": "integer",
+            "title": "Candidates"
+          },
+          "recovered_count": {
+            "type": "integer",
+            "title": "Recovered Count"
+          },
+          "still_failed_count": {
+            "type": "integer",
+            "title": "Still Failed Count"
+          },
+          "skipped_count": {
+            "type": "integer",
+            "title": "Skipped Count"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidates",
+          "recovered_count",
+          "still_failed_count",
+          "skipped_count"
+        ],
+        "title": "ReplayResponse",
+        "description": "Result of a single-row or batch replay."
+      },
       "RepositoriesListResponse": {
         "properties": {
           "repositories": {
@@ -52238,21 +55659,15 @@
               }
             ]
           },
-          "client_tools": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Client Tools",
-            "default": []
-          },
-          "custom_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LegacyCustomTool"
-            },
-            "type": "array",
-            "title": "Custom Tools",
-            "default": []
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -52376,6 +55791,71 @@
           "error"
         ],
         "title": "RetryFailRequest"
+      },
+      "RetryNodeRequest": {
+        "properties": {
+          "inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputs",
+            "description": "If provided, replaces the failed invocation's inputs. Useful for 'edit inputs and retry' — the user fixed a bad URL, tweaked a prompt variable, etc. Leave None to retry with the original inputs."
+          },
+          "attempt_bump": {
+            "type": "boolean",
+            "title": "Attempt Bump",
+            "description": "If True (default), the retried invocation runs at attempt+1 so the prior failure outcome stays as a forensic record. If False, the original outcome is overwritten by the new attempt. Leave True unless you have a specific reason to discard history.",
+            "default": true
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Max Steps",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "title": "RetryNodeRequest"
+      },
+      "RetryProposal": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "retry",
+            "title": "Action",
+            "default": "retry"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "title": "RetryProposal",
+        "description": "Re-run the failed node with the same (or edited) inputs."
       },
       "RetrySubmitRequest": {
         "properties": {
@@ -52655,6 +56135,171 @@
         ],
         "title": "RowUpdate"
       },
+      "RunCostSummary": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd",
+            "default": 0
+          },
+          "total_input_tokens": {
+            "type": "integer",
+            "title": "Total Input Tokens",
+            "default": 0
+          },
+          "total_output_tokens": {
+            "type": "integer",
+            "title": "Total Output Tokens",
+            "default": 0
+          },
+          "total_cached_tokens": {
+            "type": "integer",
+            "title": "Total Cached Tokens",
+            "default": 0
+          },
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count",
+            "default": 0
+          },
+          "avg_request_duration_ms": {
+            "type": "integer",
+            "title": "Avg Request Duration Ms",
+            "default": 0
+          },
+          "by_model": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCostBreakdown"
+            },
+            "type": "array",
+            "title": "By Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "RunCostSummary",
+        "description": "Aggregated cost for one workflow run.\n\nComputed by joining cx_request on the run's conversation_id. Total\ndollars are derived client-side: `total_cost_dollars = total_cost_usd`\n(cx_request.cost is already in USD)."
+      },
+      "RunEventRecord": {
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "spec_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Type"
+          },
+          "attempt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Id"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "event_ts": {
+            "title": "Event Ts"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "event_type",
+          "payload",
+          "event_ts"
+        ],
+        "title": "RunEventRecord",
+        "description": "One row from ``wf_node_events``. Shape mirrors\n``matrx_graph.types.events`` — payload carries the full original\nPydantic event model_dump."
+      },
       "RunExtractionRequest": {
         "properties": {
           "job_id": {
@@ -52753,6 +56398,250 @@
         },
         "type": "object",
         "title": "RunPipelineRequest"
+      },
+      "RunRecord": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "parent_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Run Id"
+          },
+          "definition_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Id"
+          },
+          "definition_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Version Id"
+          },
+          "definition_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Hash"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "interrupt_payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interrupt Payload"
+          },
+          "steps_executed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps Executed"
+          },
+          "last_checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checkpoint Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "RunRecord",
+        "description": "``wf_run`` row as returned by RunStore.load / list_recent /\nlist_for_definition."
       },
       "RunResponse": {
         "properties": {
@@ -52976,6 +56865,14 @@
             "type": "object",
             "title": "Initial Overrides",
             "description": "LLM parameter overrides applied across the run (temperature, max_tokens, model, etc.). Empty by default."
+          },
+          "skip_node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skip Node Ids",
+            "description": "Node IDs to short-circuit pre-emptively. Each one emits a node_skipped event with empty output and lets downstream edges route an empty payload. Use this when you want to test the workflow without firing a slow LLM step, an external API call, or any expensive node. Downstream nodes may break if they require fields from the skipped node — that's the trade-off."
           },
           "max_steps": {
             "type": "integer",
@@ -54253,6 +58150,58 @@
         ],
         "title": "SiteScheduleCreateRequest"
       },
+      "SkipNodeRequest": {
+        "properties": {
+          "output": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Output",
+            "description": "Output to record for the skipped node. Defaults to {} — downstream nodes see an empty payload. The scheduler's idempotency replay treats this exactly like a successful executor run."
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Max Steps",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "title": "SkipNodeRequest"
+      },
+      "SkipProposal": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "skip",
+            "title": "Action",
+            "default": "skip"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "title": "SkipProposal",
+        "description": "Synthesize a (possibly empty) output and continue."
+      },
       "SnapBboxBody": {
         "properties": {
           "page_number": {
@@ -55437,6 +59386,68 @@
         "title": "StripRepeatedRegionsResultSchema",
         "description": "Wire shape for ``POST /utilities/pdf/strip-repeated-regions``."
       },
+      "StuckRow": {
+        "properties": {
+          "primary_key": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "aged_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Aged At"
+          },
+          "age_secs": {
+            "type": "number",
+            "title": "Age Secs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "primary_key",
+          "aged_at",
+          "age_secs"
+        ],
+        "title": "StuckRow",
+        "description": "One currently-stuck row in a watched table.\n\nThe payload is intentionally minimal — just the PK + age. Use the\ntable-specific explorer (cx-explorer, wf-explorer, etc.) to drill\ninto the full row."
+      },
+      "StuckRowsResponse": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "predicate": {
+            "type": "string",
+            "title": "Predicate"
+          },
+          "max_age_secs": {
+            "type": "integer",
+            "title": "Max Age Secs"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StuckRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table",
+          "predicate",
+          "max_age_secs",
+          "rows",
+          "count"
+        ],
+        "title": "StuckRowsResponse"
+      },
       "StudioRenderRequest": {
         "properties": {
           "media": {
@@ -55817,6 +59828,85 @@
         ],
         "title": "SuggestRequest",
         "description": "Wizard input for the Research Setup Suggest Agent.\n\nThe agent (`prompt_builtins.id = 4f802fd1-…`) takes ONE variable —\n`subject_name_or_description`. The frontend wizard's single textarea\nfeeds this directly. The user can paste a short name (\"Arman Sadeghi\"),\na paragraph (\"everything we know about photosynthesis cycles…\"), or\nanything in between. The agent decides how to title and describe the\nproject from that one string.\n\nThe legacy two-field shape (`topic_name` + `topic_description`) is\naccepted via the validator below so old clients don't 422; they are\nconcatenated with a space. New clients should send only\n`subject_name_or_description`."
+      },
+      "SurfaceAmendments": {
+        "properties": {
+          "add": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RegisteredToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/InlineToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/AgentToolSpec"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "agent": "#/components/schemas/AgentToolSpec",
+                  "inline": "#/components/schemas/InlineToolSpec",
+                  "registered": "#/components/schemas/RegisteredToolSpec"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Add"
+          },
+          "remove": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove"
+          }
+        },
+        "type": "object",
+        "title": "SurfaceAmendments",
+        "description": "Per-request delta against the surface's cached/declared manifest.\n\nPer TOOL_ROUTING_RULES.md §11:\n  - ``add``:    extra tool specs the surface is bringing in this request.\n                Treated as ``default`` disposition. Logged loudly for\n                well-known surfaces (a signal that DB or surface code\n                is out of sync).\n  - ``remove``: names to drop from the surface manifest for this\n                request. Logged loudly for well-known surfaces.\n\n``rebind`` (changing executor binding for an already-bound name) is a\nfuture field and not yet wired."
+      },
+      "SurfaceManifest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "requires_auth": {
+            "type": "boolean",
+            "title": "Requires Auth"
+          },
+          "default_tools": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestToolEntry"
+            },
+            "type": "array",
+            "title": "Default Tools"
+          },
+          "optional_tools": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestToolEntry"
+            },
+            "type": "array",
+            "title": "Optional Tools"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "requires_auth",
+          "default_tools",
+          "optional_tools"
+        ],
+        "title": "SurfaceManifest",
+        "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11."
       },
       "SyncClustersRequest": {
         "properties": {
@@ -56447,6 +60537,94 @@
           "name"
         ],
         "title": "TemplateCreate"
+      },
+      "TestNodeRequest": {
+        "properties": {
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs",
+            "description": "Inputs to pass to the node's executor. Validated against the node's input_schema at execution time; a validation error comes back in the response."
+          },
+          "config_override": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Override",
+            "description": "Optional override for the node's saved config. Useful for tweaking a model / temperature / system prompt without editing and saving the workflow. None = use the saved config."
+          }
+        },
+        "type": "object",
+        "title": "TestNodeRequest"
+      },
+      "TestNodeResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "spec_type": {
+            "type": "string",
+            "title": "Spec Type"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "success",
+          "duration_ms",
+          "node_id",
+          "spec_type"
+        ],
+        "title": "TestNodeResponse"
       },
       "ToolRecord": {
         "properties": {
@@ -57494,6 +61672,112 @@
         "title": "TriggerCreateRequest",
         "description": "Create a sch_trigger row attached to an existing task."
       },
+      "TriggerFireRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "trigger_id": {
+            "type": "string",
+            "title": "Trigger Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "fired_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fired At"
+          },
+          "fired_by_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fired By User Id"
+          },
+          "source_ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ip"
+          },
+          "request_body_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Body Hash"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "trigger_id",
+          "user_id",
+          "fired_at",
+          "status"
+        ],
+        "title": "TriggerFireRecord",
+        "description": "Audit row for one trigger fire attempt — wire shape of\nGET /triggers/{id}/fires."
+      },
       "TriggerListResponse": {
         "properties": {
           "triggers": {
@@ -58390,6 +62674,27 @@
         "type": "object",
         "title": "UserDataStorePatch"
       },
+      "UserOverrides": {
+        "properties": {
+          "add": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Add"
+          },
+          "remove": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove"
+          }
+        },
+        "type": "object",
+        "title": "UserOverrides",
+        "description": "Per-request user-level inclusion / exclusion overrides.\n\nPer TOOL_ROUTING_RULES.md §5–§6, the user's add/remove pair has the\nhighest inclusion precedence: ``user.remove`` beats everything;\n``user.add`` beats ``agent.forbidden`` and surface defaults' implicit\nsilence on optional tools.\n\nValidation: ``add ∩ remove`` must be empty — the merge primitive\nrejects the request with HTTP 422 when the sets overlap."
+      },
       "ValidateCronRequest": {
         "properties": {
           "expression": {
@@ -59213,6 +63518,134 @@
         "title": "VisionMediaUploadResponse",
         "description": "Response payload for ``POST /media/upload``."
       },
+      "WatchdogStatusResponse": {
+        "properties": {
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/WatchdogTableStatus"
+            },
+            "type": "array",
+            "title": "Tables"
+          },
+          "total_stuck_rows": {
+            "type": "integer",
+            "title": "Total Stuck Rows"
+          },
+          "tables_breaching_sla": {
+            "type": "integer",
+            "title": "Tables Breaching Sla"
+          },
+          "last_swept_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Swept At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tables",
+          "total_stuck_rows",
+          "tables_breaching_sla",
+          "last_swept_at"
+        ],
+        "title": "WatchdogStatusResponse"
+      },
+      "WatchdogTableStatus": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema"
+          },
+          "predicate": {
+            "type": "string",
+            "title": "Predicate"
+          },
+          "max_age_secs": {
+            "type": "integer",
+            "title": "Max Age Secs"
+          },
+          "transition_to_on_timeout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transition To On Timeout"
+          },
+          "alert_channel": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "warning"
+            ],
+            "title": "Alert Channel"
+          },
+          "age_column": {
+            "type": "string",
+            "title": "Age Column"
+          },
+          "status_column": {
+            "type": "string",
+            "title": "Status Column"
+          },
+          "primary_key_column": {
+            "type": "string",
+            "title": "Primary Key Column"
+          },
+          "stuck_count": {
+            "type": "integer",
+            "title": "Stuck Count"
+          },
+          "oldest_stuck_age_secs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Stuck Age Secs"
+          },
+          "sla_breached": {
+            "type": "boolean",
+            "title": "Sla Breached"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table",
+          "schema",
+          "predicate",
+          "max_age_secs",
+          "transition_to_on_timeout",
+          "alert_channel",
+          "age_column",
+          "status_column",
+          "primary_key_column",
+          "stuck_count",
+          "oldest_stuck_age_secs",
+          "sla_breached"
+        ],
+        "title": "WatchdogTableStatus",
+        "description": "Health of one registered watchdog config."
+      },
       "WcClaimRead": {
         "properties": {
           "id": {
@@ -59954,6 +64387,60 @@
         ],
         "title": "WcReportRead",
         "description": "One row from `wc_report`. Totals are populated only after `/calculate`.\n\n`datetime | str` accepts native datetimes from the ORM and serializes to\nISO strings on the wire — same shape the FE consumes."
+      },
+      "WorkflowCostRollup": {
+        "properties": {
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id"
+          },
+          "range_days": {
+            "type": "integer",
+            "title": "Range Days"
+          },
+          "range_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Range Start"
+          },
+          "range_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Range End"
+          },
+          "total_runs": {
+            "type": "integer",
+            "title": "Total Runs",
+            "default": 0
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd",
+            "default": 0
+          },
+          "avg_run_cost_usd": {
+            "type": "number",
+            "title": "Avg Run Cost Usd",
+            "default": 0
+          },
+          "runs_per_day": {
+            "items": {
+              "$ref": "#/components/schemas/DailyCostBreakdown"
+            },
+            "type": "array",
+            "title": "Runs Per Day"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "workflow_id",
+          "range_days",
+          "range_start",
+          "range_end"
+        ],
+        "title": "WorkflowCostRollup",
+        "description": "Aggregated cost for one definition across a time window."
       },
       "WriteArgs": {
         "properties": {

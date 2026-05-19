@@ -15,14 +15,15 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { shallowEqual } from "react-redux";
 import { Activity, MessageSquare, Copy, Check, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { StreamDebugPanel } from "@/features/agents/components/debug/StreamDebugPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectConversationRequestIds } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { cn } from "@/lib/utils";
+import { shallowEqual } from "react-redux";
 
 // ─── Copy helper ──────────────────────────────────────────────────────────────
 
@@ -72,8 +73,7 @@ function ConversationSidebarRow({
 }) {
   const instanceStatus = useAppSelector(selectInstanceStatus(conversationId));
   const requestIds = useAppSelector(
-    (state) => state.activeRequests.byConversationId[conversationId] ?? [],
-    shallowEqual,
+    selectConversationRequestIds(conversationId),
   );
   const latestRequest = useAppSelector((state) => {
     const ids = state.activeRequests.byConversationId[conversationId];

@@ -3281,6 +3281,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/cx-explorer/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Facets */
+        get: operations["get_facets_admin_cx_explorer_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp/debug-traces": {
         parameters: {
             query?: never;
@@ -3363,6 +3380,55 @@ export interface paths {
         put?: never;
         /** Execute Tool Test */
         post: operations["execute_tool_test_tools_test_execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/surfaces/{name}/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Surface Manifest
+         * @description Per TOOL_ROUTING_RULES.md §15 step 6 — surface authors hit this at
+         *     boot to compare their local tool registrations against what the server
+         *     says they provide. Lookup is by capability name (which is the canonical
+         *     surface identifier in matrx-ai's registry).
+         *
+         *     Returns 404 when the name isn't a registered capability.
+         */
+        get: operations["get_surface_manifest_api_surfaces__name__manifest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tool-routing/cache-bust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cache Bust
+         * @description Force-reload the tool registry and capability factory caches from
+         *     the DB. Run after a migration adds/removes tools, edits tool
+         *     definitions, or changes ``tl_executor`` bindings.
+         *
+         *     Admin-only.
+         */
+        post: operations["cache_bust_admin_tool_routing_cache_bust_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6203,6 +6269,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/nodes/{node_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Single Node
+         * @description Run ONE node in isolation against user-supplied inputs.
+         *
+         *     No run row, no checkpoint, no scheduler — just resolve the executor
+         *     from the registry and call its ``execute()`` once with the supplied
+         *     inputs and the node's saved (or overridden) config. Returns the
+         *     typed output, the duration, and any error.
+         *
+         *     Useful for:
+         *       - Trying a different prompt / model / temperature without editing
+         *         and saving the whole workflow.
+         *       - Debugging a failing node by iterating on inputs.
+         *       - Smoke-testing a brand-new node config before wiring it into the
+         *         full graph.
+         *
+         *     Never writes to wf_run / wf_checkpoint / wf_node_outcome. The
+         *     invocation IS logged to ``wf_node_events`` with run_id set to the
+         *     test marker so you can grep the audit trail if needed.
+         */
+        post: operations["test_single_node_workflows__definition_id__nodes__node_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/{definition_id}/runs": {
         parameters: {
             query?: never;
@@ -6213,6 +6315,11 @@ export interface paths {
         /**
          * List Runs For Workflow
          * @description Runs for a specific workflow — used by the editor's run history tab.
+         *
+         *     Owner-gated on the parent workflow (caller must own the definition),
+         *     AND additionally filtered by user_id so this never returns runs
+         *     triggered by a different user even if cross-user sharing of a
+         *     workflow ever lands.
          */
         get: operations["list_runs_for_workflow_workflows__definition_id__runs_get"];
         put?: never;
@@ -6295,14 +6402,87 @@ export interface paths {
          * Cancel Run
          * @description Request cancellation of an in-flight run.
          *
-         *     Writes ``wf_run.status = 'cancelling'``. Both the inline streaming task
-         *     and worker-driven schedulers poll this status between super-steps and
-         *     exit cleanly on the next poll — so cancellation is at-most-one-super-step
-         *     latent, but mid-node LLM calls finish cleanly (we don't kill them
-         *     mid-flight). Idempotent: cancelling an already-terminal run is a no-op
-         *     and returns ``cancelling: false``.
+         *     Two modes:
+         *
+         *     - ``graceful`` (default): writes ``wf_run.status = 'cancelling'``. The
+         *       scheduler polls this status between super-steps and exits cleanly on
+         *       the next poll. Cancellation is at-most-one-super-step latent — a
+         *       30-second mid-node LLM call finishes before the run exits. Use this
+         *       when you want a clean checkpoint and can wait a moment.
+         *
+         *     - ``immediate``: writes ``wf_run.status = 'cancelling'`` AND walks
+         *       ``_DETACHED_TASKS`` to ``task.cancel()`` the running scheduler. The
+         *       currently-executing node's await point raises ``CancelledError``,
+         *       which propagates through the scheduler. The detached-task wrapper's
+         *       CancelledError handler writes the terminal ``cancelled`` status.
+         *       Fast (typically <1s) but the failing node is recorded with a
+         *       ``CancelledError`` outcome, not a clean output. Use this for stuck
+         *       runs or when you need to free resources right now.
+         *
+         *     Idempotent: cancelling an already-terminal run is a no-op and returns
+         *     ``cancelling: false``.
          */
         post: operations["cancel_run_runs__run_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause Run
+         * @description Request the run pause at the next super-step boundary.
+         *
+         *     Writes ``wf_run.status = 'pausing'``. The scheduler polls this between
+         *     super-steps and, on observing the flag, saves a checkpoint, emits
+         *     ``RunPausedEvent``, and exits with ``status='paused'``. The current
+         *     in-flight node finishes cleanly — pause is not interruption.
+         *
+         *     Pause is non-terminal: the run can be resumed from where it stopped
+         *     via ``POST /runs/:id/resume-paused``. Upstream node outputs and channel
+         *     state are preserved.
+         *
+         *     Idempotent: pausing a run that's already paused / cancelled / completed
+         *     is a no-op and returns ``pausing: false``.
+         */
+        post: operations["pause_run_runs__run_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/resume-paused": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Paused Run
+         * @description Resume a paused run from its last checkpoint.
+         *
+         *     Shape matches ``/runs/:id/resume`` but takes no required body —
+         *     resume-paused doesn't consume an interrupt payload, just picks up
+         *     where the scheduler stopped. The optional body lets the caller override
+         *     ``initial_variables`` or ``initial_overrides`` for the resumed leg,
+         *     same as the interrupt-resume.
+         *
+         *     Returns 409 if the run isn't in 'paused' state.
+         */
+        post: operations["resume_paused_run_runs__run_id__resume_paused_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6354,6 +6534,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/{run_id}/nodes/{node_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Node
+         * @description Retry a failed node. Streams the resumed run.
+         */
+        post: operations["retry_node_runs__run_id__nodes__node_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/nodes/{node_id}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Skip Node
+         * @description Skip a failed node and continue with empty (or user-supplied) output.
+         */
+        post: operations["skip_node_runs__run_id__nodes__node_id__skip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/nodes/{node_id}/manual-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manual Result Node
+         * @description Provide a manual output for a failed node and continue.
+         */
+        post: operations["manual_result_node_runs__run_id__nodes__node_id__manual_result_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/resume-errored": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Errored Run
+         * @description Resume an errored run as-is — retries the failed node with the same
+         *     inputs (attempt bumped so the prior failure stays as history).
+         *
+         *     Convenience entry point when the user knows the failure was transient
+         *     and just wants to re-run from where it stopped without modifying
+         *     anything. Equivalent to calling /retry on every failed node, but
+         *     today only the first failing node per super-step is captured.
+         */
+        post: operations["resume_errored_run_runs__run_id__resume_errored_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Run Events
+         * @description Server-Sent Events feed of wf_node_events for one run (Phase 4.3).
+         *
+         *     Powers the canvas's push-based delivery path. On connect we replay any
+         *     events newer than ``Last-Event-ID`` (an ISO-8601 ts on reconnect), then
+         *     subscribe to the LISTEN/NOTIFY fan-out and forward each notification
+         *     as a fresh SSE event with the event_ts as the SSE id (for resume).
+         *
+         *     Closes the stream when the run reaches a terminal status so the FE
+         *     cleanly stops the EventSource without retrying.
+         */
+        get: operations["stream_run_events_runs__run_id__events_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -6363,13 +6657,65 @@ export interface paths {
         };
         /**
          * List Run Events
-         * @description Recorded scheduler events for a run, ordered by event_ts.
+         * @description Recorded scheduler events for a run, ordered by event_ts ascending.
          *
          *     Populated by EventRecordingEmitter for both inline and queued runs —
          *     workflows executed as worker jobs (no live stream) still leave a full
          *     history in wf_node_events.
+         *
+         *     Pagination + filtering (Phase 3.5): callers can pass ``after_event_ts``
+         *     to fetch only the events they haven't seen, plus ``limit`` and
+         *     ``event_type`` to bound the response. The default unbounded response
+         *     is preserved for backward compat.
          */
         get: operations["list_run_events_runs__run_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/cost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Run Cost
+         * @description Per-run cost summary. Joins cx_request on the run's conversation_id.
+         *
+         *     Returns zeros if the run has no associated LLM calls (e.g. a pure-
+         *     deterministic workflow). The cost field on cx_request is already in
+         *     USD; total_cost_usd is the straight sum.
+         */
+        get: operations["get_run_cost_runs__run_id__cost_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/cost-rollup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Cost Rollup
+         * @description Time-windowed cost rollup for one workflow definition.
+         *
+         *     Aggregates cx_request rows across every run of the definition in the
+         *     last ``range`` days. Returns a per-day breakdown the UI can chart.
+         */
+        get: operations["get_workflow_cost_rollup_workflows__definition_id__cost_rollup_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6468,14 +6814,87 @@ export interface paths {
          * Fire Trigger
          * @description Fire a trigger on demand. Accepts webhook + manual kinds.
          *
-         *     Webhook triggers with a configured ``webhook_secret`` REQUIRE the
-         *     caller to pass it via ``X-Matrx-Trigger-Secret``. That's the auth
-         *     boundary — no JWT needed (webhook callers are usually machines).
-         *     Manual triggers and webhook triggers without a secret are public;
-         *     rate-limiting + tenant-scoped definitions are the operational
-         *     controls (future: RLS policies).
+         *     Auth model:
+         *       - ``kind="webhook"`` (must have a ``webhook_secret`` per the create
+         *         guard): caller provides the secret in ``X-Matrx-Trigger-Secret``.
+         *         No JWT required — webhook callers are usually machines that don't
+         *         have user identities.
+         *       - ``kind="manual"``: requires a JWT and the caller must own the
+         *         trigger. There is no anonymous manual fire — that would let any
+         *         attacker who guessed a trigger UUID run the workflow on the
+         *         owner's account.
+         *       - ``kind="cron"``: fires automatically; the /fire endpoint refuses.
          */
         post: operations["fire_trigger_triggers__trigger_id__fire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/triggers/{trigger_id}/fires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Trigger Fires
+         * @description Owner-gated audit log for one trigger. Most-recent first.
+         *
+         *     Returns rows from wf_trigger_fire — one per fire attempt regardless of
+         *     outcome. status='queued' = run enqueued; status='failed' = an exception
+         *     blew up before the enqueue completed.
+         */
+        get: operations["list_trigger_fires_triggers__trigger_id__fires_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recovery/handle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Handle Recovery
+         * @description Run the recovery agent against an XML envelope, return a typed proposal.
+         *
+         *     Owner-gated on both workflow_id and (if present) run_id. The LLM call
+         *     is best-effort — on failure the response carries `fallback=true` with
+         *     a deterministic ForceFailProposal so the FE always renders something.
+         */
+        post: operations["handle_recovery_api_recovery_handle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recovery/audit/{audit_id}/applied": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Recovery Applied
+         * @description Flag the audit row as applied / overridden so analytics on agent
+         *     acceptance can run later. Caller-owned via auth.uid() RLS.
+         */
+        post: operations["mark_recovery_applied_api_recovery_audit__audit_id__applied_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8091,6 +8510,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/images/ops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Image Ops
+         * @description Machine-readable catalog of every registered image edit op.
+         *
+         *     The FE renders the editor's op picker dynamically off this response.
+         *     ``backends`` reports whether the optional rembg / opencv backends are
+         *     installed in the current deployment — the FE hides the corresponding
+         *     ops when a backend is missing.
+         */
+        get: operations["list_image_ops_images_ops_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Edit Image
+         * @description Run any registered image op against a cloud file.
+         *
+         *     Produces a NEW cld_files row tagged with derivation metadata. The
+         *     source row is never modified. Optional ``mask_id`` restricts the
+         *     op's effect to the masked region (where supported).
+         */
+        post: operations["edit_image_images_edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/bg-remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bg Remove
+         * @description Foreground extraction via rembg.
+         *
+         *     When ``mask_id`` is supplied, the mask is OR'd into the rembg alpha
+         *     output — pixels marked in the mask stay opaque even if rembg would
+         *     have removed them ("definitely foreground, never strip").
+         */
+        post: operations["bg_remove_images_bg_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/images/inpaint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inpaint
+         * @description Content-aware fill within the mask region (OpenCV Telea / NS).
+         *
+         *     For Wave 2 this endpoint will accept the same wire shape but route
+         *     diffusion-based inpainting to a GPU microservice when ``method`` is
+         *     set to one of those backends.
+         */
+        post: operations["inpaint_images_inpaint_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/virtual": {
         parameters: {
             query?: never;
@@ -8771,6 +9287,174 @@ export interface paths {
         };
         /** List Providers */
         get: operations["list_providers_admin_ops_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/watchdog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Watchdog Status
+         * @description Health snapshot of every registered watched-lifecycle table.
+         *
+         *     Runs the same SELECT the sweeper would but doesn't transition anything
+         *     — it's a read-only view. The dashboard polls this on a short interval
+         *     so operators see the live state.
+         */
+        get: operations["get_watchdog_status_admin_persistence_watchdog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/watchdog/{table}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Stuck Rows
+         * @description List currently-stuck rows for one watched table.
+         */
+        get: operations["list_stuck_rows_admin_persistence_watchdog__table__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Failures
+         * @description Paginated list of failure rows. Default filter: unrecovered only.
+         */
+        get: operations["list_failures_admin_persistence_failures_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/failures/{failure_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Failure Detail
+         * @description Full payload + traceback for one failure row.
+         */
+        get: operations["get_failure_detail_admin_persistence_failures__failure_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/failures/{failure_id}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay One
+         * @description Replay one failure row.
+         */
+        post: operations["replay_one_admin_persistence_failures__failure_id__replay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/failures/replay-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay Batch
+         * @description Replay every unrecovered row matching the filter.
+         */
+        post: operations["replay_batch_admin_persistence_failures_replay_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/failures/{failure_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Failure
+         * @description Mark a failure ``recovered_at = now()`` without replaying.
+         *
+         *     Use when the row is no longer relevant — stale data, manually
+         *     fixed in SQL, or a known-unfixable bug whose row stays as a
+         *     monument.
+         */
+        post: operations["dismiss_failure_admin_persistence_failures__failure_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Summary
+         * @description Single-shot top-level health snapshot for the dashboard home.
+         */
+        get: operations["get_summary_admin_persistence_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10097,16 +10781,7 @@ export interface components {
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
-            /**
-             * Client Tools
-             * @default []
-             */
-            client_tools: string[];
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            user?: components["schemas"]["UserOverrides"] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
             sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
@@ -10598,6 +11273,11 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ArchiveWorkflowResponse */
+        ArchiveWorkflowResponse: {
+            /** Archived */
+            archived: boolean;
+        };
         /** Asset */
         Asset: {
             /**
@@ -10963,6 +11643,42 @@ export interface components {
             x1: number;
             /** Y1 */
             y1: number;
+        };
+        /** BgRemoveParams */
+        BgRemoveParams: {
+            /**
+             * Model
+             * @default u2net
+             * @enum {string}
+             */
+            model: "u2net" | "u2netp" | "u2net_human_seg" | "u2net_cloth_seg" | "silueta" | "isnet-general-use" | "isnet-anime" | "birefnet-general" | "birefnet-portrait";
+            /**
+             * Alpha Matting
+             * @default false
+             */
+            alpha_matting: boolean;
+            /**
+             * Alpha Matting Foreground Threshold
+             * @default 240
+             */
+            alpha_matting_foreground_threshold: number;
+            /**
+             * Alpha Matting Background Threshold
+             * @default 10
+             */
+            alpha_matting_background_threshold: number;
+            /**
+             * Alpha Matting Erode Size
+             * @default 10
+             */
+            alpha_matting_erode_size: number;
+            /** Background Color */
+            background_color?: string | null;
+            /**
+             * Post Process Mask
+             * @default true
+             */
+            post_process_mask: boolean;
         };
         /** Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post */
         Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
@@ -11407,6 +12123,15 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** CacheBustResponse */
+        CacheBustResponse: {
+            /** Cleared */
+            cleared: string[];
+            /** Tool Registry Count */
+            tool_registry_count: number;
+            /** Timestamp */
+            timestamp: string;
+        };
         /**
          * CacheBypass
          * @description Opt-in cache invalidation flags attached to an AI request body.
@@ -11506,6 +12231,22 @@ export interface components {
             user_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** CancelRunResponse */
+        CancelRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Cancelling */
+            cancelling: boolean;
+            /** Previous Status */
+            previous_status: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "graceful" | "immediate";
+            /** Task Cancelled */
+            task_cancelled: boolean;
         };
         /** CategorizeRequest */
         CategorizeRequest: {
@@ -11699,11 +12440,8 @@ export interface components {
             video_input?: unknown | null;
             /** Video Action */
             video_action?: ("generate" | "edit" | "extend") | null;
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            /** Custom Tools */
+            custom_tools?: unknown[] | null;
             /** Mcp Servers */
             mcp_servers?: string[] | null;
             /** Compaction Settings */
@@ -11764,16 +12502,12 @@ export interface components {
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
+            user?: components["schemas"]["UserOverrides"] | null;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
             } | null;
-            /**
-             * Client Tools
-             * @default []
-             */
-            client_tools: string[];
             ide_state?: components["schemas"]["IdeState"] | null;
             sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
@@ -11846,6 +12580,38 @@ export interface components {
             name?: string | null;
             input?: components["schemas"]["JsonValue"] | null;
             arguments?: components["schemas"]["JsonValue"] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * CheckpointRecord
+         * @description ``wf_checkpoint`` row — durable per-super-step snapshot.
+         */
+        CheckpointRecord: {
+            /** Checkpoint Id */
+            checkpoint_id?: string | null;
+            /** Run Id */
+            run_id?: string | null;
+            /** Thread Id */
+            thread_id?: string | null;
+            /** Parent Checkpoint Id */
+            parent_checkpoint_id?: string | null;
+            /** Step */
+            step?: number | null;
+            /** Channel Values */
+            channel_values?: {
+                [key: string]: unknown;
+            } | null;
+            /** Pending Writes */
+            pending_writes?: unknown[] | null;
+            /** Next Invocations */
+            next_invocations?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Interrupt Payload */
+            interrupt_payload?: {
+                [key: string]: unknown;
+            } | null;
         } & {
             [key: string]: unknown;
         };
@@ -12081,10 +12847,10 @@ export interface components {
          * ClientContext
          * @description Request envelope describing the calling client's capabilities + state.
          *
-         *     Replaces per-feature fields like ``ide_state`` and ``sandbox``. A client
-         *     declares what it can do via a set of capability names and carries typed
-         *     state keyed by capability name for tools that need to read it at
-         *     execution time.
+         *     A client declares what it can do via a set of capability names, carries
+         *     typed state keyed by capability name, may amend its declared manifest
+         *     for this specific request (see ``SurfaceAmendments``), and may declare
+         *     additional third-party MCP servers for this session.
          *
          *     Wire shape::
          *
@@ -12093,13 +12859,19 @@ export interface components {
          *           "state": {
          *             "editor-state": {"active_file": {"path": "...", ...}, ...},
          *             "sandbox-fs":   {"sandbox_id": "...", ...}
-         *           }
+         *           },
+         *           "amendments": {
+         *             "add":    [{"kind": "registered", "name": "..."}],
+         *             "remove": ["matrx-extend:foo"]
+         *           },
+         *           "mcp": ["openai-tools", "stripe-mcp"]
          *         }
          *
-         *     A client that's both a coding IDE and a browser extension declares both
-         *     capabilities and supplies both payloads. No per-client field
-         *     proliferation — adding a new client type is a registry entry, not a
-         *     request schema change.
+         *     The ``mcp`` field lists slugs of pre-registered ``public.mcp_servers``
+         *     rows the request wants active for this session in addition to whatever
+         *     MCPs the agent definition already includes. Per TOOL_ROUTING_RULES.md
+         *     §10, MCP tools obey the same name-uniqueness rule (§4) as everything
+         *     else.
          */
         ClientContext: {
             /** Capabilities */
@@ -12110,6 +12882,9 @@ export interface components {
                     [key: string]: unknown;
                 };
             };
+            amendments?: components["schemas"]["SurfaceAmendments"] | null;
+            /** Mcp */
+            mcp?: string[];
         };
         /** ClientToolResult */
         ClientToolResult: {
@@ -12497,16 +13272,7 @@ export interface components {
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
-            /**
-             * Client Tools
-             * @default []
-             */
-            client_tools: string[];
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            user?: components["schemas"]["UserOverrides"] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
             /**
              * Context
@@ -12969,6 +13735,65 @@ export interface components {
             /** Required */
             required?: string[];
         };
+        /** CxExplorerFacetEntry */
+        CxExplorerFacetEntry: {
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
+        };
+        /** CxExplorerFacets */
+        CxExplorerFacets: {
+            totals: components["schemas"]["CxExplorerTotals"];
+            /**
+             * Status
+             * @description Distinct (status, count) — uses last_request_status when present, otherwise the conversation's own status. Powers the status filter chips.
+             */
+            status: components["schemas"]["CxExplorerFacetEntry"][];
+            /**
+             * Source App
+             * @description Distinct (source_app, count). Drives the app filter.
+             */
+            source_app: components["schemas"]["CxExplorerFacetEntry"][];
+        };
+        /**
+         * CxExplorerTotals
+         * @description Sums across every row matching the current filter — not just the
+         *     visible page. Drives the "Showing 1–50 of 2,480 · 8.4M tokens · $1.20"
+         *     line in the landing-page footer.
+         */
+        CxExplorerTotals: {
+            /** Count */
+            count: number;
+            /** Total Tokens */
+            total_tokens: number;
+            /** Total Cost */
+            total_cost: number;
+            /** Total Duration Ms */
+            total_duration_ms: number;
+            /** Total Errors */
+            total_errors: number;
+            /** Total Tool Calls */
+            total_tool_calls: number;
+            /** Total Snapshots */
+            total_snapshots: number;
+        };
+        /**
+         * DailyCostBreakdown
+         * @description One day's slice of the workflow cost rollup.
+         */
+        DailyCostBreakdown: {
+            /** Date */
+            date: string;
+            /** Runs */
+            runs: number;
+            /** Cost Usd */
+            cost_usd: number;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
+        };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
             /** Id */
@@ -13242,6 +14067,46 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * DefinitionRecord
+         * @description ``wf_definition`` (or ``wf_definition_version``) row as returned by
+         *     the matrx-graph DefinitionStore. Open shape — Pydantic models in
+         *     ``matrx_graph.db.definition_store`` are the source of truth.
+         */
+        DefinitionRecord: {
+            /** Id */
+            id?: string | null;
+            /** Definition Id */
+            definition_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Version */
+            version?: number | null;
+            /** Is Version */
+            is_version?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Archived */
+            is_archived?: boolean | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Category */
+            category?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** DeleteAllMessagesResponse */
         DeleteAllMessagesResponse: {
             /** Deleted */
@@ -13390,6 +14255,15 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DiagSpawnDetachedResponse */
+        DiagSpawnDetachedResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Message */
+            message: string;
+            /** Detached Tasks In Set */
+            detached_tasks_in_set: number;
+        };
         /** DirectChatRequest */
         DirectChatRequest: {
             /**
@@ -13413,6 +14287,16 @@ export interface components {
             job_id: string;
             /** Deleted */
             deleted: number;
+        };
+        /** DismissResponse */
+        DismissResponse: {
+            /** Id */
+            id: string;
+            /**
+             * Dismissed At
+             * Format: date-time
+             */
+            dismissed_at: string;
         };
         /** DistinctValuesResponse */
         DistinctValuesResponse: {
@@ -13611,6 +14495,43 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * EditInputsRetryProposal
+         * @description Replace the failed invocation's inputs and retry.
+         */
+        EditInputsRetryProposal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "edit_inputs_retry";
+            /** Node Id */
+            node_id: string;
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * EditWorkflowProposal
+         * @description Suggest a graph edit (config / schema / structure). Cannot be applied
+         *     automatically — surfaced to the user as a recommendation.
+         */
+        EditWorkflowProposal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "edit_workflow";
+            /** Node Id */
+            node_id?: string | null;
+            /** Suggested Diff */
+            suggested_diff: {
+                [key: string]: unknown;
+            };
+            /** Rationale */
+            rationale: string;
         };
         /** EntityCreateBody */
         EntityCreateBody: {
@@ -14035,6 +14956,96 @@ export interface components {
              * @default user
              */
             scope: string;
+        };
+        /**
+         * FailureDetail
+         * @description One ``system_write_failure`` row — detail view (full payload).
+         */
+        FailureDetail: {
+            /** Id */
+            id: string;
+            /** Op Id */
+            op_id: string;
+            /** Table Target */
+            table_target: string;
+            /**
+             * Op Type
+             * @enum {string}
+             */
+            op_type: "insert" | "update" | "delete";
+            /** Request Id */
+            request_id: string | null;
+            /** User Id */
+            user_id: string | null;
+            /** Conversation Id */
+            conversation_id: string | null;
+            primary_key: components["schemas"]["JsonValue"];
+            payload: components["schemas"]["JsonValue"];
+            depends_on: components["schemas"]["JsonValue"] | null;
+            /** Error Text */
+            error_text: string;
+            /** Traceback */
+            traceback: string | null;
+            /**
+             * Failed At
+             * Format: date-time
+             */
+            failed_at: string;
+            /** Retry Count */
+            retry_count: number;
+            /** Recovered At */
+            recovered_at: string | null;
+            /** Recovery Op Id */
+            recovery_op_id: string | null;
+        };
+        /** FailureListResponse */
+        FailureListResponse: {
+            /** Rows */
+            rows: components["schemas"]["FailureSummary"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * FailureSummary
+         * @description One ``system_write_failure`` row — list view (payload truncated).
+         */
+        FailureSummary: {
+            /** Id */
+            id: string;
+            /** Op Id */
+            op_id: string;
+            /** Table Target */
+            table_target: string;
+            /**
+             * Op Type
+             * @enum {string}
+             */
+            op_type: "insert" | "update" | "delete";
+            /** Request Id */
+            request_id: string | null;
+            /** User Id */
+            user_id: string | null;
+            /** Conversation Id */
+            conversation_id: string | null;
+            /** Error Text */
+            error_text: string;
+            /**
+             * Failed At
+             * Format: date-time
+             */
+            failed_at: string;
+            /** Retry Count */
+            retry_count: number;
+            /** Recovered At */
+            recovered_at: string | null;
+            /** Recovery Op Id */
+            recovery_op_id: string | null;
+            /** Age Secs */
+            age_secs: number;
         };
         /**
          * FeedbackIterationRequest
@@ -14696,6 +15707,30 @@ export interface components {
             disabled: boolean;
         };
         /**
+         * ForceFailProposal
+         * @description The agent recommends giving up on this run.
+         */
+        ForceFailProposal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "force_fail";
+            /** Rationale */
+            rationale: string;
+        };
+        /** ForceFailRunResponse */
+        ForceFailRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Force Failed */
+            force_failed: boolean;
+            /** Previous Status */
+            previous_status: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
          * ForkAndRunRequest
          * @description Fork an existing conversation, then run a new turn on the fork.
          *
@@ -14751,16 +15786,7 @@ export interface components {
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
-            /**
-             * Client Tools
-             * @default []
-             */
-            client_tools: string[];
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            user?: components["schemas"]["UserOverrides"] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
             /**
              * Context
@@ -15067,6 +16093,106 @@ export interface components {
             /** Folders */
             folders: string[];
         };
+        /** ImageBgRemoveRequest */
+        ImageBgRemoveRequest: {
+            /** Source Id */
+            source_id: string;
+            /** Mask Id */
+            mask_id?: string | null;
+            params?: components["schemas"]["BgRemoveParams"] | null;
+            output?: components["schemas"]["ImageEditOutput"];
+        };
+        /** ImageEditOutput */
+        ImageEditOutput: {
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility: "private" | "public" | "shared";
+            /** Folder */
+            folder?: string | null;
+            /**
+             * Format
+             * @default png
+             * @enum {string}
+             */
+            format: "png" | "jpeg" | "webp" | "avif";
+            /**
+             * Quality
+             * @default 90
+             */
+            quality: number;
+            /** Preset */
+            preset?: string | null;
+            /** Filename */
+            filename?: string | null;
+        };
+        /**
+         * ImageEditRequest
+         * @description Op-discriminated image edit. ``op`` selects which registered op runs;
+         *     ``params`` is the op-specific Pydantic body (validated by the dispatcher).
+         */
+        ImageEditRequest: {
+            /** Source Id */
+            source_id: string;
+            /** Mask Id */
+            mask_id?: string | null;
+            /** Op */
+            op: string;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            };
+            output?: components["schemas"]["ImageEditOutput"];
+        };
+        /** ImageInpaintRequest */
+        ImageInpaintRequest: {
+            /** Source Id */
+            source_id: string;
+            /** Mask Id */
+            mask_id: string;
+            params?: components["schemas"]["InpaintParams"] | null;
+            output?: components["schemas"]["ImageEditOutput"];
+        };
+        /**
+         * ImageOpDescriptor
+         * @description One entry in the ops catalog returned by GET /images/ops.
+         */
+        ImageOpDescriptor: {
+            /** Name */
+            name: string;
+            /** Family */
+            family: string;
+            /** Description */
+            description: string;
+            /** Requires Mask */
+            requires_mask: boolean;
+            /** Supports Mask */
+            supports_mask: boolean;
+            /** Preserves Alpha */
+            preserves_alpha: boolean;
+            /** Params Schema */
+            params_schema: {
+                [key: string]: unknown;
+            };
+        };
+        /** ImageOpsCatalog */
+        ImageOpsCatalog: {
+            /** Ops */
+            ops: components["schemas"]["ImageOpDescriptor"][];
+            /** Aspect Ratios */
+            aspect_ratios: {
+                [key: string]: [
+                    number,
+                    number
+                ];
+            };
+            /** Backends */
+            backends: {
+                [key: string]: boolean;
+            };
+        };
         /**
          * ImpairmentAvailableAttributes
          * @description Which attributes a given impairment definition expects/allows.
@@ -15254,6 +16380,20 @@ export interface components {
              */
             description: string;
             input_schema?: components["schemas"]["CustomToolInputSchema"];
+        };
+        /** InpaintParams */
+        InpaintParams: {
+            /**
+             * Method
+             * @default telea
+             * @enum {string}
+             */
+            method: "telea" | "ns";
+            /**
+             * Radius
+             * @default 3
+             */
+            radius: number;
         };
         /**
          * InputDataType
@@ -15779,51 +16919,6 @@ export interface components {
              */
             classifier_version: string;
         };
-        /**
-         * LegacyCustomTool
-         * @description Deprecated request-side custom-tool spec.
-         *
-         *     New code should send ``tools: [{"kind": "inline", ...}]`` (``ToolSpec``)
-         *     instead. The router translates this shape to ``InlineToolSpec`` via
-         *     ``apply_unified_tools``.
-         */
-        LegacyCustomTool: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            input_schema?: components["schemas"]["LegacyCustomToolInputSchema"] | null;
-            inputSchema?: components["schemas"]["LegacyCustomToolInputSchema"] | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /**
-         * LegacyCustomToolInputSchema
-         * @description JSON Schema fragment describing a legacy custom tool's input.
-         *
-         *     Mirrors ``matrx_ai.tools.models.CustomToolInputSchema`` on the wire while
-         *     staying permissive — historical payloads sometimes include
-         *     ``additionalProperties``, ``description``, or other JSON Schema keywords
-         *     that this model lets through unchanged.
-         */
-        LegacyCustomToolInputSchema: {
-            /**
-             * Type
-             * @default object
-             */
-            type: string;
-            /** Properties */
-            properties?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /** Required */
-            required?: string[];
-        } & {
-            [key: string]: unknown;
-        };
         /** LegalSearchRequest */
         LegalSearchRequest: {
             /** Query */
@@ -16342,6 +17437,55 @@ export interface components {
             /** Facts */
             facts: components["schemas"]["ManifestFact"][];
         };
+        /** ManifestToolEntry */
+        ManifestToolEntry: {
+            /** Name */
+            name: string;
+            /**
+             * Disposition
+             * @enum {string}
+             */
+            disposition: "default" | "optional";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "registered" | "inline";
+            /** Delegate */
+            delegate: boolean;
+        };
+        /**
+         * ManualResultProposal
+         * @description User-supplied output for the failed node.
+         */
+        ManualResultProposal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "manual_result";
+            /** Node Id */
+            node_id: string;
+            /** Output */
+            output: {
+                [key: string]: unknown;
+            };
+        };
+        /** ManualResultRequest */
+        ManualResultRequest: {
+            /**
+             * Output
+             * @description User-supplied output to record for the failed node. Should validate against the node's output_schema — downstream nodes consume this exactly as if the executor produced it.
+             */
+            output: {
+                [key: string]: unknown;
+            };
+            /**
+             * Max Steps
+             * @default 1000
+             */
+            max_steps: number;
+        };
         /** MaskRequestBody */
         MaskRequestBody: {
             /** Spans */
@@ -16621,6 +17765,22 @@ export interface components {
              */
             include_preamble: boolean;
         };
+        /**
+         * ModelCostBreakdown
+         * @description Cost subtotal for one model within a run.
+         */
+        ModelCostBreakdown: {
+            /** Model Name */
+            model_name: string;
+            /** Request Count */
+            request_count: number;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
+            /** Cost Usd */
+            cost_usd: number;
+        };
         /** MoveArgs */
         MoveArgs: {
             /** New Parent Id */
@@ -16649,6 +17809,50 @@ export interface components {
             data?: {
                 [key: string]: unknown;
             };
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * NodeTypeDescriptor
+         * @description One palette item from ``GET /workflow/node-types`` /
+         *     ``GET /actions``. Shape varies per node — fields beyond the
+         *     documented core are passed through verbatim.
+         */
+        NodeTypeDescriptor: {
+            /** Type */
+            type?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Determinism */
+            determinism?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Emits Stream */
+            emits_stream?: boolean | null;
+            /** Can Interrupt */
+            can_interrupt?: boolean | null;
+            /** Input Schema */
+            input_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /** Config Schema */
+            config_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output Schema */
+            output_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /** Handles */
+            handles?: {
+                [key: string]: unknown;
+            }[] | null;
         } & {
             [key: string]: unknown;
         };
@@ -16853,6 +18057,15 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** PauseRunResponse */
+        PauseRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Pausing */
+            pausing: boolean;
+            /** Previous Status */
+            previous_status: string;
         };
         /** PdfCropBox */
         PdfCropBox: {
@@ -17313,6 +18526,24 @@ export interface components {
             expires_at?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * PersistenceSummary
+         * @description Top-level dashboard signal.
+         */
+        PersistenceSummary: {
+            /** Stuck Rows Total */
+            stuck_rows_total: number;
+            /** Tables With Stuck Rows */
+            tables_with_stuck_rows: number;
+            /** Tables Breaching Sla */
+            tables_breaching_sla: number;
+            /** Unrecovered Failures */
+            unrecovered_failures: number;
+            /** Oldest Unrecovered Failure Age Secs */
+            oldest_unrecovered_failure_age_secs: number | null;
+            /** Last Failure At */
+            last_failure_at: string | null;
         };
         /** PicklistCreate */
         PicklistCreate: {
@@ -17821,16 +19052,7 @@ export interface components {
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
-            /**
-             * Client Tools
-             * @default []
-             */
-            client_tools: string[];
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            user?: components["schemas"]["UserOverrides"] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
             /**
              * Context
@@ -17966,6 +19188,69 @@ export interface components {
             page_count: number;
             /** Pages */
             pages: components["schemas"]["ReadingOrderPage"][];
+        };
+        /**
+         * RecoveryApplyAck
+         * @description Lightweight ack for POST /api/recovery/audit/{audit_id}/applied.
+         *
+         *     The FE pings this when the user clicks Apply (or chooses to override
+         *     the proposal). Updates was_applied / was_overridden on the audit row.
+         */
+        RecoveryApplyAck: {
+            /** Audit Id */
+            audit_id: string;
+            /** Was Applied */
+            was_applied: boolean;
+            /** Was Overridden */
+            was_overridden: boolean;
+        };
+        /**
+         * RecoveryRequest
+         * @description Body for POST /api/recovery/handle.
+         */
+        RecoveryRequest: {
+            /**
+             * Envelope Xml
+             * @description The XML envelope built by the studio's CopyMenu via lib/xml-envelope.ts. Carries workflow context + payload + available_actions so the agent can suggest a fix without follow-up questions.
+             */
+            envelope_xml: string;
+            /**
+             * Surface
+             * @default node_error
+             * @enum {string}
+             */
+            surface: "node_error" | "node_output" | "node_inputs" | "checkpoint" | "run_summary" | "validation_issue" | "stream_log" | "raw_value";
+            /** Workflow Id */
+            workflow_id: string;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Failed Node Id
+             * @description Optional hint to the agent: which node the user wants the proposal to target. Falls back to the run's first failed node.
+             */
+            failed_node_id?: string | null;
+        };
+        /**
+         * RecoveryResponse
+         * @description Returned by POST /api/recovery/handle.
+         */
+        RecoveryResponse: {
+            /** Audit Id */
+            audit_id: string;
+            /** Proposal */
+            proposal: components["schemas"]["RetryProposal"] | components["schemas"]["SkipProposal"] | components["schemas"]["ManualResultProposal"] | components["schemas"]["EditInputsRetryProposal"] | components["schemas"]["EditWorkflowProposal"] | components["schemas"]["ForceFailProposal"];
+            /** Agent Reasoning */
+            agent_reasoning: string;
+            /** Confidence */
+            confidence: number;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Fallback
+             * @description True when the agent call failed and the response is a deterministic fallback (typically a force_fail with the error message in rationale). The UI should warn the user before applying a fallback proposal.
+             * @default false
+             */
+            fallback: boolean;
         };
         /** RedactPatternRequest */
         RedactPatternRequest: {
@@ -18494,6 +19779,48 @@ export interface components {
             /** Summary Position */
             summary_position: number;
         };
+        /**
+         * ReplayBatchRequest
+         * @description Filter for batch replay. Empty body = retry every unrecovered row.
+         */
+        ReplayBatchRequest: {
+            /** Table Target */
+            table_target?: string | null;
+            /** Error Text Contains */
+            error_text_contains?: string | null;
+            /**
+             * Max Age Secs
+             * @description Only retry rows whose failed_at is within this many seconds. Defaults to no time limit.
+             */
+            max_age_secs?: number | null;
+            /**
+             * Limit
+             * @default 100
+             */
+            limit: number;
+            /**
+             * Only Default Error Class
+             * @description If True, only retry the InterfaceError class that the original flush-sequentialization fix targeted. If False, retry all unrecovered rows regardless of cause.
+             * @default true
+             */
+            only_default_error_class: boolean;
+        };
+        /**
+         * ReplayResponse
+         * @description Result of a single-row or batch replay.
+         */
+        ReplayResponse: {
+            /** Candidates */
+            candidates: number;
+            /** Recovered Count */
+            recovered_count: number;
+            /** Still Failed Count */
+            still_failed_count: number;
+            /** Skipped Count */
+            skipped_count: number;
+            /** Errors */
+            errors?: string[];
+        };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
             /** Repositories */
@@ -18602,16 +19929,7 @@ export interface components {
             /** Tools Replace */
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
-            /**
-             * Client Tools
-             * @default []
-             */
-            client_tools: string[];
-            /**
-             * Custom Tools
-             * @default []
-             */
-            custom_tools: components["schemas"]["LegacyCustomTool"][];
+            user?: components["schemas"]["UserOverrides"] | null;
         };
         /** ResumeRunRequest */
         ResumeRunRequest: {
@@ -18670,6 +19988,44 @@ export interface components {
              * @default false
              */
             promote_to_extension: boolean;
+        };
+        /** RetryNodeRequest */
+        RetryNodeRequest: {
+            /**
+             * Inputs
+             * @description If provided, replaces the failed invocation's inputs. Useful for 'edit inputs and retry' — the user fixed a bad URL, tweaked a prompt variable, etc. Leave None to retry with the original inputs.
+             */
+            inputs?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Attempt Bump
+             * @description If True (default), the retried invocation runs at attempt+1 so the prior failure outcome stays as a forensic record. If False, the original outcome is overwritten by the new attempt. Leave True unless you have a specific reason to discard history.
+             * @default true
+             */
+            attempt_bump: boolean;
+            /**
+             * Max Steps
+             * @default 1000
+             */
+            max_steps: number;
+        };
+        /**
+         * RetryProposal
+         * @description Re-run the failed node with the same (or edited) inputs.
+         */
+        RetryProposal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "retry";
+            /** Node Id */
+            node_id: string;
+            /** Inputs */
+            inputs?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** RetrySubmitRequest */
         RetrySubmitRequest: {
@@ -18753,6 +20109,84 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * RunCostSummary
+         * @description Aggregated cost for one workflow run.
+         *
+         *     Computed by joining cx_request on the run's conversation_id. Total
+         *     dollars are derived client-side: `total_cost_dollars = total_cost_usd`
+         *     (cx_request.cost is already in USD).
+         */
+        RunCostSummary: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Total Cost Usd
+             * @default 0
+             */
+            total_cost_usd: number;
+            /**
+             * Total Input Tokens
+             * @default 0
+             */
+            total_input_tokens: number;
+            /**
+             * Total Output Tokens
+             * @default 0
+             */
+            total_output_tokens: number;
+            /**
+             * Total Cached Tokens
+             * @default 0
+             */
+            total_cached_tokens: number;
+            /**
+             * Request Count
+             * @default 0
+             */
+            request_count: number;
+            /**
+             * Avg Request Duration Ms
+             * @default 0
+             */
+            avg_request_duration_ms: number;
+            /** By Model */
+            by_model?: components["schemas"]["ModelCostBreakdown"][];
+        };
+        /**
+         * RunEventRecord
+         * @description One row from ``wf_node_events``. Shape mirrors
+         *     ``matrx_graph.types.events`` — payload carries the full original
+         *     Pydantic event model_dump.
+         */
+        RunEventRecord: {
+            /** Event Type */
+            event_type: string;
+            /** Step */
+            step?: number | null;
+            /** Node Id */
+            node_id?: string | null;
+            /** Spec Type */
+            spec_type?: string | null;
+            /** Attempt */
+            attempt?: number | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Checkpoint Id */
+            checkpoint_id?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Event Ts */
+            event_ts: unknown;
+        } & {
+            [key: string]: unknown;
+        };
         /** RunExtractionRequest */
         RunExtractionRequest: {
             /** Job Id */
@@ -18787,6 +20221,67 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides: boolean;
+        };
+        /**
+         * RunRecord
+         * @description ``wf_run`` row as returned by RunStore.load / list_recent /
+         *     list_for_definition.
+         */
+        RunRecord: {
+            /** Id */
+            id?: string | null;
+            /** Thread Id */
+            thread_id?: string | null;
+            /** Parent Run Id */
+            parent_run_id?: string | null;
+            /** Definition Id */
+            definition_id?: string | null;
+            /** Definition Version Id */
+            definition_version_id?: string | null;
+            /** Definition Hash */
+            definition_hash?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Input */
+            input?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output */
+            output?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Interrupt Payload */
+            interrupt_payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Steps Executed */
+            steps_executed?: number | null;
+            /** Last Checkpoint Id */
+            last_checkpoint_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Agent Version Id */
+            agent_version_id?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
         };
         /** RunResponse */
         RunResponse: {
@@ -18862,6 +20357,11 @@ export interface components {
             initial_overrides?: {
                 [key: string]: unknown;
             };
+            /**
+             * Skip Node Ids
+             * @description Node IDs to short-circuit pre-emptively. Each one emits a node_skipped event with empty output and lets downstream edges route an empty payload. Use this when you want to test the workflow without firing a slow LLM step, an external API call, or any expensive node. Downstream nodes may break if they require fields from the skipped node — that's the trade-off.
+             */
+            skip_node_ids?: string[];
             /**
              * Max Steps
              * @default 1000
@@ -19415,6 +20915,38 @@ export interface components {
              */
             enabled: boolean;
         };
+        /** SkipNodeRequest */
+        SkipNodeRequest: {
+            /**
+             * Output
+             * @description Output to record for the skipped node. Defaults to {} — downstream nodes see an empty payload. The scheduler's idempotency replay treats this exactly like a successful executor run.
+             */
+            output?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Max Steps
+             * @default 1000
+             */
+            max_steps: number;
+        };
+        /**
+         * SkipProposal
+         * @description Synthesize a (possibly empty) output and continue.
+         */
+        SkipProposal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "skip";
+            /** Node Id */
+            node_id: string;
+            /** Output */
+            output?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** SnapBboxBody */
         SnapBboxBody: {
             /** Page Number */
@@ -19793,6 +21325,37 @@ export interface components {
             /** Stripped Region Ids */
             stripped_region_ids: string[];
         };
+        /**
+         * StuckRow
+         * @description One currently-stuck row in a watched table.
+         *
+         *     The payload is intentionally minimal — just the PK + age. Use the
+         *     table-specific explorer (cx-explorer, wf-explorer, etc.) to drill
+         *     into the full row.
+         */
+        StuckRow: {
+            primary_key: components["schemas"]["JsonValue"];
+            /**
+             * Aged At
+             * Format: date-time
+             */
+            aged_at: string;
+            /** Age Secs */
+            age_secs: number;
+        };
+        /** StuckRowsResponse */
+        StuckRowsResponse: {
+            /** Table */
+            table: string;
+            /** Predicate */
+            predicate: string;
+            /** Max Age Secs */
+            max_age_secs: number;
+            /** Rows */
+            rows: components["schemas"]["StuckRow"][];
+            /** Count */
+            count: number;
+        };
         /** StudioRenderRequest */
         StudioRenderRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -19923,6 +21486,47 @@ export interface components {
             use_user_agent_overrides: boolean;
             /** Topic Id */
             topic_id?: string | null;
+        };
+        /**
+         * SurfaceAmendments
+         * @description Per-request delta against the surface's cached/declared manifest.
+         *
+         *     Per TOOL_ROUTING_RULES.md §11:
+         *       - ``add``:    extra tool specs the surface is bringing in this request.
+         *                     Treated as ``default`` disposition. Logged loudly for
+         *                     well-known surfaces (a signal that DB or surface code
+         *                     is out of sync).
+         *       - ``remove``: names to drop from the surface manifest for this
+         *                     request. Logged loudly for well-known surfaces.
+         *
+         *     ``rebind`` (changing executor binding for an already-bound name) is a
+         *     future field and not yet wired.
+         */
+        SurfaceAmendments: {
+            /** Add */
+            add?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            /** Remove */
+            remove?: string[];
+        };
+        /**
+         * SurfaceManifest
+         * @description The server's authoritative view of one surface's tool manifest.
+         *
+         *     Surface authors compare this against their local tool registrations on
+         *     every boot — a drift means either the DB or the surface code is stale
+         *     and needs reconciliation per TOOL_ROUTING_RULES.md §11.
+         */
+        SurfaceManifest: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Requires Auth */
+            requires_auth: boolean;
+            /** Default Tools */
+            default_tools: components["schemas"]["ManifestToolEntry"][];
+            /** Optional Tools */
+            optional_tools: components["schemas"]["ManifestToolEntry"][];
         };
         /** SyncClustersRequest */
         SyncClustersRequest: {
@@ -20125,6 +21729,44 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+        };
+        /** TestNodeRequest */
+        TestNodeRequest: {
+            /**
+             * Inputs
+             * @description Inputs to pass to the node's executor. Validated against the node's input_schema at execution time; a validation error comes back in the response.
+             */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Config Override
+             * @description Optional override for the node's saved config. Useful for tweaking a model / temperature / system prompt without editing and saving the workflow. None = use the saved config.
+             */
+            config_override?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** TestNodeResponse */
+        TestNodeResponse: {
+            /** Success */
+            success: boolean;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Node Id */
+            node_id: string;
+            /** Spec Type */
+            spec_type: string;
+            /** Output */
+            output?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * ToolRecord
@@ -20487,6 +22129,43 @@ export interface components {
              */
             enabled: boolean;
         };
+        /**
+         * TriggerFireRecord
+         * @description Audit row for one trigger fire attempt — wire shape of
+         *     GET /triggers/{id}/fires.
+         */
+        TriggerFireRecord: {
+            /** Id */
+            id: string;
+            /** Trigger Id */
+            trigger_id: string;
+            /** User Id */
+            user_id: string;
+            /**
+             * Fired At
+             * Format: date-time
+             */
+            fired_at: string;
+            /** Fired By User Id */
+            fired_by_user_id?: string | null;
+            /** Source Ip */
+            source_ip?: string | null;
+            /** Request Body Hash */
+            request_body_hash?: string | null;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "failed";
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** TriggerListResponse */
         TriggerListResponse: {
             /** Triggers */
@@ -20785,6 +22464,24 @@ export interface components {
             short_code?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /**
+         * UserOverrides
+         * @description Per-request user-level inclusion / exclusion overrides.
+         *
+         *     Per TOOL_ROUTING_RULES.md §5–§6, the user's add/remove pair has the
+         *     highest inclusion precedence: ``user.remove`` beats everything;
+         *     ``user.add`` beats ``agent.forbidden`` and surface defaults' implicit
+         *     silence on optional tools.
+         *
+         *     Validation: ``add ∩ remove`` must be empty — the merge primitive
+         *     rejects the request with HTTP 422 when the sets overlap.
+         */
+        UserOverrides: {
+            /** Add */
+            add?: string[];
+            /** Remove */
+            remove?: string[];
         };
         /** ValidateCronRequest */
         ValidateCronRequest: {
@@ -21119,6 +22816,50 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** WatchdogStatusResponse */
+        WatchdogStatusResponse: {
+            /** Tables */
+            tables: components["schemas"]["WatchdogTableStatus"][];
+            /** Total Stuck Rows */
+            total_stuck_rows: number;
+            /** Tables Breaching Sla */
+            tables_breaching_sla: number;
+            /** Last Swept At */
+            last_swept_at: string | null;
+        };
+        /**
+         * WatchdogTableStatus
+         * @description Health of one registered watchdog config.
+         */
+        WatchdogTableStatus: {
+            /** Table */
+            table: string;
+            /** Schema */
+            schema: string;
+            /** Predicate */
+            predicate: string;
+            /** Max Age Secs */
+            max_age_secs: number;
+            /** Transition To On Timeout */
+            transition_to_on_timeout: string | null;
+            /**
+             * Alert Channel
+             * @enum {string}
+             */
+            alert_channel: "critical" | "warning";
+            /** Age Column */
+            age_column: string;
+            /** Status Column */
+            status_column: string;
+            /** Primary Key Column */
+            primary_key_column: string;
+            /** Stuck Count */
+            stuck_count: number;
+            /** Oldest Stuck Age Secs */
+            oldest_stuck_age_secs: number | null;
+            /** Sla Breached */
+            sla_breached: boolean;
+        };
         /**
          * WcClaimRead
          * @description One row from `wc_claim`.
@@ -21291,6 +23032,43 @@ export interface components {
             life_pension_weekly?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * WorkflowCostRollup
+         * @description Aggregated cost for one definition across a time window.
+         */
+        WorkflowCostRollup: {
+            /** Workflow Id */
+            workflow_id: string;
+            /** Range Days */
+            range_days: number;
+            /**
+             * Range Start
+             * Format: date-time
+             */
+            range_start: string;
+            /**
+             * Range End
+             * Format: date-time
+             */
+            range_end: string;
+            /**
+             * Total Runs
+             * @default 0
+             */
+            total_runs: number;
+            /**
+             * Total Cost Usd
+             * @default 0
+             */
+            total_cost_usd: number;
+            /**
+             * Avg Run Cost Usd
+             * @default 0
+             */
+            avg_run_cost_usd: number;
+            /** Runs Per Day */
+            runs_per_day?: components["schemas"]["DailyCostBreakdown"][];
         };
         /** WriteArgs */
         WriteArgs: {
@@ -26958,6 +28736,46 @@ export interface operations {
             };
         };
     };
+    get_facets_admin_cx_explorer_facets_get: {
+        parameters: {
+            query?: {
+                /** @description Free-text filter across title/app/model/id */
+                q?: string | null;
+                /** @description Filter to conversations whose latest status equals this */
+                status?: string | null;
+                /** @description Filter to a single source_app */
+                source_app?: string | null;
+                /** @description Filter to a single user_id */
+                user_id?: string | null;
+                /** @description Max entries per facet axis */
+                facet_limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxExplorerFacets"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     jsonrpc_endpoint_mcp_debug_traces_post: {
         parameters: {
             query?: never;
@@ -27095,6 +28913,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_surface_manifest_api_surfaces__name__manifest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurfaceManifest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cache_bust_admin_tool_routing_cache_bust_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CacheBustResponse"];
                 };
             };
         };
@@ -32481,9 +34350,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["NodeTypeDescriptor"][];
                 };
             };
         };
@@ -32503,9 +34370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["NodeTypeDescriptor"][];
                 };
             };
         };
@@ -32530,9 +34395,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["DefinitionRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32565,9 +34428,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DefinitionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32601,9 +34462,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DefinitionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32634,9 +34493,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["ArchiveWorkflowResponse"];
                 };
             };
             /** @description Validation Error */
@@ -32667,9 +34524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["DefinitionRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32704,9 +34559,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DefinitionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32741,9 +34594,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DefinitionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32790,6 +34641,42 @@ export interface operations {
             };
         };
     };
+    test_single_node_workflows__definition_id__nodes__node_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestNodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_runs_for_workflow_workflows__definition_id__runs_get: {
         parameters: {
             query?: {
@@ -32810,9 +34697,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["RunRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32829,7 +34714,10 @@ export interface operations {
     start_workflow_run_workflows__definition_id__runs_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe. */
+                "X-Idempotency-Key"?: string | null;
+            };
             path: {
                 definition_id: string;
             };
@@ -32916,9 +34804,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["RunRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -32949,9 +34835,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["RunRecord"];
                 };
             };
             /** @description Validation Error */
@@ -32966,6 +34850,39 @@ export interface operations {
         };
     };
     cancel_run_runs__run_id__cancel_post: {
+        parameters: {
+            query?: {
+                mode?: "graceful" | "immediate";
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_run_runs__run_id__pause_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -32982,9 +34899,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PauseRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_paused_run_runs__run_id__resume_paused_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ResumeRunRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -33015,9 +34965,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ForceFailRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -33048,9 +34996,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["CheckpointRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -33064,7 +35010,115 @@ export interface operations {
             };
         };
     };
-    list_run_events_runs__run_id__events_get: {
+    retry_node_runs__run_id__nodes__node_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetryNodeRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skip_node_runs__run_id__nodes__node_id__skip_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SkipNodeRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manual_result_node_runs__run_id__nodes__node_id__manual_result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualResultRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_errored_run_runs__run_id__resume_errored_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -33081,9 +35135,141 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_run_events_runs__run_id__events_stream_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Last-Event-ID"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_run_events_runs__run_id__events_get: {
+        parameters: {
+            query?: {
+                limit?: number | null;
+                /** @description ISO-8601 timestamp. Only events strictly newer than this are returned. Used by the canvas poller for delta fetches. */
+                after_event_ts?: string | null;
+                /** @description Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored */
+                event_type?: string[] | null;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunEventRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_cost_runs__run_id__cost_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunCostSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workflow_cost_rollup_workflows__definition_id__cost_rollup_get: {
+        parameters: {
+            query?: {
+                range?: number;
+            };
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowCostRollup"];
                 };
             };
             /** @description Validation Error */
@@ -33112,9 +35298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DiagSpawnDetachedResponse"];
                 };
             };
         };
@@ -33288,6 +35472,8 @@ export interface operations {
             query?: never;
             header?: {
                 "x-matrx-trigger-secret"?: string | null;
+                /** @description Stable client-supplied key to dedupe duplicate webhook / manual fires within 24h. Honored only when the trigger owner is the effective user_id (i.e. always for manual triggers; webhook callers inherit the trigger's owner). */
+                "X-Idempotency-Key"?: string | null;
             };
             path: {
                 trigger_id: string;
@@ -33307,6 +35493,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FireResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trigger_fires_triggers__trigger_id__fires_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                trigger_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerFireRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    handle_recovery_api_recovery_handle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_recovery_applied_api_recovery_audit__audit_id__applied_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryApplyAck"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryApplyAck"];
                 };
             };
             /** @description Validation Error */
@@ -36337,6 +38624,131 @@ export interface operations {
             };
         };
     };
+    list_image_ops_images_ops_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageOpsCatalog"];
+                };
+            };
+        };
+    };
+    edit_image_images_edit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bg_remove_images_bg_remove_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageBgRemoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inpaint_images_inpaint_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageInpaintRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_adapters_virtual_get: {
         parameters: {
             query?: never;
@@ -37733,6 +40145,241 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+        };
+    };
+    get_watchdog_status_admin_persistence_watchdog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchdogStatusResponse"];
+                };
+            };
+        };
+    };
+    list_stuck_rows_admin_persistence_watchdog__table__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StuckRowsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_failures_admin_persistence_failures_get: {
+        parameters: {
+            query?: {
+                recovered?: "any" | "yes" | "no";
+                table_target?: string | null;
+                request_id?: string | null;
+                user_id?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FailureListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_failure_detail_admin_persistence_failures__failure_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                failure_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FailureDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replay_one_admin_persistence_failures__failure_id__replay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                failure_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplayResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replay_batch_admin_persistence_failures_replay_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReplayBatchRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplayResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_failure_admin_persistence_failures__failure_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                failure_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_summary_admin_persistence_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersistenceSummary"];
                 };
             };
         };

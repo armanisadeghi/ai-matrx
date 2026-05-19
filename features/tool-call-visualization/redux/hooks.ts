@@ -9,9 +9,9 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import {
-    selectOrderedToolLifecycles,
-    selectToolCallIdsInOrder,
-    selectToolLifecycle,
+  selectOrderedToolLifecycles,
+  selectToolCallIdsInOrder,
+  selectToolLifecycle,
 } from "./selectors";
 
 /**
@@ -22,20 +22,20 @@ import {
  * that produced the legacy "every card shows every tool" bug.
  */
 export function useOrderedToolLifecycles(
-    requestId: string,
+  requestId: string,
 ): ToolLifecycleEntry[] {
-    return useAppSelector(selectOrderedToolLifecycles(requestId));
+  return useAppSelector(selectOrderedToolLifecycles(requestId));
 }
 
 /** The callIds that have a tool_started event, in emission order. */
 export function useToolCallIdsInOrder(requestId: string): string[] {
-    return useAppSelector(selectToolCallIdsInOrder(requestId)) ?? [];
+  return useAppSelector(selectToolCallIdsInOrder(requestId));
 }
 
 /** A single tool lifecycle entry by callId. */
 export function useToolLifecycle(
-    requestId: string,
-    callId: string,
+  requestId: string,
+  callId: string,
 ): ToolLifecycleEntry | undefined {
-    return useAppSelector(selectToolLifecycle(requestId, callId));
+  return useAppSelector(selectToolLifecycle(requestId, callId));
 }

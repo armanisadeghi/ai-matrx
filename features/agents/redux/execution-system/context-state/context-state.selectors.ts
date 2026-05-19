@@ -23,8 +23,10 @@ export const DEFAULT_CONTEXT_WINDOW_TOKENS = 200_000;
 
 const empty: ContextStateEntry | null = null;
 
+const EMPTY_BY_CONVERSATION: Record<string, ContextStateEntry> = {};
+
 const selectSliceMap = (state: RootState) =>
-  state.contextState?.byConversationId ?? {};
+  state.contextState?.byConversationId ?? EMPTY_BY_CONVERSATION;
 
 export const selectContextState = (conversationId: string) =>
   createSelector(
@@ -45,13 +47,9 @@ export const selectEstimatedTokens = (conversationId: string) =>
     // it reflects exactly what the provider just counted. Use it when present;
     // fall back to a char-based estimate when no requests have landed yet.
     if (entry.lastRequestInputTokens > 0) {
-      return (
-        entry.lastRequestInputTokens + entry.lastRequestCachedTokens
-      );
+      return entry.lastRequestInputTokens + entry.lastRequestCachedTokens;
     }
-    return Math.ceil(
-      entry.totalCharsVisibleToModel / CHARS_PER_TOKEN_ESTIMATE,
-    );
+    return Math.ceil(entry.totalCharsVisibleToModel / CHARS_PER_TOKEN_ESTIMATE);
   });
 
 /**
@@ -62,13 +60,10 @@ export const selectContextFillRatio = (
   conversationId: string,
   windowTokens: number = DEFAULT_CONTEXT_WINDOW_TOKENS,
 ) =>
-  createSelector(
-    [selectEstimatedTokens(conversationId)],
-    (est): number => {
-      if (!windowTokens || windowTokens <= 0) return 0;
-      return Math.min(1, est / windowTokens);
-    },
-  );
+  createSelector([selectEstimatedTokens(conversationId)], (est): number => {
+    if (!windowTokens || windowTokens <= 0) return 0;
+    return Math.min(1, est / windowTokens);
+  });
 
 /** "Cache likely alive" approximation — mirrors the Python gate logic. */
 export const selectCacheLikelyAlive = (conversationId: string) =>

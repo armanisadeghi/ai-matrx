@@ -13,14 +13,16 @@ const EMPTY_COLUMNS: BattleColumn[] = [];
 const EMPTY_IDS: string[] = [];
 const EMPTY_FIELDS: MasterField[] = [];
 
+const DEFAULT_BATTLE_ROOT = {
+  columns: EMPTY_COLUMNS,
+  activeSetId: null,
+  activeSetName: null,
+  isSubmittingAll: false,
+  masterFields: EMPTY_FIELDS,
+} as const;
+
 const selectBattleRoot = (state: RootState) =>
-  state.agentComparison ?? {
-    columns: EMPTY_COLUMNS,
-    activeSetId: null,
-    activeSetName: null,
-    isSubmittingAll: false,
-    masterFields: EMPTY_FIELDS,
-  };
+  state.agentComparison ?? DEFAULT_BATTLE_ROOT;
 
 export const selectBattleColumns = createSelector(
   [selectBattleRoot],
@@ -29,7 +31,8 @@ export const selectBattleColumns = createSelector(
 
 export const selectBattleColumnIds = createSelector(
   [selectBattleColumns],
-  (columns) => (columns.length === 0 ? EMPTY_IDS : columns.map((c) => c.columnId)),
+  (columns) =>
+    columns.length === 0 ? EMPTY_IDS : columns.map((c) => c.columnId),
 );
 
 export const selectBattleColumnById = (columnId: string) =>

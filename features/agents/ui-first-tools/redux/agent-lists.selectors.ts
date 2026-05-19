@@ -39,7 +39,8 @@ export const selectAgentTasks =
 export const selectUserTodosForConversation =
   (conversationId: string) =>
   (state: RootState): CxUserTodoRow[] =>
-    state.agentLists?.byConversationId[conversationId]?.userTodos ?? EMPTY_TODOS;
+    state.agentLists?.byConversationId[conversationId]?.userTodos ??
+    EMPTY_TODOS;
 
 export const selectAgentTaskCounts = (conversationId: string) =>
   createSelector(
@@ -64,7 +65,8 @@ export const selectAgentTaskCounts = (conversationId: string) =>
 export const selectUserTodoCounts = (conversationId: string) =>
   createSelector(
     (state: RootState) =>
-      state.agentLists?.byConversationId[conversationId]?.userTodos ?? EMPTY_TODOS,
+      state.agentLists?.byConversationId[conversationId]?.userTodos ??
+      EMPTY_TODOS,
     (todos) => {
       let done = 0;
       for (const t of todos) if (t.done) done++;
@@ -76,8 +78,10 @@ export const selectUserTodoCounts = (conversationId: string) =>
  * Aggregate selector for the ListsHubView. Returns one entry per conversation
  * that has any plan/task/user-todo data. Reads only the slice — no DB hit.
  */
+const EMPTY_BY_CONVERSATION: Record<string, AgentListsForConversation> = {};
+
 export const selectAllConversationLists = (state: RootState) =>
-  state.agentLists?.byConversationId ?? {};
+  state.agentLists?.byConversationId ?? EMPTY_BY_CONVERSATION;
 
 /**
  * Has-anything check for the chip — only show the chip when there's

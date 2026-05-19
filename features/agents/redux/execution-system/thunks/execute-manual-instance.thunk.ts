@@ -211,10 +211,10 @@ function extractSystemText(content: unknown): string {
  * is independent on the wire; multi-turn UI state accumulates client-side
  * through the messages slice.
  */
-export function assembleManualRequest(
+export async function assembleManualRequest(
   state: RootState,
   conversationId: string,
-): Partial<ChatRequestPayload> | null {
+): Promise<Partial<ChatRequestPayload> | null> {
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) return null;
 
@@ -447,7 +447,7 @@ export const executeManualInstance = createAsyncThunk<
       const userInputText = userInputEntry?.text ?? "";
       const userMessageParts = userInputEntry?.messageParts ?? undefined;
 
-      const payload = assembleManualRequest(state, conversationId);
+      const payload = await assembleManualRequest(state, conversationId);
       if (!payload) {
         throw new Error(
           `Failed to assemble manual request for ${conversationId}. ` +

@@ -37,6 +37,9 @@ import type {
 /** Stable empties — never use `?? []` in selector outputs (new ref every run → Reselect stability warnings). */
 export const EMPTY_CLOUD_FILE_PERMISSIONS: CloudFilePermission[] = [];
 export const EMPTY_CLOUD_SHARE_LINKS: CloudShareLink[] = [];
+const EMPTY_CLOUD_FILE_VERSIONS: CloudFileVersion[] = [];
+const EMPTY_PENDING_REQUEST_IDS: string[] = [];
+const EMPTY_CLOUD_USER_GROUP_MEMBERS: CloudUserGroupMember[] = [];
 
 /** Re-export for consumers that import cloud-files selectors from one module. */
 export { EMPTY_TREE_CHILDREN };
@@ -106,7 +109,7 @@ export const selectFileError = createSelector(
 
 export const selectFilePendingRequestIds = createSelector(
   [selectFileById],
-  (record): string[] => record?._pendingRequestIds ?? [],
+  (record): string[] => record?._pendingRequestIds ?? EMPTY_PENDING_REQUEST_IDS,
 );
 
 /** Strip runtime fields — for components that only render domain fields. */
@@ -375,7 +378,8 @@ export const selectSelectedCount = createSelector(
 
 export const selectVersionsForFile = createSelector(
   [selectSlice, (_s: StateWithCloudFiles, fileId: string) => fileId],
-  (slice, fileId): CloudFileVersion[] => slice.versionsByFileId[fileId] ?? [],
+  (slice, fileId): CloudFileVersion[] =>
+    slice.versionsByFileId[fileId] ?? EMPTY_CLOUD_FILE_VERSIONS,
 );
 
 // ---------------------------------------------------------------------------
@@ -458,7 +462,7 @@ export const selectGroupById = createSelector(
 export const selectGroupMembers = createSelector(
   [selectSlice, (_s: StateWithCloudFiles, groupId: string) => groupId],
   (slice, groupId): CloudUserGroupMember[] =>
-    slice.groupMembersByGroupId[groupId] ?? [],
+    slice.groupMembersByGroupId[groupId] ?? EMPTY_CLOUD_USER_GROUP_MEMBERS,
 );
 
 // ---------------------------------------------------------------------------

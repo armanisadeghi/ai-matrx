@@ -4,10 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type {
-  TuningColumn,
-  TuningLockedSetup,
-} from "../types";
+import type { TuningColumn, TuningLockedSetup } from "../types";
 
 const EMPTY_COLUMNS: TuningColumn[] = [];
 const EMPTY_IDS: string[] = [];
@@ -19,14 +16,16 @@ const EMPTY_LOCKED: TuningLockedSetup = {
   userMessage: "",
 };
 
+const DEFAULT_ROOT = {
+  locked: EMPTY_LOCKED,
+  columns: EMPTY_COLUMNS,
+  activeSetId: null,
+  activeSetName: null,
+  isSubmittingAll: false,
+} as const;
+
 const selectRoot = (state: RootState) =>
-  state.agentComparisonTuning ?? {
-    locked: EMPTY_LOCKED,
-    columns: EMPTY_COLUMNS,
-    activeSetId: null,
-    activeSetName: null,
-    isSubmittingAll: false,
-  };
+  state.agentComparisonTuning ?? DEFAULT_ROOT;
 
 export const selectLockedSetup = createSelector(
   [selectRoot],

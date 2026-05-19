@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { shallowEqual } from "react-redux";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { setDebugSession } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { shallowEqual } from "react-redux";
+import {
+  selectConversationRequestCount,
+  selectConversationRequestIds,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -1742,8 +1746,7 @@ function InstanceDebugView({
   );
 
   const requestIds = useAppSelector(
-    (state) => state.activeRequests.byConversationId[conversationId] ?? [],
-    shallowEqual,
+    selectConversationRequestIds(conversationId),
   );
 
   const [selectedRequestIdx, setSelectedRequestIdx] = useState<number>(-1);
@@ -2008,8 +2011,7 @@ function InstanceTab({
     (state) => state.conversations.byConversationId[conversationId]?.status,
   );
   const requestCount = useAppSelector(
-    (state) =>
-      (state.activeRequests.byConversationId[conversationId] ?? []).length,
+    selectConversationRequestCount(conversationId),
   );
 
   const statusDot = status

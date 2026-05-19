@@ -36,6 +36,8 @@ const DEFAULT_FOLDER_ORDER: readonly string[] = [
   "Scratch",
 ];
 
+const EMPTY_NOTE_TAGS: string[] = [];
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. BASE SELECTORS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -193,7 +195,7 @@ export const selectNoteTags = (noteId: string) =>
   cached(`noteTags:${noteId}`, () =>
     createSelector(
       selectNotesMap,
-      (notes): string[] | undefined => notes[noteId]?.tags,
+      (notes): string[] => notes[noteId]?.tags ?? EMPTY_NOTE_TAGS,
     ),
   );
 

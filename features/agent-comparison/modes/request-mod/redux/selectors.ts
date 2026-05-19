@@ -14,14 +14,16 @@ const EMPTY_LOCKED: RequestModLockedSetup = {
   agentVersionId: null,
 };
 
+const DEFAULT_ROOT = {
+  locked: EMPTY_LOCKED,
+  columns: EMPTY_COLUMNS,
+  activeSetId: null,
+  activeSetName: null,
+  isSubmittingAll: false,
+} as const;
+
 const selectRoot = (state: RootState) =>
-  state.agentComparisonRequestMod ?? {
-    locked: EMPTY_LOCKED,
-    columns: EMPTY_COLUMNS,
-    activeSetId: null,
-    activeSetName: null,
-    isSubmittingAll: false,
-  };
+  state.agentComparisonRequestMod ?? DEFAULT_ROOT;
 
 export const selectLockedSetup = createSelector(
   [selectRoot],

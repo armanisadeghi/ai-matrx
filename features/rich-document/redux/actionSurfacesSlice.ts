@@ -130,6 +130,9 @@ export default actionSurfacesSlice.reducer;
 // in lib/redux/rootReducer.ts — avoids store → rootReducer → slice → store cycle.
 import type { RootState } from "@/lib/redux/rootReducer";
 
+const EMPTY_PROVIDER_STACK: RichDocumentSurfaceRegistration[] = [];
+const EMPTY_ACTION_SPECS: RichDocumentActionSpec[] = [];
+
 /** Returns the entire registration map. Prefer the per-surface selectors below. */
 export const selectActionSurfacesState = (
   state: RootState,
@@ -150,7 +153,8 @@ export const selectProviderStack = (
   state: RootState,
   surfaceId: string,
 ): RichDocumentSurfaceRegistration[] =>
-  state.richDocumentActionSurfaces?.bySurfaceId[surfaceId] ?? [];
+  state.richDocumentActionSurfaces?.bySurfaceId[surfaceId] ??
+  EMPTY_PROVIDER_STACK;
 
 /** Returns the action specs from the top-of-stack provider, or empty array. */
 export const selectSurfaceActionSpecs = (
@@ -158,5 +162,5 @@ export const selectSurfaceActionSpecs = (
   surfaceId: string,
 ): RichDocumentActionSpec[] => {
   const top = selectTopProvider(state, surfaceId);
-  return top?.computedActionSpecs ?? [];
+  return top?.computedActionSpecs ?? EMPTY_ACTION_SPECS;
 };

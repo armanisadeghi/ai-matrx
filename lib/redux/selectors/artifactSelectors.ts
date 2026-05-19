@@ -26,6 +26,8 @@ import type {
   ArtifactStatus,
 } from "@/features/artifacts/types";
 
+const EMPTY_ARTIFACT_IDS: string[] = [];
+
 // Re-export base selectors for convenience
 export {
   selectArtifactFetchStatus,
@@ -57,7 +59,7 @@ export const selectArtifactsByMessageId = createSelector(
   selectArtifactsByMessageIdIndex,
   (_state: RootState, messageId: string) => messageId,
   (byId, index, messageId) => {
-    const ids = index[messageId] ?? [];
+    const ids = index[messageId] ?? EMPTY_ARTIFACT_IDS;
     return ids.map((id) => byId[id]).filter(Boolean) as CxArtifactRecord[];
   },
 );
@@ -71,7 +73,7 @@ export const selectHtmlPageArtifactForMessage = createSelector(
   selectArtifactsByMessageIdIndex,
   (_state: RootState, messageId: string) => messageId,
   (byId, index, messageId): CxArtifactRecord | undefined => {
-    const ids = index[messageId] ?? [];
+    const ids = index[messageId] ?? EMPTY_ARTIFACT_IDS;
     return ids
       .map((id) => byId[id])
       .filter(Boolean)
@@ -89,7 +91,7 @@ export const selectArtifactsByConversationId = createSelector(
   selectArtifactsByConversationIdIndex,
   (_state: RootState, conversationId: string) => conversationId,
   (byId, index, conversationId) => {
-    const ids = index[conversationId] ?? [];
+    const ids = index[conversationId] ?? EMPTY_ARTIFACT_IDS;
     return ids.map((id) => byId[id]).filter(Boolean) as CxArtifactRecord[];
   },
 );
@@ -102,7 +104,7 @@ export const selectArtifactsByProjectId = createSelector(
   selectArtifactsByProjectIdIndex,
   (_state: RootState, projectId: string) => projectId,
   (byId, index, projectId) => {
-    const ids = index[projectId] ?? [];
+    const ids = index[projectId] ?? EMPTY_ARTIFACT_IDS;
     return ids.map((id) => byId[id]).filter(Boolean) as CxArtifactRecord[];
   },
 );
@@ -113,7 +115,7 @@ export const selectArtifactsByTaskId = createSelector(
   selectArtifactsByTaskIdIndex,
   (_state: RootState, taskId: string) => taskId,
   (byId, index, taskId) => {
-    const ids = index[taskId] ?? [];
+    const ids = index[taskId] ?? EMPTY_ARTIFACT_IDS;
     return ids.map((id) => byId[id]).filter(Boolean) as CxArtifactRecord[];
   },
 );
@@ -165,7 +167,7 @@ export const selectHasPublishedArtifactForMessage = createSelector(
   selectArtifactsByMessageIdIndex,
   (_state: RootState, messageId: string) => messageId,
   (byId, index, messageId): boolean => {
-    const ids = index[messageId] ?? [];
+    const ids = index[messageId] ?? EMPTY_ARTIFACT_IDS;
     return ids
       .map((id) => byId[id])
       .filter(Boolean)

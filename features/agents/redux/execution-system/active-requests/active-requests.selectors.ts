@@ -58,6 +58,10 @@ import type {
   CompletedOperationEntry,
 } from "@/features/agents/types/request.types";
 
+/** Stable fallbacks — never inline `?? []` in selector outputs. */
+export const EMPTY_REQUEST_IDS: string[] = [];
+const EMPTY_ACTIVE_REQUESTS: ActiveRequest[] = [];
+
 // =============================================================================
 // Base Record Selector — all parameterized selectors chain from this
 // =============================================================================
@@ -80,12 +84,23 @@ export const selectRequestsForInstance = (conversationId: string) =>
     (state: RootState) => state.activeRequests.byConversationId[conversationId],
     (state: RootState) => state.activeRequests.byRequestId,
     (ids, byRequestId): ActiveRequest[] => {
-      if (!ids || ids.length === 0) return [];
+      if (!ids || ids.length === 0) return EMPTY_ACTIVE_REQUESTS;
       return ids
         .map((id) => byRequestId[id])
         .filter((r): r is ActiveRequest => r != null);
     },
   );
+
+/** Request id list for a conversation — stable empty ref when none exist yet. */
+export const selectConversationRequestIds =
+  (conversationId: string) =>
+  (state: RootState): string[] =>
+    state.activeRequests.byConversationId[conversationId] ?? EMPTY_REQUEST_IDS;
+
+export const selectConversationRequestCount =
+  (conversationId: string) =>
+  (state: RootState): number =>
+    selectConversationRequestIds(conversationId)(state).length;
 
 export const selectPrimaryRequest =
   (conversationId: string) =>
@@ -401,8 +416,8 @@ export const selectActiveToolCount = (requestId: string) =>
 export const selectToolCallIdsInOrder = (requestId: string) =>
   createSelector(
     (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
-    (timeline): string[] | undefined => {
-      if (!timeline) return undefined;
+    (timeline): string[] => {
+      if (!timeline) return EMPTY_REQUEST_IDS;
       const seen = new Set<string>();
       const ordered: string[] = [];
       for (const entry of timeline) {
@@ -415,7 +430,7 @@ export const selectToolCallIdsInOrder = (requestId: string) =>
           ordered.push(entry.data.call_id);
         }
       }
-      return ordered;
+      return ordered.length === 0 ? EMPTY_REQUEST_IDS : ordered;
     },
   );
 

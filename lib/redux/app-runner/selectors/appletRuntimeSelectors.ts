@@ -3,41 +3,45 @@ import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { ComponentToBrokerMapping } from "../types";
 
+const EMPTY_RECORD: Record<string, never> = {};
+const EMPTY_STRING_ARRAY: string[] = [];
+
 // ================================ Base Selectors ================================
 // Component Definitions Selectors
 export const selectAppConfigs = (state: RootState) =>
-  state.componentDefinitions.appConfigs ?? {};
+  state.componentDefinitions.appConfigs ?? EMPTY_RECORD;
 export const selectComponentDefinitions = (state: RootState) =>
-  state.componentDefinitions.definitions ?? {};
+  state.componentDefinitions.definitions ?? EMPTY_RECORD;
 export const selectComponentInstances = (state: RootState) =>
-  state.componentDefinitions.instances ?? {};
+  state.componentDefinitions.instances ?? EMPTY_RECORD;
 export const selectContainers = (state: RootState) =>
-  state.componentDefinitions.containers ?? {};
+  state.componentDefinitions.containers ?? EMPTY_RECORD;
 export const selectApplets = (state: RootState) =>
-  state.componentDefinitions.applets ?? {};
+  state.componentDefinitions.applets ?? EMPTY_RECORD;
 export const selectComponentToBrokerMap = (state: RootState) =>
-  state.componentDefinitions.componentToBrokerMap ?? {};
+  state.componentDefinitions.componentToBrokerMap ?? EMPTY_RECORD;
 
 // Broker Selectors
 export const selectBrokerValues = (state: RootState) =>
-  state.brokerValues.values ?? {};
+  state.brokerValues.values ?? EMPTY_RECORD;
 export const selectBrokerHistoryMap = (state: RootState) =>
-  state.brokerValues.history ?? {};
+  state.brokerValues.history ?? EMPTY_RECORD;
 export const selectNeededBrokers = (state: RootState) =>
-  state.brokerValues.neededBrokers ?? {};
+  state.brokerValues.neededBrokers ?? EMPTY_RECORD;
 export const selectBrokerDefinitions = (state: RootState) =>
-  state.brokerValues.brokerDefinitions ?? {};
+  state.brokerValues.brokerDefinitions ?? EMPTY_RECORD;
 
 // ================================ App Selectors ================================
 // App Config Selectors
 export const selectAppConfig = createSelector(
   [selectAppConfigs, (_: RootState, appId?: string | null) => appId ?? ""],
-  (appConfigs, appId) => (appId ? (appConfigs[appId] ?? {}) : {}),
+  (appConfigs, appId) =>
+    appId ? (appConfigs[appId] ?? EMPTY_RECORD) : EMPTY_RECORD,
 );
 
 export const selectAppAppletList = createSelector(
   [selectAppConfig],
-  (appConfig) => appConfig?.appletList ?? [],
+  (appConfig) => appConfig?.appletList ?? EMPTY_STRING_ARRAY,
 );
 
 // ================================ Component Selectors ================================
@@ -51,8 +55,8 @@ export const selectComponentDefinition = createSelector(
     }),
   ],
   (definitions, { appId, id }) => {
-    if (!appId || !id) return {};
-    return definitions[appId]?.[id] ?? {};
+    if (!appId || !id) return EMPTY_RECORD;
+    return definitions[appId]?.[id] ?? EMPTY_RECORD;
   },
 );
 
@@ -65,8 +69,8 @@ export const selectComponentInstance = createSelector(
     }),
   ],
   (instances, { appId, id }) => {
-    if (!appId || !id) return {};
-    return instances[appId]?.[id] ?? {};
+    if (!appId || !id) return EMPTY_RECORD;
+    return instances[appId]?.[id] ?? EMPTY_RECORD;
   },
 );
 
@@ -80,16 +84,16 @@ export const selectContainer = createSelector(
     }),
   ],
   (containers, { appId, id }) => {
-    if (!appId || !id) return {};
-    return containers[appId]?.[id] ?? {};
+    if (!appId || !id) return EMPTY_RECORD;
+    return containers[appId]?.[id] ?? EMPTY_RECORD;
   },
 );
 
 export const selectAllContainers = createSelector(
   [selectContainers, (_: RootState, appId?: string | null) => appId ?? ""],
   (containers, appId) => {
-    if (!appId) return {};
-    return containers[appId] ?? {};
+    if (!appId) return EMPTY_RECORD;
+    return containers[appId] ?? EMPTY_RECORD;
   },
 );
 
@@ -103,14 +107,14 @@ export const selectComponentInstancesForContainer = createSelector(
     }),
   ],
   (containers, instances, { appId, containerId }) => {
-    if (!appId || !containerId) return [];
+    if (!appId || !containerId) return EMPTY_STRING_ARRAY;
 
     const container = containers[appId]?.[containerId];
-    if (!container?.fields) return [];
+    if (!container?.fields) return EMPTY_STRING_ARRAY;
 
     const result = container.fields
       .map((field) =>
-        Object.values(instances[appId] ?? {}).filter(
+        Object.values(instances[appId] ?? EMPTY_RECORD).filter(
           (instance: any) =>
             instance?.id && field?.id && instance.id.startsWith(field.id),
         ),
@@ -131,16 +135,16 @@ export const selectApplet = createSelector(
     }),
   ],
   (applets, { appId, id }) => {
-    if (!appId || !id) return {};
-    return applets[appId]?.[id] ?? {};
+    if (!appId || !id) return EMPTY_RECORD;
+    return applets[appId]?.[id] ?? EMPTY_RECORD;
   },
 );
 
 export const selectAllApplets = createSelector(
   [selectApplets, (_: RootState, appId?: string | null) => appId ?? ""],
   (applets, appId) => {
-    if (!appId) return {};
-    return applets[appId] ?? {};
+    if (!appId) return EMPTY_RECORD;
+    return applets[appId] ?? EMPTY_RECORD;
   },
 );
 
@@ -154,8 +158,8 @@ export const selectBrokerValue = createSelector(
 export const selectBrokerHistory = createSelector(
   [selectBrokerHistoryMap, (_: RootState, id?: string | null) => id ?? ""],
   (history, id) => {
-    if (!id) return [];
-    return history[id] ?? [];
+    if (!id) return EMPTY_STRING_ARRAY;
+    return history[id] ?? EMPTY_STRING_ARRAY;
   },
 );
 
@@ -168,8 +172,8 @@ export const selectBrokerDefinition = createSelector(
     }),
   ],
   (definitions, { appId, brokerId }) => {
-    if (!appId || !brokerId) return {};
-    return definitions[appId]?.[brokerId] ?? {};
+    if (!appId || !brokerId) return EMPTY_RECORD;
+    return definitions[appId]?.[brokerId] ?? EMPTY_RECORD;
   },
 );
 
@@ -185,8 +189,8 @@ export const selectAllBrokerDefinitions = createSelector(
     (_: RootState, appId?: string | null) => appId ?? "",
   ],
   (definitions, appId) => {
-    if (!appId) return {};
-    return definitions[appId] ?? {};
+    if (!appId) return EMPTY_RECORD;
+    return definitions[appId] ?? EMPTY_RECORD;
   },
 );
 
@@ -218,10 +222,12 @@ export const selectAllBrokerMappings = createSelector(
     (_: RootState, appId?: string | null) => appId ?? "",
   ],
   (mappings, appId) => {
-    if (!appId) return [];
-    return mappings[appId] ?? [];
+    if (!appId) return EMPTY_STRING_ARRAY;
+    return mappings[appId] ?? EMPTY_STRING_ARRAY;
   },
 );
+
+const EMPTY_BROKER_STATUS: Record<string, boolean> = {};
 
 // ================================ Broker Status Selectors ================================
 export const selectBrokerValueStatus = createSelector(
@@ -231,12 +237,12 @@ export const selectBrokerValueStatus = createSelector(
     (_: RootState, appId?: string | null) => appId,
   ],
   (values, neededBrokers, appId) => {
+    if (!neededBrokers) return EMPTY_BROKER_STATUS;
+
     const status: Record<string, boolean> = {};
 
-    if (!neededBrokers) return status;
-
     const brokers = appId
-      ? (neededBrokers[appId] ?? [])
+      ? (neededBrokers[appId] ?? EMPTY_STRING_ARRAY)
       : Object.values(neededBrokers).flat();
 
     brokers.forEach((brokerId) => {
@@ -256,10 +262,10 @@ export const selectMissingNeededBrokers = createSelector(
     (_: RootState, appId?: string | null) => appId,
   ],
   (values, neededBrokers, appId) => {
-    if (!neededBrokers) return [];
+    if (!neededBrokers) return EMPTY_STRING_ARRAY;
 
     const brokers = appId
-      ? (neededBrokers[appId] ?? [])
+      ? (neededBrokers[appId] ?? EMPTY_STRING_ARRAY)
       : Object.values(neededBrokers).flat();
 
     return brokers.filter((brokerId) => brokerId && !values[brokerId]);

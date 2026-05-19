@@ -42,6 +42,13 @@ interface SelectOption {
   label: string;
 }
 
+const EMPTY_SELECTED_RECORD_IDS: MatrxRecordId[] = [];
+const EMPTY_RUNTIME_FILTERS: RuntimeFilter[] = [];
+const DEFAULT_RUNTIME_SORT: RuntimeSort = {
+  field: "matrxRecordId",
+  direction: "asc",
+};
+
 interface FieldNameGroups<TEntity extends EntityKeys> {
   nativeFields: EntityAnyFieldKey<TEntity>[];
   relationshipFields: EntityAnyFieldKey<TEntity>[];
@@ -625,7 +632,10 @@ export const createEntitySelectors = <TEntity extends EntityKeys>(
   });
 
   const selectSelectedRecordIds = (state: RootState): MatrxRecordId[] => {
-    return state.entities?.[entityKey]?.selection?.selectedRecords || [];
+    return (
+      state.entities?.[entityKey]?.selection?.selectedRecords ??
+      EMPTY_SELECTED_RECORD_IDS
+    );
   };
 
   const selectIsRecordSelected = createSelector(
@@ -2007,13 +2017,13 @@ export const createEntitySelectors = <TEntity extends EntityKeys>(
 
   const selectRuntimeFilters = createSelector(
     [selectEntity],
-    (entity): RuntimeFilter[] => entity?.runtimeFilters || [],
+    (entity): RuntimeFilter[] =>
+      entity?.runtimeFilters ?? EMPTY_RUNTIME_FILTERS,
   );
 
   const selectRuntimeSort = createSelector(
     [selectEntity],
-    (entity): RuntimeSort =>
-      entity?.runtimeSort || { field: "matrxRecordId", direction: "asc" },
+    (entity): RuntimeSort => entity?.runtimeSort ?? DEFAULT_RUNTIME_SORT,
   );
 
   // New selector for relation-filtered records

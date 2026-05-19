@@ -16,14 +16,16 @@ const EMPTY_LOCKED: ModelLockedSetup = {
   userMessage: "",
 };
 
+const DEFAULT_ROOT = {
+  locked: EMPTY_LOCKED,
+  columns: EMPTY_COLUMNS,
+  activeSetId: null,
+  activeSetName: null,
+  isSubmittingAll: false,
+} as const;
+
 const selectRoot = (state: RootState) =>
-  state.agentComparisonModel ?? {
-    locked: EMPTY_LOCKED,
-    columns: EMPTY_COLUMNS,
-    activeSetId: null,
-    activeSetName: null,
-    isSubmittingAll: false,
-  };
+  state.agentComparisonModel ?? DEFAULT_ROOT;
 
 export const selectLockedSetup = createSelector(
   [selectRoot],

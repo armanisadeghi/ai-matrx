@@ -47,7 +47,7 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   const dispatch = useAppDispatch();
 
   const folder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
-  const tags = useAppSelector(selectNoteTags(noteId)) ?? [];
+  const tags = useAppSelector(selectNoteTags(noteId));
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
