@@ -302,7 +302,7 @@ export function assembleManualRequest(
   // ── Tool wire shape (see file header for full rationale) ─────────────────
   // agent.tools (UUID array) → tools_replace with RegisteredToolSpec entries.
   // The server's resolved_tool_id() returns `tool_id` when set, so the UUID
-  // round-trips cleanly through ToolRegistryV2 lookup.
+  // round-trips cleanly through ToolRegistry lookup.
   const tools_replace =
     agent.tools && agent.tools.length > 0
       ? (agent.tools.map((uuid) => ({

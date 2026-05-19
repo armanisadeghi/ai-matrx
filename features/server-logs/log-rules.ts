@@ -152,7 +152,7 @@ const MODULE_CATEGORY_MAP: Record<string, LogCategory> = {
   // ── AI execution layer ───────────────────────────────────────────────────────
   "CHAT ROUTER": "ai-execution",
   "Google Chat": "ai-execution",
-  ToolRegistryV2: "ai-execution",
+  ToolRegistry: "ai-execution",
   "AI Task": "ai-execution",
   "DEBUG EXECUTE UNTIL COMPLETE": "ai-execution",
   // ── CX / conversation lifecycle ───────────────────────────────────────────────
