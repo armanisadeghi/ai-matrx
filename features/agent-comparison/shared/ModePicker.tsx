@@ -20,6 +20,8 @@ import {
   Wrench,
   FileText,
   Workflow,
+  Cpu,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,11 +46,25 @@ const MODES: ModeEntry[] = [
     hint: "Anything goes — pick any agent + version per column",
   },
   {
+    id: "model",
+    label: "Model",
+    href: "/agents/battle/model",
+    icon: Cpu,
+    hint: "Lock everything; vary only the model per column (server normalizes settings)",
+  },
+  {
+    id: "tuning",
+    label: "Tuning",
+    href: "/agents/battle/tuning",
+    icon: Gauge,
+    hint: "Lock everything; vary model + full agent settings via the Builder UI per column",
+  },
+  {
     id: "settings",
     label: "Settings",
     href: "/agents/battle/settings",
     icon: SlidersHorizontal,
-    hint: "Lock the agent + input; vary the LLM settings (model, temp, reasoning)",
+    hint: "Lock the agent + input; vary the LLM settings (quick overrides)",
   },
   {
     id: "tools",

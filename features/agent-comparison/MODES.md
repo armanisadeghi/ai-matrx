@@ -12,10 +12,34 @@ conversations + telemetry + feedback for whatever the mode hands it.
 | Mode | Locked | Free per column | Route | Slice |
 |---|---|---|---|---|
 | **Open** ("anything goes") ✅ | nothing | agent, version, variables, message, settings, context, tools | `/agents/battle` | `agentComparison` |
-| **Settings** ✅ | agent, version, variables, message | model, temperature, top_p, max output tokens, reasoning effort, thinking level | `/agents/battle/settings` | `agentComparisonSettings` |
+| **Model** ✅ | agent, version, variables, message, settings, system prompt, tools | model id only (server normalizes settings) | `/agents/battle/model` | `agentComparisonModel` |
+| **Tuning** ✅ | source agent, version, variables, message, system prompt, tools | model id + full agent settings (via Builder UI) | `/agents/battle/tuning` | `agentComparisonTuning` |
+| **Settings** ✅ (legacy/quick) | agent, version, variables, message | model, temperature, top_p, max output tokens, reasoning effort, thinking level | `/agents/battle/settings` | `agentComparisonSettings` |
 | **System Prompt** ✅ | source agent, version, variables, message, settings, tools | system prompt text | `/agents/battle/system-prompt` | `agentComparisonSystemPrompt` |
 | **Tools** ✅ | source agent, version, variables, message, system prompt, settings | tools list (built-in + custom + MCP) | `/agents/battle/tools` | `agentComparisonTools` |
 | **Request Modification** ✅ | agent, version | per-column variables + user message | `/agents/battle/request-mod` | `agentComparisonRequestMod` |
+
+### Model vs Tuning vs Settings — when to use which
+
+- **Model** uses `apiEndpointMode: "agent"` + the per-conversation
+  `instanceModelOverrides` slice. Each column writes a single `model`
+  override; the Python server normalizes equivalent settings across
+  models so the user doesn't have to think about reasoning_effort vs
+  thinking_level vs temperature scales. Best for "GPT-5 vs Claude 4.6
+  vs Gemini 3" head-to-heads where you want the agent's defaults to
+  carry through.
+- **Tuning** uses `apiEndpointMode: "manual"` + the synthetic-agent
+  pattern. Each column owns a `cmp-<uuid>` clone of the locked agent;
+  the user opens the same `AgentSettingsModal` the Agent Builder uses
+  per column, getting the full model-aware settings UI (right inputs
+  for the right model). Best for fine-grained "same model, different
+  knobs" comparisons.
+- **Settings** is the original locked-axis mode and predates the
+  Tuning rework. It uses `instanceModelOverrides` like Model but
+  exposes a narrow custom override editor for the legacy knob set
+  (temperature/top_p/etc.). Slated for cleanup once
+  `instanceModelOverrides` and its editor catch up to the modern
+  model-aware shape; until then, both coexist.
 
 ### The synthetic-agent pattern (used by System Prompt + Tools modes)
 

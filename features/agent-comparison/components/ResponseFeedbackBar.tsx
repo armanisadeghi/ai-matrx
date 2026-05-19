@@ -31,12 +31,24 @@ import {
   Loader2,
   Star,
   Trophy,
+  Coins,
+  DollarSign,
+  Timer,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { makeSelectConversationRequests } from "@/features/agents/components/run-controls/panels/shared";
+import {
+  addUsageTotals,
+  fmtCost,
+  fmtMs,
+  fmtTokens,
+  getUserRequestResult,
+  makeSelectConversationRequests,
+  type MutableTotals,
+} from "@/features/agents/components/run-controls/panels/shared";
 import { cn } from "@/lib/utils";
 import {
   clearRankForOthers,
@@ -44,10 +56,8 @@ import {
   saveFeedback,
   type FeedbackRating,
 } from "../service/responseFeedbackService";
-import {
-  selectActiveBattleSetId,
-  selectBattleColumns,
-} from "../redux/selectors";
+import { selectActiveBattleSetId } from "../redux/selectors";
+import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { setFeedbackRank, setFeedbackSnapshot } from "../redux/battleSlice";
 import type { FeedbackSnapshot } from "../types";
 
@@ -91,7 +101,7 @@ type Scores = Record<string, number>;
  * is the DB unique index + the auto-clear thunk).
  */
 function useOtherColumnRanks(currentConversationId: string): Record<string, number> {
-  const columns = useAppSelector(selectBattleColumns);
+  const columns = useAppSelector(selectActiveBattleColumns);
   return useAppSelector((state: RootState) => {
     const out: Record<string, number> = {};
     for (const col of columns) {
@@ -137,7 +147,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const setId = useAppSelector(selectActiveBattleSetId);
-  const columns = useAppSelector(selectBattleColumns);
+  const columns = useAppSelector(selectActiveBattleColumns);
 
   const otherRanks = useOtherColumnRanks(conversationId);
   const takenRanksOnOthers = new Set(Object.values(otherRanks));
@@ -377,6 +387,9 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
 
   return (
     <div className="border border-border rounded-md bg-card/50 mx-2 my-3 shadow-sm">
+      {/* Usage strip — server-reported tokens + cost, client TTFT + total */}
+      <ResponseUsageStrip requestId={requestId} />
+
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/60 bg-muted/30">
         <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -599,6 +612,133 @@ function MetricRow({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Usage strip — server-reported tokens + cost, client TTFT + total
+// =============================================================================
+
+/**
+ * Rendered above the rating block on every completed response. Same data
+ * source as the Runs comparison table (so the numbers always match), but
+ * surfaced inline so the user sees them without opening the Runs window.
+ *
+ * Reads from `activeRequests.byRequestId[requestId]` — works regardless
+ * of comparison mode since the request slice is global.
+ */
+function ResponseUsageStrip({ requestId }: { requestId: string }) {
+  const stats = useAppSelector((state: RootState) => {
+    const req = state.activeRequests.byRequestId[requestId];
+    if (!req) return null;
+    const totals: MutableTotals = {
+      input: 0,
+      output: 0,
+      cached: 0,
+      total: 0,
+      cost: 0,
+      requests: 0,
+    };
+    const result = getUserRequestResult(req);
+    if (result) {
+      addUsageTotals(totals, result.total_usage?.total);
+    }
+    return {
+      tokensInput: totals.input || null,
+      tokensCached: totals.cached || null,
+      tokensOutput: totals.output || null,
+      tokensTotal: totals.total || null,
+      cost: totals.cost || null,
+      serverDurationMs: result?.timing_stats?.total_duration ?? null,
+      ttftMs: req.clientMetrics?.ttftMs ?? null,
+      totalClientMs: req.clientMetrics?.totalClientDurationMs ?? null,
+    };
+  });
+
+  // Render nothing if no completion event was received yet — the bar's
+  // outer guard already gated on `status === "complete"`, but a complete
+  // status without a captured `user_request` result is possible during
+  // partial server failures. Hiding cleanly beats showing zeros.
+  if (!stats || stats.tokensTotal == null) return null;
+
+  return (
+    <div className="px-3 py-2 border-b border-border/60 bg-background/60 grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <UsageTile
+        icon={<Coins className="w-3 h-3" />}
+        label="Tokens"
+        primary={fmtTokens(stats.tokensTotal)}
+        secondary={tokenBreakdown(stats)}
+        accent="text-primary"
+      />
+      <UsageTile
+        icon={<DollarSign className="w-3 h-3" />}
+        label="Cost"
+        primary={fmtCost(stats.cost)}
+        accent="text-emerald-500"
+      />
+      <UsageTile
+        icon={<Zap className="w-3 h-3" />}
+        label="TTFT"
+        primary={fmtMs(stats.ttftMs)}
+        secondary={stats.totalClientMs != null ? `total ${fmtMs(stats.totalClientMs)}` : undefined}
+        accent="text-amber-500"
+      />
+      <UsageTile
+        icon={<Timer className="w-3 h-3" />}
+        label="Server"
+        primary={fmtMs(stats.serverDurationMs)}
+        accent="text-sky-500"
+      />
+    </div>
+  );
+}
+
+function tokenBreakdown(stats: {
+  tokensInput: number | null;
+  tokensCached: number | null;
+  tokensOutput: number | null;
+}): string | undefined {
+  const parts: string[] = [];
+  if (stats.tokensInput != null && stats.tokensInput > 0) {
+    parts.push(`in ${fmtTokens(stats.tokensInput)}`);
+  }
+  if (stats.tokensCached != null && stats.tokensCached > 0) {
+    parts.push(`cached ${fmtTokens(stats.tokensCached)}`);
+  }
+  if (stats.tokensOutput != null && stats.tokensOutput > 0) {
+    parts.push(`out ${fmtTokens(stats.tokensOutput)}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+function UsageTile({
+  icon,
+  label,
+  primary,
+  secondary,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  primary: string;
+  secondary?: string;
+  accent: string;
+}) {
+  return (
+    <div className="rounded-md border border-border/60 bg-card/60 px-2 py-1.5 min-w-0">
+      <div className={cn("flex items-center gap-1 text-[9px] uppercase tracking-wider font-semibold", accent)}>
+        {icon}
+        {label}
+      </div>
+      <div className="text-[13px] font-mono font-semibold text-foreground mt-0.5 truncate">
+        {primary}
+      </div>
+      {secondary && (
+        <div className="text-[9px] text-muted-foreground/70 truncate font-mono mt-0.5">
+          {secondary}
+        </div>
+      )}
     </div>
   );
 }

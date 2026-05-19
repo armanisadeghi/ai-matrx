@@ -29,8 +29,10 @@ import {
   type MutableTotals,
 } from "@/features/agents/components/run-controls/panels/shared";
 import { cn } from "@/lib/utils";
-import { selectBattleColumns } from "../redux/selectors";
-import type { BattleColumn } from "../types";
+import {
+  selectActiveBattleColumns,
+  type BattleColumnDescriptor,
+} from "../shared/activeBattleColumns";
 
 // =============================================================================
 // Per-column derived stats — everything we know about one column's runs
@@ -170,14 +172,18 @@ function makeEmptyTotals(): MutableTotals {
 
 function buildStatsForColumn(
   state: RootState,
-  col: BattleColumn,
+  col: BattleColumnDescriptor,
 ): ColumnStats {
   const agent = col.agentId
     ? state.agentDefinition.agents?.[col.agentId]
     : undefined;
+  const displayName =
+    col.label && col.label.trim().length > 0
+      ? col.label
+      : agent?.name ?? "Unconfigured";
   const base = {
     columnId: col.columnId,
-    agentName: agent?.name ?? "Unconfigured",
+    agentName: displayName,
     versionLabel:
       col.agentVersion == null
         ? "—"
@@ -538,7 +544,7 @@ function computeRowHighlights(
 // =============================================================================
 
 export function RunsComparisonTable() {
-  const columns = useAppSelector(selectBattleColumns);
+  const columns = useAppSelector(selectActiveBattleColumns);
   // Broad subscription — recomputes on any active-request OR context-state
   // change for any column. N is small (rarely > ~5) so cost is bounded.
   const stats = useAppSelector((state) =>

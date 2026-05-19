@@ -12,7 +12,7 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { selectBattleColumns } from "../redux/selectors";
+import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { RunsComparisonTable } from "./RunsComparisonTable";
 
 interface SharedRunsWindowProps {
@@ -21,7 +21,7 @@ interface SharedRunsWindowProps {
 }
 
 export function SharedRunsWindow({ id, onClose }: SharedRunsWindowProps) {
-  const columns = useAppSelector(selectBattleColumns);
+  const columns = useAppSelector(selectActiveBattleColumns);
 
   return (
     <WindowPanel
