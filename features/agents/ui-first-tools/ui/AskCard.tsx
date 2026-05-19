@@ -15,19 +15,33 @@
  *
  * Kinds:
  *   confirm        — Yes / No
- *   choice         — radio list (single)
+ *   choice         — radio list (single); side-by-side preview when any
+ *                    option has `preview`
  *   choice_many    — checkbox list (multi)
  *   text           — textarea
  *   secret         — password input
  *   notify         — banner with action buttons + freeform Other
  *   plan_approval  — proposed plan (title + steps) + Approve / Reject
  *   takeover       — text input asking what the user did / wants
+ *
+ * Rich options + allow_other:
+ *   - Options accept the rich `{label, description?, preview?}` shape
+ *     (legacy bare strings are normalized to `{label}` upstream).
+ *   - `description` renders as a muted caption below each label.
+ *   - `preview` (any option, single-select only) triggers the
+ *     side-by-side grid layout; the focused option's preview renders in
+ *     a monospace block on the right (focus follows mouseover + selection).
+ *   - `allow_other: true` appends a dashed-border "Other" option that
+ *     expands to a textarea when selected; submit packs the response as
+ *     `{selected: [...labels, 'Other'], freeform}`.
+ *
+ * Batched questions:
+ *   When `batchTotal > 1`, the card shows an "N of M" pill.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CheckCircle2,
-  Circle,
   Info,
   AlertTriangle,
   AlertCircle,
@@ -38,24 +52,28 @@ import {
   HelpCircle,
   Eye,
   EyeOff,
+  Circle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
-import { resolvePendingAsk, cancelPendingAsk } from "../redux/pending-asks.slice";
+import {
+  resolvePendingAsk,
+  cancelPendingAsk,
+} from "../redux/pending-asks.slice";
 import {
   resolveAskByCallId,
   cancelAskByCallId,
 } from "../redux/ask-resolver-registry";
-import type { AskUserResponse } from "../tools/schemas";
+import type { AskUserResponse, UserAskOption } from "../tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import { AskCardCountdown } from "./AskCardCountdown";
+
+const OTHER_SENTINEL = "__matrx_other__";
 
 interface AskCardProps {
   ask: PendingAsk;
@@ -103,6 +121,10 @@ export function AskCard({ ask }: AskCardProps) {
   }
 
   const KindIcon = KIND_ICONS[ask.kind] ?? HelpCircle;
+  const showBatch =
+    typeof ask.batchTotal === "number" &&
+    ask.batchTotal > 1 &&
+    typeof ask.batchIndex === "number";
 
   return (
     <div
@@ -118,6 +140,28 @@ export function AskCard({ ask }: AskCardProps) {
       <div className="flex items-start gap-2">
         <KindIcon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
         <div className="flex-1 min-w-0">
+          {(ask.header || ask.context || showBatch) && (
+            <div className="flex items-center gap-2 mb-1">
+              {ask.header && (
+                <Badge
+                  variant="outline"
+                  className="h-4 px-1.5 text-[10px] uppercase tracking-wide"
+                >
+                  {ask.header}
+                </Badge>
+              )}
+              {ask.context && (
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">
+                  {ask.context}
+                </div>
+              )}
+              {showBatch && (
+                <span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
+                  {ask.batchIndex! + 1} of {ask.batchTotal}
+                </span>
+              )}
+            </div>
+          )}
           <AskBody ask={ask} onAnswer={answer} />
         </div>
         <button
@@ -167,18 +211,10 @@ function AskBody({ ask, onAnswer }: AskBodyProps) {
 }
 
 function QuestionLine({ ask }: { ask: PendingAsk }) {
+  if (!ask.question) return null;
   return (
-    <div className="flex flex-col gap-0.5">
-      {ask.question && (
-        <div className="font-medium text-foreground leading-snug whitespace-pre-wrap">
-          {ask.question}
-        </div>
-      )}
-      {ask.context && (
-        <div className="text-xs text-muted-foreground whitespace-pre-wrap">
-          {ask.context}
-        </div>
-      )}
+    <div className="font-medium text-foreground leading-snug whitespace-pre-wrap">
+      {ask.question}
     </div>
   );
 }
@@ -190,18 +226,14 @@ function ConfirmBody({ ask, onAnswer }: AskBodyProps) {
       <div className="flex gap-2">
         <Button
           size="sm"
-          onClick={() =>
-            onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: true })
-          }
+          onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: true })}
         >
           Yes
         </Button>
         <Button
           size="sm"
           variant="outline"
-          onClick={() =>
-            onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: false })
-          }
+          onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: false })}
         >
           No
         </Button>
@@ -216,61 +248,117 @@ function ChoiceBody({
   onAnswer,
 }: AskBodyProps & { multi: boolean }) {
   const [selected, setSelected] = useState<string[]>([]);
-  const options = ask.options ?? [];
+  const [otherText, setOtherText] = useState("");
+  const [focusedIdx, setFocusedIdx] = useState(0);
+  const options: UserAskOption[] = useMemo(
+    () => ask.options ?? [],
+    [ask.options],
+  );
+  // Side-by-side preview layout when ANY single-select option has a preview.
+  const sideBySide = !multi && options.some((o) => o.preview);
+  const focusedOption = options[focusedIdx];
+  const otherSelected = selected.includes(OTHER_SENTINEL);
 
-  function toggle(opt: string) {
+  function toggle(value: string) {
     if (multi) {
       setSelected((s) =>
-        s.includes(opt) ? s.filter((x) => x !== opt) : [...s, opt],
+        s.includes(value) ? s.filter((x) => x !== value) : [...s, value],
       );
     } else {
-      setSelected([opt]);
+      setSelected([value]);
     }
   }
 
   function submit() {
     if (selected.length === 0) return;
-    onAnswer({ ...EMPTY_ASK_RESPONSE, selected });
+    const hasOther = selected.includes(OTHER_SENTINEL);
+    const labels = selected.filter((s) => s !== OTHER_SENTINEL);
+    if (hasOther) {
+      if (!otherText.trim()) return;
+      labels.push("Other");
+      onAnswer({
+        ...EMPTY_ASK_RESPONSE,
+        selected: labels,
+        freeform: otherText,
+      });
+      return;
+    }
+    onAnswer({ ...EMPTY_ASK_RESPONSE, selected: labels });
   }
+
+  const canSubmit =
+    selected.length > 0 && (!otherSelected || otherText.trim().length > 0);
 
   return (
     <div className="flex flex-col gap-2">
       <QuestionLine ask={ask} />
-      {multi ? (
+      <div className={sideBySide ? "grid grid-cols-[1fr_1.2fr] gap-3" : ""}>
         <div className="flex flex-col gap-1.5">
-          {options.map((opt) => (
+          {options.map((opt, i) => (
             <label
-              key={opt}
-              className="flex items-center gap-2 cursor-pointer text-sm"
+              key={opt.label}
+              className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm hover:bg-accent"
+              onMouseEnter={() => setFocusedIdx(i)}
             >
-              <Checkbox
-                checked={selected.includes(opt)}
-                onCheckedChange={() => toggle(opt)}
+              <input
+                type={multi ? "checkbox" : "radio"}
+                name={`ask-${ask.callId}`}
+                value={opt.label}
+                checked={selected.includes(opt.label)}
+                onChange={() => {
+                  toggle(opt.label);
+                  setFocusedIdx(i);
+                }}
+                className="mt-0.5 size-3.5"
               />
-              <span>{opt}</span>
+              <div className="flex-1 min-w-0">
+                <div>{opt.label}</div>
+                {opt.description && (
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {opt.description}
+                  </div>
+                )}
+              </div>
             </label>
           ))}
+          {ask.allowOther && (
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-dashed border-border bg-background/40 px-2 py-1.5 text-sm hover:bg-accent">
+              <input
+                type={multi ? "checkbox" : "radio"}
+                name={`ask-${ask.callId}`}
+                value={OTHER_SENTINEL}
+                checked={otherSelected}
+                onChange={() => toggle(OTHER_SENTINEL)}
+                className="mt-0.5 size-3.5"
+              />
+              <div className="flex-1 min-w-0">
+                <div>Other</div>
+                {otherSelected ? (
+                  <Textarea
+                    value={otherText}
+                    onChange={(e) => setOtherText(e.target.value)}
+                    placeholder="Type your answer…"
+                    rows={2}
+                    className="mt-1 text-base"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    Type a different answer
+                  </div>
+                )}
+              </div>
+            </label>
+          )}
         </div>
-      ) : (
-        <RadioGroup
-          value={selected[0] ?? ""}
-          onValueChange={(v) => toggle(v)}
-          className="flex flex-col gap-1.5"
-        >
-          {options.map((opt) => (
-            <Label
-              key={opt}
-              htmlFor={`${ask.callId}-${opt}`}
-              className="flex items-center gap-2 cursor-pointer text-sm font-normal"
-            >
-              <RadioGroupItem value={opt} id={`${ask.callId}-${opt}`} />
-              <span>{opt}</span>
-            </Label>
-          ))}
-        </RadioGroup>
-      )}
+        {sideBySide && focusedOption?.preview && (
+          <pre className="overflow-auto rounded-md border border-border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+            {focusedOption.preview}
+          </pre>
+        )}
+      </div>
       <div>
-        <Button size="sm" onClick={submit} disabled={selected.length === 0}>
+        <Button size="sm" onClick={submit} disabled={!canSubmit}>
           {multi ? "Submit selection" : "Submit"}
         </Button>
       </div>
@@ -350,6 +438,11 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
   const [showOther, setShowOther] = useState(false);
   const LevelIcon = LEVEL_ICONS[ask.level ?? "info"];
 
+  function sendOther() {
+    if (!freeform.trim()) return;
+    onAnswer({ ...EMPTY_ASK_RESPONSE, action: "Other", freeform });
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-start gap-2">
@@ -359,65 +452,75 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
             ask.level === "error" && "text-destructive",
             ask.level === "warning" && "text-amber-500",
             ask.level === "success" && "text-emerald-500",
-            !ask.level && "text-muted-foreground",
+            (!ask.level || ask.level === "info") && "text-muted-foreground",
           )}
         />
         <div className="flex-1 text-sm whitespace-pre-wrap">{ask.message}</div>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        {(ask.actions ?? []).map((a) => (
+      {!showOther && (
+        <div className="flex flex-wrap gap-2 items-center">
+          {(ask.actions ?? []).map((a) => (
+            <Button
+              key={a}
+              size="sm"
+              variant={ask.level === "error" ? "destructive" : "secondary"}
+              onClick={() =>
+                onAnswer({ ...EMPTY_ASK_RESPONSE, action: a, freeform: null })
+              }
+            >
+              {a}
+            </Button>
+          ))}
           <Button
-            key={a}
             size="sm"
-            variant={ask.level === "error" ? "destructive" : "secondary"}
-            onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, action: a })}
+            variant="outline"
+            onClick={() => setShowOther(true)}
           >
-            {a}
+            Other…
           </Button>
-        ))}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setShowOther((s) => !s)}
-        >
-          Other…
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() =>
-            onAnswer({ ...EMPTY_ASK_RESPONSE, action: "dismiss" })
-          }
-        >
-          Dismiss
-        </Button>
-      </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              onAnswer({
+                ...EMPTY_ASK_RESPONSE,
+                action: "dismiss",
+                freeform: null,
+              })
+            }
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
       {showOther && (
-        <div className="flex gap-2 items-center">
-          <Input
+        <div className="flex flex-col gap-2">
+          <Textarea
             value={freeform}
             onChange={(e) => setFreeform(e.target.value)}
-            placeholder="Tell the agent…"
+            placeholder="Tell the agent what happened…"
+            rows={2}
+            autoFocus
             className="text-base"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && freeform.trim()) {
-                onAnswer({
-                  ...EMPTY_ASK_RESPONSE,
-                  action: "other",
-                  freeform,
-                });
-              }
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendOther();
             }}
           />
-          <Button
-            size="sm"
-            onClick={() =>
-              onAnswer({ ...EMPTY_ASK_RESPONSE, action: "other", freeform })
-            }
-            disabled={!freeform.trim()}
-          >
-            Send
-          </Button>
+          <div className="flex gap-2 items-center">
+            <Button size="sm" onClick={sendOther} disabled={!freeform.trim()}>
+              Send
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setShowOther(false);
+                setFreeform("");
+              }}
+            >
+              Back
+            </Button>
+          </div>
         </div>
       )}
     </div>

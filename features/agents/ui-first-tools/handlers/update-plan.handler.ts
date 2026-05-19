@@ -65,7 +65,7 @@ export const updatePlanHandler: ToolHandler<
         toolName: "update_plan",
         kind: "plan_approval",
         question: "Approve this plan?",
-        options: ["Approve", "Reject"],
+        options: [{ label: "Approve" }, { label: "Reject" }],
         plan: {
           title,
           steps,

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-19`
+**Last updated:** `2026-05-19` (user-tool parity refresh)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -220,6 +220,19 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-05-19` — `user` tool parity refresh to match matrx-extend's
+  May 2026 updates. Schema now accepts rich `options` objects
+  (`{label, description?, preview?}`) alongside bare strings, an optional
+  `header` chip (≤12 chars), `allow_other: true` (appends a dashed
+  "Other" option with embedded textarea on choice / choice_many), and a
+  batched form (`questions: SingleQuestion[]`, 1–4) that returns
+  `{answers: Envelope[], cancelled, timed_out}` and short-circuits on
+  the first cancel/timeout. `PendingAsk` carries `header`, `allowOther`,
+  `batchIndex`/`batchTotal`, and a normalized `UserAskOption[]`. AskCard
+  renders the header chip, "N of M" pill, option descriptions, and the
+  side-by-side preview grid when any single-select option has a
+  `preview`. `update_plan` now enqueues rich `{label}` options. Wire
+  envelope unchanged.
 - `2026-05-19` — Initial port from matrx-extend. Five new tables, seven
   tool handlers, `nextjs-surface` capability + ambient context seeding,
   inline ask card UX (above the input, never blocks), TaskPanel +

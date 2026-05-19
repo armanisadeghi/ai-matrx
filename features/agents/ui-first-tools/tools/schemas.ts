@@ -25,48 +25,163 @@ import { z } from "zod";
 // user — the ask-user mega-tool
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Rich option shape — string for legacy callers, object for new callers.
+ * Handlers normalize to `{label, description?, preview?}` before the
+ * card sees it.
+ */
+const optionInputSchema = z.union([
+  z.string().min(1),
+  z.object({
+    label: z.string().min(1),
+    description: z.string().optional(),
+    preview: z.string().optional(),
+  }),
+]);
+
+export type UserAskOptionInput = z.infer<typeof optionInputSchema>;
+
+/** Normalized option shape used by the UI. */
+export interface UserAskOption {
+  label: string;
+  description?: string;
+  preview?: string;
+}
+
+/** Normalize bare-string options to the rich shape. */
+export function normalizeAskOptions(
+  raw: UserAskOptionInput[] | undefined,
+): UserAskOption[] | undefined {
+  if (!raw) return undefined;
+  return raw.map((o) =>
+    typeof o === "string"
+      ? { label: o }
+      : { label: o.label, description: o.description, preview: o.preview },
+  );
+}
+
+const USER_ASK_TYPES = [
+  "confirm",
+  "choice",
+  "choice_many",
+  "text",
+  "secret",
+  "notify",
+] as const;
+
+/**
+ * Inner shape used when batching — same fields as the top-level args
+ * minus the `questions` discriminator.
+ */
+const singleQuestionSchema = z.object({
+  type: z.enum(USER_ASK_TYPES),
+  question: z.string().optional(),
+  header: z.string().max(12).optional(),
+  options: z.array(optionInputSchema).optional(),
+  context: z.string().optional(),
+  message: z.string().optional(),
+  actions: z.array(z.string().min(1)).optional(),
+  level: z.enum(["info", "success", "warning", "error"]).optional(),
+  allow_other: z.boolean().optional(),
+  timeout_seconds: z.number().int().min(1).max(900).optional(),
+});
+export type UserSingleQuestion = z.infer<typeof singleQuestionSchema>;
+
+function validateSingle(
+  v: UserSingleQuestion,
+  ctx: z.RefinementCtx,
+  pathPrefix: (string | number)[],
+): void {
+  const needsQuestion =
+    v.type === "confirm" ||
+    v.type === "choice" ||
+    v.type === "choice_many" ||
+    v.type === "text" ||
+    v.type === "secret";
+  if (needsQuestion && !v.question?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      message: `question is required when type='${v.type}'`,
+      path: [...pathPrefix, "question"],
+    });
+  }
+  if (v.type === "notify" && !v.message?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      message: "message is required when type='notify'",
+      path: [...pathPrefix, "message"],
+    });
+  }
+  if (
+    (v.type === "choice" || v.type === "choice_many") &&
+    (!v.options || v.options.length < 2)
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: `options must have at least 2 entries when type='${v.type}'`,
+      path: [...pathPrefix, "options"],
+    });
+  }
+}
+
+/**
+ * UserArgs is one big object with everything optional, validated by
+ * superRefine. Single-question form fills the top-level fields; batched
+ * form fills `questions[]`. The schema is intentionally flat (vs a
+ * `z.union`) so the DB `tl_def.parameters` shape mirrors it 1:1 and the
+ * drift comparator works without special-casing unions.
+ */
 export const userArgsSchema = z
   .object({
-    type: z.enum(["confirm", "choice", "choice_many", "text", "secret", "notify"]),
+    // Single-question fields (omit when using batched form)
+    type: z.enum(USER_ASK_TYPES).optional(),
     question: z.string().optional(),
-    options: z.array(z.string().min(1)).optional(),
+    header: z.string().max(12).optional(),
+    options: z.array(optionInputSchema).optional(),
     context: z.string().optional(),
     message: z.string().optional(),
     actions: z.array(z.string().min(1)).optional(),
     level: z.enum(["info", "success", "warning", "error"]).optional(),
+    allow_other: z.boolean().optional(),
     timeout_seconds: z.number().int().min(1).max(900).optional(),
+    // Batched form (mutually exclusive with everything above)
+    questions: z.array(singleQuestionSchema).min(1).max(4).optional(),
   })
   .superRefine((v, ctx) => {
-    const needsQuestion =
-      v.type === "confirm" ||
-      v.type === "choice" ||
-      v.type === "choice_many" ||
-      v.type === "text" ||
-      v.type === "secret";
-    if (needsQuestion && !v.question) {
+    const isBatch = !!v.questions && v.questions.length > 0;
+    if (isBatch) {
+      const stray = Object.entries(v).find(
+        ([k, val]) => k !== "questions" && val !== undefined,
+      );
+      if (stray) {
+        ctx.addIssue({
+          code: "custom",
+          message: `When using the batched form, only \`questions\` may be set. Saw \`${stray[0]}\`.`,
+          path: [stray[0]],
+        });
+      }
+      v.questions!.forEach((q, i) => validateSingle(q, ctx, ["questions", i]));
+      return;
+    }
+    if (!v.type) {
       ctx.addIssue({
         code: "custom",
-        message: `question is required when type='${v.type}'`,
+        message:
+          "Either `type` (single question) or `questions[]` (batched) is required",
+        path: ["type"],
       });
+      return;
     }
-    if (v.type === "notify" && !v.message) {
-      ctx.addIssue({
-        code: "custom",
-        message: "message is required when type='notify'",
-      });
-    }
-    if (
-      (v.type === "choice" || v.type === "choice_many") &&
-      (!v.options || v.options.length < 2)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: `options must have at least 2 entries when type='${v.type}'`,
-      });
-    }
+    validateSingle(v as UserSingleQuestion, ctx, []);
   });
 
 export type UserArgs = z.infer<typeof userArgsSchema>;
+
+export function isBatchedUserArgs(
+  args: UserArgs,
+): args is UserArgs & { questions: UserSingleQuestion[] } {
+  return !!args.questions && args.questions.length > 0;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // update_plan
@@ -214,3 +329,16 @@ export const EMPTY_ASK_RESPONSE: AskUserResponse = {
   cancelled: false,
   timed_out: false,
 };
+
+/**
+ * Batched response — emitted when the `user` tool was called with
+ * `questions: SingleQuestion[]`. Each entry in `answers` matches the
+ * input question by index. On the first cancel/timeout, the batch
+ * short-circuits and the remaining entries are empty envelopes with
+ * `cancelled` / `timed_out` set.
+ */
+export interface BatchedAskUserResponse {
+  answers: AskUserResponse[];
+  cancelled: boolean;
+  timed_out: boolean;
+}

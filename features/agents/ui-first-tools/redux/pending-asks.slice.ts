@@ -15,7 +15,7 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { AskUserResponse } from "../tools/schemas";
+import type { AskUserResponse, UserAskOption } from "../tools/schemas";
 
 export type PendingAskKind =
   | "confirm"
@@ -27,11 +27,7 @@ export type PendingAskKind =
   | "plan_approval"
   | "takeover";
 
-export type PendingAskStatus =
-  | "pending"
-  | "resolved"
-  | "cancelled"
-  | "expired";
+export type PendingAskStatus = "pending" | "resolved" | "cancelled" | "expired";
 
 /**
  * Minimal "level" hint (info / success / warning / error) for `notify`-kind
@@ -42,13 +38,17 @@ export type PendingAskLevel = "info" | "success" | "warning" | "error";
 export interface PendingAsk {
   callId: string;
   conversationId: string;
-  toolName: string;        // 'user' | 'update_plan' | 'request_user_takeover'
+  toolName: string; // 'user' | 'update_plan' | 'request_user_takeover'
   kind: PendingAskKind;
   question?: string;
+  /** Short uppercase chip rendered in the card header (≤12 chars). */
+  header?: string;
   /** Free-form supporting context shown above/below the question. */
   context?: string;
-  /** Choice / choice_many options. */
-  options?: string[];
+  /** Choice / choice_many options — already normalized to the rich shape. */
+  options?: UserAskOption[];
+  /** When true, render a dashed-border "Other" option with a freeform textarea. */
+  allowOther?: boolean;
   /** Notify-kind: the message body. */
   message?: string;
   /** Notify-kind: action button labels. */
@@ -61,6 +61,9 @@ export interface PendingAsk {
     reasoning?: string;
     estimated_minutes?: number;
   };
+  /** Batched-question metadata (0-based). When set, the card shows "N of M". */
+  batchIndex?: number;
+  batchTotal?: number;
   /** Wall-clock timeout. Null = no timeout. */
   expiresAtMs?: number;
   status: PendingAskStatus;
