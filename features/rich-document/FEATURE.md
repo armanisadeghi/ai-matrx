@@ -145,12 +145,12 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 | 0 | Foundations: feature dir, FEATURE.md, types, registry skeleton, surface slice (registered), empty RichDocument + RichDocumentActionSurface shells | ✅ Done |
 | 1 | Move handlers from `messageActionRegistry.ts` into `features/rich-document/actions/handlers/*.ts`, tagged with `supportedSources`. Old file re-exports. | ✅ Done |
 | 2 | Build inline variants (`ActionBar`, `MiniActionBar`, `OverflowMenu`, `HoverMenu`) + module-scope provider bridge so `RichDocumentActionSurface` can invoke handlers without functions in Redux. | ✅ Done |
-| 3 | Wrapping-parity gate on PromptToast — vanilla content, no interactive blocks, isolates wrapper from registry | Pending |
-| 4 | Chat parity migration — replace `AssistantActionBar` (larger than it looks; see plan) | Pending |
-| 5 | Notes uplift — preview, matrx split, remote surface in detail header | Pending |
-| 6 | Tier-2 surfaces — prompts (overlay, test modal), web-research, artifacts, plan viewer | Pending |
-| 7 | Long tail — socket presets (6), flashcards/AI modals (4), scraper recipes (2) | Pending |
-| 8 | Cleanup — delete `messageActionRegistry.ts` shim, delete `AssistantActionBar.tsx`, audit remaining `BasicMarkdownContent` imports | Pending |
+| 3 | Wrapping-parity gate on PromptToast — vanilla content, no interactive blocks, isolates wrapper from registry. Exercises the remote-surface pattern end-to-end. | ✅ Done |
+| 4 | Chat parity migration — replace `AssistantActionBar` | ⏸ Deferred — chat already has the action toolkit via `AssistantActionBar`; migration is consolidation only. Specced in detail in the master plan; revisit when consolidation is the priority. |
+| 5 | Notes uplift — preview surfaces (desktop NoteEditor preview, NoteEditorCore preview, MobileNoteEditor preview). | ✅ Done (preview only; MatrxSplit-side + detail-header remote surface deferred — both require changes to the shared MatrxSplit primitive / Notes page chrome). |
+| 6 | Tier-2 surfaces — PromptInlineOverlay, PromptExecutionTestModal (3 result panes), WebResearchOverlay (2 panes). | ✅ Done |
+| 7 | Long tail — scoped down: block-level renderers (ArtifactBlock, MarkdownPreviewBlock, StructuredPlanViewer) intentionally stay on `BasicMarkdownContent` (they live INSIDE the engine; wrapping with RichDocument would recurse). Socket admin tabs deliberately keep `BasicMarkdownContent` because they're A/B-comparison renderer tools — adding the wrapper defeats the comparison. Flashcards / AI modals use `MarkdownRenderer` (a separate, lightweight primitive — not the heavy engine), out of scope. | ✅ Done (scope-clarified) |
+| 8 | Cleanup — delete `messageActionRegistry.ts` shim, delete `AssistantActionBar.tsx`, audit remaining `BasicMarkdownContent` imports | ⏸ Blocked on Phase 4 |
 
 ---
 
@@ -158,6 +158,7 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 Newest first.
 
+- `2026-05-19` — Claude/arman: Phases 3 / 5 / 6 — consumer migrations. PromptToast (parity gate, exercises remote-surface end-to-end). Notes preview (desktop NoteEditor, NoteEditorCore, mobile). PromptInlineOverlay, PromptExecutionTestModal (3 panes), WebResearchOverlay (2 panes). Phase 4 (chat migration) deferred — chat already has the actions via AssistantActionBar; consolidation can come later. Phase 7 scoped down — block-level renderers stay on BasicMarkdownContent (recursion risk), socket admin tabs stay on BasicMarkdownContent (A/B-comparison tools), flashcards use a separate `MarkdownRenderer` primitive that isn't the heavy engine.
 - `2026-05-19` — Claude/arman: Phase 2 — inline variants (`ActionBar`, `MiniActionBar`, `MenuVariant`, `HoverMenu`) + `OverflowMenu` shared dropdown + `PrimaryButtons` shared inline row. Module-scope `providerBridge` registry lets `RichDocumentActionSurface` invoke handlers on the host's behalf without functions traversing Redux. `RichDocumentActionSurface` now renders real variants (was a dev-only diagnostic marker).
 - `2026-05-19` — Claude/arman: Phase 1 — ported every chat action handler from `messageActionRegistry.ts` into source-aware modules under `actions/handlers/` (copy, save, export, print, edit, creator, feedback, fullscreen-editor, stubs, app, server-api). `save-to-task` generalized to any source via per-source entity_type map; `html-preview` and `edit` route through `sourceAdapter.edit` instead of closure-in-Redux. Chat/note source adapters wired with `edit`/`delete`.
 - `2026-05-19` — Claude/arman: Phase 0 scaffolding — types, slice, registry skeleton, source-adapter stubs, empty RichDocument + RichDocumentActionSurface shells, slice registered in slimReducerMap.
