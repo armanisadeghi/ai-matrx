@@ -19730,6 +19730,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_markdown_samples: {
+        Row: {
+          content: string
+          created_at: string
+          description: string
+          detected_blocks: string[]
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          description?: string
+          detected_blocks?: string[]
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string
+          detected_blocks?: string[]
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
