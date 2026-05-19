@@ -457,11 +457,39 @@ export default [
         },
     },
     {
+        // Overlay overhaul rule #1: no JSX prop spread inside the new
+        // OverlayController. The whole reason the controller exists is to
+        // make prop wiring explicit so TypeScript catches dispatch /
+        // component prop-shape drift at compile time — a single `{...spread}`
+        // anywhere in here would defeat the point. See
+        // docs/OVERLAY_WINDOW_OVERHAUL.md.
+        //
+        // Warn (not error) during stage 3 — bumped to error after the
+        // cutover is complete.
+        files: ['features/overlays/OverlayController.tsx'],
+        rules: {
+            'no-restricted-syntax': [
+                'warn',
+                {
+                    selector: 'JSXSpreadAttribute',
+                    message:
+                        'No JSX prop spread in OverlayController.tsx — wire every prop by name. Spread reintroduces the dispatch/component drift bug class this file exists to eliminate. See docs/OVERLAY_WINDOW_OVERHAUL.md.',
+                },
+            ],
+        },
+    },
+    {
         files: [
             'features/window-panels/registry/windowRegistry.ts',
             'features/window-panels/UnifiedOverlayController.tsx',
             'features/window-panels/OverlaySurface.tsx',
             'components/overlays/OverlayController.tsx',
+            // The new explicit controller — by design, this file directly
+            // imports every window/overlay component (one `dynamic()` per
+            // entry). The "no direct windows/* import" rule exists to keep
+            // those imports inside the registry layer; this file IS the
+            // registry layer. Same exemption as windowRegistry.ts above.
+            'features/overlays/OverlayController.tsx',
         ],
         rules: {
             'no-restricted-imports': 'off',

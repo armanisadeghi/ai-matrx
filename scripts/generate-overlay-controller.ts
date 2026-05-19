@@ -1028,10 +1028,35 @@ function emitOpeners(entries: RegistryEntry[]): void {
   }
 }
 
+// Overlays with hand-written callback-aware openers. Their files in
+// `features/overlays/openers/` are thin re-exports of those hand-written
+// hooks — they must NOT be overwritten by the codegen. We preserve them
+// by skipping these overlayIds on `writeOpeners`. Listed here so it's
+// obvious from the codegen what's intentionally out of the regen loop.
+const CALLBACK_AWARE_OPENERS = new Set<string>([
+  "imageUploaderWindow",
+  "smartCodeEditorWindow",
+  "multiFileSmartCodeEditorWindow",
+  "contentEditorWindow",
+  "contentEditorListWindow",
+  "contentEditorWorkspaceWindow",
+  "curatedIconPickerWindow",
+]);
+
 function writeOpeners(entries: RegistryEntry[]): void {
+  let skipped = 0;
   for (const e of entries) {
+    if (CALLBACK_AWARE_OPENERS.has(e.overlayId)) {
+      skipped++;
+      continue;
+    }
     const path = join(REPO_ROOT, "features/overlays/openers", openerFilename(e));
     writeFileSyncSafe(path, buildOpenerFile(e));
+  }
+  if (skipped > 0) {
+    process.stderr.write(
+      `  (skipped ${skipped} callback-aware opener${skipped === 1 ? "" : "s"} — see CALLBACK_AWARE_OPENERS)\n`,
+    );
   }
 }
 

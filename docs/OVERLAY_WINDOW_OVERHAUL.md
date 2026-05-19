@@ -2,6 +2,24 @@
 
 > Living plan. Update as we make decisions or finish stages.
 
+## Status (as of 2026-05-18)
+
+| Stage | Status | Commits |
+|---|---|---|
+| 0 — SW fix (blob-cache narrowed scope) | ✅ shipped | (deployed earlier) |
+| 1 — New `OverlayController.tsx` behind a flag | ✅ committed | `25c160c6f` |
+| 2 — Typed openers (`useOpenX` + `<XController />`) + catalogue | ✅ committed | `57635640e` |
+| 3a — Callback-aware openers re-export hand-written sources | ✅ in-flight (this branch) | pending commit |
+| 3b — Tighten the 90 `as never` casts in controller (add real type imports) | 🟡 sub-agent running | pending commit |
+| 3c — ESLint rule: no JSX spread in controller (warn) | ✅ in-flight (this branch) | pending commit |
+| 3d — Migrate ~321 dispatch sites to typed openers | ⏸ deferred | none |
+| 4 — Move `windowManagerSlice` → `features/windows/manager.ts`, finish System 3 | ⏸ deferred | none |
+| 5 — Cutover (flip `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1` in prod) | ⏸ awaits user validation | — |
+| 6 — Delete legacy `UnifiedOverlayController*` / `OverlaySurface` / `windowRegistry` | ⏸ post-cutover | — |
+| 7 — System 4 persistence (URL + `window_sessions` JSONB blob mode) | ⏸ post-cutover | — |
+
+The new controller already works (flag-on in dev). Stages 3d, 4, 5, 6, 7 are polish/cleanup that don't block the cutover.
+
 ## Why
 
 In April 2026 a cleanup pass (commits `9eafe2ce0` … `1eabc0911`) accidentally merged two systems that had always been separate:
