@@ -175,7 +175,8 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 | Notes | `features/notes/FEATURE.md` |
 | Permissions & Sharing | `features/sharing/FEATURE.md` |
 | Code editor | `features/code-editor/FEATURE.md` |
-| Window Panels (all overlays) | `features/window-panels/FEATURE.md` |
+| Overlay system (controller, openers, catalogue) | `features/overlays/FEATURE.md` |
+| Window Panels (component + window manager) | `features/window-panels/FEATURE.md` |
 | Settings system | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |
 | RAG | `features/rag/FEATURE.md` |
 | Universal file handler | `features/files/handler/FEATURE.md` |
@@ -250,9 +251,14 @@ Single source of truth: `.cursor/skills/ios-mobile-first/SKILL.md`. Rules:
 
 ---
 
-## Window Panels (overlays)
+## Overlays + Windows (two independent systems)
 
-All floating windows, bottom sheets, modals, and inline agent widgets go through the window-panels system. Invoke the `window-panels` skill before adding or modifying any overlay. Entry points: `features/window-panels/**`, `components/overlays/OverlayController.tsx`, `lib/redux/slices/overlaySlice.ts`, `lib/redux/slices/windowManagerSlice.ts`.
+After the May 2026 overhaul (see `docs/OVERLAY_WINDOW_OVERHAUL.md`), what was one conflated system is now two:
+
+1. **Overlay system** — the controller that renders any component (dialog, sheet, modal, window, toast) at the top of the tree on dispatch. Lives in `features/overlays/`. Has explicit JSX prop wiring (no `{...spread}`) so TypeScript catches dispatch/component drift. **Invoke the `overlay-system` skill** before opening / adding / debugging an overlay.
+2. **WindowPanel component + Window Manager** — the draggable/resizable frame primitive (`WindowPanel.tsx`), the tray (`WindowTray.tsx`), the runtime registry slice (`windowManagerSlice.ts`), and the persistence machinery. Lives in `features/window-panels/`. A `<WindowPanel>` rendered anywhere joins the runtime manager and participates in minimize-all, focus, persistence — regardless of whether the overlay controller rendered it. **Invoke the `window-panels` skill** for tasks scoped to the component / tray / manager / persistence.
+
+Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no `kind: "window" | "modal"` discriminator; no callback functions through Redux (use the opener's `onX` props — the callback registry is hidden inside); the overlay catalogue is metadata-only and is NOT iterated to render.
 
 ---
 

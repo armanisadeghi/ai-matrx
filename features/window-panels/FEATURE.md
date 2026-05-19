@@ -1,7 +1,43 @@
 # Window Panels — FEATURE.md
 
-> **Status**: Active. Phases 0–5, 8, 9 of the modernization plan shipped (2026-04-23). Phases 6, 7, 10–13 deferred or in progress — see **Known gaps** at the bottom.
-> **Canonical reference** for the window/overlay system. Supersedes the long-form content of `INVENTORY.md`.
+> **⚠️ Read this first** — the May 2026 overhaul split this feature into two independent systems. This doc still describes the older conflated structure and is kept for historical reference + as a guide while the cutover finishes. For most tasks:
+> - **Rendering an overlay** (dialog, sheet, modal, window, toast) → [`features/overlays/FEATURE.md`](../overlays/FEATURE.md)
+> - **The WindowPanel component itself** (drag, resize, minimize, tray) → this file's "Architecture" and below
+> - **Migration history + cutover plan** → [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/OVERLAY_WINDOW_OVERHAUL.md)
+> - **Future improvements + known gaps** → [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../docs/OVERLAY_WINDOW_ROADMAP.md)
+>
+> **Status**: The legacy `UnifiedOverlayController` / `OverlaySurface` / `windowRegistry` rendering path described below is **deprecated**. It is still mounted as a fallback during the cutover (controlled by `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER`); once cutover is confirmed in production, the `registry/` directory and the controller files get deleted. The **`WindowPanel.tsx`, `WindowTray.tsx`, `WindowTraySync.tsx`, `WindowPersistenceManager.tsx`, and the window-manager Redux slice STAY** — they are the WindowPanel component primitive and System 3 (Window Manager), independent of overlay rendering.
+
+---
+
+## Quick map (post-cutover state)
+
+```
+features/overlays/                  ← overlay rendering layer (NEW canonical)
+  OverlayController.tsx                explicit JSX, no spread, type-safe
+  openers/<overlayId>.tsx              useOpenX() + <XController />
+  catalogue.ts                         render-free metadata
+  featureFlag.ts                       cutover flag reader
+
+features/window-panels/             ← WindowPanel component primitive
+  WindowPanel.tsx                      the draggable/resizable frame
+  WindowTray.tsx                       minimized-windows dock
+  WindowTraySync.tsx                   debounced viewport listener
+  WindowPersistenceManager.tsx         window_sessions DB hydration
+  windows/<feature>/                   window components (rendered by overlay controller)
+  registry/                            DEPRECATED — deleted post-cutover
+  OverlaySurface.tsx                   DEPRECATED — deleted post-cutover
+  UnifiedOverlayController*.tsx        DEPRECATED — deleted post-cutover
+
+lib/redux/slices/
+  windowManagerSlice.ts             ← System 3 (Window Manager) — runtime registration
+                                       (a <WindowPanel> joins by mounting, not by static declaration)
+  overlaySlice.ts                   ← state for the overlay system
+```
+
+---
+
+> The original FEATURE.md content (architecture diagrams, registry shape, etc.) is preserved below for historical context. **Treat the "registry" sections as describing the LEGACY path that's being deleted.**
 
 ---
 

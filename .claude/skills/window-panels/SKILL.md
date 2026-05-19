@@ -1,11 +1,22 @@
 ---
 name: window-panels
-description: Create, modify, or debug overlays in the matrx-admin window-panels system — floating windows, bottom sheets, modals, and inline agent widgets. One registry drives rendering, Tools-grid placement, persistence, URL deep-linking, and mobile presentation. Adding an overlay is a 2-file change. Use whenever the task touches `features/window-panels/**`, `components/overlays/OverlayController.tsx`, `lib/redux/slices/overlaySlice.ts`, `lib/redux/slices/windowManagerSlice.ts`, or mentions "window", "overlay", "floating panel", "Tools grid", "tray", "minimize/maximize", "drawer surface", or `mobilePresentation` in this app.
+description: Use for tasks scoped to the WindowPanel COMPONENT primitive itself — drag, resize, minimize/maximize, the tray dock (WindowTray / WindowTraySync), the runtime Window Manager registry (`windowManagerSlice`), URL persistence of window state, and the `window_sessions` DB hydration. Triggers on `features/window-panels/WindowPanel.tsx`, `WindowTray*.tsx`, `WindowPersistenceManager.tsx`, `lib/redux/slices/windowManagerSlice.ts`, or any task adding a `<WindowPanel>` directly on a page outside the overlay system. For OPENING / ADDING / RENDERING / DEBUGGING dialogs, sheets, modals, or windows-as-overlays — use the `overlay-system` skill instead. The two systems were merged in April 2026 (causing a class of silent-render bugs) and split back apart in May 2026; keep them separate.
 ---
 
-# Window Panels
+# Window Panels (component primitive + window manager)
 
-This skill is the canonical how-to. For deep architectural reference, see [`features/window-panels/FEATURE.md`](../../../features/window-panels/FEATURE.md). For the rollout history and known gaps, see the same file's "Known gaps" section.
+> **Scope (after the May 2026 overhaul):** this skill is now narrowed to the **WindowPanel component primitive** and the runtime **Window Manager** (`windowManagerSlice` + `WindowTray`). Overlay RENDERING (controller / openers / dispatch) moved to a separate system documented in the [`overlay-system`](../overlay-system/SKILL.md) skill. Treat any reference below to "the registry drives rendering" as historical context about the deprecated path that's being deleted post-cutover.
+
+The two systems are independent:
+
+- **WindowPanel + Window Manager** (this skill): a draggable/resizable frame component + a Redux-backed runtime registry every mounted `<WindowPanel>` joins. Centralized controls (minimize-all, focus, tray, persistence) act on whatever is in the runtime registry — whether the overlay controller rendered it or a page rendered it directly.
+- **Overlay System** ([overlay-system](../overlay-system/SKILL.md)): the controller + openers + catalogue that renders any component on dispatch. Used to render most WindowPanel-using overlays, but doesn't have to be — a page-local `<WindowPanel>` works fine without any overlay involvement.
+
+If your task is "open / close / register an overlay" or "dispatch openOverlay" or "migrate to typed opener" → use the **overlay-system** skill, not this one.
+
+If your task is "the window won't drag", "the tray isn't showing", "window state doesn't persist", "I want to render a WindowPanel directly on a page", or "fix WindowManager focus history" → this skill.
+
+For the original deep architectural reference (which still describes the legacy conflated path), see [`features/window-panels/FEATURE.md`](../../../features/window-panels/FEATURE.md). For the migration history, see [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../../docs/OVERLAY_WINDOW_OVERHAUL.md).
 
 ---
 
