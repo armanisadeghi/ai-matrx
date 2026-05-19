@@ -126,6 +126,19 @@ export interface ClientCapabilityPayloads {
  * capability's schema and emits a single aggregated 422 if anything fails.
  */
 export interface ClientContext {
+  /**
+   * DB-registered surface name (one row in `public.ui_surface`). The server
+   * resolves it to a default tool set via `public.tl_def_surface` with
+   * inheritance from `matrx-default/default`, and to template-substitution
+   * variables via `public.ui_surface_value`. Unknown name → 422.
+   *
+   * Examples: `matrx-user/chat`, `matrx-user/agent-builder`,
+   * `matrx-user/agent-run`, `matrx-user/code-editor`.
+   *
+   * Orthogonal to `capabilities` (payload-bearing extras). A request can
+   * declare both.
+   */
+  surface?: string;
   capabilities: ClientCapabilityName[];
   state: Partial<{
     [K in ClientCapabilityName]: ClientCapabilityPayloads[K];

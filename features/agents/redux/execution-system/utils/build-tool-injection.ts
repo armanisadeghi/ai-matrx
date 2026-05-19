@@ -34,6 +34,7 @@ import {
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
+import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -107,8 +108,19 @@ export async function buildToolInjection(
       entry.name
     ] = entry.payload;
   }
-  if (activeCapabilities.length > 0) {
-    client = { capabilities: activeCapabilities, state: stateMap };
+
+  // The DB-registered surface name from the current pathname (matrx-user/chat,
+  // matrx-user/agent-builder, …). The server resolves it via
+  // public.tl_def_surface with inheritance from matrx-default/default — so
+  // every matrx-user surface picks up the seven UI-first tools automatically.
+  const surface = detectActiveSurface() ?? undefined;
+
+  if (surface || activeCapabilities.length > 0) {
+    client = {
+      surface,
+      capabilities: activeCapabilities,
+      state: stateMap,
+    };
   }
 
   // The seven UI-first tools (user / update_plan / request_user_takeover /

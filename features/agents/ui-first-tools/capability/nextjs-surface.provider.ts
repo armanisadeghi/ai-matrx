@@ -28,6 +28,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { registerClientCapability } from "@/features/agents/redux/execution-system/client-capabilities/registry";
+import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
 import type { NextjsSurfaceState } from "@/features/agents/types/tool-injection.types";
 
 function detectTheme(): "light" | "dark" | "system" {
@@ -72,13 +73,15 @@ registerClientCapability({
     // entirely so aidream doesn't register a tool set that would just fail.
     if (!state.userAuth?.id) return null;
 
-    // Bridge surface label preference: instanceUIState if present, else
-    // fall back to a generic "chat" label. The exact source feature already
-    // rides on `request.source_feature` anyway, so this is for orchestration.
-    const surface = "chat";
-
+    // The orchestration payload's ``surface`` field used to be the bare
+    // bridge label (always "chat"). Now it carries the canonical
+    // ``ui_surface.name`` (matrx-user/chat, matrx-user/agent-builder, …)
+    // matching what ``client.surface`` ships at the envelope level — so
+    // downstream tools / variables reading the payload don't have to
+    // reconcile two surface concepts.
     const route = detectRoute();
     const route_kind = classifyRouteKind(route);
+    const surface = surfaceFromPathname(route) ?? "matrx-user/chat";
 
     const orgId = selectOrganizationId(state);
     const projectId = selectProjectId(state);
