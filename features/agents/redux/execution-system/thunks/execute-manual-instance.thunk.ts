@@ -328,7 +328,11 @@ export async function assembleManualRequest(
         kind: "inline",
         name: ct.name,
         description: ct.description ?? "",
-        input_schema: ct.input_schema ?? { type: "object", properties: {}, required: [] },
+        input_schema: ct.input_schema ?? {
+          type: "object",
+          properties: {},
+          required: [],
+        },
       });
     }
   }

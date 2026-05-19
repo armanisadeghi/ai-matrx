@@ -94,8 +94,7 @@ function makeState(
       agents: {
         [AGENT_ID]: {
           id: AGENT_ID,
-          modelId:
-            "modelId" in partial ? partial.modelId : "model-A",
+          modelId: "modelId" in partial ? partial.modelId : "model-A",
           messages: partial.messages ?? [],
           tools: partial.tools ?? [],
           customTools: partial.customTools ?? [],
@@ -168,7 +167,10 @@ describe("assembleManualRequest — live read contract", () => {
 
   test("messages[] embeds agent.messages (priming) verbatim", async () => {
     const priming = [
-      { role: "system", content: [{ type: "text", text: "you are a test agent" }] },
+      {
+        role: "system",
+        content: [{ type: "text", text: "you are a test agent" }],
+      },
       { role: "user", content: [{ type: "text", text: "example turn" }] },
     ];
     const state = makeState({ messages: priming });
@@ -220,8 +222,18 @@ describe("assembleManualRequest — live read contract", () => {
     });
     const payload = (await assembleManualRequest(state, CONVERSATION_ID))!;
     expect(payload.tools_replace).toEqual([
-      { kind: "registered", name: "tool-uuid-1", tool_id: "tool-uuid-1", delegate: false },
-      { kind: "registered", name: "tool-uuid-2", tool_id: "tool-uuid-2", delegate: false },
+      {
+        kind: "registered",
+        name: "tool-uuid-1",
+        tool_id: "tool-uuid-1",
+        delegate: false,
+      },
+      {
+        kind: "registered",
+        name: "tool-uuid-2",
+        tool_id: "tool-uuid-2",
+        delegate: false,
+      },
     ]);
     // `tools` is deliberately NOT set — see assembler for the reason.
     expect(payload.tools).toBeUndefined();
@@ -247,10 +259,10 @@ describe("assembleManualRequest — live read contract", () => {
     const state = makeState({
       settings: { temperature: 0.7, top_p: 0.95, max_output_tokens: 4096 },
     });
-    const payload = (await assembleManualRequest(state, CONVERSATION_ID)) as Record<
-      string,
-      unknown
-    >;
+    const payload = (await assembleManualRequest(
+      state,
+      CONVERSATION_ID,
+    )) as Record<string, unknown>;
     expect(payload.temperature).toBe(0.7);
     expect(payload.top_p).toBe(0.95);
     expect(payload.max_output_tokens).toBe(4096);
@@ -267,10 +279,10 @@ describe("assembleManualRequest — live read contract", () => {
       },
       // No agent.tools, so payload.tools_replace should be undefined entirely.
     });
-    const payload = (await assembleManualRequest(state, CONVERSATION_ID)) as Record<
-      string,
-      unknown
-    >;
+    const payload = (await assembleManualRequest(
+      state,
+      CONVERSATION_ID,
+    )) as Record<string, unknown>;
     expect(payload.temperature).toBe(0.5);
     expect(payload.tools).toBeUndefined();
     expect(payload.tools_replace).toBeUndefined();
@@ -311,7 +323,9 @@ describe("assembleManualRequest — live read contract", () => {
     // proves the path doesn't reach into the overrides slice. This test
     // documents that contract explicitly.
     const state = makeState({ modelId: "m" });
-    expect((state as Record<string, unknown>).instanceModelOverrides).toBeUndefined();
+    expect(
+      (state as Record<string, unknown>).instanceModelOverrides,
+    ).toBeUndefined();
     await expect(
       assembleManualRequest(state, CONVERSATION_ID),
     ).resolves.toBeDefined();
