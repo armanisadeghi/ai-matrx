@@ -1516,6 +1516,17 @@
 .shell-active-pill .shell-nav-icon {
   color: var(--shell-pill-text);
 }
+/* Image editor — suppress Filerobot's duplicate dimension readout.
+   The Resize tab already exposes width/height inputs in its side panel; the
+   topbar's secondary readout is redundant and confuses the layout. Hide it
+   only inside our editor shell so other Filerobot mounts (Annotate, Avatar)
+   are unaffected. */
+[data-image-edit-shell] .FIE_topbar-image-info,
+[data-image-edit-shell] .FIE_topbar-resize-info,
+[data-image-edit-shell] .FIE_resize-info {
+  display: none !important;
+}
+
 .shell-active-pill .shell-nav-label {
   color: var(--shell-pill-text);
   font-weight: 600;

@@ -11,7 +11,7 @@ import {
 import {
   toggleDebugMode,
   selectIsDebugMode,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 
 interface SmallIndicatorProps {
   onDragStart: (e: React.MouseEvent) => void;

@@ -73,7 +73,7 @@ import {
   selectIsDebugMode,
   toggleDebugMode,
   showPromptDebugIndicator,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import {
   toggleOverlay,
   selectIsOverlayOpen,

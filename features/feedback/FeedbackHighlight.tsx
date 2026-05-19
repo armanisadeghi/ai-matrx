@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { PartyPopper, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setModulePreferences } from "@/lib/redux/slices/userPreferencesSlice";
+import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 
 interface FeedbackHighlightProps {
   // Increments each time the parent's feedback button is clicked. We use it

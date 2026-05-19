@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Code2, Bug } from 'lucide-react';
 import { PROMPT_BUILTINS, PromptBuiltin } from '@/lib/redux/prompt-execution/builtins';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { toggleDebugMode, selectIsDebugMode } from '@/lib/redux/slices/adminDebugSlice';
+import { toggleDebugMode, selectIsDebugMode } from '@/lib/redux/preferences/adminDebugSlice';
 import { CODE_FILES, type CodeFile } from '../sample-data';
 
 export default function AICodeEditorDirectDemoPage() {

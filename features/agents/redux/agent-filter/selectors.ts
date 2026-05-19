@@ -8,7 +8,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { CodeAgentFilter } from "@/lib/redux/slices/userPreferencesSlice";
+import type { CodeAgentFilter } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
 import { selectActiveAgents } from "@/features/agents/redux/agent-definition/selectors";
 

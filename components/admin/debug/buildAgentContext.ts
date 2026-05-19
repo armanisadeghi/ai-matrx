@@ -9,7 +9,7 @@
 //   immediately understand: what page, what state, what errors, which server,
 //   what API calls were made.
 
-import type { RouteContext, ConsoleErrorEntry } from '@/lib/redux/slices/adminDebugSlice';
+import type { RouteContext, ConsoleErrorEntry } from '@/lib/redux/preferences/adminDebugSlice';
 import type { ApiCallLogEntry, ServerEnvironment } from '@/lib/redux/slices/apiConfigSlice';
 
 interface AgentContextInput {

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, AlertTriangle, Info, Megaphone, X } from 'lucide-react';
 import { SystemAnnouncement, AnnouncementType } from '@/types/feedback.types';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { setModulePreferences } from '@/lib/redux/slices/userPreferencesSlice';
+import { setModulePreferences } from '@/lib/redux/preferences/userPreferencesSlice';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';

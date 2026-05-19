@@ -10,7 +10,7 @@ import {
   hidePromptDebugIndicator,
   hideResourceDebugIndicator,
   hideExecutionStateDebug,
-} from '@/lib/redux/slices/adminDebugSlice';
+} from '@/lib/redux/preferences/adminDebugSlice';
 import { DebugIndicator } from './DebugIndicator';
 import { ResourceDebugIndicator } from './ResourceDebugIndicator';
 import { PromptExecutionDebugPanel } from './PromptExecutionDebugPanel';

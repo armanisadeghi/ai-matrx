@@ -24,9 +24,10 @@ import layoutReducer from "./slices/layoutSlice";
 import userAuthReducer from "./slices/userAuthSlice";
 import userProfileReducer from "./slices/userProfileSlice";
 
-import userPreferencesReducer from "./slices/userPreferencesSlice";
+import userPreferencesReducer from "./preferences/userPreferencesSlice";
 import flashcardChatReducer from "./slices/flashcardChatSlice";
-import adminDebugReducer from "./slices/adminDebugSlice";
+import adminDebugReducer from "./preferences/adminDebugSlice";
+import creatorDebugReducer from "./preferences/creatorDebugSlice";
 import themeReducer from "@/styles/themes/themeSlice";
 import uiReducer from "./ui/uiSlice";
 
@@ -71,7 +72,7 @@ import fsChangesReducer from "@/features/code/redux/fsChangesSlice";
 import { cloudFilesReducer } from "@/features/files";
 import messagingReducer from "@/features/messaging/redux/messagingSlice";
 import smsReducer from "@/features/sms/redux/smsSlice";
-import adminPreferencesReducer from "./slices/adminPreferencesSlice";
+import adminPreferencesReducer from "./preferences/adminPreferencesSlice";
 import apiConfigReducer from "./slices/apiConfigSlice";
 import urlSyncReducer from "./slices/urlSyncSlice";
 
@@ -207,6 +208,7 @@ export const slimReducerMap = {
   userPreferences: userPreferencesReducer,
 
   adminDebug: adminDebugReducer,
+  creatorDebug: creatorDebugReducer,
   overlays: overlaySlice,
   overlayData: overlayDataReducer,
   voicePad: voicePadReducer,

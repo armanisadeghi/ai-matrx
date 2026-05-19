@@ -22,7 +22,7 @@ import {
   setRouteContext,
   appendConsoleError,
   type ConsoleErrorEntry,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { isKnownThirdPartyNoise } from "@/lib/console-noise";
 import { v4 as uuidv4 } from "uuid";
 

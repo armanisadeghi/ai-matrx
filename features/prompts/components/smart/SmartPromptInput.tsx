@@ -37,7 +37,7 @@ import {
   selectIsDebugMode,
   showResourceDebugIndicator,
   showExecutionStateDebug,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
@@ -66,7 +66,7 @@ import {
   EMPTY_OBJECT,
 } from "@/lib/redux/prompt-execution/slice";
 import { executeMessage } from "@/lib/redux/prompt-execution/thunks/executeMessageThunk";
-import { selectPromptsPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
+import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { SmartResourcePickerButton } from "./SmartResourcePickerButton";
 import { CreatorOptionsModal } from "../builder/CreatorOptionsModal";
 

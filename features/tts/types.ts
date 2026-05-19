@@ -5,7 +5,7 @@
  */
 
 // Import and re-export from userPreferencesSlice for consistency
-import type { GroqTtsVoice } from '@/lib/redux/slices/userPreferencesSlice';
+import type { GroqTtsVoice } from '@/lib/redux/preferences/userPreferencesSlice';
 
 export type EnglishVoice = GroqTtsVoice;
 

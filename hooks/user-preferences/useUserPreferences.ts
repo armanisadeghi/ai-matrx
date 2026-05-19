@@ -8,7 +8,7 @@ import {
     setModulePreferences,
     setPreference,
     VoicePreferences,
-} from '@/lib/redux/slices/userPreferencesSlice';
+} from '@/lib/redux/preferences/userPreferencesSlice';
 
 export const useUserPreferences = () => {
     const dispatch = useAppDispatch();

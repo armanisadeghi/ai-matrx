@@ -8,26 +8,54 @@
  * warmth/blur/threshold/posterize/pixelate/noise), filters, freehand pen,
  * shapes (rect/ellipse/polygon/line/arrow), text, watermark.
  *
- * On top of Filerobot's native toolbar we layer four AI assists:
- *   • ✨ Suggest edits  → `image-suggest-edits` agent
- *   • Background remove → `bg-remove` Python endpoint
- *   • Upscale (2× / 4×) → `upscale` Python endpoint
- *   • Generate variant  → `image-edit` (instruction prompt) endpoint
+ * Overlaid on top of Filerobot:
+ *   • A header strip with file name, back, save-as-duplicate, generate-sizes
+ *     dropdown, mask toggle, and history toggle.
+ *   • AI assists (BG remove / upscale / AI edit) — see EditAiToolbar.
+ *   • A right-rail Versions list (collapsible, localStorage-persisted).
+ *   • A mask painting overlay above Filerobot's image area.
  *
- * All AI helpers consume + produce cloud_file_ids — when one returns, the
- * editor reloads its source from the result so the user can keep editing.
+ * The editor always operates on a cloudFileId — the /[id] route guarantees
+ * it. Saving replaces the existing file (creates a new version) by default;
+ * "Save as duplicate" creates a fresh file.
  */
 
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Loader2, Save, X, Zap } from "lucide-react";
+import {
+  ChevronLeft,
+  Copy,
+  History,
+  Layers,
+  Loader2,
+  Save,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectFileName } from "@/features/files/redux/selectors";
+import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
+import { addAssetVariants } from "@/features/files/api/assets";
+import type { AssetPreset } from "@/features/files/types";
 import { useImageSource } from "../shared/use-image-source";
 import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { EditAiToolbar } from "./EditAiToolbar";
+import { MaskOverlay } from "./MaskOverlay";
+import { useMaskState } from "./use-mask-state";
 import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 
 // Filerobot 5.0.1 ships THREE files (HistoryButtons.js, TabsResponsive.js,
@@ -35,14 +63,7 @@ import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 // without an `import React from "react"` at the top — almost certainly a
 // regression in their build. Next.js's `transpilePackages` can't repair it
 // because there's no import to preserve. Polyfill `React` on `globalThis`
-// before the Filerobot bundle loads so those bare calls resolve. Cheap +
-// localized to the Edit mode loader, gone the day Filerobot fixes the issue.
-//
-// Same vintage of build bug: those files also spread `active={boolean}` onto
-// a DOM <button>, which triggers React's "non-boolean attribute" dev warning
-// on every render. Suppress it via the shared third-party-noise filter
-// (lib/console-noise.ts) — stack-checked so it only swallows warnings whose
-// call originates inside react-filerobot-image-editor, never our own code.
+// before the Filerobot bundle loads so those bare calls resolve.
 const FilerobotImageEditor = dynamic(
   async () => {
     const ReactNs = await import("react");
@@ -64,6 +85,15 @@ interface SavedImage {
 }
 
 const EDIT_FOLDER = "Images/Edited";
+const RAIL_LS_KEY = "image-edit.versions-rail-open";
+
+const VARIANT_PRESETS: { id: AssetPreset; label: string; blurb: string }[] = [
+  { id: "web", label: "Web", blurb: "Hero, OG, card, touch icon, PWA, thumb" },
+  { id: "social", label: "Social", blurb: "OG, square, portrait, story, YT thumb" },
+  { id: "email", label: "Email", blurb: "1200×400 header + 1080² square" },
+  { id: "avatar", label: "Avatar", blurb: "400², 200², 96², 48², 24²" },
+  { id: "favicon", label: "Favicon", blurb: "192, 180, 32, 16 px favicons" },
+];
 
 export function EditModeShell({
   source,
@@ -73,12 +103,14 @@ export function EditModeShell({
   onSave,
   onCancel,
 }: ModeShellProps) {
+  const router = useRouter();
   const { url, filename } = useImageSource(source);
   const themeMode = useThemeMode();
   const [saving, setSaving] = useState(false);
-  // Allows AI ops to swap the underlying source mid-edit. We bump a key to
-  // force-remount Filerobot when this changes (it's not designed to react
-  // to a runtime `source` prop change).
+  const [savingVariants, setSavingVariants] = useState<AssetPreset | null>(null);
+
+  // Allows AI ops + version-restore to swap the underlying source mid-edit.
+  // We bump a key to force-remount Filerobot when this changes.
   const [overrideUrl, setOverrideUrl] = useState<string | null>(null);
   const [overrideFilename, setOverrideFilename] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -86,11 +118,50 @@ export function EditModeShell({
   const activeUrl = overrideUrl ?? url;
   const activeFilename = overrideFilename ?? filename;
 
+  const effectiveCloudFileId =
+    cloudFileId ??
+    (source?.kind === "cloudFileId" ? source.cloudFileId : null);
+
+  // Use the Redux file name when available so it stays in sync with renames.
+  const reduxFileName = useAppSelector((s) =>
+    effectiveCloudFileId ? selectFileName(s, effectiveCloudFileId) : null,
+  );
+  const displayName = reduxFileName ?? activeFilename;
+
+  // Save mode flag (read by the Filerobot save handler). Tracked via ref so
+  // setting it from a menu click doesn't re-render Filerobot underneath us.
+  const nextSaveModeRef = useRef<"version" | "new">("version");
+
+  // Versions rail — open by default, persisted to localStorage.
+  const [railOpen, setRailOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const stored = window.localStorage.getItem(RAIL_LS_KEY);
+    return stored === null ? true : stored === "1";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(RAIL_LS_KEY, railOpen ? "1" : "0");
+  }, [railOpen]);
+
+  // Mask state.
+  const mask = useMaskState();
+
+  // Editor canvas area ref — mask overlay positions itself over this.
+  const canvasAreaRef = useRef<HTMLDivElement | null>(null);
+
   const handleAiResult = useCallback((newUrl: string, newName: string) => {
     setOverrideUrl(newUrl);
     setOverrideFilename(newName);
     setReloadKey((k) => k + 1);
+    mask.clear();
     toast.success("AI result loaded into the editor.");
+  }, [mask]);
+
+  const handleVersionRestored = useCallback(() => {
+    setReloadKey((k) => k + 1);
+    setOverrideUrl(null);
+    setOverrideFilename(null);
+    toast.success("Version restored. Editor reloaded.");
   }, []);
 
   const handleSave = useCallback(
@@ -100,6 +171,8 @@ export function EditModeShell({
         return;
       }
       setSaving(true);
+      const mode = nextSaveModeRef.current;
+      nextSaveModeRef.current = "version"; // reset for the next click
       try {
         const blob = base64ToBlob(saved.imageBase64, saved.mimeType);
         const result = await saveEditedImage({
@@ -108,8 +181,23 @@ export function EditModeShell({
           folderPath: defaultFolder,
           mime: saved.mimeType,
           metadata: { kind: "edit", source_filename: filename },
+          fileId:
+            mode === "version" && effectiveCloudFileId
+              ? effectiveCloudFileId
+              : undefined,
+          changeSummary: mode === "version" ? "Edited in Image Studio" : undefined,
         });
-        toast.success("Saved.");
+        if (mode === "version") {
+          toast.success("Saved as new version.");
+        } else {
+          toast.success("Saved as a new file.");
+        }
+        // If we created a NEW file (Save as duplicate) and we're on a page
+        // route, navigate to the new file's editor so the URL reflects the
+        // canonical file the user is now editing.
+        if (mode === "new" && presentation === "page" && result.fileId) {
+          router.replace(`/images/edit/${result.fileId}`);
+        }
         onSave?.(result);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Save failed";
@@ -118,7 +206,7 @@ export function EditModeShell({
         setSaving(false);
       }
     },
-    [defaultFolder, filename, onSave],
+    [defaultFolder, filename, effectiveCloudFileId, onSave, presentation, router],
   );
 
   // Filerobot's onSave is sync but our save is async — fire and forget,
@@ -130,75 +218,339 @@ export function EditModeShell({
     [handleSave],
   );
 
+  // Programmatically trigger Filerobot's built-in save button. Used by our
+  // header "Save" and "Save as duplicate" actions so the user has one
+  // consistent surface to commit edits.
+  const triggerFilerobotSave = useCallback(() => {
+    if (!canvasAreaRef.current) return false;
+    // Filerobot exposes its save under data-tut="save" + visible "Save" text;
+    // we try both selectors and a text-content fallback so we're resilient to
+    // class-name churn between Filerobot versions.
+    const root = canvasAreaRef.current;
+    const candidates = [
+      root.querySelector<HTMLElement>('[data-tut="save"] button'),
+      root.querySelector<HTMLElement>('[data-tut="save"]'),
+      root.querySelector<HTMLElement>(".FIE_topbar-save-button"),
+    ].filter(Boolean) as HTMLElement[];
+    let target: HTMLElement | null = candidates[0] ?? null;
+    if (!target) {
+      const buttons = root.querySelectorAll<HTMLElement>("button");
+      buttons.forEach((b) => {
+        if (!target && /^\s*Save\s*$/.test(b.textContent ?? "")) target = b;
+      });
+    }
+    if (target) {
+      target.click();
+      return true;
+    }
+    return false;
+  }, []);
+
+  const handleHeaderSave = useCallback(() => {
+    nextSaveModeRef.current = "version";
+    if (!triggerFilerobotSave()) {
+      toast.info(
+        "Open the editor's Save panel to commit the edit (couldn't find the internal save button).",
+      );
+    }
+  }, [triggerFilerobotSave]);
+
+  const handleSaveAsDuplicate = useCallback(() => {
+    nextSaveModeRef.current = "new";
+    if (!triggerFilerobotSave()) {
+      nextSaveModeRef.current = "version";
+      toast.info("Open the editor's Save panel to commit the duplicate.");
+    }
+  }, [triggerFilerobotSave]);
+
+  const handleGenerateVariants = useCallback(
+    async (preset: AssetPreset) => {
+      if (!effectiveCloudFileId) {
+        toast.info("Save first, then we can render size variants.");
+        return;
+      }
+      setSavingVariants(preset);
+      try {
+        await addAssetVariants(effectiveCloudFileId, { preset });
+        toast.success(`${labelForPreset(preset)} variants generated.`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Variant generation failed";
+        toast.error(msg);
+      } finally {
+        setSavingVariants(null);
+      }
+    },
+    [effectiveCloudFileId],
+  );
+
+  const handleBack = useCallback(() => {
+    if (presentation === "modal") {
+      onCancel?.();
+      return;
+    }
+    router.back();
+  }, [presentation, onCancel, router]);
+
   if (!activeUrl) {
     return (
       <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        No image loaded. Pass a <code className="mx-1">?url=</code> or{" "}
-        <code className="mx-1">?file=</code> query parameter, or open this from
-        a Cloud Files row.
+        Loading image…
       </div>
     );
   }
 
   const stem = stripExt(activeFilename);
-
   const isDark = themeMode === "dark";
   const activeTheme = isDark ? darkTheme : lightTheme;
-  // Filerobot doesn't watch `theme` deeply — combine the theme mode into the
-  // key so a light↔dark toggle force-remounts the editor with a clean theme
-  // application.
-  const editorKey = `${themeMode}-${reloadKey}`;
+  const editorKey = `${themeMode}-${reloadKey}-${activeUrl}`;
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-background">
-      <EditAiToolbar
-        sourceCloudFileId={
-          cloudFileId ??
-          (source?.kind === "cloudFileId" ? source.cloudFileId : null)
-        }
-        sourceUrl={activeUrl}
-        onResult={handleAiResult}
-      />
-      <div className="flex-1 min-h-0 relative">
-        <FilerobotImageEditor
-          key={editorKey}
-          source={activeUrl}
-          theme={activeTheme}
-          previewBgColor={isDark ? "#27272a" : "#f4f4f6"}
-          onSave={onFilerobotSave}
-          onClose={() => onCancel?.()}
-          defaultSavedImageName={`${stem}-edited`}
-          defaultSavedImageType="png"
-          defaultSavedImageQuality={0.95}
-          savingPixelRatio={2}
-          previewPixelRatio={1}
-          showBackButton={presentation === "modal"}
-          avoidChangesNotSavedAlertOnLeave={false}
-          // Skip the Scaleflex CDN translations fetch — we ship in English
-          // and don't need their backend lookup hitting the network.
-          useBackendTranslations={false}
-          tabsIds={[
-            "Adjust",
-            "Finetune",
-            "Filters",
-            "Annotate",
-            "Watermark",
-            "Resize",
-          ]}
-          defaultTabId="Adjust"
-          defaultToolId="Crop"
-        />
-        {saving && (
-          <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Saving…</span>
-            </div>
+    <TooltipProvider delayDuration={200}>
+      <div
+        className="h-full min-h-0 flex flex-col bg-background"
+        data-image-edit-shell
+      >
+        {/* ── Header strip ─────────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card/60 shrink-0">
+          {presentation === "page" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={handleBack}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Back</TooltipContent>
+            </Tooltip>
+          ) : null}
+
+          <div className="min-w-0 flex-1 flex items-baseline gap-2">
+            <span
+              className="text-sm font-medium truncate"
+              title={displayName}
+            >
+              {displayName}
+            </span>
+            {effectiveCloudFileId ? null : (
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
+                Unsaved
+              </span>
+            )}
           </div>
-        )}
+
+          {/* Mask toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={mask.active ? "default" : "ghost"}
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={() => mask.toggle()}
+              >
+                <Layers className="h-3.5 w-3.5" />
+                Mask
+                {mask.hasPixels ? (
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary-foreground/80" />
+                ) : null}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {mask.active
+                ? "Mask painting on — click again to hide"
+                : "Paint a mask to constrain AI ops"}
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Generate sizes dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                disabled={!effectiveCloudFileId || savingVariants !== null}
+              >
+                {savingVariants ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                Sizes
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Generate sized variants</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {VARIANT_PRESETS.map((p) => (
+                <DropdownMenuItem
+                  key={p.id}
+                  onClick={() => void handleGenerateVariants(p.id)}
+                  disabled={savingVariants !== null}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{p.label}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {p.blurb}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Save dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                disabled={saving}
+              >
+                {saving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                Save
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                onClick={handleHeaderSave}
+                disabled={!effectiveCloudFileId}
+              >
+                <Save className="h-3.5 w-3.5 mr-2" />
+                Save as new version
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSaveAsDuplicate}>
+                <Copy className="h-3.5 w-3.5 mr-2" />
+                Save as duplicate
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* History rail toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={railOpen ? "default" : "ghost"}
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setRailOpen((v) => !v)}
+                disabled={!effectiveCloudFileId}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {railOpen ? "Hide version history" : "Show version history"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* ── AI toolbar (relocated from sibling) ─────────────────────── */}
+        <EditAiToolbar
+          sourceCloudFileId={effectiveCloudFileId}
+          sourceUrl={activeUrl}
+          onResult={handleAiResult}
+          mask={mask}
+        />
+
+        {/* ── Editor area + versions rail ─────────────────────────────── */}
+        <div className="flex-1 min-h-0 flex">
+          <div
+            ref={canvasAreaRef}
+            className="flex-1 min-w-0 min-h-0 relative"
+          >
+            <FilerobotImageEditor
+              key={editorKey}
+              source={activeUrl}
+              theme={activeTheme}
+              previewBgColor={isDark ? "#27272a" : "#f4f4f6"}
+              onSave={onFilerobotSave}
+              onClose={() => onCancel?.()}
+              defaultSavedImageName={`${stem}-edited`}
+              defaultSavedImageType="png"
+              defaultSavedImageQuality={0.95}
+              savingPixelRatio={2}
+              previewPixelRatio={1}
+              showBackButton={presentation === "modal"}
+              avoidChangesNotSavedAlertOnLeave={false}
+              useBackendTranslations={false}
+              tabsIds={[
+                "Adjust",
+                "Finetune",
+                "Filters",
+                "Annotate",
+                "Watermark",
+                "Resize",
+              ]}
+              defaultTabId="Adjust"
+              defaultToolId="Crop"
+            />
+            <MaskOverlay
+              canvasAreaRef={canvasAreaRef}
+              mask={mask}
+            />
+            {saving && (
+              <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Saving…</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {railOpen && effectiveCloudFileId ? (
+            <aside className="w-72 shrink-0 border-l border-border bg-card flex flex-col min-h-0">
+              <VersionsRail
+                fileId={effectiveCloudFileId}
+                onRestored={handleVersionRestored}
+              />
+            </aside>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
+}
+
+function VersionsRail({
+  fileId,
+  onRestored,
+}: {
+  fileId: string;
+  onRestored: () => void;
+}) {
+  // FileVersionsList drives the actual list; we listen for restore by
+  // diffing the Redux slice through a sentinel. The simplest robust
+  // signal is to subscribe to the file's `version` field — when it
+  // changes after a restore (or a save), bump the parent editor.
+  const version = useAppSelector(
+    (s) =>
+      (s.cloudFiles?.filesById?.[fileId] as { version?: number } | undefined)
+        ?.version ?? null,
+  );
+  const lastSeenRef = useRef<number | null>(version);
+  useEffect(() => {
+    if (version === null) return;
+    if (lastSeenRef.current === null) {
+      lastSeenRef.current = version;
+      return;
+    }
+    if (version !== lastSeenRef.current) {
+      lastSeenRef.current = version;
+      onRestored();
+    }
+  }, [version, onRestored]);
+
+  return <FileVersionsList fileId={fileId} className="min-h-0" />;
 }
 
 function EditorSkeleton() {
@@ -226,13 +578,15 @@ function base64ToBlob(base64DataUrl: string, mime: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
+function labelForPreset(p: AssetPreset): string {
+  const def = VARIANT_PRESETS.find((x) => x.id === p);
+  return def?.label ?? String(p);
+}
+
 /**
  * Filerobot theme overrides — pinned 1:1 to the codebase design tokens.
  *
  * SOURCE: app/globals.css (`:root` for light, `.dark` for dark).
- * The codebase uses the zinc scale + primary blue. Every value below is the
- * hex equivalent of a `--token` defined in globals.css — keep this in sync
- * if globals.css changes.
  *
  * Filerobot's `theme.palette` reads from TWO key namespaces:
  *   1. Filerobot shorthand keys (`bg-secondary`, `accent-primary`, …) drive
@@ -246,48 +600,36 @@ function base64ToBlob(base64DataUrl: string, mime: string): Blob {
  * raw values), so we reify the HSL tokens to hex here.
  */
 
-// LIGHT — mirrors :root in app/globals.css
-//   --background      240  5% 96%   → #f4f4f6   (zinc-100-ish)
-//   --foreground      240  4% 16%   → #27272a   (zinc-850)
-//   --card              0  0% 100%  → #ffffff
-//   --muted           240  5% 92%   → #e9e9ec
-//   --muted-foreground 240 5% 35%   → #56565d
-//   --accent          240  5% 94%   → #efeff1   (zinc-150)
-//   --primary         210 80% 45%   → #1773ce   (codebase blue)
-//   --border          240  6% 85%   → #d8d8db   (zinc-300)
-//   --input           240  6% 90%   → #e5e5e8
 const lightTheme = {
   palette: {
-    // ── Filerobot shorthand keys (editor chrome) ──
-    "bg-primary": "#ffffff", // --card
-    "bg-primary-active": "#1773ce", // --primary
-    "bg-secondary": "#f4f4f6", // --background
-    "accent-primary": "#1773ce", // --primary
-    "accent-primary-active": "#125ea8", // --primary darker
-    "icons-primary": "#27272a", // --foreground
-    "icons-secondary": "#56565d", // --muted-foreground
-    "borders-primary": "#d8d8db", // --border
-    "borders-secondary": "#efeff1", // --accent
-    "borders-strong": "#a1a1a8", // zinc-400
+    "bg-primary": "#ffffff",
+    "bg-primary-active": "#1773ce",
+    "bg-secondary": "#f4f4f6",
+    "accent-primary": "#1773ce",
+    "accent-primary-active": "#125ea8",
+    "icons-primary": "#27272a",
+    "icons-secondary": "#56565d",
+    "borders-primary": "#d8d8db",
+    "borders-secondary": "#efeff1",
+    "borders-strong": "#a1a1a8",
     "light-shadow": "rgba(39, 39, 42, 0.08)",
-    "warning-primary": "#f59e0b", // --warning
-    // ── @scaleflex/ui Color enum keys (embedded menus) ──
-    "bg-stateless": "#ffffff", // --card
-    "bg-active": "#1773ce", // --primary
-    "bg-hover": "#efeff1", // --accent
+    "warning-primary": "#f59e0b",
+    "bg-stateless": "#ffffff",
+    "bg-active": "#1773ce",
+    "bg-hover": "#efeff1",
     "bg-base-light": "#f9f9fa",
-    "bg-base-medium": "#efeff1", // --accent
-    "bg-grey": "#e9e9ec", // --muted
-    "bg-tooltip": "#27272a", // --foreground
-    "txt-primary": "#27272a", // --foreground
-    "txt-secondary": "#56565d", // --muted-foreground
+    "bg-base-medium": "#efeff1",
+    "bg-grey": "#e9e9ec",
+    "bg-tooltip": "#27272a",
+    "txt-primary": "#27272a",
+    "txt-secondary": "#56565d",
     "txt-secondary-invert": "#ffffff",
     "txt-placeholder": "#a1a1a8",
-    "icon-primary": "#27272a", // --foreground
+    "icon-primary": "#27272a",
     "icons-placeholder": "#a1a1a8",
     "icons-invert": "#ffffff",
-    "icons-muted": "#d8d8db", // --border
-    "btn-primary-text": "#ffffff", // --primary-foreground
+    "icons-muted": "#d8d8db",
+    "btn-primary-text": "#ffffff",
     "accent-primary-hover": "#125ea8",
   },
   typography: {
@@ -296,49 +638,36 @@ const lightTheme = {
   },
 };
 
-// DARK — mirrors .dark in app/globals.css
-//   --background      240  4% 16%   → #27272a   (zinc-850)
-//   --foreground      240  5% 90%   → #e4e4e7   (zinc-200)
-//   --card            240  5% 20%   → #313135   (zinc-800)
-//   --popover         240  5% 18%   → #2c2c30
-//   --muted           240  4% 24%   → #3a3a3e
-//   --muted-foreground 240 5% 80%   → #c9c9cd
-//   --accent          240  4% 24%   → #3a3a3e
-//   --primary         221 83% 53%   → #2563eb   (Tailwind blue-600)
-//   --border          240  4% 30%   → #48484e   (zinc-700/750)
-//   --input           240  4% 28%   → #434348
 const darkTheme = {
   palette: {
-    // ── Filerobot shorthand keys (editor chrome) ──
-    "bg-primary": "#313135", // --card
-    "bg-primary-active": "#2563eb", // --primary
-    "bg-secondary": "#27272a", // --background
-    "accent-primary": "#2563eb", // --primary
-    "accent-primary-active": "#1d4ed8", // --primary darker
-    "icons-primary": "#e4e4e7", // --foreground
-    "icons-secondary": "#c9c9cd", // --muted-foreground
-    "borders-primary": "#48484e", // --border
-    "borders-secondary": "#3a3a3e", // --muted/accent
+    "bg-primary": "#313135",
+    "bg-primary-active": "#2563eb",
+    "bg-secondary": "#27272a",
+    "accent-primary": "#2563eb",
+    "accent-primary-active": "#1d4ed8",
+    "icons-primary": "#e4e4e7",
+    "icons-secondary": "#c9c9cd",
+    "borders-primary": "#48484e",
+    "borders-secondary": "#3a3a3e",
     "borders-strong": "#5a5a60",
     "light-shadow": "rgba(0, 0, 0, 0.4)",
-    "warning-primary": "#facc15", // dark --warning
-    // ── @scaleflex/ui Color enum keys (embedded menus) ──
-    "bg-stateless": "#313135", // --card
-    "bg-active": "#3a3a3e", // --accent
-    "bg-hover": "#3a3a3e", // --accent
+    "warning-primary": "#facc15",
+    "bg-stateless": "#313135",
+    "bg-active": "#3a3a3e",
+    "bg-hover": "#3a3a3e",
     "bg-base-light": "#3a3a3e",
-    "bg-base-medium": "#27272a", // --background
-    "bg-grey": "#3a3a3e", // --muted
-    "bg-tooltip": "#18181b", // zinc-900
-    "txt-primary": "#e4e4e7", // --foreground
-    "txt-secondary": "#c9c9cd", // --muted-foreground
+    "bg-base-medium": "#27272a",
+    "bg-grey": "#3a3a3e",
+    "bg-tooltip": "#18181b",
+    "txt-primary": "#e4e4e7",
+    "txt-secondary": "#c9c9cd",
     "txt-secondary-invert": "#27272a",
     "txt-placeholder": "#7c7c84",
-    "icon-primary": "#e4e4e7", // --foreground
+    "icon-primary": "#e4e4e7",
     "icons-placeholder": "#7c7c84",
     "icons-invert": "#27272a",
-    "icons-muted": "#48484e", // --border
-    "btn-primary-text": "#ffffff", // --primary-foreground
+    "icons-muted": "#48484e",
+    "btn-primary-text": "#ffffff",
     "accent-primary-hover": "#1d4ed8",
   },
   typography: {
@@ -347,13 +676,6 @@ const darkTheme = {
   },
 };
 
-// Re-export the close button trio so the modal-mode wrapper can render its
-// own header without duplicating styles.
-export { Zap, Save, X };
-
-// Track dark/light by reading the `dark` class on <html>. Mirrors the
-// pattern used by `components/ui/sonner.tsx` so we don't pull in
-// next-themes for a single boolean.
 function useThemeMode(): "light" | "dark" {
   return useSyncExternalStore<"light" | "dark">(
     (onChange) => {

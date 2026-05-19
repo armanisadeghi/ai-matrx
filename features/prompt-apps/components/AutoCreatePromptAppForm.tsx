@@ -41,7 +41,7 @@ import {
   type AutoCreateMode,
 } from "../hooks/useAutoCreateApp";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import {
   selectPrimaryResponseTextByTaskId,
   selectPrimaryResponseEndedByTaskId,

@@ -18,7 +18,7 @@ import type {
   AiModelsPreferences,
   SystemPreferences,
   AgentContextPreferences,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 
 // Base selector
 export const selectUserPreferences = (state: RootState): UserPreferencesState =>

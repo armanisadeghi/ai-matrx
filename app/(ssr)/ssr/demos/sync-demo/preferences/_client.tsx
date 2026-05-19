@@ -32,7 +32,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   setModulePreferences,
   resetModulePreferences,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 import type { RootState } from "@/lib/redux/store";
 import type { IdentityKey } from "@/lib/sync/types";
 

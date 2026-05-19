@@ -164,7 +164,7 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
             title="Open the file in the full Image Studio (more space + side-by-side history)"
           >
             <Link
-              href={`/images/edit?cloudFileId=${encodeURIComponent(fileId)}`}
+              href={`/images/edit/${encodeURIComponent(fileId)}`}
             >
               <ExternalLink className="h-3 w-3" />
               Open in Image Studio

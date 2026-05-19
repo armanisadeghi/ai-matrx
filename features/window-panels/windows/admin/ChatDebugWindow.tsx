@@ -10,7 +10,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
   toggleDebugMode,
   selectIsDebugMode,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 // Legacy chat debug window — reads removed `chatConversations` slice. Debug
 // UI is non-critical; stubbed to render empty while chat is rebuilt.
 import type { RootState } from "@/lib/redux/store";

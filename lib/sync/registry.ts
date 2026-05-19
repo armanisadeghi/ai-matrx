@@ -14,7 +14,7 @@
 
 import type { Policy } from "./types";
 import { themePolicy } from "@/styles/themes/themeSlice";
-import { userPreferencesPolicy } from "@/lib/redux/slices/userPreferencesSlice";
+import { userPreferencesPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
 import { userProfilePolicy } from "@/lib/redux/slices/userProfileSlice";
 
 // Uses `Policy<any>` instead of `Policy<unknown>` because `partialize: readonly (keyof TState)[]`

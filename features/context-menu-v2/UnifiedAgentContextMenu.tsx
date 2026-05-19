@@ -15,7 +15,7 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectIsDebugMode,
   toggleDebugMode,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
   selectIsOverlayOpen,

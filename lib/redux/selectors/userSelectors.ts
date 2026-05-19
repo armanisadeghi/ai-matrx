@@ -74,6 +74,23 @@ export const selectAdminLevel = (state: RootState): AdminLevel | null =>
 export const selectIsSuperAdmin = (state: RootState): boolean =>
   state.userAuth.adminLevel === "super_admin";
 
+/**
+ * Authority check for the "creator" role — agentic engineers building
+ * agents, shortcuts, content blocks, etc. There is no dedicated `creator`
+ * row in the database yet, so for now any admin qualifies as a creator.
+ * When the DB-side creator role lands, update this body to read from the
+ * real source; every consumer keeps working unchanged.
+ *
+ * Pair with `selectIsCreatorMode` / `selectShowCreatorTools` from
+ * `lib/redux/preferences/creatorDebugSlice` to gate creator-only UI:
+ *
+ *     const canSeeCreatorUi = useAppSelector(selectIsCreator);
+ *     const creatorModeOn   = useAppSelector(selectIsCreatorMode);
+ *     if (!canSeeCreatorUi || !creatorModeOn) return null;
+ */
+export const selectIsCreator = (state: RootState): boolean =>
+  state.userAuth.isAdmin;
+
 export const selectAccessToken = (state: RootState): string | null =>
   state.userAuth.accessToken;
 export const selectAuthReady = (state: RootState): boolean =>

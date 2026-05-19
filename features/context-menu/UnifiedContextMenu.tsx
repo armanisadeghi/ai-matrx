@@ -86,7 +86,7 @@ import {
   selectIsDebugMode,
   toggleDebugMode,
   showPromptDebugIndicator,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
   selectIsOverlayOpen,

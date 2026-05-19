@@ -59,7 +59,7 @@ import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
 import type { OverlayId } from "./registry/overlay-ids";
 import MobileDrawerSurface from "./mobile/MobileDrawerSurface";
 import MobileCardSurface from "./mobile/MobileCardSurface";
-import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useUrlSync } from "./url-sync/useUrlSync";
 import { useWindowPersistence } from "./WindowPersistenceManager";
 import { Save } from "lucide-react";

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 
 const AdminNavInjector = dynamic(
   () => import("@/features/shell/components/sidebar/AdminNavInjector"),

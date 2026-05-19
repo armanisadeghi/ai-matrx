@@ -61,7 +61,7 @@ import {
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTasks } from "@/features/scopes/redux/thunks/ensureScopeTasks";
 import { ensureOrphanProjects } from "@/features/scopes/redux/thunks/ensureOrphanProjects";
-import { selectDefaultContextPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
+import { selectDefaultContextPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   ContextRow,
   type PickerOption,

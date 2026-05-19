@@ -39,6 +39,7 @@ import { TemplatesPalette } from "./TemplatesPalette";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import type { UserMarkdownSample } from "./user-samples-service";
 import type { StudioTemplate } from "./templates";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 type StudioMode = "studio" | "analysis";
 
@@ -186,12 +187,13 @@ export function MarkdownStudio() {
     return () => window.removeEventListener("keydown", handler);
   }, [loadedSample, isDirty, content, handleQuickUpdate]);
 
-  const contentLabel = loadedSampleName ?? (content.trim() ? "Untitled" : "Empty");
+  const contentLabel =
+    loadedSampleName ?? (content.trim() ? "Untitled" : "Empty");
 
   return (
     <div className="flex h-full w-full flex-col bg-textured">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="border-b border-border/70 bg-background/70 backdrop-blur">
+      <header className="border-b border-border/70 bg-background/70 backdrop-blur pr-10">
         <div className="flex items-center gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-transparent text-primary">

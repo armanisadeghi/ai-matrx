@@ -240,16 +240,19 @@ const overlaySlice = createSlice({
 
 type StateWithOverlays = { overlays: OverlayState };
 
+/** Stable fallback when an overlay instance has never been opened. */
+const CLOSED_OVERLAY_INSTANCE: OverlayInstance = {
+  isOpen: false,
+  data: null,
+};
+
 /** Returns the instance record for a given overlay + instanceId. Falls back to closed/null. */
 export const selectOverlay = (
   state: StateWithOverlays,
   overlayId: string,
   instanceId: string = DEFAULT_INSTANCE_ID,
 ): OverlayInstance =>
-  state.overlays.overlays[overlayId]?.[instanceId] ?? {
-    isOpen: false,
-    data: null,
-  };
+  state.overlays.overlays[overlayId]?.[instanceId] ?? CLOSED_OVERLAY_INSTANCE;
 
 /** True when the given overlay instance is open. */
 export const selectIsOverlayOpen = (

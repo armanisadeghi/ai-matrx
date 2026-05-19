@@ -19,7 +19,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveServer } from "@/lib/redux/slices/adminPreferencesSlice";
+import { selectEffectiveServer } from "@/lib/redux/preferences/adminPreferencesSlice";
 import { hydrateContextState } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
 
 // Wire shape from GET /cx/conversations/{id}/context-state. JSONB-shaped

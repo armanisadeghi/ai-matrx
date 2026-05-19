@@ -22,7 +22,7 @@ import {
   selectDebugData,
   selectRouteContext,
   selectConsoleErrors,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {

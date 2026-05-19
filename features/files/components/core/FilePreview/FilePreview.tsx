@@ -247,7 +247,7 @@ export function FilePreview({
       openInRoute = {
         label: "Open in Image Studio",
         onClick: () =>
-          router.push(`/images/edit?cloudFileId=${encodeURIComponent(fileId)}`),
+          router.push(`/images/edit/${encodeURIComponent(fileId)}`),
       };
     }
     const previewActions = buildPreviewActions({

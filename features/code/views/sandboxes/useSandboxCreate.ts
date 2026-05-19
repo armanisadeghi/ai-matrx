@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setPreference } from "@/lib/redux/slices/userPreferencesSlice";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import type {
   SandboxCreateRequest,
   SandboxTemplate,

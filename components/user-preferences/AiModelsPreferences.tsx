@@ -14,7 +14,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   setPreference,
   UserPreferencesState,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 import { useModels, type AIModel } from "@/features/ai-models/hooks/useModels";
 
 type FilterView = "all" | "active" | "inactive";

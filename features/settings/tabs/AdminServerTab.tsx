@@ -7,7 +7,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
-import type { ServerEnvironment } from "@/lib/redux/slices/adminPreferencesSlice";
+import type { ServerEnvironment } from "@/lib/redux/preferences/adminPreferencesSlice";
 
 export default function AdminServerTab() {
   const [override, setOverride] = useSetting<ServerEnvironment | null>(

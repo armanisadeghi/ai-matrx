@@ -7,7 +7,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsTextarea } from "@/components/official/settings/primitives/SettingsTextarea";
 import { useSetting } from "../hooks/useSetting";
-import type { CustomCleanerAgent } from "@/lib/redux/slices/userPreferencesSlice";
+import type { CustomCleanerAgent } from "@/lib/redux/preferences/userPreferencesSlice";
 
 const PLACEHOLDER = `[
   {

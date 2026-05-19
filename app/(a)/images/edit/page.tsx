@@ -1,33 +1,20 @@
-import EditShellClient from "./EditShellClient";
+import EditLandingClient from "./EditLandingClient";
 
 /**
- * /image-studio/edit
+ * /images/edit
  *
- * Full-page Filerobot editor. Source is provided via query params:
- *   ?url=<absolute>    → load from URL
- *   ?cloudFileId=<id>  → load from cloud_files (resolved client-side)
+ * Landing screen. Resolves the user's chosen source (upload / paste / drop /
+ * URL / "My Files" picker) to a cloud-file id, then routes them to
+ * /images/edit/[id] — the canonical editor surface.
  *
- * The shell is dynamically imported with ssr:false because Filerobot reaches
- * for `window`, `document`, and the canvas API on first paint.
- *
- * Header + outer chrome are owned by `(tools)/layout.tsx`.
+ * The URL is the source of truth: refresh-safe, share-safe, version-safe.
  */
 
 interface PageProps {
-  searchParams: Promise<{
-    url?: string;
-    cloudFileId?: string;
-    folder?: string;
-  }>;
+  searchParams: Promise<{ folder?: string }>;
 }
 
-export default async function EditPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  return (
-    <EditShellClient
-      urlParam={params.url ?? null}
-      cloudFileId={params.cloudFileId ?? null}
-      folder={params.folder}
-    />
-  );
+export default async function EditLandingPage({ searchParams }: PageProps) {
+  const { folder } = await searchParams;
+  return <EditLandingClient folder={folder} />;
 }

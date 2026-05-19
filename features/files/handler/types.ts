@@ -361,6 +361,19 @@ export interface UploadOpts {
    * If omitted, defaults to a per-feature inbox like "Inbox/Pasted".
    */
   folderPath?: string;
+  /**
+   * Full logical file path (folder + filename). Wins over `folderPath`
+   * when set. Use this to write a new version of an existing file by
+   * pointing at the same path the existing file occupies — the Python
+   * backend treats matching paths as version-increments on the existing
+   * cld_files row rather than creating a new sibling.
+   */
+  filePath?: string;
+  /**
+   * One-line note attached to the new version row (`cld_file_versions.change_summary`).
+   * Surfaces in the version history UI.
+   */
+  changeSummary?: string;
   /** Visibility on the new cld_files row. Default "private". */
   visibility?: Visibility;
   /** Initial sharing grants. */

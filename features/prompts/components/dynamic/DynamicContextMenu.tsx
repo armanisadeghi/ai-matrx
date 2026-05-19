@@ -31,7 +31,7 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectIsDebugMode,
   showPromptDebugIndicator,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { startPromptInstance } from "@/lib/redux/prompt-execution/thunks/startInstanceThunk";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";

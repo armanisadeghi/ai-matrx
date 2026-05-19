@@ -17,8 +17,8 @@
 import { useEffect } from "react";
 import { RefreshCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectPromptsPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
-import { setModulePreferences } from "@/lib/redux/slices/userPreferencesSlice";
+import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
+import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectAutoClearConversation } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setAutoClearConversation } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 

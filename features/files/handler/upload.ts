@@ -96,10 +96,15 @@ export async function uploadInternal(
   const result = await cloudUpload(
     file,
     {
-      folderPath: folderPath.replace(/^\/+|\/+$/g, ""),
+      // filePath wins when set — used by version-replace callers (e.g. the
+      // image editor "Save" path that overwrites the existing cloud file).
+      ...(opts.filePath
+        ? { filePath: opts.filePath.replace(/^\/+/, "") }
+        : { folderPath: folderPath.replace(/^\/+|\/+$/g, "") }),
       visibility: opts.visibility ?? "private",
       shareWith: opts.shareWith,
       shareLevel: opts.shareLevel,
+      changeSummary: opts.changeSummary,
       metadata,
       onProgress: opts.onProgress
         ? (event) => opts.onProgress!(event.loaded, event.total)

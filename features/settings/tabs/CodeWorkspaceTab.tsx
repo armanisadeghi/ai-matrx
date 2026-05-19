@@ -19,7 +19,7 @@ import { selectActiveAgents } from "@/features/agents/redux/agent-definition/sel
 import type {
   CodeAgentFilter,
   ConversationHistoryGrouping,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 
 /**
  * Settings tab for the /code workspace. Covers the agent filter that seeds

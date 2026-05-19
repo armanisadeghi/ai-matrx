@@ -13,7 +13,7 @@
  * persistence while still matching the old return shape.
  */
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import type { UserPreferences } from "@/lib/redux/slices/userPreferencesSlice";
+import type { UserPreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 
 export function usePreferenceValue<
   T extends keyof UserPreferences,

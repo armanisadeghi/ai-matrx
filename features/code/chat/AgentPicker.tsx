@@ -23,9 +23,9 @@ import {
   makeSelectAgentsForFilter,
 } from "@/features/agents/redux/agent-filter/selectors";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
-import type { CodeAgentFilter } from "@/lib/redux/slices/userPreferencesSlice";
+import type { CodeAgentFilter } from "@/lib/redux/preferences/userPreferencesSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { setPreference } from "@/lib/redux/slices/userPreferencesSlice";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { HOVER_ROW } from "../styles/tokens";
 
 interface AgentPickerProps {

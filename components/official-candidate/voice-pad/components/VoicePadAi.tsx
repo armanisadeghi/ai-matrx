@@ -28,7 +28,7 @@ import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIcon
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import type { CustomCleanerAgent } from "@/lib/redux/slices/userPreferencesSlice";
+import type { CustomCleanerAgent } from "@/lib/redux/preferences/userPreferencesSlice";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import { VoicePadAiContextPanel } from "./VoicePadAiContextPanel";
 import {

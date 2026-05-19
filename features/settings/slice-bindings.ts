@@ -3,13 +3,13 @@ import type { RootState } from "@/lib/redux/store";
 import {
   setPreference,
   type UserPreferences,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 import { setMode, toggleMode } from "@/styles/themes/themeSlice";
 import {
   setServerOverride,
   setCustomServerUrl,
   clearAdminPreferences,
-} from "@/lib/redux/slices/adminPreferencesSlice";
+} from "@/lib/redux/preferences/adminPreferencesSlice";
 import { setIsInWindow, setLayoutStyle } from "@/lib/redux/slices/layoutSlice";
 import {
   toggleWindowsHidden,

@@ -18,8 +18,8 @@ import {
 } from "@/features/settings/hooks/useSetting";
 import { useSettingsSearch } from "@/features/settings/hooks/useSettingsSearch";
 import { findTab } from "@/features/settings/registry";
-import type { ThinkingMode } from "@/lib/redux/slices/userPreferencesSlice";
-import type { ServerEnvironment } from "@/lib/redux/slices/adminPreferencesSlice";
+import type { ThinkingMode } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { ServerEnvironment } from "@/lib/redux/preferences/adminPreferencesSlice";
 import { useState } from "react";
 
 function PersistenceBadge({ path }: { path: string }) {

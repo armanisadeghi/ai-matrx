@@ -1,47 +1,38 @@
 "use client";
 
 /**
- * The thin toolbar above Filerobot. Hosts the AI assists — these aren't
- * available inside Filerobot's native toolbar, and they want their own
- * busy state, so a sibling toolbar is the cleanest mount point.
+ * AI assists strip — Suggest edits, Background remove, Upscale (2× / 4×),
+ * AI edit by prompt. Lives inside the editor frame.
  *
- * Each button is gated by what it needs:
- *   • Background remove + Upscale + Variants need a cloud_file_id, which
- *     means the source must already be persisted. If we're on a freshly
- *     dropped File, the buttons are disabled with an explanatory tooltip.
- *   • Suggest edits + Generate variant work either way (the agent path
- *     accepts a fresh Blob too).
- *
- * When the Python endpoint isn't yet implemented, the call returns 404 and
- * we surface a friendly "coming soon" message rather than a generic error.
+ * Each AI op consumes the canonical `sourceCloudFileId` (the editor is
+ * always operating on a saved cloud file by the time we get here). When
+ * the mask overlay has been painted, the mask is uploaded as its own
+ * cloud file and the resulting id is passed as `mask_id` so the backend
+ * can constrain the op to the painted region.
  */
 
-import { useState } from "react";
-import {
-  ArrowUp,
-  Eraser,
-  Loader2,
-  Zap,
-  ZapOff
-} from "lucide-react";
+import { useCallback, useState } from "react";
+import { ArrowUp, Eraser, Loader2, Sparkles, Zap, ZapOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { fileHandler } from "@/features/files/handler/handler";
 import {
   removeBackground,
   upscaleImage,
   editImage,
 } from "../../api/python";
+import type { MaskState } from "./use-mask-state";
 
 interface Props {
   sourceCloudFileId: string | null;
   sourceUrl: string;
   onResult: (newUrl: string, newName: string) => void;
+  mask: MaskState;
 }
 
 type Busy = null | "bg" | "up2" | "up4" | "edit" | "suggest";
@@ -50,25 +41,57 @@ export function EditAiToolbar({
   sourceCloudFileId,
   sourceUrl: _sourceUrl,
   onResult,
+  mask,
 }: Props) {
   const [busy, setBusy] = useState<Busy>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [editOpen, setEditOpen] = useState(false);
 
-  const requireCloudId = (op: string): string | null => {
+  const ensureId = (op: string): string | null => {
     if (sourceCloudFileId) return sourceCloudFileId;
-    toast.info(
-      `${op} needs the image to be saved first. Click Save, then re-open from Cloud Files.`,
-    );
+    toast.info(`${op} needs a saved cloud file to work on.`);
     return null;
   };
 
+  // Upload the painted mask (if any) as its own cloud file and return the
+  // resulting id. Returns null when the mask is empty so callers can omit
+  // the parameter and the backend defaults to unmasked behavior.
+  const resolveMaskId = useCallback(
+    async (sourceFileId: string): Promise<string | null> => {
+      if (!mask.hasPixels) return null;
+      const blob = await mask.exportPng();
+      if (!blob) return null;
+      const file = new File(
+        [blob],
+        `mask-${sourceFileId}-${Date.now()}.png`,
+        { type: "image/png" },
+      );
+      const normalized = await fileHandler.upload(
+        { kind: "file", file },
+        {
+          folderPath: "Images/Masks",
+          visibility: "private",
+          metadata: {
+            kind: "mask",
+            source_file_id: sourceFileId,
+          },
+        },
+      );
+      return normalized.fileId ?? null;
+    },
+    [mask],
+  );
+
   const handleBgRemove = async () => {
-    const id = requireCloudId("Background remove");
+    const id = ensureId("Background remove");
     if (!id) return;
     setBusy("bg");
     try {
-      const { file } = await removeBackground({ source_id: id });
+      const maskId = await resolveMaskId(id);
+      const { file } = await removeBackground({
+        source_id: id,
+        ...(maskId ? { mask_id: maskId } : {}),
+      });
       onResult(file.public_url, deriveName(file.public_url, "no-bg.png"));
     } catch (err) {
       handleApiError(err, "Background remove");
@@ -78,7 +101,7 @@ export function EditAiToolbar({
   };
 
   const handleUpscale = async (factor: 2 | 4) => {
-    const id = requireCloudId("Upscale");
+    const id = ensureId("Upscale");
     if (!id) return;
     setBusy(factor === 2 ? "up2" : "up4");
     try {
@@ -92,7 +115,7 @@ export function EditAiToolbar({
   };
 
   const handleEditPrompt = async () => {
-    const id = requireCloudId("AI edit");
+    const id = ensureId("AI edit");
     if (!id) return;
     if (!editPrompt.trim()) {
       toast.info("Type what you want changed.");
@@ -100,9 +123,11 @@ export function EditAiToolbar({
     }
     setBusy("edit");
     try {
+      const maskId = await resolveMaskId(id);
       const { file } = await editImage({
         source_id: id,
         prompt: editPrompt.trim(),
+        ...(maskId ? { mask_id: maskId } : {}),
       });
       onResult(file.public_url, deriveName(file.public_url, "edited.png"));
       setEditOpen(false);
@@ -115,174 +140,183 @@ export function EditAiToolbar({
   };
 
   const handleSuggestEdits = () => {
-    // Wired to the `image-suggest-edits` agent shortcut once it lands in
-    // the DB + system-shortcuts.ts. Until then this button is
-    // intentionally a stub — the agent surface is described in
-    // features/image-studio/AI-AGENTS.md.
     toast.info(
       "Suggest edits agent ships next wave — see features/image-studio/AI-AGENTS.md",
     );
   };
 
+  const idMissing = !sourceCloudFileId;
+
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
-        <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
-          <Zap className="h-3 w-3" />
-          AI assist
-        </span>
+    <div className="flex items-center gap-1 overflow-x-auto border-b border-border bg-card/40 px-2 py-1 shrink-0">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1 flex items-center gap-1 shrink-0">
+        <Sparkles className="h-3 w-3" />
+        AI
+      </span>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={handleSuggestEdits}
-              disabled={busy !== null}
-            >
-              {busy === "suggest" ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Zap className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Suggest edits
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Ask AI what edits this image needs</TooltipContent>
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 gap-1.5 text-xs"
+            onClick={handleSuggestEdits}
+            disabled={busy !== null}
+          >
+            {busy === "suggest" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Zap className="h-3.5 w-3.5" />
+            )}
+            Suggest
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Ask AI what edits this image needs</TooltipContent>
+      </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={handleBgRemove}
-              disabled={busy !== null}
-            >
-              {busy === "bg" ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Eraser className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Remove BG
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Remove background → transparent PNG</TooltipContent>
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 gap-1.5 text-xs"
+            onClick={handleBgRemove}
+            disabled={busy !== null || idMissing}
+          >
+            {busy === "bg" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Eraser className="h-3.5 w-3.5" />
+            )}
+            Remove BG
+            {mask.hasPixels ? (
+              <span className="text-[9px] uppercase tracking-wide text-primary/80">
+                masked
+              </span>
+            ) : null}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Remove background → transparent PNG
+          {mask.hasPixels ? " (constrained to mask)" : ""}
+        </TooltipContent>
+      </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={() => handleUpscale(2)}
-              disabled={busy !== null}
-            >
-              {busy === "up2" ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ArrowUp className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              2×
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Upscale 2×</TooltipContent>
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 gap-1 text-xs"
+            onClick={() => handleUpscale(2)}
+            disabled={busy !== null || idMissing}
+          >
+            {busy === "up2" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ArrowUp className="h-3.5 w-3.5" />
+            )}
+            2×
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Upscale 2×</TooltipContent>
+      </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={() => handleUpscale(4)}
-              disabled={busy !== null}
-            >
-              {busy === "up4" ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ArrowUp className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              4×
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Upscale 4×</TooltipContent>
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 gap-1 text-xs"
+            onClick={() => handleUpscale(4)}
+            disabled={busy !== null || idMissing}
+          >
+            {busy === "up4" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ArrowUp className="h-3.5 w-3.5" />
+            )}
+            4×
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Upscale 4×</TooltipContent>
+      </Tooltip>
 
-        <div className="hidden md:block flex-1" />
+      <div className="hidden md:block flex-1" />
 
-        {editOpen ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <input
-              autoFocus
-              value={editPrompt}
-              onChange={(e) => setEditPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleEditPrompt();
-                if (e.key === "Escape") {
-                  setEditOpen(false);
-                  setEditPrompt("");
-                }
-              }}
-              placeholder='e.g. "make it sunset", "change shirt to blue"'
-              className="h-8 w-56 md:w-72 rounded-md border border-border bg-background px-2 text-xs"
-              style={{ fontSize: "16px" }}
-              disabled={busy !== null}
-            />
-            <Button
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={handleEditPrompt}
-              disabled={busy !== null || !editPrompt.trim()}
-            >
-              {busy === "edit" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                "Apply"
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={() => {
+      {editOpen ? (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <input
+            autoFocus
+            value={editPrompt}
+            onChange={(e) => setEditPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleEditPrompt();
+              if (e.key === "Escape") {
                 setEditOpen(false);
                 setEditPrompt("");
-              }}
+              }
+            }}
+            placeholder='e.g. "make it sunset", "change shirt to blue"'
+            className="h-7 w-56 md:w-72 rounded-md border border-border bg-background px-2 text-xs"
+            style={{ fontSize: "16px" }}
+            disabled={busy !== null}
+          />
+          <Button
+            size="sm"
+            className="h-7 shrink-0"
+            onClick={handleEditPrompt}
+            disabled={busy !== null || !editPrompt.trim() || idMissing}
+          >
+            {busy === "edit" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Apply"
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0"
+            onClick={() => {
+              setEditOpen(false);
+              setEditPrompt("");
+            }}
+          >
+            <ZapOff className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-7 shrink-0 gap-1.5 text-xs"
+              onClick={() => setEditOpen(true)}
+              disabled={busy !== null || idMissing}
             >
-              <ZapOff className="h-3.5 w-3.5" />
+              <Zap className="h-3.5 w-3.5" />
+              AI edit by prompt
+              {mask.hasPixels ? (
+                <span className="text-[9px] uppercase tracking-wide opacity-80">
+                  masked
+                </span>
+              ) : null}
             </Button>
-          </div>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-8 shrink-0"
-                onClick={() => setEditOpen(true)}
-                disabled={busy !== null}
-              >
-                <Zap className="h-3.5 w-3.5 mr-1.5" />
-                AI edit by prompt
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              Edit the image by typing what you want changed
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-    </TooltipProvider>
+          </TooltipTrigger>
+          <TooltipContent>
+            Edit the image by typing what you want changed
+            {mask.hasPixels ? " (constrained to mask)" : ""}
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </div>
   );
 }
 
 function handleApiError(err: unknown, opName: string) {
   const msg = err instanceof Error ? err.message : `${opName} failed`;
-  // Friendly path while Python endpoints are stubs.
   const notImplemented =
     /404|not.*found|not.*implement/i.test(msg) ||
     msg.toLowerCase().includes("unavailable");

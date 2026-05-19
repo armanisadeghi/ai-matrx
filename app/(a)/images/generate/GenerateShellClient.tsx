@@ -177,7 +177,7 @@ export default function GenerateShellClient() {
               />
               <div className="p-2 flex flex-wrap gap-1.5 text-xs">
                 <Link
-                  href={`/images/edit?cloudFileId=${encodeURIComponent(r.cloud_file_id)}`}
+                  href={`/images/edit/${encodeURIComponent(r.cloud_file_id)}`}
                   className="min-h-[32px] px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
                 >
                   Edit

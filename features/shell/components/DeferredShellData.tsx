@@ -9,7 +9,7 @@ import { setUser, setShellDataLoaded } from "@/lib/redux/slices/userSlice";
 import {
   setModulePreferences,
   type UserPreferences,
-} from "@/lib/redux/slices/userPreferencesSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
 import { setContextMenuRows } from "@/lib/redux/slices/contextMenuCacheSlice";
 import { setAgentContextMenuRows } from "@/lib/redux/slices/agentContextMenuCacheSlice";
 import {

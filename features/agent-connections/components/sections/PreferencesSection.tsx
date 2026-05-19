@@ -33,7 +33,7 @@ import {
   type KeybindingValue,
 } from "@/components/official/settings/primitives/SettingsKeybinding";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import type { AgentConnectionsShortcut } from "@/lib/redux/slices/userPreferencesSlice";
+import type { AgentConnectionsShortcut } from "@/lib/redux/preferences/userPreferencesSlice";
 
 const SCOPE_OPTIONS = [
   { value: "user", label: "Personal" },

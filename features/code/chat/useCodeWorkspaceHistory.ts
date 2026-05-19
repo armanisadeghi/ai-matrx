@@ -13,8 +13,8 @@ import {
   setPreference,
   type CodeAgentFilter,
   type ConversationHistoryGrouping,
-} from "@/lib/redux/slices/userPreferencesSlice";
-import { selectCodingPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
+} from "@/lib/redux/preferences/userPreferencesSlice";
+import { selectCodingPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { makeSelectAgentIdsForFilter } from "@/features/agents/redux/agent-filter/selectors";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 

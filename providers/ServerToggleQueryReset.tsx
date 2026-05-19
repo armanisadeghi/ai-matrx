@@ -6,7 +6,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectCustomServerUrl,
   selectServerOverride,
-} from "@/lib/redux/slices/adminPreferencesSlice";
+} from "@/lib/redux/preferences/adminPreferencesSlice";
 
 /**
  * Bridges the admin server-override toggle into TanStack Query.

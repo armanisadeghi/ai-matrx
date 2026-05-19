@@ -18,8 +18,8 @@ import { usePromptRunner } from "@/features/prompts/hooks/usePromptRunner";
 import {
   AiModelsPreferences,
   PromptsPreferences,
-} from "@/lib/redux/slices/userPreferencesSlice";
-import { updateDebugData } from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/userPreferencesSlice";
+import { updateDebugData } from "@/lib/redux/preferences/adminDebugSlice";
 import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
 import {
   selectPrimaryResponseTextByTaskId,
@@ -38,7 +38,7 @@ import {
 import type { Resource } from "../../types/resources";
 import { useResourceMessageFormatter } from "@/features/prompts/hooks/useResourceMessageFormatter";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { selectPromptsPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
+import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { PromptBuilderDesktop } from "./PromptBuilderDesktop";
 import { PromptBuilderMobile } from "./PromptBuilderMobile";
 import {

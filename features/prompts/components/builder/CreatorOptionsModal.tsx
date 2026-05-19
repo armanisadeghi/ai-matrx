@@ -22,7 +22,7 @@ import {
     setShowSystemMessage,
     setShowTemplateMessages,
 } from "@/lib/redux/prompt-execution/slice";
-import { toggleDebugMode, selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { toggleDebugMode, selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { Separator } from "@/components/ui/separator";
 
 interface CreatorOptionsModalProps {

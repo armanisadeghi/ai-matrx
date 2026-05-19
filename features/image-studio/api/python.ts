@@ -125,6 +125,12 @@ export interface BgRemoveBody {
   source_id: string;
   /** Optional sensitivity for edge refinement. */
   refine_edges?: boolean;
+  /**
+   * Optional mask cloud_file_id (PNG with alpha — opaque pixels mark
+   * "definitely foreground, never strip"). When omitted the backend uses
+   * its auto-segmenter on the whole image.
+   */
+  mask_id?: string;
 }
 
 export async function removeBackground(

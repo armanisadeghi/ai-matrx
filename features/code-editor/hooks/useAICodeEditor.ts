@@ -19,7 +19,7 @@ import {
   selectMergedVariables,
 } from "@/lib/redux/prompt-execution/selectors";
 import { completeExecutionThunk } from "@/lib/redux/prompt-execution/thunks/completeExecutionThunk";
-import { selectPromptsPreferences } from "@/lib/redux/selectors/userPreferenceSelectors";
+import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { selectCachedPrompt } from "@/lib/redux/slices/promptCacheSlice";
 import {
   parseCodeEdits,

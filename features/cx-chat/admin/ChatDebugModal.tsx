@@ -27,7 +27,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
   toggleDebugMode,
   selectIsDebugMode,
-} from "@/lib/redux/slices/adminDebugSlice";
+} from "@/lib/redux/preferences/adminDebugSlice";
 import { chatConversationsActions } from "../_legacy-stubs";
 import {
   selectShowDebugInfo,

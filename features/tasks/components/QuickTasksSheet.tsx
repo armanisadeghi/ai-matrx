@@ -79,10 +79,19 @@ import TaskDetailsPanel from "./TaskDetailsPanel";
 import TaskSortControl from "./TaskSortControl";
 import type { TaskFilterType } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOverlay } from "@/lib/redux/slices/overlaySlice";
+import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";
 
 interface QuickTasksSheetProps {
   onClose?: () => void;
+  className?: string;
+}
+
+interface QuickTasksOverlayData {
+  prePopulate?: {
+    title?: string;
+    description?: string;
+    metadataInfo?: string;
+  };
   className?: string;
 }
 
@@ -117,15 +126,16 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   const [hasPrePopulated, setHasPrePopulated] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Access overlay data for pre-population
-  const overlayData = useAppSelector((state) =>
-    selectOverlay(state, "quickTasks"),
+  // Access overlay data for pre-population (data payload only — not the wrapper).
+  const overlayData = useAppSelector(
+    (state) =>
+      selectOverlayData(state, "quickTasks") as QuickTasksOverlayData | null,
   );
 
   // Pre-populate task fields from overlay data (one-time only)
   useEffect(() => {
-    if (overlayData?.data?.prePopulate && !hasPrePopulated) {
-      const { title, description, metadataInfo } = overlayData.data.prePopulate;
+    if (overlayData?.prePopulate && !hasPrePopulated) {
+      const { title, description, metadataInfo } = overlayData.prePopulate;
 
       if (title) {
         dispatch(setNewTaskTitle(title));
@@ -139,7 +149,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
 
       setHasPrePopulated(true);
     }
-  }, [overlayData, hasPrePopulated, setNewTaskTitle]);
+  }, [overlayData, hasPrePopulated, dispatch]);
 
   // Update selected project when activeProject changes
   useEffect(() => {

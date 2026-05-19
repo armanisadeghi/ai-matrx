@@ -70,7 +70,7 @@ import {
   selectModelOptions,
   fetchAvailableModels,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";

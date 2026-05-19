@@ -26,7 +26,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { updateDebugData, clearDebugNamespace, selectIsDebugMode } from '@/lib/redux/slices/adminDebugSlice';
+import { updateDebugData, clearDebugNamespace, selectIsDebugMode } from '@/lib/redux/preferences/adminDebugSlice';
 import { selectIsSuperAdmin } from '@/lib/redux/slices/userSlice';
 
 export function useDebugContext(namespace: string) {

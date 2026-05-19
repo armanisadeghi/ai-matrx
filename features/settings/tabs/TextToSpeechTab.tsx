@@ -6,7 +6,7 @@ import { SettingsSelect } from "@/components/official/settings/primitives/Settin
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { useSetting } from "../hooks/useSetting";
-import type { GroqTtsVoice } from "@/lib/redux/slices/userPreferencesSlice";
+import type { GroqTtsVoice } from "@/lib/redux/preferences/userPreferencesSlice";
 
 const groqVoices: GroqTtsVoice[] = [
   "Arista-PlayAI",

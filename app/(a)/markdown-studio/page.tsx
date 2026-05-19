@@ -1,7 +1,7 @@
-// app/(authenticated)/markdown-studio/page.tsx
+// app/(a)/markdown-studio/page.tsx
 // Server Component shell. The Markdown Studio itself is a Client
 // Component (interactive editor + parser comparison). This page just
-// renders the shell and lets the (authenticated) layout handle auth.
+// renders the shell and lets the (a) layout handle auth.
 
 import { MarkdownStudio } from "@/components/markdown-studio/MarkdownStudio";
 

@@ -10,7 +10,7 @@ import { SettingsSlider } from "@/components/official/settings/primitives/Settin
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import type { ThinkingMode } from "@/lib/redux/slices/userPreferencesSlice";
+import type { ThinkingMode } from "@/lib/redux/preferences/userPreferencesSlice";
 
 interface StandalonePromptsPreferencesProps {
   onSaveSuccess?: () => void;

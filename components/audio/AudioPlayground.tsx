@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { setModulePreferences } from '@/lib/redux/slices/userPreferencesSlice';
+import { setModulePreferences } from '@/lib/redux/preferences/userPreferencesSlice';
 import type { RootState } from "@/lib/redux/store";
 import {Language} from "@/lib/cartesia/cartesia.types";
 

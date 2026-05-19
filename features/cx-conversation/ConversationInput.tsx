@@ -72,7 +72,7 @@ import {
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectActiveChatAgent } from "./_legacy-stubs";
-import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";

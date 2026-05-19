@@ -42,7 +42,7 @@ import {
   selectShouldShowVariables,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@/lib/redux/slices/adminDebugSlice";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   smartExecute,
