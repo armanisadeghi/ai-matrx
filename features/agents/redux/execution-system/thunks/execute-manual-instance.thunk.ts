@@ -39,21 +39,26 @@
  *     the network call so a tab-close / server-never-responds round-trip
  *     surfaces on the next page load via the recovery UI.
  *
- * Tool wire shape — per matrx-ai/tools/specs.py canonical contract:
- *   - `agent.tools` (UUID array) → `tools_replace: list[RegisteredToolSpec]`
- *     where each entry is `{kind: "registered", name: <uuid>, tool_id: <uuid>,
- *     delegate: false}`. We use `tools_replace` (not `tools`) because (a) it
- *     is the explicit "the client owns the active tool set" semantic — exactly
- *     the Builder's contract — and (b) the chat router's `_build_unified_config`
- *     puts a populated `tools` field through pydantic model_dump → dict, which
- *     downstream merge_request_tools cannot canonicalize. `tools_replace`
- *     clears `config.tools` server-side before merging, avoiding that path.
- *   - `agent.customTools` → `custom_tools: list[dict]` (legacy wire shape,
- *     server-side `_legacy_custom_tools_to_specs` converts to InlineToolSpec).
- *   - `agent.mcpServers` → `mcp_servers: list[str]` (UUIDs, flows through
- *     UnifiedConfig).
- *   - Per-instance client tool names (widget + slice) → `client_tools` (legacy
- *     array of names; server reads ctx.client_tools).
+ * Tool wire shape — per TOOL_ROUTING_RULES.md (canonical) and
+ * matrx-ai/tools/specs.py:
+ *   - All tool fields funnel through `buildToolInjection({mode: "replace"})`
+ *     so the manual path stays in lockstep with executeInstance's shape.
+ *     Seed the function with the agent's saved tools and customTools and it
+ *     returns `{tools_replace, client}`.
+ *   - `agent.tools` (UUID array) → `RegisteredToolSpec` seeds without a
+ *     hardcoded `delegate` (the server's auto_delegate flips it when the
+ *     active client surface owns a delegated handler for the tool).
+ *   - `agent.customTools` → `InlineToolSpec` seeds (server treats inline
+ *     specs as always client-delegated).
+ *   - `agent.mcpServers` (slug list) → `client.mcp` per §10. The server
+ *     unions it with any MCPs the agent definition already carries.
+ *   - Per-instance client tool names (widget + slice) ride through
+ *     `buildToolInjection`'s built-in client-tool path as
+ *     `RegisteredToolSpec` with `delegate=true`.
+ *   - The active capability providers (editor-state, sandbox-fs,
+ *     nextjs-surface) populate the `client.capabilities` envelope. The
+ *     nextjs-surface capability auto-injects the seven UI-first tools
+ *     server-side; we don't ship them by name here.
  *
  * History: this thunk was deleted in commit 5bcb43380 (the May 2026 tool-
  * injection migration), which rerouted every caller through executeInstance.
@@ -94,12 +99,6 @@ import {
   registerAbortController,
   unregisterAbortController,
 } from "./abort-registry";
-import { callbackManager } from "@/utils/callbackManager";
-import {
-  deriveClientToolsFromHandle,
-  isWidgetActionName,
-  type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
 import {
   selectIsBlockMode,
   selectIsMemoryToggleRequested,
@@ -107,7 +106,6 @@ import {
   selectMemoryModel,
   selectMemoryScope,
   selectMemoryToggleTarget,
-  selectWidgetHandleIdFor,
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
@@ -121,6 +119,8 @@ import {
   beatHeartbeat as beatNetHeartbeat,
   finishRequest as finishNetRequest,
 } from "@/lib/redux/net/netRequestsSlice";
+import { buildToolInjection } from "../utils/build-tool-injection";
+import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
 
 // UI-only capability flags carried inside `agent.settings` for the builder's
 // model picker (e.g. `tools: { allowed: true }`, `image_urls: true`). They
@@ -299,44 +299,54 @@ export function assembleManualRequest(
   const variables = selectResolvedVariables(conversationId)(state);
   const context = selectContextPayload(conversationId)(state);
 
-  // ── Tool wire shape (see file header for full rationale) ─────────────────
-  // agent.tools (UUID array) → tools_replace with RegisteredToolSpec entries.
-  // The server's resolved_tool_id() returns `tool_id` when set, so the UUID
-  // round-trips cleanly through ToolRegistryV2 lookup.
-  const tools_replace =
-    agent.tools && agent.tools.length > 0
-      ? (agent.tools.map((uuid) => ({
-          kind: "registered" as const,
-          name: uuid,
-          tool_id: uuid,
-          delegate: false,
-        })) as ChatRequestPayload["tools_replace"])
-      : undefined;
-  // agent.customTools → legacy custom_tools field (server converts to
-  // InlineToolSpec inside apply_unified_tools).
-  const custom_tools =
-    agent.customTools && agent.customTools.length > 0
-      ? (agent.customTools as unknown as Array<Record<string, unknown>>)
-      : undefined;
-  const mcp_servers =
-    agent.mcpServers && agent.mcpServers.length > 0
-      ? agent.mcpServers
-      : undefined;
+  // ── Tool wire shape — unified through buildToolInjection ────────────────
+  // agent.tools (UUID array) becomes seed RegisteredToolSpec entries with
+  // tool_id set so the server's resolved_tool_id() rebinds them through the
+  // registry. delegate is left at the default (false) — the server's
+  // auto_delegate logic flips it when the active client surface owns a
+  // delegated handler for the tool, and the nextjs-surface capability
+  // already brings the seven UI-first tools online with delegate=True.
+  //
+  // agent.customTools become InlineToolSpec seed entries — same shape as
+  // CustomToolDefinition (name + description + input_schema).
+  //
+  // Widget + per-instance client tools ride through buildToolInjection's
+  // built-in client-tool path (RegisteredToolSpec with delegate=true).
+  const seedFromAgent: ToolSpec[] = [];
+  if (agent.tools) {
+    for (const uuid of agent.tools) {
+      seedFromAgent.push({
+        kind: "registered",
+        name: uuid,
+        tool_id: uuid,
+      });
+    }
+  }
+  if (agent.customTools) {
+    for (const ct of agent.customTools) {
+      seedFromAgent.push({
+        kind: "inline",
+        name: ct.name,
+        description: ct.description ?? "",
+        input_schema: ct.input_schema ?? { type: "object", properties: {}, required: [] },
+      });
+    }
+  }
 
-  // Per-instance client tool NAMES (legacy field). Distinct from the tool
-  // registry uuids above — these are names of tools the browser will execute
-  // on behalf of the agent (widget actions + ad-hoc capability tools).
-  const nonWidgetClientTools = (
-    state.instanceClientTools.byConversationId[conversationId] ?? []
-  ).filter((name) => !isWidgetActionName(name));
-  const widgetHandleId = selectWidgetHandleIdFor(state, conversationId);
-  const widgetHandle = widgetHandleId
-    ? callbackManager.get<WidgetHandle>(widgetHandleId)
-    : null;
-  const widgetClientTools = deriveClientToolsFromHandle(widgetHandle);
-  const mergedClientTools = [...nonWidgetClientTools, ...widgetClientTools];
-  const client_tools =
-    mergedClientTools.length > 0 ? mergedClientTools : undefined;
+  const injection = await buildToolInjection(state, conversationId, {
+    mode: "replace",
+    seedTools: seedFromAgent,
+  });
+
+  // agent.mcpServers (slug list) → client.mcp per TOOL_ROUTING_RULES.md §10.
+  // Server merges into config.mcp_servers without disturbing whatever the
+  // agent definition already carries.
+  if (agent.mcpServers && agent.mcpServers.length > 0) {
+    injection.client = {
+      ...(injection.client ?? { capabilities: [], state: {} }),
+      mcp: agent.mcpServers,
+    };
+  }
 
   const { sourceApp, sourceFeature } = instance;
   const isEphemeral = instance.isEphemeral === true;
@@ -364,12 +374,11 @@ export function assembleManualRequest(
     request.variables = variables as Record<string, unknown>;
   }
   if (context) request.context = context;
-  if (tools_replace) request.tools_replace = tools_replace;
-  if (custom_tools)
-    request.custom_tools = custom_tools as ChatRequestPayload["custom_tools"];
-  if (mcp_servers) request.mcp_servers = mcp_servers;
-  if (client_tools)
-    request.client_tools = client_tools as ChatRequestPayload["client_tools"];
+  if (injection.tools_replace)
+    request.tools_replace =
+      injection.tools_replace as ChatRequestPayload["tools_replace"];
+  if (injection.client)
+    request.client = injection.client as ChatRequestPayload["client"];
   if (structuredSystemInstruction) {
     request.system_instruction =
       structuredSystemInstruction as unknown as string;
