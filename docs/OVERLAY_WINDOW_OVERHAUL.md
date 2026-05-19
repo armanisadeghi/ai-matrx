@@ -4,21 +4,53 @@
 
 ## Status (as of 2026-05-18)
 
-| Stage | Status | Commits |
+| Stage | Status | Commit |
 |---|---|---|
 | 0 — SW fix (blob-cache narrowed scope) | ✅ shipped | (deployed earlier) |
-| 1 — New `OverlayController.tsx` behind a flag | ✅ committed | `25c160c6f` |
-| 2 — Typed openers (`useOpenX` + `<XController />`) + catalogue | ✅ committed | `57635640e` |
-| 3a — Callback-aware openers re-export hand-written sources | ✅ in-flight (this branch) | pending commit |
-| 3b — Tighten the 90 `as never` casts in controller (add real type imports) | 🟡 sub-agent running | pending commit |
-| 3c — ESLint rule: no JSX spread in controller (warn) | ✅ in-flight (this branch) | pending commit |
-| 3d — Migrate ~321 dispatch sites to typed openers | ⏸ deferred | none |
-| 4 — Move `windowManagerSlice` → `features/windows/manager.ts`, finish System 3 | ⏸ deferred | none |
+| 1 — New `OverlayController.tsx` behind a flag | ✅ shipped | `25c160c6f` |
+| 2 — Typed openers (`useOpenX` + `<XController />`) + catalogue | ✅ shipped | `57635640e` |
+| 3a — Callback-aware openers re-export hand-written sources | ✅ shipped | `cd0e24407` |
+| 3b — Tighten the `as never` casts (35 of 41 done, 6 documented) | ✅ shipped | `ec67ca9c6` |
+| 3c — ESLint rule: no JSX spread in controller (warn) | ✅ shipped | `cd0e24407` |
+| 3d — Migrate first dispatch site (AgentOptionsMenu — 27 sites) | ✅ shipped | `ec67ca9c6` |
+| 4 — Other dispatch site migrations (~290 remaining) | ⏸ incremental | — |
 | 5 — Cutover (flip `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1` in prod) | ⏸ awaits user validation | — |
 | 6 — Delete legacy `UnifiedOverlayController*` / `OverlaySurface` / `windowRegistry` | ⏸ post-cutover | — |
 | 7 — System 4 persistence (URL + `window_sessions` JSONB blob mode) | ⏸ post-cutover | — |
 
-The new controller already works (flag-on in dev). Stages 3d, 4, 5, 6, 7 are polish/cleanup that don't block the cutover.
+## Cutover handoff — what to do next
+
+The new controller is **complete and type-safe**. It needs browser validation. The fastest way:
+
+1. **Enable in dev** by adding the URL param to any authenticated page:
+   ```
+   ?newOverlayController=1
+   ```
+   Or set it sticky once via the browser DevTools console:
+   ```js
+   localStorage.matrx_new_overlay_controller = "1"
+   ```
+
+2. **Click through the overlays you care most about.** The original bug class was agent windows (Edit / Run / Run History / Advanced Editor / Settings) — confirm those open and receive the right agent. Also try at least one each of: a dialog (Email, Save to Notes), a sheet (Quick Tasks), a Window panel (Notes, Cloud Files), and an instanced multi-window (image viewer, full-screen editor).
+
+3. **Watch the console**. The diagnostic middleware is still in place — if any overlay's dispatch fires but the component doesn't mount within 1500 ms, you'll get the heartbeat report telling you which layer broke. With the new controller this should never happen because the dispatch → JSX render path is one synchronous React tree commit.
+
+4. **If validation passes**, flip the flag in production:
+   ```bash
+   # In Vercel project env vars
+   NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1
+   ```
+   Deploy. The legacy `UnifiedOverlayController` keeps mounting until you redeploy with the new env var; both code paths render the same Redux state so the rollback is just toggling the env var back.
+
+5. **After 48 h of clean prod**, come back and I'll do Stage 6 (delete the legacy files). That removes `UnifiedOverlayController`, `UnifiedOverlayControllerImpl`, `OverlaySurface`, `windowRegistry.ts`, and the spread-render pattern entirely.
+
+## Rollback plan
+
+If anything goes wrong:
+- **Mid-validation**: just remove the URL param / localStorage key. Page refresh = back on legacy.
+- **In prod**: unset `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER` in Vercel and redeploy. Legacy controller takes over again on next page load.
+
+The new controller cannot break the legacy one — they're independently mounted by the same gate, only one at a time.
 
 ## Why
 
