@@ -38,6 +38,15 @@ import { resolveActionLabel } from "./actions/utils";
 // Side-effect import — registers every built-in action handler at module load.
 // Without this, the registry is empty when resolveActions runs.
 import "./actions/handlers";
+import {
+  registerBridge,
+  unregisterBridge,
+  updateBridge,
+} from "./runtime/providerBridge";
+import { ActionBar } from "./variants/ActionBar";
+import { MiniActionBar } from "./variants/MiniActionBar";
+import { MenuVariant } from "./variants/MenuVariant";
+import { HoverMenu } from "./variants/HoverMenu";
 import type {
   ContentSource,
   RichDocumentAction,
@@ -200,6 +209,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     actionsSurfaceId,
     className,
     contentClassName,
+    actionsClassName,
     content,
     events,
     serverProcessedBlocks,
@@ -228,28 +238,42 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // Per-instance provider ID — stable across renders.
   const providerId = React.useId();
 
-  // Live refs — Phase 2 variant click handlers read these inside their
-  // closures so a button clicked seconds after a content edit operates on
-  // the new content. During render the values are read from props directly
-  // (refs are off-limits during render per react-hooks/refs).
+  // Live refs — variant click handlers read these inside their closures so
+  // a button clicked seconds after a content edit operates on the new
+  // content. During render the values are read from props directly (refs
+  // are off-limits during render per react-hooks/refs).
   const contentRef = React.useRef(content ?? "");
   const sourceRef = React.useRef<ContentSource>(source);
   const callbacksRef = React.useRef(actionsProp?.callbacks);
   const extensionsRef = React.useRef<SourceExtensions | undefined>(
     actionsProp?.extensions,
   );
+  const dispatchRef = React.useRef(dispatch);
+  const isAuthRef = React.useRef(isAuthenticated);
+  const isAdminRef = React.useRef(isAdmin);
   React.useLayoutEffect(() => {
     contentRef.current = content ?? "";
     sourceRef.current = source;
     callbacksRef.current = actionsProp?.callbacks;
     extensionsRef.current = actionsProp?.extensions;
+    dispatchRef.current = dispatch;
+    isAuthRef.current = isAuthenticated;
+    isAdminRef.current = isAdmin;
   });
-  // Reference the refs so Phase 1 lint doesn't drop them; Phase 2 variants
-  // import a `useRichDocumentContextFactory` hook that consumes them.
-  void contentRef;
-  void sourceRef;
-  void callbacksRef;
-  void extensionsRef;
+
+  // Factory for the live action context. Defined inline; React Compiler
+  // memoizes identity. Reads from refs at invocation time (legal inside
+  // event handlers — only render-time reads are banned).
+  const getCtx = (): RichDocumentActionContext =>
+    buildContext({
+      content: contentRef.current,
+      source: sourceRef.current,
+      callbacks: callbacksRef.current,
+      extensions: extensionsRef.current,
+      dispatch: dispatchRef.current,
+      isAuthenticated: isAuthRef.current,
+      isAdmin: isAdminRef.current,
+    });
 
   // Build the live context from props for render-time spec computation.
   const ctx = buildContext({
@@ -320,15 +344,77 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     );
   }, [actionsVariant, actionsSurfaceId, providerId, dispatch, specs]);
 
-  // Phase 2 will switch on actionsVariant to render the variants; for now
-  // a non-"remote" / non-"none" value silently no-ops. The action engine
-  // is live and the remote surface works.
-  void resolvedActions;
+  // Bridge registration — the module-scope side channel that lets a remote
+  // RichDocumentActionSurface invoke handlers without functions traversing
+  // Redux. Registered for every actionsVariant (not just "remote") so the
+  // bridge is always available; harmless when no surface is consuming it.
+  React.useEffect(() => {
+    registerBridge(providerId, { getCtx, resolvedActions });
+    return () => unregisterBridge(providerId);
+    // Re-registration on every relevant change happens via updateBridge below.
+     
+  }, [providerId]);
+  React.useEffect(() => {
+    updateBridge(providerId, { getCtx, resolvedActions });
+  });
 
-  // PHASE 0: no inline variants yet — render only the engine. Phase 2
-  // mounts <ActionBar/>, <MiniActionBar/>, <OverflowMenu/>, <HoverMenu/>.
+  // Pick the variant. Returns null for "remote" / "none" — the remote
+  // surface renders the actions elsewhere via the bridge; "none" hides
+  // them entirely.
+  let actionsNode: React.ReactNode = null;
+  switch (actionsVariant) {
+    case "bar":
+      actionsNode = (
+        <ActionBar
+          actions={resolvedActions}
+          getCtx={getCtx}
+          className={cn("mt-1", actionsClassName)}
+        />
+      );
+      break;
+    case "mini-bar":
+      actionsNode = (
+        <MiniActionBar
+          actions={resolvedActions}
+          getCtx={getCtx}
+          className={cn("mt-0.5", actionsClassName)}
+        />
+      );
+      break;
+    case "menu":
+      actionsNode = (
+        <MenuVariant
+          actions={resolvedActions}
+          getCtx={getCtx}
+          className={cn("mt-0.5", actionsClassName)}
+        />
+      );
+      break;
+    case "hover-menu":
+      actionsNode = (
+        <HoverMenu
+          actions={resolvedActions}
+          getCtx={getCtx}
+          className={actionsClassName}
+        />
+      );
+      break;
+    case "remote":
+    case "none":
+    default:
+      actionsNode = null;
+  }
+
+  // hover-menu requires `group` on the root so the absolutely-positioned
+  // child's `group-hover` selector resolves correctly.
+  const rootClassName = cn(
+    "rich-document",
+    actionsVariant === "hover-menu" ? "relative group" : null,
+    className,
+  );
+
   return (
-    <div className={cn("rich-document", className)}>
+    <div className={rootClassName}>
       <div className={cn("rich-document__content", contentClassName)}>
         <MarkdownStream
           content={content}
@@ -350,7 +436,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
           strictServerData={strictServerData}
         />
       </div>
-      {/* Phase 0: inline action variants intentionally not rendered. */}
+      {actionsNode}
     </div>
   );
 }

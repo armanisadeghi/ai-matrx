@@ -1,6 +1,6 @@
 # FEATURE.md — `rich-document`
 
-**Status:** `scaffolded`
+**Status:** `active`
 **Tier:** `1`
 **Last updated:** `2026-05-19`
 
@@ -142,9 +142,9 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Foundations: feature dir, FEATURE.md, types, registry skeleton, surface slice (registered), empty RichDocument + RichDocumentActionSurface shells | ✅ Current |
-| 1 | Move handlers from `messageActionRegistry.ts` into `features/rich-document/actions/handlers/*.ts`, tagged with `supportedSources`. Old file re-exports. | Pending |
-| 2 | Build inline variants (`ActionBar`, `MiniActionBar`, `OverflowMenu`, `HoverMenu`) | Pending |
+| 0 | Foundations: feature dir, FEATURE.md, types, registry skeleton, surface slice (registered), empty RichDocument + RichDocumentActionSurface shells | ✅ Done |
+| 1 | Move handlers from `messageActionRegistry.ts` into `features/rich-document/actions/handlers/*.ts`, tagged with `supportedSources`. Old file re-exports. | ✅ Done |
+| 2 | Build inline variants (`ActionBar`, `MiniActionBar`, `OverflowMenu`, `HoverMenu`) + module-scope provider bridge so `RichDocumentActionSurface` can invoke handlers without functions in Redux. | ✅ Done |
 | 3 | Wrapping-parity gate on PromptToast — vanilla content, no interactive blocks, isolates wrapper from registry | Pending |
 | 4 | Chat parity migration — replace `AssistantActionBar` (larger than it looks; see plan) | Pending |
 | 5 | Notes uplift — preview, matrx split, remote surface in detail header | Pending |
@@ -158,6 +158,8 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 Newest first.
 
+- `2026-05-19` — Claude/arman: Phase 2 — inline variants (`ActionBar`, `MiniActionBar`, `MenuVariant`, `HoverMenu`) + `OverflowMenu` shared dropdown + `PrimaryButtons` shared inline row. Module-scope `providerBridge` registry lets `RichDocumentActionSurface` invoke handlers on the host's behalf without functions traversing Redux. `RichDocumentActionSurface` now renders real variants (was a dev-only diagnostic marker).
+- `2026-05-19` — Claude/arman: Phase 1 — ported every chat action handler from `messageActionRegistry.ts` into source-aware modules under `actions/handlers/` (copy, save, export, print, edit, creator, feedback, fullscreen-editor, stubs, app, server-api). `save-to-task` generalized to any source via per-source entity_type map; `html-preview` and `edit` route through `sourceAdapter.edit` instead of closure-in-Redux. Chat/note source adapters wired with `edit`/`delete`.
 - `2026-05-19` — Claude/arman: Phase 0 scaffolding — types, slice, registry skeleton, source-adapter stubs, empty RichDocument + RichDocumentActionSurface shells, slice registered in slimReducerMap.
 
 ---
