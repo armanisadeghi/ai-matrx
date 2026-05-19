@@ -1518,12 +1518,15 @@
 }
 /* Image editor — suppress Filerobot's duplicate dimension readout.
    The Resize tab already exposes width/height inputs in its side panel; the
-   topbar's secondary readout is redundant and confuses the layout. Hide it
-   only inside our editor shell so other Filerobot mounts (Annotate, Avatar)
-   are unaffected. */
+   topbar's secondary readout (first child of the center options group, an
+   element like "1408 × 768 px") is redundant and confuses the layout. Hide
+   it only inside our editor shell so other Filerobot mounts (Annotate,
+   Avatar) are unaffected. The first-child target survives Filerobot's
+   styled-component class hashing across versions. */
 [data-image-edit-shell] .FIE_topbar-image-info,
 [data-image-edit-shell] .FIE_topbar-resize-info,
-[data-image-edit-shell] .FIE_resize-info {
+[data-image-edit-shell] .FIE_resize-info,
+[data-image-edit-shell] .FIE_topbar-center-options > :first-child {
   display: none !important;
 }
 
