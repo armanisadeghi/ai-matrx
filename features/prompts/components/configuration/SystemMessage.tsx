@@ -1,5 +1,5 @@
 import React, { RefObject, useRef, useState, useLayoutEffect } from "react";
-import { Maximize2, Braces, Edit2, Wand2, Eraser, FileText, Eye } from "lucide-react";
+import { Maximize2, Braces, Edit2, Zap, Eraser, FileText, Eye } from "lucide-react";
 import { VariableSelector } from "../VariableSelector";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -200,7 +200,7 @@ export function SystemMessage({
         },
         {
             id: 'optimize',
-            icon: Wand2,
+            icon: Zap,
             tooltip: 'Optimize with AI',
             mobileLabel: 'Optimize with AI',
             onClick: (e) => {

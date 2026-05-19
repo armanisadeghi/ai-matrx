@@ -1,6 +1,6 @@
 // components/ui/AICustomizationPanel.tsx
 import React, { useState } from "react";
-import { Save, Wand2 } from "lucide-react";
+import { Save, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AICustomizationProps, ConfigState, SectionConfig } from "./types";
 import { Card } from "@/components/ui/card";
@@ -116,7 +116,7 @@ export const AICustomizationPanel: React.FC<AICustomizationProps> = ({ config, i
             <header className="sticky top-0 z-10 bg-card border-b border-border px-6 py-4 shadow-sm">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center">
-                        <Wand2 className="h-7 w-7 text-primary mr-2" />
+                        <Zap className="h-7 w-7 text-primary mr-2" />
                         <h1 className="text-xl font-bold">Customize Your AI Experience</h1>
                     </div>
 

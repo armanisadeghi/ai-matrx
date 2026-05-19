@@ -58,22 +58,25 @@ export function AgentSelectorIsland({
     startTransition(() => router.push(nextHref));
   };
 
+  console.log("[DEBUG] showVersion", showVersion);
+  console.log("[DEBUG] version", version);
+
   return (
-    <div className="flex items-center gap-0 min-w-0 shrink">
+    <div className="flex items-center gap-2 min-w-0 shrink">
       <AgentListDropdown
         onSelect={handleAgentSelect}
         label={displayName}
         triggerSlot={triggerSlot}
         noBorder
       />
-      {showVersion && version != null && (
+      {showVersion && (
         <span className="text-[0.625rem] font-medium text-[var(--shell-nav-text)] tabular-nums shrink-0">
           v{version}
         </span>
       )}
       {showBuiltin && isBuiltin && (
         <span
-          className="text-[0.625rem] font-semibold uppercase tracking-wider leading-none px-1.5 py-0.5 rounded-full border border-destructive/40 bg-destructive/10 text-destructive shrink-0"
+          className="text-[0.725rem] font-semibold uppercase tracking-wider leading-none px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/10 text-destructive shrink-0"
           title="System-owned agent — edits affect all users"
         >
           Builtin

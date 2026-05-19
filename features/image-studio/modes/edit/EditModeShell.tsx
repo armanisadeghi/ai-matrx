@@ -20,7 +20,7 @@
 
 import { useCallback, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
-import { Loader2, Save, Sparkles, X } from "lucide-react";
+import { Loader2, Save, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -349,7 +349,7 @@ const darkTheme = {
 
 // Re-export the close button trio so the modal-mode wrapper can render its
 // own header without duplicating styles.
-export { Sparkles, Save, X };
+export { Zap, Save, X };
 
 // Track dark/light by reading the `dark` class on <html>. Mirrors the
 // pattern used by `components/ui/sonner.tsx` so we don't pull in

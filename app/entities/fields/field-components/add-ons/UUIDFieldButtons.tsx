@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wand2 } from "lucide-react";
+import { Zap } from "lucide-react";
 import FieldActionButtons, { FieldActionButtonsProps } from './FieldActionButtons';
 
 // Explicitly include all props we want to keep from FieldActionButtonsProps
@@ -38,7 +38,7 @@ const UUIDFieldButtons = ({
       className={className}
       maxHistory={maxHistory}
       onGenerateValue={generateUUID}
-      generateIcon={<Wand2 className="h-4 w-4" />}
+      generateIcon={<Zap className="h-4 w-4" />}
       generateTooltip="Generate UUID"
     />
   );

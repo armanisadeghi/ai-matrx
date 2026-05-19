@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Sparkles, X } from "lucide-react";
+import { ArrowRight, Crown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UpgradeToastProps {
@@ -42,7 +42,7 @@ export function UpgradeToast({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/30 to-transparent" />
       <div className="flex items-start gap-3 p-4">
         <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-foreground text-background">
-          <Sparkles className="h-3.5 w-3.5" />
+          <Crown className="h-3.5 w-3.5" />
         </span>
         <div className="flex-1 flex flex-col gap-2">
           <div className="flex items-start justify-between gap-2">

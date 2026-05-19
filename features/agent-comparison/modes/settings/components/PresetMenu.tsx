@@ -15,7 +15,7 @@
  * editor.
  */
 
-import { Sparkles, ChevronDown } from "lucide-react";
+import { Zap, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
@@ -180,7 +180,7 @@ export function PresetMenu() {
               : "Pick an agent first to use presets"
           }
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Zap className="w-3.5 h-3.5" />
           Presets
           <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
         </Button>

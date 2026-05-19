@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wand2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { DbFunctionNode } from "@/features/workflows/types";
 import {
   updateArgOverride,
@@ -214,7 +214,7 @@ const ArgumentsTab: React.FC<ArgumentsTabProps> = ({
                 }}
                 className="h-7 px-2 text-xs"
               >
-                <Wand2 className="h-3 w-3" />
+                <Zap className="h-3 w-3" />
                 Clean JSON
               </Button>
             </div>

@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import cronstrue from "cronstrue";
-import { Wand2 } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -67,7 +67,7 @@ export default function CronTesterPage() {
   return (
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-3xl">
       <div className="flex items-center gap-2">
-        <Wand2 className="h-5 w-5 text-blue-500" />
+        <Zap className="h-5 w-5 text-blue-500" />
         <div>
           <h1 className="text-lg font-semibold leading-none">Cron tester</h1>
           <p className="text-xs text-muted-foreground mt-0.5">

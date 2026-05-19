@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useState} from 'react';
-import {Wand2, Copy, Check, RotateCcw, History, Trash} from 'lucide-react';
+import {Zap, Copy, Check, RotateCcw, History, Trash} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
@@ -133,7 +133,7 @@ const EntityUUIDField: React.FC<EntityUUIDFieldProps> = (
                             onClick={generateUUID}
                             disabled={disabled}
                         >
-                            <Wand2 className="h-4 w-4"/>
+                            <Zap className="h-4 w-4"/>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Generate UUID</TooltipContent>

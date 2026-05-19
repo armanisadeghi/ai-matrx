@@ -1,15 +1,8 @@
-import {
-  Eye,
-  Edit2,
-  Maximize2,
-  Braces,
-  Wand2,
-  Eraser,
-  FileText,
-  Sparkles,
-} from "lucide-react";
+import { Maximize2, Braces, Eraser, FileText, Webhook } from "lucide-react";
 
-export type SystemMessageViewMode = "edit" | "plain" | "preview";
+// View-mode toggle has moved out of this button row and into the
+// MessageViewModeMenu rendered next to the "System" role label. This file
+// only owns the action icons that genuinely belong in the toolbar.
 
 import {
   ResponsiveIconButtonGroup,
@@ -29,7 +22,6 @@ import { VariableSelector } from "@/features/agents/components/variables-managem
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 
 interface SystemMessageButtonsProps {
-  viewMode?: SystemMessageViewMode;
   hasVariableSupport?: boolean;
   hasFullScreenEditor?: boolean;
   variableNames?: string[];
@@ -41,14 +33,12 @@ interface SystemMessageButtonsProps {
   onSaveTemplate?: (label: string, content: string, tags: string[]) => void;
   onOptimize?: () => void;
   onOpenFullScreenEditor?: () => void;
-  onSetViewMode?: (mode: SystemMessageViewMode) => void;
   onClear?: () => void;
   onAddBlockType?: (type: BlockType) => void;
   onVoiceTranscription?: (text: string) => void;
 }
 
 export function SystemMessageButtons({
-  viewMode = "plain",
   hasVariableSupport = false,
   hasFullScreenEditor = false,
   variableNames = [],
@@ -59,7 +49,6 @@ export function SystemMessageButtons({
   onSaveTemplate,
   onOptimize,
   onOpenFullScreenEditor,
-  onSetViewMode,
   onClear,
   onAddBlockType,
   onVoiceTranscription,
@@ -140,7 +129,7 @@ export function SystemMessageButtons({
     },
     {
       id: "optimize",
-      icon: Wand2,
+      icon: Webhook,
       tooltip: "Optimize with AI",
       mobileLabel: "Optimize with AI",
       onClick: (e) => {
@@ -170,57 +159,6 @@ export function SystemMessageButtons({
       },
     },
     {
-      id: "view-edit",
-      icon: Edit2,
-      tooltip: "Edit mode",
-      mobileLabel: "Edit",
-      hidden: !onSetViewMode,
-      className: viewMode === "edit" ? "bg-primary/10 text-primary" : undefined,
-      onClick: (e) => {
-        e?.stopPropagation();
-        onSetViewMode?.("edit");
-      },
-      onMouseDown: (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      },
-    },
-    {
-      id: "view-plain",
-      icon: Eye,
-      tooltip: "Plain view (highlights variables)",
-      mobileLabel: "Plain",
-      hidden: !onSetViewMode,
-      className:
-        viewMode === "plain" ? "bg-primary/10 text-primary" : undefined,
-      onClick: (e) => {
-        e?.stopPropagation();
-        onSetViewMode?.("plain");
-      },
-      onMouseDown: (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      },
-    },
-    {
-      id: "view-preview",
-      icon: Sparkles,
-      tooltip: "Preview (renders markdown)",
-      mobileLabel: "Preview",
-      hidden: !onSetViewMode,
-      className:
-        viewMode === "preview" ? "bg-purple-500/10 text-purple-500" : undefined,
-      iconClassName: viewMode === "preview" ? "text-purple-400" : undefined,
-      onClick: (e) => {
-        e?.stopPropagation();
-        onSetViewMode?.("preview");
-      },
-      onMouseDown: (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      },
-    },
-    {
       id: "clear",
       icon: Eraser,
       tooltip: "Clear message",
@@ -237,8 +175,8 @@ export function SystemMessageButtons({
     {
       id: "voice",
       icon: undefined,
-      tooltip: "Record voice",
-      mobileLabel: "Record Voice",
+      tooltip: "Add text from voice",
+      mobileLabel: "Add text from voice",
       hidden: !onVoiceTranscription,
       render: onVoiceTranscription
         ? () => (

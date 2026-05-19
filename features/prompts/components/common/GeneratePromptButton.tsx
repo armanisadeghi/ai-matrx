@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Wand2 } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { PromptGenerator } from '../actions/prompt-generator/PromptGenerator';
 
 export function GeneratePromptButton() {
@@ -14,7 +14,7 @@ export function GeneratePromptButton() {
         onClick={() => setIsOpen(true)}
         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
       >
-        <Wand2 className="h-4 w-4 mr-2" />
+        <Zap className="h-4 w-4 mr-2" />
         <span className="hidden sm:inline">Generate with AI</span>
         <span className="sm:hidden">Generate</span>
       </Button>

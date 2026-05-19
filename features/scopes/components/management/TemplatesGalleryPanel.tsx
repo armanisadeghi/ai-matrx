@@ -10,7 +10,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useTemplates } from "@/features/scopes/hooks/useTemplates";
@@ -130,7 +130,7 @@ export function TemplatesGalleryPanel() {
                       href={`/organizations/${targetOrg.slug ?? targetOrg.id}/scopes?template=${t.id}`}
                       className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
                     >
-                      <Sparkles className="h-3 w-3" />
+                      <Zap className="h-3 w-3" />
                       Apply to {targetOrg.name}
                     </Link>
                   ) : (

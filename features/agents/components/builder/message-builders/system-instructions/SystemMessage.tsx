@@ -29,10 +29,11 @@ import type { AgentDefinitionMessage } from "@/features/agents/types/agent-messa
 
 // Module Shared Components
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
+import { SystemMessageButtons } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
 import {
-  SystemMessageButtons,
-  type SystemMessageViewMode,
-} from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
+  MessageViewModeMenu,
+  type MessageViewMode,
+} from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
 import MarkdownStream from "@/components/MarkdownStream";
 import {
   BlockList,
@@ -75,7 +76,7 @@ export function SystemMessage({
   onOpenFullScreenEditor,
   scrollContainerRef,
 }: SystemMessageProps) {
-  const [viewMode, setViewMode] = useState<SystemMessageViewMode>("plain");
+  const [viewMode, setViewMode] = useState<MessageViewMode>("plain");
   const isEditing = viewMode === "edit";
   const setIsEditing = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -660,12 +661,14 @@ export function SystemMessage({
       <div className="group border-border rounded-lg bg-gray-50 dark:bg-gray-800">
         {/* Header */}
         <div className="flex items-center justify-between px-2 py-1 sticky top-0 z-10 rounded-t-lg bg-gray-50 dark:bg-gray-800">
-          <Label className="text-xs text-gray-600 dark:text-gray-400">
-            System
-          </Label>
+          <div className="flex items-center gap-1">
+            <Label className="text-xs text-gray-600 dark:text-gray-400">
+              System
+            </Label>
+            <MessageViewModeMenu viewMode={viewMode} onChange={setViewMode} />
+          </div>
           <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons
-              viewMode={viewMode}
               hasVariableSupport={hasVariableSupport}
               hasFullScreenEditor={!!onOpenFullScreenEditor}
               variableNames={variableNames}
@@ -676,7 +679,6 @@ export function SystemMessage({
               onSaveTemplate={() => {}}
               onOptimize={() => setIsOptimizerOpen(true)}
               onOpenFullScreenEditor={onOpenFullScreenEditor}
-              onSetViewMode={setViewMode}
               onClear={() => handleTextChange("")}
               onAddBlockType={(type) => setPendingAddType(type)}
               onVoiceTranscription={handleVoiceTranscription}

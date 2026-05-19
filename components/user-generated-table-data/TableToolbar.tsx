@@ -10,7 +10,7 @@ import TableReferenceOverlay from './TableReferenceOverlay';
 import RowOrderingModal from './RowOrderingModal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X, Download, Pencil, Trash, Settings, Plus, Link, Wand2, ArrowUpDown, GripVertical, Eye } from 'lucide-react';
+import { Search, X, Download, Pencil, Trash, Settings, Plus, Link, Zap, ArrowUpDown, GripVertical, Eye } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface TableToolbarProps {
@@ -227,7 +227,7 @@ export default function TableToolbar({
               className="whitespace-nowrap text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               title="Clean HTML formatting in all string fields"
             >
-              <Wand2 className="h-4 w-4 md:mr-2" />
+              <Zap className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Clean All HTML</span>
             </Button>
           )}

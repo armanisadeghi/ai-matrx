@@ -199,6 +199,51 @@ const deletedFileHooksRestriction = {
     ],
 };
 
+// Banned lucide-react icons — Wand / Sparkles / Bot are AI-cliché icons
+// we're purging from the app. Implemented as a tiny inline plugin so we
+// can wire it as `warn` independently of the (deliberately `error`) global
+// `no-restricted-imports` / `no-restricted-syntax` slots, without flat
+// config's "later rule wins" replacing those higher-severity bans.
+const BANNED_LUCIDE_ICON_RE = /^(Wand2?|Sparkles?|Bot)$/;
+const matrxLintPlugin = {
+    rules: {
+        'no-banned-lucide-icons': {
+            meta: {
+                type: 'suggestion',
+                docs: {
+                    description:
+                        'Disallow Wand / Sparkles / Bot icons from lucide-react.',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        "'{{name}}' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons.",
+                },
+            },
+            create(context) {
+                return {
+                    ImportDeclaration(node) {
+                        if (node.source.value !== 'lucide-react') return;
+                        for (const spec of node.specifiers) {
+                            if (
+                                spec.type === 'ImportSpecifier' &&
+                                spec.imported.type === 'Identifier' &&
+                                BANNED_LUCIDE_ICON_RE.test(spec.imported.name)
+                            ) {
+                                context.report({
+                                    node: spec,
+                                    messageId: 'banned',
+                                    data: { name: spec.imported.name },
+                                });
+                            }
+                        }
+                    },
+                };
+            },
+        },
+    },
+};
+
 // Doctrine anti-pattern #3 — Parallel Redux slices (see PRINCIPLES.md).
 // `createSlice` / `createReducer` must live alongside the rest of the store
 // in `lib/redux/**` or `features/*/redux/**`. Calling them anywhere else
@@ -316,9 +361,13 @@ export default [
     {
         plugins: {
             'no-barrel-files': noBarrelFiles,
+            matrx: matrxLintPlugin,
         },
         rules: {
             'no-barrel-files/no-barrel-files': 'warn',
+            // Loud but non-blocking — keep at 'warn' so CI / Vercel builds
+            // don't fail while we clean up existing usages.
+            'matrx/no-banned-lucide-icons': 'warn',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',

@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Image as ImageIcon, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { Image as ImageIcon, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -132,14 +132,14 @@ export default function GenerateShellClient() {
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
           ) : (
-            <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
           )}
           Generate
         </Button>
 
         <div className="hidden md:block rounded-md border border-border bg-card/30 p-3 text-xs text-muted-foreground space-y-1.5">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <Sparkles className="h-3 w-3" />
+            <Zap className="h-3 w-3" />
             About this tool
           </div>
           <p>

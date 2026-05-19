@@ -4,7 +4,7 @@ import {memo} from 'react';
 import {cn} from '@/lib/utils';
 import {Card, CardContent} from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
-import {Grid2X2, ChevronRight, Star, Wand2, BookOpen, Mail, User, StarIcon, FileText, Hash, Brain, MessageCircle, Boxes, Briefcase, VariableIcon, SquareFunction } from 'lucide-react';
+import {Grid2X2, ChevronRight, Star, Zap, BookOpen, Mail, User, StarIcon, FileText, Hash, Brain, MessageCircle, Boxes, Briefcase, VariableIcon, SquareFunction } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,
@@ -208,7 +208,7 @@ const BubbleQuickRef = memo(function BubbleQuickRef(
                     "bg-pink-100 border-pink-400 dark:bg-pink-950 dark:border-pink-700" :
                     "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-800"
             )}>
-                <Wand2 className={cn(
+                <Zap className={cn(
                     "h-4 w-4",
                     isSelected ? "text-pink-500 dark:text-pink-400" : "text-blue-400 dark:text-blue-300"
                 )}/>

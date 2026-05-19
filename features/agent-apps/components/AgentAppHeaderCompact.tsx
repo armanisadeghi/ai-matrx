@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Wand2 } from "lucide-react";
+import { ArrowLeft, Rocket } from "lucide-react";
 import type { AgentApp, PublicAgentApp } from "../types";
 
 interface AgentAppHeaderCompactProps {
@@ -28,7 +28,7 @@ export function AgentAppHeaderCompact({
         </Link>
       ) : (
         <div className="h-7 w-7 inline-flex items-center justify-center text-primary">
-          <Wand2 className="w-4 h-4" />
+          <Rocket className="w-4 h-4" />
         </div>
       )}
       <div className="min-w-0 flex-1">

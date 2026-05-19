@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { X, FileText, MessageSquare, Plus, Wand2, Settings2, Variable, Wrench, Save, Eye, Edit2, Rainbow, CheckCircle2, AlertTriangle, FileJson, Info, Check, RefreshCw, AlertCircle } from "lucide-react";
+import { X, FileText, MessageSquare, Plus, Zap, Settings2, Variable, Wrench, Save, Eye, Edit2, Rainbow, CheckCircle2, AlertTriangle, FileJson, Info, Check, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -355,7 +355,7 @@ export function FullScreenEditor({
                                 onClick={() => setIsOptimizerOpen(true)}
                                 className="w-full mt-2 h-8 text-xs bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
                             >
-                                <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                                <Zap className="h-3.5 w-3.5 mr-1.5" />
                                 Optimize System Prompt
                             </Button>
                         </div>

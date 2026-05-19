@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Stars, Brain, MessageSquare, BookOpen, Clock, UserCircle, Sliders, Save, Zap, Code, ListChecks, Palette, CircuitBoard, Wand2, UserCog, PanelTop, Image, BellRing, Smile } from 'lucide-react';
+import { Stars, Brain, MessageSquare, BookOpen, Clock, UserCircle, Sliders, Save, Zap, Code, ListChecks, Palette, CircuitBoard, UserCog, PanelTop, Image, BellRing, Smile } from 'lucide-react';
 
 export default function AIExperienceCustomizer() {
   // State for all customization options
@@ -277,7 +277,7 @@ export default function AIExperienceCustomizer() {
       <header className="sticky top-0 z-10 bg-textured border-b border-border px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <Wand2 className="h-7 w-7 text-blue-600 dark:text-blue-500 mr-2" />
+            <Zap className="h-7 w-7 text-blue-600 dark:text-blue-500 mr-2" />
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Customize Your AI Experience</h1>
           </div>
           <button

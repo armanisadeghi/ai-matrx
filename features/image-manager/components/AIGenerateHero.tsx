@@ -12,7 +12,7 @@
  * the user can pre-configure model + style before AI gen lands.
  */
 
-import { Settings, Sparkles } from "lucide-react";
+import { Settings, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -33,7 +33,7 @@ export function AIGenerateHero() {
     <div className="h-full flex items-start md:items-center justify-center overflow-y-auto overscroll-contain p-4 md:p-8">
       <div className="text-center max-w-md">
         <div className="mx-auto h-14 w-14 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
-          <Sparkles className="h-7 w-7" />
+          <Zap className="h-7 w-7" />
         </div>
         <h3 className="text-lg font-semibold text-foreground">
           AI Image Generation

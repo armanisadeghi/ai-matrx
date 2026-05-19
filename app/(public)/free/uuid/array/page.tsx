@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Plus, Copy, Check, Wand2, ChevronDown, ChevronUp, ListFilter } from 'lucide-react';
+import { X, Plus, Copy, Check, Zap, ChevronDown, ChevronUp, ListFilter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -82,7 +82,7 @@ const UUIDArrayField = () => {
                             onClick={generateUUID}
                             title="Generate UUID"
                         >
-                            <Wand2 className="h-4 w-4" />
+                            <Zap className="h-4 w-4" />
                         </Button>
                         <Button
                             type="button"

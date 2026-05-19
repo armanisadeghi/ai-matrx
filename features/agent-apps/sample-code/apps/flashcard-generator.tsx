@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BookOpen, Sparkles, Loader2, GraduationCap, Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { BookOpen, Zap, Loader2, GraduationCap, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -155,7 +155,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5 mr-2" />
+                <Zap className="w-5 h-5 mr-2" />
                 Generate Flashcards
               </>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Bot, Sparkles, Type, MessageCircleQuestion } from "lucide-react";
+import { Rocket, Type, MessageCircleQuestion, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -232,8 +232,8 @@ const MODES: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { id: "agent_default", label: "Agent Default", icon: Bot },
-  { id: "surface_value", label: "Surface Value", icon: Sparkles },
+  { id: "agent_default", label: "Agent Default", icon: Rocket },
+  { id: "surface_value", label: "Surface Value", icon: Zap },
   { id: "direct_value", label: "Direct Value", icon: Type },
   { id: "prompt_user", label: "Prompt User", icon: MessageCircleQuestion },
 ];

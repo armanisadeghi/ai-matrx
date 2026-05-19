@@ -21,7 +21,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, FileText, Layers, Sparkles, Wand2 } from "lucide-react";
+import { CheckCircle2, FileText, Layers, Stars, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   ProcessingFrame,
@@ -257,7 +257,7 @@ function CleanAnimation({ frame }: { frame: ProcessingFrame }) {
           className="relative"
         >
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-[0_0_20px_4px_rgba(168,85,247,0.55)]">
-            <Wand2 className="h-3.5 w-3.5 text-white" />
+            <Zap className="h-3.5 w-3.5 text-white" />
           </div>
         </motion.div>
         {/* Sparkle trail */}
@@ -502,7 +502,7 @@ function EmbedAnimation({ frame }: { frame: ProcessingFrame }) {
         style={{ top: "8px", left: "50%" }}
       >
         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-emerald-500/40 bg-background/80 backdrop-blur-sm text-[9px] font-mono text-emerald-700 dark:text-emerald-400">
-          <Sparkles className="h-2.5 w-2.5" />
+          <Stars className="h-2.5 w-2.5" />
           <span className="tabular-nums">[ 0.241, -0.193, 0.482, … ]</span>
         </div>
       </motion.div>
@@ -617,7 +617,7 @@ const STAGE_META: Record<
   },
   clean: {
     label: "Clean",
-    Icon: Wand2,
+    Icon: Zap,
     unit: "Page",
     bgFrom: "from-violet-500/10",
     bgTo: "to-violet-500/0",
@@ -639,7 +639,7 @@ const STAGE_META: Record<
   },
   embed: {
     label: "Embed",
-    Icon: Sparkles,
+    Icon: Stars,
     unit: "Vector",
     bgFrom: "from-emerald-500/10",
     bgTo: "to-emerald-500/0",

@@ -56,7 +56,7 @@ import {
 } from "../utils/download-bundle";
 import { slugifyFilename } from "../utils/slugify-filename";
 import type { ProcessedVariant } from "../types";
-import { Edit3, Layers, SlidersHorizontal, Wand2, X, Zap } from "lucide-react";
+import { Edit3, Layers, SlidersHorizontal, X, Zap } from "lucide-react";
 import {
   BottomSheet,
   BottomSheetBody,
@@ -400,7 +400,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
                         onClick={handleDescribeAll}
                         className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 hover:bg-amber-500/10 text-amber-800 dark:text-amber-300 px-2.5 py-1 text-xs font-medium"
                       >
-                        <Wand2 className="h-3 w-3" />
+                        <Zap className="h-3 w-3" />
                         Use AI to name
                       </button>
                       {renameAcknowledged && (

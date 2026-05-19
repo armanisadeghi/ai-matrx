@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Sparkles, X } from "lucide-react";
+import { ArrowRight, Crown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UpgradeFloatingPillProps {
@@ -39,7 +39,7 @@ export function UpgradeFloatingPill({
         onClick={onCta}
         className="inline-flex items-center gap-1 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background transition-transform hover:scale-[1.03]"
       >
-        <Sparkles className="h-3 w-3" />
+        <Crown className="h-3 w-3" />
         {ctaLabel}
         <ArrowRight className="h-3 w-3" />
       </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mail, Wand2 } from "lucide-react";
+import { Mail, Zap } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Field } from "@/components/official/Field";
@@ -405,7 +405,7 @@ export default function TextareaTiersDemo() {
               required
               help={
                 <span className="flex items-start gap-1.5">
-                  <Wand2 className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <Zap className="h-3 w-3 mt-0.5 flex-shrink-0" />
                   Posted to #team-updates. Visible to your whole org.
                 </span>
               }

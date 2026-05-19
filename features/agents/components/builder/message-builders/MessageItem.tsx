@@ -40,12 +40,17 @@ const UnifiedAgentContextMenu = dynamic(
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
 import { MessageItemButtons } from "@/features/agents/components/builder/message-builders/MessageItemButtons";
 import {
+  MessageViewModeMenu,
+  type MessageViewMode,
+} from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
+import {
   BlockList,
   BlockType,
 } from "@/features/agents/components/builder/message-builders/AddBlockButton";
 import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import MarkdownStream from "@/components/MarkdownStream";
 
 /** Extract text from a TextBlock. */
 function extractTextFromBlock(block: Record<string, unknown>): string {
@@ -101,7 +106,20 @@ export function MessageItem({
 }: MessageItemProps) {
   const dispatch = useAppDispatch();
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [viewMode, setViewMode] = useState<MessageViewMode>("plain");
+  const isEditing = viewMode === "edit";
+  const setIsEditing = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      setViewMode((prev) => {
+        const wasEditing = prev === "edit";
+        const nextEditing =
+          typeof next === "function" ? next(wasEditing) : next;
+        if (nextEditing === wasEditing) return prev;
+        return nextEditing ? "edit" : "plain";
+      });
+    },
+    [],
+  );
   const [pendingAddType, setPendingAddType] = useState<
     BlockType | null | undefined
   >(undefined);
@@ -622,21 +640,23 @@ export function MessageItem({
     <div className={cn("group rounded-lg bg-muted ")}>
       {/* Header */}
       <div className="flex items-center justify-between sticky top-0 z-10 pt-0 pb-1 pr-2 rounded-t-lg bg-transparent">
-        <Select
-          value={displayRole}
-          onValueChange={(v) => handleRoleChange(v as "user" | "assistant")}
-        >
-          <SelectTrigger className="h-4 bg-transparent text-foreground !border-none hover:bg-accent w-auto min-w-[120px] text-xs !shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:opacity-0 [&>svg]:group-hover:opacity-100 [&>svg]:transition-opacity">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="assistant">Assistant</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1">
+          <Select
+            value={displayRole}
+            onValueChange={(v) => handleRoleChange(v as "user" | "assistant")}
+          >
+            <SelectTrigger className="h-4 bg-transparent text-foreground !border-none hover:bg-accent w-auto min-w-[120px] text-xs !shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:opacity-0 [&>svg]:group-hover:opacity-100 [&>svg]:transition-opacity">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="assistant">Assistant</SelectItem>
+            </SelectContent>
+          </Select>
+          <MessageViewModeMenu viewMode={viewMode} onChange={setViewMode} />
+        </div>
         <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <MessageItemButtons
-            isEditing={isEditing}
             hasVariableSupport={hasVariableSupport}
             hasFullScreenEditor={!!onOpenFullScreenEditor}
             variableNames={variableNames}
@@ -652,7 +672,6 @@ export function MessageItem({
                 ? () => onOpenFullScreenEditor(messageIndex)
                 : undefined
             }
-            onToggleEditing={() => setIsEditing((prev) => !prev)}
             onClear={handleClear}
             onDelete={handleDelete}
             onAddBlockType={(type) => setPendingAddType(type)}
@@ -664,7 +683,28 @@ export function MessageItem({
 
       {/* Content */}
       <div className="p-4">
-        {isEditing ? (
+        {viewMode === "preview" ? (
+          <div
+            className="cursor-text"
+            style={{ minHeight: "80px" }}
+            onClick={() => setViewMode("edit")}
+            title="Click to edit"
+          >
+            {currentText ? (
+              <MarkdownStream
+                content={currentText}
+                hideCopyButton
+                className="text-sm"
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                {message.role === "assistant"
+                  ? "Assistant response / example output..."
+                  : "User message / example input..."}
+              </span>
+            )}
+          </div>
+        ) : isEditing ? (
           <UnifiedAgentContextMenu
             sourceFeature="agent-builder"
             getTextarea={() => textareaRef.current}

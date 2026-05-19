@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTEXT_MENU_BASE, CONTEXT_MENU_PAGES } from "./_registry";
 
@@ -34,7 +34,7 @@ export default function ContextMenuHubPage() {
         {/* ── Intro ──────────────────────────────────────────────────── */}
         <header className="space-y-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <Zap className="h-4 w-4 text-primary" />
             <h1 className="text-xl font-semibold">
               UnifiedAgentContextMenu — Testing Suite
             </h1>

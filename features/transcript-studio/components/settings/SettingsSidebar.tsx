@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb, ListChecks, Settings2, Sparkles, X } from "lucide-react";
+import { Lightbulb, ListChecks, Settings2, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -69,7 +69,7 @@ export function SettingsSidebar({
         <div className="mt-6 flex flex-col gap-6">
           {/* Column 2 — cleaning */}
           <SettingsGroup
-            icon={Sparkles}
+            icon={Zap}
             title="Cleaned transcript (Column 2)"
           >
             <AgentShortcutPicker

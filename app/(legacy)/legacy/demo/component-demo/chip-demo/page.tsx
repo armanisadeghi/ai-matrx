@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Chip, EnhancedChip } from '@/components/ui/chip';
-import { Star, Heart, Stars, Flame, Zap, Crown, Diamond, Shield, Award, Trophy, Medal, Gift, Rocket, Sparkle } from 'lucide-react';
+import { Star, Heart, Stars, Flame, Zap, Crown, Diamond, Shield, Award, Trophy, Medal, Gift, Rocket } from 'lucide-react';
 import TextDivider from '@/components/matrx/TextDivider';
 import {Lightning} from "@mynaui/icons-react";
 
@@ -198,7 +198,7 @@ export default function DemoPage() {
                                         key={variant}
                                         variant={variant}
                                         glow
-                                        icon={Sparkle}
+                                        icon={Stars}
                                     >
                                         {variant} glow
                                     </EnhancedChip>

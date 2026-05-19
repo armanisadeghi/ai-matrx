@@ -9,7 +9,7 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { motion } from "motion/react";
-import { Sparkles } from "lucide-react";
+import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface OutputNodeData extends Record<string, unknown> {
@@ -42,7 +42,7 @@ function OutputNodeImpl({ data }: NodeProps) {
       />
 
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
-        <Sparkles className="h-5 w-5" strokeWidth={2} />
+        <Zap className="h-5 w-5" strokeWidth={2} />
       </div>
 
       <div className="flex flex-col gap-0.5 leading-tight">

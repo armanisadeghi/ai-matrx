@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Minus, Sparkles } from "lucide-react";
+import { Check, Crown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BillingCycle, Plan } from "@/features/pricing/data";
 import { ANNUAL_DISCOUNT, formatPrice } from "@/features/pricing/data";
@@ -45,7 +45,7 @@ export function PlanCard({
 
       {plan.badge && (
         <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
-          {isRecommended && <Sparkles className="h-3 w-3" strokeWidth={2.5} />}
+          {isRecommended && <Crown className="h-3 w-3" strokeWidth={2.5} />}
           {plan.badge}
         </div>
       )}

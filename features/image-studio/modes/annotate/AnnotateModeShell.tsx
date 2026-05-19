@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Save, ShieldAlert, Sparkles, X } from "lucide-react";
+import { Loader2, Save, ShieldAlert, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useImageSource } from "../shared/use-image-source";
@@ -158,7 +158,7 @@ export function AnnotateModeShell({
     <div className="h-full min-h-0 flex flex-col">
       <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
         <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
-          <Sparkles className="h-3 w-3" />
+          <Zap className="h-3 w-3" />
           AI assist
         </span>
 
@@ -169,7 +169,7 @@ export function AnnotateModeShell({
           onClick={handleSuggestAnnotations}
           disabled={aiBusy !== null}
         >
-          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+          <Zap className="h-3.5 w-3.5 mr-1.5" />
           Suggest annotations
         </Button>
 

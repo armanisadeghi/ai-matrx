@@ -25,7 +25,7 @@ import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, RotateCw, Save, Sparkles, X, ZoomIn } from "lucide-react";
+import { Loader2, RotateCw, Save, X, Zap, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { detectFaces } from "../../api/python";
 import { cropFileToFile } from "../../utils/crop-file";
@@ -207,7 +207,7 @@ export function AvatarModeShell({
             {smartCropping ? (
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
             ) : (
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
             )}
             Smart crop
           </Button>

@@ -1,7 +1,7 @@
 // app/entities/fields/field-components/EntityUUIDArray.tsx
 
 import React, { useState } from 'react';
-import { X, Plus, Copy, Check, Wand2, ChevronDown, ListFilter } from 'lucide-react';
+import { X, Plus, Copy, Check, Zap, ChevronDown, ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -115,7 +115,7 @@ const EntityUUIDArray = React.forwardRef<HTMLDivElement, EntityUUIDArrayProps>(
                         onClick={generateUUID}
                         disabled={disabled}
                     >
-                        <Wand2 className="h-4 w-4" />
+                        <Zap className="h-4 w-4" />
                     </Button>
                     <Button
                         type="button"

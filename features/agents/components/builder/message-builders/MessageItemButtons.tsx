@@ -1,12 +1,7 @@
-import {
-  Eye,
-  Edit2,
-  Maximize2,
-  Braces,
-  Eraser,
-  X,
-  FileText,
-} from "lucide-react";
+import { Maximize2, Braces, Eraser, X, FileText } from "lucide-react";
+
+// View-mode toggle has moved to MessageViewModeMenu next to the role
+// selector. This file owns the action icon row only.
 
 import {
   ResponsiveIconButtonGroup,
@@ -27,7 +22,6 @@ import { VariableSelector } from "@/features/agents/components/variables-managem
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 
 interface MessageItemButtonsProps {
-  isEditing?: boolean;
   hasVariableSupport?: boolean;
   hasFullScreenEditor?: boolean;
   variableNames?: string[];
@@ -39,7 +33,6 @@ interface MessageItemButtonsProps {
   templateMessageIndex?: number;
   onSaveTemplate?: (label: string, content: string, tags: string[]) => void;
   onOpenFullScreenEditor?: () => void;
-  onToggleEditing?: () => void;
   onClear?: () => void;
   onDelete?: () => void;
   onAddBlockType?: (type: BlockType) => void;
@@ -48,7 +41,6 @@ interface MessageItemButtonsProps {
 }
 
 export function MessageItemButtons({
-  isEditing = false,
   hasVariableSupport = false,
   hasFullScreenEditor = false,
   variableNames = [],
@@ -60,7 +52,6 @@ export function MessageItemButtons({
   templateMessageIndex = 0,
   onSaveTemplate,
   onOpenFullScreenEditor,
-  onToggleEditing,
   onClear,
   onDelete,
   onAddBlockType,
@@ -150,21 +141,6 @@ export function MessageItemButtons({
       onClick: (e) => {
         e?.stopPropagation();
         onOpenFullScreenEditor?.();
-      },
-      onMouseDown: (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      },
-    },
-    {
-      id: "edit",
-      icon: isEditing ? Eye : Edit2,
-      tooltip: isEditing ? "View" : "Edit",
-      mobileLabel: isEditing ? "View" : "Edit",
-      hidden: !onToggleEditing,
-      onClick: (e) => {
-        e?.stopPropagation();
-        onToggleEditing?.();
       },
       onMouseDown: (e) => {
         e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, AlertCircle, Loader2 } from "lucide-react";
+import { Zap, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatNumber } from "../../lib/formulas";
 import type { StatelessRatingResponse } from "../../api/types";
@@ -41,7 +41,7 @@ function ResultBody({ liveState }: { liveState: LiveRatingState }) {
   if (liveState.status === "incomplete") {
     return (
       <EmptyState
-        icon={Sparkles}
+        icon={Zap}
         title="Your rating will appear here"
         description={
           liveState.reason ?? "Fill in the claim and add at least one injury."
@@ -78,7 +78,7 @@ function ResultBody({ liveState }: { liveState: LiveRatingState }) {
   if (!liveState.result) {
     return (
       <EmptyState
-        icon={Sparkles}
+        icon={Zap}
         title="Your rating will appear here"
         description="Fill in the claim and add at least one injury."
       />

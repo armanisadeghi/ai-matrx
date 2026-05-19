@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { GitBranch, HelpCircle, Target, CheckCircle2, XCircle, Wand2, ArrowRight } from 'lucide-react';
+import { GitBranch, HelpCircle, Target, CheckCircle2, XCircle, Zap, ArrowRight } from 'lucide-react';
 
 interface DecisionTreeLoadingVisualizationProps {
   title?: string;
@@ -32,7 +32,7 @@ const DecisionTreeLoadingVisualization: React.FC<DecisionTreeLoadingVisualizatio
               </div>
             </div>
             <div className="absolute top-0 left-8 animate-pulse delay-500">
-              <Wand2 className="h-5 w-5 text-indigo-400 dark:text-indigo-300" />
+              <Zap className="h-5 w-5 text-indigo-400 dark:text-indigo-300" />
             </div>
           </div>
           

@@ -38,7 +38,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Sparkles, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, X, Zap } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -232,7 +232,7 @@ export function VariableMappingEditor({
           className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors shrink-0"
           title="Guess mappings from variable names."
         >
-          <Sparkles className="w-3 h-3" />
+          <Zap className="w-3 h-3" />
           Auto-suggest
         </button>
       </div>

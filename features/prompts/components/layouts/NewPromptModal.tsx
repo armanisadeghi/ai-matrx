@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Upload, Wrench, Wand2, LayoutPanelTop } from "lucide-react";
+import { Plus, Upload, Wrench, Zap, LayoutPanelTop } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
 import { PromptImporter } from "@/features/prompts/components/common/PromptImporter";
@@ -118,7 +118,7 @@ export function NewPromptModal({ isOpen, onClose }: NewPromptModalProps) {
 
           <ActionButton
             icon={
-              <Wand2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             }
             title="Generate with AI"
             description="Let AI create a prompt based on your exact requirements"

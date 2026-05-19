@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wand2 } from "lucide-react";
+import { ArrowLeft, Rocket } from "lucide-react";
 import { AgentGenerator } from "@/features/agents/agent-creators/interactive-builder/AgentGenerator";
 
 export const metadata = { title: "Generate Agent with AI | AI Matrx" };
@@ -15,7 +15,7 @@ export default function GenerateAgentPage() {
           </Button>
         </Link>
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <Wand2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           AI Agent Generator
         </div>
       </div>

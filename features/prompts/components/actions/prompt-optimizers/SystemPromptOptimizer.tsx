@@ -30,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Wand2, Check, X, Loader2, Copy, Zap } from "lucide-react";
+import { Check, X, Loader2, Copy, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { usePromptsBasePath } from "@/features/prompts/hooks/usePromptsBasePath";
@@ -282,7 +282,7 @@ export function SystemPromptOptimizer({
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="flex items-center gap-2">
-                  <Wand2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   Optimize System Message
                 </DialogTitle>
                 <DialogDescription className="mt-1">
@@ -351,7 +351,7 @@ export function SystemPromptOptimizer({
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                    <Wand2 className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
+                    <Zap className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Click "Optimize" to see the improved version
                     </p>
@@ -415,7 +415,7 @@ export function SystemPromptOptimizer({
                     onClick={handleOptimize}
                     disabled={isSavingCopy}
                   >
-                    <Wand2 className="h-4 w-4 mr-2" />
+                    <Zap className="h-4 w-4 mr-2" />
                     Re-optimize
                   </Button>
                   {fullPromptObject && (
@@ -460,7 +460,7 @@ export function SystemPromptOptimizer({
                     </>
                   ) : (
                     <>
-                      <Wand2 className="h-4 w-4 mr-2" />
+                      <Zap className="h-4 w-4 mr-2" />
                       Optimize
                     </>
                   )}

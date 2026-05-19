@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Sparkles, X } from "lucide-react";
+import { ArrowRight, Crown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UpgradeBannerProps {
@@ -34,7 +34,7 @@ export function UpgradeBanner({
         className,
       )}
     >
-      <Sparkles className="h-4 w-4 shrink-0 opacity-80" strokeWidth={2} />
+      <Crown className="h-4 w-4 shrink-0 opacity-80" strokeWidth={2} />
       <span className="flex-1 truncate">{message}</span>
       <button
         type="button"

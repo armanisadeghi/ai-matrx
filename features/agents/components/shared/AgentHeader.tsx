@@ -53,6 +53,7 @@ export function AgentHeader({
             agentId={agentId}
             initialName={agentName}
             basePath={basePath}
+            showVersion={false}
           />
         </div>
         <AgentModeController

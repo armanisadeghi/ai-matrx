@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Scan, Wand2 } from "lucide-react";
+import { Scan, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ImagePosition, ImagePositionAnchor } from "../types";
 
@@ -71,7 +71,7 @@ export function MiniFocalPointPicker({
                             : "border-border hover:bg-muted/40 text-muted-foreground",
                     )}
                 >
-                    <Wand2 className="h-2.5 w-2.5" />
+                    <Zap className="h-2.5 w-2.5" />
                     Sm·A
                 </button>
                 <button

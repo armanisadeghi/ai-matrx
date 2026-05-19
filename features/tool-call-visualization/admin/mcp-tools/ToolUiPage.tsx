@@ -2,7 +2,7 @@
 
 import React, { useTransition, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Wand2, Paintbrush, Eye } from "lucide-react";
+import { ArrowLeft, Zap, Paintbrush, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -151,7 +151,7 @@ export function ToolUiPage({ tool }: Props) {
                 Preview &amp; Test
               </TabsTrigger>
               <TabsTrigger value="generate" className="text-xs gap-1.5">
-                <Wand2 className="h-3.5 w-3.5" />
+                <Zap className="h-3.5 w-3.5" />
                 Generate
               </TabsTrigger>
               <TabsTrigger value="editor" className="text-xs gap-1.5">

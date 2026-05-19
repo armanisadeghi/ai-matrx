@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Sparkles, Trash2 } from "lucide-react";
+import { Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -351,7 +351,7 @@ export function ShortcutEditorNext({
             />
             {form.surfaceName === DEFAULT_SURFACE_NAME && (
               <div className="mt-3 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
-                <Sparkles className="h-3 w-3 mt-0.5 shrink-0" />
+                <Zap className="h-3 w-3 mt-0.5 shrink-0" />
                 <span>
                   You&rsquo;re editing on the Default surface — these mappings
                   pre-fill every new shortcut on every other surface for this

@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, ChevronDown, ChevronRight, Code, Settings } from "lucide-react";
+import { ChevronDown, ChevronRight, Code, Rocket, Settings } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SURFACE_META } from "../../constants/surfaces";
@@ -20,7 +20,7 @@ export function SpecCard({ task }: Props) {
   return (
     <Card>
       <CardContent className="p-4 sm:p-5 space-y-4">
-        <SectionTitle icon={Bot} label="Agent" />
+        <SectionTitle icon={Rocket} label="Agent" />
         <Row label="Agent">
           <span className="font-mono text-xs">
             {task.agentId ?? "Platform default"}
@@ -114,7 +114,7 @@ function SectionTitle({
   icon: Icon,
   label,
 }: {
-  icon: typeof Bot;
+  icon: typeof Rocket;
   label: string;
 }) {
   return (
