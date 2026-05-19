@@ -59,9 +59,24 @@ function classifyRouteKind(pathname: string | null): string | null {
   return "other";
 }
 
+/**
+ * Toggle: keep the capability OUT of the wire envelope until aidream
+ * registers `nextjs-surface` as a known capability. Until that lands,
+ * declaring it would 422 the whole request. The seven UI-first tools
+ * still ship via `build-tool-injection.ts` (gated on `state.userAuth?.id`,
+ * not on this capability). The ambient context still rides through
+ * `seedAmbientContextKeys` into the `context` payload. The ONLY thing
+ * disabling this loses is the orchestration envelope at
+ * `client.state['nextjs-surface']` — which we don't need today.
+ *
+ * To re-enable after aidream adds the handler: flip this to true.
+ */
+const ENABLE_NEXTJS_SURFACE_CAPABILITY = false;
+
 registerClientCapability({
   name: "nextjs-surface",
   selectPayload: (state, conversationId): NextjsSurfaceState | null => {
+    if (!ENABLE_NEXTJS_SURFACE_CAPABILITY) return null;
     // Authentication is required — the seven UI-first tools all hit RLS-gated
     // tables. If there's no user, the capability stays out of the envelope
     // entirely so aidream doesn't register a tool set that would just fail.

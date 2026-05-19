@@ -112,17 +112,22 @@ export async function buildToolInjection(
     client = { capabilities: activeCapabilities, state: stateMap };
   }
 
-  // ── 2b. UI-first tools — auto-merge when nextjs-surface is active ───────
+  // ── 2b. UI-first tools — auto-merge for any authenticated user ─────────
   //
   // The seven UI-first tools (user / update_plan / request_user_takeover /
   // tasks / user_todos / memory / storage) are declared client-delegated
-  // tools that ride alongside any agent's saved tool set. They become
-  // available whenever the `nextjs-surface` capability is active for the
-  // current request. Aidream's `load_nextjs_tools` discovery handler
-  // (when implemented) can lazy-load these based on `state.nextjs-surface`,
-  // but for v1 we send them all per request — the menu cost is one line
-  // per name and the model already knows when not to use them.
-  if (activeCapabilities.includes("nextjs-surface")) {
+  // tools that ride alongside any agent's saved tool set. They use the
+  // same tool names matrx-extend has been shipping for months — so the
+  // names already exist in aidream's `tl_def` registry. We ship them as
+  // `kind: "registered"` with `delegate: true` so aidream short-circuits
+  // dispatch and emits `tool_delegated` for our client to handle.
+  //
+  // NOTE: this is INTENTIONALLY decoupled from the `nextjs-surface`
+  // capability. Aidream may not have a `load_nextjs_tools` discovery
+  // handler registered yet; in that case declaring the capability would
+  // 422 the entire request. As long as the user is signed in (which RLS
+  // requires for the handlers to write anything), ship the tools.
+  if (state.userAuth?.id) {
     const declaredNames = new Set(
       allTools.map((t) => ("name" in t ? (t.name as string) : "")),
     );
