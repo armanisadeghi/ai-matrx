@@ -76,6 +76,64 @@ export interface EditResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Prompt-based AI edit — stub for the natural-language image edit feature
+// that ships behind /images/edit-by-prompt (Wave 2 per IMAGE_OPS.md). The
+// frontend keeps a UI affordance ready so the feature lights up the moment
+// the endpoint lands; until then the call surfaces a friendly "ships next
+// wave" toast.
+// ---------------------------------------------------------------------------
+
+export interface EditByPromptBody {
+  source_id: string;
+  prompt: string;
+  /** Optional mask cloud_file_id — constrains the edit to the masked region. */
+  mask_id?: string;
+  output?: EditOutput;
+}
+
+export async function editImageByPrompt(
+  body: EditByPromptBody,
+): Promise<EditResponse> {
+  const { data } = await postJson<EditResponse, EditByPromptBody>(
+    "/images/edit-by-prompt",
+    body,
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Suggest edits — stub for the `image-suggest-edits` agent shortcut. The
+// agent inspects the image and proposes a sequence of ops to apply. Wire
+// goes live the moment the shortcut lands in `system-shortcuts.ts`.
+// ---------------------------------------------------------------------------
+
+export interface SuggestEditsBody {
+  source_id: string;
+  /** Optional steering hint, e.g. "lighter and warmer", "make it pop". */
+  hint?: string;
+}
+
+export interface SuggestEditsResponse {
+  /** Ordered list of ops the agent would apply. */
+  suggestions: Array<{
+    op: string;
+    params: Record<string, unknown>;
+    label: string;
+    rationale?: string;
+  }>;
+}
+
+export async function suggestEdits(
+  body: SuggestEditsBody,
+): Promise<SuggestEditsResponse> {
+  const { data } = await postJson<SuggestEditsResponse, SuggestEditsBody>(
+    "/images/suggest-edits",
+    body,
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Generic op dispatcher — matches POST /images/edit exactly
 // ---------------------------------------------------------------------------
 

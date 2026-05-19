@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
   Brush,
   Eraser,
+  Lightbulb,
   Loader2,
   PaintBucket,
   Settings2,
@@ -32,6 +33,8 @@ import {
   Sun,
   Wand2,
   Waves,
+  X,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -52,9 +55,11 @@ import {
   adjust,
   autoColor,
   denoise as denoiseOp,
+  editImageByPrompt,
   inpaint,
   removeBackground,
   sharpen as sharpenOp,
+  suggestEdits,
   upscaleImage,
   type AssetEnvelope,
 } from "../../api/python";
@@ -76,7 +81,9 @@ type Busy =
   | "bg"
   | "up2"
   | "up4"
-  | "inpaint";
+  | "inpaint"
+  | "suggest"
+  | "prompt";
 
 export function EditAiToolbar({
   sourceCloudFileId,
@@ -92,6 +99,8 @@ export function EditAiToolbar({
     sharpness: 1,
   });
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [promptText, setPromptText] = useState("");
+  const [promptOpen, setPromptOpen] = useState(false);
 
   const idMissing = !sourceCloudFileId;
   const anyBusy = busy !== null;
@@ -249,6 +258,54 @@ export function EditAiToolbar({
       consume(asset, `${factor}x.png`);
     } catch (err) {
       handleApiError(err, `${factor}× upscale`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // ── AI features (Wave 2 — endpoints live, UI ready) ─────────────────────
+
+  const handleSuggest = async () => {
+    const id = ensureId("Suggest edits");
+    if (!id) return;
+    setBusy("suggest");
+    try {
+      const { suggestions } = await suggestEdits({ source_id: id });
+      if (!suggestions?.length) {
+        toast.info("The image looks good — no edits suggested.");
+        return;
+      }
+      // Pluck the first suggestion as a quick taste; a richer dropdown UI
+      // lands when the agent ships with multiple ranked recommendations.
+      const first = suggestions[0];
+      toast.success(`Suggested: ${first.label} — coming soon as one-click.`);
+    } catch (err) {
+      handleApiError(err, "Suggest edits");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handlePrompt = async () => {
+    const id = ensureId("AI edit by prompt");
+    if (!id) return;
+    if (!promptText.trim()) {
+      toast.info("Type what you want changed.");
+      return;
+    }
+    setBusy("prompt");
+    try {
+      const maskId = await resolveMaskId(id);
+      const { asset } = await editImageByPrompt({
+        source_id: id,
+        prompt: promptText.trim(),
+        ...(maskId ? { mask_id: maskId } : {}),
+      });
+      consume(asset, "ai-edit.png");
+      setPromptOpen(false);
+      setPromptText("");
+    } catch (err) {
+      handleApiError(err, "AI edit by prompt");
     } finally {
       setBusy(null);
     }
@@ -454,11 +511,91 @@ export function EditAiToolbar({
       <div className="hidden md:block flex-1" />
 
       {mask.hasPixels ? (
-        <span className="hidden md:inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary mr-1 shrink-0">
+        <span className="hidden md:inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary mr-2 shrink-0">
           <PaintBucket className="h-3 w-3" />
           mask active
         </span>
       ) : null}
+
+      {/* AI features — endpoints live in Wave 2; UI is ready so they light
+          up the moment the backend ships. */}
+      <ToolbarOpButton
+        label="Suggest"
+        icon={Lightbulb}
+        running={busy === "suggest"}
+        disabled={anyBusy || idMissing}
+        onClick={handleSuggest}
+        tooltip="Ask AI what edits this image needs"
+      />
+
+      {promptOpen ? (
+        <div className="flex items-center gap-1.5 shrink-0 pl-1">
+          <input
+            autoFocus
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handlePrompt();
+              if (e.key === "Escape") {
+                setPromptOpen(false);
+                setPromptText("");
+              }
+            }}
+            placeholder='"make it sunset", "change shirt to blue"…'
+            className="h-7 w-56 md:w-72 rounded-md border border-border bg-background px-2 text-xs"
+            style={{ fontSize: "16px" }}
+            disabled={anyBusy}
+          />
+          <Button
+            size="sm"
+            className="h-7 shrink-0 text-xs"
+            onClick={handlePrompt}
+            disabled={anyBusy || !promptText.trim() || idMissing}
+          >
+            {busy === "prompt" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Apply"
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0"
+            onClick={() => {
+              setPromptOpen(false);
+              setPromptText("");
+            }}
+            title="Close"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+              onClick={() => setPromptOpen(true)}
+              disabled={anyBusy || idMissing}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              AI edit
+              {mask.hasPixels ? (
+                <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">
+                  masked
+                </span>
+              ) : null}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Edit the image by typing what you want changed
+            {mask.hasPixels ? " — constrained to your mask" : ""}
+          </TooltipContent>
+        </Tooltip>
+      )}
     </div>
   );
 }
