@@ -15,6 +15,7 @@
  */
 "use client";
 
+import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -22,7 +23,38 @@ import {
   selectIsOverlayOpen,
   selectOverlayData,
   selectOpenInstances,
+  type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
+
+// Prop-type imports for overlay components below — used to replace `as never`
+// casts emitted by the codegen with precise static types.
+import type { QuickCreateTab } from "@/features/agent-shortcuts/hooks/useShortcutQuickCreate";
+import type { AgentContentTab } from "@/features/window-panels/windows/agents/agent-content.types";
+import type {
+  AgentConnectionsSection,
+  Scope as AgentConnectionsScope,
+} from "@/features/agent-connections/types";
+import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
+import type { CodeFile as MultiFileCoreCodeFile } from "@/features/code-editor/multi-file-core/types";
+import type { FilesystemAdapter } from "@/features/code/adapters/FilesystemAdapter";
+import type { ProcessAdapter } from "@/features/code/adapters/ProcessAdapter";
+import type { ContentEditorSeedDocument } from "@/features/window-panels/windows/content-editors/useOpenContentEditorWindow";
+import type { HierarchyCreationWindowData } from "@/features/window-panels/windows/context-scopes/HierarchyCreationWindow";
+import type { AssetPreset } from "@/features/files/types";
+import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
+import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
+import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
+import type { ResourceType } from "@/utils/permissions";
+import type {
+  CodeEditorAgentConfig,
+  CodeFile as AgentCodeEditorCodeFile,
+} from "@/features/code-editor/agent-code-editor/types";
+import type {
+  TaskSourceInput,
+  TaskPrePopulate,
+} from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
+import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 const AdminIndicator = dynamic(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -716,7 +748,7 @@ export default function OverlayController() {
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "agentAdminShortcutWindow" }))}
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
-            initialActiveTab={data?.initialActiveTab as never}  /* TODO: review */
+            initialActiveTab={data?.initialActiveTab as QuickCreateTab | undefined}
           />
         );
       })()}
@@ -732,8 +764,8 @@ export default function OverlayController() {
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "agentAdvancedEditorWindow" }))}
             initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : null}
-            initialTab={data?.initialTab as never}  /* TODO: review */
-            tabs={(Array.isArray(data?.tabs) || (typeof data?.tabs === "object" && data?.tabs !== null) ? data.tabs : undefined) as never}  /* TODO: review */
+            initialTab={data?.initialTab as AgentContentTab | undefined}
+            tabs={(Array.isArray(data?.tabs) || (typeof data?.tabs === "object" && data?.tabs !== null) ? data.tabs : undefined) as AgentContentTab[] | undefined}
             multiAgentMode={typeof data?.multiAgentMode === "boolean" ? data.multiAgentMode : undefined}
           />
         );
@@ -811,8 +843,8 @@ export default function OverlayController() {
           <AgentConnectionsWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "agentConnectionsWindow" }))}
-            initialSection={data?.initialSection as never}  /* TODO: review */
-            initialScope={data?.initialScope as never}  /* TODO: review */
+            initialSection={data?.initialSection as AgentConnectionsSection | undefined}
+            initialScope={data?.initialScope as AgentConnectionsScope | undefined}
             initialSelectedItemId={typeof data?.initialSelectedItemId === "string" ? data.initialSelectedItemId : null}
           />
         );
@@ -829,7 +861,7 @@ export default function OverlayController() {
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "agentContentSidebarWindow" }))}
             initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : null}
-            initialTab={data?.initialTab as never}  /* TODO: review */
+            initialTab={data?.initialTab as AgentContentTab | undefined}
           />
         );
       })()}
@@ -952,7 +984,7 @@ export default function OverlayController() {
             instanceId={inst.instanceId}
             onClose={() => dispatch(closeOverlay({ overlayId: "agentGateWindow", instanceId: inst.instanceId }))}
             conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
-            downstreamOverlayId={data?.downstreamOverlayId as never}  /* TODO: review */
+            downstreamOverlayId={data?.downstreamOverlayId as OverlayId | undefined}
           />
         );
       })}
@@ -1173,8 +1205,8 @@ export default function OverlayController() {
           <BrowserWorkbenchWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "browserWorkbenchWindow" }))}
-            initialBookmarks={data?.initialBookmarks as never}  /* TODO: review */
-            initialTabs={data?.initialTabs as never}  /* TODO: review */
+            initialBookmarks={data?.initialBookmarks as unknown}
+            initialTabs={data?.initialTabs as unknown}
             initialActiveTabId={typeof data?.initialActiveTabId === "string" ? data.initialActiveTabId : null}
           />
         );
@@ -1219,7 +1251,7 @@ export default function OverlayController() {
           <CloudFilesWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "cloudFilesWindow" }))}
-            initialTab={data?.initialTab as never}  /* TODO: review */
+            initialTab={data?.initialTab as CloudFilesWindowTab | undefined}
           />
         );
       })()}
@@ -1233,7 +1265,7 @@ export default function OverlayController() {
             key={inst.instanceId}
             onClose={() => dispatch(closeOverlay({ overlayId: "codeEditorWindow", instanceId: inst.instanceId }))}
             windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : []) as never}  /* TODO: review */
+            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : []) as MultiFileCoreCodeFile[]}
             fileIds={Array.isArray(data?.fileIds) && data.fileIds.every((v) => typeof v === "string") ? (data.fileIds as string[]) : undefined}
             activeFileId={typeof data?.activeFileId === "string" ? data.activeFileId : undefined}
             title={typeof data?.title === "string" ? data.title : null}
@@ -1265,10 +1297,10 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "codeWorkspaceWindow", instanceId: inst.instanceId }))}
             windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
             title={typeof data?.title === "string" ? data.title : null}
-            adapter={data?.adapter as never}  /* TODO: review */
-            process={data?.process as never}  /* TODO: review */
-            rightSlot={data?.rightSlot as never}  /* TODO: review */
-            farRightSlot={data?.farRightSlot as never}  /* TODO: review */
+            adapter={data?.adapter as FilesystemAdapter | undefined}
+            process={data?.process as ProcessAdapter | undefined}
+            rightSlot={data?.rightSlot as ReactNode}
+            farRightSlot={data?.farRightSlot as ReactNode}
             hideChat={typeof data?.hideChat === "boolean" ? data.hideChat : undefined}
             hideHistory={typeof data?.hideHistory === "boolean" ? data.hideHistory : undefined}
           />
@@ -1285,7 +1317,7 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "contentEditorListWindow", instanceId: inst.instanceId }))}
             windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
             callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            documents={(Array.isArray(data?.documents) || (typeof data?.documents === "object" && data?.documents !== null) ? data.documents : undefined) as never}  /* TODO: review */
+            documents={(Array.isArray(data?.documents) || (typeof data?.documents === "object" && data?.documents !== null) ? data.documents : undefined) as ContentEditorSeedDocument[] | undefined}
             activeDocumentId={typeof data?.activeDocumentId === "string" ? data.activeDocumentId : null}
             listTitle={typeof data?.listTitle === "string" ? data.listTitle : null}
             title={typeof data?.title === "string" ? data.title : null}
@@ -1320,7 +1352,7 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "contentEditorWorkspaceWindow", instanceId: inst.instanceId }))}
             windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
             callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            documents={(Array.isArray(data?.documents) || (typeof data?.documents === "object" && data?.documents !== null) ? data.documents : undefined) as never}  /* TODO: review */
+            documents={(Array.isArray(data?.documents) || (typeof data?.documents === "object" && data?.documents !== null) ? data.documents : undefined) as ContentEditorSeedDocument[] | undefined}
             openDocumentIds={Array.isArray(data?.openDocumentIds) && data.openDocumentIds.every((v) => typeof v === "string") ? (data.openDocumentIds as string[]) : undefined}
             activeDocumentId={typeof data?.activeDocumentId === "string" ? data.activeDocumentId : null}
             listTitle={typeof data?.listTitle === "string" ? data.listTitle : null}
@@ -1457,13 +1489,13 @@ export default function OverlayController() {
             instanceId={inst.instanceId}
             onClose={() => dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId: inst.instanceId }))}
             content={typeof data?.content === "string" ? data.content : undefined}
-            mode={data?.mode as never}  /* TODO: review */
+            mode={data?.mode as FullScreenEditorMode | undefined}
             conversationId={typeof data?.conversationId === "string" ? data.conversationId : undefined}
             messageId={typeof data?.messageId === "string" ? data.messageId : undefined}
             onSave={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            tabs={(Array.isArray(data?.tabs) || (typeof data?.tabs === "object" && data?.tabs !== null) ? data.tabs : undefined) as never}  /* TODO: review */
-            initialTab={data?.initialTab as never}  /* TODO: review */
-            analysisData={(Array.isArray(data?.analysisData) || (typeof data?.analysisData === "object" && data?.analysisData !== null) ? data.analysisData : undefined) as never}  /* TODO: review */
+            tabs={(Array.isArray(data?.tabs) || (typeof data?.tabs === "object" && data?.tabs !== null) ? data.tabs : undefined) as never}  /* TODO: review — TabId is a non-exported local type */
+            initialTab={data?.initialTab as never}  /* TODO: review — TabId is a non-exported local type */
+            analysisData={(Array.isArray(data?.analysisData) || (typeof data?.analysisData === "object" && data?.analysisData !== null) ? data.analysisData : undefined) as Record<string, unknown> | undefined}
             title={typeof data?.title === "string" ? data.title : undefined}
             description={typeof data?.description === "string" ? data.description : undefined}
             showSaveButton={typeof data?.showSaveButton === "boolean" ? data.showSaveButton : undefined}
@@ -1495,7 +1527,7 @@ export default function OverlayController() {
           <HierarchyCreationWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))}
-            data={data?.data as never}  /* TODO: review */
+            data={data?.data as HierarchyCreationWindowData | undefined}
           />
         );
       })()}
@@ -1544,7 +1576,7 @@ export default function OverlayController() {
             instanceId={inst.instanceId}
             onClose={() => dispatch(closeOverlay({ overlayId: "imageUploaderWindow", instanceId: inst.instanceId }))}
             callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            preset={data?.preset as never}  /* TODO: review */
+            preset={data?.preset as AssetPreset | undefined}
             folder={typeof data?.folder === "string" ? data.folder : undefined}
             title={typeof data?.title === "string" ? data.title : null}
             description={typeof data?.description === "string" ? data.description : null}
@@ -1600,7 +1632,7 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "jsonTruncator" }))}
             title={typeof data?.title === "string" ? data.title : undefined}
             id={typeof data?.id === "string" ? data.id : undefined}
-            defaultTab={data?.defaultTab as never}  /* TODO: review */
+            defaultTab={data?.defaultTab as JsonTruncatorTab | undefined}
           />
         );
       })()}
@@ -1694,12 +1726,12 @@ export default function OverlayController() {
             windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
             callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
             agentId={typeof data?.agentId === "string" ? data.agentId : ""}
-            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : []) as never}  /* TODO: review */
+            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : []) as MultiFileCoreCodeFile[]}
             initialActiveFile={typeof data?.initialActiveFile === "string" ? data.initialActiveFile : null}
             title={typeof data?.title === "string" ? data.title : null}
             defaultWordWrap={(["on", "off"] as ReadonlyArray<unknown>).includes(data?.defaultWordWrap) ? (data?.defaultWordWrap as "on" | "off") : undefined}
             autoFormatOnOpen={typeof data?.autoFormatOnOpen === "boolean" ? data.autoFormatOnOpen : undefined}
-            variables={data?.variables as never}  /* TODO: review */
+            variables={data?.variables as Record<string, unknown> | null | undefined}
           />
         );
       })}
@@ -1808,7 +1840,7 @@ export default function OverlayController() {
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChatHistory" }))}
             initialSelectedConversationId={typeof data?.initialSelectedConversationId === "string" ? data.initialSelectedConversationId : null}
-            initialGroupBy={data?.initialGroupBy as never}  /* TODO: review */
+            initialGroupBy={data?.initialGroupBy as never}  /* TODO: review — GroupBy is a non-exported local type */
           />
         );
       })()}
@@ -1866,7 +1898,7 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "quickNoteSaveWindow" }))}
             initialContent={typeof data?.initialContent === "string" ? data.initialContent : undefined}
             defaultFolder={typeof data?.defaultFolder === "string" ? data.defaultFolder : undefined}
-            initialEditorMode={data?.initialEditorMode as never}  /* TODO: review */
+            initialEditorMode={data?.initialEditorMode as EditorMode | undefined}
           />
         );
       })()}
@@ -1925,13 +1957,13 @@ export default function OverlayController() {
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "resourcePickerWindow" }))}
             onResourceSelected={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            attachmentCapabilities={data?.attachmentCapabilities as never}  /* TODO: review */
+            attachmentCapabilities={data?.attachmentCapabilities as never}  /* TODO: review — anonymous inline shape */
             onSettingsClick={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
             onDebugClick={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
             showDebugActive={typeof data?.showDebugActive === "boolean" ? data.showDebugActive : undefined}
             width={typeof data?.width === "number" ? data.width : undefined}
             height={typeof data?.height === "number" ? data.height : undefined}
-            position={data?.position as never}  /* TODO: review */
+            position={data?.position as WindowPosition | undefined}
           />
         );
       })()}
@@ -1968,7 +2000,7 @@ export default function OverlayController() {
             initialContent={typeof data?.initialContent === "string" ? data.initialContent : ""}
             defaultFolder={typeof data?.defaultFolder === "string" ? data.defaultFolder : undefined}
             title={typeof data?.title === "string" ? data.title : undefined}
-            initialEditorMode={data?.initialEditorMode as never}  /* TODO: review */
+            initialEditorMode={data?.initialEditorMode as EditorMode | undefined}
             onSaved={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
           />
         );
@@ -1986,7 +2018,7 @@ export default function OverlayController() {
             initialContent={typeof data?.initialContent === "string" ? data.initialContent : ""}
             defaultFolder={typeof data?.defaultFolder === "string" ? data.defaultFolder : undefined}
             title={typeof data?.title === "string" ? data.title : undefined}
-            initialEditorMode={data?.initialEditorMode as never}  /* TODO: review */
+            initialEditorMode={data?.initialEditorMode as EditorMode | undefined}
             onSaved={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
           />
         );
@@ -2014,7 +2046,7 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "shareModal", instanceId: inst.instanceId }))}
-            resourceType={data?.resourceType as never}  /* TODO: review */
+            resourceType={data?.resourceType as ResourceType}
             resourceId={typeof data?.resourceId === "string" ? data.resourceId : ""}
             resourceName={typeof data?.resourceName === "string" ? data.resourceName : ""}
             isOwner={typeof data?.isOwner === "boolean" ? data.isOwner : false}
@@ -2032,7 +2064,7 @@ export default function OverlayController() {
           <ShareModalWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "shareModalWindow" }))}
-            resourceType={data?.resourceType as never}  /* TODO: review */
+            resourceType={data?.resourceType as ResourceType}
             resourceId={typeof data?.resourceId === "string" ? data.resourceId : ""}
             resourceName={typeof data?.resourceName === "string" ? data.resourceName : ""}
             isOwner={typeof data?.isOwner === "boolean" ? data.isOwner : false}
@@ -2064,11 +2096,11 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "smartCodeEditorWindow", instanceId: inst.instanceId }))}
             windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
             callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            agents={(Array.isArray(data?.agents) || (typeof data?.agents === "object" && data?.agents !== null) ? data.agents : []) as never}  /* TODO: review */
+            agents={(Array.isArray(data?.agents) || (typeof data?.agents === "object" && data?.agents !== null) ? data.agents : []) as CodeEditorAgentConfig[]}
             defaultPickerAgentId={typeof data?.defaultPickerAgentId === "string" ? data.defaultPickerAgentId : undefined}
             initialCode={typeof data?.initialCode === "string" ? data.initialCode : undefined}
             language={typeof data?.language === "string" ? data.language : undefined}
-            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : undefined) as never}  /* TODO: review */
+            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : undefined) as AgentCodeEditorCodeFile[] | undefined}
             initialActiveFilePath={typeof data?.initialActiveFilePath === "string" ? data.initialActiveFilePath : undefined}
             filePath={typeof data?.filePath === "string" ? data.filePath : undefined}
             selection={typeof data?.selection === "string" ? data.selection : undefined}
@@ -2112,7 +2144,7 @@ export default function OverlayController() {
           <StreamDebugFloating
             onClose={() => dispatch(closeOverlay({ overlayId: "streamDebug" }))}
             conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
-            defaultPosition={(Array.isArray(data?.defaultPosition) || (typeof data?.defaultPosition === "object" && data?.defaultPosition !== null) ? data.defaultPosition : undefined) as never}  /* TODO: review */
+            defaultPosition={(Array.isArray(data?.defaultPosition) || (typeof data?.defaultPosition === "object" && data?.defaultPosition !== null) ? data.defaultPosition : undefined) as never}  /* TODO: review — anonymous inline { x: number; y: number } */
             requestIdOverride={typeof data?.requestIdOverride === "string" ? data.requestIdOverride : undefined}
           />
         );
@@ -2142,8 +2174,8 @@ export default function OverlayController() {
           <TaskQuickCreateWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "taskQuickCreateWindow" }))}
-            source={data?.source as never}  /* TODO: review */
-            prePopulate={data?.prePopulate as never}  /* TODO: review */
+            source={data?.source as TaskSourceInput | undefined}
+            prePopulate={data?.prePopulate as TaskPrePopulate | undefined}
           />
         );
       })()}
@@ -2160,7 +2192,7 @@ export default function OverlayController() {
             onClose={() => dispatch(closeOverlay({ overlayId: "toolCallWindow", instanceId: inst.instanceId }))}
             requestId={typeof data?.requestId === "string" ? data.requestId : null}
             callIds={Array.isArray(data?.callIds) && data.callIds.every((v) => typeof v === "string") ? (data.callIds as string[]) : []}
-            entries={data?.entries as never}  /* TODO: review */
+            entries={data?.entries as ToolLifecycleEntry[] | null}
             initialCallId={typeof data?.initialCallId === "string" ? data.initialCallId : null}
             initialTab={typeof data?.initialTab === "string" ? data.initialTab : null}
           />
@@ -2243,7 +2275,7 @@ export default function OverlayController() {
           <WhatsAppMediaWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "whatsappMedia" }))}
-            initialTabId={data?.initialTabId as never}  /* TODO: review */
+            initialTabId={data?.initialTabId as never}  /* TODO: review — MediaTabId is a non-exported local type */
           />
         );
       })()}
