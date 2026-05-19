@@ -204,31 +204,35 @@ function Section({
           {rows.map((r) => (
             <li
               key={r.id}
-              className="border-t border-border/60 first:border-t-0"
+              className={cn(
+                "group border-t border-border/60 first:border-t-0",
+                "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent/50",
+              )}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelect(r.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(r.id);
+                }
+              }}
             >
-              <button
-                type="button"
-                onClick={() => onSelect(r.id)}
-                className="group w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent/50"
-              >
-                <Network className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm text-foreground truncate">
-                    {r.name}
+              <Network className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm text-foreground truncate">{r.name}</div>
+                {r.description && (
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {r.description}
                   </div>
-                  {r.description && (
-                    <div className="text-[11px] text-muted-foreground truncate">
-                      {r.description}
-                    </div>
-                  )}
-                </div>
-                <span
-                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <FavoriteAgentButton id={r.id} variant="list" />
-                </span>
-              </button>
+                )}
+              </div>
+              <span
+                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FavoriteAgentButton id={r.id} variant="list" />
+              </span>
             </li>
           ))}
         </ul>

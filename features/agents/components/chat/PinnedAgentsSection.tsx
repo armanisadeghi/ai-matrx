@@ -58,35 +58,41 @@ export function PinnedAgentsSection({
           {pinned.map((agent) => {
             const isActive = activeAgentId === agent.id;
             return (
-              <li key={agent.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(agent.id)}
+              <li
+                key={agent.id}
+                className={cn(
+                  "group flex items-center gap-2 px-2 py-1 text-xs cursor-pointer",
+                  "text-foreground/90 hover:bg-accent/60",
+                  isActive && "bg-accent/70",
+                )}
+                onClick={() => onSelect(agent.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(agent.id);
+                  }
+                }}
+                title={agent.description || agent.name}
+              >
+                <Network
                   className={cn(
-                    "group w-full flex items-center gap-2 px-2 py-1 text-left text-xs",
-                    "text-foreground/90 hover:bg-accent/60",
-                    isActive && "bg-accent/70",
+                    "h-3.5 w-3.5 shrink-0",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
                   )}
-                  title={agent.description || agent.name}
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  {agent.name || "Untitled agent"}
+                </span>
+                <span
+                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Network
-                    className={cn(
-                      "h-3.5 w-3.5 shrink-0",
-                      isActive
-                        ? "text-primary"
-                        : "text-muted-foreground group-hover:text-foreground",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1 truncate">
-                    {agent.name || "Untitled agent"}
-                  </span>
-                  <span
-                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FavoriteAgentButton id={agent.id} variant="list" />
-                  </span>
-                </button>
+                  <FavoriteAgentButton id={agent.id} variant="list" />
+                </span>
               </li>
             );
           })}

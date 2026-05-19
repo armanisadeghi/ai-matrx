@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
 
@@ -7,24 +7,35 @@ interface ConversationPageProps {
 }
 
 /**
- * First-paint: SSR resolves the owning agentId for the conversation so the
- * client shell can mount without a round-trip. The full bundle (messages,
- * variables, overrides, observability) is hydrated client-side via
- * `loadConversation` — this keeps the critical path small and lets the
- * conversation stream in progressively.
+ * First-paint: SSR resolves the owning agentId AND the agent's display name
+ * for the conversation so the client shell can mount without a round-trip
+ * (and without showing "Loading…" in the picker — the dropdown is intentionally
+ * lazy and only fetches on user click). The full bundle (messages, variables,
+ * overrides, observability) is hydrated client-side via `loadConversation`.
  */
-async function resolveAgentIdForConversation(
+async function resolveConversationSeed(
   conversationId: string,
-): Promise<string | null> {
+): Promise<{ agentId: string; agentName: string | null } | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("cx_conversation")
-    .select("initial_agent_id")
+    .select("initial_agent_id, agx_agent:initial_agent_id (name)")
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();
   if (error || !data) return null;
-  return (data.initial_agent_id as string | null) ?? null;
+  const agentId = (data.initial_agent_id as string | null) ?? null;
+  if (!agentId) return null;
+  // Supabase typing for embedded selects can be array-of-one or object
+  // depending on relationship cardinality. Both shapes are handled below.
+  const embedded = (data as { agx_agent?: unknown }).agx_agent;
+  const agentName =
+    embedded && typeof embedded === "object"
+      ? ((Array.isArray(embedded)
+          ? (embedded[0] as { name?: string | null })?.name
+          : (embedded as { name?: string | null }).name) ?? null)
+      : null;
+  return { agentId, agentName };
 }
 
 export default async function ChatConversationPage({
@@ -32,10 +43,16 @@ export default async function ChatConversationPage({
 }: ConversationPageProps) {
   const { conversationId } = await params;
 
-  const agentId = await resolveAgentIdForConversation(conversationId);
-  if (!agentId) {
+  const seed = await resolveConversationSeed(conversationId);
+  if (!seed) {
     redirect("/chat/new");
   }
 
-  return <ChatRoomClient agentId={agentId} conversationId={conversationId} />;
+  return (
+    <ChatRoomClient
+      agentId={seed.agentId}
+      conversationId={conversationId}
+      initialAgentName={seed.agentName ?? undefined}
+    />
+  );
 }

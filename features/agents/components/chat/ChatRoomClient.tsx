@@ -13,6 +13,7 @@ import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
   registerSurface,
   unregisterSurface,
@@ -29,6 +30,13 @@ interface ChatRoomClientProps {
    *  `/chat/[conversationId]`. When absent (mounted by `/chat/a/[agentId]`),
    *  the launcher creates a fresh instance. */
   conversationId?: string;
+  /**
+   * Agent name resolved server-side. Used as the picker placeholder so the
+   * lazy `AgentListDropdown` shows the right label on first paint without
+   * forcing an early agents-list fetch. The dropdown still loads its full
+   * list lazily on user click.
+   */
+  initialAgentName?: string;
 }
 
 const SOURCE_FEATURE = "chat-route";
@@ -50,6 +58,7 @@ const SOURCE_FEATURE = "chat-route";
 export function ChatRoomClient({
   agentId,
   conversationId: conversationIdProp,
+  initialAgentName,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -175,15 +184,35 @@ export function ChatRoomClient({
   ]);
 
   // ── Pending navigation → router.replace ─────────────────────────────────
-  // After the first user submit on /chat/a/[agentId], the streaming thunk
-  // sets pendingNavigation with the new conversationId; this effect promotes
-  // the URL so future reloads land on /chat/[conversationId].
+  // Fork / retry / delete actions set pendingNavigation with the target
+  // conversationId; this effect promotes it into a URL change so the user
+  // ends up on the right deep-linkable route.
   const pendingNavigation = useAppSelector(selectPendingNavigation(surfaceKey));
   useEffect(() => {
     if (!pendingNavigation) return;
     router.replace(`/chat/${pendingNavigation.conversationId}`);
     dispatch(clearPendingNavigation({ surfaceKey }));
   }, [pendingNavigation, router, dispatch, surfaceKey]);
+
+  // ── Post-submit URL promotion (only on /chat/a/[agentId]) ────────────────
+  // On /chat/a/[agentId] the launcher pre-creates an instance with a client
+  // UUID, but the conversation isn't persisted in cx_conversation until the
+  // server processes the first request and emits its initial `record_reserved`
+  // events. Promoting on the user's optimistic local message alone races the
+  // server — the SSR query at /chat/[cid] would 404-redirect back to /chat/new.
+  // The agent's reserved message arrives only AFTER the cx_conversation row
+  // exists, so message-count >= 2 is the reliable post-persistence signal.
+  const messageCount = useAppSelector((state) =>
+    liveConversationId ? selectMessageCount(liveConversationId)(state) : 0,
+  );
+  const promotedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (conversationIdProp) return; // already at /chat/[cid]
+    if (!liveConversationId || messageCount < 2) return;
+    if (promotedRef.current === liveConversationId) return;
+    promotedRef.current = liveConversationId;
+    router.replace(`/chat/${liveConversationId}`);
+  }, [conversationIdProp, liveConversationId, messageCount, router]);
 
   // ── Single source of truth ───────────────────────────────────────────────
   // Prop wins when present (loading existing). Otherwise launcher's id wins.
@@ -194,7 +223,11 @@ export function ChatRoomClient({
     router.push(`/chat/a/${encodeURIComponent(nextAgentId)}`);
   };
 
-  const displayAgentName = agentName || agent?.name || "Loading…";
+  // Picker label. Never "Loading…": the dropdown is deliberately lazy and the
+  // SSR-fetched `initialAgentName` is enough for first paint; the placeholder
+  // ("Select an agent") kicks in only when no agent is selected at all.
+  const displayAgentName =
+    agentName || agent?.name || initialAgentName || undefined;
 
   if (isInitializing || !conversationId) {
     return (

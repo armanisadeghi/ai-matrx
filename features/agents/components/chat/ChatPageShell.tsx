@@ -20,6 +20,7 @@ import {
   selectGlobalListStatus,
 } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import { fetchGlobalConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
+import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 interface ChatPageShellProps {
@@ -58,7 +59,7 @@ export function ChatPageShell({
   activeConversationId,
   activeAgentId,
   activeAgentName,
-  pickerPlaceholder = "Choose an agent",
+  pickerPlaceholder = "Select an agent",
   onAgentSelect,
   onNewChat,
   children,
@@ -75,9 +76,9 @@ export function ChatPageShell({
   // ── Last-used agent ─────────────────────────────────────────────────────
   // Drives the `+` button: when a last-used agent can be derived from the
   // user's most recent conversation, route directly to /chat/a/[id] instead
-  // of forcing the picker. The conversation list is normally hydrated by
-  // ChatLandingClient or the sidebar; fetch on mount as a safety net so the
-  // selector is populated when this shell mounts cold (e.g. via /chat/a/[id]).
+  // of forcing the picker. Fetch the global conversation list on mount as a
+  // safety net so the selector is populated whenever the shell mounts —
+  // including direct deep-links to /chat/[conversationId] or /chat/a/[id].
   const globalListStatus = useAppSelector(selectGlobalListStatus);
   const lastUsedAgentId = useAppSelector(selectLastUsedAgentId);
   useEffect(() => {
@@ -85,6 +86,13 @@ export function ChatPageShell({
       dispatch(fetchGlobalConversations({ limit: 25 }));
     }
   }, [dispatch, globalListStatus]);
+
+  // Hydrate the agent definition slice so the sidebar PinnedAgentsSection and
+  // the agent picker dropdown have data without each consumer fetching alone.
+  // `initializeChatAgents` is idempotent (5-min TTL + in-flight dedupe).
+  useEffect(() => {
+    dispatch(initializeChatAgents());
+  }, [dispatch]);
 
   const focusInput = useCallback(() => {
     const el = document.querySelector<HTMLTextAreaElement>(

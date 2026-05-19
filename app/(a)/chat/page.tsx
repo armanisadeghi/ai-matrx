@@ -1,5 +1,11 @@
-import { ChatLandingClient } from "@/features/agents/components/chat/ChatLandingClient";
+import { redirect } from "next/navigation";
 
-export default function ChatLandingPage() {
-  return <ChatLandingClient />;
+/**
+ * `/chat` is intentionally the agent picker, NOT a "resume last conversation"
+ * landing. Users reach prior conversations via the sidebar — visiting /chat
+ * itself always presents a fresh choice (mirrors how Slack / iMessage open to
+ * an empty "compose" surface, not your last thread).
+ */
+export default function ChatRoot() {
+  redirect("/chat/new");
 }
