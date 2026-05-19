@@ -123,6 +123,7 @@ export function CodeWorkspaceContextMenu({
     <div className={className}>
       <UnifiedAgentContextMenu
         sourceFeature="code-editor"
+        surfaceName="matrx-user/code-editor"
         isEditable={false}
         enabledPlacements={[
           PLACEMENT_TYPES.AI_ACTION,

@@ -79,6 +79,7 @@ export type SourceFeature =
   | "agent-advanced-editor-window"
   | "agent-content-window"
   | "voice-pad-ai"
+  | "transcripts"
   | "transcript-studio"
   | "agent-run-window"
   | "agent-run-history-window"

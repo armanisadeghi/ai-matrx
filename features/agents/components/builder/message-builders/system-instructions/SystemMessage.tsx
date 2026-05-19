@@ -709,6 +709,7 @@ export function SystemMessage({
           ) : isEditing ? (
             <UnifiedAgentContextMenu
               sourceFeature="agent-builder"
+              surfaceName="matrx-user/agent-builder"
               getTextarea={() =>
                 textareaRefs.current[systemMessageIndex] || null
               }

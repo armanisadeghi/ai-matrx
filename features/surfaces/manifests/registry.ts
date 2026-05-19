@@ -22,6 +22,11 @@ import { notesEditorManifest } from "./notes-editor.manifest";
 import { codeEditorManifest } from "./code-editor.manifest";
 import { pdfWidgetsManifest } from "./pdf-widgets.manifest";
 import { contentExtractorManifest } from "./content-extractor.manifest";
+import { transcriptsManifest } from "./transcripts.manifest";
+import { agentBuilderManifest } from "./agent-builder.manifest";
+import { chatManifest } from "./chat.manifest";
+import { agentRunManifest } from "./agent-run.manifest";
+import { scraperManifest } from "./scraper.manifest";
 
 /** All registered surface manifests. Import order does not matter. */
 export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
@@ -29,6 +34,11 @@ export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
   codeEditorManifest,
   pdfWidgetsManifest,
   contentExtractorManifest,
+  transcriptsManifest,
+  agentBuilderManifest,
+  chatManifest,
+  agentRunManifest,
+  scraperManifest,
 ];
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */

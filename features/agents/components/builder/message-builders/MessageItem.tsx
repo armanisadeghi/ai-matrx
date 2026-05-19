@@ -707,6 +707,7 @@ export function MessageItem({
         ) : isEditing ? (
           <UnifiedAgentContextMenu
             sourceFeature="agent-builder"
+            surfaceName="matrx-user/agent-builder"
             getTextarea={() => textareaRef.current}
             contextData={{ contextMenuData }}
             enabledPlacements={["ai-action", "content-block", "quick-action"]}

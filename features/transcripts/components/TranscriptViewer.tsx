@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PromoteToStudioButton } from '@/features/transcript-studio/components/conversion/PromoteToStudioButton';
 import { ContentActionBar } from '@/components/content-actions/ContentActionBar';
+import { UnifiedAgentContextMenu } from '@/features/context-menu-v2/UnifiedAgentContextMenu';
+import { useTranscriptsSurfaceScope } from '@/features/transcripts/hooks/useTranscriptsSurfaceScope';
 
 export function TranscriptViewer() {
     const { activeTranscript, updateTranscript } = useTranscriptsContext();
@@ -37,6 +39,21 @@ export function TranscriptViewer() {
     const [volume, setVolume] = useState(1);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const audioRef = useRef<HTMLAudioElement>(null);
+    const segmentContainerRef = useRef<HTMLDivElement>(null);
+
+    // Build the `matrx-user/transcripts` surface scope. The builder snapshots
+    // Redux/context state at call time, and reads live `currentTime` /
+    // `paused` / `playbackRate` directly off the <audio> element so the
+    // scope reflects the moment the user clicks an action — not the last
+    // render. We invoke it here so the scope flows in via UnifiedAgentContextMenu's
+    // `contextData` prop on every render (cheap; audio onTimeUpdate fires
+    // a few times per second).
+    const buildSurfaceScope = useTranscriptsSurfaceScope({
+        audioRef,
+        isEditingMetadata,
+        contentContainerRef: segmentContainerRef,
+    });
+    const surfaceScope = buildSurfaceScope();
 
     // Playback speed options
     const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2, 3];
@@ -358,36 +375,38 @@ export function TranscriptViewer() {
             )}
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30 pb-safe">
-                <Card className="border-0 shadow-none bg-transparent">
-                    <CardContent className="p-0">
-                        {/* We pass the reconstructed string content, BUT AdvancedTranscriptViewer 
-                            should ideally accept segments directly to avoid re-parsing. 
-                            However, the current simplified version takes content string. 
-                            
-                            Fix: The viewer we just updated (if I recall correctly from my thought process) 
-                            accepts `content` string and parses it. 
-                            
-                            Actually, passing segments directly would be more efficient if we already have them.
-                            But `AdvancedTranscriptViewer` is designed to parse raw text.
-                            
-                            Wait, I can modify `AdvancedTranscriptViewer` to accept `segments` prop as override?
-                            Or just rely on the content string reconstruction which I did above.
-                            
-                            The `AdvancedTranscriptViewer` uses `onUpdateTranscript` to pass back edits.
-                            
-                            For now, relying on string reconstruction `transcriptContent` is fine, 
-                            as long as `AdvancedTranscriptViewer` can parse it back to segments.
-                         */}
-                        <AdvancedTranscriptViewer
-                            content={transcriptContent}
-                            hideTitle={true}
-                            onUpdateTranscript={handleUpdateSegments}
-                            onTimeClick={handleTranscriptTimeClick}
-                            currentTime={currentTime}
-                        />
-                    </CardContent>
-                </Card>
+            <div
+                ref={segmentContainerRef}
+                className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30 pb-safe"
+            >
+                <UnifiedAgentContextMenu
+                    sourceFeature="transcripts"
+                    surfaceName="matrx-user/transcripts"
+                    // ApplicationScope.context is typed as object; the menu's
+                    // contextData.context is string. We don't populate `context`
+                    // here either way — surface values flow through the index
+                    // signature — so widen at the boundary.
+                    contextData={surfaceScope as unknown as Record<string, unknown>}
+                    placementMode={{
+                        "ai-action": "show",
+                        "content-block": "hide",
+                        "organization-tool": "show",
+                        "user-tool": "show",
+                        "quick-action": "show",
+                    }}
+                >
+                    <Card className="border-0 shadow-none bg-transparent">
+                        <CardContent className="p-0">
+                            <AdvancedTranscriptViewer
+                                content={transcriptContent}
+                                hideTitle={true}
+                                onUpdateTranscript={handleUpdateSegments}
+                                onTimeClick={handleTranscriptTimeClick}
+                                currentTime={currentTime}
+                            />
+                        </CardContent>
+                    </Card>
+                </UnifiedAgentContextMenu>
             </div>
         </div>
     );
