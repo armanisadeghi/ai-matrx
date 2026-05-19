@@ -19,6 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { Clock, FolderOpen, Trash2, Users } from "lucide-react";
+import { DndContext } from "@dnd-kit/core";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -58,14 +59,23 @@ export function WindowPanelShell({
   };
 
   return (
-    <div
-      className={cn("flex h-full w-full flex-col overflow-hidden", className)}
-    >
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setTab(value as CloudFilesWindowTab)}
-        className="flex flex-1 flex-col overflow-hidden"
+    // FileTree (rendered inside BrowseTab below) calls `useDndMonitor` to
+    // listen for drag events. It REQUIRES a DndContext ancestor — the public
+    // /files route gets one from PageShell, but the window shell doesn't have
+    // a natural top-level DndContext, so we provide a minimal one here. No
+    // drag handlers are wired yet (drag-to-organize inside the window is a
+    // future enhancement); FileTree's monitor will simply observe an empty
+    // stream of drag events, which is fine. FileList renders its own inner
+    // DndContext for the file-row dragging that surface already supports.
+    <DndContext>
+      <div
+        className={cn("flex h-full w-full flex-col overflow-hidden", className)}
       >
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setTab(value as CloudFilesWindowTab)}
+          className="flex flex-1 flex-col overflow-hidden"
+        >
         <TabsList className="mx-2 mt-2 shrink-0 self-start">
           <TabsTrigger value="browse" className="gap-1.5">
             <FolderOpen className="h-3.5 w-3.5" />
@@ -109,8 +119,9 @@ export function WindowPanelShell({
         >
           <TrashTab />
         </TabsContent>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </DndContext>
   );
 }
 
