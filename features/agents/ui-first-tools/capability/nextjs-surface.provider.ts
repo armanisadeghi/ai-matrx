@@ -65,7 +65,7 @@ function classifyRouteKind(pathname: string | null): string | null {
  * declaring it would 422 the whole request. The seven UI-first tools
  * still ship via `build-tool-injection.ts` (gated on `state.userAuth?.id`,
  * not on this capability). The ambient context still rides through
- * `seedAmbientContextKeys` into the `context` payload. The ONLY thing
+ * `buildAmbientContext` (first-turn-only) into the `context` payload. The ONLY thing
  * disabling this loses is the orchestration envelope at
  * `client.state['nextjs-surface']` — which we don't need today.
  *

@@ -29,6 +29,7 @@ import { ContentActionBar } from "@/components/content-actions/ContentActionBar"
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { CustomCleanerAgent } from "@/lib/redux/slices/userPreferencesSlice";
+import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import { VoicePadAiContextPanel } from "./VoicePadAiContextPanel";
 import {
   AI_POST_PROCESS_AGENTS,
@@ -217,7 +218,15 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
     }
   }, []);
 
-  const responseValue = editedResponse ?? ai.accumulatedText;
+  // Strip <thinking>/<reasoning> blocks from the streaming model output so
+  // chain-of-thought never reaches the textarea or the clipboard. While a
+  // thinking block is open (closer hasn't arrived), surface a "Thinking…"
+  // indicator in the header instead.
+  const { visible: strippedResponse, isThinking } = useMemo(
+    () => stripThinkingStreaming(ai.accumulatedText),
+    [ai.accumulatedText],
+  );
+  const responseValue = editedResponse ?? strippedResponse;
   responseRef.current = responseValue;
   const isBusyEarly =
     ai.phase === "launching" ||
@@ -226,7 +235,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
   const responsePlaceholder =
     ai.phase === "idle"
       ? "Your cleaned transcript will appear here after recording..."
-      : isBusyEarly && ai.accumulatedText.length === 0
+      : (isBusyEarly || isThinking) && responseValue.length === 0
         ? "Analyzing your transcript..."
         : ai.phase === "error"
           ? (ai.error ?? "Something went wrong. Please try again.")
@@ -378,6 +387,16 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
             <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               <Stars className="h-3 w-3 text-primary/80" />
               AI Response
+              {isThinking && (
+                <span className="normal-case font-normal text-primary/80 inline-flex items-center gap-1">
+                  · Thinking
+                  <span className="inline-flex gap-0.5">
+                    <span className="h-1 w-1 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="h-1 w-1 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="h-1 w-1 rounded-full bg-primary/70 animate-bounce" />
+                  </span>
+                </span>
+              )}
               {ai.phase === "complete" && responseValue.trim() && (
                 <span className="normal-case font-normal text-green-600 dark:text-green-400">
                   · Ready
@@ -389,7 +408,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
               <Loader2
                 className={cn(
                   "h-3.5 w-3.5 text-muted-foreground",
-                  isBusyEarly ? "animate-spin" : "invisible",
+                  isBusyEarly || isThinking ? "animate-spin" : "invisible",
                 )}
               />
               {ai.phase === "complete" && responseValue.trim().length > 0 && (

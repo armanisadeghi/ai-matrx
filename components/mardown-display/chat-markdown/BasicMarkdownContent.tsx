@@ -184,7 +184,16 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
     // decodes `&lt;` and `&gt;` back to `<` and `>` in text, so inline
     // references like <Admin> or <Resource> still render as the literal
     // characters on screen.
-    processed = processed.replace(/<(\/?[\w][\w-]*)([^>]*?)>/g, "&lt;$1$2&gt;");
+    // Escape XML/HTML-style angle-bracket tokens, but SKIP content inside
+    // backtick code spans — HTML entities are not decoded inside code spans,
+    // so escaping there causes literal "&lt;" to appear on screen.
+    processed = processed.replace(
+      /(`+)([\s\S]*?)\1|<(\/?[\w][\w-]*)([^>]*?)>/g,
+      (match, backticks, _codeContent, tagName, tagAttrs) => {
+        if (backticks !== undefined) return match; // preserve code spans verbatim
+        return `&lt;${tagName}${tagAttrs}&gt;`; // escape tags outside code spans
+      },
+    );
 
     // Replace leading spaces on each line with non-breaking spaces so HTML
     // doesn't collapse them — this preserves indentation visually.

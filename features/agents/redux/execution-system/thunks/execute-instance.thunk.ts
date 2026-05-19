@@ -35,6 +35,10 @@ import { selectResolvedVariables } from "../instance-variable-values/instance-va
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import {
+  buildAmbientContext,
+  isFirstTurn,
+} from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+import {
   selectOrganizationId,
   selectProjectId,
   selectTaskId,
@@ -243,30 +247,30 @@ export const executeInstance = createAsyncThunk<
       // the user's raw prose; on reload from the DB the same message would
       // render as prose + chips — a visible mismatch during the first turn.
 
-      // Seed the ambient-context keys (user / client / route_brief /
-      // organization / project / task / active_scopes) before assembling.
-      // Idempotent: overwrites in place. Cheap — pure Redux reads.
-      // This is what makes `{{user.name}}` etc. just work in agent prompts.
-      const { seedAmbientContextKeys } = await import(
-        "@/features/agents/ui-first-tools/redux/seed-ambient-context.thunk"
-      );
-      dispatch(seedAmbientContextKeys(conversationId));
-
-      // Re-read state after the ambient seed so the assembled payload
-      // includes the newly-written keys.
-      const stateAfterSeed = getState() as RootState;
-
       // Assemble the request (sync — pure selector logic).
-      const payload = assembleRequest(stateAfterSeed, conversationId);
+      const payload = assembleRequest(state, conversationId);
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
       }
       if (debug) payload.debug = true;
 
+      // First-turn-only ambient context. The agent gets `user`,
+      // `route_brief`, `organization`, `active_scopes`, etc. once — on the
+      // first send of the conversation, merged directly into payload.context.
+      // We deliberately do NOT route this through the `instanceContext` slice
+      // (which renders chips above every user message). The agent has the
+      // keys in its prior turns; re-sending on every turn is noise.
+      if (isFirstTurn(state, conversationId)) {
+        const ambient = buildAmbientContext(state, conversationId);
+        if (ambient) {
+          payload.context = { ...(payload.context ?? {}), ...ambient };
+        }
+      }
+
       // Layer the unified tool-injection envelope (`tools`, `tools_replace`,
       // `client`) onto the assembled payload. Async because capability
       // providers may need network calls (sandbox token mint).
-      const injection = await buildToolInjection(stateAfterSeed, conversationId, {
+      const injection = await buildToolInjection(state, conversationId, {
         mode: "additive",
       });
       if (injection.tools) payload.tools = injection.tools;
