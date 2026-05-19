@@ -117,6 +117,13 @@ export interface ConversationHistorySidebarProps {
   emptyState?: React.ReactNode;
   /** Content rendered at the very top of the sidebar header row. */
   headerSlot?: React.ReactNode;
+  /**
+   * Content rendered below the header but above the search / grouping
+   * controls. Use this for surface-specific affordances that should sit
+   * above the conversation list — e.g. the chat route injects a Pinned
+   * Agents section here. Renders nothing when omitted.
+   */
+  topSlot?: React.ReactNode;
   /** Extra header actions (shown next to grouping + search toggles). */
   headerActions?: React.ReactNode;
 
@@ -167,6 +174,7 @@ export const ConversationHistorySidebar: React.FC<
   surfaceKey,
   emptyState,
   headerSlot,
+  topSlot,
   headerActions,
   showSearch = true,
   showGroupingToggle = true,
@@ -322,6 +330,7 @@ export const ConversationHistorySidebar: React.FC<
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {headerSlot}
+      {topSlot}
 
       {/* ── Controls row: search + grouping toggle + actions ─────────────── */}
       {(showSearch || showGroupingToggle || headerActions) && (
