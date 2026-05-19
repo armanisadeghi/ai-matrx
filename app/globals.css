@@ -1580,6 +1580,17 @@
   stroke: hsl(var(--accent-foreground)) !important;
 }
 
+/* Filerobot's FeedbackPopup (the @scaleflex/ui Popup anchored bottom-center)
+   surfaces messages like "Error in loading the image with the provided url:
+   ..." that we already pipe through our own sonner toasts. The popup floats
+   over the page with an in-editor look that confused users into thinking it
+   was a generative-AI preview window. Hide it everywhere so Filerobot stops
+   shipping its own toast UI; our shell catches loads/saves via the props it
+   exposes and we surface friendly messages through toast.error / toast.info. */
+.FIE_feedback-robot {
+  display: none !important;
+}
+
 .shell-active-pill .shell-nav-label {
   color: var(--shell-pill-text);
   font-weight: 600;

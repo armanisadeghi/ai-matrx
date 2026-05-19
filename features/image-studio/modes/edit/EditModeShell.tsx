@@ -283,12 +283,16 @@ export function EditModeShell({
     [effectiveCloudFileId],
   );
 
+  // Back navigates to the editor landing — the user's expected "start over"
+  // surface. Using router.back() here would dump them out of the edit flow
+  // entirely (potentially to /dashboard or wherever they came from), which
+  // breaks the editor → pick-another-file mental model.
   const handleBack = useCallback(() => {
     if (presentation === "modal") {
       onCancel?.();
       return;
     }
-    router.back();
+    router.push("/images/edit");
   }, [presentation, onCancel, router]);
 
   if (!activeUrl) {
