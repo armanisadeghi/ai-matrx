@@ -14,8 +14,11 @@ import { LoadingSpinner } from "@/components/ui/spinner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+
+const PAGE_LOCATION = "AI Matrx Admin — AI Tasks (/administration/ai-tasks)";
 
 export default function AiTasksPage() {
   const { tasks, isLoading, error, total, refresh } = useAiTasks({
@@ -60,17 +63,40 @@ export default function AiTasksPage() {
               {total} total tasks
             </p>
           </div>
-          <Button
-            onClick={() => refresh()}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            {tasks.length > 0 && (
+              <CopyButtons
+                size="sm"
+                label="All AI tasks"
+                human={() =>
+                  tasks
+                    .map(
+                      (t) =>
+                        `${t.id} · ${t.task_name || "—"} · ${t.status} · ${formatDate(t.created_at)}`,
+                    )
+                    .join("\n")
+                }
+                agent={() => ({
+                  kind: "ai-tasks",
+                  location: PAGE_LOCATION,
+                  description: "The AI tasks currently listed.",
+                  data: tasks,
+                  attributes: { count: tasks.length, total },
+                })}
+              />
+            )}
+            <Button
+              onClick={() => refresh()}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -107,6 +133,7 @@ export default function AiTasksPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Created At</TableHead>
                     <TableHead>Updated At</TableHead>
+                    <TableHead className="w-8" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,6 +162,31 @@ export default function AiTasksPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(task.updated_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <CopyButtons
+                          size="icon"
+                          label={`Task ${task.id.slice(0, 8)}`}
+                          human={() =>
+                            [
+                              `ID: ${task.id}`,
+                              `Name: ${task.task_name || "—"}`,
+                              `Status: ${task.status}`,
+                              `Created: ${formatDate(task.created_at)}`,
+                              `Updated: ${formatDate(task.updated_at)}`,
+                            ].join("\n")
+                          }
+                          agent={() => ({
+                            kind: "ai-task",
+                            location: PAGE_LOCATION,
+                            description: "A single AI task row.",
+                            data: task,
+                            attributes: {
+                              id: task.id,
+                              status: task.status,
+                            },
+                          })}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

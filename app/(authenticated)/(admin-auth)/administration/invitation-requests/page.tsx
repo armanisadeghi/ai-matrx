@@ -41,6 +41,10 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+
+const PAGE_LOCATION =
+  "AI Matrx Admin — Invitation Requests (/administration/invitation-requests)";
 
 interface InvitationRequest {
   id: string;
@@ -148,6 +152,17 @@ export default function InvitationRequestsPage() {
 
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
+  const requestSummary = (r: InvitationRequest) =>
+    [
+      `Name: ${r.full_name}`,
+      `Email: ${r.email}`,
+      `Company: ${r.company}`,
+      `Type: ${r.user_type === "other" ? r.user_type_other : r.user_type}`,
+      `Status: ${r.status}`,
+      `Use case: ${r.use_case}`,
+      `Submitted: ${new Date(r.created_at).toLocaleString()}`,
+    ].join("\n");
+
   return (
     <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
       {/* Header */}
@@ -161,9 +176,30 @@ export default function InvitationRequestsPage() {
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={fetchRequests} disabled={loading}>
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <CopyButtons
+              size="sm"
+              label="Invitation requests"
+              human={() => filtered.map(requestSummary).join("\n\n")}
+              agent={() => ({
+                kind: "invitation-requests",
+                location: PAGE_LOCATION,
+                description:
+                  "The invitation requests currently shown (after filter/search).",
+                data: filtered,
+                attributes: {
+                  count: filtered.length,
+                  total: totalCount,
+                  filter: statusFilter,
+                },
+              })}
+            />
+          )}
+          <Button variant="ghost" size="sm" onClick={fetchRequests} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -242,19 +278,34 @@ export default function InvitationRequestsPage() {
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(req.created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => {
-                        setSelectedRequest(req);
-                        setNotes(req.notes || "");
-                        setRejectionReason("");
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1">
+                      <CopyButtons
+                        size="icon"
+                        label={req.full_name}
+                        human={() => requestSummary(req)}
+                        agent={() => ({
+                          kind: "invitation-request",
+                          location: PAGE_LOCATION,
+                          description: "A single invitation request.",
+                          data: req,
+                          summary: requestSummary(req),
+                          attributes: { id: req.id, status: req.status },
+                        })}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setSelectedRequest(req);
+                          setNotes(req.notes || "");
+                          setRejectionReason("");
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -393,7 +444,24 @@ export default function InvitationRequestsPage() {
                 )}
               </div>
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 sm:justify-between">
+                <CopyButtons
+                  size="sm"
+                  label={selectedRequest.full_name}
+                  human={() => requestSummary(selectedRequest)}
+                  agent={() => ({
+                    kind: "invitation-request",
+                    location: PAGE_LOCATION,
+                    description: "The invitation request open in the detail dialog.",
+                    data: selectedRequest,
+                    summary: requestSummary(selectedRequest),
+                    attributes: {
+                      id: selectedRequest.id,
+                      status: selectedRequest.status,
+                    },
+                  })}
+                />
+                <div className="flex items-center gap-2">
                 <Button variant="ghost" onClick={() => setSelectedRequest(null)}>
                   Close
                 </Button>
@@ -416,6 +484,7 @@ export default function InvitationRequestsPage() {
                     </Button>
                   </>
                 )}
+                </div>
               </DialogFooter>
             </>
           )}
