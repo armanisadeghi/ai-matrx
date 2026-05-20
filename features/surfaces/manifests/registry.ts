@@ -27,6 +27,17 @@ import { agentBuilderManifest } from "./agent-builder.manifest";
 import { chatManifest } from "./chat.manifest";
 import { agentRunManifest } from "./agent-run.manifest";
 import { scraperManifest } from "./scraper.manifest";
+import { documentsManifest } from "./documents.manifest";
+import { researchManifest } from "./research.manifest";
+import { tasksManifest } from "./tasks.manifest";
+import { dataTablesManifest } from "./data-tables.manifest";
+import { filesManifest } from "./files.manifest";
+import { projectsManifest } from "./projects.manifest";
+import { messagesManifest } from "./messages.manifest";
+import { listsManifest } from "./lists.manifest";
+import { canvasManifest } from "./canvas.manifest";
+import { aiResultsManifest } from "./ai-results.manifest";
+import { agentAdvancedEditorManifest } from "./agent-advanced-editor.manifest";
 
 /** All registered surface manifests. Import order does not matter. */
 export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
@@ -39,6 +50,17 @@ export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
   chatManifest,
   agentRunManifest,
   scraperManifest,
+  documentsManifest,
+  researchManifest,
+  tasksManifest,
+  dataTablesManifest,
+  filesManifest,
+  projectsManifest,
+  messagesManifest,
+  listsManifest,
+  canvasManifest,
+  aiResultsManifest,
+  agentAdvancedEditorManifest,
 ];
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */

@@ -48,6 +48,7 @@ import {
 import { selectAgentSystemMessage } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
+import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -627,21 +628,20 @@ export function SystemMessage({
     [isEditing, scrollContainerRef],
   );
 
+  const buildAgentScope = useAgentBuilderSurfaceScope(agentId);
+
+  // Surface scope for `matrx-user/agent-builder`. Agent-level values (model,
+  // tools, agent_json, etc.) come from the hook; `content` /
+  // `system_instruction` are the developer message being edited. Top-level
+  // keys flow straight through UnifiedAgentContextMenu into the ApplicationScope.
   const contextMenuData = useMemo(() => {
     return {
+      ...buildAgentScope(),
       content: developerMessage,
-      context: JSON.stringify({
-        messages: messages,
-        systemMessage: developerMessage,
-        variableDefinitions,
-        settings: agentSettings,
-      }),
-      currentMessageRole: "system",
-      allMessages: JSON.stringify(messages),
-      systemMessage: developerMessage,
-      promptVariables: JSON.stringify(variableDefinitions),
+      system_instruction: developerMessage,
+      focused_field: "system_instruction",
     };
-  }, [developerMessage, messages, variableDefinitions, agentSettings]);
+  }, [buildAgentScope, developerMessage]);
 
   // Not yet loaded
   if (messages === undefined) {
@@ -713,7 +713,7 @@ export function SystemMessage({
               getTextarea={() =>
                 textareaRefs.current[systemMessageIndex] || null
               }
-              contextData={{ contextMenuData }}
+              contextData={contextMenuData as unknown as Record<string, unknown>}
               enabledPlacements={["ai-action", "content-block", "quick-action"]}
               isEditable={true}
               enableFloatingIcon={true}

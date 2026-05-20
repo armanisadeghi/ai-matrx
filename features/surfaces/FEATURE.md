@@ -118,6 +118,22 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
+- **2026-05-15 (bulk push)** — Registered 11 more surface manifests +
+  made agent-builder fully functional. New: `matrx-user/documents`,
+  `research`, `tasks`, `data-tables`, `files`, `projects`, `messages`,
+  `lists`, `canvas`, `ai-results`, `agent-advanced-editor`. The
+  agent-builder surface now emits its full scope at runtime via
+  `features/agents/hooks/useAgentBuilderSurfaceScope.ts` — the existing
+  `UnifiedAgentContextMenu` mounts in `SystemMessage.tsx` /
+  `MessageItem.tsx` pass the agent definition (incl. `agent_json`,
+  `system_instruction`, model/tools/slots) as `contextData`. **DB synced
+  directly** (anon key can't write, service endpoint unreachable from the
+  agent shell) via `scripts/emit-surface-sync-sql.ts` → MCP `execute_sql`
+  upsert; `ui_surface_value` now mirrors all 20 registered manifests
+  (337 values). Emitter wiring still pending for the read-only/list
+  surfaces (documents, research, tasks, data-tables, files, projects,
+  messages, lists, canvas, ai-results) — manifests + DB are live so
+  bindings work; runtime scope emission lands when actions are built.
 - **2026-05-05** — v2 page shipped at `/admin/surfaces`. Backend seed
   expanded to 102 surfaces. Banner added to `/admin/lookups` UI Surfaces
   tab pointing at v2.
