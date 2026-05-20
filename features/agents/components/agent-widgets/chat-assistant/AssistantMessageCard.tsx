@@ -1,7 +1,8 @@
 "use client";
 
 import { Webhook } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 
 interface AssistantMessageCardProps {
   content: string;
@@ -22,7 +23,18 @@ export function AssistantMessageCard({
             <Webhook className="w-3 h-3 text-primary" />
           </div>
           <div className="min-w-0 flex-1 text-xs leading-relaxed [&_p]:m-0 [&_pre]:text-[10px] [&_code]:text-[10px] overflow-hidden">
-            <MarkdownStream content={content} isStreamActive={isStreaming} />
+            <RichDocument
+              content={content}
+              source={{ type: "raw" } as ContentSource}
+              isStreamActive={isStreaming}
+              // Hide actions while streaming; once done, an unobtrusive
+              // hover ⋯ in the top-right exposes copy / save / print / etc.
+              actionsVariant={isStreaming ? "none" : "icon-only"}
+              actionsPosition="top-right"
+              actionsBehavior="hover-only"
+              actions={{ exclude: ["announcements", "preferences"] }}
+              hideCopyButton
+            />
           </div>
         </div>
       </div>

@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../../types";
 import {
@@ -125,10 +127,14 @@ export const DeepResearchReportTab: React.FC<ToolRendererProps> = ({
           </div>
         )}
         <div className="p-5">
-          <MarkdownStream
+          <RichDocument
             content={parsed.curatedReport}
+            source={{ type: "raw" } as ContentSource}
+            actionsVariant="mini-bar"
+            actionsClassName="mt-2"
+            actions={{ exclude: ["announcements", "preferences"] }}
             hideCopyButton
-            className="text-sm"
+            contentClassName="text-sm"
           />
         </div>
       </div>

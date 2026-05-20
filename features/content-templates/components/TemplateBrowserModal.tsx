@@ -42,7 +42,8 @@ import {
 } from "@/features/content-templates/services/content-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 
 interface TemplateBrowserModalProps {
   isOpen: boolean;
@@ -338,7 +339,14 @@ export function TemplateBrowserModal({
             </div>
             <ScrollArea className="flex-1 p-4">
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <MarkdownStream content={selectedTemplate.content || ""} />
+                <RichDocument
+                  content={selectedTemplate.content || ""}
+                  source={{ type: "raw" } as ContentSource}
+                  actionsVariant="icon-only"
+                  actionsPosition="top-right"
+                  actionsBehavior="hover-only"
+                  actions={{ exclude: ["announcements", "preferences"] }}
+                />
               </div>
             </ScrollArea>
             <div className="p-4 border-t border-border/50">

@@ -49,7 +49,8 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
@@ -139,7 +140,15 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
         </ToggleGroup>
       </div>
       {mode === "md" ? (
-        <MarkdownStream content={content || "—"} isStreamActive={false} />
+        <RichDocument
+          content={content || "—"}
+          source={{ type: "raw" } as ContentSource}
+          isStreamActive={false}
+          actionsVariant="icon-only"
+          actionsPosition="top-right"
+          actionsBehavior="hover-only"
+          actions={{ exclude: ["announcements", "preferences"] }}
+        />
       ) : (
         <pre className="text-sm font-mono whitespace-pre-wrap break-words p-3 rounded-md bg-muted/30 border border-border/40 leading-relaxed">
           {content || "—"}
