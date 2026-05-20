@@ -19,7 +19,6 @@ import {
   Check,
   Download,
   ExternalLink,
-  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +40,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toast } from "sonner";
 import type {
   SandboxInstance,
@@ -71,12 +71,10 @@ const STATUS_BADGE_MAP: Record<
   expired: { variant: "secondary", label: "Expired" },
 };
 
-// ── Clipboard payload formatters ────────────────────────────────────────────
-// Two flavors per scope: a human-readable summary and an agent-oriented block.
-// The agent block wraps the data in xml-ish context tags (where you are, what
-// was copied, when) and dumps the FULL raw row as JSON so every id / field is
-// present no matter how ugly — that raw dump is what makes it future-proof as
-// the row shape grows.
+// ── Human-readable clipboard summaries ──────────────────────────────────────
+// The agent-payload envelope (xml-ish context + full JSON dump) is produced by
+// the shared <CopyButtons> primitive; these helpers only build the
+// human-readable flavor, which is inherently data-specific.
 const PAGE_LOCATION =
   "AI Matrx Admin — Sandbox Management (/administration/sandbox)";
 
@@ -105,26 +103,6 @@ function humanInstance(i: SandboxInstance): string {
     .join("\n");
 }
 
-function agentInstanceBlock(i: SandboxInstance): string {
-  return `<sandbox-instance id="${i.id}" sandbox-id="${i.sandbox_id}" status="${i.status}">
-<summary>
-${humanInstance(i)}
-</summary>
-<raw-data format="json">
-${JSON.stringify(i, null, 2)}
-</raw-data>
-</sandbox-instance>`;
-}
-
-function agentInstance(i: SandboxInstance): string {
-  return `<context>
-<location>${PAGE_LOCATION}</location>
-<copied>A single sandbox instance row from the admin sandbox management table.</copied>
-<copied-at>${new Date().toISOString()}</copied-at>
-</context>
-${agentInstanceBlock(i)}`;
-}
-
 interface SandboxStats {
   active: number;
   total: number;
@@ -143,24 +121,6 @@ Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.unique
     .map((i, idx) => `--- [${idx + 1}] ---\n${humanInstance(i)}`)
     .join("\n\n");
   return `${header}\n\n${body}`;
-}
-
-function agentAll(
-  list: SandboxInstance[],
-  stats: SandboxStats,
-  filter: string,
-): string {
-  const blocks = list.map((i) => agentInstanceBlock(i)).join("\n");
-  return `<sandbox-instances count="${list.length}">
-<context>
-<location>${PAGE_LOCATION}</location>
-<copied>All sandbox instances currently listed in the admin sandbox management table.</copied>
-<filter>${filter}</filter>
-<stats active="${stats.active}" total="${stats.total}" unique-users="${stats.uniqueUsers}" failed="${stats.failed}" />
-<copied-at>${new Date().toISOString()}</copied-at>
-</context>
-${blocks}
-</sandbox-instances>`;
 }
 
 export default function AdminSandboxManagementPage() {
@@ -309,11 +269,6 @@ export default function AdminSandboxManagementPage() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const copyPayload = async (text: string, label: string) => {
-    await copyToClipboard(text, label);
-    toast.success(`${label} copied to clipboard`);
-  };
-
   const handleDownloadKey = () => {
     if (!sshAccess || !sshTarget) return;
     const blob = new Blob([sshAccess.private_key], {
@@ -359,12 +314,11 @@ export default function AdminSandboxManagementPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={instances.length === 0}
-              onClick={() =>
-                copyPayload(
+            {instances.length > 0 && (
+              <CopyButtons
+                size="sm"
+                label="All sandboxes"
+                human={() =>
                   humanAll(
                     instances,
                     {
@@ -374,39 +328,27 @@ export default function AdminSandboxManagementPage() {
                       failed: failedCount,
                     },
                     statusFilter,
-                  ),
-                  "All sandboxes",
-                )
-              }
-              title="Copy all instances (human-readable)"
-            >
-              <Copy className="w-4 h-4 mr-1" />
-              Copy all
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={instances.length === 0}
-              onClick={() =>
-                copyPayload(
-                  agentAll(
-                    instances,
-                    {
-                      active: activeCount,
-                      total: instances.length,
-                      uniqueUsers,
-                      failed: failedCount,
-                    },
-                    statusFilter,
-                  ),
-                  "All sandboxes (for AI agent)",
-                )
-              }
-              title="Copy all instances with full context, formatted for an AI agent"
-            >
-              <Bot className="w-4 h-4 mr-1" />
-              Copy all for AI
-            </Button>
+                  )
+                }
+                agent={() => ({
+                  kind: "sandbox-instances",
+                  location: PAGE_LOCATION,
+                  description:
+                    "All sandbox instances currently listed in the admin sandbox management table.",
+                  data: instances,
+                  attributes: {
+                    count: instances.length,
+                    filter: statusFilter,
+                  },
+                  context: {
+                    active: activeCount,
+                    total: instances.length,
+                    "unique-users": uniqueUsers,
+                    failed: failedCount,
+                  },
+                })}
+              />
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -594,34 +536,24 @@ export default function AdminSandboxManagementPage() {
                                 </Button>
                               </>
                             )}
-                            <Button
-                              variant="ghost"
+                            <CopyButtons
                               size="icon"
-                              className="h-7 w-7"
-                              onClick={() =>
-                                copyPayload(
-                                  humanInstance(instance),
-                                  `Sandbox ${instance.sandbox_id}`,
-                                )
-                              }
-                              title="Copy details (human-readable)"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() =>
-                                copyPayload(
-                                  agentInstance(instance),
-                                  `Sandbox ${instance.sandbox_id} (for AI agent)`,
-                                )
-                              }
-                              title="Copy with full context, formatted for an AI agent"
-                            >
-                              <Bot className="w-3.5 h-3.5" />
-                            </Button>
+                              label={`Sandbox ${instance.sandbox_id}`}
+                              human={() => humanInstance(instance)}
+                              agent={() => ({
+                                kind: "sandbox-instance",
+                                location: PAGE_LOCATION,
+                                description:
+                                  "A single sandbox instance row from the admin sandbox management table.",
+                                data: instance,
+                                summary: humanInstance(instance),
+                                attributes: {
+                                  id: instance.id,
+                                  "sandbox-id": instance.sandbox_id,
+                                  status: instance.status,
+                                },
+                              })}
+                            />
                             <Button
                               variant="ghost"
                               size="sm"
