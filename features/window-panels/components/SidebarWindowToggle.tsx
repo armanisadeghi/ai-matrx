@@ -15,6 +15,7 @@ import {
   ArrowUp,
   Columns3,
   Rows3,
+  Crown,
   ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ import {
   arrangeActiveWindows,
 } from "@/lib/redux/slices/windowManagerSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { LayoutIconButton } from "@/features/window-panels/components/LayoutIcon";
 import {
   MenuDivider,
@@ -63,11 +65,12 @@ export default function SidebarWindowToggle() {
   const allMinimized = useAppSelector(selectAllMinimized);
   const windows = useAppSelector(selectAllWindows);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isCreator = useAppSelector(selectIsCreator);
   const hasWindows = windows.length > 0;
 
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "visibility" | "layout" | "tools" | "admin"
+    "visibility" | "layout" | "tools" | "admin" | "creator"
   >("tools");
   const [layoutDirX, setLayoutDirX] = useState<"ltr" | "rtl">("rtl");
   const [layoutDirY, setLayoutDirY] = useState<"ttb" | "btt">("ttb");
@@ -243,6 +246,21 @@ export default function SidebarWindowToggle() {
                 >
                   <ShieldAlert className="w-3 h-3" />
                   Admin
+                </button>
+              )}
+              {isCreator && (
+                <button
+                  type="button"
+                  className={cn(
+                    "px-2 py-1 text-[11px] font-medium uppercase tracking-wider rounded-md transition-colors flex items-center gap-1",
+                    activeTab === "creator"
+                      ? "bg-violet-500/15 text-violet-500"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/40",
+                  )}
+                  onClick={() => setActiveTab("creator")}
+                >
+                  <Crown className="w-3 h-3" />
+                  Creator
                 </button>
               )}
             </div>
@@ -623,6 +641,11 @@ export default function SidebarWindowToggle() {
             {/* ── Tab Content: Admin ───────────────────────────────────────── */}
             {activeTab === "admin" && isAdmin && (
               <ToolsGrid section="admin" onAfterActivate={closePopover} />
+            )}
+
+            {/* ── Tab Content: Creator ─────────────────────────────────────── */}
+            {activeTab === "creator" && isCreator && (
+              <ToolsGrid section="creator" onAfterActivate={closePopover} />
             )}
           </div>,
           document.body,

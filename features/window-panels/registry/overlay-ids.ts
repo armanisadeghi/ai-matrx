@@ -68,6 +68,7 @@ export const OVERLAY_IDS = [
   "contentEditorWorkspaceWindow",
   "contentHistory",
   "contextSwitcherWindow",
+  "creatorHub",
   "cropStudioWindow",
   "curatedIconPickerWindow",
   "emailDialog",

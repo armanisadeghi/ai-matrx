@@ -21,6 +21,7 @@ import DirectContextSelection from "./DirectContextSelection";
 import SidebarNotesToggle from "@/features/notes/actions/SidebarNotesToggle";
 import SidebarVoicePadToggle from "../controls/SidebarVoicePadToggle";
 import SidebarAdminIndicatorToggle from "../controls/SidebarAdminIndicatorToggle";
+import SidebarCreatorHubToggle from "../controls/SidebarCreatorHubToggle";
 import SidebarEnvToggle from "../controls/SidebarEnvToggle";
 import SidebarWindowToggleIsland from "./SidebarWindowToggleIsland";
 import {
@@ -86,6 +87,7 @@ export default function Sidebar({ pathname }: SidebarProps) {
       {/* Footer — Admin indicator (admins), Voice + Settings */}
       <div className="shell-sidebar-footer">
         <SidebarEnvToggle />
+        <SidebarCreatorHubToggle />
         <SidebarAdminIndicatorToggle />
         <SidebarWindowToggleIsland />
         <SidebarNotesToggle />

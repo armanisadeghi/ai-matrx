@@ -212,6 +212,18 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "cloud_files" },
   },
 
+  // ── Creator Hub ─────────────────────────────────────────────────────────
+  {
+    slug: "creator-hub-window",
+    overlayId: "creatorHub",
+    kind: "window",
+    label: "Creator Hub",
+    defaultData: { activeTab: "settings" },
+    mobilePresentation: "fullscreen",
+    mobileSidebarAs: "drawer",
+    urlSync: { key: "creator_hub" },
+  },
+
   // ── File Preview ──────────────────────────────────────────────────────────
   {
     slug: "file-preview-window",

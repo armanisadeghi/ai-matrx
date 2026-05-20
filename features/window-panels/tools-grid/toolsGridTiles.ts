@@ -39,6 +39,7 @@ import {
   Clapperboard,
   Cpu,
   Crop,
+  Crown,
   Database,
   DoorOpen,
   FileCode2,
@@ -98,12 +99,13 @@ export type ToolsCategory =
   | "agents"
   | "files-web"
   | "general"
+  | "creator"
   | "admin";
 
 export const TOOLS_CATEGORIES: ReadonlyArray<{
   id: ToolsCategory;
   label: string;
-  gate?: "admin";
+  gate?: "admin" | "creator";
 }> = [
   { id: "voice", label: "Voice" },
   { id: "notes", label: "Notes" },
@@ -111,6 +113,7 @@ export const TOOLS_CATEGORIES: ReadonlyArray<{
   { id: "agents", label: "Agents" },
   { id: "files-web", label: "Files & Web" },
   { id: "general", label: "General" },
+  { id: "creator", label: "Creator", gate: "creator" },
   { id: "admin", label: "Admin", gate: "admin" },
 ];
 
@@ -152,8 +155,8 @@ export interface ToolsGridTile {
   icon: LucideIcon;
   /** Category bucket. */
   category: ToolsCategory;
-  /** Admin-only gate. Default: shown to everyone in the category's audience. */
-  gate?: "admin";
+  /** Visibility gate. Default: shown to everyone in the category's audience. */
+  gate?: "admin" | "creator";
   /**
    * EITHER declarative (overlayId + optional seedData + instanceStrategy) —
    * covers ~95% of tiles.
@@ -647,6 +650,16 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     icon: CheckSquare,
     category: "general",
     overlayId: "quickTasksWindow",
+  },
+
+  // ── Creator ──────────────────────────────────────────────────────────────
+  {
+    id: "tile.creator-hub",
+    label: "Creator Hub",
+    icon: Crown,
+    category: "creator",
+    gate: "creator",
+    overlayId: "creatorHub",
   },
 
   // ── Admin (incl. agent debug / widgets — labels match windowRegistry) ──

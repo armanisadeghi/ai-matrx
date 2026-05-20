@@ -265,6 +265,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  creatorHub: {
+    label: "Creator Hub",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   cropStudioWindow: {
     label: "Crop Studio Window",
     instanceMode: "singleton",

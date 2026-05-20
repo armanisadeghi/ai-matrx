@@ -41,6 +41,7 @@ import type {
 } from "@/features/agent-connections/types";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import type { CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
+import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import type { CodeFile as MultiFileCoreCodeFile } from "@/features/code-editor/multi-file-core/types";
 import type { FilesystemAdapter } from "@/features/code/adapters/FilesystemAdapter";
 import type { ProcessAdapter } from "@/features/code/adapters/ProcessAdapter";
@@ -223,6 +224,10 @@ const ChatDebugWindow = dynamic(
 );
 const CloudFilesWindow = dynamic(
   () => import("@/features/window-panels/windows/cloud-files/CloudFilesWindow"),
+  { ssr: false },
+);
+const CreatorHubWindow = dynamic(
+  () => import("@/features/window-panels/windows/creator/CreatorHubWindow"),
   { ssr: false },
 );
 const CodeEditorWindow = dynamic(
@@ -542,6 +547,7 @@ export default function OverlayController() {
     chatDebugWindow: useAppSelector((s) => selectIsOverlayOpen(s, "chatDebugWindow")),
     cloudFilesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "cloudFilesWindow")),
     contextSwitcherWindow: useAppSelector((s) => selectIsOverlayOpen(s, "contextSwitcherWindow")),
+    creatorHub: useAppSelector((s) => selectIsOverlayOpen(s, "creatorHub")),
     cropStudioWindow: useAppSelector((s) => selectIsOverlayOpen(s, "cropStudioWindow")),
     emailDialogWindow: useAppSelector((s) => selectIsOverlayOpen(s, "emailDialogWindow")),
     executionInspectorWindow: useAppSelector((s) => selectIsOverlayOpen(s, "executionInspectorWindow")),
@@ -616,6 +622,7 @@ export default function OverlayController() {
     chatDebugWindow: useAppSelector((s) => selectOverlayData(s, "chatDebugWindow")) as Record<string, unknown> | null,
     cloudFilesWindow: useAppSelector((s) => selectOverlayData(s, "cloudFilesWindow")) as Record<string, unknown> | null,
     contextSwitcherWindow: useAppSelector((s) => selectOverlayData(s, "contextSwitcherWindow")) as Record<string, unknown> | null,
+    creatorHub: useAppSelector((s) => selectOverlayData(s, "creatorHub")) as Record<string, unknown> | null,
     cropStudioWindow: useAppSelector((s) => selectOverlayData(s, "cropStudioWindow")) as Record<string, unknown> | null,
     emailDialogWindow: useAppSelector((s) => selectOverlayData(s, "emailDialogWindow")) as Record<string, unknown> | null,
     executionInspectorWindow: useAppSelector((s) => selectOverlayData(s, "executionInspectorWindow")) as Record<string, unknown> | null,
@@ -1268,6 +1275,20 @@ export default function OverlayController() {
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "cloudFilesWindow" }))}
             initialTab={data?.initialTab as CloudFilesWindowTab | undefined}
+          />
+        );
+      })()}
+
+      {/* creatorHub */}
+      {(() => {
+        const isOpen = isOpenById.creatorHub;
+        const data = dataById.creatorHub as Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <CreatorHubWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "creatorHub" }))}
+            initialTab={typeof data?.initialTab === "string" ? (data.initialTab as CreatorHubTabId) : undefined}
           />
         );
       })()}

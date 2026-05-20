@@ -16,6 +16,7 @@ import { Fragment, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/windowRegistryMetadata";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
@@ -36,10 +37,11 @@ interface ToolsGridProps {
    */
   onAfterActivate?: () => void;
   /**
-   * Which section to render. "tools" = non-admin categories; "admin" = admin
-   * category only. Lets SidebarWindowToggle keep its two-tab layout intact.
+   * Which section to render. "tools" = everyday categories; "admin" = admin
+   * category only; "creator" = creator category only. Lets SidebarWindowToggle
+   * render one ToolsGrid per tab.
    */
-  section: "tools" | "admin";
+  section: "tools" | "admin" | "creator";
 }
 
 export default function ToolsGrid({
@@ -50,6 +52,7 @@ export default function ToolsGrid({
   const store = useAppStore();
   const router = useRouter();
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isCreator = useAppSelector(selectIsCreator);
 
   // Build the tile-click handler once. Each tile's own click closure binds
   // only the tile reference; all side-effects resolve from registry + ctx.
@@ -106,9 +109,13 @@ export default function ToolsGrid({
 
   // Filter categories by section + admin gate.
   const visibleCategories = TOOLS_CATEGORIES.filter((cat) => {
-    if (section === "admin" && cat.id !== "admin") return false;
-    if (section === "tools" && cat.id === "admin") return false;
+    // Each gated section renders only its own category.
+    if (section === "admin") return cat.id === "admin" && isAdmin;
+    if (section === "creator") return cat.id === "creator" && isCreator;
+    // "tools" — everyday categories only; admin/creator live in their own tabs.
+    if (cat.id === "admin" || cat.id === "creator") return false;
     if (cat.gate === "admin" && !isAdmin) return false;
+    if (cat.gate === "creator" && !isCreator) return false;
     return true;
   });
 
@@ -116,8 +123,14 @@ export default function ToolsGrid({
   const tilesByCategory = new Map<ToolsCategory, ToolsGridTile[]>();
   for (const tile of TOOLS_GRID_TILES) {
     if (tile.gate === "admin" && !isAdmin) continue;
+    if (tile.gate === "creator" && !isCreator) continue;
     if (section === "admin" && tile.category !== "admin") continue;
-    if (section === "tools" && tile.category === "admin") continue;
+    if (section === "creator" && tile.category !== "creator") continue;
+    if (
+      section === "tools" &&
+      (tile.category === "admin" || tile.category === "creator")
+    )
+      continue;
     const bucket = tilesByCategory.get(tile.category) ?? [];
     bucket.push(tile);
     tilesByCategory.set(tile.category, bucket);
@@ -136,7 +149,7 @@ export default function ToolsGrid({
             {section === "tools" && <MenuSection label={cat.label} />}
             <div
               className={
-                section === "admin"
+                section === "admin" || section === "creator"
                   ? "grid grid-cols-2 gap-1.5 px-2 pb-2 mt-1"
                   : "grid grid-cols-2 gap-1.5 px-2 pb-2"
               }

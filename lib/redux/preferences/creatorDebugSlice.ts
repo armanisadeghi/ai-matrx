@@ -15,6 +15,10 @@
 //   - settings           — small typed settings bag for the rare actual
 //                          preferences creators have that differ from
 //                          regular users
+//   - debugData          — namespaced key/value store ("Namespace:Label")
+//                          any feature can drop arbitrary debug data into
+//                          without its own slice. Rendered by the Creator
+//                          Hub "Data" tab. Mirrors adminDebugSlice.debugData.
 //
 // Authority (is-this-user-a-creator) lives in userAuth — never duplicate
 // it here. This slice is purely "what does the current creator want to see
@@ -40,6 +44,10 @@ export interface CreatorDebugState {
    *  "Shortcuts:JsonInspector", etc. Anything not present is treated as
    *  false. */
   visibility: Record<string, boolean>;
+  /** Namespaced key/value store ("Namespace:Label"). Any feature can drop
+   *  arbitrary debug data here via setCreatorDebugKey without its own slice;
+   *  rendered by the Creator Hub "Data" tab. Parallels adminDebugSlice. */
+  debugData: Record<string, unknown>;
   settings: CreatorDebugSettings;
 }
 
@@ -47,6 +55,7 @@ const initialState: CreatorDebugState = {
   isCreatorMode: false,
   showCreatorTools: false,
   visibility: {},
+  debugData: {},
   settings: {
     showRawIds: false,
     showBuildAffordances: true,
@@ -92,6 +101,47 @@ const creatorDebugSlice = createSlice({
       state.settings[action.payload.key] = action.payload.value;
     },
 
+    // ── Debug data (namespaced key/value; mirrors adminDebugSlice) ────────
+
+    // Merge key/value pairs — use namespaced keys: "Agents:Last Run"
+    updateCreatorDebugData: (
+      state,
+      action: PayloadAction<Record<string, unknown>>,
+    ) => {
+      state.debugData = { ...state.debugData, ...action.payload };
+    },
+    // Replace ALL debug data
+    setCreatorDebugData: (
+      state,
+      action: PayloadAction<Record<string, unknown>>,
+    ) => {
+      state.debugData = action.payload;
+    },
+    // Set a single key
+    setCreatorDebugKey: (
+      state,
+      action: PayloadAction<{ key: string; value: unknown }>,
+    ) => {
+      state.debugData[action.payload.key] = action.payload.value;
+    },
+    // Remove a single key
+    removeCreatorDebugKey: (state, action: PayloadAction<string>) => {
+      delete state.debugData[action.payload];
+    },
+    // Remove all keys for a namespace prefix — call on component unmount
+    clearCreatorDebugNamespace: (state, action: PayloadAction<string>) => {
+      const prefix = action.payload + ":";
+      for (const key of Object.keys(state.debugData)) {
+        if (key.startsWith(prefix)) {
+          delete state.debugData[key];
+        }
+      }
+    },
+    // Clear all debug data
+    clearCreatorDebugData: (state) => {
+      state.debugData = {};
+    },
+
     resetCreatorState: () => initialState,
   },
 });
@@ -105,6 +155,12 @@ export const {
   toggleVisibilityFlag,
   clearVisibilityFlag,
   setCreatorSetting,
+  updateCreatorDebugData,
+  setCreatorDebugData,
+  setCreatorDebugKey,
+  removeCreatorDebugKey,
+  clearCreatorDebugNamespace,
+  clearCreatorDebugData,
   resetCreatorState,
 } = creatorDebugSlice.actions;
 
@@ -131,3 +187,12 @@ export const selectCreatorVisibilityFlag =
 export const selectCreatorSettings = (
   state: WithCreatorDebug,
 ): CreatorDebugSettings => state.creatorDebug.settings;
+
+export const selectCreatorDebugData = (
+  state: WithCreatorDebug,
+): Record<string, unknown> => state.creatorDebug.debugData;
+
+export const selectCreatorDebugKey =
+  (key: string) =>
+  (state: WithCreatorDebug): unknown =>
+    state.creatorDebug.debugData[key];
