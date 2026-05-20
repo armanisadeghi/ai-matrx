@@ -19,6 +19,7 @@ import {
   Check,
   Download,
   ExternalLink,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,98 @@ const STATUS_BADGE_MAP: Record<
   failed: { variant: "destructive", label: "Failed" },
   expired: { variant: "secondary", label: "Expired" },
 };
+
+// ── Clipboard payload formatters ────────────────────────────────────────────
+// Two flavors per scope: a human-readable summary and an agent-oriented block.
+// The agent block wraps the data in xml-ish context tags (where you are, what
+// was copied, when) and dumps the FULL raw row as JSON so every id / field is
+// present no matter how ugly — that raw dump is what makes it future-proof as
+// the row shape grows.
+const PAGE_LOCATION =
+  "AI Matrx Admin — Sandbox Management (/administration/sandbox)";
+
+function humanInstance(i: SandboxInstance): string {
+  const ttlH = Math.floor(i.ttl_seconds / 3600);
+  const ttlM = Math.floor((i.ttl_seconds % 3600) / 60);
+  return [
+    `Sandbox: ${i.sandbox_id}`,
+    `Status: ${i.status}`,
+    `Tier: ${i.tier ?? "—"}`,
+    `User ID: ${i.user_id}`,
+    `Instance ID: ${i.id}`,
+    i.container_id ? `Container ID: ${i.container_id}` : null,
+    i.proxy_url ? `Proxy URL: ${i.proxy_url}` : null,
+    `Created: ${new Date(i.created_at).toLocaleString()}`,
+    `Expires: ${i.expires_at ? new Date(i.expires_at).toLocaleString() : "—"}`,
+    `TTL: ${i.ttl_seconds}s (${ttlH}h ${ttlM}m)`,
+    `Hot Path: ${i.hot_path ?? "—"}`,
+    `Cold Path: ${i.cold_path ?? "—"}`,
+    i.last_heartbeat_at
+      ? `Last Heartbeat: ${new Date(i.last_heartbeat_at).toLocaleString()}`
+      : null,
+    i.stop_reason ? `Stop Reason: ${i.stop_reason}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function agentInstanceBlock(i: SandboxInstance): string {
+  return `<sandbox-instance id="${i.id}" sandbox-id="${i.sandbox_id}" status="${i.status}">
+<summary>
+${humanInstance(i)}
+</summary>
+<raw-data format="json">
+${JSON.stringify(i, null, 2)}
+</raw-data>
+</sandbox-instance>`;
+}
+
+function agentInstance(i: SandboxInstance): string {
+  return `<context>
+<location>${PAGE_LOCATION}</location>
+<copied>A single sandbox instance row from the admin sandbox management table.</copied>
+<copied-at>${new Date().toISOString()}</copied-at>
+</context>
+${agentInstanceBlock(i)}`;
+}
+
+interface SandboxStats {
+  active: number;
+  total: number;
+  uniqueUsers: number;
+  failed: number;
+}
+
+function humanAll(
+  list: SandboxInstance[],
+  stats: SandboxStats,
+  filter: string,
+): string {
+  const header = `Sandbox Management — ${list.length} instance(s) [filter: ${filter}]
+Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.uniqueUsers} · Failed: ${stats.failed}`;
+  const body = list
+    .map((i, idx) => `--- [${idx + 1}] ---\n${humanInstance(i)}`)
+    .join("\n\n");
+  return `${header}\n\n${body}`;
+}
+
+function agentAll(
+  list: SandboxInstance[],
+  stats: SandboxStats,
+  filter: string,
+): string {
+  const blocks = list.map((i) => agentInstanceBlock(i)).join("\n");
+  return `<sandbox-instances count="${list.length}">
+<context>
+<location>${PAGE_LOCATION}</location>
+<copied>All sandbox instances currently listed in the admin sandbox management table.</copied>
+<filter>${filter}</filter>
+<stats active="${stats.active}" total="${stats.total}" unique-users="${stats.uniqueUsers}" failed="${stats.failed}" />
+<copied-at>${new Date().toISOString()}</copied-at>
+</context>
+${blocks}
+</sandbox-instances>`;
+}
 
 export default function AdminSandboxManagementPage() {
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
@@ -135,11 +228,16 @@ export default function AdminSandboxManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "stop" }),
       });
-      if (resp.ok) {
-        await fetchInstances();
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to stop (HTTP ${resp.status})`);
       }
+      await fetchInstances();
+      toast.success(`Sandbox ${instance.sandbox_id} stopped`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to stop");
+      const msg = err instanceof Error ? err.message : "Failed to stop";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setStoppingIds((prev) => {
         const next = new Set(prev);
@@ -211,6 +309,11 @@ export default function AdminSandboxManagementPage() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const copyPayload = async (text: string, label: string) => {
+    await copyToClipboard(text, label);
+    toast.success(`${label} copied to clipboard`);
+  };
+
   const handleDownloadKey = () => {
     if (!sshAccess || !sshTarget) return;
     const blob = new Blob([sshAccess.private_key], {
@@ -255,16 +358,66 @@ export default function AdminSandboxManagementPage() {
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-            />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={instances.length === 0}
+              onClick={() =>
+                copyPayload(
+                  humanAll(
+                    instances,
+                    {
+                      active: activeCount,
+                      total: instances.length,
+                      uniqueUsers,
+                      failed: failedCount,
+                    },
+                    statusFilter,
+                  ),
+                  "All sandboxes",
+                )
+              }
+              title="Copy all instances (human-readable)"
+            >
+              <Copy className="w-4 h-4 mr-1" />
+              Copy all
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={instances.length === 0}
+              onClick={() =>
+                copyPayload(
+                  agentAll(
+                    instances,
+                    {
+                      active: activeCount,
+                      total: instances.length,
+                      uniqueUsers,
+                      failed: failedCount,
+                    },
+                    statusFilter,
+                  ),
+                  "All sandboxes (for AI agent)",
+                )
+              }
+              title="Copy all instances with full context, formatted for an AI agent"
+            >
+              <Bot className="w-4 h-4 mr-1" />
+              Copy all for AI
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -441,6 +594,34 @@ export default function AdminSandboxManagementPage() {
                                 </Button>
                               </>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() =>
+                                copyPayload(
+                                  humanInstance(instance),
+                                  `Sandbox ${instance.sandbox_id}`,
+                                )
+                              }
+                              title="Copy details (human-readable)"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() =>
+                                copyPayload(
+                                  agentInstance(instance),
+                                  `Sandbox ${instance.sandbox_id} (for AI agent)`,
+                                )
+                              }
+                              title="Copy with full context, formatted for an AI agent"
+                            >
+                              <Bot className="w-3.5 h-3.5" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
