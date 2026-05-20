@@ -8,6 +8,8 @@ import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 import { TaskPanelChip } from "@/features/agents/ui-first-tools/ui/lists/TaskPanelChip";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 
 import { cn } from "@/lib/utils";
 
@@ -47,6 +49,14 @@ interface AgentConversationColumnProps {
   surfaceKey: string;
   constrainWidth?: boolean;
   smartInputProps?: SmartInputForwardProps;
+  /**
+   * Optional empty-state surface. When provided AND the display conversation
+   * has zero messages, this is rendered above the input instead of the
+   * (empty) message list. Used by `/chat/new` to surface the greeting +
+   * quick-action chips. Disappears automatically once the first message
+   * lands in the messages slice.
+   */
+  landingContent?: React.ReactNode;
 }
 
 export function AgentConversationColumn({
@@ -55,10 +65,16 @@ export function AgentConversationColumn({
   surfaceKey,
   constrainWidth = false,
   smartInputProps,
+  landingContent,
 }: AgentConversationColumnProps) {
   const displayId = displayConversationId ?? conversationId;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  // Subscribed because we need to swap landing → message list the moment the
+  // first message lands. `selectMessageCount` returns a primitive (number),
+  // so re-renders are cheap.
+  const messageCount = useAppSelector(selectMessageCount(displayId));
+  const showLanding = !!landingContent && messageCount === 0;
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -82,23 +98,32 @@ export function AgentConversationColumn({
       )}
     >
       <div className="relative flex-1 min-h-0">
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="h-full overflow-y-auto pt-12"
-        >
-          {/* Older-history pagination trigger. Isolated component — */}
-          {/* subscribes only to the older-page flags so its re-renders */}
-          {/* never reach the message tree below. */}
-          <OlderMessagesSentinel
-            conversationId={displayId}
-            scrollRef={scrollRef}
-          />
-          <AgentConversationDisplay
-            conversationId={displayId}
-            surfaceKey={surfaceKey}
-          />
-        </div>
+        {showLanding ? (
+          // Empty-state surface (e.g. /chat/new greeting + chips). Replaces
+          // the scroll area until the first message lands. We intentionally
+          // do NOT mount OlderMessagesSentinel or AgentConversationDisplay
+          // here — there's nothing to paginate or render and they'd
+          // subscribe to selectors we don't need yet.
+          <div className="h-full overflow-y-auto">{landingContent}</div>
+        ) : (
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="h-full overflow-y-auto pt-12"
+          >
+            {/* Older-history pagination trigger. Isolated component — */}
+            {/* subscribes only to the older-page flags so its re-renders */}
+            {/* never reach the message tree below. */}
+            <OlderMessagesSentinel
+              conversationId={displayId}
+              scrollRef={scrollRef}
+            />
+            <AgentConversationDisplay
+              conversationId={displayId}
+              surfaceKey={surfaceKey}
+            />
+          </div>
+        )}
         <div
           className="pointer-events-none absolute bottom-0 left-0 right-0 h-3"
           style={{

@@ -14,6 +14,8 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import {
   registerSurface,
   unregisterSurface,
@@ -37,6 +39,13 @@ interface ChatRoomClientProps {
    * list lazily on user click.
    */
   initialAgentName?: string;
+  /**
+   * Optional empty-state surface — rendered in place of the message list
+   * while the conversation has zero messages. Forwarded to
+   * `AgentConversationColumn`. Used by `/chat/new` to show the greeting +
+   * quick-action chips before the user submits their first message.
+   */
+  landingContent?: React.ReactNode;
 }
 
 const SOURCE_FEATURE = "chat-route";
@@ -59,6 +68,7 @@ export function ChatRoomClient({
   agentId,
   conversationId: conversationIdProp,
   initialAgentName,
+  landingContent,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -194,6 +204,30 @@ export function ChatRoomClient({
     dispatch(clearPendingNavigation({ surfaceKey }));
   }, [pendingNavigation, router, dispatch, surfaceKey]);
 
+  // ── Draft transfer from /chat/new chip click ────────────────────────────
+  // When a chip on /chat/new is clicked, the source page stashes the user's
+  // in-progress draft in sessionStorage keyed to this agent's id. We apply it
+  // once the launcher has created the instance entry — `setUserInputText`
+  // requires `state.instanceUserInput.byConversationId[cid]` to exist.
+  const draftAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (conversationIdProp) return; // existing conversation, not a chip target
+    if (!liveConversationId) return;
+    if (draftAppliedRef.current === liveConversationId) return;
+    const transfer = consumeChatDraftTransfer(agentId);
+    if (!transfer) {
+      draftAppliedRef.current = liveConversationId;
+      return;
+    }
+    draftAppliedRef.current = liveConversationId;
+    dispatch(
+      setUserInputText({
+        conversationId: liveConversationId,
+        text: transfer.text,
+      }),
+    );
+  }, [conversationIdProp, liveConversationId, agentId, dispatch]);
+
   // ── Post-submit URL promotion (only on /chat/a/[agentId]) ────────────────
   // On /chat/a/[agentId] the launcher pre-creates an instance with a client
   // UUID, but the conversation isn't persisted in cx_conversation until the
@@ -258,6 +292,7 @@ export function ChatRoomClient({
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: true,
           }}
+          landingContent={landingContent}
         />
       </div>
     </ChatPageShell>
