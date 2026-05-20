@@ -549,6 +549,7 @@ export default function OverlayController() {
     contextSwitcherWindow: useAppSelector((s) => selectIsOverlayOpen(s, "contextSwitcherWindow")),
     creatorHub: useAppSelector((s) => selectIsOverlayOpen(s, "creatorHub")),
     cropStudioWindow: useAppSelector((s) => selectIsOverlayOpen(s, "cropStudioWindow")),
+    emailDialog: useAppSelector((s) => selectIsOverlayOpen(s, "emailDialog")),
     emailDialogWindow: useAppSelector((s) => selectIsOverlayOpen(s, "emailDialogWindow")),
     executionInspectorWindow: useAppSelector((s) => selectIsOverlayOpen(s, "executionInspectorWindow")),
     feedbackDialog: useAppSelector((s) => selectIsOverlayOpen(s, "feedbackDialog")),
@@ -575,6 +576,7 @@ export default function OverlayController() {
     quickDataWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickDataWindow")),
     quickNoteSaveWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickNoteSaveWindow")),
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
+    quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
     quickTasksWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasksWindow")),
     quickUtilities: useAppSelector((s) => selectIsOverlayOpen(s, "quickUtilities")),
     resourcePickerWindow: useAppSelector((s) => selectIsOverlayOpen(s, "resourcePickerWindow")),
@@ -586,6 +588,8 @@ export default function OverlayController() {
     taskQuickCreateWindow: useAppSelector((s) => selectIsOverlayOpen(s, "taskQuickCreateWindow")),
     transcriptStudioWindow: useAppSelector((s) => selectIsOverlayOpen(s, "transcriptStudioWindow")),
     undoHistory: useAppSelector((s) => selectIsOverlayOpen(s, "undoHistory")),
+    userPreferences: useAppSelector((s) => selectIsOverlayOpen(s, "userPreferences")),
+    userPreferencesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "userPreferencesWindow")),
     whatsappMedia: useAppSelector((s) => selectIsOverlayOpen(s, "whatsappMedia")),
     whatsappSettings: useAppSelector((s) => selectIsOverlayOpen(s, "whatsappSettings")),
     whatsappShellWindow: useAppSelector((s) => selectIsOverlayOpen(s, "whatsappShellWindow")),
@@ -1455,8 +1459,8 @@ export default function OverlayController() {
         );
       })}
 
-      {/* emailDialog — self-subscribing component (reads overlay state internally). */}
-      <EmailDialogBridge />
+      {/* emailDialog */}
+      {isOpenById.emailDialog ? <EmailDialogBridge /> : null}
 
       {/* TODO: review prop wiring for emailDialogWindow */}
       {/* emailDialogWindow */}
@@ -1953,8 +1957,19 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* quickTasks — self-subscribing component (reads overlay state internally). */}
-      <QuickTasksSheet />
+      {/* quickTasks — reads its pre-populate data internally, but does NOT
+          self-gate on isOpen (it relied on the legacy OverlaySurface gate).
+          Gate it here like every other overlay or it renders the full tasks
+          sheet on every route, including public ones. */}
+      {(() => {
+        const isOpen = isOpenById.quickTasks;
+        if (!isOpen) return null;
+        return (
+          <QuickTasksSheet
+            onClose={() => dispatch(closeOverlay({ overlayId: "quickTasks" }))}
+          />
+        );
+      })()}
 
       {/* quickTasksWindow */}
       {(() => {
@@ -2263,11 +2278,13 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* userPreferences — self-subscribing component (reads overlay state internally). */}
-      <SettingsShellOverlay />
-
-      {/* userPreferencesWindow — self-subscribing component (reads overlay state internally). */}
-      <SettingsShellOverlay />
+      {/* userPreferences + userPreferencesWindow — SettingsShellOverlay handles
+          BOTH overlay ids internally, so render it once, gated on either being
+          open. (It was rendered twice + ungated before, which mounted two
+          settings shells on every route the controller was active on.) */}
+      {isOpenById.userPreferences || isOpenById.userPreferencesWindow ? (
+        <SettingsShellOverlay />
+      ) : null}
 
       {/* voicePad — multi-instance */}
       {instancesById.voicePad.map((inst) => {

@@ -292,11 +292,29 @@ function resolveImportPath(spec: string): string | undefined {
   return undefined;
 }
 
+/**
+ * A component may be rendered UNGATED (the controller mounts it always and
+ * trusts it to return null when closed) ONLY if it actually self-gates —
+ * i.e. it reads `selectIsOverlayOpen` / `useOverlayOpen` and returns null
+ * when closed.
+ *
+ * Reading `selectOverlayData` / `selectOverlay` ALONE is NOT proof of
+ * self-gating: `QuickTasksSheet` reads `selectOverlayData` only (for
+ * pre-populate data) and renders unconditionally — it relied on the legacy
+ * OverlaySurface's isOpen gate. Rendering it ungated put the full tasks
+ * sheet on every route (authenticated AND public). So self-subscribing
+ * requires an explicit open-state read.
+ */
 function isSelfSubscribing(src: string): boolean {
+  const readsOpenState =
+    /\bselectIsOverlayOpen\b/.test(src) || /\buseOverlayOpen\b/.test(src);
+  if (!readsOpenState) return false;
   return (
     /\bselectOverlayData\b/.test(src) ||
     /\bselectOverlay\b/.test(src) ||
-    /\buseOverlayData\b/.test(src)
+    /\buseOverlayData\b/.test(src) ||
+    /\bselectIsOverlayOpen\b/.test(src) ||
+    /\buseOverlayOpen\b/.test(src)
   );
 }
 
@@ -676,10 +694,22 @@ function emitBlock(entry: RegistryEntry): string {
   const Comp = entry.componentName;
   const indent = "      ";
 
+  // RULE (owner's directive): NOTHING in the controller renders ungated.
+  // Every overlay is `{isOpen && <X .../>}` — the controller is purely a
+  // "render-when-dispatched" mechanism. An ungated render mounts the
+  // component (and loads its chunk) on every route the controller is active
+  // on, and — if the component doesn't actually self-gate — paints its UI
+  // everywhere (the QuickTasksSheet-on-every-route bug). If a component is
+  // genuinely needed without a trigger, it does NOT belong here — it goes in
+  // app/Providers.tsx or the layout.
+  //
+  // Self-subscribing components (those that read their own overlay data) are
+  // still GATED here on isOpen; they just additionally read `data` from the
+  // slice inside. They render with no explicit props (they self-source).
   if (entry.selfSubscribing) {
     return [
-      `      {/* ${id} — self-subscribing component (reads overlay state internally). */}`,
-      `      <${Comp} />`,
+      `      {/* ${id} — self-sources its data from the slice; still gated on isOpen. */}`,
+      `      {isOpenById.${id} ? <${Comp} /> : null}`,
       "",
     ].join("\n");
   }
@@ -977,8 +1007,15 @@ function emit(entries: RegistryEntry[]): void {
     (e) => !e.selfSubscribing && e.instanceMode === "multi",
   );
 
+  // isOpenById covers EVERY singleton overlay — including self-subscribing
+  // ones — because the controller now gates self-subscribing renders on
+  // isOpen too (nothing renders ungated). `dataById` stays non-self-
+  // subscribing only: self-subscribing components read their own `data`.
+  const isOpenEntries = entries.filter(
+    (e) => e.instanceMode === "singleton",
+  );
   out.push(`  const isOpenById = {`);
-  for (const e of singletons) {
+  for (const e of isOpenEntries) {
     out.push(
       `    ${e.overlayId}: useAppSelector((s) => selectIsOverlayOpen(s, "${e.overlayId}")),`,
     );
