@@ -33,7 +33,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
-import { setToolsColumnCollapsed } from "../redux/slice";
+import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
+import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
+import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
+import { setToolsColumnCollapsed, setToolsColumns } from "../redux/slice";
 import {
   addColumnToToolsBattle,
   clearToolsBattle,
@@ -73,6 +76,7 @@ export function ToolsToolbar({
   const canSubmit = useAppSelector(selectCanSubmitTools);
   const columns = useAppSelector(selectToolsColumns);
   const collapsedCount = useAppSelector(selectCollapsedToolsColumnCount);
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -106,6 +110,7 @@ export function ToolsToolbar({
       }
     }
     try {
+      maybeShuffleForBlind(columns, setToolsColumns);
       const res = await dispatch(submitAllTools()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
@@ -157,6 +162,7 @@ export function ToolsToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearToolsBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -338,6 +344,8 @@ export function ToolsToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

@@ -15,10 +15,16 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { BoundColumn } from "../../../shared/BoundColumn";
+import { BlindColumnHeader } from "../../../shared/BlindColumnHeader";
+import { selectBlindActive } from "../../../redux/selectors";
 import { TuningColumnHeader } from "./TuningColumnHeader";
 import { TuningSummaryPanel } from "./TuningSummaryPanel";
-import { TUNING_SURFACE_KEY } from "../redux/thunks";
+import {
+  TUNING_SURFACE_KEY,
+  removeColumnFromTuningBattle,
+} from "../redux/thunks";
 import type { TuningColumn as TuningColumnType } from "../types";
 
 interface Props {
@@ -27,9 +33,39 @@ interface Props {
 }
 
 export function TuningColumn({ column, onToggleCollapse }: Props) {
+  const dispatch = useAppDispatch();
+  const blindActive = useAppSelector(selectBlindActive);
+
   if (column.collapsed) {
     return <CollapsedView column={column} onExpand={onToggleCollapse} />;
   }
+
+  // Blind test: model + settings ARE the varied axis — hide the tuning
+  // panel, show only the response under a neutral anon header.
+  if (blindActive) {
+    return (
+      <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
+        <BlindColumnHeader
+          columnId={column.columnId}
+          collapsed={column.collapsed}
+          onToggleCollapse={onToggleCollapse}
+          onRemove={() =>
+            dispatch(
+              removeColumnFromTuningBattle({ columnId: column.columnId }),
+            )
+          }
+        />
+        <div className="flex-1 overflow-hidden flex justify-center min-w-0">
+          <BoundColumn
+            conversationId={column.conversationId}
+            surfaceKey={TUNING_SURFACE_KEY}
+            hideInput
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
       <TuningColumnHeader

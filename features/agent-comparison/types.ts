@@ -75,6 +75,39 @@ export interface BattleState {
    * server-side telemetry.
    */
   feedbackByConversation: Record<string, FeedbackSnapshot>;
+  /**
+   * Blind-test state. Cross-mode (every comparison mode reads it through
+   * the shared selectors) because the masking lives in shared surfaces
+   * (ResponseFeedbackBar usage strip, RunsComparisonTable) and a shared
+   * BlindColumnHeader. See `shared/blind.ts`.
+   */
+  blind: BlindState;
+}
+
+/**
+ * Blind-test session state.
+ *
+ * Flow: user ticks `enabled` (intent) → clicks Submit All → the toolbar
+ * shuffles the columns and dispatches `activateBlind({ order })` which
+ * sets `active = true` and stores the shuffled `order`. While
+ * `active && !revealed`, every identifying surface masks itself
+ * (varied-axis chrome, labels → "Response A/B/C", cost/speed/token
+ * metrics). The user evaluates blind, then clicks Reveal → `revealed`
+ * flips true and the masks lift. Clearing the comparison resets all of
+ * this.
+ */
+export interface BlindState {
+  /** Pre-submit checkbox intent. */
+  enabled: boolean;
+  /** True once a blind submit has locked in (masking is on). */
+  active: boolean;
+  /** True once the user has revealed (masking lifts, session stays). */
+  revealed: boolean;
+  /**
+   * Shuffled columnIds — source of truth for both the anonymized
+   * "Response A/B/C" labels (by index) and the on-screen order.
+   */
+  order: string[];
 }
 
 export interface FeedbackSnapshot {

@@ -16,10 +16,16 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { BoundColumn } from "../../../shared/BoundColumn";
+import { BlindColumnHeader } from "../../../shared/BlindColumnHeader";
+import { selectBlindActive } from "../../../redux/selectors";
 import { ToolsColumnHeader } from "./ToolsColumnHeader";
 import { ToolsSummaryPanel } from "./ToolsSummaryPanel";
-import { TOOLS_SURFACE_KEY } from "../redux/thunks";
+import {
+  TOOLS_SURFACE_KEY,
+  removeColumnFromToolsBattle,
+} from "../redux/thunks";
 import type { ToolsColumn as ToolsColumnType } from "../types";
 
 interface Props {
@@ -28,9 +34,39 @@ interface Props {
 }
 
 export function ToolsColumn({ column, onToggleCollapse }: Props) {
+  const dispatch = useAppDispatch();
+  const blindActive = useAppSelector(selectBlindActive);
+
   if (column.collapsed) {
     return <CollapsedView column={column} onExpand={onToggleCollapse} />;
   }
+
+  // Blind test: the tools list IS the varied axis — hide it, show only
+  // the response under a neutral anon header.
+  if (blindActive) {
+    return (
+      <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
+        <BlindColumnHeader
+          columnId={column.columnId}
+          collapsed={column.collapsed}
+          onToggleCollapse={onToggleCollapse}
+          onRemove={() =>
+            dispatch(
+              removeColumnFromToolsBattle({ columnId: column.columnId }),
+            )
+          }
+        />
+        <div className="flex-1 overflow-hidden flex justify-center min-w-0">
+          <BoundColumn
+            conversationId={column.conversationId}
+            surfaceKey={TOOLS_SURFACE_KEY}
+            hideInput
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
       <ToolsColumnHeader

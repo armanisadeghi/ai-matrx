@@ -24,10 +24,16 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SystemMessage } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessage";
 import { BoundColumn } from "../../../shared/BoundColumn";
+import { BlindColumnHeader } from "../../../shared/BlindColumnHeader";
+import { selectBlindActive } from "../../../redux/selectors";
 import { SystemPromptColumnHeader } from "./SystemPromptColumnHeader";
-import { SYSTEM_PROMPT_SURFACE_KEY } from "../redux/thunks";
+import {
+  SYSTEM_PROMPT_SURFACE_KEY,
+  removeColumnFromSystemPromptBattle,
+} from "../redux/thunks";
 import type { SystemPromptColumn as SystemPromptColumnType } from "../types";
 
 interface Props {
@@ -36,9 +42,39 @@ interface Props {
 }
 
 export function SystemPromptColumn({ column, onToggleCollapse }: Props) {
+  const dispatch = useAppDispatch();
+  const blindActive = useAppSelector(selectBlindActive);
+
   if (column.collapsed) {
     return <CollapsedView column={column} onExpand={onToggleCollapse} />;
   }
+
+  // Blind test: the system-prompt editor IS the varied axis, so hide it
+  // entirely and show only the response. Header → neutral anon header.
+  if (blindActive) {
+    return (
+      <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
+        <BlindColumnHeader
+          columnId={column.columnId}
+          collapsed={column.collapsed}
+          onToggleCollapse={onToggleCollapse}
+          onRemove={() =>
+            dispatch(
+              removeColumnFromSystemPromptBattle({ columnId: column.columnId }),
+            )
+          }
+        />
+        <div className="flex-1 overflow-hidden flex justify-center min-w-0">
+          <BoundColumn
+            conversationId={column.conversationId}
+            surfaceKey={SYSTEM_PROMPT_SURFACE_KEY}
+            hideInput
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
       <SystemPromptColumnHeader

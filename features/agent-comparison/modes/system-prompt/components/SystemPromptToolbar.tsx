@@ -37,7 +37,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
-import { setSystemPromptColumnCollapsed } from "../redux/slice";
+import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
+import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
+import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
+import {
+  setSystemPromptColumnCollapsed,
+  setSystemPromptColumns,
+} from "../redux/slice";
 import {
   addColumnToSystemPromptBattle,
   clearSystemPromptBattle,
@@ -79,6 +85,7 @@ export function SystemPromptToolbar({
   const collapsedCount = useAppSelector(
     selectCollapsedSystemPromptColumnCount,
   );
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -112,6 +119,7 @@ export function SystemPromptToolbar({
       }
     }
     try {
+      maybeShuffleForBlind(columns, setSystemPromptColumns);
       const res = await dispatch(submitAllSystemPrompt()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
@@ -163,6 +171,7 @@ export function SystemPromptToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearSystemPromptBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -344,6 +353,8 @@ export function SystemPromptToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

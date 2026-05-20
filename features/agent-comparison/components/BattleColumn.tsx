@@ -17,12 +17,14 @@
  */
 
 import { ChevronsLeftRight } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 import { BattleColumnHeader } from "./BattleColumnHeader";
 import { BoundColumn } from "../shared/BoundColumn";
-import { BATTLE_SURFACE_KEY } from "../redux/thunks";
+import { BlindColumnHeader } from "../shared/BlindColumnHeader";
+import { selectBlindActive } from "../redux/selectors";
+import { BATTLE_SURFACE_KEY, removeBattleColumn } from "../redux/thunks";
 import type { BattleColumn as BattleColumnType } from "../types";
 
 interface BattleColumnProps {
@@ -31,6 +33,9 @@ interface BattleColumnProps {
 }
 
 export function BattleColumn({ column, onToggleCollapse }: BattleColumnProps) {
+  const dispatch = useAppDispatch();
+  const blindActive = useAppSelector(selectBlindActive);
+
   // When collapsed, the resizable panel is forced down to 44px wide. The
   // full UI doesn't fit (and would jitter on every animation tick anyway),
   // so we swap to a vertical-rail "click to expand" affordance.
@@ -41,10 +46,21 @@ export function BattleColumn({ column, onToggleCollapse }: BattleColumnProps) {
   }
   return (
     <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
-      <BattleColumnHeader
-        column={column}
-        onToggleCollapse={onToggleCollapse}
-      />
+      {blindActive ? (
+        <BlindColumnHeader
+          columnId={column.columnId}
+          collapsed={column.collapsed}
+          onToggleCollapse={onToggleCollapse}
+          onRemove={() =>
+            dispatch(removeBattleColumn({ columnId: column.columnId }))
+          }
+        />
+      ) : (
+        <BattleColumnHeader
+          column={column}
+          onToggleCollapse={onToggleCollapse}
+        />
+      )}
       <div className="flex-1 overflow-hidden flex justify-center min-w-0">
         {column.agentId ? (
           <BoundColumn

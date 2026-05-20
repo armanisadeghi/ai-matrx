@@ -7,11 +7,17 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { BattleColumn, MasterField } from "../types";
+import type { BattleColumn, BlindState, MasterField } from "../types";
 
 const EMPTY_COLUMNS: BattleColumn[] = [];
 const EMPTY_IDS: string[] = [];
 const EMPTY_FIELDS: MasterField[] = [];
+const DEFAULT_BLIND: BlindState = {
+  enabled: false,
+  active: false,
+  revealed: false,
+  order: [],
+};
 
 const DEFAULT_BATTLE_ROOT = {
   columns: EMPTY_COLUMNS,
@@ -77,4 +83,47 @@ export const selectCollapsedBattleColumnCount = createSelector(
 export const selectMasterFields = createSelector(
   [selectBattleRoot],
   (root) => root.masterFields ?? EMPTY_FIELDS,
+);
+
+// =============================================================================
+// Blind test (cross-mode)
+// =============================================================================
+
+const selectBlindRaw = (state: RootState) =>
+  state.agentComparison?.blind ?? DEFAULT_BLIND;
+
+export const selectBlindState = createSelector(
+  [selectBlindRaw],
+  (blind) => blind ?? DEFAULT_BLIND,
+);
+
+/** The pre-submit checkbox value. */
+export const selectBlindEnabled = createSelector(
+  [selectBlindState],
+  (blind) => blind.enabled,
+);
+
+/**
+ * True while masking should be ON — a blind run is locked in and the
+ * user hasn't revealed yet. This is the flag every masking surface reads.
+ */
+export const selectBlindActive = createSelector(
+  [selectBlindState],
+  (blind) => blind.active && !blind.revealed,
+);
+
+/** True once a blind run exists (active regardless of reveal). */
+export const selectBlindSessionExists = createSelector(
+  [selectBlindState],
+  (blind) => blind.active,
+);
+
+export const selectBlindRevealed = createSelector(
+  [selectBlindState],
+  (blind) => blind.revealed,
+);
+
+export const selectBlindOrder = createSelector(
+  [selectBlindState],
+  (blind) => blind.order,
 );

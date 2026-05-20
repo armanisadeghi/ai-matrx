@@ -60,6 +60,9 @@ import {
   selectSubmittableBattleColumns,
 } from "../redux/selectors";
 import { ComparisonSetLoaderDialog } from "./ComparisonSetLoaderDialog";
+import { BlindControls } from "../shared/BlindControls";
+import { useBlindShuffle } from "../shared/useBlindShuffle";
+import { resetBlind, setColumns } from "../redux/battleSlice";
 import {
   SubmitAllPreflightDialog,
   type ColumnReadiness,
@@ -95,6 +98,7 @@ export function BattleToolbar({
   const columns = useAppSelector(selectBattleColumns);
   const submittable = useAppSelector(selectSubmittableBattleColumns);
   const collapsedCount = useAppSelector(selectCollapsedBattleColumnCount);
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -106,6 +110,8 @@ export function BattleToolbar({
   const [preflightReadiness, setPreflightReadiness] = useState<ColumnReadiness[]>([]);
 
   const runSubmit = async () => {
+    // Blind test: shuffle + activate masking before firing the run.
+    maybeShuffleForBlind(columns, setColumns);
     try {
       const res = await dispatch(submitAllBattleColumns()).unwrap();
       const parts: string[] = [];
@@ -196,6 +202,7 @@ export function BattleToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -386,6 +393,8 @@ export function BattleToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

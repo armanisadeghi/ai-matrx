@@ -28,11 +28,14 @@ import {
   getUserRequestResult,
   type MutableTotals,
 } from "@/features/agents/components/run-controls/panels/shared";
+import { EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   selectActiveBattleColumns,
   type BattleColumnDescriptor,
 } from "../shared/activeBattleColumns";
+import { selectBlindActive, selectBlindOrder } from "../redux/selectors";
+import { blindAnonLabel } from "../shared/blind";
 
 // =============================================================================
 // Per-column derived stats — everything we know about one column's runs
@@ -828,14 +831,41 @@ const selectRunsComparisonColumnStats = createSelector(
 // =============================================================================
 
 export function RunsComparisonTable() {
-  const stats = useAppSelector(selectRunsComparisonColumnStats);
+  const rawStats = useAppSelector(selectRunsComparisonColumnStats);
+  const blindActive = useAppSelector(selectBlindActive);
+  const blindOrder = useAppSelector(selectBlindOrder);
 
-  if (stats.length === 0) return null;
+  if (rawStats.length === 0) return null;
+
+  // During a blind test, anonymize the column identity (agent name +
+  // version both leak which model ran) and show ONLY the user's own
+  // evaluation rows — every metric section (tokens, cost, timing, …)
+  // is a giveaway. The masks lift on Reveal.
+  const stats = blindActive
+    ? rawStats.map((s) => ({
+        ...s,
+        agentName: blindAnonLabel(s.columnId, blindOrder),
+        versionLabel: "—",
+      }))
+    : rawStats;
+
+  const sections = blindActive
+    ? SECTIONS.filter((sec) => sec.title === "Your evaluation")
+    : SECTIONS;
 
   return (
     <div className="space-y-3 p-3">
       <ColumnHeaderStrip stats={stats} />
-      {SECTIONS.map((section) => (
+      {blindActive && (
+        <div className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/5 px-3 py-2">
+          <EyeOff className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+          <span className="text-[11px] text-muted-foreground">
+            Blind test active — model, tokens, cost, and speed are hidden.
+            Only your evaluations show. Reveal to compare every metric.
+          </span>
+        </div>
+      )}
+      {sections.map((section) => (
         <SectionTable key={section.title} section={section} stats={stats} />
       ))}
     </div>

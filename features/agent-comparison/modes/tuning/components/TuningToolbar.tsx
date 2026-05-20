@@ -37,7 +37,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
-import { setTuningColumnCollapsed } from "../redux/slice";
+import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
+import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
+import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
+import { setTuningColumnCollapsed, setTuningColumns } from "../redux/slice";
 import {
   addColumnToTuningBattle,
   clearTuningBattle,
@@ -79,6 +82,7 @@ export function TuningToolbar({
   const collapsedCount = useAppSelector(
     selectCollapsedTuningColumnCount,
   );
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -112,6 +116,7 @@ export function TuningToolbar({
       }
     }
     try {
+      maybeShuffleForBlind(columns, setTuningColumns);
       const res = await dispatch(submitAllTuning()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
@@ -163,6 +168,7 @@ export function TuningToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearTuningBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -344,6 +350,8 @@ export function TuningToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

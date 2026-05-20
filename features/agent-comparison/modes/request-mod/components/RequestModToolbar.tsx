@@ -30,7 +30,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
-import { setRequestModColumnCollapsed } from "../redux/slice";
+import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
+import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
+import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
+import {
+  setRequestModColumnCollapsed,
+  setRequestModColumns,
+} from "../redux/slice";
 import {
   addColumnToRequestModBattle,
   clearRequestModBattle,
@@ -70,6 +76,7 @@ export function RequestModToolbar({
   const collapsedCount = useAppSelector(
     selectCollapsedRequestModColumnCount,
   );
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -88,6 +95,7 @@ export function RequestModToolbar({
       return;
     }
     try {
+      maybeShuffleForBlind(columns, setRequestModColumns);
       const res = await dispatch(submitAllRequestMod()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
@@ -143,6 +151,7 @@ export function RequestModToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearRequestModBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -322,6 +331,8 @@ export function RequestModToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

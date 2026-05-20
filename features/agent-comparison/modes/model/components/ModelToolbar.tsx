@@ -35,7 +35,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
-import { setModelColumnCollapsed } from "../redux/slice";
+import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
+import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
+import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
+import { setModelColumnCollapsed, setModelColumns } from "../redux/slice";
 import {
   addColumnToModelBattle,
   clearModelBattle,
@@ -75,6 +78,7 @@ export function ModelToolbar({
   const canSubmit = useAppSelector(selectCanSubmitModel);
   const columns = useAppSelector(selectModelColumns);
   const collapsedCount = useAppSelector(selectCollapsedModelColumnCount);
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -107,6 +111,8 @@ export function ModelToolbar({
         return;
       }
     }
+    // Blind test: shuffle + activate masking BEFORE firing the run.
+    maybeShuffleForBlind(columns, setModelColumns);
     try {
       const res = await dispatch(submitAllModel()).unwrap();
       const parts: string[] = [];
@@ -159,6 +165,7 @@ export function ModelToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearModelBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -338,6 +345,8 @@ export function ModelToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

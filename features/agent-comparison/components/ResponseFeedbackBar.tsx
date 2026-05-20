@@ -35,6 +35,7 @@ import {
   DollarSign,
   Timer,
   Zap,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -56,7 +57,10 @@ import {
   saveFeedback,
   type FeedbackRating,
 } from "../service/responseFeedbackService";
-import { selectActiveBattleSetId } from "../redux/selectors";
+import {
+  selectActiveBattleSetId,
+  selectBlindActive,
+} from "../redux/selectors";
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { setFeedbackRank, setFeedbackSnapshot } from "../redux/battleSlice";
 import type { FeedbackSnapshot } from "../types";
@@ -148,6 +152,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
   const userId = useAppSelector(selectUserId);
   const setId = useAppSelector(selectActiveBattleSetId);
   const columns = useAppSelector(selectActiveBattleColumns);
+  const blindActive = useAppSelector(selectBlindActive);
 
   const otherRanks = useOtherColumnRanks(conversationId);
   const takenRanksOnOthers = new Set(Object.values(otherRanks));
@@ -387,8 +392,14 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
 
   return (
     <div className="border border-border rounded-md bg-card/50 mx-2 my-3 shadow-sm">
-      {/* Usage strip — server-reported tokens + cost, client TTFT + total */}
-      <ResponseUsageStrip requestId={requestId} />
+      {/* Usage strip — server-reported tokens + cost, client TTFT + total.
+          Hidden during an active blind test (cost/speed leak which model
+          ran); replaced by a neutral notice so the user knows it's there. */}
+      {blindActive ? (
+        <BlindUsageNotice />
+      ) : (
+        <ResponseUsageStrip requestId={requestId} />
+      )}
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/60 bg-muted/30">
@@ -612,6 +623,27 @@ function MetricRow({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Blind-test usage placeholder
+// =============================================================================
+
+/**
+ * Replaces the usage strip while a blind test is active — the real
+ * tokens/cost/speed numbers leak which model ran, so we show a neutral
+ * notice instead. Lifts automatically on Reveal.
+ */
+function BlindUsageNotice() {
+  return (
+    <div className="px-3 py-2 border-b border-border/60 bg-violet-500/5 flex items-center gap-2">
+      <EyeOff className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+      <span className="text-[11px] text-muted-foreground">
+        Tokens, cost, and speed are hidden during the blind test —{" "}
+        <span className="text-violet-500 font-medium">Reveal</span> to compare.
+      </span>
     </div>
   );
 }

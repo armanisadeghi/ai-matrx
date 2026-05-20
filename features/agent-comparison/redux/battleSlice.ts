@@ -33,6 +33,12 @@ const initialState: BattleState = {
   ],
   feedbackRanks: {},
   feedbackByConversation: {},
+  blind: {
+    enabled: false,
+    active: false,
+    revealed: false,
+    order: [],
+  },
 };
 
 const battleSlice = createSlice({
@@ -129,6 +135,12 @@ const battleSlice = createSlice({
       state.isSubmittingAll = false;
       state.feedbackRanks = {};
       state.feedbackByConversation = {};
+      state.blind = {
+        enabled: false,
+        active: false,
+        revealed: false,
+        order: [],
+      };
     },
 
     // ── Submit-all guard ─────────────────────────────────────────
@@ -236,6 +248,34 @@ const battleSlice = createSlice({
           action.payload.snapshot;
       }
     },
+
+    // ── Blind test (cross-mode) ──────────────────────────────────
+    /** Pre-submit checkbox intent. No-ops while a blind run is active. */
+    setBlindEnabled(state, action: PayloadAction<boolean>) {
+      if (state.blind.active) return;
+      state.blind.enabled = action.payload;
+    },
+    /**
+     * Lock in a blind run: store the shuffled column order and turn
+     * masking on. Called by the toolbar's submit handler right before
+     * it fires the mode's Submit All thunk.
+     */
+    activateBlind(state, action: PayloadAction<{ order: string[] }>) {
+      state.blind.active = true;
+      state.blind.revealed = false;
+      state.blind.order = action.payload.order;
+    },
+    /** Lift the masks. The shuffled order + session stay intact. */
+    revealBlind(state) {
+      state.blind.revealed = true;
+    },
+    /** Full reset — used on clear and when a non-blind submit fires. */
+    resetBlind(state) {
+      state.blind.enabled = false;
+      state.blind.active = false;
+      state.blind.revealed = false;
+      state.blind.order = [];
+    },
   },
 });
 
@@ -262,6 +302,10 @@ export const {
   setFeedbackRank,
   clearAllFeedbackRanks,
   setFeedbackSnapshot,
+  setBlindEnabled,
+  activateBlind,
+  revealBlind,
+  resetBlind,
 } = battleSlice.actions;
 
 export default battleSlice.reducer;

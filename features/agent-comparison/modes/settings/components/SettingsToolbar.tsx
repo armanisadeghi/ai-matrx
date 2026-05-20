@@ -44,9 +44,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
+import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
+import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
+import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
 import { PresetMenu } from "./PresetMenu";
 import {
   setSettingsColumnCollapsed,
+  setSettingsColumns,
 } from "../redux/slice";
 import {
   addColumnToSettingsBattle,
@@ -87,6 +91,7 @@ export function SettingsToolbar({
   const canSubmit = useAppSelector(selectCanSubmitSettings);
   const columns = useAppSelector(selectSettingsColumns);
   const collapsedCount = useAppSelector(selectCollapsedSettingsColumnCount);
+  const maybeShuffleForBlind = useBlindShuffle();
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
@@ -127,6 +132,7 @@ export function SettingsToolbar({
       }
     }
     try {
+      maybeShuffleForBlind(columns, setSettingsColumns);
       const res = await dispatch(submitAllSettings()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
@@ -178,6 +184,7 @@ export function SettingsToolbar({
     setClearConfirm(false);
     try {
       await dispatch(clearSettingsBattle()).unwrap();
+      dispatch(resetBlind());
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -356,6 +363,8 @@ export function SettingsToolbar({
         </DropdownMenu>
 
         <div className="w-px h-5 bg-border mx-1" />
+
+        <BlindControls />
 
         <Button
           size="sm"

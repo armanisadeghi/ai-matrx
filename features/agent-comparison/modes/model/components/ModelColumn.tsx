@@ -11,9 +11,12 @@
 
 import { ChevronsLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { BoundColumn } from "../../../shared/BoundColumn";
+import { BlindColumnHeader } from "../../../shared/BlindColumnHeader";
+import { selectBlindActive } from "../../../redux/selectors";
 import { ModelColumnHeader } from "./ModelColumnHeader";
-import { MODEL_SURFACE_KEY } from "../redux/thunks";
+import { MODEL_SURFACE_KEY, removeColumnFromModelBattle } from "../redux/thunks";
 import type { ModelColumn as ModelColumnType } from "../types";
 
 interface Props {
@@ -22,15 +25,31 @@ interface Props {
 }
 
 export function ModelColumn({ column, onToggleCollapse }: Props) {
+  const dispatch = useAppDispatch();
+  const blindActive = useAppSelector(selectBlindActive);
+
   if (column.collapsed) {
     return <CollapsedView column={column} onExpand={onToggleCollapse} />;
   }
   return (
     <div className="h-full flex flex-col min-w-0 min-h-0 bg-background">
-      <ModelColumnHeader
-        column={column}
-        onToggleCollapse={onToggleCollapse}
-      />
+      {blindActive ? (
+        <BlindColumnHeader
+          columnId={column.columnId}
+          collapsed={column.collapsed}
+          onToggleCollapse={onToggleCollapse}
+          onRemove={() =>
+            dispatch(
+              removeColumnFromModelBattle({ columnId: column.columnId }),
+            )
+          }
+        />
+      ) : (
+        <ModelColumnHeader
+          column={column}
+          onToggleCollapse={onToggleCollapse}
+        />
+      )}
       <div className="flex-1 overflow-hidden flex justify-center min-w-0">
         <BoundColumn
           conversationId={column.conversationId}
