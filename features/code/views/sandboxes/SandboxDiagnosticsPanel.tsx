@@ -679,8 +679,11 @@ export function SandboxDiagnosticsPanel({
           </TabsList>
 
           {showFilesystem && (
-            <TabsContent value="filesystem" className="mt-2">
-              <div className="flex items-center gap-2 mb-2">
+            <TabsContent
+              value="filesystem"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+            >
+              <div className="flex items-center gap-2 mb-2 shrink-0">
                 <Input
                   value={fsRootPath}
                   onChange={(e) => setFsRootPath(e.target.value)}
@@ -707,12 +710,12 @@ export function SandboxDiagnosticsPanel({
                 </span>
               </div>
               {fsRootError && (
-                <div className="text-destructive text-xs font-mono mb-2 break-all">
+                <div className="text-destructive text-xs font-mono mb-2 break-all shrink-0">
                   {fsRootError}
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <ScrollArea className="h-96 border border-border rounded-md">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:flex-1 md:min-h-0">
+                <ScrollArea className="h-72 md:h-full border border-border rounded-md">
                   <div className="p-2 text-xs font-mono">
                     {fsRootLoading && !fsRoot ? (
                       <div className="text-muted-foreground flex items-center gap-2">
@@ -735,7 +738,7 @@ export function SandboxDiagnosticsPanel({
                     )}
                   </div>
                 </ScrollArea>
-                <ScrollArea className="h-96 border border-border rounded-md">
+                <ScrollArea className="h-72 md:h-full border border-border rounded-md">
                   <div className="p-2 text-xs">
                     {selectedFile ? (
                       <>
@@ -781,8 +784,11 @@ export function SandboxDiagnosticsPanel({
           )}
 
           {showEnv && (
-            <TabsContent value="agent-env" className="mt-2">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <TabsContent
+              value="agent-env"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+            >
+              <div className="flex items-center gap-2 mb-2 flex-wrap shrink-0">
                 <select
                   value={envView}
                   onChange={(e) => setEnvView(e.target.value as typeof envView)}
@@ -820,18 +826,18 @@ export function SandboxDiagnosticsPanel({
                 )}
               </div>
               {agentEnvError && (
-                <div className="text-destructive text-xs font-mono mb-2 break-all">
+                <div className="text-destructive text-xs font-mono mb-2 break-all shrink-0">
                   {agentEnvError}
                 </div>
               )}
               {agentEnv?.[`${envView}_error` as keyof AgentEnvResponse] && (
-                <div className="text-destructive text-xs font-mono mb-2 break-all">
+                <div className="text-destructive text-xs font-mono mb-2 break-all shrink-0">
                   {String(
                     agentEnv[`${envView}_error` as keyof AgentEnvResponse],
                   )}
                 </div>
               )}
-              <ScrollArea className="h-96 border border-border rounded-md">
+              <ScrollArea className="h-96 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
                 <table className="w-full text-[11px] font-mono">
                   <thead className="text-left text-muted-foreground sticky top-0 bg-background">
                     <tr>
@@ -879,7 +885,7 @@ export function SandboxDiagnosticsPanel({
                   </tbody>
                 </table>
               </ScrollArea>
-              <p className="text-[11px] text-muted-foreground mt-2">
+              <p className="text-[11px] text-muted-foreground mt-2 shrink-0">
                 <strong>aidream process env</strong> is the ground truth —
                 it&apos;s what the FastAPI process actually sees. If a var is
                 here, the agent has it. If not, no amount of{" "}
@@ -890,8 +896,11 @@ export function SandboxDiagnosticsPanel({
           )}
 
           {showRaw && (
-            <TabsContent value="raw" className="mt-2">
-              <ScrollArea className="h-72 border border-border rounded-md">
+            <TabsContent
+              value="raw"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+            >
+              <ScrollArea className="h-72 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
                 <pre className="text-xs font-mono p-3 whitespace-pre-wrap">
                   {JSON.stringify(diag, null, 2)}
                 </pre>
@@ -900,15 +909,18 @@ export function SandboxDiagnosticsPanel({
           )}
 
           {showEnv && (
-            <TabsContent value="env" className="mt-2">
-              <div className="text-xs space-y-2">
-                <div>
+            <TabsContent
+              value="env"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+            >
+              <div className="text-xs space-y-2 md:flex md:flex-col md:flex-1 md:min-h-0">
+                <div className="shrink-0">
                   <strong>
                     {diag.container.passthrough_landed?.length ?? 0}
                   </strong>{" "}
                   env vars landed inside the container:
                 </div>
-                <ScrollArea className="h-60 border border-border rounded-md">
+                <ScrollArea className="h-60 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-1 p-2 font-mono">
                     {(diag.container.passthrough_landed ?? []).map((k) => (
                       <span key={k} className="text-success">
@@ -925,7 +937,7 @@ export function SandboxDiagnosticsPanel({
                   </div>
                 </ScrollArea>
                 {(diag.container.passthrough_missing_count ?? 0) > 0 && (
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground shrink-0">
                     {diag.container.passthrough_missing_count} more not set on
                     the orchestrator (see{" "}
                     <code className="text-xs">missing_keys</code> in the
@@ -937,8 +949,11 @@ export function SandboxDiagnosticsPanel({
           )}
 
           {showLogs && (
-            <TabsContent value="logs" className="mt-2">
-              <div className="flex items-center gap-2 mb-2">
+            <TabsContent
+              value="logs"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+            >
+              <div className="flex items-center gap-2 mb-2 shrink-0">
                 <select
                   value={logSource}
                   onChange={(e) => setLogSource(e.target.value as LogSource)}
@@ -976,7 +991,7 @@ export function SandboxDiagnosticsPanel({
                   auto-refreshes every 3s
                 </span>
               </div>
-              <ScrollArea className="h-96 border border-border rounded-md">
+              <ScrollArea className="h-96 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
                 <pre className="text-[11px] font-mono p-3 whitespace-pre-wrap leading-tight">
                   {logs || "(empty)"}
                 </pre>

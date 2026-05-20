@@ -422,7 +422,7 @@ export default function SandboxDetailPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-8">
         <div className="max-w-6xl mx-auto space-y-4">
           {error && !instance && (
             <Card className="border-destructive">
@@ -939,6 +939,21 @@ export default function SandboxDetailPage() {
           )}
         </div>
       </div>
+
+      <footer className="shrink-0 border-t border-border bg-card px-4 py-2">
+        <div className="flex items-center justify-between gap-4 max-w-6xl mx-auto text-xs text-muted-foreground">
+          <span className="font-mono truncate">{instance.sandbox_id}</span>
+          <div className="flex items-center gap-3 shrink-0">
+            <Badge variant={statusVariant}>{statusLabel}</Badge>
+            {!remaining.isExpired && (
+              <span className="font-mono">
+                {isActive ? "Ends in " : ""}
+                {remaining.text}
+              </span>
+            )}
+          </div>
+        </div>
+      </footer>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
