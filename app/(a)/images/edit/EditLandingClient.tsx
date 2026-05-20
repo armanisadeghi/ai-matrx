@@ -211,7 +211,7 @@ function FileTreePicker({ onSelect, busy }: FileTreePickerProps) {
 
   useEffect(() => {
     if (!userId) return;
-    if (treeStatus === "idle" || treeStatus === "error") {
+    if (treeStatus === "idle") {
       void dispatch(loadUserFileTree({ userId }));
     }
   }, [userId, treeStatus, dispatch]);
