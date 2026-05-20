@@ -38,6 +38,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { toast } from "sonner";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
@@ -239,6 +241,31 @@ export default function SandboxListPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {uniqueInstances.length > 0 && (
+              <CopyButtons
+                size="sm"
+                label="My sandboxes"
+                human={() =>
+                  uniqueInstances
+                    .map(
+                      (i, idx) =>
+                        `--- [${idx + 1}] ---\n${sandboxInstanceSummary(i)}`,
+                    )
+                    .join("\n\n")
+                }
+                agent={() => ({
+                  kind: "sandbox-instances",
+                  location: "AI Matrx — My Sandboxes",
+                  description: "All sandbox instances in the user's list.",
+                  data: uniqueInstances,
+                  attributes: {
+                    count: uniqueInstances.length,
+                    active: activeCount,
+                    total,
+                  },
+                })}
+              />
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -507,6 +534,24 @@ export default function SandboxListPage() {
                                 className="flex items-center justify-end gap-1"
                                 onClick={(e) => e.stopPropagation()}
                               >
+                                <CopyButtons
+                                  size="icon"
+                                  label={`Sandbox ${instance.sandbox_id}`}
+                                  human={() => sandboxInstanceSummary(instance)}
+                                  agent={() => ({
+                                    kind: "sandbox-instance",
+                                    location: "AI Matrx — My Sandboxes",
+                                    description:
+                                      "A sandbox instance row from the user's sandbox list.",
+                                    data: instance,
+                                    summary: sandboxInstanceSummary(instance),
+                                    attributes: {
+                                      id: instance.id,
+                                      "sandbox-id": instance.sandbox_id,
+                                      status: effectiveStatus,
+                                    },
+                                  })}
+                                />
                                 {isEffectivelyActive && (
                                   <Button
                                     variant="outline"

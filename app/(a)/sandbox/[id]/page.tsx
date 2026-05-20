@@ -40,6 +40,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import {
   STATUS_BADGE_VARIANT,
@@ -394,6 +396,24 @@ export default function SandboxDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <CopyButtons
+              size="sm"
+              label={`Sandbox ${instance.sandbox_id}`}
+              human={() => sandboxInstanceSummary(instance)}
+              agent={() => ({
+                kind: "sandbox-instance",
+                location: "AI Matrx — Sandbox detail",
+                description:
+                  "The sandbox instance currently open on the detail page.",
+                data: instance,
+                summary: sandboxInstanceSummary(instance),
+                attributes: {
+                  id: instance.id,
+                  "sandbox-id": instance.sandbox_id,
+                  status: effectiveStatus,
+                },
+              })}
+            />
             {isActive && (
               <>
                 <Button

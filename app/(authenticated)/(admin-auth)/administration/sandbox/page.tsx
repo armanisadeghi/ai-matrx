@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { toast } from "sonner";
 import type {
   SandboxInstance,
@@ -72,36 +73,12 @@ const STATUS_BADGE_MAP: Record<
 };
 
 // ── Human-readable clipboard summaries ──────────────────────────────────────
-// The agent-payload envelope (xml-ish context + full JSON dump) is produced by
-// the shared <CopyButtons> primitive; these helpers only build the
-// human-readable flavor, which is inherently data-specific.
+// Per-instance summary lives in lib/sandbox/format.ts (shared with the user
+// list + detail pages). The agent-payload envelope is produced by the shared
+// <CopyButtons> primitive; humanAll just composes per-instance summaries with
+// the admin-only stats header.
 const PAGE_LOCATION =
   "AI Matrx Admin — Sandbox Management (/administration/sandbox)";
-
-function humanInstance(i: SandboxInstance): string {
-  const ttlH = Math.floor(i.ttl_seconds / 3600);
-  const ttlM = Math.floor((i.ttl_seconds % 3600) / 60);
-  return [
-    `Sandbox: ${i.sandbox_id}`,
-    `Status: ${i.status}`,
-    `Tier: ${i.tier ?? "—"}`,
-    `User ID: ${i.user_id}`,
-    `Instance ID: ${i.id}`,
-    i.container_id ? `Container ID: ${i.container_id}` : null,
-    i.proxy_url ? `Proxy URL: ${i.proxy_url}` : null,
-    `Created: ${new Date(i.created_at).toLocaleString()}`,
-    `Expires: ${i.expires_at ? new Date(i.expires_at).toLocaleString() : "—"}`,
-    `TTL: ${i.ttl_seconds}s (${ttlH}h ${ttlM}m)`,
-    `Hot Path: ${i.hot_path ?? "—"}`,
-    `Cold Path: ${i.cold_path ?? "—"}`,
-    i.last_heartbeat_at
-      ? `Last Heartbeat: ${new Date(i.last_heartbeat_at).toLocaleString()}`
-      : null,
-    i.stop_reason ? `Stop Reason: ${i.stop_reason}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
 
 interface SandboxStats {
   active: number;
@@ -118,7 +95,7 @@ function humanAll(
   const header = `Sandbox Management — ${list.length} instance(s) [filter: ${filter}]
 Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.uniqueUsers} · Failed: ${stats.failed}`;
   const body = list
-    .map((i, idx) => `--- [${idx + 1}] ---\n${humanInstance(i)}`)
+    .map((i, idx) => `--- [${idx + 1}] ---\n${sandboxInstanceSummary(i)}`)
     .join("\n\n");
   return `${header}\n\n${body}`;
 }
@@ -539,14 +516,14 @@ export default function AdminSandboxManagementPage() {
                             <CopyButtons
                               size="icon"
                               label={`Sandbox ${instance.sandbox_id}`}
-                              human={() => humanInstance(instance)}
+                              human={() => sandboxInstanceSummary(instance)}
                               agent={() => ({
                                 kind: "sandbox-instance",
                                 location: PAGE_LOCATION,
                                 description:
                                   "A single sandbox instance row from the admin sandbox management table.",
                                 data: instance,
-                                summary: humanInstance(instance),
+                                summary: sandboxInstanceSummary(instance),
                                 attributes: {
                                   id: instance.id,
                                   "sandbox-id": instance.sandbox_id,
