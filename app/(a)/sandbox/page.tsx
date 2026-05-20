@@ -38,6 +38,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { toast } from "sonner";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import {
@@ -131,6 +132,11 @@ export default function SandboxListPage() {
   };
 
   const handleCreate = async () => {
+    // Hard guard against double-submit: a successful POST that the FE
+    // mis-reads as a failure (non-ok response on an already-created row)
+    // drops the user back to the form, and without this guard a second
+    // click would spin up a duplicate sandbox.
+    if (creating) return;
     console.log("[SandboxListPage] handleCreate: Starting creation flow");
     setCreating(true);
     setCreateError(null);
@@ -152,6 +158,7 @@ export default function SandboxListPage() {
       setCreatedInstanceId(result.instance.id);
       setCreating(false);
       setCreateSuccess(true);
+      toast.success(`Sandbox ${result.instance.sandbox_id} created`);
 
       // Brief success state before redirect
       setTimeout(() => {
@@ -168,6 +175,12 @@ export default function SandboxListPage() {
       );
       setCreating(false);
       setCreateError(result.error || "Failed to create sandbox");
+      toast.error(result.error || "Failed to create sandbox");
+      // The POST may have created the row server-side even though the
+      // response didn't come back clean. Re-sync so the list reflects
+      // reality and the user can open / delete the real instance instead
+      // of blindly retrying and stacking duplicates.
+      void fetchInstances();
     }
   };
 
@@ -348,7 +361,7 @@ export default function SandboxListPage() {
                       </Button>
                       <Button
                         onClick={handleCreate}
-                        disabled={createForm.loadingTemplates}
+                        disabled={createForm.loadingTemplates || creating}
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Create Sandbox
