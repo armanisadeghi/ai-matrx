@@ -45,6 +45,7 @@ import {
 } from "@/features/agents/components/builder/message-builders/AddBlockButton";
 import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
+import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 /** Extract text from a TextBlock. */
@@ -591,22 +592,18 @@ export function MessageItem({
     [isEditing, scrollContainerRef],
   );
 
+  const buildAgentScope = useAgentBuilderSurfaceScope(agentId);
+
+  // Surface scope for `matrx-user/agent-builder`. Agent-level values come from
+  // the hook; `content` is the message text being edited. Top-level keys flow
+  // through UnifiedAgentContextMenu into the ApplicationScope.
   const contextMenuData = useMemo(
     () => ({
+      ...buildAgentScope(),
       content: currentText,
-      context: JSON.stringify({ messageIndex, agentId }),
-      currentMessageRole: message?.role ?? "user",
-      allMessages: JSON.stringify(allMessages),
-      promptVariables: JSON.stringify(variableDefinitions),
+      focused_field: `message:${message?.role ?? "user"}`,
     }),
-    [
-      currentText,
-      messageIndex,
-      agentId,
-      message,
-      allMessages,
-      variableDefinitions,
-    ],
+    [buildAgentScope, currentText, message],
   );
 
   const displayRole =
@@ -669,7 +666,7 @@ export function MessageItem({
             sourceFeature="agent-builder"
             surfaceName="matrx-user/agent-builder"
             getTextarea={() => textareaRef.current}
-            contextData={{ contextMenuData }}
+            contextData={contextMenuData as unknown as Record<string, unknown>}
             enabledPlacements={["ai-action", "content-block", "quick-action"]}
             isEditable={true}
             enableFloatingIcon={true}
