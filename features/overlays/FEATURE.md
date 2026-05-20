@@ -246,44 +246,36 @@ The opener encapsulates the mode choice; callers don't think about it.
 
 ---
 
-## Feature flag (during cutover)
+## Mounting
 
-The new controller mounts behind a flag for safety during cutover. Source priority:
+The controller is mounted once per provider tree, imported directly (no `dynamic()` shell, no feature flag):
 
-1. URL: `?newOverlayController=1` (per-tab dev override)
-2. localStorage: `matrx_new_overlay_controller=1` (sticky dev opt-in)
-3. Env: `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1` (preview/prod)
+- **Authenticated routes** — `app/DeferredSingletons.tsx` mounts it behind an `OverlayControllerGate` that returns `null` until `selectAnyOverlayOpen` is true. So the controller's module (and the per-overlay chunks it lazy-loads) stay out of the page until the user opens their first overlay.
+- **Public routes** — `app/(public)/PublicProviders.tsx` mounts it directly.
 
-Reader: [`featureFlag.ts`](./featureFlag.ts). Used by both [`app/DeferredSingletons.tsx`](../../app/DeferredSingletons.tsx) (authenticated routes) and [`app/(public)/PublicProviders.tsx`](../../app/(public)/PublicProviders.tsx) (public routes) so flipping the env var promotes both surfaces uniformly.
-
-Once the cutover is complete and the legacy code is deleted, the flag goes too. Everything just mounts the new controller.
+The cutover is complete: the feature flag, the legacy controller, and the diagnostic middleware are all deleted. There is exactly one render path.
 
 ---
 
-## Diagnostic console signals
+## Diagnostic console signal
 
-All three are production-safe, fire at most once per page session:
-
-- `console.warn: [overlays] LEGACY UnifiedOverlayController is mounting …`
-  Indicates the old spread-render controller is rendering somewhere. Useful for confirming cutover. Should never appear in prod after the env var is flipped + deployed.
+One production-safe signal, fires at most once per page session:
 
 - `console.info: [overlays] NEW OverlayController active …`
-  Confirms the new explicit controller is the active one.
+  Confirms the controller mounted. (The legacy `console.warn` signals were removed with the legacy controller.)
 
-- `console.warn: [overlays] LEGACY OverlaySurface rendering "<overlayId>" …`
-  Fires once per unique overlay-id rendered through the legacy path. If you click an overlay and see this warn for its id, that specific overlay is still on the legacy path for the current page.
-
-Plus a deeper diagnostic middleware (`lib/redux/middleware/overlayDiagnostics.ts`) that times overlay dispatches and reports if an overlay was dispatched but no component ever mounted within ~1.5s. Reports the render-tree heartbeat (which layer last reported alive) so silent-failure debugging is fast. This survives the cutover — kept as a permanent safety net.
+There is no longer a timeout/heartbeat middleware: the explicit controller renders synchronously, so a component that throws surfaces through React's normal error boundary rather than a silent 1.5s timeout. The whole silent-failure bug class is structurally impossible now.
 
 ---
 
 ## Hard rules
 
-1. **No prop spread in `OverlayController.tsx`.** Wire every prop by name. ESLint enforces (`no-restricted-syntax: warn`, bumped to error post-cutover).
-2. **Don't import `openOverlay`/`closeOverlay` outside `features/overlays/`.** Use the typed opener. Aspirational rule; enforced informally during stage 3, ESLint-warn-then-error in a future pass.
-3. **Don't add a `kind` discriminator** to overlay metadata. The controller knows what each overlay is by rendering it explicitly; sheets / modals / windows / toasts are all just components.
-4. **Don't put functions in `openOverlay` data.** Use `callbackGroupId` via `callbackManager` (the opener hides this from callers).
-5. **Don't introduce a new "registry that the controller iterates."** The controller's render path is explicit JSX. The catalogue is metadata only; nothing iterates it to render.
+1. **No prop spread in `OverlayController.tsx`.** Wire every prop by name. ESLint enforces (`no-restricted-syntax` on `JSXSpreadAttribute`).
+2. **Nothing renders ungated.** Every overlay block is gated on `isOpen`. An ungated render mounts on every route and, if the component doesn't self-gate, paints its UI everywhere (the QuickTasksSheet bug). A component that's needed without a trigger does NOT belong here — it goes in `app/Providers.tsx` or the layout.
+3. **Don't import `openOverlay`/`closeOverlay` outside `features/overlays/`.** Use the typed opener.
+4. **Don't add a `kind` discriminator** to overlay metadata. The controller knows what each overlay is by rendering it explicitly; sheets / modals / windows / toasts are all just components.
+5. **Don't put functions in `openOverlay` data.** Use `callbackGroupId` via `callbackManager` (the opener hides this from callers).
+6. **Don't introduce a new "registry that the controller iterates."** The controller's render path is explicit JSX. The catalogue is metadata only; nothing iterates it to render.
 
 ---
 

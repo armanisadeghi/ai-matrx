@@ -57,6 +57,7 @@ import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { EditAiToolbar } from "./EditAiToolbar";
 import { MaskOverlay } from "./MaskOverlay";
+import { EditorTabHint } from "./EditorTabHint";
 import { useMaskState } from "./use-mask-state";
 import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 
@@ -695,6 +696,7 @@ export function EditModeShell({
               defaultToolId="Crop"
             />
             <MaskOverlay canvasAreaRef={canvasAreaRef} mask={mask} />
+            <EditorTabHint canvasAreaRef={canvasAreaRef} />
 
             {/* Floating Reset — always visible top-left over the canvas so
                 the user knows escape is one click away. Triggers Filerobot's

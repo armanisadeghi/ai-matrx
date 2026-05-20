@@ -248,7 +248,7 @@ export function InputActionButtons({
         )}
 
         {showMicrophone && (
-          <AgentMicrophoneButton conversationId={conversationId} size="sm" />
+          <AgentMicrophoneButton conversationId={conversationId} size="md" />
         )}
 
         {showSendButton && (

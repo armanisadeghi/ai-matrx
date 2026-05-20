@@ -106,12 +106,10 @@ If you need callbacks on a new overlay, look at one of these as a template. The 
    }
    ```
 
-3. **Add the three artifacts** (controller block, opener file, catalogue entry). For one overlay, hand-edit them directly:
-   - [`features/overlays/OverlayController.tsx`](../../../features/overlays/OverlayController.tsx) — add the `const Comp = dynamic(...)` import at the top, the `useAppSelector` lines in the body, and the JSX block (see existing patterns).
+3. **Add the three artifacts** (controller block, opener file, catalogue entry). The controller is hand-maintained — there is NO codegen (the one-shot seed script was deleted with the legacy registry):
+   - [`features/overlays/OverlayController.tsx`](../../../features/overlays/OverlayController.tsx) — add the `const Comp = dynamic(...)` import at the top, the `isOpenById` selector entry, and the **gated** JSX block (see existing patterns). NEVER render the component ungated.
    - `features/overlays/openers/<overlayId>.tsx` — copy an existing opener as the template.
    - `features/overlays/catalogue.ts` — one entry: `{ label, instanceMode, isWindow }`.
-
-   For bulk regeneration (RARE — only when adding many at once and on a fresh branch), `pnpm tsx scripts/generate-overlay-controller.ts all`. **This OVERWRITES the controller and all openers** (except the callback-aware ones). Hand-tightened type casts will be lost. Use sparingly.
 
 ### Migrate a legacy dispatch site
 
@@ -134,59 +132,45 @@ If the opener's exported hook name doesn't match `useOpen` + camelCase(overlayId
 
 ### Debug an overlay that doesn't render
 
-Look at the browser console. Two signal sources:
+Look at the browser console:
 
-1. **Cutover confirmation logs** (once per page session):
-   - `console.info: [overlays] NEW OverlayController active` — new path active
-   - `console.warn: [overlays] LEGACY UnifiedOverlayController is mounting` — old path active (cutover incomplete here)
-   - `console.warn: [overlays] LEGACY OverlaySurface rendering "<id>"` — that specific overlay rendered through the legacy path
+- `console.info: [overlays] NEW OverlayController active` — fires once per page session, confirms the controller mounted. There is only one controller now (the legacy controller + its `console.warn` signals + the timeout/heartbeat middleware are all deleted).
+- If an overlay doesn't appear: check (a) the dispatch fired (`openOverlay({ overlayId })` with the RIGHT id), (b) the controller has a gated block for that id, (c) the component itself returns something when `isOpen`. A render-time throw will surface through React's error boundary (no more silent 1.5s timeouts).
 
-2. **Diagnostic middleware** (`lib/redux/middleware/overlayDiagnostics.ts`): if an overlay is dispatched but no component mounts within 1500ms, it logs a heartbeat report telling you which layer last reported alive (`DeferredSingletons gate` → `OverlayController` → `OverlaySurface` → component). For the new path this almost never fires; for the legacy path it caught all the silent-failure bugs.
+### How it's mounted
 
-### Cutover state (right now)
-
-The new controller is **flag-gated**. To use it in dev:
-
-```js
-// In DevTools:
-localStorage.matrx_new_overlay_controller = "1"; location.reload();
-```
-
-In production: set `NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER=1` in Vercel env. Both `app/DeferredSingletons.tsx` (authenticated routes) and `app/(public)/PublicProviders.tsx` (public routes) read the same flag.
-
-Once the flag is on in prod for 48h with clean signals, the legacy code (`UnifiedOverlayController*`, `OverlaySurface`, `windowRegistry*`) gets deleted in a cleanup PR.
+One controller, imported directly (no flag, no `dynamic()` shell):
+- Authenticated: `app/DeferredSingletons.tsx` → `OverlayControllerGate` (returns null until `selectAnyOverlayOpen`).
+- Public: `app/(public)/PublicProviders.tsx` → mounted directly.
 
 ## Patterns to recognize and what to do
 
 | You see this | Do this |
 |---|---|
 | `dispatch(openOverlay({ overlayId: "X", data: {...} }))` in a file you're editing | Migrate to `useOpenX()`. Add the import, call the hook at the top of the component, replace the dispatch. |
-| A component's Props has changed (added/renamed) | Update both the controller block (in `OverlayController.tsx`) AND the opener's Options interface (in `features/overlays/openers/<X>.tsx`). TypeScript should catch most drift, but the opener Options type is hand-derived so it can fall behind. |
-| `as never` cast in `OverlayController.tsx` with a `// TODO: review` comment | If the referenced type is exportable, add an `import type { … }` at the top and replace `as never` with the real type. If the type is non-exported / anonymous, leave it and document why in an inline comment. 6 remain at last audit — see `docs/OVERLAY_WINDOW_ROADMAP.md`. |
-| A new "registry" or "manifest" being added that the controller iterates | Push back. The whole point of the new system is that the render path is explicit. If you need metadata, add it to `catalogue.ts` (which doesn't render anything). If you need a new render path, that's a redesign discussion. |
-| `kind: "window"` or `kind: "modal"` showing up in a new entry | Push back. There's no kind discriminator anymore. The controller's JSX knows which component to render; it doesn't branch on kind. |
-| Spread (`{...something}`) appearing in `OverlayController.tsx` | Reject the change. ESLint will warn; an editor will see the warning. Wire props by name. |
+| A component's Props has changed (added/renamed) | Update both the controller block (in `OverlayController.tsx`) AND the opener's Options interface (in `features/overlays/openers/<X>.tsx`). |
+| A component rendered **ungated** in the controller (`<X />` not behind `{isOpenById.X ? … : null}` or an `if (!isOpen) return null` IIFE) | Fix it — gate it. Ungated renders mount on every route and paint UI everywhere if the component doesn't self-gate (the QuickTasksSheet bug). If it's genuinely needed without a trigger, move it to `app/Providers.tsx`. |
+| A new "registry" or "manifest" being added that the controller iterates | Push back. The render path is explicit JSX. Metadata goes in `catalogue.ts` (renders nothing). |
+| `kind: "window"` or `kind: "modal"` showing up in a new entry | Push back. There's no kind discriminator. The controller's JSX knows which component to render. |
+| Spread (`{...something}`) appearing in `OverlayController.tsx` | Reject. ESLint flags it. Wire props by name. |
 
 ## Files reference
 
 ```
 features/overlays/
 ├── FEATURE.md                  ← deep reference
-├── OverlayController.tsx       ← THE mount. 2,300 lines. Boring on purpose.
+├── OverlayController.tsx       ← THE mount. ~2,300 lines. Hand-maintained, every block gated.
 ├── catalogue.ts                ← render-free metadata
-├── featureFlag.ts              ← cutover flag reader
-└── openers/<overlayId>.tsx     ← 111 files, hook + Controller per overlay
-
-scripts/
-└── generate-overlay-controller.ts  ← codegen (one-shot, don't re-run casually)
+└── openers/<overlayId>.tsx     ← ~111 files, hook + Controller per overlay
 
 lib/redux/
-├── slices/overlaySlice.ts      ← state + actions (typed OverlayId)
-├── middleware/overlayDiagnostics.ts  ← timing watchdog (kept post-cutover)
-└── …
+└── slices/overlaySlice.ts      ← state + actions (typed OverlayId)
 
 features/window-panels/         ← DIFFERENT system — WindowPanel + Window Manager
 └── …                              (see window-panels skill)
+```
+
+The legacy system is gone: no `UnifiedOverlayController`, no `OverlaySurface`, no `windowRegistry.ts`, no `featureFlag.ts`, no diagnostics middleware, no seed codegen.
 ```
 
 ## Owner's non-negotiables (from the original architectural decision)
