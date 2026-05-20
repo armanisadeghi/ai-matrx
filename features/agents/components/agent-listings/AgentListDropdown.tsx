@@ -144,7 +144,9 @@ export function AgentListDropdown({
         className,
       )}
     >
-      <span className="truncate max-w-[200px]">{label}</span>
+      <span className="truncate max-w-[200px]" title={label}>
+        {label}
+      </span>
       {activeFilterCount > 0 && (
         <span className="flex items-center justify-center w-4 h-4 rounded-md bg-primary text-primary-foreground text-[10px]">
           {activeFilterCount}

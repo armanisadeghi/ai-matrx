@@ -52,7 +52,20 @@ export type CanvasRenderMode = "inline" | "global" | "auto";
 interface CanvasState {
   isOpen: boolean;
   items: CanvasItem[]; // List of all canvas items in current session
-  currentItemId: string | null; // Currently active item
+  currentItemId: string | null; // Currently active item (top pane when split)
+  /**
+   * Secondary pane item id. When non-null, the canvas renders in split mode:
+   * `currentItemId` lives in the top pane, `secondaryItemId` in the bottom
+   * pane, with a draggable horizontal handle between them. `null` = single
+   * pane (default).
+   */
+  secondaryItemId: string | null;
+  /**
+   * Ratio of the top pane height in split mode, 0–100 (percent). The bottom
+   * pane fills the remainder. Persisted across opens. Only meaningful when
+   * `secondaryItemId` is non-null.
+   */
+  splitRatio: number;
   isAvailable: boolean; // Whether canvas is available in current context/layout
   canvasWidth: number; // Width of canvas panel in pixels (persisted)
   renderMode: CanvasRenderMode; // Preferred render mode
@@ -62,6 +75,8 @@ const initialState: CanvasState = {
   isOpen: false,
   items: [],
   currentItemId: null,
+  secondaryItemId: null,
+  splitRatio: 55,
   isAvailable: false, // Default to false, layouts enable it
   canvasWidth: 768, // Default width matches max-w-3xl so content fills perfectly
   renderMode: "auto", // Auto-detect best render mode
@@ -122,20 +137,79 @@ export const canvasSlice = createSlice({
       // Keep items and currentItemId for reopen
     },
 
+    // Toggle open/closed without losing state. Used by the global ⌘\ shortcut.
+    toggleCanvas: (state) => {
+      if (state.isOpen) {
+        state.isOpen = false;
+      } else if (state.currentItemId) {
+        state.isOpen = true;
+      }
+    },
+
     // Clear all canvas history
     clearCanvas: (state) => {
       state.isOpen = false;
       state.items = [];
       state.currentItemId = null;
+      state.secondaryItemId = null;
     },
 
-    // Switch to a different canvas item
+    // Switch to a different canvas item (top pane in split mode)
     setCurrentItem: (state, action: PayloadAction<string>) => {
       const itemExists = state.items.some((item) => item.id === action.payload);
       if (itemExists) {
+        // If user navigates the top pane to the same item that's in the
+        // bottom pane, collapse the split so we don't show duplicates.
+        if (state.secondaryItemId === action.payload) {
+          state.secondaryItemId = null;
+        }
         state.currentItemId = action.payload;
         state.isOpen = true;
       }
+    },
+
+    /**
+     * Open the canvas in split mode with the given item in the BOTTOM pane.
+     * If only one item exists, this is a no-op (you can't split with yourself).
+     * If `itemId` is the current top item, falls back to the most recent
+     * other item so a "Split" button always does something sensible.
+     */
+    splitCanvasWith: (state, action: PayloadAction<string | undefined>) => {
+      if (!state.currentItemId || state.items.length < 2) return;
+      const requested = action.payload;
+      let target: string | undefined = requested;
+      if (!target || target === state.currentItemId) {
+        // Pick the most-recently-used item that isn't the top one.
+        const others = state.items
+          .filter((i) => i.id !== state.currentItemId)
+          .sort((a, b) => b.timestamp - a.timestamp);
+        target = others[0]?.id;
+      }
+      if (!target) return;
+      state.secondaryItemId = target;
+      state.isOpen = true;
+    },
+
+    /** Collapse the split — keeps the top pane, drops the bottom. */
+    unsplitCanvas: (state) => {
+      state.secondaryItemId = null;
+    },
+
+    /**
+     * Swap the top and bottom panes — useful when the user wants the bottom
+     * pane to be the "main" focus without closing either.
+     */
+    swapCanvasPanes: (state) => {
+      if (!state.secondaryItemId || !state.currentItemId) return;
+      const top = state.currentItemId;
+      state.currentItemId = state.secondaryItemId;
+      state.secondaryItemId = top;
+    },
+
+    /** Persist the top-pane ratio (0–100) while the user drags the handle. */
+    setCanvasSplitRatio: (state, action: PayloadAction<number>) => {
+      const next = Math.max(15, Math.min(85, action.payload));
+      state.splitRatio = next;
     },
 
     // Remove a specific canvas item
@@ -146,9 +220,18 @@ export const canvasSlice = createSlice({
       if (itemIndex !== -1) {
         state.items.splice(itemIndex, 1);
 
+        // If we removed the secondary pane's item, just collapse the split.
+        if (state.secondaryItemId === action.payload) {
+          state.secondaryItemId = null;
+        }
+
         // If we removed the current item, switch to the last one or close
         if (state.currentItemId === action.payload) {
-          if (state.items.length > 0) {
+          // Prefer promoting the secondary pane if one exists.
+          if (state.secondaryItemId) {
+            state.currentItemId = state.secondaryItemId;
+            state.secondaryItemId = null;
+          } else if (state.items.length > 0) {
             state.currentItemId = state.items[state.items.length - 1].id;
           } else {
             state.currentItemId = null;
@@ -241,8 +324,13 @@ export const canvasSlice = createSlice({
 export const {
   openCanvas,
   closeCanvas,
+  toggleCanvas,
   clearCanvas,
   setCurrentItem,
+  splitCanvasWith,
+  unsplitCanvas,
+  swapCanvasPanes,
+  setCanvasSplitRatio,
   removeCanvasItem,
   updateCanvasContent,
   markItemSynced,
@@ -275,8 +363,29 @@ export const selectCurrentCanvasItem = (
   return items.find((item) => item.id === currentItemId) || null;
 };
 
+// Get the secondary canvas item (split mode) or null
+export const selectSecondaryCanvasItem = (
+  state: WithCanvas,
+): CanvasItem | null => {
+  if (!state.canvas) return null;
+  const { items, secondaryItemId } = state.canvas;
+  if (!secondaryItemId) return null;
+  return items.find((item) => item.id === secondaryItemId) || null;
+};
+
+export const selectSecondaryCanvasItemId = (state: WithCanvas) =>
+  state.canvas?.secondaryItemId ?? null;
+
+export const selectCanvasIsSplit = (state: WithCanvas) =>
+  !!state.canvas?.secondaryItemId;
+
+export const selectCanvasSplitRatio = (state: WithCanvas) =>
+  state.canvas?.splitRatio ?? 55;
+
 // Get current canvas content (for backward compatibility)
-export const selectCanvasContent = (state: WithCanvas): CanvasContent | null => {
+export const selectCanvasContent = (
+  state: WithCanvas,
+): CanvasContent | null => {
   const currentItem = selectCurrentCanvasItem(state);
   return currentItem?.content || null;
 };

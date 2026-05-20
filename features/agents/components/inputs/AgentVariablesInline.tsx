@@ -109,12 +109,13 @@ export function AgentVariablesInline({
 
   return (
     <div
-      className="bg-transparent border-b border-border max-h-72 overflow-y-scroll w-full shrink-0"
+      className="max-h-72 overflow-y-auto w-full shrink-0 divide-y divide-border/40"
       data-variable-inputs
     >
       {definitions.map((variable, index) => {
         const isExpanded = expandedVariableId === variable.name;
-        const rawValue = userValues[variable.name] ?? variable.defaultValue ?? "";
+        const rawValue =
+          userValues[variable.name] ?? variable.defaultValue ?? "";
         // Variable values are strings (text-style or URL for media). Coerce
         // defensively so legacy object shapes don't render as "[object Object]".
         const displayValue: string =
@@ -132,33 +133,35 @@ export function AgentVariablesInline({
             >
               <PopoverTrigger asChild>
                 <div
-                  className="flex items-center gap-2 pl-1.5 pr-3 h-6 bg-transparent border-b border-border hover:bg-muted/50 transition-colors focus-within:border-primary/50 group w-full"
+                  className="flex items-center gap-2 pl-2.5 pr-1.5 h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30 group w-full cursor-pointer"
                   onClick={() => handleExpand(variable.name)}
                   tabIndex={index + 1}
                 >
                   <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer">
                     {formatText(variable.name)}:
                   </Label>
-                  <div className="flex-1 text-xs text-foreground min-w-0">
+                  <div className="flex-1 text-sm text-foreground min-w-0">
                     {displayValue ? (
                       <span className="whitespace-nowrap overflow-hidden text-ellipsis block">
                         {displayValue.replace(/\n/g, " ↵ ")}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground/60">
                         {variable.helpText ?? "Enter value..."}
                       </span>
                     )}
                   </div>
-                  <ChevronUp className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="shrink-0 h-6 w-6 inline-flex items-center justify-center rounded-full text-primary">
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </PopoverTrigger>
               <PopoverContent
-                className="max-h-[500px] p-2 border-border overflow-y-auto"
+                className="max-h-[500px] p-2 border-border overflow-y-auto rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_8px_24px_-8px_rgba(0,0,0,0.6)]"
                 style={{ width: "var(--radix-popover-trigger-width)" }}
                 align="start"
                 side="top"
-                sideOffset={0}
+                sideOffset={6}
               >
                 <VariableInputComponent
                   value={displayValue}
@@ -177,7 +180,7 @@ export function AgentVariablesInline({
         return (
           <div
             key={variable.name}
-            className="flex items-center gap-2 pl-1.5 pr-3 h-6 bg-transparent border-b border-border hover:bg-muted/50 transition-colors focus-within:border-primary/50 group"
+            className="flex items-center gap-2 pl-2.5 pr-1.5 h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30 group"
           >
             <Label
               className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer"
@@ -195,14 +198,14 @@ export function AgentVariablesInline({
               onChange={(e) => handleValueChange(variable.name, e.target.value)}
               onKeyDown={(e) => handleVariableKeyDown(e, index)}
               placeholder={variable.helpText ?? "Enter value..."}
-              className="flex-1 text-base md:text-xs bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/60 min-w-0"
+              className="flex-1 text-sm bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/60 min-w-0"
               data-variable-index={index}
               tabIndex={index + 1}
             />
             <button
               type="button"
               onClick={() => handleExpand(variable.name)}
-              className="shrink-0 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              className="shrink-0 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
               tabIndex={-1}
               title="Expand to full editor"
             >

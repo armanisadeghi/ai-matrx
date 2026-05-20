@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PanelLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  PanelLeftTapButton,
+  PlusTapButton,
+} from "@/components/icons/tap-buttons";
 import {
   Drawer,
   DrawerContent,
@@ -199,27 +202,23 @@ export function ChatPageShell({
   //
   // The three controls render in the exact same horizontal positions whether
   // the sidebar is expanded (header lives inside the sidebar) or collapsed
-  // (header floats over the chat surface). `floating` only swaps the chrome
-  // — translucent card + border + shadow — so the controls feel anchored
-  // against the chat background instead of against the sidebar.
+  // (header floats directly on the chat backdrop). When floating there is
+  // intentionally NO container chrome — no border, no background, no shadow.
+  // The glass tap buttons carry their own visual weight via the canonical
+  // `matrx-glass-thin-border` pill, so the controls read as anchored UI
+  // primitives rather than a floating toolbar.
   const renderDesktopHeader = (floating: boolean) => (
     <div
       className={cn(
-        "flex h-10 shrink-0 items-center gap-1 pl-1.5 pr-1",
-        floating
-          ? "rounded-xl border border-border bg-card/90 shadow-sm backdrop-blur-md"
-          : "border-b border-border",
+        "flex h-11 shrink-0 items-center gap-1",
+        floating ? "px-0" : "border-b border-border pl-1 pr-0.5",
       )}
     >
-      <button
-        type="button"
+      <PanelLeftTapButton
         onClick={() => setHistoryExpanded((v) => !v)}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        aria-label={historyExpanded ? "Hide sidebar" : "Show sidebar"}
-        title={historyExpanded ? "Hide sidebar (⌘B)" : "Show sidebar (⌘B)"}
-      >
-        <PanelLeft className="h-4 w-4" />
-      </button>
+        ariaLabel={historyExpanded ? "Hide sidebar" : "Show sidebar"}
+        tooltip={historyExpanded ? "Hide sidebar (⌘B)" : "Show sidebar (⌘B)"}
+      />
       <div
         data-chat-agent-picker-trigger
         className="flex min-w-0 flex-1 items-center"
@@ -233,30 +232,22 @@ export function ChatPageShell({
           className="w-full justify-between bg-transparent"
         />
       </div>
-      <button
-        type="button"
+      <PlusTapButton
         onClick={handleNewChat}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        aria-label="New chat"
-        title="New chat (⌘K)"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
+        ariaLabel="New chat"
+        tooltip="New chat (⌘K)"
+      />
     </div>
   );
 
   // ── Mobile drawer top row: [toggle] [agent picker] [+ new chat] ────────
   const mobileTopRow = (
-    <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border pl-1.5 pr-1">
-      <button
-        type="button"
+    <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border pl-1 pr-0.5">
+      <PanelLeftTapButton
         onClick={() => setHistoryDrawerOpen(false)}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-        aria-label="Hide history"
-        title="Hide history"
-      >
-        <PanelLeft className="h-4 w-4" />
-      </button>
+        ariaLabel="Hide history"
+        tooltip={false}
+      />
       <div
         data-chat-agent-picker-trigger
         className="flex min-w-0 flex-1 items-center"
@@ -272,18 +263,14 @@ export function ChatPageShell({
           className="w-full justify-between bg-transparent"
         />
       </div>
-      <button
-        type="button"
+      <PlusTapButton
         onClick={() => {
           setHistoryDrawerOpen(false);
           handleNewChat();
         }}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-        aria-label="New chat"
-        title="New chat"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
+        ariaLabel="New chat"
+        tooltip={false}
+      />
     </div>
   );
 
@@ -316,7 +303,7 @@ export function ChatPageShell({
             chat. Same height + same left offset as the in-sidebar header,
             so the layout reads as one continuous bar. */}
         {!isMobile && !historyExpanded && (
-          <div className="absolute top-1.5 left-1.5 z-30 hidden lg:block w-72">
+          <div className="absolute top-0 left-0 z-30 hidden lg:block w-72">
             {renderDesktopHeader(true)}
           </div>
         )}
@@ -324,19 +311,15 @@ export function ChatPageShell({
         {isMobile && (
           <header
             className={cn(
-              "shrink-0 flex items-center justify-between gap-1 px-1.5",
-              "h-10 border-b border-border bg-card/60 backdrop-blur-sm",
+              "shrink-0 flex items-center justify-between gap-1 px-0.5",
+              "h-11 border-b border-border bg-card/60 backdrop-blur-sm",
             )}
           >
-            <button
-              type="button"
+            <PanelLeftTapButton
               onClick={() => setHistoryDrawerOpen(true)}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-              aria-label="Show history"
-              title="Show history"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </button>
+              ariaLabel="Show history"
+              tooltip={false}
+            />
             <div
               data-chat-agent-picker-trigger
               className="flex min-w-0 flex-1 items-center justify-center"
@@ -349,15 +332,11 @@ export function ChatPageShell({
                 className="w-full justify-center bg-transparent"
               />
             </div>
-            <button
-              type="button"
+            <PlusTapButton
               onClick={handleNewChat}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-              aria-label="New chat"
-              title="New chat"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+              ariaLabel="New chat"
+              tooltip={false}
+            />
           </header>
         )}
 
