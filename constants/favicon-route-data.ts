@@ -29,6 +29,10 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/projects", favicon: { color: "#4f46e5", letter: "Pj" } },
   { href: "/files", favicon: { color: "#0284c7", letter: "Fi" } },
   {
+    href: "/tools/pdf-extractor",
+    favicon: { color: "#ea580c", letter: "Pd" },
+  },
+  {
     href: "/transcription/processor",
     favicon: { color: "#9333ea", letter: "Tr" },
   },

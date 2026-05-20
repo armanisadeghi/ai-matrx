@@ -167,6 +167,16 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "blue",
   },
   {
+    label: "PDF Extractor",
+    href: "/tools/pdf-extractor",
+    iconName: "FileScan",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Upload, extract, and process PDF documents",
+    color: "orange",
+  },
+  {
     label: "Images",
     href: "/images",
     iconName: "Aperture",
