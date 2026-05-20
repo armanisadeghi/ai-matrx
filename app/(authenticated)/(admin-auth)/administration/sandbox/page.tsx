@@ -39,6 +39,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 import type {
   SandboxInstance,
   SandboxStatus,
@@ -77,6 +79,7 @@ export default function AdminSandboxManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
+  const [deleting, setDeleting] = useState(false);
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
@@ -148,16 +151,24 @@ export default function AdminSandboxManagementPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setDeleting(true);
     try {
       const resp = await fetch(`/api/admin/sandbox/${deleteTarget.id}`, {
         method: "DELETE",
       });
-      if (resp.ok || resp.status === 204) {
-        setInstances((prev) => prev.filter((i) => i.id !== deleteTarget.id));
-        setDeleteTarget(null);
+      if (!resp.ok && resp.status !== 204) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to delete (HTTP ${resp.status})`);
       }
+      setInstances((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+      toast.success(`Sandbox ${deleteTarget.sandbox_id} deleted`);
+      setDeleteTarget(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      const msg = err instanceof Error ? err.message : "Failed to delete";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -547,29 +558,26 @@ export default function AdminSandboxManagementPage() {
       </div>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Sandbox</DialogTitle>
-            <DialogDescription>
-              This will permanently remove this sandbox instance
-              {deleteTarget &&
-              ["ready", "running"].includes(deleteTarget.status)
-                ? " and destroy the running container"
-                : ""}
-              . This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteTarget(null);
+        }}
+        title="Delete Sandbox"
+        description={
+          <>
+            This will permanently remove this sandbox instance
+            {deleteTarget && ["ready", "running"].includes(deleteTarget.status)
+              ? " and destroy the running container"
+              : ""}
+            . This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        busy={deleting}
+        onConfirm={handleDelete}
+      />
 
       {/* SSH access dialog */}
       <Dialog
