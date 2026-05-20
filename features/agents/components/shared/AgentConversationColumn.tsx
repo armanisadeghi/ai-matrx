@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ArrowDown } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
@@ -98,32 +99,47 @@ export function AgentConversationColumn({
       )}
     >
       <div className="relative flex-1 min-h-0">
-        {showLanding ? (
-          // Empty-state surface (e.g. /chat/new greeting + chips). Replaces
-          // the scroll area until the first message lands. We intentionally
-          // do NOT mount OlderMessagesSentinel or AgentConversationDisplay
-          // here — there's nothing to paginate or render and they'd
-          // subscribe to selectors we don't need yet.
-          <div className="h-full overflow-y-auto">{landingContent}</div>
-        ) : (
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="h-full overflow-y-auto pt-12"
-          >
-            {/* Older-history pagination trigger. Isolated component — */}
-            {/* subscribes only to the older-page flags so its re-renders */}
-            {/* never reach the message tree below. */}
-            <OlderMessagesSentinel
-              conversationId={displayId}
-              scrollRef={scrollRef}
-            />
-            <AgentConversationDisplay
-              conversationId={displayId}
-              surfaceKey={surfaceKey}
-            />
-          </div>
-        )}
+        {/* Landing → conversation transition. When the first message lands,
+            the landing surface drops away (fade + slide down) while the
+            conversation view fades up — reads as the input dropping to the
+            bottom and the chat taking over. Both are absolutely positioned
+            during the overlap so there's no layout jump. */}
+        <AnimatePresence initial={false}>
+          {showLanding ? (
+            <motion.div
+              key="landing"
+              className="absolute inset-0 overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: 48 }}
+              transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+            >
+              {landingContent}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="conversation"
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="absolute inset-0 overflow-y-auto pt-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.05 }}
+            >
+              {/* Older-history pagination trigger. Isolated component — */}
+              {/* subscribes only to the older-page flags so its re-renders */}
+              {/* never reach the message tree below. */}
+              <OlderMessagesSentinel
+                conversationId={displayId}
+                scrollRef={scrollRef}
+              />
+              <AgentConversationDisplay
+                conversationId={displayId}
+                surfaceKey={surfaceKey}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div
           className="pointer-events-none absolute bottom-0 left-0 right-0 h-3"
           style={{
@@ -149,10 +165,15 @@ export function AgentConversationColumn({
 
       {/* While the landing is showing, suppress the standard input + the
           Creator Panel + UI-first chip — the landing surface provides its
-          own minimal input (pill-shaped, just upload/mic/send). They come
-          back the instant the first message lands and the landing falls away. */}
+          own minimal input (pill-shaped, just upload/mic/send). On the first
+          message the landing falls away and this block slides up into the
+          bottom slot, completing the "input dropped to the bottom" motion. */}
       {!showLanding && (
-        <>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+        >
           <CreatorRunPanel
             conversationId={conversationId}
             displayConversationId={displayId}
@@ -173,7 +194,7 @@ export function AgentConversationColumn({
             surfaceKey={surfaceKey}
             {...smartInputProps}
           />
-        </>
+        </motion.div>
       )}
     </div>
   );
