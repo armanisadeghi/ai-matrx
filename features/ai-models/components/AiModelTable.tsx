@@ -46,6 +46,8 @@ import {
   ListFilter,
 } from "lucide-react";
 import type { AiModel, AiProvider } from "../types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
 import type { TabState, AiModelFilters } from "../hooks/useTabUrlState";
 import AiModelFilterBar from "./AiModelFilterBar";
 
@@ -585,6 +587,24 @@ function RowActions({
         >
           <Copy className="h-3.5 w-3.5" />
         </Button>
+        <span onClick={(e) => e.stopPropagation()} className="contents">
+          <CopyButtons
+            size="icon"
+            label={item.common_name || item.name}
+            human={() => aiModelSummary(item)}
+            agent={() => ({
+              kind: "ai-model",
+              location: AI_MODELS_LOCATION,
+              description: "A single AI model registry row.",
+              data: item,
+              summary: aiModelSummary(item),
+              attributes: {
+                id: item.id,
+                provider: item.model_provider ?? item.provider ?? "",
+              },
+            })}
+          />
+        </span>
         <Button
           variant="ghost"
           size="icon"

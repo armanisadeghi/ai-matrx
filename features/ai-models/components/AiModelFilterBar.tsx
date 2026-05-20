@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import type { AiModelFilters, TabState } from "../hooks/useTabUrlState";
 import type { AiModel } from "../types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
 
 interface AiModelFilterBarProps {
   tabState: TabState;
@@ -320,6 +322,20 @@ export default function AiModelFilterBar({
 
         <div className="flex-1 min-w-2" />
 
+        {models.length > 0 && (
+          <CopyButtons
+            size="icon"
+            label="AI models"
+            human={() => models.map(aiModelSummary).join("\n\n")}
+            agent={() => ({
+              kind: "ai-models",
+              location: AI_MODELS_LOCATION,
+              description: "The full AI model registry.",
+              data: models,
+              attributes: { count: models.length, shown: filteredCount },
+            })}
+          />
+        )}
         <Button
           variant="ghost"
           size="icon"
