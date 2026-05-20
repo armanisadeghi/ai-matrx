@@ -1,13 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileName } from "@/features/files/redux/selectors";
-import { fileHandler } from "@/features/files/handler/handler";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { Button } from "@/components/ui/button";
 import type { ImageSource } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(
@@ -24,111 +21,20 @@ interface Props {
 }
 
 /**
- * Filerobot uses `crossOrigin="Anonymous"` on every image fetch, which
- * fails fast if either (a) the S3 bucket's CORS policy is missing the
- * requesting origin or (b) the signed URL is past its 1-hour TTL after
- * a long session. We pre-verify the URL with the same crossOrigin profile
- * BEFORE mounting Filerobot so failures surface in our own shell as a
- * clean retry affordance — not as Filerobot's bottom-anchored popup.
- *
- * The retry path re-resolves the URL through the handler so any updated
- * signed URL (e.g. after a backend rotation) is picked up automatically.
+ * Resolve the file id to a renderable URL through the universal handler.
+ * `useFileSrc` returns the best URL for the file's visibility — a permanent
+ * CDN URL for public files, a freshly-minted signed URL for private ones —
+ * so Filerobot always loads through the CDN when one exists and never
+ * re-uses a stale signed URL. (The earlier crossOrigin pre-probe was
+ * removed: it blocked the editor for tens of seconds on private files whose
+ * signed S3 URLs are perfectly loadable but don't echo CORS headers for a
+ * HEAD-style anonymous probe.)
  */
-type LoadState =
-  | { kind: "testing" }
-  | { kind: "ready"; url: string }
-  | { kind: "error"; message: string };
-
 export default function EditByIdClient({ cloudFileId, folder }: Props) {
-  const baseUrl = useFileSrc({ kind: "file_id", fileId: cloudFileId });
+  const url = useFileSrc({ kind: "file_id", fileId: cloudFileId });
   const fileName = useAppSelector((s) => selectFileName(s, cloudFileId));
-  const [state, setState] = useState<LoadState>({ kind: "testing" });
-  const [attempt, setAttempt] = useState(0);
-  const lastTestedRef = useRef<string | null>(null);
 
-  // Probe the image with crossOrigin="Anonymous" — exactly what Filerobot
-  // does. If the probe succeeds we're guaranteed Filerobot will too;
-  // if it fails we fall back to a refreshed URL once before surfacing
-  // an error.
-  useEffect(() => {
-    if (!baseUrl) {
-      setState({ kind: "testing" });
-      return;
-    }
-    let cancelled = false;
-    setState({ kind: "testing" });
-
-    const probe = async (url: string, isRetry: boolean) => {
-      const ok = await testImageLoad(url);
-      if (cancelled) return;
-      if (ok) {
-        lastTestedRef.current = url;
-        setState({ kind: "ready", url });
-        return;
-      }
-      if (isRetry) {
-        setState({
-          kind: "error",
-          message:
-            "Couldn't load this image. The signed URL may have expired, or the S3 bucket isn't returning CORS headers for this origin.",
-        });
-        return;
-      }
-      // First failure → ask the handler for a fresh-resolve and retry.
-      try {
-        const refreshed = await fileHandler.resolve({
-          kind: "file_id",
-          fileId: cloudFileId,
-        });
-        const nextUrl = refreshed.url;
-        if (!cancelled && nextUrl && nextUrl !== url) {
-          await probe(nextUrl, true);
-        } else if (!cancelled) {
-          // Same URL came back — at least try once more in case the failure
-          // was transient.
-          await probe(url, true);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setState({
-          kind: "error",
-          message:
-            err instanceof Error
-              ? err.message
-              : "Couldn't refresh the file URL.",
-        });
-      }
-    };
-
-    void probe(baseUrl, false);
-    return () => {
-      cancelled = true;
-    };
-  }, [baseUrl, cloudFileId, attempt]);
-
-  const handleRetry = useCallback(() => {
-    setAttempt((a) => a + 1);
-  }, []);
-
-  if (state.kind === "error") {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-background p-6">
-        <div className="max-w-md text-center space-y-3">
-          <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-full bg-destructive/10">
-            <AlertCircle className="h-5 w-5 text-destructive" />
-          </div>
-          <p className="text-sm font-medium">Couldn't load this image</p>
-          <p className="text-xs text-muted-foreground">{state.message}</p>
-          <Button size="sm" variant="outline" onClick={handleRetry} className="gap-1.5">
-            <RefreshCw className="h-3.5 w-3.5" />
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (state.kind !== "ready") {
+  if (!url) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-background">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -141,13 +47,17 @@ export default function EditByIdClient({ cloudFileId, folder }: Props) {
 
   const source: ImageSource = {
     kind: "url",
-    url: state.url,
+    url,
     suggestedFilename: fileName ?? "image",
   };
 
   return (
     <div className="w-full h-full flex flex-col min-h-0 bg-background">
+      {/* key forces a full remount when the file id changes (e.g. after
+          "Save as duplicate" navigates to the new file) so the editor's
+          internal state never points at the previous file. */}
       <EditModeShell
+        key={cloudFileId}
         source={source}
         cloudFileId={cloudFileId}
         defaultFolder={folder ?? "Images/Edited"}
@@ -155,22 +65,4 @@ export default function EditByIdClient({ cloudFileId, folder }: Props) {
       />
     </div>
   );
-}
-
-function testImageLoad(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    let settled = false;
-    const done = (ok: boolean) => {
-      if (settled) return;
-      settled = true;
-      resolve(ok);
-    };
-    img.onload = () => done(true);
-    img.onerror = () => done(false);
-    // Bail out at 12s so a hanging request doesn't lock the page.
-    setTimeout(() => done(false), 12_000);
-    img.src = url;
-  });
 }
