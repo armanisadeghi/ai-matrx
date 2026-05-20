@@ -185,6 +185,51 @@ export type PageRunStatus =
 
 export type TriggerSource = "manual_ui" | "scheduled" | "api" | "tool_call";
 
+// ─── Template output columns (the table definition) ───────────────────────
+
+/**
+ * Where a column's value comes from. This is the key generalization that
+ * lets a template's table have MORE or FEWER columns than any single
+ * agent returns:
+ *
+ *   - agent      → filled from the extraction agent's output (mapped by
+ *                  `agentField`). Drop agent fields you don't want simply
+ *                  by not declaring a column for them.
+ *   - validation → filled by a later validation/dedup/enrich agent pass
+ *                  over the accumulated rows (Push 2). Empty until then.
+ *   - manual     → filled by a human in the Results table (confirmation /
+ *                  review / notes). Editable cells.
+ *   - system     → filled automatically by the pipeline (page anchor,
+ *                  source chunk, etc.). Read-only.
+ */
+export type ColumnSource = "agent" | "validation" | "manual" | "system";
+
+export type ColumnType = "string" | "number" | "integer" | "boolean";
+
+export interface ExtractionColumn {
+  /** Stable key. For agent columns this is also the payload key written
+   *  at persist time (today we read via `agentField`; Push 2 normalizes). */
+  key: string;
+  label: string;
+  type: ColumnType;
+  description?: string;
+  source: ColumnSource;
+  /** For source==="agent": which agent-output field maps into this column.
+   *  Defaults to `key` when omitted. */
+  agentField?: string;
+}
+
+/**
+ * The template's own output schema. When present, it is the source of
+ * truth for the Results table columns. When absent (or the legacy empty
+ * JSON-schema), the table falls back to inheriting the agent's schema /
+ * inferring columns from the data.
+ */
+export interface TemplateColumnsSchema {
+  kind: "extraction_columns";
+  columns: ExtractionColumn[];
+}
+
 // ─── Surface variable mapping ─────────────────────────────────────────────
 
 /**

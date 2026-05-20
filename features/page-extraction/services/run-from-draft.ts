@@ -224,7 +224,29 @@ export function draftDiffersFromJob(
   if ((draft.ragBoost ?? null) !== (job.rag_boost ?? null)) return true;
   if (draft.attachCombinedPdf !== (job.attach_combined_pdf ?? false))
     return true;
+  if (!outputSchemaEqual(draft.outputSchema, job.output_schema)) return true;
   return false;
+}
+
+function outputSchemaEqual(a: unknown, b: unknown): boolean {
+  // Normalize the "no schema" cases (null, undefined, empty legacy schema)
+  // to a single canonical so toggling between them isn't seen as a change.
+  const norm = (v: unknown): string => {
+    if (v == null) return "";
+    if (
+      typeof v === "object" &&
+      (v as { kind?: string }).kind !== "extraction_columns"
+    ) {
+      const props = (v as { properties?: Record<string, unknown> }).properties;
+      if (!props || Object.keys(props).length === 0) return "";
+    }
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return String(v);
+    }
+  };
+  return norm(a) === norm(b);
 }
 
 function extraInputsEqual(

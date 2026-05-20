@@ -19,6 +19,28 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
+/**
+ * Manual cell write — merge a single key into a result row's payload.
+ * Used by the Results table for `manual`-source columns (review fields,
+ * confirmations, notes). RLS lets the job owner update their own results.
+ *
+ * Read-modify-write of the whole payload object: the caller passes the
+ * row's current payload so we don't round-trip a read first.
+ */
+export async function updateResultPayloadField(opts: {
+  resultId: string;
+  currentPayload: Record<string, unknown>;
+  key: string;
+  value: unknown;
+}): Promise<void> {
+  const nextPayload = { ...opts.currentPayload, [opts.key]: opts.value };
+  const { error } = await db
+    .from("page_extraction_results")
+    .update({ payload: nextPayload })
+    .eq("id", opts.resultId);
+  if (error) throw error;
+}
+
 export async function getRun(runId: string): Promise<PageExtractionRun | null> {
   const { data, error } = await db
     .from("page_extraction_runs")

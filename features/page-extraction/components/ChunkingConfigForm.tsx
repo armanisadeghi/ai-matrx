@@ -40,7 +40,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import {
   clearDraft,
   ensureDraft,
@@ -60,6 +60,7 @@ import {
   parsePageRangeInput,
 } from "@/features/page-extraction/utils/chunk-preview";
 import { SavedJobsList } from "@/features/page-extraction/components/SavedJobsList";
+import { SchemaEditor } from "@/features/page-extraction/components/SchemaEditor";
 import { VariableMappingEditor } from "@/features/page-extraction/components/VariableMappingEditor";
 import { TemplateReadOnlyView } from "@/features/page-extraction/components/TemplateReadOnlyView";
 import {
@@ -135,7 +136,7 @@ export function ChunkingConfigForm({
   const loadedAgentId = loadedJob?.agent_id ?? null;
   useEffect(() => {
     if (!loadedAgentId) return;
-    void dispatch(fetchAgentExecutionMinimal(loadedAgentId));
+    void dispatch(fetchFullAgent(loadedAgentId));
   }, [loadedAgentId, dispatch]);
 
   const loadedAgent = useAppSelector((s) =>
@@ -290,7 +291,7 @@ function TemplateEditor({
   // render.
   useEffect(() => {
     if (!draft.agentId) return;
-    void dispatch(fetchAgentExecutionMinimal(draft.agentId));
+    void dispatch(fetchFullAgent(draft.agentId));
   }, [draft.agentId, dispatch]);
 
   const [saving, setSaving] = useState(false);
@@ -580,6 +581,22 @@ function TemplateEditor({
           </label>
         </Field>
       )}
+
+      {/* 4c. Output columns — the durable table definition. Import from
+              the agent, then add review/validation columns or drop fields.
+              Empty = inherit the agent's schema at run time. */}
+      <Field
+        label="Output table"
+        hint="Defines the Results columns."
+      >
+        <SchemaEditor
+          outputSchema={draft.outputSchema}
+          agentOutputSchema={agent?.outputSchema}
+          onChange={(next) =>
+            dispatch(patchDraft({ fileId, patch: { outputSchema: next } }))
+          }
+        />
+      </Field>
 
       {/* 5. RAG-boost override */}
       <Field label="RAG boost" hint="Blank = agent default">

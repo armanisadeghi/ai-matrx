@@ -36,19 +36,21 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { clearJobResults, getJob } from "@/features/page-extraction/api/jobs";
+import { updateResultPayloadField } from "@/features/page-extraction/api/runs";
 import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
 import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
-import {
-  columnLabel,
-  schemaColumns,
-  unwrapArraySchema,
-} from "@/features/page-extraction/utils/schema-validation";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
+import {
+  cellValueFor,
+  COLUMN_SOURCE_META,
+  parseTemplateColumns,
+} from "@/features/page-extraction/utils/columns";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
-  FlatObjectSchema,
+  ExtractionColumn,
   PageExtractionJob,
+  PageExtractionResult,
 } from "@/features/page-extraction/types";
 
 export interface ResultsTableProps {
@@ -151,24 +153,18 @@ function SingleJobResultsTable({
     };
   }, [jobId]);
 
-  const schema = useMemo<FlatObjectSchema | null>(
-    () => unwrapArraySchema(job?.output_schema),
+  /**
+   * Template column schema (the durable table definition). When present
+   * it is the source of truth: ordered, labeled, source-aware columns —
+   * including manual/validation columns that have no data yet. When
+   * absent, fall back to inferring columns from the result payload keys.
+   */
+  const templateCols = useMemo<ExtractionColumn[] | null>(
+    () => parseTemplateColumns(job?.output_schema),
     [job?.output_schema],
   );
-  const schemaCols = useMemo(() => schemaColumns(schema), [schema]);
 
-  /**
-   * When the Job's output_schema has no properties (or the schema is just
-   * `{ type: "object", properties: {} }` — common when the user hasn't
-   * defined columns explicitly), fall back to the UNION of keys across
-   * all result payloads. This is the difference between "rows exist but
-   * the table looks empty" and "I can see my data."
-   *
-   * We sort keys by their first occurrence in the result set so the
-   * column order is stable across renders.
-   */
-  const cols = useMemo(() => {
-    if (schemaCols.length > 0) return schemaCols;
+  const inferredCols = useMemo(() => {
     const ordered: string[] = [];
     const seen = new Set<string>();
     for (const r of results) {
@@ -181,7 +177,7 @@ function SingleJobResultsTable({
       }
     }
     return ordered;
-  }, [schemaCols, results]);
+  }, [results]);
 
   if (!jobId) {
     return (
@@ -242,49 +238,199 @@ function SingleJobResultsTable({
         </Button>
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16 text-xs">Page</TableHead>
-              {cols.map((key) => (
-                <TableHead key={key} className="text-xs">
-                  {columnLabel(key, schema)}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {results.map((r) => {
-              const payload = (r.payload ?? {}) as Record<string, unknown>;
-              const canJump =
-                typeof r.canonical_page === "number" && r.canonical_page > 0;
-              return (
-                <TableRow
-                  key={r.id}
-                  className={canJump ? "cursor-pointer hover:bg-muted/50" : ""}
-                  onClick={() => {
-                    if (canJump && onJumpToPage)
-                      onJumpToPage(r.canonical_page as number);
-                  }}
-                >
-                  <TableCell className="text-xs tabular-nums">
-                    {r.canonical_page ??
-                      formatPageRange(
-                        Array.isArray(r.source_pages) ? r.source_pages : [],
-                      )}
-                  </TableCell>
-                  {cols.map((key) => (
-                    <TableCell key={key} className="text-xs align-top">
-                      {renderCell(payload[key])}
+        {templateCols ? (
+          <SchemaResultsBody
+            columns={templateCols}
+            results={results}
+            onJumpToPage={onJumpToPage}
+            onRefetch={refetch}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16 text-xs">Page</TableHead>
+                {inferredCols.map((key) => (
+                  <TableHead key={key} className="text-xs">
+                    {prettifyKey(key)}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {results.map((r) => {
+                const payload = (r.payload ?? {}) as Record<string, unknown>;
+                const canJump =
+                  typeof r.canonical_page === "number" && r.canonical_page > 0;
+                return (
+                  <TableRow
+                    key={r.id}
+                    className={
+                      canJump ? "cursor-pointer hover:bg-muted/50" : ""
+                    }
+                    onClick={() => {
+                      if (canJump && onJumpToPage)
+                        onJumpToPage(r.canonical_page as number);
+                    }}
+                  >
+                    <TableCell className="text-xs tabular-nums">
+                      {r.canonical_page ??
+                        formatPageRange(
+                          Array.isArray(r.source_pages) ? r.source_pages : [],
+                        )}
                     </TableCell>
-                  ))}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    {inferredCols.map((key) => (
+                      <TableCell key={key} className="text-xs align-top">
+                        {renderCell(payload[key])}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
+  );
+}
+
+// ─── Schema-driven body (template column schema present) ─────────────────
+
+function SchemaResultsBody({
+  columns,
+  results,
+  onJumpToPage,
+  onRefetch,
+}: {
+  columns: ExtractionColumn[];
+  results: PageExtractionResult[];
+  onJumpToPage?: (page: number) => void;
+  onRefetch: () => void;
+}) {
+  const toast = useToastManager("page-extraction");
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-16 text-xs">Page</TableHead>
+          {columns.map((col) => (
+            <TableHead key={col.key} className="text-xs">
+              <span className="flex items-center gap-1">
+                {col.label}
+                {col.source !== "agent" && (
+                  <span
+                    className="text-[8px] uppercase tracking-wider text-muted-foreground/60"
+                    title={COLUMN_SOURCE_META[col.source].hint}
+                  >
+                    {col.source}
+                  </span>
+                )}
+              </span>
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {results.map((r) => {
+          const canJump =
+            typeof r.canonical_page === "number" && r.canonical_page > 0;
+          return (
+            <TableRow key={r.id}>
+              <TableCell
+                className={
+                  "text-xs tabular-nums" +
+                  (canJump ? " cursor-pointer hover:underline" : "")
+                }
+                onClick={() => {
+                  if (canJump && onJumpToPage)
+                    onJumpToPage(r.canonical_page as number);
+                }}
+              >
+                {r.canonical_page ??
+                  formatPageRange(
+                    Array.isArray(r.source_pages) ? r.source_pages : [],
+                  )}
+              </TableCell>
+              {columns.map((col) => {
+                const editable = COLUMN_SOURCE_META[col.source].editable;
+                const value = cellValueFor(r, col);
+                return (
+                  <TableCell key={col.key} className="text-xs align-top">
+                    {editable ? (
+                      <ManualCell
+                        result={r}
+                        column={col}
+                        value={value}
+                        onSaved={onRefetch}
+                        onError={(m) => toast.error(m)}
+                      />
+                    ) : (
+                      renderCell(value)
+                    )}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+function ManualCell({
+  result,
+  column,
+  value,
+  onSaved,
+  onError,
+}: {
+  result: PageExtractionResult;
+  column: ExtractionColumn;
+  value: unknown;
+  onSaved: () => void;
+  onError: (msg: string) => void;
+}) {
+  const [draft, setDraft] = useState<string>(
+    value == null ? "" : String(value),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const persist = async (raw: string) => {
+    const current = String(value ?? "");
+    if (raw === current) return;
+    setSaving(true);
+    try {
+      let parsed: unknown = raw;
+      if (column.type === "boolean")
+        parsed = raw === "" ? null : /^(true|yes|1|y)$/i.test(raw);
+      else if (column.type === "number" || column.type === "integer")
+        parsed = raw === "" ? null : Number(raw);
+      await updateResultPayloadField({
+        resultId: result.id,
+        currentPayload: (result.payload ?? {}) as Record<string, unknown>,
+        key: column.key,
+        value: parsed,
+      });
+      onSaved();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <input
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={(e) => void persist(e.target.value)}
+      disabled={saving}
+      placeholder="—"
+      className="w-full bg-transparent border border-transparent hover:border-border focus:border-primary rounded px-1 py-0.5 text-xs outline-none"
+    />
   );
 }
 
