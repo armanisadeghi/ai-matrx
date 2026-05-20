@@ -255,6 +255,7 @@
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) {
   background: var(--shell-pill-bg);
@@ -274,6 +275,7 @@
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) svg,
 :where(
@@ -288,6 +290,7 @@
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) .shell-nav-icon { color: var(--shell-pill-text); }
 
@@ -302,6 +305,7 @@
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
 
@@ -1241,6 +1245,7 @@
   .shell-root[data-pathname^="/tasks"]        .shell-mobile-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-mobile-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-mobile-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-mobile-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-mobile-nav-item[data-nav-href="/settings"]
 ) {
   background: var(--shell-pill-bg);
