@@ -129,21 +129,21 @@ export async function uploadInternal(
   const normalized = fromCloudFile(cloudFile, source);
 
   // Stitch on the share-link fields — cloudUpload created them in the
-  // same round-trip as the upload. Guarantee `url` is non-empty when a
-  // share token is present: prefer the directUrl, then the user-facing
-  // `/share/{token}` page (when an appOrigin is supplied), then the
-  // canonical Python `/share/{token}/download` URL. Never assign `""`
-  // — `??` does not short-circuit empty strings and downstream consumers
-  // depend on truthiness for the URL field.
+  // same round-trip as the upload. URL precedence is deliberate: a PUBLIC
+  // file's `normalized.url` is the permanent CDN URL (set by fromCloudFile)
+  // and must win over the signed-redirect `directUrl` — otherwise we hand
+  // out a 1h-expiring `/share/{token}/download` redirect as if it were a
+  // permanent public link (the reported bug). Only private/shared files,
+  // whose `normalized.url` is empty, fall through to the share-token URLs.
   if (result.shareToken) {
     const appShareUrl = opts.appOrigin
       ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
       : undefined;
     const url =
+      normalized.url ||
       result.directUrl ||
       appShareUrl ||
       result.shareUrl ||
-      normalized.url ||
       pythonShareUrl(result.shareToken);
     return {
       ...normalized,

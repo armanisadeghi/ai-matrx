@@ -82,16 +82,28 @@ export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
-    // The DB has no public_url column — it's computed server-side. For
-    // direct DB reads (Supabase realtime, server-side SSR), callers
-    // should fall back to useFileSrc({ kind: "file_id", fileId }) when this is null.
+    // The DB has no computed-URL columns (public_url / url / cdn_url /
+    // signed_url / download_url are all server-computed on the REST path).
+    // Direct-DB reads (Supabase realtime, SSR) leave these null; the
+    // resolver mints a signed URL on demand via useFileSrc.
     publicUrl: null,
+    url: null,
+    cdnUrl: null,
+    signedUrl: null,
+    downloadUrl: null,
     // The DB no longer has a thumbnail_url column either (Phase 1b dropped
     // it); resolved server-side from the variants store on the REST path.
     // Direct-DB-read callers should fall back to `useFileAsset(fileId)`
     // and read `asset.variants["thumbnail_url"].url`.
     thumbnailUrl: null,
     source: { kind: "real" },
+    // Lineage + dimension columns exist on the DB row but were never mapped,
+    // so realtime/SSR-sourced records lost derivedFrom + width/height that
+    // REST-sourced records keep. Map them for shape parity.
+    parentFileId: row.parent_file_id ?? null,
+    derivationKind: row.derivation_kind ?? null,
+    derivationMetadata:
+      (row.derivation_metadata as Record<string, unknown> | null) ?? null,
     // Dedup-pyramid columns from Phase 2.0. Null on rows uploaded before
     // the dedup consolidation script ran or on rows that have never been
     // identified as duplicates / never had their canonical extract set.
@@ -114,6 +126,9 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
   const extras = row as unknown as {
     duplicate_of_file_id?: string | null;
     canonical_processed_document_id?: string | null;
+    parent_file_id?: string | null;
+    derivation_kind?: string | null;
+    derivation_metadata?: Record<string, unknown> | null;
   };
   return {
     id: row.id,
@@ -137,11 +152,23 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     // CDN URL for visibility="public" files when the server has the CDN
     // feature enabled. Includes a ?v=<checksum[:8]> cache-buster.
     publicUrl: row.public_url ?? null,
+    // The four-flavour URL envelope. The REST FileRecord now carries all
+    // four (api-types.ts FileRecord). Dropping them here is what forced
+    // every handler-path consumer to re-mint signed URLs even for public
+    // files that already have a permanent cdn_url — the root cause of the
+    // "share links should be CDN" bug.
+    url: row.url ?? null,
+    cdnUrl: row.cdn_url ?? null,
+    signedUrl: row.signed_url ?? null,
+    downloadUrl: row.download_url ?? null,
     // Phase 1b: backend-rendered thumbnail (every file gets one). The
     // wire field is resolved server-side from the variants store now
     // that `cld_files.thumbnail_url` column has been dropped.
     thumbnailUrl: row.thumbnail_url ?? null,
     source: { kind: "real" },
+    parentFileId: extras.parent_file_id ?? null,
+    derivationKind: extras.derivation_kind ?? null,
+    derivationMetadata: extras.derivation_metadata ?? null,
     duplicateOfFileId: extras.duplicate_of_file_id ?? null,
     canonicalProcessedDocumentId:
       extras.canonical_processed_document_id ?? null,

@@ -222,9 +222,23 @@ function cloudFileFromRecord(
     updatedAt: (r.updatedAt as string) ?? new Date().toISOString(),
     deletedAt: (r.deletedAt as string | null) ?? null,
     publicUrl: (r.publicUrl as string | null) ?? null,
+    // Carry the four-flavour URL envelope through the cache-record path so
+    // a file hydrated from the slice keeps its permanent cdn_url instead of
+    // forcing a re-mint (matches apiFileRecordToCloudFile).
+    url: (r.url as string | null) ?? null,
+    cdnUrl: (r.cdnUrl as string | null) ?? null,
+    signedUrl: (r.signedUrl as string | null) ?? null,
+    downloadUrl: (r.downloadUrl as string | null) ?? null,
     thumbnailUrl: (r.thumbnailUrl as string | null) ?? null,
     source: (r.source as { kind: "real" }) ?? { kind: "real" },
     parentFileId: (r.parentFileId as string | null | undefined) ?? null,
     derivationKind: (r.derivationKind as string | null | undefined) ?? null,
+    derivationMetadata:
+      (r.derivationMetadata as Record<string, unknown> | null | undefined) ??
+      null,
+    duplicateOfFileId:
+      (r.duplicateOfFileId as string | null | undefined) ?? null,
+    canonicalProcessedDocumentId:
+      (r.canonicalProcessedDocumentId as string | null | undefined) ?? null,
   };
 }

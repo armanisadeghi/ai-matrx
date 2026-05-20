@@ -178,6 +178,23 @@ export interface CloudFile {
    */
   publicUrl: string | null;
   /**
+   * The four-flavour URL envelope the REST `FileRecord` carries (see
+   * aidream FE_MEDIA_BLOCK_CONTRACT.md §"URL fields"). Resolution order
+   * for display is: `cdnUrl` (permanent, public-only) → a still-valid
+   * `signedUrl` → mint a fresh signed URL. `url` is the server's canonical
+   * pick (CDN for public, signed-inline for private). `downloadUrl` carries
+   * attachment disposition.
+   *
+   * These are populated by `apiFileRecordToCloudFile` from the REST
+   * response. They are `null` on the direct-DB read path (the `cld_files`
+   * table has no computed-URL columns) — DB-sourced rows fall back to
+   * minting via the resolver.
+   */
+  url: string | null;
+  cdnUrl: string | null;
+  signedUrl: string | null;
+  downloadUrl: string | null;
+  /**
    * Backend-rendered thumbnail URL (Phase 1b universal thumbnails). Set
    * for **every** uploaded file regardless of MIME — Python now renders
    * SOCIAL_BASELINE variants (og_url / thumbnail_url / tiny_url) for

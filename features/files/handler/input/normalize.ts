@@ -222,10 +222,25 @@ export function fromCloudFile(
     sizeBytes: cloudFile.fileSize ?? undefined,
     checksum: cloudFile.checksum ?? undefined,
   });
+  // Prefer the PERMANENT URL flavours for public files (cdn_url → canonical
+  // url → legacy public_url). These never expire, so they're safe to seed
+  // directly. For private/shared files we deliberately leave `url` empty
+  // and let the resolver mint a fresh signed URL through its TTL-aware
+  // cache — the signed URL the REST response carried may already be stale,
+  // and the FileRecord doesn't include an expiry we could trust. This is
+  // the fix for "we issue expiring signed URLs for public files that have
+  // a permanent cdn_url."
+  const isPublic = cloudFile.visibility === "public";
+  const bestUrl = isPublic
+    ? (cloudFile.cdnUrl ?? cloudFile.url ?? cloudFile.publicUrl ?? undefined)
+    : (cloudFile.publicUrl ?? undefined);
+  // A CDN/public URL is CORS-safe for fetch; a raw signed S3 URL is not.
+  const isCdnOrPublic =
+    !!(isPublic && (cloudFile.cdnUrl ?? cloudFile.url)) || !!cloudFile.publicUrl;
   return {
     fileId: cloudFile.id,
     fileUri: cloudFile.storageUri,
-    url: cloudFile.publicUrl ?? undefined,
+    url: bestUrl,
     origin: cloudFile.visibility === "public" ? "public" : "owned",
     capabilities: {
       canRead: true,
@@ -233,7 +248,7 @@ export function fromCloudFile(
       canShare: true,
       canDelete: true,
       requiresAuth: cloudFile.visibility !== "public",
-      transportSafeForFetch: !!cloudFile.publicUrl,
+      transportSafeForFetch: isCdnOrPublic,
     },
     meta,
     lifecycle: {

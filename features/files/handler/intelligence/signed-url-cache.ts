@@ -85,10 +85,15 @@ export function invalidateSignedUrl(fileId: string): void {
 
 /**
  * Drop every cached URL. Use on sign-out / user switch so a previous
- * user's signed URLs are never handed to a new user.
+ * user's signed URLs are never handed to a new user. We also clear the
+ * in-flight dedup map — otherwise a mint that was in progress at sign-out
+ * resolves AFTER the clear and writes the previous user's URL back into
+ * the cache, and any concurrent awaiter receives it. That's a (narrow)
+ * cross-user session-bleed window this function exists to prevent.
  */
 export function clearSignedUrlCache(): void {
   cache.clear();
+  inflight.clear();
 }
 
 export function _peekCacheForTests(): ReadonlyMap<string, CacheEntry> {

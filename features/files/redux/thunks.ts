@@ -226,12 +226,16 @@ export const loadUserFileTree = createAsyncThunk<
           createdAt: f.createdAt ?? "",
           updatedAt: f.updatedAt ?? "",
           deletedAt: f.deletedAt ?? null,
-          // Tree-spine reconstruction is internal — public_url and the
-          // Phase-1b backend thumbnail_url are only populated when records
-          // arrive via the REST API. Default both to null here; the file
-          // grid (`MediaThumbnail`) falls through to `useFileAsset` →
+          // Tree-spine reconstruction is internal — the computed URL fields
+          // and the Phase-1b backend thumbnail_url are only populated when
+          // records arrive via the REST API. Default all to null here; the
+          // file grid (`MediaThumbnail`) falls through to `useFileAsset` →
           // `Asset.variants["thumbnail_url"]` when these are absent.
           publicUrl: null,
+          url: null,
+          cdnUrl: null,
+          signedUrl: null,
+          downloadUrl: null,
           thumbnailUrl: null,
           source: { kind: "real" },
           _dirty: false,

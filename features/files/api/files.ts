@@ -268,7 +268,11 @@ export async function getSignedUrl(
   params: { expiresIn?: number } = {},
   opts: RequestOptions = {},
 ): Promise<{ data: SignedUrlResponse; meta: ResponseMeta }> {
-  const expiresIn = params.expiresIn ?? 3600;
+  // Clamp to the documented bounds (60s – 7d). An un-clamped value would
+  // either be silently re-clamped server-side — desyncing the client cache's
+  // expiry math from reality — or rejected outright.
+  const requested = params.expiresIn ?? 3600;
+  const expiresIn = Math.min(604800, Math.max(60, Math.floor(requested)));
   return getJson<SignedUrlResponse>(
     `/files/${fileId}/url?expires_in=${expiresIn}`,
     opts,
