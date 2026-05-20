@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Bug } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -15,7 +16,17 @@ export default function SidebarAdminIndicatorToggle() {
     selectIsOverlayOpen(state, "adminIndicator"),
   );
 
-  if (!isAdmin) return null;
+  // Defer the visibility gate to post-hydration. This control sits next to
+  // SidebarCreatorHubToggle in the footer; if either toggle's gate flips
+  // between SSR and the first client commit, the buttons swap DOM positions
+  // and React's hydration reconciles the wrong node, producing the
+  // "fewer hooks than expected" / hydration-mismatch error.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  if (!hydrated || !isAdmin) return null;
 
   return (
     <button

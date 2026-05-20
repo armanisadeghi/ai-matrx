@@ -69,7 +69,10 @@ import {
   selectStreamPhase,
   selectIsExecuting,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectConversationMessages,
+  EMPTY_CONVERSATION_MESSAGES,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -391,9 +394,14 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const streamPhase = useAppSelector((state) =>
     conversationId ? selectStreamPhase(conversationId)(state) : "idle",
   );
-  const messages = useAppSelector((state) =>
-    conversationId ? selectConversationMessages(conversationId)(state) : [],
+  const messagesSelector = useMemo(
+    () =>
+      conversationId
+        ? selectConversationMessages(conversationId)
+        : () => EMPTY_CONVERSATION_MESSAGES,
+    [conversationId],
   );
+  const messages = useAppSelector(messagesSelector);
 
   const isStreaming =
     streamPhase === "text_streaming" ||

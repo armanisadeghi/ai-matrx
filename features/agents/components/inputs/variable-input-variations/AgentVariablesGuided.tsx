@@ -512,7 +512,8 @@ function GuidedVariableContent({
     if (cc.type === "image") return <ImageVariableInput {...sharedProps} />;
     if (cc.type === "audio") return <AudioVariableInput {...sharedProps} />;
     if (cc.type === "video") return <VideoVariableInput {...sharedProps} />;
-    if (cc.type === "document") return <DocumentVariableInput {...sharedProps} />;
+    if (cc.type === "document")
+      return <DocumentVariableInput {...sharedProps} />;
     if (cc.type === "youtube") return <YoutubeVariableInput {...sharedProps} />;
   }
 
@@ -631,18 +632,15 @@ export function AgentVariablesGuided({
     return () => ro.disconnect();
   }, [activeIndex, isCollapsed]);
 
-  if (total === 0) return null;
-  if (!shouldShowVariables || !showVariablePanel) return null;
-
-  const variable = variableDefaults[activeIndex];
-  const value: unknown = values[variable.name] ?? variable.defaultValue ?? "";
-  const formattedName = formatText(variable.name);
-  const helpText = variable.helpText;
-
-  const answeredCount = variableDefaults.filter((v) => {
-    const val = values[v.name] ?? v.defaultValue ?? "";
-    return String(val ?? "").trim() !== "";
-  }).length;
+  // Compute the active variable BEFORE the early-return so all downstream hooks
+  // (useCallback) run unconditionally. Fall back to a safe placeholder when the
+  // list is empty — the component still bails via the early-return below, but
+  // hook count stays stable across renders. Without this, flipping
+  // `shouldShowVariables` mid-stream (e.g. during smartExecute) would skip the
+  // useCallbacks below and crash with "Rendered fewer hooks than expected."
+  const variable: VariableDefinition | undefined =
+    variableDefaults[activeIndex];
+  const variableName = variable?.name ?? "";
 
   const goNext = useCallback(() => {
     if (activeIndex < total - 1) {
@@ -666,19 +664,21 @@ export function AgentVariablesGuided({
 
   const handleChange = useCallback(
     (v: unknown) => {
+      if (!variableName) return;
       dispatch(
         setUserVariableValue({
           conversationId,
-          name: variable.name,
+          name: variableName,
           value: v,
         }),
       );
     },
-    [dispatch, conversationId, variable.name],
+    [dispatch, conversationId, variableName],
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (!variable) return;
       if (e.key === "Enter" && !e.shiftKey) {
         const cc = variable.customComponent;
         if (!cc || cc.type === "textarea") {
@@ -691,6 +691,20 @@ export function AgentVariablesGuided({
     },
     [variable, activeIndex, total, goNext],
   );
+
+  // Early-returns AFTER all hooks have been called — guarantees stable hook
+  // count across renders even when `shouldShowVariables` toggles.
+  if (total === 0 || !variable) return null;
+  if (!shouldShowVariables || !showVariablePanel) return null;
+
+  const value: unknown = values[variable.name] ?? variable.defaultValue ?? "";
+  const formattedName = formatText(variable.name);
+  const helpText = variable.helpText;
+
+  const answeredCount = variableDefaults.filter((v) => {
+    const val = values[v.name] ?? v.defaultValue ?? "";
+    return String(val ?? "").trim() !== "";
+  }).length;
 
   // Border radius: seamless mode removes bottom rounding to merge with chat input
   const outerRadius = seamless ? "rounded-t-xl rounded-b-none" : "rounded-xl";

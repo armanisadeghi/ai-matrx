@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp, CircleStop, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
@@ -51,13 +51,21 @@ export function NewChatLandingInput({
   const canSend = !isExecuting && charCount > 0;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Once the textarea exceeds a single line we flip the grid layout so the
+  // textarea spans the full width and the leading/trailing controls drop to
+  // a footer row (ChatGPT-style). Single-line state keeps the inline pill.
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Auto-resize: grow with content up to MAX_TEXTAREA_HEIGHT, then scroll.
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "0px";
-    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+    const next = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT);
+    el.style.height = `${next}px`;
+    // Threshold: one line of text-base + leading-relaxed ≈ 28px. Use a small
+    // buffer so wrapping kicks in only on a real second line.
+    setIsExpanded(next > 36);
   }, [text]);
 
   const submit = useCallback(() => {
@@ -79,34 +87,21 @@ export function NewChatLandingInput({
 
   return (
     <div
+      onClick={() => textareaRef.current?.focus()}
       className={cn(
-        "w-full rounded-[28px] border border-border bg-card",
-        "shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-none",
-        "px-2.5 pt-3 pb-2 flex flex-col gap-1",
+        "w-full rounded-[28px] border border-border bg-card cursor-text",
+        "shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+        "p-2.5 grid grid-cols-[auto_1fr_auto] items-center gap-x-1.5",
+        // Single-line: [leading] [primary] [trailing]
+        // Expanded:    [primary primary primary] / [leading . trailing]
+        isExpanded
+          ? "[grid-template-areas:'primary_primary_primary''leading_._trailing']"
+          : "[grid-template-areas:'leading_primary_trailing']",
         "transition-colors focus-within:border-foreground/25",
       )}
     >
-      {/* Composing surface */}
-      <textarea
-        ref={textareaRef}
-        value={text}
-        onChange={(e) =>
-          dispatch(setUserInputText({ conversationId, text: e.target.value }))
-        }
-        onKeyDown={handleKeyDown}
-        rows={1}
-        placeholder="Ask anything"
-        autoFocus
-        className={cn(
-          "w-full resize-none bg-transparent outline-none border-none",
-          "px-3 pt-1 text-base text-foreground placeholder:text-muted-foreground/60",
-          "scrollbar-thin leading-relaxed",
-        )}
-        style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
-      />
-
-      {/* Tools row */}
-      <div className="flex items-center gap-1 px-1">
+      {/* Leading — attach */}
+      <div className="[grid-area:leading]" onClick={(e) => e.stopPropagation()}>
         <SmartAgentResourcePickerButton
           conversationId={conversationId}
           triggerSlot={
@@ -122,18 +117,42 @@ export function NewChatLandingInput({
             </Button>
           }
         />
+      </div>
 
-        <div className="flex-1" />
+      {/* Primary — textarea */}
+      <textarea
+        ref={textareaRef}
+        value={text}
+        onChange={(e) =>
+          dispatch(setUserInputText({ conversationId, text: e.target.value }))
+        }
+        onKeyDown={handleKeyDown}
+        rows={1}
+        placeholder="Ask anything"
+        autoFocus
+        className={cn(
+          "[grid-area:primary] w-full min-w-0 resize-none bg-transparent outline-none border-none",
+          "px-2 text-base text-foreground placeholder:text-muted-foreground/60",
+          "scrollbar-thin leading-7",
+        )}
+        style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
+      />
 
+      {/* Trailing — mic + send */}
+      <div
+        className="[grid-area:trailing] flex items-center gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
         <AgentMicrophoneButton conversationId={conversationId} size="md" />
 
         <Button
           onClick={submit}
           disabled={!isExecuting && !canSend}
           className={cn(
-            "h-9 w-9 p-0 rounded-full ml-0.5",
+            "h-9 w-9 p-0 rounded-full",
             "bg-foreground text-background hover:bg-foreground/90",
-            "disabled:opacity-25 disabled:cursor-not-allowed",
+            "shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]",
+            "disabled:opacity-25 disabled:cursor-not-allowed disabled:shadow-none",
           )}
           title={isExecuting ? "Stop" : "Send"}
           aria-label={isExecuting ? "Stop" : "Send"}

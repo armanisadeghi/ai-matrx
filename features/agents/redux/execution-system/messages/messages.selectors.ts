@@ -33,29 +33,45 @@ import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
 const EMPTY_RECORDS: MessageRecord[] = [];
+/** Stable empty list for selectors / hooks when no conversation is mounted yet. */
+export const EMPTY_CONVERSATION_MESSAGES: MessageRecord[] = EMPTY_RECORDS;
 const EMPTY_IDS: string[] = [];
 const EMPTY_SEGMENTS: ContentSegment[] = [];
+
+const conversationMessagesSelectorCache = new Map<
+  string,
+  ReturnType<typeof createSelector>
+>();
 
 // ---------------------------------------------------------------------------
 // Core reads
 // ---------------------------------------------------------------------------
 
 /** Ordered `MessageRecord[]` for a conversation. */
-export const selectConversationMessages = (conversationId: string) =>
-  createSelector(
-    (state: RootState) =>
-      state.messages.byConversationId[conversationId]?.orderedIds,
-    (state: RootState) => state.messages.byConversationId[conversationId]?.byId,
-    (orderedIds, byId): MessageRecord[] => {
-      if (!orderedIds || !byId || orderedIds.length === 0) return EMPTY_RECORDS;
-      const out: MessageRecord[] = [];
-      for (const id of orderedIds) {
-        const rec = byId[id];
-        if (rec) out.push(rec);
-      }
-      return out.length === 0 ? EMPTY_RECORDS : out;
-    },
-  );
+export const selectConversationMessages = (conversationId: string) => {
+  if (!conversationMessagesSelectorCache.has(conversationId)) {
+    conversationMessagesSelectorCache.set(
+      conversationId,
+      createSelector(
+        (state: RootState) =>
+          state.messages.byConversationId[conversationId]?.orderedIds,
+        (state: RootState) =>
+          state.messages.byConversationId[conversationId]?.byId,
+        (orderedIds, byId): MessageRecord[] => {
+          if (!orderedIds || !byId || orderedIds.length === 0)
+            return EMPTY_RECORDS;
+          const out: MessageRecord[] = [];
+          for (const id of orderedIds) {
+            const rec = byId[id];
+            if (rec) out.push(rec);
+          }
+          return out.length === 0 ? EMPTY_RECORDS : out;
+        },
+      ),
+    );
+  }
+  return conversationMessagesSelectorCache.get(conversationId)!;
+};
 
 export const selectOrderedMessageIds =
   (conversationId: string) =>

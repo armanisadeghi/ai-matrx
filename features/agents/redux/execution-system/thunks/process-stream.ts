@@ -284,7 +284,7 @@ export async function processStream({
   // messageId. Single-reservation streams trivially collapse to one entry.
   const reservedAssistantTurns: Array<{ messageId: string; position: number }> =
     [];
-   
+
   let reservedUserRequestId: string | null = null;
 
   // Maps the provider's opaque `call_id` (used by activeRequests.toolLifecycle)
@@ -1143,23 +1143,32 @@ export async function processStream({
           }),
         );
       } else if (d.table === "cx_conversation") {
-        // Manual mode: wire convId ≠ local Redux convId by design — skip.
+        // Manual mode: wire convId ≠ local Redux convId by design. The
+        // server-side cx_conversation row is keyed by a different id than
+        // our local Redux conversationId, so the local id is NOT a valid
+        // list-row id and must never be written into the per-agent
+        // conversation list cache. Doing so pollutes the cache with rows
+        // whose ids don't exist server-side (loadConversation fails) AND
+        // flips the cache status to "succeeded", which suppresses the
+        // real `get_agent_conversations` RPC on the run page's sidebar.
+        // Both the assertion and the list-cache upsert are therefore
+        // gated on agent mode.
         if (!forceLocalConversationId) {
           assertConversationIdMatches(
             conversationId,
             d.record_id,
             "record_reserved-cx_conversation",
           );
-        }
-        if (!cxConversationConfirmed) {
-          cxConversationConfirmed = true;
-          dispatch(confirmServerSync(conversationId));
-          const syncListCx = upsertAgentConversationFromExecutionAction(
-            getState(),
-            conversationId,
-            conversationId,
-          );
-          if (syncListCx) dispatch(syncListCx);
+          if (!cxConversationConfirmed) {
+            cxConversationConfirmed = true;
+            dispatch(confirmServerSync(conversationId));
+            const syncListCx = upsertAgentConversationFromExecutionAction(
+              getState(),
+              conversationId,
+              conversationId,
+            );
+            if (syncListCx) dispatch(syncListCx);
+          }
         }
       }
 

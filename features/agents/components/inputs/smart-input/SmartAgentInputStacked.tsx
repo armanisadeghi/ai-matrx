@@ -27,7 +27,6 @@ import { selectShowFreeformInput } from "@/features/agents/redux/execution-syste
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { Button } from "@/components/ui/button";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
-
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   sendButtonVariant?: "default" | "blue";
@@ -66,9 +65,7 @@ export function SmartAgentInputStacked({
   const showFreeformInput = useAppSelector(
     selectShowFreeformInput(conversationId ?? ""),
   );
-  const isExecuting = useAppSelector(
-    selectIsExecuting(conversationId ?? ""),
-  );
+  const isExecuting = useAppSelector(selectIsExecuting(conversationId ?? ""));
 
   const sendBtnClass =
     sendButtonVariant === "blue"

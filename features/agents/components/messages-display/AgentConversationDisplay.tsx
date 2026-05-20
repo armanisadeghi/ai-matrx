@@ -28,7 +28,6 @@ import {
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { AgentUserMessage } from "./user/AgentUserMessage";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
-
 const AssistantTurnGroup = dynamic(
   () =>
     import("./assistant/AssistantTurnGroup").then((m) => ({
