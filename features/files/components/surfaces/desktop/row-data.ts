@@ -29,6 +29,7 @@ import {
   folderToSortable,
 } from "@/features/files/redux/tree-utils";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
 import type { CloudFilesSection } from "./section";
 import type { FilterChipKey } from "./FilterChips";
 
@@ -175,6 +176,10 @@ export function buildRows({
     if (file.deletedAt && section !== "trash") return false;
     if (!file.deletedAt && section === "trash") return false;
 
+    // Recents shows what the user worked on — never system/AI-generated output
+    // (scraper captures, variants, Image Studio generations, temp staging).
+    if (filter === "recents" && isExcludedFromRecents(file.filePath)) return false;
+
     if (section === "photos") {
       const mime = (file.mimeType ?? "").toLowerCase();
       if (!mime.startsWith("image/")) return false;
@@ -239,6 +244,8 @@ export function buildRows({
   const filterFolders = (folder: CloudFolderRecord): boolean => {
     if (folder.deletedAt && section !== "trash") return false;
     if (!folder.deletedAt && section === "trash") return false;
+    if (filter === "recents" && isExcludedFromRecents(folder.folderPath))
+      return false;
     if (section === "photos") return false; // photos view never shows folders
     if (section === "shared") {
       const perms = permissionsByResourceId[folder.id];

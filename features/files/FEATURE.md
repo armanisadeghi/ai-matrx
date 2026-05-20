@@ -813,3 +813,14 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
   - `GET /files/recents?cf.type=document&sort=created_at&dir=desc` → **200**.
   - `GET /files/Reports/2026/Q1?cf.modified=week&sort=size&dir=desc` → **200** (folder catch-all + filters round-trip together).
   - `GET /files?cols=name,owner,extension,mime,path,size,version&cf.rag=indexed,not_indexed` → **200** (visible-columns + multi-select RAG filter).
+- **2026-05-20** — **System-generated content no longer clutters the workspace or Recents (cross-repo).** Provenance rule: only user-uploaded/added files belong in the user's tree + Recents; everything the system creates (scraper captures, variants, AI generations, temp staging) stays hidden and reachable only by digging in.
+
+  **Backend (aidream `matrx-utils` cloud_sync, Supabase `txzxabzwovsujtloxrus`).**
+  - Migration `015_hide_system_namespace_from_user_tree.sql` — `cld_is_system_path()` (canonical roots `system-files/` + `generations/`), a `BEFORE INSERT/UPDATE` trigger auto-stamping `cld_folders.is_system` (the structural chokepoint — no folder-create path can leave a system folder unflagged), an `is_system` backfill, and a `cld_get_user_file_tree` rebuild that excludes BOTH roots from BOTH the file leg AND the folder leg. Previously only `system-files/` *files* were hidden, so ~1,682 system folders + all of `generations/` leaked into the tree.
+  - Migration `016_relocate_legacy_system_output_and_drop_scars.sql` — relocated pre-registry bare roots (`crawls/` 4,486 files, `sites/`, `tool-images/`, `ai-media/`, `browser-agent/`, `system/`) under `system-files/` (logical path only — `storage_uri`/S3 untouched) and deleted 6 empty `__dedup_` duplicate-folder scars from a one-time manual de-dup.
+
+  **Frontend.** New predicates in [utils/folder-conventions.ts](utils/folder-conventions.ts): `isGeneratedContentPath` (Image Studio `Images/Generated/...`, agent-block assets) and `isExcludedFromRecents` (= `isSystemPath` ∪ generated). Applied in [row-data.ts](components/surfaces/desktop/row-data.ts) `buildRows`, gated on the `recents` filter so folder navigation + the Studio Library are unaffected.
+
+  **Verified (real production data).** Heavy account file-tree page: files 4,901 → 336, crawl files 4,453 → 0, leaked system folders 1,682 → 0, `generations/` files → 0, same-place duplicate folders → 0; all 4,486 crawls relocated under `system-files/`. FE changed files typecheck clean.
+
+  **Follow-up.** Image Studio + agent-blocks still write generated output to the user-root `Images/Generated/` instead of the `generations/` registry root; migrating the writer + existing data (so it's hidden at the source rather than filtered by path) is tracked separately.

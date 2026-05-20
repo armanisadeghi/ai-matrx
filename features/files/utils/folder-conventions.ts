@@ -263,6 +263,40 @@ export function isSystemPath(path: string | null | undefined): boolean {
 }
 
 /**
+ * True when a path holds system- or AI-generated content rather than something
+ * the user created or uploaded by hand. Distinct from `isSystemPath` (which is
+ * the backend-owned `system-files/` infra namespace): these live under USER
+ * roots for legacy reasons — the Image Studio writes generated variants to
+ * `Images/Generated/...` and agent-block assets land under `Agent Apps/blocks`
+ * / `Images/agent-blocks`. The durable fix is migrating these writers to the
+ * backend `generations/` registry root (tracked separately); until then this
+ * predicate keeps that output out of Recents by path.
+ */
+export function isGeneratedContentPath(path: string | null | undefined): boolean {
+  if (!path) return false;
+  const roots = [
+    CloudFolders.IMAGES_GENERATED, // "Images/Generated"
+    CloudFolders.GENERATED, // "Generated"
+    CloudFolders.AGENT_BLOCKS, // "Agent Apps/blocks"
+    "Images/agent-blocks", // legacy agent-block image output
+  ];
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
+/**
+ * True when a file/folder path must be excluded from the **Recents** stream.
+ * Recents is for things the user actually worked on — never background output.
+ * Covers backend infra (`isSystemPath`: `system-files/`, `.matrx-tmp/`) AND
+ * system/AI-generated user-root content (`isGeneratedContentPath`). The backend
+ * file-tree RPC already drops the `system-files/` + `generations/` registry
+ * roots; this predicate handles the conventions that still live under user
+ * roots on the frontend.
+ */
+export function isExcludedFromRecents(path: string | null | undefined): boolean {
+  return isSystemPath(path) || isGeneratedContentPath(path);
+}
+
+/**
  * True if the folder path matches one of our canonical conventions (either
  * visible or hidden). Useful for UI that wants to show a pretty icon next
  * to known folders.
