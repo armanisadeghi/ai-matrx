@@ -31,7 +31,7 @@ interface PromptInlineOverlayProps {
  * - Diff highlighting (future enhancement)
  * - Positioned near text selection
  * - Streaming support
- * - Uses BasicMarkdownContent for rendering
+ * - Uses RichDocument (mini-bar actions) for rendering
  */
 export default function PromptInlineOverlay({
   isOpen,

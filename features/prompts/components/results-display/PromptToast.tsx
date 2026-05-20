@@ -72,7 +72,7 @@ interface PromptToastProps {
  * - Manual dismiss option
  * - Stacks with other toasts
  * - Slide-in animation
- * - Uses BasicMarkdownContent for simple markdown rendering
+ * - Uses RichDocument (remote action surface) for rendering + actions
  */
 export default function PromptToast({
   toastId,
