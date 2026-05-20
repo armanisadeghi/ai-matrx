@@ -11,6 +11,7 @@ import {
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -77,6 +78,7 @@ export function ChatRoomClient({
 
   const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
+  useCreatorOwnershipSync(agentId);
 
   // Register this client as a `page` surface so action bars can route
   // fork / retry navigation outcomes correctly (URL change).

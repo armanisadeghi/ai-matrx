@@ -4,11 +4,13 @@
  * The Creator Hub — a global home for creator chrome, opened from the Crown in
  * the main sidebar. The creator analogue of the admin Bug indicator.
  *
- * Layout: a WindowPanel whose left sidebar is the tab list; each entry is a
- * tab page. The first page is creator Settings (incl. the creator-debug master
- * toggle); the Data page renders the arbitrary creator debug bag; the rest are
- * a faithful duplicate of the agent run page's CreatorRunPanel tab list,
- * rendered as placeholders (those tabs are conversation-scoped and wired later).
+ * Layout: a WindowPanel whose left sidebar is the tab list; each entry is a tab
+ * page. Settings (creator-debug master toggle + prefs) and Data (the arbitrary
+ * creator debug bag) are real and page-agnostic. The remaining tabs render the
+ * SAME run-control panels as the inline CreatorRunPanel via the shared
+ * CreatorRunTabContent, bound to the conversation the user was last active in
+ * (sourced from the conversation-focus slice). When no conversation is active,
+ * those tabs show an empty state.
  */
 
 "use client";
@@ -28,39 +30,77 @@ import {
   BarChart3,
   Gauge,
   Server,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import {
+  selectLastFocusedInputConversation,
+  selectLastFocusedDisplayConversation,
+  selectLastFocusedSurfaceKey,
+} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import CreatorRunTabContent, {
+  useCreatorRunWindows,
+  type RunTabId,
+} from "@/features/agents/components/run-controls/CreatorRunTabContent";
+import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
-import CreatorHubPlaceholder from "./tabs/CreatorHubPlaceholder";
-import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 
 interface CreatorHubTabDef {
   id: CreatorHubTabId;
   label: string;
   icon: LucideIcon;
+  /** Present for conversation-scoped tabs that defer to CreatorRunTabContent. */
+  runTabId?: RunTabId;
 }
 
-// Order: real tabs first (Settings, Data), then a duplicate of CreatorRunPanel's
-// ALL_TABS. The run panel's "settings"/"Run" entry is id "run" here so the new
-// creator Settings page can own id "settings".
+// Settings + Data first (page-agnostic), then the run-control tabs — a faithful
+// duplicate of CreatorRunPanel's tab list. The run panel's Run tab is id
+// "settings" there; here it's id "run" so the creator Settings page owns
+// "settings".
 const CREATOR_HUB_TABS: CreatorHubTabDef[] = [
   { id: "settings", label: "Settings", icon: Settings },
   { id: "data", label: "Data", icon: Database },
-  { id: "actions", label: "Actions", icon: Play },
-  { id: "context", label: "Context", icon: Layers },
-  { id: "payload", label: "Payload", icon: FileJson },
-  { id: "widget_invoker", label: "Widgets", icon: ToyBrick },
-  { id: "run", label: "Run", icon: SlidersHorizontal },
-  { id: "sysprompt", label: "System", icon: ScrollText },
-  { id: "last", label: "Request", icon: Activity },
-  { id: "model_context", label: "Model Context", icon: Brain },
-  { id: "session", label: "Session", icon: BarChart3 },
-  { id: "client", label: "Client", icon: Gauge },
-  { id: "backend", label: "Backend", icon: Server },
+  { id: "actions", label: "Actions", icon: Play, runTabId: "actions" },
+  { id: "context", label: "Context", icon: Layers, runTabId: "context" },
+  { id: "payload", label: "Payload", icon: FileJson, runTabId: "payload" },
+  {
+    id: "widget_invoker",
+    label: "Widgets",
+    icon: ToyBrick,
+    runTabId: "widget_invoker",
+  },
+  { id: "run", label: "Run", icon: SlidersHorizontal, runTabId: "settings" },
+  { id: "sysprompt", label: "System", icon: ScrollText, runTabId: "sysprompt" },
+  { id: "last", label: "Request", icon: Activity, runTabId: "last" },
+  {
+    id: "model_context",
+    label: "Model Context",
+    icon: Brain,
+    runTabId: "model_context",
+  },
+  { id: "session", label: "Session", icon: BarChart3, runTabId: "session" },
+  { id: "client", label: "Client", icon: Gauge, runTabId: "client" },
+  { id: "backend", label: "Backend", icon: Server, runTabId: "backend" },
 ];
+
+function HubEmptyConversation() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+      <MessageSquare className="h-6 w-6 text-muted-foreground/50" />
+      <p className="text-sm font-medium text-foreground">
+        No active conversation
+      </p>
+      <p className="max-w-xs text-xs text-muted-foreground">
+        Open an agent run or chat to populate this tab. The hub reflects the
+        conversation you were last working in.
+      </p>
+    </div>
+  );
+}
 
 export interface CreatorHubWindowProps {
   isOpen: boolean;
@@ -74,6 +114,20 @@ export default function CreatorHubWindow({
   initialTab = "settings",
 }: CreatorHubWindowProps) {
   const [activeTab, setActiveTab] = useState<CreatorHubTabId>(initialTab);
+
+  // Source the conversation the user was last active in (page-agnostic).
+  const inputConvId = useAppSelector(selectLastFocusedInputConversation);
+  const displayConvId = useAppSelector(selectLastFocusedDisplayConversation);
+  const surfaceKey = useAppSelector(selectLastFocusedSurfaceKey);
+
+  // Shared embedded windows (Stream Debug, Run Settings) for the Actions tab.
+  // Called unconditionally (rules of hooks); the open callbacks are only
+  // reachable when a conversation exists, so empty ids never produce windows.
+  const { openStreamDebugWindow, openRunSettingsWindow, windowPanels } =
+    useCreatorRunWindows({
+      conversationId: inputConvId ?? "",
+      displayId: displayConvId ?? inputConvId ?? "",
+    });
 
   if (!isOpen) return null;
 
@@ -106,30 +160,49 @@ export default function CreatorHubWindow({
     </nav>
   );
 
-  return (
-    <WindowPanel
-      title="Creator Hub"
-      width={760}
-      height={620}
-      minWidth={520}
-      minHeight={420}
-      urlSyncKey="creator_hub"
-      overlayId="creatorHub"
-      onClose={onClose}
-      sidebar={sidebar}
-      sidebarDefaultSize={190}
-      sidebarMinSize={150}
-      onCollectData={() => ({ activeTab })}
-    >
-      <div className="flex h-full w-full flex-col overflow-hidden bg-background">
-        {activeTab === "settings" ? (
-          <CreatorSettingsTab />
-        ) : activeTab === "data" ? (
-          <CreatorDataTab />
-        ) : (
-          <CreatorHubPlaceholder label={active.label} />
-        )}
+  let body: React.ReactNode;
+  if (active.id === "settings") {
+    body = <CreatorSettingsTab />;
+  } else if (active.id === "data") {
+    body = <CreatorDataTab />;
+  } else if (active.runTabId) {
+    body = inputConvId ? (
+      <div className="h-full overflow-y-auto">
+        <CreatorRunTabContent
+          tabId={active.runTabId}
+          conversationId={inputConvId}
+          displayConversationId={displayConvId ?? undefined}
+          surfaceKey={surfaceKey ?? "creator-hub"}
+          onOpenStreamDebugWindow={openStreamDebugWindow}
+          onOpenRunSettingsWindow={openRunSettingsWindow}
+        />
       </div>
-    </WindowPanel>
+    ) : (
+      <HubEmptyConversation />
+    );
+  }
+
+  return (
+    <>
+      <WindowPanel
+        title="Creator Hub"
+        width={900}
+        height={620}
+        minWidth={600}
+        minHeight={420}
+        urlSyncKey="creator_hub"
+        overlayId="creatorHub"
+        onClose={onClose}
+        sidebar={sidebar}
+        sidebarDefaultSize={190}
+        sidebarMinSize={150}
+        onCollectData={() => ({ activeTab })}
+      >
+        <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+          {body}
+        </div>
+      </WindowPanel>
+      {windowPanels}
+    </>
   );
 }

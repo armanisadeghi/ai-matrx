@@ -26,6 +26,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
@@ -63,6 +64,7 @@ export function AgentRunnerPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
+  useCreatorOwnershipSync(agentId);
 
   const executionPayload = useAppSelector((state) =>
     selectAgentExecutionPayload(state, agentId),

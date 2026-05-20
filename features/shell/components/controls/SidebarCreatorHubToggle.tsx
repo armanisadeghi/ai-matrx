@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Crown } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
@@ -21,7 +22,17 @@ export default function SidebarCreatorHubToggle() {
     selectIsOverlayOpen(state, "creatorHub"),
   );
 
-  if (!isCreator) return null;
+  // `creatorDebug.isCreator` is set client-side by `useCreatorOwnershipSync`
+  // (post-mount effect), so on first render it is always false. Defer the
+  // visibility gate to post-hydration to guarantee SSR and the first client
+  // commit agree — otherwise this toggle and the sibling admin toggle can
+  // swap DOM positions during hydration and crash the tree.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  if (!hydrated || !isCreator) return null;
 
   return (
     <button

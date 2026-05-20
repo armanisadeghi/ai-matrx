@@ -5,298 +5,28 @@
  * CreatorRunPanel — Creator Run Panel
  *
  * A collapsible, always-visible tabbed panel between conversation and input.
- * Collapsed: single compact row with "Creator Panel" + stats pills.
+ * Collapsed: single compact row with the conversation title + Cloud/Sandbox pill.
  * Expanded: fixed-height tabbed panel (h-72).
  *
- * Tabs:
- *   Actions | Run Settings | System Prompt | Last Request | Session | Client
- *
- * Rendered inline by AgentConversationColumn — uses <WindowPanel> as styling
- * chrome for two embedded sub-panels but is NOT mounted via the unified
- * registry/controller. Its props are driven by the parent column, not Redux.
- * Do NOT add a registry entry without first converting it to the callback-bus
- * pattern (see ImageUploaderWindow for the model).
+ * The per-tab content and the two embedded windows (Stream Debug, Run Settings)
+ * are shared with the global Creator Hub via `CreatorRunTabContent` and
+ * `useCreatorRunWindows` — this component only owns the collapsible bottom-bar
+ * chrome. Window panels render outside the collapsed/expanded branches so they
+ * stay mounted even when collapsed.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  RotateCcw,
-  AppWindow,
-  SlidersHorizontal,
-  Brain,
-} from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import {
-  restoreWindow,
-  focusWindow,
-  selectWindow,
-} from "@/lib/redux/slices/windowManagerSlice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import {
-  selectIsMemoryEnabledForConversation,
-  selectMemoryCounters,
-  selectMemoryDegraded,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { startNewConversation } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectUseStructuredSystemInstruction } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { RunSettingsEditor } from "./RunSettingsEditor";
-import { ContextSlotsTab } from "./ContextSlotsTab";
-import { PayloadTab } from "./PayloadTab";
+import { useState, useCallback, useEffect } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { SystemInstructionEditor } from "../builder/message-builders/system-instructions/SystemInstructionEditor";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { StreamDebugPanel } from "../debug/StreamDebugPanel";
-import { AgentWidgetInvokerTester } from "./AgentWidgetInvokerTester";
-import { RequestStatsPanel } from "./panels/RequestStatsPanel";
-import { SessionStatsPanel } from "./panels/SessionStatsPanel";
-import { ClientMetricsPanel } from "./panels/ClientMetricsPanel";
-import { BackendTargetPanel } from "./panels/BackendTargetPanel";
-import { ModelContextPanel } from "./panels/ModelContextPanel";
 import { cn } from "@/lib/utils";
-
-// =============================================================================
-// Tab type
-// =============================================================================
-
-type TabId =
-  | "actions"
-  | "context"
-  | "payload"
-  | "widget_invoker"
-  | "settings"
-  | "sysprompt"
-  | "last"
-  | "model_context"
-  | "session"
-  | "client"
-  | "backend";
-
-// =============================================================================
-// Tab 1: Actions
-// =============================================================================
-
-function ActionsTab({
-  conversationId,
-  surfaceKey,
-  onOpenStreamDebugWindow,
-  onOpenRunSettingsWindow,
-}: {
-  conversationId: string;
-  surfaceKey: string;
-  onOpenStreamDebugWindow: () => void;
-  onOpenRunSettingsWindow: () => void;
-}) {
-  const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isMemoryEnabled = useAppSelector(
-    selectIsMemoryEnabledForConversation(conversationId),
-  );
-  const memoryDegraded = useAppSelector(selectMemoryDegraded(conversationId));
-  const memoryCounters = useAppSelector(selectMemoryCounters(conversationId));
-
-  const handleReset = useCallback(() => {
-    dispatch(
-      startNewConversation({
-        currentConversationId: conversationId,
-        surfaceKey,
-      }),
-    )
-      .unwrap()
-      .catch((err) => console.error("Failed to reset test instance:", err));
-  }, [conversationId, surfaceKey, dispatch]);
-
-  const handleOpenMemoryInspector = useCallback(() => {
-    dispatch(
-      openOverlay({
-        overlayId: "observationalMemoryWindow",
-        data: { initialSelectedConversationId: conversationId },
-      }),
-    );
-  }, [dispatch, conversationId]);
-
-  const ActionButton = ({
-    onClick,
-    icon: Icon,
-    label,
-    iconClassName,
-  }: {
-    onClick: () => void;
-    icon: React.ComponentType<{ className?: string }>;
-    label: React.ReactNode;
-    iconClassName?: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center justify-center gap-1.5 w-[84px] h-[84px] text-muted-foreground hover:text-foreground bg-muted/10 hover:bg-muted/30 border border-transparent hover:border-border rounded-xl transition-all shrink-0"
-    >
-      <Icon className={cn("w-7 h-7", iconClassName)} />
-      <span className="text-[10px] text-center leading-tight font-medium px-1">
-        {label}
-      </span>
-    </button>
-  );
-
-  return (
-    <div className="p-2 flex flex-wrap content-start gap-2 h-full overflow-y-auto">
-      <ActionButton
-        onClick={handleReset}
-        icon={RotateCcw}
-        iconClassName="text-amber-500"
-        label={
-          <>
-            Reset
-            <br />
-            Conversation
-          </>
-        }
-      />
-      <ActionButton
-        onClick={onOpenStreamDebugWindow}
-        icon={AppWindow}
-        iconClassName="text-blue-500"
-        label={
-          <>
-            Debug
-            <br />
-            Window
-          </>
-        }
-      />
-      <ActionButton
-        onClick={onOpenRunSettingsWindow}
-        icon={SlidersHorizontal}
-        iconClassName="text-green-500"
-        label={
-          <>
-            Run
-            <br />
-            Settings
-          </>
-        }
-      />
-      {isAdmin && (
-        <button
-          type="button"
-          onClick={handleOpenMemoryInspector}
-          className={cn(
-            "relative flex flex-col items-center justify-center gap-1.5 w-[84px] h-[84px] text-muted-foreground hover:text-foreground bg-muted/10 hover:bg-muted/30 border border-transparent hover:border-border rounded-xl transition-all shrink-0",
-            isMemoryEnabled &&
-              "bg-purple-500/10 border-purple-500/30 text-foreground",
-          )}
-        >
-          <Brain
-            className={cn(
-              "w-7 h-7",
-              isMemoryEnabled ? "text-purple-500" : "text-purple-500/60",
-            )}
-          />
-          <span className="text-[10px] text-center leading-tight font-medium px-1">
-            Memory
-            <br />
-            Inspector
-          </span>
-          {isMemoryEnabled && (
-            <span className="absolute top-1 right-1 flex items-center gap-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-              {memoryCounters.totalEvents > 0 && (
-                <span className="text-[9px] font-mono text-purple-500 leading-none">
-                  {memoryCounters.totalEvents}
-                </span>
-              )}
-            </span>
-          )}
-          {memoryDegraded && (
-            <span className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-amber-500" />
-          )}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// =============================================================================
-// Tab 2: Run Settings
-// =============================================================================
-
-function RunSettingsTab({ conversationId }: { conversationId: string }) {
-  return (
-    <div className="px-3 py-2">
-      <RunSettingsEditor conversationId={conversationId} />
-    </div>
-  );
-}
-
-// =============================================================================
-// Tab 3: System Prompt
-// =============================================================================
-
-function SystemPromptTab({ conversationId }: { conversationId: string }) {
-  const dispatch = useAppDispatch();
-  const isActive = useAppSelector(
-    selectUseStructuredSystemInstruction(conversationId),
-  );
-
-  return (
-    <div className="px-3 py-2">
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-border">
-        <Label
-          htmlFor={`sysprompt-active-${conversationId}`}
-          className="text-xs text-muted-foreground cursor-pointer"
-        >
-          Structured system prompt
-        </Label>
-        <Switch
-          id={`sysprompt-active-${conversationId}`}
-          checked={isActive}
-          onCheckedChange={(v) =>
-            dispatch(
-              setBuilderAdvancedSettings({
-                conversationId,
-                changes: { useStructuredSystemInstruction: v },
-              }),
-            )
-          }
-          className="scale-75 origin-right"
-        />
-      </div>
-
-      {isActive ? (
-        <SystemInstructionEditor conversationId={conversationId} />
-      ) : (
-        <p className="text-xs text-muted-foreground/60">
-          Enable to configure structured system instruction fields (intro,
-          outro, content blocks, etc.)
-        </p>
-      )}
-    </div>
-  );
-}
-
-// =============================================================================
-// Main component
-// =============================================================================
-
-const ALL_TABS: TabId[] = [
-  "actions",
-  "context",
-  "payload",
-  "widget_invoker",
-  "settings",
-  "sysprompt",
-  "last",
-  "model_context",
-  "session",
-  "client",
-  "backend",
-];
+import CreatorRunTabContent, {
+  useCreatorRunWindows,
+  ALL_RUN_TABS,
+  RUN_TAB_LABELS,
+  type RunTabId,
+} from "./CreatorRunTabContent";
 
 interface CreatorRunPanelProps {
   /**
@@ -308,22 +38,15 @@ interface CreatorRunPanelProps {
    */
   conversationId: string;
   /**
-   * The DISPLAY conversation — where the streaming response lives and
-   * where telemetry/recovery data is keyed (Last Request, Session, Client,
-   * Backend, Reset). Falls back to `conversationId` when not provided.
-   *
-   * Why both: under autoClear=true, smart-execute fires the request on the
-   * current conversation, then splits — input focus moves to a new instance
-   * while display focus stays put. The just-completed request's stats live
-   * on the DISPLAY id; settings the engineer is configuring for the NEXT
-   * call live on the INPUT id. Threading both is the only way both
-   * surfaces stay coherent.
+   * The DISPLAY conversation — where the streaming response lives and where
+   * telemetry/recovery data is keyed (Last Request, Session, Client, Backend,
+   * Reset). Falls back to `conversationId` when not provided.
    */
   displayConversationId?: string;
   /** Focus surface for startNewConversation (reset conversation). */
   surfaceKey: string;
   /** Restrict which tabs are visible. Defaults to all tabs when omitted. */
-  tabs?: TabId[];
+  tabs?: RunTabId[];
 }
 
 export function CreatorRunPanel({
@@ -333,68 +56,26 @@ export function CreatorRunPanel({
   tabs: allowedTabs,
 }: CreatorRunPanelProps) {
   // Telemetry / response-context tabs read from the DISPLAY id (where the
-  // just-completed request actually landed). Settings tabs that configure
-  // the next submit stay on the INPUT id (`conversationId`).
+  // just-completed request actually landed). Settings tabs that configure the
+  // next submit stay on the INPUT id (`conversationId`).
   const displayId = displayConversationId ?? conversationId;
-  const dispatch = useAppDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>(() =>
+  const [activeTab, setActiveTab] = useState<RunTabId>(() =>
     allowedTabs && allowedTabs.length > 0 ? allowedTabs[0] : "actions",
   );
-  // Window panels stay mounted once opened (never unmounted while minimized).
-  // Only set to false when the user explicitly closes via onClose.
-  const [streamDebugWindowOpen, setStreamDebugWindowOpen] = useState(false);
-  const [runSettingsWindowOpen, setRunSettingsWindowOpen] = useState(false);
 
-  // Freeze window ids at first render — they must never change even if
-  // conversationId changes (e.g. after reset), otherwise the hook cleanup
-  // fires, unregisters the window from Redux, and the tray chip disappears.
-  // Stream Debug is keyed to displayId (where the response lives); Run
-  // Settings is keyed to the input id (where the next call fires).
-  const streamDebugIdRef = useRef(`stream-debug-${displayId}`);
-  const runSettingsIdRef = useRef(`run-settings-${conversationId}`);
-  const streamDebugId = streamDebugIdRef.current;
-  const runSettingsId = runSettingsIdRef.current;
-
-  const streamDebugEntry = useAppSelector(selectWindow(streamDebugId));
-  const runSettingsEntry = useAppSelector(selectWindow(runSettingsId));
-
-  const openStreamDebugWindow = useCallback(() => {
-    if (streamDebugEntry) {
-      // Already registered — restore if minimized, then focus
-      dispatch(restoreWindow(streamDebugId));
-      dispatch(focusWindow(streamDebugId));
-    } else {
-      setStreamDebugWindowOpen(true);
-    }
-  }, [dispatch, streamDebugEntry, streamDebugId]);
-
-  const openRunSettingsWindow = useCallback(() => {
-    if (runSettingsEntry) {
-      dispatch(restoreWindow(runSettingsId));
-      dispatch(focusWindow(runSettingsId));
-    } else {
-      setRunSettingsWindowOpen(true);
-    }
-  }, [dispatch, runSettingsEntry, runSettingsId]);
+  const { openStreamDebugWindow, openRunSettingsWindow, windowPanels } =
+    useCreatorRunWindows({ conversationId, displayId });
 
   // Title belongs to the conversation that was just labeled by the server —
-  // that's the display id (where the response carrying the title landed).
-  const conversationTitle = useAppSelector(
-    selectConversationTitle(displayId),
-  );
+  // the display id (where the response carrying the title landed).
+  const conversationTitle = useAppSelector(selectConversationTitle(displayId));
 
-  // At-a-glance API target indicator — appears on the collapsed creator bar
-  // so an admin can see whether THIS conversation is talking to the cloud
-  // server or to a sandbox proxy without expanding the panel. Source of
-  // truth lives in `instanceUIState[displayId].serverOverrideUrl`; see
-  // BackendTargetPanel for the full breakdown. Tied to displayId so the
-  // badge describes the run the user is currently looking at.
-  const instanceUIForBadge = useAppSelector(
-    selectInstanceUIState(displayId),
-  );
+  // At-a-glance API target indicator for the collapsed bar (cloud vs sandbox).
+  const instanceUIForBadge = useAppSelector(selectInstanceUIState(displayId));
   const isOverridden = Boolean(instanceUIForBadge?.serverOverrideUrl);
-  // Session count across ALL instances for the tab label
+
+  // Session count across ALL instances for the tab label.
   const totalRequestCount = useAppSelector((state) => {
     let count = 0;
     for (const id of state.conversations.allConversationIds) {
@@ -407,13 +88,11 @@ export function CreatorRunPanel({
   const handleCollapse = useCallback(() => setIsExpanded(false), []);
 
   // Deep-link from external triggers (e.g. the header ContextGaugeWidget):
-  // listen for ``matrx:openCreatorTab`` and switch tabs / expand. The custom
-  // event carries the target tab id so other surfaces can route to any tab.
-  // Gated on conversationId so unrelated panels (other open creator panels in
-  // a multi-pane layout) ignore the signal.
+  // listen for `matrx:openCreatorTab` and switch tabs / expand. Gated on
+  // conversationId so unrelated panels in a multi-pane layout ignore it.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    type Detail = { tab?: TabId; conversationId?: string };
+    type Detail = { tab?: RunTabId; conversationId?: string };
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<Detail>).detail ?? {};
       if (
@@ -424,9 +103,7 @@ export function CreatorRunPanel({
         return;
       }
       if (!detail.tab) return;
-      // Respect the optional ``tabs`` filter — if a parent restricted us, only
-      // open tabs that pass the filter.
-      const allowed = allowedTabs ?? ALL_TABS;
+      const allowed = allowedTabs ?? ALL_RUN_TABS;
       if (!allowed.includes(detail.tab)) return;
       setActiveTab(detail.tab);
       setIsExpanded(true);
@@ -434,42 +111,6 @@ export function CreatorRunPanel({
     window.addEventListener("matrx:openCreatorTab", handler);
     return () => window.removeEventListener("matrx:openCreatorTab", handler);
   }, [conversationId, displayId, allowedTabs]);
-
-  // ── Window panels — rendered OUTSIDE the collapsed/expanded branches ───────
-  // They must always stay mounted once opened so the hook's cleanup never fires
-  // and the minimized tray chip keeps working. Only unmounted on explicit close.
-  const windowPanels = (
-    <>
-      {streamDebugWindowOpen && (
-        <WindowPanel
-          id={streamDebugId}
-          title="Stream Debug"
-          width={680}
-          height={720}
-          onClose={() => setStreamDebugWindowOpen(false)}
-          urlSyncKey="debug"
-          urlSyncId={displayId}
-        >
-          <StreamDebugPanel conversationId={displayId} />
-        </WindowPanel>
-      )}
-      {runSettingsWindowOpen && (
-        <WindowPanel
-          id={runSettingsId}
-          title="Run Settings"
-          width={420}
-          height={480}
-          onClose={() => setRunSettingsWindowOpen(false)}
-          urlSyncKey="run_settings"
-          urlSyncId={conversationId}
-        >
-          <div className="p-3">
-            <RunSettingsEditor conversationId={conversationId} />
-          </div>
-        </WindowPanel>
-      )}
-    </>
-  );
 
   // ── Collapsed view ────────────────────────────────────────────────────────
   if (!isExpanded) {
@@ -508,27 +149,14 @@ export function CreatorRunPanel({
   }
 
   // ── Expanded view ─────────────────────────────────────────────────────────
-  const visibleTabIds = allowedTabs ?? ALL_TABS;
-
-  const allTabDefs: Array<{ id: TabId; label: string }> = [
-    { id: "actions", label: "Actions" },
-    { id: "context", label: "Context" },
-    { id: "payload", label: "Payload" },
-    { id: "widget_invoker", label: "Widgets" },
-    { id: "settings", label: "Run" },
-    { id: "sysprompt", label: "System" },
-    { id: "last", label: "Request" },
-    { id: "model_context", label: "Model Context" },
-    {
-      id: "session",
-      label:
-        totalRequestCount > 0 ? `Session (${totalRequestCount})` : "Session",
-    },
-    { id: "client", label: "Client" },
-    { id: "backend", label: "Backend" },
-  ];
-
-  const tabs = allTabDefs.filter((t) => visibleTabIds.includes(t.id));
+  const visibleTabIds = allowedTabs ?? ALL_RUN_TABS;
+  const tabs = visibleTabIds.map((id) => ({
+    id,
+    label:
+      id === "session" && totalRequestCount > 0
+        ? `Session (${totalRequestCount})`
+        : RUN_TAB_LABELS[id],
+  }));
 
   return (
     <>
@@ -564,54 +192,14 @@ export function CreatorRunPanel({
 
         {/* Tab content — fixed height (shorter on mobile so it doesn't dominate the viewport) */}
         <div className="h-[50dvh] sm:h-72 overflow-y-auto">
-          {/* Actions: reset clears the displayed conversation; memory + */}
-          {/* debug windows describe the displayed run. */}
-          {activeTab === "actions" && (
-            <ActionsTab
-              conversationId={displayId}
-              surfaceKey={surfaceKey}
-              onOpenStreamDebugWindow={openStreamDebugWindow}
-              onOpenRunSettingsWindow={openRunSettingsWindow}
-            />
-          )}
-          {/* Context / payload / run settings / system prompt / widgets */}
-          {/* configure the NEXT submit — keep them on the input id. */}
-          {activeTab === "context" && (
-            <ContextSlotsTab conversationId={conversationId} />
-          )}
-          {activeTab === "payload" && (
-            <PayloadTab conversationId={conversationId} />
-          )}
-          {activeTab === "settings" && (
-            <RunSettingsTab conversationId={conversationId} />
-          )}
-          {activeTab === "sysprompt" && (
-            <SystemPromptTab conversationId={conversationId} />
-          )}
-          {/* Telemetry — every panel keyed to the request that just ran, */}
-          {/* which lives on the display id (not the input one). */}
-          {activeTab === "last" && (
-            <RequestStatsPanel conversationId={displayId} />
-          )}
-          {activeTab === "model_context" && (
-            <ModelContextPanel conversationId={displayId} />
-          )}
-          {activeTab === "session" && (
-            <SessionStatsPanel conversationId={displayId} />
-          )}
-          {activeTab === "client" && (
-            <ClientMetricsPanel conversationId={displayId} />
-          )}
-          {activeTab === "widget_invoker" && (
-            <AgentWidgetInvokerTester
-              conversationId={conversationId}
-              sourceFeature="agent-creator-panel"
-              surfaceKey={`creator-widget-tester:${conversationId}`}
-            />
-          )}
-          {activeTab === "backend" && (
-            <BackendTargetPanel conversationId={displayId} />
-          )}
+          <CreatorRunTabContent
+            tabId={activeTab}
+            conversationId={conversationId}
+            displayConversationId={displayConversationId}
+            surfaceKey={surfaceKey}
+            onOpenStreamDebugWindow={openStreamDebugWindow}
+            onOpenRunSettingsWindow={openRunSettingsWindow}
+          />
         </div>
       </div>
       {windowPanels}

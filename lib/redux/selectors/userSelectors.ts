@@ -75,11 +75,11 @@ export const selectIsSuperAdmin = (state: RootState): boolean =>
   state.userAuth.adminLevel === "super_admin";
 
 /**
- * Authority check for the "creator" role — agentic engineers building
- * agents, shortcuts, content blocks, etc. There is no dedicated `creator`
- * row in the database yet, so for now any admin qualifies as a creator.
- * When the DB-side creator role lands, update this body to read from the
- * real source; every consumer keeps working unchanged.
+ * Authority check for the "creator" role — agentic engineers building agents,
+ * shortcuts, content blocks, etc. TRUE only when we are CERTAIN the current
+ * user owns the agent currently in context: set by `useCreatorOwnershipSync`
+ * on agent build/run/chat/apps pages and aggressively cleared on navigation /
+ * when ownership is uncertain. Reads the ownership flag in `creatorDebugSlice`.
  *
  * Pair with `selectIsCreatorMode` / `selectShowCreatorTools` from
  * `lib/redux/preferences/creatorDebugSlice` to gate creator-only UI:
@@ -89,7 +89,7 @@ export const selectIsSuperAdmin = (state: RootState): boolean =>
  *     if (!canSeeCreatorUi || !creatorModeOn) return null;
  */
 export const selectIsCreator = (state: RootState): boolean =>
-  state.userAuth.isAdmin;
+  state.creatorDebug.isCreator;
 
 export const selectAccessToken = (state: RootState): string | null =>
   state.userAuth.accessToken;

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
 import type { AgentApp } from "@/features/agent-apps/types";
+import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 
 interface AgentAppsPanelProps {
   agentId: string;
@@ -26,6 +27,8 @@ export function AgentAppsPanel({
   agentName,
   apps,
 }: AgentAppsPanelProps) {
+  useCreatorOwnershipSync(agentId);
+
   const publishedCount = apps.filter((a) => a.status === "published").length;
   const draftCount = apps.filter((a) => a.status === "draft").length;
   const featuredCount = apps.filter((a) => a.is_featured).length;

@@ -184,7 +184,7 @@ export default function SidebarWindowToggle() {
             role="menu"
             className={cn(
               "fixed z-[10000] flex flex-col",
-              "w-[350px] rounded-xl overflow-hidden",
+              "w-[440px] rounded-xl overflow-hidden",
               "bg-card/97 backdrop-blur-xl border border-blue-300 dark:border-blue-700 shadow-2xl",
               "py-1 text-sm",
             )}

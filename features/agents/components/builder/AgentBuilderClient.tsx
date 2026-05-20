@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 import { useAgentAutoSave } from "@/features/agents/hooks/useAgentAutoSave";
+import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileBuilderSkeleton } from "./AgentBuilderSkeletons";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
@@ -39,6 +40,7 @@ export function AgentBuilderClient({
   }, []);
 
   useAgentAutoSave(agentId);
+  useCreatorOwnershipSync(agentId);
 
   // Gate on mounted so SSR + first client paint match: Redux may rehydrate before
   // hydration completes, which would otherwise render skeleton on server and real UI on client.

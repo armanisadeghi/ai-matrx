@@ -37,3 +37,29 @@ export const selectIsFocusSplit =
 
 export const selectAllSurfaceFocus = (state: RootState) =>
   state.conversationFocus?.bySurface;
+
+/** The surfaceKey whose focus was set most recently (or null). */
+export const selectLastFocusedSurfaceKey = (state: RootState): string | null =>
+  state.conversationFocus?.lastSurfaceKey ?? null;
+
+/**
+ * The "input" conversation id of the most-recently-focused surface — i.e. the
+ * conversation the user was last actively in. Used by page-agnostic surfaces
+ * (the global Creator Hub) that have no surfaceKey of their own.
+ */
+export const selectLastFocusedInputConversation = (
+  state: RootState,
+): string | null => {
+  const key = state.conversationFocus?.lastSurfaceKey;
+  if (!key) return null;
+  return state.conversationFocus?.bySurface[key]?.input ?? null;
+};
+
+/** The "display" conversation id of the most-recently-focused surface. */
+export const selectLastFocusedDisplayConversation = (
+  state: RootState,
+): string | null => {
+  const key = state.conversationFocus?.lastSurfaceKey;
+  if (!key) return null;
+  return state.conversationFocus?.bySurface[key]?.display ?? null;
+};

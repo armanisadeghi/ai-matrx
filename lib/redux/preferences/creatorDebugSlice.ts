@@ -38,6 +38,15 @@ export interface CreatorDebugSettings {
 }
 
 export interface CreatorDebugState {
+  /**
+   * Authority flag — TRUE only when we are CERTAIN the current user owns the
+   * agent currently in context. Set by useCreatorOwnershipSync on agent
+   * build/run/chat/apps pages; defaults false and is aggressively cleared on
+   * navigation / when ownership is uncertain. This is what `selectIsCreator`
+   * (userSelectors) reads. Distinct from `isCreatorMode`, the creator's manual
+   * "show creator UI" toggle.
+   */
+  isCreator: boolean;
   isCreatorMode: boolean;
   showCreatorTools: boolean;
   /** Per-feature visibility flags. Keys are namespaced: "Agents:RawState",
@@ -52,6 +61,7 @@ export interface CreatorDebugState {
 }
 
 const initialState: CreatorDebugState = {
+  isCreator: false,
   isCreatorMode: false,
   showCreatorTools: false,
   visibility: {},
@@ -67,6 +77,11 @@ const creatorDebugSlice = createSlice({
   name: "creatorDebug",
   initialState,
   reducers: {
+    // Authority flag — set by useCreatorOwnershipSync only (never toggled by UI).
+    setIsCreator: (state, action: PayloadAction<boolean>) => {
+      state.isCreator = action.payload;
+    },
+
     toggleCreatorMode: (state) => {
       state.isCreatorMode = !state.isCreatorMode;
     },
@@ -142,11 +157,17 @@ const creatorDebugSlice = createSlice({
       state.debugData = {};
     },
 
-    resetCreatorState: () => initialState,
+    // Preserve the ownership authority flag — it's derived from the agent in
+    // context, not a user preference, so a settings reset shouldn't drop it.
+    resetCreatorState: (state) => ({
+      ...initialState,
+      isCreator: state.isCreator,
+    }),
   },
 });
 
 export const {
+  setIsCreator,
   toggleCreatorMode,
   setCreatorMode,
   toggleCreatorTools,
