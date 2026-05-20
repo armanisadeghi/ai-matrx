@@ -81,7 +81,11 @@ export function FileLineageChip({ fileId, className }: FileLineageChipProps) {
       )}
       {hasProcessedDoc && (
         <span
-          title={`Has a processed_documents row with ${state.status === "found" ? state.doc.chunk_count : 0} chunks`}
+          title={
+            state.status === "found" && state.doc.chunk_count != null
+              ? `Has a processed_documents row with ${state.doc.chunk_count} chunks`
+              : "Has a processed_documents row"
+          }
           className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5"
         >
           <GitBranch className="h-3 w-3" />

@@ -9,8 +9,9 @@
 > the BE. Items move from `Open` → `Resolved` when the corresponding
 > work ships and we've verified it on our side.
 >
-> Last updated: 2026-05-17 (post-audit; closed twelve items the Python
-> team shipped between 2026-05-05 and 2026-05-17).
+> Last updated: 2026-05-20 (added items 4–7 from the Python-as-DB-proxy
+> audit — see also [docs/SERVER_SIDE_REQUESTS.md](../../../docs/SERVER_SIDE_REQUESTS.md)
+> for the cross-cutting rule + app-wide audit table).
 
 ---
 
@@ -73,6 +74,105 @@ defer. Will become urgent before any enterprise customer with a
 security review.
 
 **Blocker?** No.
+
+---
+
+### 4. 🟡 Architecture: stop using `/files/*` reads as a database proxy
+
+**Priority:** Medium — incremental cleanup, do it endpoint-by-endpoint.
+
+**Context:** Several `GET /files/*` endpoints just read RLS-protected
+`cld_*` / `processed_documents` tables and return them. The browser is
+already authorized to read those tables directly (RLS), and the
+`42P17` permission-recursion fix (resolved 2026-04-26) removed the
+original reason reads were routed through Python. The file **tree**
+already loads via `cld_get_user_file_tree` + `.from('cld_files')`, so
+the feature is split-brained: some reads are direct, some proxy. The
+trigger was `GET /files/{id}/document` firing once per row on every
+list render + every upload (a guaranteed 404 at upload time) to read
+one `processed_documents` row — now fixed FE-side via a direct read.
+
+**Ask:** As the FE migrates each read to a direct supabase-js
+read/RPC, mark the matching endpoint `@deprecated`, then **delete** it
+(no legacy proxies kept "just in case"). Candidates:
+`GET /files`, `/files/{id}`, `/files/trash`, `/files/folders`,
+`/files/groups`, `/files/{id}/share-links`, `/folders/{id}/share-links`,
+and `/files/{id}/document` (already unused by the FE).
+**Keep on Python** (not proxies): `/assets/*`, `/files/{id}/asset`
+(renders + signs), `/files/{id}/ingest*`, and anything computed or
+needing the `rag` schema.
+
+**Blocker?** No — FE drives the migration; this just confirms we can
+delete the proxies as we go.
+
+**Current FE workaround:** Migrating reads to direct Supabase one
+surface at a time; proxies stay callable until each is retired.
+
+---
+
+### 5. 🟡 Expose a RAG `chunk_count` the browser can read
+
+**Priority:** Low (cosmetic).
+
+**Context:** RAG chunks live in `rag.kg_chunks` — the `rag` schema is
+not exposed to PostgREST, so the browser can't count them. This is the
+only field of the old `GET /files/{id}/document` payload the FE can't
+resolve via a direct `processed_documents` read.
+
+**Ask:** Either maintain a `chunk_count` integer column on
+`public.processed_documents` (updated by the ingest pipeline —
+preferred, cheapest for batch reads), or expose a `public` view /
+`SECURITY DEFINER` RPC returning the count per `processed_document_id`.
+
+**Blocker?** No.
+
+**Current FE workaround:** `chunk_count` is left `null` and the
+"N chunks" stat is hidden in the Document/Info tabs + lineage tooltip;
+everything else renders from the direct read.
+
+---
+
+### 6. 🟡 Add a "shared file" SELECT policy on `processed_documents`
+
+**Priority:** Medium — only for shared-file RAG previews.
+
+**Context:** With the FE reading `processed_documents` directly under
+RLS, a user viewing a file **shared** with them (not owned, not same
+org) sees the Document tab as "not ingested" — the only SELECT policies
+are owner (`owner_id = auth.uid()`) and org-member, so RLS hides the
+row.
+
+**Blocking question:** Did `GET /files/{id}/document` (and the other
+`/files/*` reads) run under the **user's JWT** (RLS enforced) or a
+**service-role client** (RLS bypassed + manual auth)? That determines
+whether shared-file RAG previews ever worked, i.e. whether this is a
+parity fix or a new capability.
+
+**Ask:** If shared-file RAG access is intended, add a SELECT policy on
+`public.processed_documents` mirroring `cld_files_shared_user_select`
+(`cld_user_has_permission_grant(<file id>, 'file', 'read')`).
+
+**Blocker?** No.
+
+**Current FE workaround:** Owner + org documents resolve correctly;
+shared-file RAG previews show "not ingested" until this lands.
+
+---
+
+### 7. 🟡 Make `cld_user_storage_usage` readable directly (RLS or RPC)
+
+**Priority:** Medium — needed to retire `GET /files/usage`.
+
+**Context:** `/files/usage` proxies `cld_user_storage_usage`, but that
+table has **RLS disabled**, so the FE can't safely read it directly.
+
+**Ask:** Enable RLS + an owner SELECT policy, or expose a
+`SECURITY DEFINER` RPC (`cld_get_storage_usage()`) returning the
+caller's usage.
+
+**Blocker?** No.
+
+**Current FE workaround:** Still calling `GET /files/usage`.
 
 ---
 

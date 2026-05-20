@@ -171,8 +171,10 @@ export function DocumentTab({
     <div className={cn("flex h-full w-full flex-col", className)}>
       <div className="flex items-center justify-between border-b border-border bg-muted/20 px-3 py-1 text-xs shrink-0">
         <span className="text-muted-foreground">
-          {state.doc.derivation_kind} · {state.doc.total_pages ?? 0} pages ·{" "}
-          {state.doc.chunk_count} chunks
+          {state.doc.derivation_kind} · {state.doc.total_pages ?? 0} pages
+          {state.doc.chunk_count != null
+            ? ` · ${state.doc.chunk_count} chunks`
+            : ""}
         </span>
         <div className="flex items-center gap-1">
           <button
@@ -322,8 +324,8 @@ function UnavailableCard({
         </h3>
         <p className="text-xs text-muted-foreground break-words">{reason}</p>
         <p className="text-[10px] text-muted-foreground/70">
-          Couldn't reach `GET /files/&#123;id&#125;/document`. Likely a
-          transient network or backend hiccup — try again.
+          Couldn't read the document index. Likely a transient network
+          hiccup — try again.
         </p>
       </div>
       <button

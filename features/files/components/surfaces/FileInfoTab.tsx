@@ -214,10 +214,12 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
                   label="Pages"
                   value={(docState.state.doc.total_pages ?? 0).toLocaleString()}
                 />
-                <Row
-                  label="Chunks"
-                  value={docState.state.doc.chunk_count.toLocaleString()}
-                />
+                {docState.state.doc.chunk_count != null ? (
+                  <Row
+                    label="Chunks"
+                    value={docState.state.doc.chunk_count.toLocaleString()}
+                  />
+                ) : null}
                 <Row
                   label="Last ingested"
                   value={formatTs(docState.state.doc.updated_at)}
