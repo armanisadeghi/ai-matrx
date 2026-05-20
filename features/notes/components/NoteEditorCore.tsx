@@ -294,6 +294,7 @@ export function NoteEditorCore({
             actionsVariant={actionsSurfaceId ? "remote" : "bar"}
             actionsSurfaceId={actionsSurfaceId}
             actionsClassName="mb-2"
+            enableContextMenu
             isStreamActive={false}
             hideCopyButton={true}
             allowFullScreenEditor={true}

@@ -43,7 +43,7 @@ This feature owns no database tables. It composes content originating elsewhere 
 - `RichDocumentAction` — `{ id, label, icon, category, supportedSources, visible?, disabled?, run, renderSlot?, order?, requiresAuth? }`. Handler-side type.
 - `RichDocumentActionContext` — runtime context passed to every `run` / `visible` / `disabled`. Carries live `content`, `source`, `dispatch`, auth flags, callbacks, `instanceKey(prefix)`, and a discriminated `extensions` field for source-specific baggage (the chat-message variant holds `streamRequestId`, `contentHistoryCount`, `groupMessageIds`, etc.).
 - `RichDocumentActionSpec` — the pure-metadata snapshot stored in Redux for remote surfaces. **Contains no functions.** `iconName` is a string; the renderer maps it back to a `LucideIcon`.
-- `RichDocumentSurfaceRegistration` — `{ providerId, registeredAt, computedActionSpecs, sourceType }`. One entry per active RichDocument bound to a remote surface.
+- `RichDocumentSurfaceRegistration` — `{ providerId, computedActionSpecs, sourceType }`. One entry per active RichDocument bound to a remote surface. Registration order is encoded by the provider stack's array order.
 
 ---
 

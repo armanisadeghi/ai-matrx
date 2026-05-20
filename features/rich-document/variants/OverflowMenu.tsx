@@ -16,18 +16,12 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { buildMenuTree, type MenuSubmenuNode } from "./shared/menuStructure";
-import { runAction, resolveActionDisplay } from "./shared/runAction";
+import { buildMenuTree } from "./shared/menuStructure";
+import { DropdownMenuTree } from "./shared/DropdownMenuTree";
 import { MobileActionDrawer } from "./MobileActionDrawer";
 import type {
   RichDocumentAction,
@@ -88,49 +82,9 @@ export function OverflowMenu(props: OverflowMenuProps): React.ReactElement {
     );
   }
 
-  // Desktop → dropdown with submenus.
+  // Desktop → dropdown with submenus (shared tree renderer).
   const ctxForLabels = getCtx();
   const tree = buildMenuTree(menuActions);
-
-  const renderItem = (action: RichDocumentAction) => {
-    const { label, Icon, iconColor, isDisabled } = resolveActionDisplay(
-      action,
-      ctxForLabels,
-    );
-    return (
-      <DropdownMenuItem
-        key={action.id}
-        disabled={isDisabled}
-        onClick={() => runAction(action, getCtx)}
-      >
-        <Icon className={cn("h-4 w-4 mr-2", iconColor)} />
-        <span>{label}</span>
-      </DropdownMenuItem>
-    );
-  };
-
-  const renderSubmenu = (submenu: MenuSubmenuNode) => {
-    const TriggerIcon = submenu.icon;
-    return (
-      <DropdownMenuSub key={submenu.label}>
-        <DropdownMenuSubTrigger>
-          {TriggerIcon ? (
-            <TriggerIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-          ) : null}
-          <span>{submenu.label}</span>
-        </DropdownMenuSubTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuSubContent className="w-56">
-            {submenu.actions.map(renderItem)}
-          </DropdownMenuSubContent>
-        </DropdownMenuPortal>
-      </DropdownMenuSub>
-    );
-  };
-
-  const hasTop = tree.topLevel.length > 0;
-  const hasSubs = tree.submenus.length > 0;
-  const hasExtras = tree.extras.length > 0;
 
   return (
     <DropdownMenu>
@@ -145,11 +99,11 @@ export function OverflowMenu(props: OverflowMenuProps): React.ReactElement {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        {hasTop ? tree.topLevel.map(renderItem) : null}
-        {hasTop && (hasSubs || hasExtras) ? <DropdownMenuSeparator /> : null}
-        {hasSubs ? tree.submenus.map(renderSubmenu) : null}
-        {hasSubs && hasExtras ? <DropdownMenuSeparator /> : null}
-        {hasExtras ? tree.extras.map(renderItem) : null}
+        <DropdownMenuTree
+          tree={tree}
+          getCtx={getCtx}
+          ctxForLabels={ctxForLabels}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );

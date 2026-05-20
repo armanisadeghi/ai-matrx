@@ -47,9 +47,13 @@ import {
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
+// Lightweight wrapper — the heavy context-menu chunk is lazy inside it, so
+// this static import costs nothing until the user right-clicks.
+import { ContextMenuMount } from "./runtime/ContextMenuMount";
 import type {
   ContentSource,
   RichDocumentAction,
+  RichDocumentActionId,
   RichDocumentActionContext,
   RichDocumentActionSpec,
   RichDocumentActionsProp,
@@ -100,6 +104,19 @@ export interface RichDocumentProps {
   actionsBehavior?: RichDocumentActionsBehavior;
   /** Required when actionsVariant === "remote". */
   actionsSurfaceId?: string;
+  /**
+   * Enable a right-click context menu over the content. Lazy-loaded (the
+   * menu chunk only ships after the first right-click) and streaming-safe
+   * (yields to the native browser menu while isStreamActive). Pass an object
+   * to add context-menu-only `extra` actions or `exclude` specific ones.
+   * This is the extension point for future per-surface right-click actions.
+   */
+  enableContextMenu?:
+    | boolean
+    | {
+        extra?: RichDocumentAction[];
+        exclude?: (RichDocumentActionId | string)[];
+      };
 
   // ---- Layout ----
   className?: string;
@@ -215,6 +232,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     actionsPosition = "below",
     actionsBehavior = "always",
     actionsSurfaceId,
+    enableContextMenu,
     className,
     contentClassName,
     actionsClassName,
@@ -314,7 +332,6 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         surfaceId: actionsSurfaceId,
         registration: {
           providerId,
-          registeredAt: Date.now(),
           computedActionSpecs: specs,
           sourceType: source.type,
         },
@@ -441,7 +458,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     className,
   );
 
-  const engine = (
+  const engineInner = (
     <div className={cn("rich-document__content", contentClassName)}>
       <MarkdownStream
         content={content}
@@ -464,6 +481,31 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
       />
     </div>
   );
+
+  // Optionally wrap the content in the right-click context menu. The context
+  // action set layers any context-menu-only extra/exclude on top of the
+  // base resolved set. The mount is lazy + streaming-safe internally.
+  let engine: React.ReactNode = engineInner;
+  if (enableContextMenu) {
+    const cmOptions =
+      typeof enableContextMenu === "object" ? enableContextMenu : {};
+    const contextActions = resolveActions(ctx, {
+      exclude: [
+        ...(actionsProp?.exclude ?? []),
+        ...(cmOptions.exclude ?? []),
+      ],
+      extra: [...(actionsProp?.extra ?? []), ...(cmOptions.extra ?? [])],
+    });
+    engine = (
+      <ContextMenuMount
+        actions={contextActions}
+        getCtx={getCtx}
+        isStreamActive={isStreamActive}
+      >
+        {engineInner}
+      </ContextMenuMount>
+    );
+  }
 
   return (
     <div className={rootClassName}>
