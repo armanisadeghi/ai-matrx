@@ -104,10 +104,32 @@ function SingleJobResultsTable({
 }) {
   const [job, setJob] = useState<PageExtractionJob | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [hideDuplicates, setHideDuplicates] = useState(true);
   const toast = useToastManager("page-extraction");
   const { results, loading, error, refetch } = useExtractionResults(jobId, {
     pageNumber,
   });
+
+  // Rows a validation pass soft-flagged as duplicates carry
+  // payload.is_duplicate === true. Hidden by default; the toggle reveals
+  // them. Soft-flag only — the rows are never deleted.
+  const dupeCount = useMemo(
+    () =>
+      results.filter(
+        (r) => (r.payload as Record<string, unknown> | null)?.is_duplicate,
+      ).length,
+    [results],
+  );
+  const visibleResults = useMemo(
+    () =>
+      hideDuplicates
+        ? results.filter(
+            (r) =>
+              !(r.payload as Record<string, unknown> | null)?.is_duplicate,
+          )
+        : results,
+    [results, hideDuplicates],
+  );
 
   const handleClearData = async () => {
     if (!jobId) return;
@@ -212,7 +234,7 @@ function SingleJobResultsTable({
   }
 
   const rowCountLabel =
-    results.length + " row" + (results.length === 1 ? "" : "s");
+    visibleResults.length + " row" + (visibleResults.length === 1 ? "" : "s");
 
   return (
     <div className="flex flex-col h-full">
@@ -221,27 +243,42 @@ function SingleJobResultsTable({
           {rowCountLabel}
           {pageNumber != null ? " (filtered to page " + pageNumber + ")" : ""}
         </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
-          disabled={clearing}
-          onClick={() => void handleClearData()}
-          title="Delete every result row for this template (template stays)"
-        >
-          {clearing ? (
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-          ) : (
-            <Trash2 className="w-3 h-3 mr-1" />
+        <div className="flex items-center gap-1">
+          {dupeCount > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-1.5 text-[10px] text-muted-foreground"
+              onClick={() => setHideDuplicates((v) => !v)}
+              title="Rows a validation pass flagged as duplicates"
+            >
+              {hideDuplicates
+                ? `Show ${dupeCount} duplicate${dupeCount === 1 ? "" : "s"}`
+                : "Hide duplicates"}
+            </Button>
           )}
-          Clear data
-        </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+            disabled={clearing}
+            onClick={() => void handleClearData()}
+            title="Delete every result row for this template (template stays)"
+          >
+            {clearing ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3 mr-1" />
+            )}
+            Clear data
+          </Button>
+        </div>
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
         {templateCols ? (
           <SchemaResultsBody
             columns={templateCols}
-            results={results}
+            results={visibleResults}
             onJumpToPage={onJumpToPage}
             onRefetch={refetch}
           />
@@ -258,7 +295,7 @@ function SingleJobResultsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((r) => {
+              {visibleResults.map((r) => {
                 const payload = (r.payload ?? {}) as Record<string, unknown>;
                 const canJump =
                   typeof r.canonical_page === "number" && r.canonical_page > 0;

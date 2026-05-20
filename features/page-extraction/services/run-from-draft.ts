@@ -91,6 +91,9 @@ export function validateDraft(draft: ChunkingConfigDraft): string[] {
   if (draft.agentId && Object.keys(draft.variableMapping).length === 0) {
     issues.push("Wire at least one agent variable.");
   }
+  if (draft.kind === "validation" && !draft.validatesJobId) {
+    issues.push("Pick the template this validates.");
+  }
   return issues;
 }
 
@@ -147,6 +150,9 @@ export async function saveTemplateFromDraft(
       is_saved: true,
       extra_inputs: draft.extraInputs,
       attach_combined_pdf: draft.attachCombinedPdf,
+      kind: draft.kind,
+      validates_job_id:
+        draft.kind === "validation" ? draft.validatesJobId : null,
       model_overrides: null,
       max_concurrent: draft.maxConcurrent,
     };
@@ -173,6 +179,9 @@ export async function saveTemplateFromDraft(
     is_saved: true,
     extra_inputs: draft.extraInputs,
     attach_combined_pdf: draft.attachCombinedPdf,
+    kind: draft.kind,
+    validates_job_id:
+      draft.kind === "validation" ? draft.validatesJobId : null,
     model_overrides: null,
     max_concurrent: draft.maxConcurrent,
     // Null = inherit the agent's defaultRagBoost; a number overrides it
@@ -225,6 +234,12 @@ export function draftDiffersFromJob(
   if (draft.attachCombinedPdf !== (job.attach_combined_pdf ?? false))
     return true;
   if (!outputSchemaEqual(draft.outputSchema, job.output_schema)) return true;
+  if (draft.kind !== (job.kind ?? "extraction")) return true;
+  if (
+    (draft.kind === "validation" ? draft.validatesJobId : null) !==
+    (job.validates_job_id ?? null)
+  )
+    return true;
   return false;
 }
 

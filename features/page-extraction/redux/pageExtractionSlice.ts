@@ -136,6 +136,11 @@ export interface ChunkingConfigDraft {
   /** When pdf_page is active, also attach one combined PDF of the whole
    *  chunk's pages (continuous cross-page context). */
   attachCombinedPdf: boolean;
+  /** extraction (default) or validation. */
+  kind: import("@/features/page-extraction/types").JobKind;
+  /** For validation templates: the extraction template whose rows this
+   *  template reads + updates. */
+  validatesJobId: string | null;
 }
 
 export const emptyDraft = (): ChunkingConfigDraft => ({
@@ -154,6 +159,8 @@ export const emptyDraft = (): ChunkingConfigDraft => ({
   extraInputs: [],
   ragBoost: null,
   attachCombinedPdf: false,
+  kind: "extraction",
+  validatesJobId: null,
 });
 
 export interface PageExtractionState {

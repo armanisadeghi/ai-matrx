@@ -39,6 +39,11 @@ export interface PageExtractionJob {
   /** When pdf_page is active, also attach one combined PDF of the whole
    *  chunk's pages (continuous cross-page context). Default false. */
   attach_combined_pdf: boolean;
+  /** extraction (default) or validation. See JobKind. */
+  kind: JobKind;
+  /** For validation templates: the extraction template whose rows this
+   *  template reads and updates. Null for extraction templates. */
+  validates_job_id: string | null;
   /** Extra inputs sourced from OTHER templates' result rows. See
    *  `ExtraExtractionInput` for the shape. The wiring is described in
    *  the migration `page_extraction_jobs_extra_inputs.sql`. */
@@ -184,6 +189,14 @@ export type PageRunStatus =
   | "skipped";
 
 export type TriggerSource = "manual_ui" | "scheduled" | "api" | "tool_call";
+
+/**
+ * A template is either an `extraction` (per-chunk fan-out that inserts
+ * result rows — the default) or a `validation` template (runs once over
+ * an extraction template's accumulated rows and UPDATES them: dedup
+ * flags, completeness, enrichment).
+ */
+export type JobKind = "extraction" | "validation";
 
 // ─── Template output columns (the table definition) ───────────────────────
 

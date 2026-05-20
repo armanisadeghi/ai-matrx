@@ -444,74 +444,133 @@ function TemplateEditor({
         />
       </Field>
 
-      {/* 2. Page range */}
-      <Field
-        label="Pages"
-        required
-        hint={pagesLoading ? "Loading…" : `${availablePages.length} available`}
-      >
-        <Input
-          value={draft.scopePagesInputRaw}
-          onChange={(e) => handleRangeChange(e.target.value)}
-          placeholder="1-50, 80-90"
-          className="h-7 text-[11px]"
-        />
-        {draft.scopePages.length > 0 && (
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            <span className="font-mono text-foreground/80">
-              {draft.scopePages.length}
-            </span>{" "}
-            in scope
-          </p>
-        )}
-        {rangeError && (
-          <p className="mt-1 text-[10px] text-destructive flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" /> {rangeError}
-          </p>
-        )}
+      {/* 1b. Template kind — extraction (per-chunk, inserts rows) vs
+              validation (one pass over another template's rows, updates
+              them: dedup / completeness / enrichment). */}
+      <Field label="Type" hint="What this template does">
+        <div className="flex gap-1">
+          {(["extraction", "validation"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => dispatch(patchDraft({ fileId, patch: { kind: k } }))}
+              className={
+                "flex-1 h-7 rounded-md border text-[11px] capitalize transition-colors " +
+                (draft.kind === k
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-border bg-card text-muted-foreground hover:bg-accent/40")
+              }
+            >
+              {k}
+            </button>
+          ))}
+        </div>
       </Field>
 
-      {/* 3. Chunk size + overlap */}
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Chunk size" required hint="Pages per call">
-          <Input
-            value={draft.chunkSize ?? ""}
-            onChange={(e) => handleChunkSizeChange(e.target.value)}
-            type="number"
-            min={1}
-            max={50}
-            placeholder="12"
-            className="h-7 text-[11px]"
+      {/* Validation-only: which extraction template's rows to process. */}
+      {draft.kind === "validation" && (
+        <Field
+          label="Validates template"
+          required
+          hint="Whose rows this reads + updates"
+        >
+          <ValidatesTemplatePicker
+            fileId={fileId}
+            currentJobId={selectedJobId}
+            value={draft.validatesJobId}
+            onChange={(id) =>
+              dispatch(patchDraft({ fileId, patch: { validatesJobId: id } }))
+            }
           />
+          <p className="mt-1 text-[10px] text-muted-foreground/70 leading-snug">
+            The validation agent receives every result row of that template
+            (as <code>validated_rows</code>) and writes its{" "}
+            <span className="font-medium">validation</span>-source columns
+            back onto those rows.
+          </p>
         </Field>
-        <Field label="Overlap" hint="Repeat pages">
-          <Input
-            value={draft.chunkOverlap}
-            onChange={(e) => handleChunkOverlapChange(e.target.value)}
-            type="number"
-            min={0}
-            max={Math.max(0, (draft.chunkSize ?? 1) - 1)}
-            placeholder="0"
-            className="h-7 text-[11px]"
-          />
-        </Field>
-      </div>
-      {draft.chunkSize != null && draft.scopePages.length > 0 && (
-        <p className="text-[10px] text-muted-foreground -mt-2">
-          →{" "}
-          <span className="font-mono text-foreground/80">{chunks.length}</span>{" "}
-          chunk{chunks.length === 1 ? "" : "s"}
-          {stats.avgChars > 0 && (
-            <>
-              {" "}
-              · avg{" "}
-              <span className="font-mono">
-                {stats.avgChars.toLocaleString()}
+      )}
+
+      {/* Extraction-only fields: pages + chunking. Validation runs once
+          over the whole result set, so it has no page scope or chunk size. */}
+      {draft.kind === "extraction" && (
+        <>
+          {/* 2. Page range */}
+          <Field
+            label="Pages"
+            required
+            hint={
+              pagesLoading
+                ? "Loading…"
+                : `${availablePages.length} available`
+            }
+          >
+            <Input
+              value={draft.scopePagesInputRaw}
+              onChange={(e) => handleRangeChange(e.target.value)}
+              placeholder="1-50, 80-90"
+              className="h-7 text-[11px]"
+            />
+            {draft.scopePages.length > 0 && (
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                <span className="font-mono text-foreground/80">
+                  {draft.scopePages.length}
+                </span>{" "}
+                in scope
+              </p>
+            )}
+            {rangeError && (
+              <p className="mt-1 text-[10px] text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {rangeError}
+              </p>
+            )}
+          </Field>
+
+          {/* 3. Chunk size + overlap */}
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Chunk size" required hint="Pages per call">
+              <Input
+                value={draft.chunkSize ?? ""}
+                onChange={(e) => handleChunkSizeChange(e.target.value)}
+                type="number"
+                min={1}
+                max={50}
+                placeholder="12"
+                className="h-7 text-[11px]"
+              />
+            </Field>
+            <Field label="Overlap" hint="Repeat pages">
+              <Input
+                value={draft.chunkOverlap}
+                onChange={(e) => handleChunkOverlapChange(e.target.value)}
+                type="number"
+                min={0}
+                max={Math.max(0, (draft.chunkSize ?? 1) - 1)}
+                placeholder="0"
+                className="h-7 text-[11px]"
+              />
+            </Field>
+          </div>
+          {draft.chunkSize != null && draft.scopePages.length > 0 && (
+            <p className="text-[10px] text-muted-foreground -mt-2">
+              →{" "}
+              <span className="font-mono text-foreground/80">
+                {chunks.length}
               </span>{" "}
-              chars
-            </>
+              chunk{chunks.length === 1 ? "" : "s"}
+              {stats.avgChars > 0 && (
+                <>
+                  {" "}
+                  · avg{" "}
+                  <span className="font-mono">
+                    {stats.avgChars.toLocaleString()}
+                  </span>{" "}
+                  chars
+                </>
+              )}
+            </p>
           )}
-        </p>
+        </>
       )}
 
       {/* 4. Agent + variable wiring. Wiring drives `source_variations`
@@ -707,6 +766,41 @@ function Field({
   );
 }
 
+// ─── Internal: validates-template picker ──────────────────────────────────
+
+function ValidatesTemplatePicker({
+  fileId,
+  currentJobId,
+  value,
+  onChange,
+}: {
+  fileId: string;
+  currentJobId: string | null;
+  value: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  const { jobs } = useExtractionJobs(fileId);
+  // Only extraction templates are valid targets — you can't validate a
+  // validation template, and a template can't validate itself.
+  const candidates = jobs.filter(
+    (j) => j.id !== currentJobId && (j.kind ?? "extraction") === "extraction",
+  );
+  return (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || null)}
+      className="h-7 text-[11px] w-full rounded-md border border-input bg-background px-2"
+    >
+      <option value="">Select extraction template…</option>
+      {candidates.map((j) => (
+        <option key={j.id} value={j.id}>
+          {j.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 /**
@@ -739,5 +833,7 @@ function jobToDraftPatch(job: PageExtractionJob) {
     extraInputs: job.extra_inputs ?? [],
     ragBoost: job.rag_boost ?? null,
     attachCombinedPdf: job.attach_combined_pdf ?? false,
+    kind: job.kind ?? "extraction",
+    validatesJobId: job.validates_job_id ?? null,
   };
 }
