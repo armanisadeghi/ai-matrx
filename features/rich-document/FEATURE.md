@@ -2,7 +2,9 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-19`
+**Last updated:** `2026-05-20`
+
+> **Skill**: [`.claude/skills/rich-document-actions/SKILL.md`](../../.claude/skills/rich-document-actions/SKILL.md) — the how-to for using RichDocument on a page, adding an action, adding a content source, and wiring a remote surface. Read the skill for tasks; read this FEATURE.md for deep reference.
 
 ---
 
