@@ -199,6 +199,21 @@ function parseLine(line: string): ExtractionStreamEvent | null {
           total_tokens: Number(data.total_tokens ?? 0),
         },
       };
+    case "page_extraction.validation_completed":
+      // Validation runs end with this instead of run_completed. Map it to
+      // the same run.completed shape so the progress bar finishes; the
+      // updated rows themselves arrive via Realtime on the source job.
+      return {
+        event: "run.completed",
+        data: {
+          run_id: String(data.run_id ?? ""),
+          result_count: Number(data.rows_updated ?? 0),
+          completed_chunks: 1,
+          failed_chunks: 0,
+          total_cost: Number(data.total_cost ?? 0),
+          total_tokens: Number(data.total_tokens ?? 0),
+        },
+      };
     case "page_extraction.run_failed":
       return {
         event: "run.failed",

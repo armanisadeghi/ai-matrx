@@ -78,7 +78,9 @@ export function useExtractionResults(
     };
   }, [jobId, opts.runId, refetchTick]);
 
-  // Realtime INSERT subscription — scope to the job (any run).
+  // Realtime subscription — INSERT (new extraction rows) AND UPDATE
+  // (a validation pass writing is_duplicate / canonical_entry / other
+  // validation columns back onto existing rows). Scope to the job.
   useEffect(() => {
     if (!jobId) return;
     const supabase = createClient();
@@ -109,6 +111,21 @@ export function useExtractionResults(
               );
             });
           });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "page_extraction_results",
+          filter,
+        },
+        (payload) => {
+          const row = payload.new as PageExtractionResult;
+          setResults((prev) =>
+            prev.map((r) => (r.id === row.id ? row : r)),
+          );
         },
       )
       .subscribe();
