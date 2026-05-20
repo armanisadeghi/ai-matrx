@@ -593,41 +593,41 @@ export function EditModeShell({
             <TooltipContent>Generate Web / Social / Email / Avatar / Favicon variants</TooltipContent>
           </Tooltip>
 
-          {/* Save dropdown */}
+          {/* Save — direct button */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-7 shrink-0 gap-1 text-xs"
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
-                    Save
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem
-                    onClick={handleHeaderSave}
-                    disabled={!effectiveCloudFileId}
-                  >
-                    <Save className="h-3.5 w-3.5 mr-2" />
-                    Save as new version
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSaveAsDuplicate}>
-                    <Copy className="h-3.5 w-3.5 mr-2" />
-                    Save as duplicate
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 shrink-0 gap-1 text-xs"
+                onClick={handleHeaderSave}
+                disabled={saving || !effectiveCloudFileId}
+              >
+                {saving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                Save
+              </Button>
             </TooltipTrigger>
-            <TooltipContent>Save edits — choose new version or duplicate</TooltipContent>
+            <TooltipContent>Save as new version</TooltipContent>
+          </Tooltip>
+
+          {/* Duplicate — ghost icon button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={handleSaveAsDuplicate}
+                disabled={saving}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Save as duplicate (new file)</TooltipContent>
           </Tooltip>
 
           {/* History rail toggle — subtle "selected" state via accent. */}
