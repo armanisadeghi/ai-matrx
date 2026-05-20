@@ -15,7 +15,7 @@
  * `applyEdit` + typed sugar for the common families.
  */
 
-import { postJson } from "@/lib/python-client";
+import { getJson, postJson } from "@/lib/python-client";
 
 // ---------------------------------------------------------------------------
 // Output options — shared across every op
@@ -217,14 +217,23 @@ export const denoise = (
 // Background removal — convenience wrapper at /images/bg-remove
 // ---------------------------------------------------------------------------
 
-export interface BgRemoveBody {
-  source_id: string;
-  /** When supplied, OR'd into the alpha output — "definitely foreground". */
-  mask_id?: string;
+// Per IMAGE_EDIT_API.md, the bg-remove/inpaint request models declare
+// `extra="forbid"` and nest their knobs under `params`. Sending model /
+// alpha_matting / method / radius at the top level → 422. Keep them nested.
+export interface BgRemoveParams {
   /** Force a specific rembg model — default "u2net". */
   model?: "u2net" | "u2netp" | "isnet-general-use" | "birefnet-general";
   /** Cleaner alpha mattes (slower). Default false. */
   alpha_matting?: boolean;
+  /** Flatten transparency onto this colour instead of leaving alpha. */
+  background_color?: string;
+}
+
+export interface BgRemoveBody {
+  source_id: string;
+  /** When supplied, OR'd into the alpha output — "definitely foreground". */
+  mask_id?: string;
+  params?: BgRemoveParams;
   output?: EditOutput;
 }
 
@@ -242,13 +251,17 @@ export async function removeBackground(
 // Inpaint — convenience wrapper at /images/inpaint. Mask REQUIRED.
 // ---------------------------------------------------------------------------
 
-export interface InpaintBody {
-  source_id: string;
-  mask_id: string;
+export interface InpaintParams {
   /** Telea (default, fast) or NS (Navier-Stokes, slightly higher quality). */
   method?: "telea" | "ns";
   /** Inpaint radius in pixels. Default 3. */
   radius?: number;
+}
+
+export interface InpaintBody {
+  source_id: string;
+  mask_id: string;
+  params?: InpaintParams;
   output?: EditOutput;
 }
 
@@ -261,45 +274,54 @@ export async function inpaint(body: InpaintBody): Promise<EditResponse> {
 }
 
 // ---------------------------------------------------------------------------
-// Upscale — kept for backward compat; routes through the generic /images/edit
-// with op=resize (proper "super-resolution" lands in Wave 2). For now, this
-// is a 2× / 4× cubic resize.
+// Upscale — there is NO /images/upscale endpoint (super-resolution is Wave 2
+// per IMAGE_OPS.md). We route through the generic POST /images/edit with
+// op="resize", which does a high-quality interpolated enlarge. Requires the
+// source's natural dimensions so we can multiply by the factor.
 // ---------------------------------------------------------------------------
 
 export async function upscaleImage(body: {
   source_id: string;
   factor: 2 | 4;
+  width: number;
+  height: number;
 }): Promise<EditResponse> {
-  // The platform exposes upscale through the legacy /images/upscale endpoint
-  // that aidream provides for backward compat — fall through to it.
-  const { data } = await postJson<EditResponse, { source_id: string; factor: 2 | 4 }>(
-    "/images/upscale",
-    body,
-  );
-  return data;
+  return applyEdit({
+    source_id: body.source_id,
+    op: "resize",
+    params: {
+      width: Math.round(body.width * body.factor),
+      height: Math.round(body.height * body.factor),
+      fit: "fill",
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Catalog query — GET /images/ops returns each op's JSON Schema, plus
-// backend availability info. Useful for driving a "more edits" picker.
+// Catalog query — GET /images/ops returns the op catalog + aspect ratios +
+// backend availability. Drives a "more edits" picker and lets the UI hide
+// ops whose optional backend isn't installed.
 // ---------------------------------------------------------------------------
 
 export interface OpsCatalogEntry {
   op: string;
   family: string;
   available: boolean;
-  /** Hints for the picker: human label + brief blurb. */
   label?: string;
   description?: string;
   /** JSON Schema for `params`. */
   params_schema?: Record<string, unknown>;
 }
 
-export async function listOps(): Promise<OpsCatalogEntry[]> {
-  const { data } = await postJson<OpsCatalogEntry[], Record<string, never>>(
-    "/images/ops",
-    {},
-  );
+export interface ImageOpsCatalog {
+  ops: OpsCatalogEntry[];
+  aspect_ratios?: Record<string, number>;
+  backends?: Record<string, boolean>;
+}
+
+export async function listOps(): Promise<ImageOpsCatalog> {
+  // GET, not POST — POSTing a GET-only route returns 405.
+  const { data } = await getJson<ImageOpsCatalog>("/images/ops");
   return data;
 }
 

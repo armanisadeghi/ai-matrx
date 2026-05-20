@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileName } from "@/features/files/redux/selectors";
 import { renameFile } from "@/features/files/redux/thunks";
+import { fileHandler } from "@/features/files/handler/handler";
 import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
 import { addAssetVariants } from "@/features/files/api/assets";
 import type { AssetPreset } from "@/features/files/types";
@@ -189,6 +190,33 @@ export function EditModeShell({
   const activeUrl = overrideUrl ?? url;
   const activeFilename = overrideFilename ?? filename;
 
+  // Natural source dimensions — needed by the mask overlay (mask must be
+  // exported at source dims or the backend 400s) and by upscale (op=resize
+  // multiplies these by the factor). Loaded from the active image; updated
+  // whenever the source swaps (AI op / version restore).
+  const [sourceDims, setSourceDims] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!activeUrl) {
+      setSourceDims(null);
+      return;
+    }
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      if (!cancelled) {
+        setSourceDims({ width: img.naturalWidth, height: img.naturalHeight });
+      }
+    };
+    img.src = activeUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [activeUrl]);
+
   const effectiveCloudFileId =
     cloudFileId ??
     (source?.kind === "cloudFileId" ? source.cloudFileId : null);
@@ -228,7 +256,7 @@ export function EditModeShell({
   // previous version, and the Versions rail captures the full editing
   // arc, not just the manual Save points.
   const handleAiResult = useCallback(
-    async (newUrl: string, newName: string) => {
+    async (newUrl: string, newName: string, newFileId?: string) => {
       setOverrideUrl(newUrl);
       setOverrideFilename(newName);
       setReloadKey((k) => k + 1);
@@ -239,15 +267,27 @@ export function EditModeShell({
         return;
       }
 
-      // Fetch the AI result bytes and persist as a new version of the
-      // current file. Use the URL the backend already gave us — same-origin
-      // CORS rules apply, same as Filerobot's load.
+      // Persist the AI result as a new version of the CURRENT file so the
+      // Versions rail captures the full editing arc and ops chain on the
+      // latest bytes. Prefer resolving bytes via the handler when we have
+      // the result's file_id (always a fresh URL); fall back to the op's
+      // returned URL, which is fresh enough immediately post-op.
       try {
-        const res = await fetch(newUrl, { credentials: "omit", mode: "cors" });
-        if (!res.ok) {
-          throw new Error(`Fetch ${newUrl} → ${res.status}`);
+        let blob: Blob;
+        if (newFileId) {
+          const resolved = await fileHandler.resolve({
+            kind: "file_id",
+            fileId: newFileId,
+          });
+          const fetchUrl = resolved.url ?? newUrl;
+          const res = await fetch(fetchUrl, { mode: "cors" });
+          if (!res.ok) throw new Error(`Fetch ${fetchUrl} → ${res.status}`);
+          blob = await res.blob();
+        } else {
+          const res = await fetch(newUrl, { mode: "cors" });
+          if (!res.ok) throw new Error(`Fetch ${newUrl} → ${res.status}`);
+          blob = await res.blob();
         }
-        const blob = await res.blob();
         await saveEditedImage({
           blob,
           filename: newName,
@@ -255,7 +295,10 @@ export function EditModeShell({
           mime: blob.type || undefined,
           fileId: effectiveCloudFileId,
           changeSummary: deriveOpSummary(newName),
-          metadata: { kind: "ai-edit", source_url: newUrl },
+          metadata: {
+            kind: "ai-edit",
+            source_file_id: newFileId ?? null,
+          },
         });
         toast.success("AI result saved as a new version.");
       } catch (err) {
@@ -654,6 +697,7 @@ export function EditModeShell({
         <EditAiToolbar
           sourceCloudFileId={effectiveCloudFileId}
           sourceUrl={activeUrl}
+          sourceDims={sourceDims}
           onResult={handleAiResult}
           mask={mask}
         />
@@ -695,7 +739,11 @@ export function EditModeShell({
               defaultTabId="Adjust"
               defaultToolId="Crop"
             />
-            <MaskOverlay canvasAreaRef={canvasAreaRef} mask={mask} />
+            <MaskOverlay
+              canvasAreaRef={canvasAreaRef}
+              mask={mask}
+              sourceDims={sourceDims}
+            />
             <EditorTabHint canvasAreaRef={canvasAreaRef} />
 
             {/* Floating Reset — always visible top-left over the canvas so

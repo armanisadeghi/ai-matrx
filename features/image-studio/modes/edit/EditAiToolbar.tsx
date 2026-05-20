@@ -66,7 +66,8 @@ import type { MaskState } from "./use-mask-state";
 interface Props {
   sourceCloudFileId: string | null;
   sourceUrl: string;
-  onResult: (newUrl: string, newName: string) => void;
+  sourceDims: { width: number; height: number } | null;
+  onResult: (newUrl: string, newName: string, newFileId?: string) => void;
   mask: MaskState;
 }
 
@@ -86,6 +87,7 @@ type Busy =
 export function EditAiToolbar({
   sourceCloudFileId,
   sourceUrl: _sourceUrl,
+  sourceDims,
   onResult,
   mask,
 }: Props) {
@@ -145,13 +147,19 @@ export function EditAiToolbar({
       const variants = r?.variants as
         | Record<string, { url?: string | null }>
         | undefined;
-      const file = r?.file as { public_url?: string } | undefined;
+      const asset = r?.asset as
+        | { primary_url?: string; file_id?: string }
+        | undefined;
       const url =
         (r?.primary_url as string | undefined) ??
         variants?.original?.url ??
-        (r?.public_url as string | undefined) ??
-        file?.public_url ??
-        ((r?.asset as { primary_url?: string })?.primary_url ?? null);
+        asset?.primary_url ??
+        null;
+      // Capture the new row's file_id so the parent can chain subsequent
+      // ops against the RESULT, not the original source (and skip the
+      // redundant re-fetch when auto-versioning).
+      const fileId =
+        (r?.file_id as string | undefined) ?? asset?.file_id ?? undefined;
       if (!url) {
         toast.error("Op completed but returned no URL.", {
           description:
@@ -161,7 +169,7 @@ export function EditAiToolbar({
         console.warn("[image-edit] unrecognized op response shape:", response);
         return;
       }
-      onResult(url, deriveName(url, fallbackName));
+      onResult(url, deriveName(url, fallbackName), fileId);
     },
     [onResult],
   );
@@ -298,8 +306,17 @@ export function EditAiToolbar({
   const handleUpscale = async (factor: 2 | 4) => {
     const id = ensureId("Upscale");
     if (!id) return;
+    if (!sourceDims) {
+      toast.info("Still measuring the image — try again in a moment.");
+      return;
+    }
     setBusy(factor === 2 ? "up2" : "up4");
-    const body = { source_id: id, factor };
+    const body = {
+      source_id: id,
+      factor,
+      width: sourceDims.width,
+      height: sourceDims.height,
+    };
     const asset = await runOp(`${factor}× upscale`, body, () =>
       upscaleImage(body),
     );

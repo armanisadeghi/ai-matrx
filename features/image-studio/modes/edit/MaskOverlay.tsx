@@ -9,37 +9,40 @@ import type { MaskState } from "./use-mask-state";
 interface Props {
   canvasAreaRef: React.MutableRefObject<HTMLDivElement | null>;
   mask: MaskState;
+  /** Natural source dimensions — the backing canvas is sized to these so
+   *  the exported mask aligns 1:1 with the source (backend 400s otherwise). */
+  sourceDims: { width: number; height: number } | null;
 }
 
 /**
- * Transparent overlay <canvas> for painting masks. Floats above Filerobot's
- * canvas; pointer events only when mask mode is active (draw/erase). Tracks
- * the underlying displayed image so the overlay matches its rendered size
- * AND captures stroke positions in pixel space.
+ * Transparent overlay <canvas> for painting masks. Floats above the IMAGE
+ * CONTENT rectangle (not Filerobot's whole workspace canvas), so strokes
+ * land where the cursor is even when the image is letterboxed inside the
+ * workspace. The backing canvas is sized to the SOURCE image's natural
+ * dimensions, so `toBlob()` produces a mask that matches the source pixel
+ * grid exactly — the contract the backend enforces (mask dims must equal
+ * source dims, else 400).
  *
- * We size the backing canvas to the source image's natural dimensions so
- * the exported PNG aligns 1:1 with the source on the backend. The visible
- * CSS size matches the on-screen <img> Filerobot is showing.
+ * Limitation: assumes Filerobot's default contain-fit at zoom = 1. If the
+ * user zooms/pans the workspace the overlay won't track the transform;
+ * masking is intended to be used at the default fit.
  */
-export function MaskOverlay({ canvasAreaRef, mask }: Props) {
+export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
   const { mode, active, brushSize, canvasRef, setMode, setBrushSize, markDirty, clear } = mask;
   const [box, setBox] = useState<{
     left: number;
     top: number;
     width: number;
     height: number;
-    naturalWidth: number;
-    naturalHeight: number;
   } | null>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Find Filerobot's displayed canvas/image and track its on-screen bbox.
-  // Filerobot renders a Konva <canvas> inside its workspace; we mirror that
-  // canvas's geometry. We poll via ResizeObserver + a layout effect; both
-  // cheap.
+  // Track the displayed IMAGE content rect: the contain-fit rectangle of the
+  // source aspect ratio inside Filerobot's workspace canvas. Strokes map
+  // into this rect; the backing canvas exports at source dims.
   useEffect(() => {
-    if (!active) {
+    if (!active || !sourceDims) {
       setBox(null);
       return;
     }
@@ -47,9 +50,6 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
     if (!area) return;
 
     const findTargetCanvas = (): HTMLCanvasElement | null => {
-      // Konva stage canvases live under the FIE workspace. Pick the largest
-      // one (the user-facing layer) — Konva also creates small hidden
-      // canvases for caching.
       const canvases = area.querySelectorAll<HTMLCanvasElement>(
         ".konvajs-content canvas, canvas",
       );
@@ -57,9 +57,7 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
       let bestArea = 0;
       canvases.forEach((c) => {
         if (canvasRef.current === c) return; // skip our own mask canvas
-        const w = c.clientWidth;
-        const h = c.clientHeight;
-        const a = w * h;
+        const a = c.clientWidth * c.clientHeight;
         if (a > bestArea) {
           bestArea = a;
           best = c;
@@ -76,17 +74,26 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
       }
       const areaRect = area.getBoundingClientRect();
       const rect = target.getBoundingClientRect();
-      // Use the underlying drawing buffer for natural dimensions so masks
-      // are exported at full source resolution.
-      const natW = target.width || rect.width;
-      const natH = target.height || rect.height;
+      // Contain-fit the source aspect ratio inside the workspace canvas so
+      // the overlay covers exactly the visible image, not the letterbox.
+      const sourceAspect = sourceDims.width / sourceDims.height;
+      const canvasAspect = rect.width / rect.height;
+      let displayW: number;
+      let displayH: number;
+      if (sourceAspect > canvasAspect) {
+        displayW = rect.width;
+        displayH = rect.width / sourceAspect;
+      } else {
+        displayH = rect.height;
+        displayW = rect.height * sourceAspect;
+      }
+      const offsetX = (rect.width - displayW) / 2;
+      const offsetY = (rect.height - displayH) / 2;
       setBox({
-        left: rect.left - areaRect.left,
-        top: rect.top - areaRect.top,
-        width: rect.width,
-        height: rect.height,
-        naturalWidth: natW,
-        naturalHeight: natH,
+        left: rect.left - areaRect.left + offsetX,
+        top: rect.top - areaRect.top + offsetY,
+        width: displayW,
+        height: displayH,
       });
     };
 
@@ -95,8 +102,6 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
     ro.observe(area);
     const target = findTargetCanvas();
     if (target) ro.observe(target);
-    // Filerobot animates in — re-measure on a short interval for the first
-    // second so we catch the settled layout.
     const t1 = setTimeout(measure, 250);
     const t2 = setTimeout(measure, 750);
     return () => {
@@ -104,28 +109,28 @@ export function MaskOverlay({ canvasAreaRef, mask }: Props) {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [active, canvasAreaRef, canvasRef]);
+  }, [active, canvasAreaRef, canvasRef, sourceDims]);
 
-  // Keep the backing canvas sized to natural dimensions when the box updates.
+  // Keep the backing canvas sized to the SOURCE natural dimensions so the
+  // exported mask matches the source pixel grid.
   useEffect(() => {
-    if (!box) return;
+    if (!sourceDims) return;
     const c = canvasRef.current;
     if (!c) return;
-    if (c.width !== box.naturalWidth || c.height !== box.naturalHeight) {
-      // Preserve the existing image when we resize.
+    if (c.width !== sourceDims.width || c.height !== sourceDims.height) {
       const tmp = document.createElement("canvas");
       tmp.width = c.width;
       tmp.height = c.height;
       const tmpCtx = tmp.getContext("2d");
       if (tmpCtx) tmpCtx.drawImage(c, 0, 0);
-      c.width = box.naturalWidth;
-      c.height = box.naturalHeight;
+      c.width = sourceDims.width;
+      c.height = sourceDims.height;
       const ctx = c.getContext("2d");
       if (ctx && tmp.width > 0 && tmp.height > 0) {
         ctx.drawImage(tmp, 0, 0, c.width, c.height);
       }
     }
-  }, [box, canvasRef]);
+  }, [sourceDims, canvasRef]);
 
   const strokeAt = useCallback(
     (clientX: number, clientY: number, overlayRect: DOMRect) => {
