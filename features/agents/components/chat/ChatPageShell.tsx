@@ -20,7 +20,6 @@ import {
   selectGlobalListStatus,
 } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import { fetchGlobalConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 interface ChatPageShellProps {
@@ -86,13 +85,12 @@ export function ChatPageShell({
       dispatch(fetchGlobalConversations({ limit: 25 }));
     }
   }, [dispatch, globalListStatus]);
-
-  // Hydrate the agent definition slice so the sidebar PinnedAgentsSection and
-  // the agent picker dropdown have data without each consumer fetching alone.
-  // `initializeChatAgents` is idempotent (5-min TTL + in-flight dedupe).
-  useEffect(() => {
-    dispatch(initializeChatAgents());
-  }, [dispatch]);
+  // NOTE: we do NOT eagerly fetch the agent list here. The chat sidebar's
+  // PinnedAgentsSection reads from the centralized agent-consumers pipeline
+  // and renders nothing until that data is already loaded — same lazy
+  // behavior as AgentListDropdown (which calls initializeChatAgents() in
+  // ensureLoaded() on first open). Fetching here would pull every agent on
+  // every chat-route mount even for users with zero pinned agents.
 
   const focusInput = useCallback(() => {
     const el = document.querySelector<HTMLTextAreaElement>(

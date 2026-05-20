@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Network } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectFavoriteAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
+import { makeSelectFilteredAgents } from "@/features/agents/redux/agent-consumers/selectors";
+import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import { FavoriteAgentButton } from "@/features/agents/components/agent-listings/FavoriteAgentButton";
 
 interface PinnedAgentsSectionProps {
@@ -14,20 +16,59 @@ interface PinnedAgentsSectionProps {
   onSelect: (agentId: string) => void;
 }
 
+const CONSUMER_ID = "chat-sidebar-pinned";
+
 /**
- * Renders the user's pinned ("favorite") agents at the top of the chat sidebar.
+ * Renders the user's pinned agents at the top of the chat sidebar.
  *
- * Reuses `agx_agent.is_favorite` — the same column that powers the agents
- * grid's amber star. No new schema, no new slice; we just filter the registry.
+ * Backed by the same centralized agent-consumers Redux pipeline that powers
+ * `AgentListDropdown` — we register a dedicated consumer ("chat-sidebar-pinned")
+ * with `favFilter: "yes"`, then read `makeSelectFilteredAgents(consumerId)`.
+ * This means the section reflects whatever the user has favorited via the
+ * canonical FavoriteAgentButton (toggling persists through `saveAgentField`
+ * → `agx_agent.is_favorite`), respects archive/access filters consistently
+ * with the rest of the app, and shares the agent registry with the dropdown
+ * (no parallel fetches).
  *
- * Hidden entirely when the user has zero pinned agents — no empty-state
- * placeholder cluttering the sidebar.
+ * We intentionally do NOT trigger an agent-list fetch from this component:
+ * if the registry hasn't been populated yet (user hasn't opened the picker),
+ * we render nothing rather than pulling every agent down just to filter to
+ * favorites. The list populates as soon as the user opens the dropdown — same
+ * lazy behavior as everywhere else.
  */
 export function PinnedAgentsSection({
   activeAgentId,
   onSelect,
 }: PinnedAgentsSectionProps) {
-  const pinned = useAppSelector(selectFavoriteAgents);
+  const dispatch = useAppDispatch();
+
+  // Register a dedicated consumer for the chat sidebar's pinned view.
+  // unregisterOnUnmount=false: the consumer slot is cheap and we want its
+  // filter state to survive sidebar collapse/expand cycles.
+  const consumer = useAgentConsumer(CONSUMER_ID);
+
+  // Lazy-load the agent registry the same way `AgentListDropdown` does via
+  // `ensureLoaded`. The thunk is idempotent (5-min TTL + in-flight dedup),
+  // so this co-exists cleanly with the dropdown's own call — the second one
+  // is a no-op. Without this, fresh page loads (full reload, not client nav)
+  // would show an empty Pinned section even when favorites exist server-side.
+  useEffect(() => {
+    dispatch(initializeChatAgents());
+  }, [dispatch]);
+
+  // Make sure this consumer's filter is locked to favorites-only. Done in an
+  // effect (not on register) so existing slots get corrected too. Cheap: the
+  // setter is stable and re-dispatching the same value is a no-op in Redux.
+  useEffect(() => {
+    if (consumer.favFilter !== "yes") consumer.setFavFilter("yes");
+  }, [consumer]);
+
+  const selectFiltered = useMemo(
+    () => makeSelectFilteredAgents(CONSUMER_ID),
+    [],
+  );
+  const pinned = useAppSelector(selectFiltered);
+
   const [open, setOpen] = useState(true);
 
   if (pinned.length === 0) return null;
@@ -76,14 +117,6 @@ export function PinnedAgentsSection({
                 }}
                 title={agent.description || agent.name}
               >
-                <Network
-                  className={cn(
-                    "h-3.5 w-3.5 shrink-0",
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground",
-                  )}
-                />
                 <span className="min-w-0 flex-1 truncate">
                   {agent.name || "Untitled agent"}
                 </span>
