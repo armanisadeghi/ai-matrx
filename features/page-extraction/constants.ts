@@ -70,9 +70,8 @@ export const SOURCE_VARIATIONS: SourceVariationDef[] = [
     kind: "pdf_page",
     label: "PDF page (attachment)",
     description:
-      "Each page sent as an attachment so the agent can read it visually. Heavier; slower.",
+      "Attach the actual PDF of each page so the agent reads it natively — captures layout, signatures, stamps, and scanned content text can't. Requires a PDF-capable model (Gemini, Claude, GPT).",
     isTextual: false,
-    comingSoon: true,
   },
 ];
 

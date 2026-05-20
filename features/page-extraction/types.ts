@@ -36,6 +36,9 @@ export interface PageExtractionJob {
   chunking_strategy: ChunkingStrategy;
   is_saved: boolean;
   archived_at: string | null;
+  /** When pdf_page is active, also attach one combined PDF of the whole
+   *  chunk's pages (continuous cross-page context). Default false. */
+  attach_combined_pdf: boolean;
   /** Extra inputs sourced from OTHER templates' result rows. See
    *  `ExtraExtractionInput` for the shape. The wiring is described in
    *  the migration `page_extraction_jobs_extra_inputs.sql`. */

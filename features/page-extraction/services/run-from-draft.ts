@@ -146,6 +146,7 @@ export async function saveTemplateFromDraft(
       chunking_strategy: draft.chunkingStrategy,
       is_saved: true,
       extra_inputs: draft.extraInputs,
+      attach_combined_pdf: draft.attachCombinedPdf,
       model_overrides: null,
       max_concurrent: draft.maxConcurrent,
     };
@@ -171,6 +172,7 @@ export async function saveTemplateFromDraft(
     chunking_strategy: draft.chunkingStrategy,
     is_saved: true,
     extra_inputs: draft.extraInputs,
+    attach_combined_pdf: draft.attachCombinedPdf,
     model_overrides: null,
     max_concurrent: draft.maxConcurrent,
     // Null = inherit the agent's defaultRagBoost; a number overrides it
@@ -220,6 +222,8 @@ export function draftDiffersFromJob(
     return true;
   if (!extraInputsEqual(draft.extraInputs, job.extra_inputs ?? [])) return true;
   if ((draft.ragBoost ?? null) !== (job.rag_boost ?? null)) return true;
+  if (draft.attachCombinedPdf !== (job.attach_combined_pdf ?? false))
+    return true;
   return false;
 }
 

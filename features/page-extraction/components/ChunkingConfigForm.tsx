@@ -64,6 +64,7 @@ import { VariableMappingEditor } from "@/features/page-extraction/components/Var
 import { TemplateReadOnlyView } from "@/features/page-extraction/components/TemplateReadOnlyView";
 import {
   DraftValidationError,
+  deriveSourceVariations,
   draftDiffersFromJob,
   saveTemplateFromDraft,
   validateDraft,
@@ -544,6 +545,42 @@ function TemplateEditor({
         )}
       </Field>
 
+      {/* 4b. PDF attachment options — only relevant when the wiring
+              activates the pdf_page variation (an agent variable is
+              wired to receive the page attachments). */}
+      {deriveSourceVariations(draft.variableMapping).includes("pdf_page") && (
+        <Field
+          label="PDF attachments"
+          hint="Per-page PDFs are always attached when pdf_page is wired."
+        >
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.attachCombinedPdf}
+              onChange={(e) =>
+                dispatch(
+                  patchDraft({
+                    fileId,
+                    patch: { attachCombinedPdf: e.target.checked },
+                  }),
+                )
+              }
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <span className="font-medium text-foreground">
+                Also attach a combined chunk PDF
+              </span>
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                Sends one PDF of the whole chunk&apos;s pages alongside the
+                individual per-page attachments, giving the agent continuous
+                cross-page context. More tokens.
+              </p>
+            </div>
+          </label>
+        </Field>
+      )}
+
       {/* 5. RAG-boost override */}
       <Field label="RAG boost" hint="Blank = agent default">
         <Input
@@ -684,5 +721,6 @@ function jobToDraftPatch(job: PageExtractionJob) {
     maxConcurrent: job.max_concurrent,
     extraInputs: job.extra_inputs ?? [],
     ragBoost: job.rag_boost ?? null,
+    attachCombinedPdf: job.attach_combined_pdf ?? false,
   };
 }

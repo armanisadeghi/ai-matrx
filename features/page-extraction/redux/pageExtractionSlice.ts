@@ -133,6 +133,9 @@ export interface ChunkingConfigDraft {
    * job's derivatives + the chunks the bridge writes from them.
    */
   ragBoost: number | null;
+  /** When pdf_page is active, also attach one combined PDF of the whole
+   *  chunk's pages (continuous cross-page context). */
+  attachCombinedPdf: boolean;
 }
 
 export const emptyDraft = (): ChunkingConfigDraft => ({
@@ -150,6 +153,7 @@ export const emptyDraft = (): ChunkingConfigDraft => ({
   maxConcurrent: 3,
   extraInputs: [],
   ragBoost: null,
+  attachCombinedPdf: false,
 });
 
 export interface PageExtractionState {
