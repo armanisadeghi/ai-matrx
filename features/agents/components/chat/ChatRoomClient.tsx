@@ -15,6 +15,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import {
   registerSurface,
@@ -132,6 +133,11 @@ export function ChatRoomClient({
     sourceFeature: SOURCE_FEATURE,
     ready: !isInitializing && !conversationIdProp,
     config: { responseDensity: "compact" },
+    // The chat route promotes /chat/new → /chat/[conversationId] right after
+    // the first submit, which unmounts this launcher mid-stream. Retain the
+    // started conversation so the destination route re-attaches to the live
+    // instance instead of re-fetching (and clobbering the stream).
+    retainOnUnmount: true,
   });
 
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
@@ -150,10 +156,25 @@ export function ChatRoomClient({
 
     (async () => {
       try {
+        const state = store.getState();
         const exists =
-          !!store.getState().conversations?.byConversationId?.[
-            conversationIdProp
-          ];
+          !!state.conversations?.byConversationId?.[conversationIdProp];
+        // If the conversation is already live in memory with messages, this
+        // is a URL promotion from /chat/new or /chat/a/[agentId] right after
+        // the user submitted — the stream is in-flight in Redux. Calling
+        // loadConversation here would re-fetch from the DB and clobber the
+        // active stream (the "stream is missed" bug). Skip the load entirely;
+        // the in-memory state is the source of truth. We only hydrate from
+        // the server for genuinely cold conversations (deep-link, refresh,
+        // sidebar click on a conversation not in memory).
+        const alreadyLiveCount =
+          state.messages?.byConversationId?.[conversationIdProp]?.orderedIds
+            ?.length ?? 0;
+        if (exists && alreadyLiveCount > 0) {
+          // Make sure focus points at this conversation, then bail.
+          dispatch(setFocus({ surfaceKey, conversationId: conversationIdProp }));
+          return;
+        }
         if (ctrl.signal.aborted) return;
         if (!exists) {
           await dispatch(

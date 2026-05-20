@@ -812,6 +812,23 @@ export interface ManagedAgentOptions {
    * conversation lifecycle.
    */
   onConversationCreated?: (conversationId: string) => void;
+
+  /**
+   * CLIENT-ONLY (read by `useAgentLauncher`, never forwarded to the thunk).
+   *
+   * Controls the managed-mode unmount cleanup:
+   *   - false (default): always destroy the launcher-created instance on
+   *     unmount. Right for surfaces whose URL is stable for a conversation's
+   *     whole life (agent runner, builder).
+   *   - true: on unmount, only destroy the instance if it's ABANDONED (no
+   *     messages). A conversation the user actually started is RETAINED.
+   *     Required by surfaces that change route mid-conversation — the chat
+   *     route promotes `/chat/new` → `/chat/[conversationId]` right after the
+   *     first submit, which unmounts the launcher; destroying the instance
+   *     there would wipe the in-flight stream. The destination route
+   *     re-attaches to the retained instance instead of re-fetching.
+   */
+  retainOnUnmount?: boolean;
 }
 
 // =============================================================================

@@ -26,7 +26,10 @@
 
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import {
+  destroyInstanceIfAllowed,
+  destroyInstanceIfAbandoned,
+} from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import {
   selectFocusedConversation,
@@ -238,6 +241,7 @@ export function useAgentLauncher(
     autoClearConversation,
     apiEndpointMode,
     jsonExtraction,
+    retainOnUnmount = false,
   } = options ?? {};
 
   useEffect(() => {
@@ -269,7 +273,15 @@ export function useAgentLauncher(
 
     return () => {
       if (createdId) {
-        dispatch(destroyInstanceIfAllowed(createdId));
+        // retainOnUnmount surfaces (chat route) keep started conversations
+        // alive across the route change that promotes /chat/new →
+        // /chat/[conversationId]; only abandoned (empty) instances are
+        // reaped. Everyone else destroys unconditionally.
+        if (retainOnUnmount) {
+          dispatch(destroyInstanceIfAbandoned(createdId));
+        } else {
+          dispatch(destroyInstanceIfAllowed(createdId));
+        }
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

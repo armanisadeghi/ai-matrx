@@ -49,7 +49,10 @@ export function ChatNewClient({ defaultAgentName }: ChatNewClientProps) {
       agentId={DEFAULT_NEW_CHAT_AGENT_ID}
       initialAgentName={defaultAgentName}
       landingContent={
-        <NewChatGreeting sourceConversationId={sourceConversationId} />
+        <NewChatGreeting
+          sourceConversationId={sourceConversationId}
+          surfaceKey={surfaceKey}
+        />
       }
     />
   );

@@ -96,6 +96,14 @@ interface SmartAgentResourcePickerButtonProps {
   uploadPath?: string;
   /** When true, opens as a floating WindowPanel instead of a popover. Default: false. */
   useWindowMode?: boolean;
+  /**
+   * Custom trigger element — replaces the default ghost-Database button.
+   * When provided, the surface (e.g. the chat landing's pill input) controls
+   * the trigger's icon, size, and chrome while the picker behaviour stays
+   * identical. Note: the parent should NOT attach its own onClick — clicks
+   * propagate to the popover via Radix's PopoverTrigger.
+   */
+  triggerSlot?: React.ReactNode;
 }
 
 export function SmartAgentResourcePickerButton({
@@ -103,6 +111,7 @@ export function SmartAgentResourcePickerButton({
   uploadBucket = "userContent",
   uploadPath = "agent-attachments",
   useWindowMode = false,
+  triggerSlot,
 }: SmartAgentResourcePickerButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dispatch = useAppDispatch();
@@ -147,7 +156,7 @@ export function SmartAgentResourcePickerButton({
     [conversationId, dispatch],
   );
 
-  const trigger = (
+  const defaultTrigger = (
     <Button
       variant="ghost"
       size="sm"
@@ -158,6 +167,19 @@ export function SmartAgentResourcePickerButton({
     >
       <Database className="w-3 h-3" />
     </Button>
+  );
+
+  // Surfaces can replace the trigger entirely (e.g. the chat landing wants
+  // a Plus icon with its own sizing). Window-mode click is wired up here
+  // because the custom trigger doesn't know about that flag.
+  const trigger = triggerSlot ? (
+    useWindowMode ? (
+      <span onClick={() => setIsOpen(true)}>{triggerSlot}</span>
+    ) : (
+      triggerSlot
+    )
+  ) : (
+    defaultTrigger
   );
 
   if (useWindowMode) {

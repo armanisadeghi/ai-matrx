@@ -9,38 +9,49 @@ import {
   SECONDARY_QUICK_ACTIONS,
 } from "./chat-quick-actions.config";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
+import { NewChatLandingInput } from "./NewChatLandingInput";
 import { cn } from "@/lib/utils";
 
 interface NewChatGreetingProps {
   /**
-   * The conversation currently bound to the input on the new-chat page —
-   * used to read any draft text the user has already typed so we can carry
-   * it to the agent they pick.
+   * The default-agent conversation bound to the landing input — same Redux
+   * state as the standard SmartAgentInput. Carries the user's draft when a
+   * chip is clicked and is the target of the landing input's submit.
    */
   sourceConversationId: string | null;
+  /** Surface key forwarded to the landing input's smartExecute dispatch. */
+  surfaceKey: string;
 }
 
 /**
- * Empty-state surface shown on `/chat/new`. Greets the user, then offers
- * two rows of agent shortcuts. Clicking a chip routes to `/chat/a/[agentId]`
- * and forwards any in-progress draft via sessionStorage so it lands in the
- * destination agent's input bar.
+ * Landing surface shown above an empty conversation on `/chat/new`.
  *
- * The chip catalog lives in `chat-quick-actions.config.ts` — edit that file
- * to rearrange or swap agents without touching this component.
+ * Layout (top → bottom, centered):
+ *   - Greeting: "Hello, <FirstName>" / "How can I help you today?"
+ *   - 5 primary agent chips (full-width pill rows)
+ *   - The minimal landing input (pill: upload / textarea / mic / send)
+ *   - 4 secondary agent chips (compact pills, centered under the input)
+ *
+ * Clicking a chip carries any in-progress draft to the destination agent
+ * via sessionStorage. Submitting through the landing input fires
+ * `smartExecute` against the default agent — the same path the standard
+ * SmartAgentInput uses — so streaming starts immediately.
+ *
+ * The chip catalog lives in `chat-quick-actions.config.ts`.
  */
-export function NewChatGreeting({ sourceConversationId }: NewChatGreetingProps) {
+export function NewChatGreeting({
+  sourceConversationId,
+  surfaceKey,
+}: NewChatGreetingProps) {
   const router = useRouter();
   const store = useAppStore();
   const userName = useAppSelector(selectActiveUserName);
-  // First name only — "Hello, Arman" feels right; "Hello, Arman Sadeghi"
-  // does not. Falls back gracefully when full name isn't populated.
+  // First name only — "Hello, Arman" feels right; full name does not.
   const firstName = (userName ?? "").trim().split(/\s+/)[0] || "";
 
   const handleChipClick = (agentId: string) => {
     // Snapshot the draft AT click time — not via a subscribed selector — so
-    // we don't re-render this component on every keystroke. `getState()` is
-    // a one-shot read.
+    // we don't re-render this component on every keystroke.
     const draftText = sourceConversationId
       ? selectUserInputText(sourceConversationId)(store.getState())
       : "";
@@ -52,7 +63,8 @@ export function NewChatGreeting({ sourceConversationId }: NewChatGreetingProps) 
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto">
-      <div className="mx-auto max-w-3xl w-full px-6 py-12 sm:py-16 flex flex-col gap-8">
+      <div className="mx-auto max-w-2xl w-full px-6 pt-12 sm:pt-16 pb-8 flex flex-col gap-6">
+        {/* Greeting */}
         <header className="flex flex-col gap-1">
           <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">
             {firstName ? `Hello, ${firstName}` : "Hello"}
@@ -62,6 +74,7 @@ export function NewChatGreeting({ sourceConversationId }: NewChatGreetingProps) 
           </p>
         </header>
 
+        {/* 5 primary chips */}
         <section
           aria-label="Quick actions"
           className="flex flex-col gap-2"
@@ -88,9 +101,19 @@ export function NewChatGreeting({ sourceConversationId }: NewChatGreetingProps) 
           ))}
         </section>
 
+        {/* Minimal landing input — only mounts when we have a conversation
+            to bind to (the launcher's pre-created default-agent instance) */}
+        {sourceConversationId && (
+          <NewChatLandingInput
+            conversationId={sourceConversationId}
+            surfaceKey={surfaceKey}
+          />
+        )}
+
+        {/* 4 secondary chips — centered under the input */}
         <section
           aria-label="More actions"
-          className="flex flex-wrap gap-2"
+          className="flex flex-wrap items-center justify-center gap-2"
         >
           {SECONDARY_QUICK_ACTIONS.map((action) => (
             <button

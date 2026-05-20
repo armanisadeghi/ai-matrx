@@ -147,26 +147,34 @@ export function AgentConversationColumn({
         )}
       </div>
 
-      <CreatorRunPanel
-        conversationId={conversationId}
-        displayConversationId={displayId}
-        surfaceKey={surfaceKey}
-      />
+      {/* While the landing is showing, suppress the standard input + the
+          Creator Panel + UI-first chip — the landing surface provides its
+          own minimal input (pill-shaped, just upload/mic/send). They come
+          back the instant the first message lands and the landing falls away. */}
+      {!showLanding && (
+        <>
+          <CreatorRunPanel
+            conversationId={conversationId}
+            displayConversationId={displayId}
+            surfaceKey={surfaceKey}
+          />
 
-      {/* UI-first tools: chip surfaces plan/task/todo counts (hidden when
-          empty); zone surfaces pending ask cards directly above the input.
-          The chat input itself stays fully interactive — answering cards
-          and typing into the input are independent actions. */}
-      <div className="flex items-center justify-end mb-1">
-        <TaskPanelChip conversationId={displayId} />
-      </div>
-      <PendingAsksZone conversationId={displayId} />
+          {/* UI-first tools: chip surfaces plan/task/todo counts (hidden when
+              empty); zone surfaces pending ask cards directly above the input.
+              The chat input itself stays fully interactive — answering cards
+              and typing into the input are independent actions. */}
+          <div className="flex items-center justify-end mb-1">
+            <TaskPanelChip conversationId={displayId} />
+          </div>
+          <PendingAsksZone conversationId={displayId} />
 
-      <SmartAgentInput
-        conversationId={conversationId}
-        surfaceKey={surfaceKey}
-        {...smartInputProps}
-      />
+          <SmartAgentInput
+            conversationId={conversationId}
+            surfaceKey={surfaceKey}
+            {...smartInputProps}
+          />
+        </>
+      )}
     </div>
   );
 }
