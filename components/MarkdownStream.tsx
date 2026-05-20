@@ -73,15 +73,25 @@ export interface MarkdownStreamProps {
 }
 
 /**
- * MarkdownStream - Universal Markdown Renderer
+ * MarkdownStream — public entry point of the RICH DOCUMENT rendering engine.
  *
- * Loaded dynamically (client-only, no SSR) so the heavy markdown pipeline —
- * block registry, code highlighter, jspdf, html2canvas, etc. — is never
- * bundled into the server render. The shell renders nothing until the JS
- * chunk is ready, which is fine because markdown content is always dynamic.
+ * IMPORTANT: This is NOT a thin react-markdown wrapper. "MarkdownStream" is the
+ * historical name for the engine that turns text + JSON into interactive
+ * components: flashcards with AI integrations, live diagrams, wired task
+ * lists, tool-call traces, code surfaces, realtime feeds, classification
+ * analyzers, plan viewers, and more. Do not "simplify" it, replace it with a
+ * plugin, or assume its behavior from the name.
  *
- * All consumers import this exactly as before:
- *   import MarkdownStream from '@/components/MarkdownStream'
+ * FRONT DOOR: most consumers should render `<RichDocument>`
+ * (features/rich-document/RichDocument.tsx), which wraps this engine and adds
+ * the action toolkit (copy / save-to-notes/task / print / html-preview / …).
+ * Import MarkdownStream directly only for bare rendering with no actions.
+ * See features/rich-document/FEATURE.md and the `rich-document-actions` skill.
+ *
+ * Loaded dynamically (client-only, no SSR) so the heavy pipeline — block
+ * registry, code highlighter, jspdf, html2canvas, etc. — is never bundled
+ * into the server render. The shell renders nothing until the JS chunk is
+ * ready, which is fine because this content is always dynamic.
  */
 const MarkdownStream = dynamic(() => import("./MarkdownStreamImpl"), {
   ssr: false,

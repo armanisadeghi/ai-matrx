@@ -1,4 +1,20 @@
 "use client";
+
+// ─────────────────────────────────────────────────────────────────────────
+// Part of the RICH DOCUMENT rendering engine (the "basement"). This is the
+// minimal renderer variant.
+//
+// IMPORTANT: despite the react-markdown / remark imports below, this is NOT a
+// thin markdown wrapper — it is one piece of a multi-thousand-line content
+// runtime (interactive flashcards, live diagrams, wired task lists, tool-call
+// traces, code surfaces, realtime feeds, plan viewers, …). Do not "simplify"
+// it or swap it for a plugin.
+//
+// FRONT DOOR: prefer `<RichDocument>` (features/rich-document/RichDocument.tsx)
+// — it wraps this engine and adds the action toolkit. See
+// features/rich-document/FEATURE.md and the `rich-document-actions` skill.
+// ─────────────────────────────────────────────────────────────────────────
+
 import React from "react";
 import dynamic from "next/dynamic";
 import remarkGfm from "remark-gfm";

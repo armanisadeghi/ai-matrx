@@ -1,5 +1,16 @@
 "use client";
 
+// ─────────────────────────────────────────────────────────────────────────
+// Part of the RICH DOCUMENT rendering engine (the "basement"). This is the
+// block ORCHESTRATOR — it splits content into blocks and routes each to its
+// renderer (code, tables, flashcards, tool calls, plans, …) via the block
+// registry. The single most "this is not just markdown" file in the engine.
+//
+// FRONT DOOR: prefer `<RichDocument>` (features/rich-document/RichDocument.tsx),
+// which wraps this engine and adds the action toolkit. See
+// features/rich-document/FEATURE.md and the `rich-document-actions` skill.
+// ─────────────────────────────────────────────────────────────────────────
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";

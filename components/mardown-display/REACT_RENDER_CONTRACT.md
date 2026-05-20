@@ -1,5 +1,7 @@
 # React Render Contract — Block Streaming Protocol
 
+> **This directory (`components/mardown-display/`) is the RICH DOCUMENT rendering engine** — the "basement" of the Rich Document system. It is NOT a thin markdown wrapper; it is the multi-thousand-line runtime that turns text + JSON into interactive components (flashcards, diagrams, task lists, tool-call traces, code, plans, …). The front door is `<RichDocument>` (`features/rich-document/RichDocument.tsx`), which wraps this engine and adds the action toolkit. See [`features/rich-document/FEATURE.md`](../../features/rich-document/FEATURE.md) and the `rich-document-actions` skill.
+
 > This document is the **React team's counterpart** to `aidream/ai/processing/streaming-constitution.md`.
 > It describes what Python guarantees, what React must handle, outstanding gaps, and the render pipeline.
 
