@@ -463,7 +463,7 @@ export default [
         // component prop-shape drift at compile time — a single `{...spread}`
         // anywhere in here would defeat the point. See
         // docs/OVERLAY_WINDOW_OVERHAUL.md.
-        files: ['features/overlays/OverlayControllerImpl.tsx'],
+        files: ['features/overlays/OverlayController.tsx'],
         rules: {
             'no-restricted-syntax': [
                 'warn',
@@ -488,7 +488,7 @@ export default [
             // file IS the registry layer. Same exemption as
             // windowRegistry.ts above. The thin shell `OverlayController.tsx`
             // does NOT need the exemption — it only imports its Impl.
-            'features/overlays/OverlayControllerImpl.tsx',
+            'features/overlays/OverlayController.tsx',
         ],
         rules: {
             'no-restricted-imports': 'off',

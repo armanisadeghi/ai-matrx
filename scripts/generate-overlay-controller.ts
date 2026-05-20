@@ -2,13 +2,13 @@
 /**
  * generate-overlay-controller.ts
  *
- * One-shot codegen for the new `features/overlays/OverlayControllerImpl.tsx`.
+ * One-shot codegen for the new `features/overlays/OverlayController.tsx`.
  * Walks every registry entry, resolves the component file, reads its Props
  * interface, and emits explicit per-overlay JSX with no `{...spread}` —
  * every prop wired by name with a runtime type guard around the dispatched
  * `data` field.
  *
- *   pnpm tsx scripts/generate-overlay-controller.ts > features/overlays/OverlayControllerImpl.tsx
+ *   pnpm tsx scripts/generate-overlay-controller.ts > features/overlays/OverlayController.tsx
  *
  * The generated file is intended to be the SEED, not a permanently-
  * regenerated artifact. After the migration, the controller is a normal
@@ -875,7 +875,7 @@ function main(): void {
     case "all":
       // Convenience: write all three to their canonical destinations.
       writeFileSyncSafe(
-        join(REPO_ROOT, "features/overlays/OverlayControllerImpl.tsx"),
+        join(REPO_ROOT, "features/overlays/OverlayController.tsx"),
         captureToString(() => emit(entries)),
       );
       writeOpeners(entries);
