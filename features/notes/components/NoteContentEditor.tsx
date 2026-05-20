@@ -70,9 +70,18 @@ const NoteContextMenu = dynamic(
 
 interface NoteContentEditorProps {
   noteId: string;
+  /**
+   * When provided, the preview/split action surface renders REMOTELY to a
+   * `<RichDocumentActionSurface surfaceId={...}/>` mounted by the parent
+   * (e.g. the Notes page header) instead of inline. Omit for inline actions.
+   */
+  actionsSurfaceId?: string;
 }
 
-export function NoteContentEditor({ noteId }: NoteContentEditorProps) {
+export function NoteContentEditor({
+  noteId,
+  actionsSurfaceId,
+}: NoteContentEditorProps) {
   const dispatch = useAppDispatch();
   const instanceId = useNotesInstanceId();
 
@@ -468,6 +477,7 @@ export function NoteContentEditor({ noteId }: NoteContentEditorProps) {
             className="flex-1 min-h-0"
             resetKey={`${noteId}:${resetGen}`}
             noteId={noteId}
+            actionsSurfaceId={actionsSurfaceId}
             findOverlay={
               editorMode === "plain" || editorMode === "split" ? (
                 <>

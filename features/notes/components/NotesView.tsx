@@ -70,6 +70,7 @@ import {
   selectNoteLabel,
 } from "../redux/selectors";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteMetadataBar } from "./NoteMetadataBar";
@@ -395,6 +396,16 @@ export function NotesView({ config, className }: NotesViewProps) {
                 Refresh
               </button>
             </div>
+            {/* Active note's action bar — fed remotely by the primary
+                NoteContentEditor (preview/split modes register here).
+                Renders nothing in plain/wysiwyg modes (no provider). */}
+            {activeTabId && (
+              <RichDocumentActionSurface
+                surfaceId={`note-detail-${activeTabId}`}
+                variant="bar"
+                fallback={null}
+              />
+            )}
           </PageHeader>
 
           {/* Layer 5: Sidebar */}
@@ -441,9 +452,12 @@ export function NotesView({ config, className }: NotesViewProps) {
                 splitNoteId ? (
                   /* ── Split view: two editors side-by-side ─────────── */
                   <div className="flex-1 flex min-h-0">
-                    {/* Left pane — active tab */}
+                    {/* Left pane — active tab. Actions feed the header bar. */}
                     <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                      <NoteContentEditor noteId={activeTabId} />
+                      <NoteContentEditor
+                        noteId={activeTabId}
+                        actionsSurfaceId={`note-detail-${activeTabId}`}
+                      />
                     </div>
                     {/* Resize divider */}
                     <div className="w-px bg-border shrink-0" />
@@ -465,7 +479,10 @@ export function NotesView({ config, className }: NotesViewProps) {
                     </div>
                   </div>
                 ) : (
-                  <NoteContentEditor noteId={activeTabId} />
+                  <NoteContentEditor
+                    noteId={activeTabId}
+                    actionsSurfaceId={`note-detail-${activeTabId}`}
+                  />
                 )
               ) : (
                 <div className="flex-1 flex items-center justify-center text-muted-foreground">

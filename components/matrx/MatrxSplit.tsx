@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -12,6 +13,22 @@ import MarkdownStream, {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Eye, PenLine } from "lucide-react";
+import type {
+  ContentSource,
+  RichDocumentActionId,
+  RichDocumentActionsVariant,
+} from "@/features/rich-document/types";
+
+// Lazy — only pulled into the bundle when a caller opts into actions by
+// passing `actionsSource`. Consumers that don't use the action surface pay
+// nothing for the rich-document registry.
+const RichDocument = dynamic(
+  () =>
+    import("@/features/rich-document/RichDocument").then((m) => ({
+      default: m.RichDocument,
+    })),
+  { ssr: false },
+);
 
 export interface MatrxSplitProps {
   /** The markdown content to edit and preview */
@@ -67,6 +84,21 @@ export interface MatrxSplitProps {
    * scroll position, etc.
    */
   previewContainerRef?: React.Ref<HTMLDivElement | null>;
+  /**
+   * Opt into the RichDocument action surface on the preview pane. When set,
+   * the preview renders `<RichDocument source={actionsSource} .../>` instead
+   * of a bare `<MarkdownStream/>`, so users get copy / save-to-task / print /
+   * etc. on the rendered content. When omitted, MatrxSplit behaves exactly
+   * as before (zero impact on existing callers; RichDocument isn't even
+   * loaded into the bundle).
+   */
+  actionsSource?: ContentSource;
+  /** Action surface variant. Defaults to "remote" when actionsSurfaceId is set, else "hover-menu". */
+  actionsVariant?: RichDocumentActionsVariant;
+  /** Remote surface id — pairs with a <RichDocumentActionSurface/> elsewhere (e.g. a header). */
+  actionsSurfaceId?: string;
+  /** Action IDs to hide in the preview's action surface. */
+  actionsExclude?: (RichDocumentActionId | string)[];
 }
 
 /**
@@ -111,10 +143,54 @@ export function MatrxSplit({
   onPreviewChange,
   editorOverlay,
   previewContainerRef,
+  actionsSource,
+  actionsVariant,
+  actionsSurfaceId,
+  actionsExclude,
 }: MatrxSplitProps) {
   const previewChange = onPreviewChange ?? onChange;
   const isMobile = useIsMobile();
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
+
+  // Single source of truth for the preview body — swaps to RichDocument when
+  // a caller opts into actions, else the bare MarkdownStream. Used by both
+  // the mobile single-pane and the desktop two-pane layouts below.
+  const renderPreviewBody = () => {
+    if (actionsSource) {
+      return (
+        <RichDocument
+          content={previewValue}
+          source={actionsSource}
+          actionsVariant={
+            actionsVariant ?? (actionsSurfaceId ? "remote" : "hover-menu")
+          }
+          actionsSurfaceId={actionsSurfaceId}
+          actions={
+            actionsExclude ? { exclude: actionsExclude } : undefined
+          }
+          isStreamActive={false}
+          hideCopyButton={hideCopyButton}
+          analysisData={analysisData}
+          messageId={messageId}
+          allowFullScreenEditor={allowFullScreenEditor}
+          contentClassName={previewMarkdownClassName}
+          onContentChange={previewChange}
+        />
+      );
+    }
+    return (
+      <MarkdownStream
+        content={previewValue}
+        isStreamActive={false}
+        hideCopyButton={hideCopyButton}
+        analysisData={analysisData}
+        messageId={messageId}
+        allowFullScreenEditor={allowFullScreenEditor}
+        className={previewMarkdownClassName}
+        onContentChange={previewChange}
+      />
+    );
+  };
 
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -298,16 +374,7 @@ export function MatrxSplit({
               )}
             >
               {previewValue.trim() ? (
-                <MarkdownStream
-                  content={previewValue}
-                  isStreamActive={false}
-                  hideCopyButton={hideCopyButton}
-                  analysisData={analysisData}
-                  messageId={messageId}
-                  allowFullScreenEditor={allowFullScreenEditor}
-                  className={previewMarkdownClassName}
-                  onContentChange={previewChange}
-                />
+                renderPreviewBody()
               ) : (
                 <p className="py-2 text-sm italic text-muted-foreground">
                   {emptyPreviewMessage}
@@ -355,16 +422,7 @@ export function MatrxSplit({
           )}
         >
           {previewValue.trim() ? (
-            <MarkdownStream
-              content={previewValue}
-              isStreamActive={false}
-              hideCopyButton={hideCopyButton}
-              analysisData={analysisData}
-              messageId={messageId}
-              allowFullScreenEditor={allowFullScreenEditor}
-              className={previewMarkdownClassName}
-              onContentChange={previewChange}
-            />
+            renderPreviewBody()
           ) : (
             <p className="py-2 text-sm italic text-muted-foreground">
               {emptyPreviewMessage}

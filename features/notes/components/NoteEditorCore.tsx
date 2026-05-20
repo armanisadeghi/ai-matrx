@@ -110,6 +110,13 @@ export interface NoteEditorCoreProps {
    * appear but `save-to-task` won't link to a parent note row.
    */
   noteId?: string;
+  /**
+   * When provided, the preview/split action surface renders REMOTELY to a
+   * `<RichDocumentActionSurface surfaceId={...}/>` the parent mounts (e.g. a
+   * page header) instead of inline. When omitted, actions render inline
+   * (a bar under the preview, a hover-menu over the split preview pane).
+   */
+  actionsSurfaceId?: string;
 }
 
 /**
@@ -138,7 +145,12 @@ export function NoteEditorCore({
   findOverlay,
   previewContainerRef,
   noteId,
+  actionsSurfaceId,
 }: NoteEditorCoreProps) {
+  // Shared content source + action placement for the preview / split panes.
+  const richSource: ContentSource = noteId
+    ? { type: "note", noteId }
+    : { type: "raw" };
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const internalTuiRef = useRef<any>(null);
 
@@ -250,6 +262,9 @@ export function NoteEditorCore({
           previewContainerRef={previewContainerRef}
           textareaClassName={cn("pb-[85vh]", textareaClassName)}
           previewClassName={cn("pb-[85vh]", previewClassName)}
+          actionsSource={richSource}
+          actionsVariant={actionsSurfaceId ? "remote" : "hover-menu"}
+          actionsSurfaceId={actionsSurfaceId}
         />
       )}
 
@@ -275,12 +290,9 @@ export function NoteEditorCore({
           <RichDocument
             key={resetKey}
             content={content}
-            source={
-              noteId
-                ? ({ type: "note", noteId } as ContentSource)
-                : ({ type: "raw" } as ContentSource)
-            }
-            actionsVariant="bar"
+            source={richSource}
+            actionsVariant={actionsSurfaceId ? "remote" : "bar"}
+            actionsSurfaceId={actionsSurfaceId}
             actionsClassName="mb-2"
             isStreamActive={false}
             hideCopyButton={true}
