@@ -2,11 +2,12 @@
 
 // features/rich-document/RichDocument.tsx
 //
-// PHASE 0 — skeleton. Renders the underlying content engine and registers
-// against the remote-surface slice when actionsVariant === "remote". The
-// action REGISTRY is empty in Phase 0, so the inline variants ("bar",
-// "mini-bar", "menu", "hover-menu") have nothing to render; they're left as
-// no-ops until Phase 2 plugs in the variant renderers.
+// Renders the content engine + a configurable action surface. The surface
+// has three orthogonal axes: actionsVariant (WHAT: bar / mini-bar / menu /
+// icon-only / remote / none), actionsPosition (WHERE: below / above /
+// top-right / top-left / middle-right / middle-left), and actionsBehavior
+// (VISIBILITY: always / hover-only). Absolute positions layer over the
+// content; hover-only fades the surface in on parent hover/focus.
 //
 // CLIENT-ONLY. MarkdownStream is `dynamic({ ssr: false })`. RichDocument
 // inherits the same boundary — server components cannot render this

@@ -114,7 +114,7 @@ export interface NoteEditorCoreProps {
    * When provided, the preview/split action surface renders REMOTELY to a
    * `<RichDocumentActionSurface surfaceId={...}/>` the parent mounts (e.g. a
    * page header) instead of inline. When omitted, actions render inline
-   * (a bar under the preview, a hover-menu over the split preview pane).
+   * (a bar under the preview, a hover icon over the split preview pane).
    */
   actionsSurfaceId?: string;
 }
@@ -263,7 +263,7 @@ export function NoteEditorCore({
           textareaClassName={cn("pb-[85vh]", textareaClassName)}
           previewClassName={cn("pb-[85vh]", previewClassName)}
           actionsSource={richSource}
-          actionsVariant={actionsSurfaceId ? "remote" : "hover-menu"}
+          actionsVariant={actionsSurfaceId ? "remote" : "icon-only"}
           actionsSurfaceId={actionsSurfaceId}
         />
       )}

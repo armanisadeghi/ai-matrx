@@ -170,8 +170,10 @@ export function MatrxSplit({
           content={previewValue}
           source={actionsSource}
           actionsVariant={
-            actionsVariant ?? (actionsSurfaceId ? "remote" : "hover-menu")
+            actionsVariant ?? (actionsSurfaceId ? "remote" : "icon-only")
           }
+          actionsPosition={actionsPosition ?? "top-right"}
+          actionsBehavior={actionsBehavior ?? "hover-only"}
           actionsSurfaceId={actionsSurfaceId}
           actions={
             actionsExclude ? { exclude: actionsExclude } : undefined
