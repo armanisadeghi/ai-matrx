@@ -12,7 +12,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
 import {
@@ -195,15 +195,28 @@ export function ChatPageShell({
 
   const pickerLabel = activeAgentName?.trim() || pickerPlaceholder;
 
-  // ── Desktop sidebar top row: [toggle] [agent picker] [+ new chat] ──────
-  const desktopTopRow = (
-    <div className="flex h-9 shrink-0 items-center gap-1 border-b border-border pl-1.5 pr-1">
+  // ── Shared desktop header: [toggle] [agent picker] [+ new chat] ────────
+  //
+  // The three controls render in the exact same horizontal positions whether
+  // the sidebar is expanded (header lives inside the sidebar) or collapsed
+  // (header floats over the chat surface). `floating` only swaps the chrome
+  // — translucent card + border + shadow — so the controls feel anchored
+  // against the chat background instead of against the sidebar.
+  const renderDesktopHeader = (floating: boolean) => (
+    <div
+      className={cn(
+        "flex h-10 shrink-0 items-center gap-1 pl-1.5 pr-1",
+        floating
+          ? "rounded-xl border border-border bg-card/90 shadow-sm backdrop-blur-md"
+          : "border-b border-border",
+      )}
+    >
       <button
         type="button"
-        onClick={() => setHistoryExpanded(false)}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-        aria-label="Hide sidebar"
-        title="Hide sidebar (⌘B)"
+        onClick={() => setHistoryExpanded((v) => !v)}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        aria-label={historyExpanded ? "Hide sidebar" : "Show sidebar"}
+        title={historyExpanded ? "Hide sidebar (⌘B)" : "Show sidebar (⌘B)"}
       >
         <PanelLeft className="h-4 w-4" />
       </button>
@@ -212,7 +225,7 @@ export function ChatPageShell({
         className="flex min-w-0 flex-1 items-center"
       >
         <AgentListDropdown
-          key={activeAgentId ?? "no-agent"}
+          key={`${floating ? "float" : "dock"}-${activeAgentId ?? "no-agent"}`}
           onSelect={onAgentSelect}
           label={pickerLabel}
           compact
@@ -223,7 +236,7 @@ export function ChatPageShell({
       <button
         type="button"
         onClick={handleNewChat}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         aria-label="New chat"
         title="New chat (⌘K)"
       >
@@ -281,12 +294,11 @@ export function ChatPageShell({
           className="hidden lg:flex w-64 shrink-0 border-r border-border flex-col overflow-hidden bg-card"
           aria-label="Chat history"
         >
-          <ConversationHistorySidebar
+          <ChatHistorySidebar
             scopeId={CHAT_HISTORY_SCOPE}
-            agentIds={[]}
             activeConversationId={activeConversationId ?? null}
             onOpenConversation={openConversation}
-            headerSlot={desktopTopRow}
+            headerSlot={renderDesktopHeader(false)}
             topSlot={
               <PinnedAgentsSection
                 activeAgentId={activeAgentId}
@@ -298,19 +310,15 @@ export function ChatPageShell({
       )}
 
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
-        {/* Floating sidebar toggle when desktop history is hidden — sits at
-            the same top-left position as the in-sidebar toggle so it appears
-            visually anchored across both states. */}
+        {/* Floating header when the sidebar is collapsed. The three controls
+            stay anchored in their original positions over the chat surface
+            so the user never loses access to toggle / agent picker / new
+            chat. Same height + same left offset as the in-sidebar header,
+            so the layout reads as one continuous bar. */}
         {!isMobile && !historyExpanded && (
-          <button
-            type="button"
-            onClick={() => setHistoryExpanded(true)}
-            className="absolute top-1.5 left-1.5 z-30 hidden lg:flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm hover:bg-accent hover:text-foreground"
-            aria-label="Show sidebar"
-            title="Show sidebar (⌘B)"
-          >
-            <PanelLeft className="h-4 w-4" />
-          </button>
+          <div className="absolute top-1.5 left-1.5 z-30 hidden lg:block w-72">
+            {renderDesktopHeader(true)}
+          </div>
         )}
 
         {isMobile && (
@@ -369,9 +377,8 @@ export function ChatPageShell({
               </DrawerTitle>
             </DrawerHeader>
             <div className="flex-1 min-h-0 overflow-hidden pb-safe">
-              <ConversationHistorySidebar
+              <ChatHistorySidebar
                 scopeId={CHAT_HISTORY_SCOPE}
-                agentIds={[]}
                 activeConversationId={activeConversationId ?? null}
                 onOpenConversation={(conv) => {
                   setHistoryDrawerOpen(false);
