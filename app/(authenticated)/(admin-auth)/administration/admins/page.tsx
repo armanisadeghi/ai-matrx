@@ -21,7 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { Database } from "@/types/database.types";
+
+const PAGE_LOCATION = "AI Matrx Admin — Admins & Levels (/administration/admins)";
 
 type AdminLevel = Database["public"]["Enums"]["admin_level"];
 
@@ -66,6 +69,16 @@ const LEVEL_LABEL: Record<AdminLevel, string> = {
 function formatDate(value: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
+}
+
+function adminSummary(row: AdminRow): string {
+  return [
+    `Email: ${row.email ?? "—"}`,
+    `Level: ${LEVEL_LABEL[row.level]}`,
+    `User ID: ${row.user_id}`,
+    `Promoted: ${formatDate(row.admin_created_at)}`,
+    `Last sign-in: ${formatDate(row.last_sign_in_at)}`,
+  ].join("\n");
 }
 
 function levelBadgeClass(level: AdminLevel) {
@@ -325,6 +338,20 @@ export default function AdminsManagementPage() {
             <h2 className="text-sm font-medium text-foreground">
               Current admins ({admins.length})
             </h2>
+            {admins.length > 0 && (
+              <CopyButtons
+                size="sm"
+                label="All admins"
+                human={() => admins.map(adminSummary).join("\n\n")}
+                agent={() => ({
+                  kind: "admins",
+                  location: PAGE_LOCATION,
+                  description: "All current admins and their levels.",
+                  data: admins,
+                  attributes: { count: admins.length },
+                })}
+              />
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -391,6 +418,23 @@ export default function AdminsManagementPage() {
                         {formatDate(row.last_sign_in_at)}
                       </td>
                       <td className="px-4 py-2 align-middle text-right">
+                        <div className="flex items-center justify-end gap-1">
+                        <CopyButtons
+                          size="icon"
+                          label={row.email ?? row.user_id}
+                          human={() => adminSummary(row)}
+                          agent={() => ({
+                            kind: "admin",
+                            location: PAGE_LOCATION,
+                            description: "A single admin row.",
+                            data: row,
+                            summary: adminSummary(row),
+                            attributes: {
+                              "user-id": row.user_id,
+                              level: row.level,
+                            },
+                          })}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
@@ -405,6 +449,7 @@ export default function AdminsManagementPage() {
                           )}
                           <span className="ml-1.5">Revoke</span>
                         </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -420,9 +465,32 @@ export default function AdminsManagementPage() {
             <h2 className="text-sm font-medium text-foreground">
               Audit log ({audit.length})
             </h2>
-            <p className="text-xs text-muted-foreground">
-              Every admin change is logged at the DB layer, including any made via direct SQL.
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-muted-foreground">
+                Every admin change is logged at the DB layer, including any made via direct SQL.
+              </p>
+              {audit.length > 0 && (
+                <CopyButtons
+                  size="sm"
+                  label="Audit log"
+                  human={() =>
+                    audit
+                      .map(
+                        (e) =>
+                          `${formatDate(e.created_at)} · ${e.action} · actor: ${e.actor_email ?? "system"} · target: ${e.target_email ?? e.target_user_id}`,
+                      )
+                      .join("\n")
+                  }
+                  agent={() => ({
+                    kind: "admin-audit-log",
+                    location: PAGE_LOCATION,
+                    description: "The admin audit log entries currently shown.",
+                    data: audit,
+                    attributes: { count: audit.length },
+                  })}
+                />
+              )}
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
