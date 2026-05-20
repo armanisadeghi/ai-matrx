@@ -11,6 +11,7 @@ import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsks
 import { TaskPanelChip } from "@/features/agents/ui-first-tools/ui/lists/TaskPanelChip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
 
 import { cn } from "@/lib/utils";
 
@@ -76,6 +77,7 @@ export function AgentConversationColumn({
   // so re-renders are cheap.
   const messageCount = useAppSelector(selectMessageCount(displayId));
   const showLanding = !!landingContent && messageCount === 0;
+  const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -174,11 +176,13 @@ export function AgentConversationColumn({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
         >
-          <CreatorRunPanel
-            conversationId={conversationId}
-            displayConversationId={displayId}
-            surfaceKey={surfaceKey}
-          />
+          {showCreatorPanel && (
+            <CreatorRunPanel
+              conversationId={conversationId}
+              displayConversationId={displayId}
+              surfaceKey={surfaceKey}
+            />
+          )}
 
           {/* UI-first tools: chip surfaces plan/task/todo counts (hidden when
               empty); zone surfaces pending ask cards directly above the input.

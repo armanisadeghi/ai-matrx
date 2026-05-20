@@ -433,7 +433,9 @@ function AnalysisSectionCard({ section }: { section: AnalysisSection }) {
                 <RichDocument
                     content={section.content}
                     source={{ type: "raw" } as ContentSource}
-                    actionsVariant="hover-menu"
+                    actionsVariant="icon-only"
+                    actionsPosition="top-right"
+                    actionsBehavior="hover-only"
                     actions={{ exclude: ["announcements", "preferences"] }}
                 />
             </div>

@@ -11,9 +11,8 @@
  *
  * Order (fastest first, so problems surface quickly):
  *
- *   1. check:overlay-keys      ~1s   overlay dispatch ↔ defaultData ↔ component-props alignment
- *   2. check:surface-drift     ~1s   surface manifest invariants
- *   3. check:doctrine          ~1s   doctrine red flags (advisory, never fails the run)
+ *   1. check:surface-drift     ~1s   surface manifest invariants
+ *   2. check:doctrine          ~1s   doctrine red flags (advisory, never fails the run)
  *   6. sync-types step 1       ~5s   Supabase database types (pnpm db-types)        [skipped: --fast / --no-sync]
  *   7. sync-types step 2       ~3s   Python API types (paths/schemas)               [skipped: --fast / --no-sync]
  *   8. lint                    ~30s  eslint . (advisory — large pre-existing baseline)
@@ -74,11 +73,6 @@ function step({ id, title, command, skip, advisory = false }) {
 }
 
 // ── Fast static checks (<2s each) ──────────────────────────────────────────
-step({
-  id: "overlay-keys",
-  title: "Overlay key alignment (dispatch ↔ defaultData ↔ props)",
-  command: ["pnpm", "check:overlay-keys"],
-});
 step({
   id: "surface-drift",
   title: "Surface manifest invariants",

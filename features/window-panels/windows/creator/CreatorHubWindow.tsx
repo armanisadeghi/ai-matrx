@@ -46,6 +46,8 @@ import CreatorRunTabContent, {
   type RunTabId,
 } from "@/features/agents/components/run-controls/CreatorRunTabContent";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
+import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
 
@@ -119,6 +121,18 @@ export default function CreatorHubWindow({
   const inputConvId = useAppSelector(selectLastFocusedInputConversation);
   const displayConvId = useAppSelector(selectLastFocusedDisplayConversation);
   const surfaceKey = useAppSelector(selectLastFocusedSurfaceKey);
+
+  // Detected active context — shown in a banner so the user can see which
+  // agent/conversation the hub is referencing (and spot a wrong guess). Run /
+  // chat surface keys embed the agentId after the ":".
+  const isCreator = useAppSelector(selectIsCreator);
+  const activeAgentId =
+    surfaceKey && surfaceKey.includes(":")
+      ? surfaceKey.slice(surfaceKey.indexOf(":") + 1)
+      : null;
+  const activeAgentName = useAppSelector((state) =>
+    activeAgentId ? selectAgentName(state, activeAgentId) : null,
+  );
 
   // Shared embedded windows (Stream Debug, Run Settings) for the Actions tab.
   // Called unconditionally (rules of hooks); the open callbacks are only
@@ -199,6 +213,42 @@ export default function CreatorHubWindow({
         onCollectData={() => ({ activeTab })}
       >
         <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-border bg-muted/40 px-3 py-1.5 text-[11px]"
+            title={surfaceKey ? `Surface: ${surfaceKey}` : undefined}
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Active
+            </span>
+            <span className="text-foreground">
+              Agent:{" "}
+              <span className="font-medium">
+                {activeAgentName ??
+                  (activeAgentId ? `${activeAgentId.slice(0, 8)}…` : "none")}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              Conversation:{" "}
+              <span className="font-mono">
+                {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
+              </span>
+            </span>
+            <span
+              className={cn(
+                "ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium",
+                isCreator
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : "bg-muted text-muted-foreground",
+              )}
+              title={
+                isCreator
+                  ? "You are detected as the creator/owner of this agent"
+                  : "You are not detected as the creator of this agent"
+              }
+            >
+              {isCreator ? "Creator" : "Not creator"}
+            </span>
+          </div>
           {body}
         </div>
       </WindowPanel>

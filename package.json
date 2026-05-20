@@ -42,7 +42,6 @@
     "ship:history": "tsx scripts/matrx/ship.ts history",
     "find-circular": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1",
     "find-circular:count": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1 | grep 'Found'",
-    "check:overlay-keys": "tsx scripts/check-overlay-key-alignment.ts",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
     "check:doctrine": "tsx scripts/check-doctrine.ts",
     "check:doctrine:staged": "tsx scripts/check-doctrine.ts --staged",

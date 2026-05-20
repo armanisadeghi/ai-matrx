@@ -17412,6 +17412,63 @@ export type Database = {
         }
         Relationships: []
       }
+      system_error: {
+        Row: {
+          agent_id: string | null
+          context: Json | null
+          conversation_id: string | null
+          error_text: string
+          error_type: string | null
+          id: string
+          kind: string
+          occurred_at: string
+          payload: Json | null
+          request_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          route: string | null
+          source_app: string | null
+          traceback: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          context?: Json | null
+          conversation_id?: string | null
+          error_text: string
+          error_type?: string | null
+          id?: string
+          kind: string
+          occurred_at?: string
+          payload?: Json | null
+          request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string | null
+          source_app?: string | null
+          traceback?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          context?: Json | null
+          conversation_id?: string | null
+          error_text?: string
+          error_type?: string | null
+          id?: string
+          kind?: string
+          occurred_at?: string
+          payload?: Json | null
+          request_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string | null
+          source_app?: string | null
+          traceback?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       system_function: {
         Row: {
           description: string | null
@@ -20943,6 +21000,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wf_template: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          definition: Json
+          description: string | null
+          id: string
+          is_published: boolean
+          name: string
+          popularity: number
+          preview_image_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          definition: Json
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          popularity?: number
+          preview_image_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          popularity?: number
+          preview_image_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       wf_trigger: {
         Row: {

@@ -6,9 +6,11 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsCreatorMode,
   selectShowCreatorTools,
+  selectShowCreatorPanel,
   selectCreatorSettings,
   toggleCreatorMode,
   toggleCreatorTools,
+  toggleShowCreatorPanel,
   setCreatorSetting,
   resetCreatorState,
 } from "@/lib/redux/preferences/creatorDebugSlice";
@@ -47,6 +49,7 @@ export default function CreatorSettingsTab() {
   const dispatch = useAppDispatch();
   const isCreatorMode = useAppSelector(selectIsCreatorMode);
   const showCreatorTools = useAppSelector(selectShowCreatorTools);
+  const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const settings = useAppSelector(selectCreatorSettings);
 
   return (
@@ -75,6 +78,12 @@ export default function CreatorSettingsTab() {
           description="Master toggle for every creator-only surface"
           checked={isCreatorMode}
           onCheckedChange={() => dispatch(toggleCreatorMode())}
+        />
+        <SettingRow
+          label="Show creator panel"
+          description="The run-control panel above the agent input (Actions, Payload, …)"
+          checked={showCreatorPanel}
+          onCheckedChange={() => dispatch(toggleShowCreatorPanel())}
         />
         <SettingRow
           label="Show creator tools"

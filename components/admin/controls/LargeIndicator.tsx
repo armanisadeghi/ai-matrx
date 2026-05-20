@@ -11,6 +11,7 @@ import {
   Copy,
   ClipboardCheck,
   Terminal,
+  Crown,
 } from "lucide-react";
 import MatrxDynamicPanel from "@/components/matrx/resizable/MatrxDynamicPanel";
 import PageDebugDisplay from "@/components/admin/debug/PageDebugDisplay";
@@ -23,6 +24,10 @@ import {
   selectRouteContext,
   selectConsoleErrors,
 } from "@/lib/redux/preferences/adminDebugSlice";
+import {
+  selectShowCreatorPanel,
+  toggleShowCreatorPanel,
+} from "@/lib/redux/preferences/creatorDebugSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
@@ -78,6 +83,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   const debugData = useAppSelector(selectDebugData);
   const routeContext = useAppSelector(selectRouteContext);
   const consoleErrors = useAppSelector(selectConsoleErrors);
+  const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
 
   const handleCopyContext = useCallback(async () => {
     const context = buildAgentContext({
@@ -367,6 +373,31 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
               )}
             </div>
           )}
+        </div>
+
+        {/* Creator Panel — admin failsafe to show/hide the inline creator panel */}
+        <div className="bg-slate-700 p-3 rounded">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-xs font-semibold text-slate-200">
+                Creator Panel
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                Show the run-control panel above the agent input
+              </div>
+            </div>
+            <button
+              onClick={() => dispatch(toggleShowCreatorPanel())}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                showCreatorPanel
+                  ? "bg-green-600 text-white"
+                  : "bg-slate-600 hover:bg-slate-500 text-slate-200"
+              }`}
+            >
+              <Crown size={13} />
+              {showCreatorPanel ? "On" : "Off"}
+            </button>
+          </div>
         </div>
 
         {/* Console Errors */}

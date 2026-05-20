@@ -6138,6 +6138,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/node-types/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Node Types
+         * @description Phase 6.3 — re-run node registration so newly-added actions appear
+         *     without a server restart.
+         *
+         *     Admin-only (re-importing modules is a dev / ops affordance, not a
+         *     user action). Re-invokes the same idempotent register_with_graph
+         *     helpers the app lifespan calls at startup, then returns the fresh
+         *     count. The studio's "Refresh palette" button calls this then
+         *     invalidates its node-types query.
+         */
+        post: operations["refresh_node_types_workflow_node_types_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/actions": {
         parameters: {
             query?: never;
@@ -6299,6 +6326,68 @@ export interface paths {
          *     test marker so you can grep the audit trail if needed.
          */
         post: operations["test_single_node_workflows__definition_id__nodes__node_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/bulk-archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Archive Workflows
+         * @description Archive multiple workflows. Per-id owner check; partial success OK.
+         */
+        post: operations["bulk_archive_workflows_workflows_bulk_archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/bulk-cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Cancel Runs
+         * @description Gracefully cancel multiple active runs.
+         */
+        post: operations["bulk_cancel_runs_runs_bulk_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/bulk-retry-errored": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Retry Errored Runs
+         * @description Resume multiple errored runs from their failed node. Each resume is
+         *     spawned detached (queued path) so a large batch doesn't tie up the
+         *     request — the FE polls the runs list to watch them progress.
+         */
+        post: operations["bulk_retry_errored_runs_runs_bulk_retry_errored_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6526,6 +6615,33 @@ export interface paths {
         };
         /** List Run Checkpoints */
         get: operations["list_run_checkpoints_runs__run_id__checkpoints_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/checkpoints/{checkpoint_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Checkpoint Preview
+         * @description Time-travel preview for one checkpoint (Phase 5.1).
+         *
+         *     Returns the checkpoint + per-node states derived from wf_node_outcome
+         *     rows where ``step <= checkpoint.step``. The frontend uses this to
+         *     recolour the canvas in read-only preview mode without replaying the
+         *     event log. For each (node_id), the LATEST attempt wins — failures get
+         *     overwritten by their eventual user_skip / user_manual / retry outcome
+         *     if one was recorded before the checkpoint.
+         */
+        get: operations["get_checkpoint_preview_runs__run_id__checkpoints__checkpoint_id__preview_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12052,6 +12168,11 @@ export interface components {
             /** New Parent Id */
             new_parent_id?: string | null;
         };
+        /** BulkIdsRequest */
+        BulkIdsRequest: {
+            /** Ids */
+            ids: string[];
+        };
         /** BulkLoadRequest */
         BulkLoadRequest: {
             /**
@@ -12059,6 +12180,24 @@ export interface components {
              * @description Resources to load, in the order given. Defaults to the full Phase-1 set: courts, dockets, opinion_clusters. Each resource's dependencies must complete successfully or it'll be skipped.
              */
             resources?: string[] | null;
+        };
+        /** BulkOpResponse */
+        BulkOpResponse: {
+            /** Succeeded */
+            succeeded: number;
+            /** Failed */
+            failed: number;
+            /** Results */
+            results: components["schemas"]["BulkOpResult"][];
+        };
+        /** BulkOpResult */
+        BulkOpResult: {
+            /** Id */
+            id: string;
+            /** Ok */
+            ok: boolean;
+            /** Error */
+            error?: string | null;
         };
         /**
          * BulkOperationRequest
@@ -12582,6 +12721,33 @@ export interface components {
             arguments?: components["schemas"]["JsonValue"] | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * CheckpointPreview
+         * @description Snapshot used by the studio's time-travel preview mode.
+         *
+         *     Returned by ``GET /runs/{run_id}/checkpoints/{cp_id}/preview``. Combines
+         *     the checkpoint metadata (so the banner can show step / parent /
+         *     interrupt_payload) with the per-node states the canvas needs to
+         *     recolour itself.
+         */
+        CheckpointPreview: {
+            /** Checkpoint Id */
+            checkpoint_id: string;
+            /** Run Id */
+            run_id: string;
+            /** Step */
+            step: number;
+            /** Parent Checkpoint Id */
+            parent_checkpoint_id?: string | null;
+            /** Interrupt Payload */
+            interrupt_payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Node States */
+            node_states: components["schemas"]["NodeStateAtCheckpoint"][];
         };
         /**
          * CheckpointRecord
@@ -17813,6 +17979,41 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * NodeStateAtCheckpoint
+         * @description The state of one node at a given checkpoint, derived from wf_node_outcome.
+         *
+         *     The frontend uses this to recolour the canvas in preview mode without
+         *     needing to replay the whole event log. ``state`` mirrors the FE's
+         *     nodeRunState enum (minus ``running`` / ``retrying`` — preview is
+         *     always at a step boundary so nothing is mid-flight).
+         */
+        NodeStateAtCheckpoint: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "completed" | "failed" | "skipped";
+            /**
+             * Attempt
+             * @default 1
+             */
+            attempt: number;
+            /** Output */
+            output?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Source */
+            source?: string | null;
+        };
+        /**
          * NodeTypeDescriptor
          * @description One palette item from ``GET /workflow/node-types`` /
          *     ``GET /actions``. Shape varies per node — fields beyond the
@@ -19422,6 +19623,13 @@ export interface components {
              */
             confidence_tier: string;
         };
+        /** RefreshNodeTypesResponse */
+        RefreshNodeTypesResponse: {
+            /** Refreshed */
+            refreshed: boolean;
+            /** Node Type Count */
+            node_type_count: number;
+        };
         /** RegionBbox */
         RegionBbox: {
             /** X0 */
@@ -19999,6 +20207,13 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
+             * Config Override
+             * @description Phase 5.3 — one-shot config tweak applied ONLY to this retry attempt; the workflow draft is NOT touched. Use when the user wants to test a config change (e.g. bump max_tokens, swap a model) without committing it to the saved definition. Merged over the node's authored config and re-validated through the config_schema before the executor runs.
+             */
+            config_override?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Attempt Bump
              * @description If True (default), the retried invocation runs at attempt+1 so the prior failure outcome stays as a forensic record. If False, the original outcome is overwritten by the new attempt. Leave True unless you have a specific reason to discard history.
              * @default true
@@ -20362,6 +20577,11 @@ export interface components {
              * @description Node IDs to short-circuit pre-emptively. Each one emits a node_skipped event with empty output and lets downstream edges route an empty payload. Use this when you want to test the workflow without firing a slow LLM step, an external API call, or any expensive node. Downstream nodes may break if they require fields from the skipped node — that's the trade-off.
              */
             skip_node_ids?: string[];
+            /**
+             * Skip Edge Ids
+             * @description Phase 5.2 — edge IDs the scheduler should NOT route along. When a source node completes, any outgoing edges in this set are silently dropped — downstream targets receive no payload from them. Useful for 'what if branch X didn't fire?' testing without editing the graph.
+             */
+            skip_edge_ids?: string[];
             /**
              * Max Steps
              * @default 1000
@@ -34355,6 +34575,26 @@ export interface operations {
             };
         };
     };
+    refresh_node_types_workflow_node_types_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshNodeTypesResponse"];
+                };
+            };
+        };
+    };
     list_actions_actions_get: {
         parameters: {
             query?: never;
@@ -34664,6 +34904,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TestNodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_archive_workflows_workflows_bulk_archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkIdsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkOpResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_cancel_runs_runs_bulk_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkIdsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkOpResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_retry_errored_runs_runs_bulk_retry_errored_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkIdsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkOpResponse"];
                 };
             };
             /** @description Validation Error */
@@ -34997,6 +35336,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckpointRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_checkpoint_preview_runs__run_id__checkpoints__checkpoint_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                checkpoint_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointPreview"];
                 };
             };
             /** @description Validation Error */

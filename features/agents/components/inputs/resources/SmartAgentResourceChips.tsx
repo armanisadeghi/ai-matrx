@@ -153,17 +153,17 @@ function getResourceLabel(resource: ManagedResource): string {
   // Editor pills carry a structured `source` we can format directly —
   // keeps the chip identifiable even though `preview` is never set on add.
   if (resource.blockType === "editor_error") {
-    const src = resource.source as
-      | { file?: string; line?: number }
-      | null;
+    const src = resource.source as { file?: string; line?: number } | null;
     if (src?.file) {
       return `${basename(src.file)}${src.line ? `:${src.line}` : ""}`;
     }
   }
   if (resource.blockType === "editor_code_snippet") {
-    const src = resource.source as
-      | { file?: string; startLine?: number; endLine?: number }
-      | null;
+    const src = resource.source as {
+      file?: string;
+      startLine?: number;
+      endLine?: number;
+    } | null;
     if (src?.file) {
       const range =
         src.startLine !== undefined && src.endLine !== undefined
@@ -248,7 +248,7 @@ function ResourceChip({ resource, onRemove }: ResourceChipProps) {
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${display.bg} ${isError ? "ring-1 ring-destructive/50" : ""}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${display.bg} border border-border/60 shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_1px_1px_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_1px_0_rgba(0,0,0,0.3)] ${isError ? "ring-1 ring-destructive/50" : ""}`}
     >
       {isPending ? (
         <Loader2 className={`w-3 h-3 ${display.color} animate-spin`} />
@@ -359,9 +359,7 @@ export function SmartAgentResourceChips({
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
-  const showAttachments = useAppSelector(
-    selectShowAttachments(conversationId),
-  );
+  const showAttachments = useAppSelector(selectShowAttachments(conversationId));
 
   const handleRemove = useCallback(
     (resourceId: string) => {
@@ -374,7 +372,7 @@ export function SmartAgentResourceChips({
   if (resources.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5 px-2 py-1 border-b border-border shrink-0">
+    <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
       <AnimatePresence mode="popLayout">
         {resources.map((resource) => (
           <ResourceChip

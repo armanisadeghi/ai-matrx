@@ -124,7 +124,9 @@ export function AgentTextarea({
         const normalized = await upload(
           { kind: "file", file },
           {
-            folderPath: uploadPath ? `${uploadBucket}/${uploadPath}` : uploadBucket,
+            folderPath: uploadPath
+              ? `${uploadBucket}/${uploadPath}`
+              : uploadBucket,
             visibility: "private",
             createShareLink: true,
             shareLinkPermissionLevel: "read",
@@ -246,7 +248,7 @@ export function AgentTextarea({
   }
 
   return (
-    <div className="px-2 pt-1.5 relative shrink-0">
+    <div className="px-2 relative shrink-0">
       <div className="relative">
         <textarea
           ref={textareaRef}
@@ -254,15 +256,15 @@ export function AgentTextarea({
           onChange={(e) => handleTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholderText}
-          className="w-full bg-transparent border-none outline-none text-base md:text-xs text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide"
-          style={{ minHeight: compact ? 20 : 40 }}
+          className="w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 transition-[height] duration-150 ease-out motion-reduce:transition-none"
+          style={{ minHeight: compact ? 28 : 40 }}
           rows={1}
         />
         {showExpand && (
           <button
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
-            className="absolute top-0 right-0 p-1 rounded hover:bg-muted/80 opacity-50 hover:opacity-100 transition-all"
+            className="absolute top-1 right-1 p-1 rounded-full hover:bg-muted/80 opacity-50 hover:opacity-100 transition-all"
             title={isExpanded ? "Collapse input" : "Expand input"}
           >
             {isExpanded ? (

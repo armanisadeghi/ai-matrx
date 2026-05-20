@@ -243,7 +243,10 @@ export interface RichDocumentAction {
 }
 
 // ============================================================================
-// VARIANT — how the action surface renders.
+// VARIANT / POSITION / BEHAVIOR — three orthogonal axes describing the
+// action surface. `variant` = WHAT renders, `position` = WHERE, `behavior`
+// = visibility. The old conflated "hover-menu" is now expressed as
+// `{ variant: "icon-only", position: "top-right", behavior: "hover-only" }`.
 // ============================================================================
 
 export type RichDocumentActionsVariant =
@@ -253,12 +256,31 @@ export type RichDocumentActionsVariant =
   | "mini-bar"
   /** Single ⋯ overflow button, all actions in dropdown. */
   | "menu"
-  /** ⋯ button absolutely positioned top-right, fades in on hover. */
-  | "hover-menu"
+  /** Single ⋯ trigger — same renderer as "menu", named for absolute/hover use. */
+  | "icon-only"
   /** No inline UI — registers to a remote <RichDocumentActionSurface/>. */
   | "remote"
   /** Hide actions entirely. */
   | "none";
+
+/** Where the action surface sits relative to the content. */
+export type RichDocumentActionsPosition =
+  /** In-flow, below the content (default). */
+  | "below"
+  /** In-flow, above the content. */
+  | "above"
+  /** Absolutely positioned, layered over the content. */
+  | "top-right"
+  | "top-left"
+  | "middle-right"
+  | "middle-left";
+
+/** Visibility behavior of the action surface. */
+export type RichDocumentActionsBehavior =
+  /** Always visible (default). */
+  | "always"
+  /** Hidden until the content is hovered/focused (fades in). */
+  | "hover-only";
 
 // ============================================================================
 // ACTION SELECTION — the `actions` prop on RichDocument.

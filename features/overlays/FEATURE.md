@@ -62,18 +62,14 @@ It is deliberately **decoupled** from the WindowPanel component primitive. A win
 
 ```
 features/overlays/
-├── OverlayController.tsx       # The mount point. ~2,300 lines, intentionally explicit.
+├── OverlayController.tsx       # The single mount point. ~2,300 lines, intentionally explicit. Hand-maintained.
 ├── catalogue.ts                # Render-free metadata for every overlay.
-├── featureFlag.ts              # Reads NEXT_PUBLIC_USE_NEW_OVERLAY_CONTROLLER + dev overrides.
 └── openers/
     ├── <overlayId>.tsx         # One file per overlay. Each exports useOpenX() + <XController />.
-    └── …                       # 111 files at time of writing.
-
-scripts/
-└── generate-overlay-controller.ts  # Codegen for the controller + openers + catalogue.
+    └── …                       # ~111 files.
 ```
 
-The legacy controller (`UnifiedOverlayController`, `UnifiedOverlayControllerImpl`, `OverlaySurface`, `windowRegistry`) still exists in `features/window-panels/` until the post-cutover cleanup. It is mounted only when the flag is off; it carries a `console.warn` on mount so its presence is auditable.
+The controller is imported directly (no `dynamic()` shell, no flag) and mounted once per provider tree — gated only by `selectAnyOverlayOpen` in `app/DeferredSingletons.tsx` (authenticated) and mounted directly in `app/(public)/PublicProviders.tsx` (public). The legacy system (`UnifiedOverlayController`, `OverlaySurface`, `windowRegistry.ts`, the diagnostics middleware, the feature flag, and the seed codegen) is **deleted** — there is no second path.
 
 ---
 
@@ -184,15 +180,13 @@ A new overlay is a 3-file change:
    }
    ```
 
-3. **Run the codegen** to emit the controller block + opener:
+3. **Hand-edit the three artifacts.** The controller is hand-maintained (the one-shot seed codegen that bootstrapped it has been deleted). Add:
+   - the `isOpenById` selector entry,
+   - the `dynamic()` import + the gated JSX block in `OverlayController.tsx`,
+   - the opener file under `openers/`,
+   - the `catalogue.ts` entry.
 
-   ```bash
-   pnpm tsx scripts/generate-overlay-controller.ts all
-   ```
-
-   This will overwrite `OverlayController.tsx`, every opener file (except the 7 callback-aware ones — see `CALLBACK_AWARE_OPENERS` in the codegen), and `catalogue.ts`. The controller already has hand-tightened type casts on top of the codegen output — you'll want to re-tighten any new `as never` markers after a regeneration. **Don't run the codegen casually**; it's a one-shot seeder, not a permanently-regenerated artifact.
-
-   For ad-hoc additions of a single overlay, it's often easier to hand-edit the three artifacts directly. The shape is:
+   **Cardinal rule:** the JSX block MUST be gated on `isOpen` — never render a component ungated in the controller (an ungated render mounts on every route and, if the component doesn't self-gate, paints its UI everywhere — that was the QuickTasksSheet bug). The shape is:
 
    - Controller block (in `OverlayController.tsx`):
      ```tsx

@@ -75,11 +75,11 @@ export function InputButton({
       type="button"
       onClick={onClick}
       title={tooltip}
-      className={`h-7 w-7 flex items-center justify-center rounded-md transition-colors
-        ${active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground hover:bg-muted"}
+      className={`h-8 w-8 flex items-center justify-center rounded-full transition-colors
+        ${active ? "bg-muted/80 text-foreground" : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"}
         ${className}`}
     >
-      <Icon className="w-3.5 h-3.5" />
+      <Icon className="w-4 h-4" />
     </button>
   );
 }
@@ -134,12 +134,8 @@ export function InputActionButtons({
   const shouldShowAutoClearToggle = useAppSelector(
     selectShouldShowAutoClearToggle(conversationId),
   );
-  const showAttachments = useAppSelector(
-    selectShowAttachments(conversationId),
-  );
-  const showMicrophone = useAppSelector(
-    selectShowMicrophone(conversationId),
-  );
+  const showAttachments = useAppSelector(selectShowAttachments(conversationId));
+  const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const isDebugMode = useAppSelector(selectIsDebugMode);
 
@@ -156,11 +152,11 @@ export function InputActionButtons({
 
   const sendBtnClass =
     sendButtonVariant === "blue"
-      ? "h-7 w-7 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-40 text-white"
-      : "h-7 w-7 p-0 shrink-0 rounded-full bg-muted hover:bg-muted/80 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-40 text-foreground";
+      ? "h-9 w-9 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-30 disabled:shadow-none text-white shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]"
+      : "h-9 w-9 p-0 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-25 disabled:shadow-none shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]";
 
   return (
-    <div className="flex items-center justify-between px-2 pb-1.5 mt-1 shrink-0">
+    <div className="flex items-center justify-between px-1 shrink-0">
       {/* Left: resource picker / debug / variable toggle */}
       <div className="flex items-center gap-0.5">
         {showAttachments && (
@@ -264,9 +260,9 @@ export function InputActionButtons({
             title={isExecuting ? "Stop" : "Send"}
           >
             {isExecuting ? (
-              <CircleStop className="w-3.5 h-3.5" />
+              <CircleStop className="w-4 h-4" />
             ) : (
-              <ArrowUp className="w-3.5 h-3.5" />
+              <ArrowUp className="w-5 h-5" />
             )}
           </Button>
         )}

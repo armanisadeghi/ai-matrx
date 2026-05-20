@@ -46,7 +46,6 @@ import {
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
-import { HoverMenu } from "./variants/HoverMenu";
 import type {
   ContentSource,
   RichDocumentAction,
@@ -54,6 +53,8 @@ import type {
   RichDocumentActionSpec,
   RichDocumentActionsProp,
   RichDocumentActionsVariant,
+  RichDocumentActionsPosition,
+  RichDocumentActionsBehavior,
   SourceExtensions,
 } from "./types";
 import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
@@ -92,6 +93,10 @@ export interface RichDocumentProps {
   // ---- Actions ----
   actions?: RichDocumentActionsProp;
   actionsVariant?: RichDocumentActionsVariant;
+  /** Where the action surface sits. Default "below". */
+  actionsPosition?: RichDocumentActionsPosition;
+  /** Visibility. Default "always". */
+  actionsBehavior?: RichDocumentActionsBehavior;
   /** Required when actionsVariant === "remote". */
   actionsSurfaceId?: string;
 
@@ -206,6 +211,8 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     source,
     actions: actionsProp,
     actionsVariant = "none",
+    actionsPosition = "below",
+    actionsBehavior = "always",
     actionsSurfaceId,
     className,
     contentClassName,
@@ -360,83 +367,111 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
 
   // Pick the variant. Returns null for "remote" / "none" — the remote
   // surface renders the actions elsewhere via the bridge; "none" hides
-  // them entirely.
-  let actionsNode: React.ReactNode = null;
+  // them entirely. "icon-only" and "menu" share the MenuVariant renderer.
+  let variantNode: React.ReactNode = null;
   switch (actionsVariant) {
     case "bar":
-      actionsNode = (
-        <ActionBar
-          actions={resolvedActions}
-          getCtx={getCtx}
-          className={cn("mt-1", actionsClassName)}
-        />
-      );
+      variantNode = <ActionBar actions={resolvedActions} getCtx={getCtx} />;
       break;
     case "mini-bar":
-      actionsNode = (
-        <MiniActionBar
-          actions={resolvedActions}
-          getCtx={getCtx}
-          className={cn("mt-0.5", actionsClassName)}
-        />
+      variantNode = (
+        <MiniActionBar actions={resolvedActions} getCtx={getCtx} />
       );
       break;
     case "menu":
-      actionsNode = (
-        <MenuVariant
-          actions={resolvedActions}
-          getCtx={getCtx}
-          className={cn("mt-0.5", actionsClassName)}
-        />
-      );
-      break;
-    case "hover-menu":
-      actionsNode = (
-        <HoverMenu
-          actions={resolvedActions}
-          getCtx={getCtx}
-          className={actionsClassName}
-        />
-      );
+    case "icon-only":
+      variantNode = <MenuVariant actions={resolvedActions} getCtx={getCtx} />;
       break;
     case "remote":
     case "none":
     default:
-      actionsNode = null;
+      variantNode = null;
   }
 
-  // hover-menu requires `group` on the root so the absolutely-positioned
-  // child's `group-hover` selector resolves correctly.
+  const isAbsolute =
+    actionsPosition === "top-right" ||
+    actionsPosition === "top-left" ||
+    actionsPosition === "middle-right" ||
+    actionsPosition === "middle-left";
+
+  // Absolute placement classes per position.
+  const absolutePositionClass = isAbsolute
+    ? cn(
+        "absolute z-10",
+        actionsPosition === "top-right" && "right-1 top-1",
+        actionsPosition === "top-left" && "left-1 top-1",
+        actionsPosition === "middle-right" &&
+          "right-1 top-1/2 -translate-y-1/2",
+        actionsPosition === "middle-left" &&
+          "left-1 top-1/2 -translate-y-1/2",
+      )
+    : null;
+
+  // hover-only fades the surface in on parent hover/focus.
+  const hoverClass =
+    actionsBehavior === "hover-only"
+      ? "opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+      : null;
+
+  // In-flow spacing for below/above.
+  const inFlowClass = !isAbsolute
+    ? actionsPosition === "above"
+      ? "mb-1"
+      : "mt-1"
+    : null;
+
+  const actionsNode = variantNode ? (
+    <div
+      className={cn(
+        absolutePositionClass,
+        hoverClass,
+        inFlowClass,
+        actionsClassName,
+      )}
+    >
+      {variantNode}
+    </div>
+  ) : null;
+
+  // Root needs `relative` for absolute children and `group` for hover-only.
   const rootClassName = cn(
     "rich-document",
-    actionsVariant === "hover-menu" ? "relative group" : null,
+    (isAbsolute || actionsBehavior === "hover-only") && "relative group",
     className,
+  );
+
+  const engine = (
+    <div className={cn("rich-document__content", contentClassName)}>
+      <MarkdownStream
+        content={content}
+        events={events}
+        serverProcessedBlocks={serverProcessedBlocks}
+        taskId={taskId}
+        requestId={requestId}
+        turnId={turnId}
+        conversationId={conversationId}
+        isStreamActive={isStreamActive}
+        onContentChange={onContentChange}
+        applyLocalEdits={applyLocalEdits}
+        analysisData={analysisData}
+        messageId={messageId}
+        allowFullScreenEditor={allowFullScreenEditor}
+        hideCopyButton={hideCopyButton}
+        onError={onError}
+        onPhaseUpdate={onPhaseUpdate}
+        strictServerData={strictServerData}
+      />
+    </div>
   );
 
   return (
     <div className={rootClassName}>
-      <div className={cn("rich-document__content", contentClassName)}>
-        <MarkdownStream
-          content={content}
-          events={events}
-          serverProcessedBlocks={serverProcessedBlocks}
-          taskId={taskId}
-          requestId={requestId}
-          turnId={turnId}
-          conversationId={conversationId}
-          isStreamActive={isStreamActive}
-          onContentChange={onContentChange}
-          applyLocalEdits={applyLocalEdits}
-          analysisData={analysisData}
-          messageId={messageId}
-          allowFullScreenEditor={allowFullScreenEditor}
-          hideCopyButton={hideCopyButton}
-          onError={onError}
-          onPhaseUpdate={onPhaseUpdate}
-          strictServerData={strictServerData}
-        />
-      </div>
-      {actionsNode}
+      {/* Absolute surfaces layer over the content; "above" renders before;
+          "below" (default) renders after. */}
+      {isAbsolute ? actionsNode : null}
+      {!isAbsolute && actionsPosition === "above" ? actionsNode : null}
+      {engine}
+      {!isAbsolute && actionsPosition !== "above" ? actionsNode : null}
     </div>
   );
 }

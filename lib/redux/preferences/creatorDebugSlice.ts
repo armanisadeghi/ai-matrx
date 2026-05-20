@@ -49,6 +49,9 @@ export interface CreatorDebugState {
   isCreator: boolean;
   isCreatorMode: boolean;
   showCreatorTools: boolean;
+  /** Show the inline Creator Run Panel above the agent input. Default false;
+   *  toggled from the Creator Hub Settings tab or the admin indicator. */
+  showCreatorPanel: boolean;
   /** Per-feature visibility flags. Keys are namespaced: "Agents:RawState",
    *  "Shortcuts:JsonInspector", etc. Anything not present is treated as
    *  false. */
@@ -64,6 +67,7 @@ const initialState: CreatorDebugState = {
   isCreator: false,
   isCreatorMode: false,
   showCreatorTools: false,
+  showCreatorPanel: false,
   visibility: {},
   debugData: {},
   settings: {
@@ -94,6 +98,13 @@ const creatorDebugSlice = createSlice({
     },
     setCreatorTools: (state, action: PayloadAction<boolean>) => {
       state.showCreatorTools = action.payload;
+    },
+
+    toggleShowCreatorPanel: (state) => {
+      state.showCreatorPanel = !state.showCreatorPanel;
+    },
+    setShowCreatorPanel: (state, action: PayloadAction<boolean>) => {
+      state.showCreatorPanel = action.payload;
     },
 
     setVisibilityFlag: (
@@ -172,6 +183,8 @@ export const {
   setCreatorMode,
   toggleCreatorTools,
   setCreatorTools,
+  toggleShowCreatorPanel,
+  setShowCreatorPanel,
   setVisibilityFlag,
   toggleVisibilityFlag,
   clearVisibilityFlag,
@@ -196,6 +209,9 @@ export const selectIsCreatorMode = (state: WithCreatorDebug): boolean =>
 
 export const selectShowCreatorTools = (state: WithCreatorDebug): boolean =>
   state.creatorDebug.showCreatorTools;
+
+export const selectShowCreatorPanel = (state: WithCreatorDebug): boolean =>
+  state.creatorDebug.showCreatorPanel;
 
 export const selectCreatorVisibility = (state: WithCreatorDebug) =>
   state.creatorDebug.visibility;

@@ -17,6 +17,8 @@ import type {
   ContentSource,
   RichDocumentActionId,
   RichDocumentActionsVariant,
+  RichDocumentActionsPosition,
+  RichDocumentActionsBehavior,
 } from "@/features/rich-document/types";
 
 // Lazy — only pulled into the bundle when a caller opts into actions by
@@ -93,8 +95,12 @@ export interface MatrxSplitProps {
    * loaded into the bundle).
    */
   actionsSource?: ContentSource;
-  /** Action surface variant. Defaults to "remote" when actionsSurfaceId is set, else "hover-menu". */
+  /** Action surface variant. Defaults to "remote" when actionsSurfaceId is set, else "icon-only". */
   actionsVariant?: RichDocumentActionsVariant;
+  /** Action surface position. Defaults to "top-right". */
+  actionsPosition?: RichDocumentActionsPosition;
+  /** Action surface visibility. Defaults to "hover-only". */
+  actionsBehavior?: RichDocumentActionsBehavior;
   /** Remote surface id — pairs with a <RichDocumentActionSurface/> elsewhere (e.g. a header). */
   actionsSurfaceId?: string;
   /** Action IDs to hide in the preview's action surface. */
@@ -145,6 +151,8 @@ export function MatrxSplit({
   previewContainerRef,
   actionsSource,
   actionsVariant,
+  actionsPosition,
+  actionsBehavior,
   actionsSurfaceId,
   actionsExclude,
 }: MatrxSplitProps) {

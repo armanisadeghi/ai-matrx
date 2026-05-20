@@ -26,6 +26,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectShowFreeformInput } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
@@ -69,8 +70,8 @@ export function SmartAgentInputStacked({
 
   const sendBtnClass =
     sendButtonVariant === "blue"
-      ? "h-7 w-7 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-40 text-white"
-      : "h-7 w-7 p-0 shrink-0 rounded-full bg-muted hover:bg-muted/80 dark:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-40 text-foreground";
+      ? "h-9 w-9 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-30 disabled:shadow-none text-white shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]"
+      : "h-9 w-9 p-0 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-25 disabled:shadow-none shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]";
 
   if (!conversationId) {
     return <UninitializedShell sendBtnClass={sendBtnClass} singleRow={false} />;
@@ -80,28 +81,42 @@ export function SmartAgentInputStacked({
     if (!disableSend) dispatch(smartExecute({ conversationId, surfaceKey }));
   };
 
+  // Outer shell — matches the `/chat/new` landing pill so the two surfaces
+  // feel like one continuous component as the conversation grows. The
+  // `transition-[padding,border-color]` lets focus/expansion changes flow
+  // smoothly; the textarea inside owns its own height transition.
+  const shellClassName = cn(
+    "w-full rounded-[28px] border border-border bg-card",
+    "shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+    "flex flex-col min-h-0 overflow-hidden",
+    "transition-colors focus-within:border-foreground/25",
+    compact ? "max-w-[500px]" : "max-w-[800px]",
+  );
+
   // Variables-only mode: hide chips + textarea + full toolbar. Render the
   // variables panel and a single Run button. Apps that want a structured
   // form experience (no chat box) configure showFreeformInput = false.
   if (!showFreeformInput) {
     const handleStop = () => dispatch(cancelExecution(conversationId));
     return (
-      <div
-        className={`flex flex-col min-h-0 bg-card rounded-lg w-full ${compact ? "max-w-[500px]" : "max-w-[800px]"} border border-border overflow-hidden`}
-      >
+      <div className={shellClassName}>
         <SmartAgentVariables
           conversationId={conversationId}
           compact={compact}
           onSubmit={handleSubmit}
           styleOverride={variablesPanelStyle}
         />
-        <div className="flex items-center justify-end gap-2 px-2 py-1.5 border-t border-border/60">
+        <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border/40">
           {extraRightControls}
           <Button
             size="sm"
             onClick={isExecuting ? handleStop : handleSubmit}
             disabled={disableSend && !isExecuting}
-            className="gap-1.5"
+            className={cn(
+              "gap-1.5 rounded-full",
+              "shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]",
+              "disabled:shadow-none",
+            )}
           >
             {isExecuting ? (
               <>
@@ -121,9 +136,7 @@ export function SmartAgentInputStacked({
   }
 
   return (
-    <div
-      className={`flex flex-col min-h-0 bg-card rounded-lg w-full ${compact ? "max-w-[500px]" : "max-w-[800px]"} border border-border overflow-hidden`}
-    >
+    <div className={cn(shellClassName, "px-2.5 pt-2 pb-1.5 gap-1")}>
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
       <SmartAgentVariables
         conversationId={conversationId}
@@ -135,7 +148,7 @@ export function SmartAgentInputStacked({
       {/* Resource chips — pinned, never scrolls away */}
       <SmartAgentResourceChips conversationId={conversationId} />
 
-      {/* Textarea — shrinks slightly under pressure but stays visible */}
+      {/* Textarea — owns its own height transition for smooth flow */}
       <AgentTextarea
         conversationId={conversationId}
         compact={compact}

@@ -17,7 +17,7 @@ const windowPanelsImportRestriction = {
                 '@/features/window-panels/windows/**/*',
             ],
             message:
-                "Import window components only via the registry's componentImport (features/window-panels/registry/windowRegistry.ts). Direct imports break bundle splitting. See .claude/skills/window-panels/SKILL.md.",
+                "Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct imports break bundle splitting. See .claude/skills/overlay-system/SKILL.md.",
         },
         {
             group: ['*supabase*storage*', '*storage*Bucket*'],
@@ -477,17 +477,13 @@ export default [
     },
     {
         files: [
-            'features/window-panels/registry/windowRegistry.ts',
-            'features/window-panels/UnifiedOverlayController.tsx',
-            'features/window-panels/OverlaySurface.tsx',
-            'components/overlays/OverlayController.tsx',
-            // The new explicit controller's Impl — by design, this file
-            // directly imports every window/overlay component (one
-            // `dynamic()` per entry). The "no direct windows/* import" rule
-            // exists to keep those imports inside the registry layer; this
-            // file IS the registry layer. Same exemption as
-            // windowRegistry.ts above. The thin shell `OverlayController.tsx`
-            // does NOT need the exemption — it only imports its Impl.
+            // The explicit overlay controller — by design, this file directly
+            // imports every window/overlay component (one `dynamic()` per
+            // entry). The "no direct windows/* import" rule exists to keep
+            // those imports out of route bundles; the controller IS the one
+            // sanctioned place that loads them (lazily). The legacy
+            // UnifiedOverlayController / OverlaySurface / windowRegistry.ts
+            // files that used to share this exemption are deleted.
             'features/overlays/OverlayController.tsx',
         ],
         rules: {
