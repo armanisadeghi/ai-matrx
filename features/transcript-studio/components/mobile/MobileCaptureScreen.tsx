@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mic, Pause, Play, Sparkles, Square } from "lucide-react";
+import { Mic, Pause, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useStudioSession } from "../../hooks/useStudioSession";
@@ -10,7 +10,6 @@ import { FullTranscriptDrawer } from "./FullTranscriptDrawer";
 
 interface MobileCaptureScreenProps {
   sessionId: string;
-  onOpenAssistant: () => void;
 }
 
 function formatClock(totalSec: number): string {
@@ -20,10 +19,7 @@ function formatClock(totalSec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function MobileCaptureScreen({
-  sessionId,
-  onOpenAssistant,
-}: MobileCaptureScreenProps) {
+export function MobileCaptureScreen({ sessionId }: MobileCaptureScreenProps) {
   const session = useStudioSession({ sessionId });
   const liveTranscript = useAppSelector((s) => s.recordings.liveTranscript);
   const [openTranscriptId, setOpenTranscriptId] = useState<string | null>(null);
@@ -64,74 +60,75 @@ export function MobileCaptureScreen({
 
       {/* Fixed record bar */}
       <div className="shrink-0 border-t border-border bg-card/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-4">
-          {/* Pause/resume (only while recording) */}
-          <div className="flex w-16 justify-start">
-            {isRecording && (
+        {isRecording && (
+          <div className="mb-2 flex items-center justify-center gap-2 text-xs">
+            <span className="font-mono tabular-nums text-red-600 dark:text-red-400">
+              {formatClock(session.durationSec)}
+            </span>
+            <span className="text-muted-foreground">
+              {session.isPaused ? "Paused — resume to keep the same recording" : "Recording"}
+            </span>
+          </div>
+        )}
+        <div className="flex items-center justify-center gap-4">
+          {isRecording ? (
+            <>
+              {/* Pause / resume — primary while recording */}
               <button
                 type="button"
                 onClick={session.isPaused ? session.resume : session.pause}
-                aria-label={session.isPaused ? "Resume" : "Pause"}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground active:bg-accent"
+                className="flex h-14 min-w-[7.5rem] items-center justify-center gap-2 rounded-full bg-muted px-5 text-base font-medium text-foreground active:bg-accent"
               >
                 {session.isPaused ? (
-                  <Play className="h-5 w-5" />
+                  <>
+                    <Play className="h-5 w-5" />
+                    Resume
+                  </>
                 ) : (
-                  <Pause className="h-5 w-5" />
+                  <>
+                    <Pause className="h-5 w-5" />
+                    Pause
+                  </>
                 )}
               </button>
-            )}
-          </div>
 
-          {/* Big record / stop button with audio-reactive ring */}
-          <button
-            type="button"
-            onClick={isRecording ? session.stop : session.start}
-            disabled={blockedByOther}
-            aria-label={isRecording ? "Stop recording" : "Start recording"}
-            className={cn(
-              "relative flex h-20 w-20 items-center justify-center rounded-full transition-transform active:scale-95",
-              isRecording
-                ? "bg-red-500 text-white"
-                : blockedByOther
-                  ? "cursor-not-allowed bg-muted text-muted-foreground"
-                  : "bg-primary text-primary-foreground",
-            )}
-          >
-            {isRecording && !session.isPaused && (
-              <span
-                aria-hidden
-                className="absolute inset-0 rounded-full bg-red-500/30"
-                style={{
-                  transform: `scale(${1 + (level / 100) * 0.4})`,
-                  transition: "transform 100ms ease-out",
-                }}
-              />
-            )}
-            {isRecording ? (
-              <Square className="relative h-7 w-7 fill-current" />
-            ) : (
-              <Mic className="relative h-8 w-8" />
-            )}
-          </button>
-
-          {/* Assistant entry / duration */}
-          <div className="flex w-16 justify-end">
-            {isRecording ? (
-              <span className="font-mono text-sm tabular-nums text-red-600 dark:text-red-400">
-                {formatClock(session.durationSec)}
-              </span>
-            ) : (
+              {/* Stop / finish */}
               <button
                 type="button"
-                onClick={onOpenAssistant}
-                aria-label="Open assistant"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground active:bg-accent"
+                onClick={session.stop}
+                aria-label="Stop recording"
+                className="relative flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white transition-transform active:scale-95"
               >
-                <Sparkles className="h-5 w-5" />
+                {!session.isPaused && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-full bg-red-500/30"
+                    style={{
+                      transform: `scale(${1 + (level / 100) * 0.4})`,
+                      transition: "transform 100ms ease-out",
+                    }}
+                  />
+                )}
+                <Square className="relative h-6 w-6 fill-current" />
               </button>
-            )}
-          </div>
+            </>
+          ) : (
+            /* Idle — big record button */
+            <button
+              type="button"
+              onClick={session.start}
+              disabled={blockedByOther}
+              aria-label="Start recording"
+              className={cn(
+                "flex h-20 w-20 items-center justify-center rounded-full transition-transform active:scale-95",
+                blockedByOther
+                  ? "cursor-not-allowed bg-muted text-muted-foreground"
+                  : "bg-primary text-primary-foreground",
+              )}
+            >
+              <Mic className="h-8 w-8" />
+            </button>
+          )}
         </div>
         {blockedByOther && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
