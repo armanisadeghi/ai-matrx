@@ -92,6 +92,13 @@ export const DEFAULT_QUIZ_SHORTCUT_ID =
 // metadata; per-session overrides land in studio_session_settings.
 export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 
+// The audio-first studio assistant — a builtin agx_agent that receives the
+// session's transcripts as named context objects and edits the working
+// document (studio_documents) via ctx_patch. Seeded in
+// migrations/studio_audio_assistant_agent.sql.
+export const AUDIO_ASSISTANT_AGENT_ID =
+  "86564a0c-fe79-40a7-bf97-6349fb352a9d";
+
 // Tick cadence for the trigger scheduler. 500ms is fine for ~10s+ intervals;
 // the scheduler skips ticks where the elapsed-since-last-flush guard
 // hasn't expired.

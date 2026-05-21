@@ -16,6 +16,18 @@ A 4-column live transcription workspace. Users record audio, see raw transcript 
 
 **Routes**
 - `app/(a)/transcription/studio/` — full-page workspace, sidebar + active session view. Public URL: `/transcription/studio` (see `next.config.js` redirects from `/transcript-studio`).
+- `app/(a)/transcription/mobile/` — mobile-first capture + audio-first assistant. Public URL: `/transcription/mobile`. Reuses the same session + segment data layer; SSR-seeds via `StudioHydrator`, resolves/creates an active session in `MobileStudioRoute`, then mounts `MobileStudioScreen`.
+
+**Mobile capture + assistant** (`components/mobile/`)
+- `MobileStudioScreen.tsx` — controller with a `capture | assistant` screen toggle; activates the session (wires realtime) and loads recording/raw/cleaned segments + documents on mount.
+- `MobileCaptureScreen.tsx` — big record button + audio-reactive ring, pause/resume/stop, live transcript strip, and the recording-card list. Each re-tap of record after stop opens a new cycle.
+- `RecordingCardList.tsx` / `RecordingCard.tsx` — one card per recording cycle (`studio_recording_segments`). Multi-select (checkbox + long-press) → bottom Keep/Delete bar (`confirm` + `deleteRecordingSegmentThunk`). Tap/long-press → full transcript drawer. Per-card audio playback via `useFileSrc(audio_path)` → HTML5 `<audio>`.
+- `FullTranscriptDrawer.tsx` — Drawer showing one cycle's raw transcript with a `ContentActionBar`.
+- `AssistantScreen.tsx` — the audio-first assistant: working-document panel + "Read aloud" (`useCartesia`), `AgentConversationDisplay` for messages, and an `AgentMicrophoneButton` + textarea + Send input.
+
+**Hooks**
+- `hooks/useStudioAssistant.ts` — creates one assistant conversation per session (kept in the slice), ensures the working document, and rebuilds the named context objects (`recording_NN_raw` / `session_cleaned` / `working_document`) before each turn.
+- `service/assistantContextBuilder.ts` — builds the `setContextEntries` payload, including the mutable+persisted `working_document` rich context object (`source.kind = "studio_document"`).
 
 **Window panel**
 - `features/window-panels/windows/transcript-studio/TranscriptStudioWindow.tsx` — same `StudioView` inside a floating `WindowPanel` (`overlayId: "transcriptStudioWindow"`, slug: `"transcript-studio-window"`).
@@ -48,7 +60,8 @@ A 4-column live transcription workspace. Users record audio, see raw transcript 
 
 **Database tables** (Supabase)
 - `studio_sessions` — parent. Multi-scope (`user_id`, `organization_id`, `project_id`, `is_public`). `transcript_id` is a nullable FK to `transcripts(id)` for bidirectional conversion with the simpler transcripts feature.
-- `studio_recording_segments` — one row per start/stop cycle.
+- `studio_recording_segments` — one row per start/stop cycle. `audio_path` holds the durable `cld_files` fileId for the cycle's assembled audio (set by `finalizeRecordingSegmentThunk`); raw chunks link via `studio_raw_segments.recording_segment_id`. Backs the mobile recording cards.
+- `studio_documents` — the assistant's collaborative working document (migration `migrations/studio_documents.sql`). Edited server-side via `ctx_patch` (aidream writeback handler `kind="studio_document"`); structurally separate from `studio_cleaned_segments` so the auto-cleanup version is never overwritten. One row per `(session_id, kind)`.
 - `studio_raw_segments` — append-only chunk log (Column 1).
 - `studio_cleaned_segments` — versioned cleaned text (Column 2). `superseded_at` flips when a later run replaces from the same time anchor forward.
 - `studio_concept_items` — Column 3 output (themes, key ideas, entities, questions).
@@ -121,3 +134,4 @@ These are sibling features. The simple `features/transcripts/` view is shaped fo
     - **Import audio** (`FileAudio`): opens `AudioImportDialog` with three tabs: *Upload file* (drag-drop or browse → `saveAudioToStorage` → signed URL → `/api/audio/transcribe-url`), *From URL* (Supabase Storage URLs only for now), *Cloud Files* (opens the existing `cloudFilesWindow` overlay; user pastes the URL back into the URL tab). Each Whisper segment becomes one `studio_raw_segments` row with timestamps shifted past any existing tail.
   - `StudioLayout` rebuilt to render exactly one branch (mobile vs desktop) via `useIsMobile()` — fixes a duplicate portal target where `<ActiveSessionView>` was mounting twice.
 - **2026-05-07** — Route move: full-page studio lives at `/transcription/studio` under `app/(a)/transcription/studio/`. Permanent redirects from `/transcript-studio` in `next.config.js`. Updated in-app links (`PromoteToStudioButton`), metadata/favicon paths, and FEATURE entry points.
+- **2026-05-21** — Mobile capture + audio-first assistant (`/transcription/mobile`). Closed the audio-persistence gap: recording cycles now write `studio_recording_segments` rows and upload per-cycle audio (`finalizeRecordingSegmentThunk` via `saveAudioToStorage`), with raw chunks stamped with `recording_segment_id` — each card is independently playable; auto-cleanup (`runCleaningPassThunk`) fires per stop. New `studio_documents` table + the audio-first assistant: `useStudioAssistant` creates one conversation per session and ships the session's transcripts as named context objects (`recording_NN_raw` / `session_cleaned`) plus a mutable `working_document` the agent edits via `ctx_patch` (backend writeback handler `studio_document` in aidream). New "Audio Studio Assistant" builtin `agx_agent` (`AUDIO_ASSISTANT_AGENT_ID`, seed in `migrations/studio_audio_assistant_agent.sql`). Exposed `safetyId` on `useChunkedRecordAndTranscribe` + `ChunkCompleteInfo`. Added recording-segment + document state/selectors/thunks/realtime to the slice.

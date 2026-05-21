@@ -133,6 +133,7 @@ Verify exact schemas in Supabase before extending.
 
 ## Change log
 
+- `2026-05-21` — `useChunkedRecordAndTranscribe` exposes the crash-safe `safetyId` (via `getSafetyId()` on its return and on every `ChunkCompleteInfo`) so subscribers can reassemble a recording cycle's audio with `audioSafetyStore.getAudioBlob(safetyId)`. Consumed by the transcript-studio mobile capture flow; additive — existing consumers unaffected.
 - `2026-05-07` — Transcript management UI route is `/transcription/processor` (permanent redirect from `/transcripts` in `next.config.js`).
 - `2026-05-03` — VoicePadAi: replaced 6 hardcoded user-owned cleaner agents with 3 system-owned agents in `ai-agents.ts`; added `contextVariableKey` field on the agent shape so context can be wired as a regular variable for agents that don't use a context slot. All transcription window panels (voicePad, voicePadAdvanced, voicePadAi) and the transcript processor viewer now expose `ContentActionBar` for Save to Notes/Tasks/Scratch/etc.
 - `2026-04-25` — Removed `features/audio` barrel `index.ts` files; consumers import from source files (and official voice components) per project no-barrel policy.
