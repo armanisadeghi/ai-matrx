@@ -42,6 +42,12 @@ export interface ChunkCompleteInfo {
   chunkIndex: number;
   tStart: number;
   tEnd: number;
+  /**
+   * Crash-safe IndexedDB entry id for the in-flight recording cycle. Stable
+   * for the whole start→stop cycle; lets a subscriber reassemble the cycle's
+   * audio later via `audioSafetyStore.getAudioBlob(safetyId)`.
+   */
+  safetyId: string;
   text: string;
   accumulatedText: string;
 }
@@ -445,6 +451,7 @@ export function useChunkedRecordAndTranscribe({
                   tEnd: t2.tEnd,
                   text: snippet,
                   accumulatedText: full,
+                  safetyId: safetyIdRef.current,
                 });
               }
             } else {
@@ -456,6 +463,7 @@ export function useChunkedRecordAndTranscribe({
                   tEnd: timing.tEnd,
                   text: snippet,
                   accumulatedText: full,
+                  safetyId: safetyIdRef.current,
                 });
               }
             }
@@ -775,5 +783,7 @@ export function useChunkedRecordAndTranscribe({
     pauseRecording,
     resumeRecording,
     reset,
+    /** Current crash-safe IndexedDB entry id, or "" when idle. */
+    getSafetyId: () => safetyIdRef.current,
   };
 }

@@ -131,6 +131,25 @@ export interface AgentRun {
   error: string | null;
 }
 
+/**
+ * studio_documents — the collaborative "working document" the audio-first
+ * assistant builds with the user. Edited server-side via `ctx_patch` (backend
+ * writeback handler kind="studio_document"). Structurally separate from
+ * `studio_cleaned_segments` so the auto-cleanup version is never overwritten.
+ */
+export type StudioDocumentKind = "working_document" | string;
+
+export interface StudioDocument {
+  id: string;
+  sessionId: string;
+  kind: StudioDocumentKind;
+  title: string;
+  content: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SessionSettings {
   sessionId: string;
   cleaningShortcutId: string | null;
@@ -165,6 +184,19 @@ export interface UpdateSessionInput {
   audioStoragePath?: string | null;
   transcriptId?: string | null;
   isDeleted?: boolean;
+}
+
+export interface CreateRecordingSegmentInput {
+  sessionId: string;
+  segmentIndex: number;
+  tStart: number;
+  startedAt: string;
+}
+
+export interface UpdateRecordingSegmentInput {
+  audioPath?: string | null;
+  tEnd?: number | null;
+  endedAt?: string | null;
 }
 
 // ── View-model helpers ────────────────────────────────────────────────

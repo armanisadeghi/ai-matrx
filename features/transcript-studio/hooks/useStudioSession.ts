@@ -12,15 +12,18 @@
  * surfaces a toast error and short-circuits.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   useGlobalRecording,
   type StartRecordingArgs,
 } from "@/providers/GlobalRecordingProvider";
 import {
+  finalizeRecordingSegmentThunk,
   ingestRawChunkThunk,
+  runCleaningPassThunk,
+  startRecordingSegmentThunk,
   startSessionRecordingThunk,
   stopSessionRecordingThunk,
 } from "../redux/thunks";
@@ -49,9 +52,16 @@ export function useStudioSession({
   sessionId,
 }: UseStudioSessionOptions): UseStudioSessionReturn {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const recording = useGlobalRecording();
 
   const recordings = useAppSelector((s) => s.recordings);
+
+  // Per-cycle refs. Set on start (before any chunk fires), read in the chunk +
+  // completion callbacks, which are captured at start time.
+  const recordingSegmentIdRef = useRef<string | null>(null);
+  const safetyIdRef = useRef<string | null>(null);
+  const lastTEndRef = useRef<number>(0);
 
   const isOwnedRecording =
     recordings.isRecording &&
@@ -74,11 +84,63 @@ export function useStudioSession({
     }
     // Mark the session row as recording immediately for responsive UI.
     void dispatch(startSessionRecordingThunk({ id: sessionId }));
+
+    // Open a new recording cycle (one card) BEFORE the recorder starts so the
+    // segment id is available to stamp every chunk.
+    recordingSegmentIdRef.current = null;
+    safetyIdRef.current = null;
+    lastTEndRef.current = 0;
+    const existing =
+      store.getState().transcriptStudio.recordingSegmentIdsBySession[
+        sessionId
+      ] ?? [];
+    try {
+      const segment = await dispatch(
+        startRecordingSegmentThunk({
+          sessionId,
+          segmentIndex: existing.length,
+          tStart: 0,
+        }),
+      ).unwrap();
+      recordingSegmentIdRef.current = segment.id;
+    } catch {
+      // Segment row failed — recording can still proceed; chunks just won't be
+      // grouped into a card. Surfaced via the thunk's own toast.
+    }
+
     const args: StartRecordingArgs = {
       context: { kind: "studio", sessionId },
       onChunkComplete: (info) => {
+        safetyIdRef.current = info.safetyId || safetyIdRef.current;
+        if (info.tEnd > lastTEndRef.current) lastTEndRef.current = info.tEnd;
         if (!info.text.trim()) return;
-        void dispatch(ingestRawChunkThunk({ sessionId, info }));
+        void dispatch(
+          ingestRawChunkThunk({
+            sessionId,
+            info,
+            recordingSegmentId: recordingSegmentIdRef.current,
+          }),
+        );
+      },
+      onComplete: () => {
+        const recordingSegmentId = recordingSegmentIdRef.current;
+        if (recordingSegmentId) {
+          void dispatch(
+            finalizeRecordingSegmentThunk({
+              sessionId,
+              recordingSegmentId,
+              safetyId: safetyIdRef.current,
+              tEnd: lastTEndRef.current,
+            }),
+          ).finally(() => {
+            // Auto-clean this cycle once its raw chunks have landed.
+            void dispatch(
+              runCleaningPassThunk({ sessionId, triggerCause: "session-stop" }),
+            );
+          });
+        }
+        recordingSegmentIdRef.current = null;
+        safetyIdRef.current = null;
       },
       onError: (msg) => {
         toast.error(msg);
@@ -93,6 +155,7 @@ export function useStudioSession({
     sessionId,
     recording,
     dispatch,
+    store,
     recordings.isRecording,
     recordings.context,
   ]);
@@ -101,6 +164,9 @@ export function useStudioSession({
     if (!sessionId) return;
     if (!isOwnedRecording) return;
     const totalDurationMs = Math.round((recordings.durationSec ?? 0) * 1000);
+    // Triggers the recorder's completion path, which fires `onComplete` above
+    // (finalize audio + cleanup). Audio is already in IndexedDB, so nothing is
+    // lost even if the upload in onComplete fails.
     recording.stop();
     void dispatch(
       stopSessionRecordingThunk({ id: sessionId, totalDurationMs }),

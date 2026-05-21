@@ -315,6 +315,254 @@ export async function deleteRawSegment(id: string): Promise<void> {
   }
 }
 
+// ── studio_recording_segments ────────────────────────────────────────
+// One row per start→stop cycle. `audio_path` holds the durable cld_files
+// fileId for the cycle's assembled audio (set on finalize). Raw chunks link
+// back via studio_raw_segments.recording_segment_id so each "card" in the
+// mobile UI is an independently playable, independently deletable unit.
+
+export interface RecordingSegmentRow {
+  id: string;
+  session_id: string;
+  segment_index: number;
+  t_start: number | string;
+  t_end: number | string | null;
+  audio_path: string | null;
+  started_at: string;
+  ended_at: string | null;
+}
+
+export function rowToRecordingSegment(
+  row: RecordingSegmentRow,
+): import("../types").RecordingSegment {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    segmentIndex: row.segment_index,
+    tStart: typeof row.t_start === "string" ? Number(row.t_start) : row.t_start,
+    tEnd:
+      row.t_end === null
+        ? null
+        : typeof row.t_end === "string"
+          ? Number(row.t_end)
+          : row.t_end,
+    audioPath: row.audio_path,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+  };
+}
+
+export async function insertRecordingSegment(
+  input: import("../types").CreateRecordingSegmentInput,
+): Promise<import("../types").RecordingSegment> {
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .insert({
+      session_id: input.sessionId,
+      segment_index: input.segmentIndex,
+      t_start: input.tStart,
+      started_at: input.startedAt,
+    })
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(
+      `[studio] insertRecordingSegment failed: ${error?.message ?? "no row"}`,
+    );
+  }
+  return rowToRecordingSegment(data as RecordingSegmentRow);
+}
+
+export async function updateRecordingSegment(
+  id: string,
+  patch: import("../types").UpdateRecordingSegmentInput,
+): Promise<import("../types").RecordingSegment> {
+  const update: Record<string, unknown> = {};
+  if (patch.audioPath !== undefined) update.audio_path = patch.audioPath;
+  if (patch.tEnd !== undefined) update.t_end = patch.tEnd;
+  if (patch.endedAt !== undefined) update.ended_at = patch.endedAt;
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .update(update)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(
+      `[studio] updateRecordingSegment failed: ${error?.message ?? "no row"}`,
+    );
+  }
+  return rowToRecordingSegment(data as RecordingSegmentRow);
+}
+
+export async function listRecordingSegments(
+  sessionId: string,
+): Promise<import("../types").RecordingSegment[]> {
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("segment_index", { ascending: true });
+  if (error) {
+    throw new Error(`[studio] listRecordingSegments failed: ${error.message}`);
+  }
+  return ((data ?? []) as RecordingSegmentRow[]).map(rowToRecordingSegment);
+}
+
+export async function listRecordingSegmentsServer(
+  serverClient: { from: (table: string) => unknown },
+  sessionId: string,
+): Promise<import("../types").RecordingSegment[]> {
+  const looseClient = serverClient as unknown as LooseSupabase;
+  const { data, error } = await looseClient
+    .from("studio_recording_segments")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("segment_index", { ascending: true });
+  if (error) {
+    throw new Error(
+      `[studio] listRecordingSegmentsServer failed: ${error.message}`,
+    );
+  }
+  return ((data ?? []) as RecordingSegmentRow[]).map(rowToRecordingSegment);
+}
+
+/**
+ * Delete a recording segment and every raw chunk that belongs to it. We delete
+ * the raw rows explicitly (the FK is ON DELETE SET NULL, which would orphan the
+ * transcript text rather than remove it). The mobile "card delete" is meant to
+ * throw away the whole recording — audio + transcript — so we remove both.
+ */
+export async function deleteRecordingSegment(id: string): Promise<void> {
+  const { error: rawError } = await db
+    .from("studio_raw_segments")
+    .delete()
+    .eq("recording_segment_id", id);
+  if (rawError) {
+    throw new Error(
+      `[studio] deleteRecordingSegment (raw) failed: ${rawError.message}`,
+    );
+  }
+  const { error } = await db
+    .from("studio_recording_segments")
+    .delete()
+    .eq("id", id);
+  if (error) {
+    throw new Error(`[studio] deleteRecordingSegment failed: ${error.message}`);
+  }
+}
+
+// ── studio_documents ─────────────────────────────────────────────────
+
+export interface StudioDocumentRow {
+  id: string;
+  session_id: string;
+  kind: string;
+  title: string;
+  content: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function rowToStudioDocument(
+  row: StudioDocumentRow,
+): import("../types").StudioDocument {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    kind: row.kind,
+    title: row.title,
+    content: row.content,
+    version: row.version,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listStudioDocuments(
+  sessionId: string,
+): Promise<import("../types").StudioDocument[]> {
+  const { data, error } = await db
+    .from("studio_documents")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw new Error(`[studio] listStudioDocuments failed: ${error.message}`);
+  }
+  return ((data ?? []) as StudioDocumentRow[]).map(rowToStudioDocument);
+}
+
+/**
+ * Get the session's working document, creating it on first access. Relies on
+ * the UNIQUE (session_id, kind) constraint so a concurrent create resolves to
+ * a single row (we re-select on conflict).
+ */
+export async function getOrCreateWorkingDocument(
+  sessionId: string,
+  kind: import("../types").StudioDocumentKind = "working_document",
+  title = "Working Document",
+): Promise<import("../types").StudioDocument> {
+  const existing = await db
+    .from("studio_documents")
+    .select("*")
+    .eq("session_id", sessionId)
+    .eq("kind", kind)
+    .maybeSingle();
+  if (existing.error) {
+    throw new Error(
+      `[studio] getOrCreateWorkingDocument select failed: ${existing.error.message}`,
+    );
+  }
+  if (existing.data) {
+    return rowToStudioDocument(existing.data as StudioDocumentRow);
+  }
+
+  const { data, error } = await db
+    .from("studio_documents")
+    .insert({ session_id: sessionId, kind, title })
+    .select("*")
+    .single();
+  if (error) {
+    // A concurrent insert won the race — re-read the now-existing row.
+    const retry = await db
+      .from("studio_documents")
+      .select("*")
+      .eq("session_id", sessionId)
+      .eq("kind", kind)
+      .maybeSingle();
+    if (retry.data) return rowToStudioDocument(retry.data as StudioDocumentRow);
+    throw new Error(
+      `[studio] getOrCreateWorkingDocument insert failed: ${error.message}`,
+    );
+  }
+  return rowToStudioDocument(data as StudioDocumentRow);
+}
+
+/**
+ * Direct content write (used by inline edits on the client). The assistant's
+ * own edits land server-side via the ctx_patch writeback handler and arrive
+ * back through realtime — they do NOT go through this path.
+ */
+export async function updateStudioDocumentContent(
+  id: string,
+  content: string,
+): Promise<import("../types").StudioDocument> {
+  const { data, error } = await db
+    .from("studio_documents")
+    .update({ content })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(
+      `[studio] updateStudioDocumentContent failed: ${error?.message ?? "no row"}`,
+    );
+  }
+  return rowToStudioDocument(data as StudioDocumentRow);
+}
+
 // ── studio_runs ───────────────────────────────────────────────────────
 
 interface AgentRunRow {

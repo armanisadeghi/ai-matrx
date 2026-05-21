@@ -14,18 +14,24 @@ import {
   deleteConceptItem,
   deleteModuleSegment,
   deleteRawSegment,
+  deleteRecordingSegment,
   fetchSessionSettings,
+  getOrCreateWorkingDocument,
   insertRawSegment,
+  insertRecordingSegment,
   listCleanedSegments,
   listConceptItems,
   listModuleSegments,
   listRawSegments,
+  listRecordingSegments,
   listSessions,
+  listStudioDocuments,
   softDeleteSession,
   updateCleanedSegmentText,
   updateConceptItem,
   updateModuleSegmentPayload,
   updateRawSegmentText,
+  updateRecordingSegment,
   updateSession,
   upsertSessionSettings,
   type ConceptItemPatch,
@@ -37,10 +43,15 @@ import type {
   CreateSessionInput,
   ModuleSegment,
   RawSegment,
+  RecordingSegment,
   SessionSettings,
+  StudioDocument,
   StudioSession,
   UpdateSessionInput,
 } from "../types";
+import { audioSafetyStore } from "@/features/audio/services/audioSafetyStore";
+import { saveAudioToStorage } from "@/features/transcripts/service/audioStorageService";
+import { getUserId } from "@/utils/auth/getUserId";
 import {
   activeSessionIdSet,
   cleanedSegmentRemoved,
@@ -57,12 +68,17 @@ import {
   rawSegmentUpdated,
   rawSegmentsAppended,
   rawSegmentsLoaded,
+  recordingSegmentRemoved,
+  recordingSegmentUpserted,
+  recordingSegmentsLoaded,
   sessionRemoved,
   sessionSettingsLoaded,
   sessionsListFailed,
   sessionsListLoaded,
   sessionsListLoading,
   sessionUpserted,
+  studioDocumentUpserted,
+  studioDocumentsLoaded,
 } from "./slice";
 
 interface CreateSessionThunkArg extends CreateSessionInput {
@@ -340,13 +356,22 @@ export const fetchConceptItemsThunk = createAsyncThunk<
 
 export const ingestRawChunkThunk = createAsyncThunk<
   RawSegment,
-  { sessionId: string; info: ChunkCompleteInfo }
+  {
+    sessionId: string;
+    info: ChunkCompleteInfo;
+    /** Links the chunk to its start→stop recording cycle (the mobile card). */
+    recordingSegmentId?: string | null;
+  }
 >(
   "transcriptStudio/ingestRawChunk",
-  async ({ sessionId, info }, { dispatch, rejectWithValue }) => {
+  async (
+    { sessionId, info, recordingSegmentId },
+    { dispatch, rejectWithValue },
+  ) => {
     try {
       const segment = await insertRawSegment({
         sessionId,
+        recordingSegmentId: recordingSegmentId ?? null,
         chunkIndex: info.chunkIndex,
         tStart: info.tStart,
         tEnd: info.tEnd,
@@ -362,6 +387,195 @@ export const ingestRawChunkThunk = createAsyncThunk<
           : "Failed to persist transcription chunk";
       // Toast quietly; recording continues.
       toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+// ── Recording segments (mobile cards) ────────────────────────────────
+
+export const fetchRecordingSegmentsThunk = createAsyncThunk<
+  RecordingSegment[],
+  { sessionId: string }
+>(
+  "transcriptStudio/fetchRecordingSegments",
+  async ({ sessionId }, { dispatch, rejectWithValue }) => {
+    try {
+      const segments = await listRecordingSegments(sessionId);
+      dispatch(recordingSegmentsLoaded({ sessionId, segments }));
+      return segments;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to load recording segments";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+/**
+ * Open a recording cycle. Inserts a `studio_recording_segments` row at the
+ * given session-relative start time and returns it so the caller can stamp
+ * every raw chunk for this cycle with `recordingSegmentId`.
+ */
+export const startRecordingSegmentThunk = createAsyncThunk<
+  RecordingSegment,
+  { sessionId: string; segmentIndex: number; tStart: number }
+>(
+  "transcriptStudio/startRecordingSegment",
+  async (
+    { sessionId, segmentIndex, tStart },
+    { dispatch, rejectWithValue },
+  ) => {
+    try {
+      const segment = await insertRecordingSegment({
+        sessionId,
+        segmentIndex,
+        tStart,
+        startedAt: new Date().toISOString(),
+      });
+      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      return segment;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to start recording segment";
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+/**
+ * Close a recording cycle: assemble its audio from the crash-safe IndexedDB
+ * entry, upload it durably, and write the resulting fileId onto the segment so
+ * each card becomes independently playable. The blob is already in IndexedDB
+ * before this runs, so a failed upload never loses audio — the orphan
+ * reconcile retries it on next session load.
+ */
+export const finalizeRecordingSegmentThunk = createAsyncThunk<
+  RecordingSegment | null,
+  {
+    sessionId: string;
+    recordingSegmentId: string;
+    safetyId: string | null;
+    tEnd: number;
+  }
+>(
+  "transcriptStudio/finalizeRecordingSegment",
+  async (
+    { sessionId, recordingSegmentId, safetyId, tEnd },
+    { dispatch, rejectWithValue },
+  ) => {
+    try {
+      let audioPath: string | null = null;
+      if (safetyId) {
+        const blob = await audioSafetyStore.getAudioBlob(safetyId);
+        if (blob && blob.size > 0) {
+          const userId = getUserId();
+          if (userId) {
+            const upload = await saveAudioToStorage(blob, userId, undefined, 5);
+            audioPath = upload.fileId;
+          }
+        }
+      }
+      const segment = await updateRecordingSegment(recordingSegmentId, {
+        tEnd,
+        endedAt: new Date().toISOString(),
+        ...(audioPath ? { audioPath } : {}),
+      });
+      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      return segment;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to finalize recording segment";
+      // Non-fatal: the transcript is already saved and the audio is still in
+      // IndexedDB for the orphan reconcile to retry.
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+export const deleteRecordingSegmentThunk = createAsyncThunk<
+  void,
+  { sessionId: string; recordingSegmentId: string }
+>(
+  "transcriptStudio/deleteRecordingSegment",
+  async (
+    { sessionId, recordingSegmentId },
+    { dispatch, getState, rejectWithValue },
+  ) => {
+    try {
+      // Optimistically remove the card and its raw chunks from Redux.
+      const root = getState() as {
+        transcriptStudio: {
+          rawIdsBySession: Record<string, string[]>;
+          rawById: Record<string, Record<string, RawSegment>>;
+        };
+      };
+      const rawIds = root.transcriptStudio.rawIdsBySession[sessionId] ?? [];
+      const rawById = root.transcriptStudio.rawById[sessionId] ?? {};
+      const ownedRawIds = rawIds.filter(
+        (id) => rawById[id]?.recordingSegmentId === recordingSegmentId,
+      );
+      dispatch(
+        recordingSegmentRemoved({ sessionId, segmentId: recordingSegmentId }),
+      );
+      for (const rawId of ownedRawIds) {
+        dispatch(rawSegmentRemoved({ sessionId, segmentId: rawId }));
+      }
+      await deleteRecordingSegment(recordingSegmentId);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to delete recording";
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+// ── Working document (studio_documents) ──────────────────────────────
+
+export const fetchStudioDocumentsThunk = createAsyncThunk<
+  StudioDocument[],
+  { sessionId: string }
+>(
+  "transcriptStudio/fetchStudioDocuments",
+  async ({ sessionId }, { dispatch, rejectWithValue }) => {
+    try {
+      const documents = await listStudioDocuments(sessionId);
+      dispatch(studioDocumentsLoaded({ sessionId, documents }));
+      return documents;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load documents";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+export const ensureWorkingDocumentThunk = createAsyncThunk<
+  StudioDocument,
+  { sessionId: string }
+>(
+  "transcriptStudio/ensureWorkingDocument",
+  async ({ sessionId }, { dispatch, rejectWithValue }) => {
+    try {
+      const document = await getOrCreateWorkingDocument(sessionId);
+      dispatch(studioDocumentUpserted({ sessionId, document }));
+      return document;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to prepare working document";
       return rejectWithValue(message);
     }
   },

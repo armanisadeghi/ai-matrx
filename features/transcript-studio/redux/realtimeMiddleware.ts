@@ -31,11 +31,15 @@ import {
   rowToCleanedSegment,
   rowToConceptItem,
   rowToModuleSegment,
+  rowToRecordingSegment,
+  rowToStudioDocument,
   type SessionRow,
   type RawSegmentRow,
   type CleanedSegmentRow,
   type ConceptItemRow,
   type ModuleSegmentRow,
+  type RecordingSegmentRow,
+  type StudioDocumentRow,
 } from "../service/studioService";
 import {
   sessionUpserted,
@@ -52,6 +56,9 @@ import {
   moduleSegmentsAppended,
   moduleSegmentUpdated,
   moduleSegmentRemoved,
+  recordingSegmentUpserted,
+  recordingSegmentRemoved,
+  studioDocumentUpserted,
 } from "./slice";
 import { fetchSessionsThunk } from "./thunks";
 
@@ -368,6 +375,63 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
                 moduleSegmentRemoved({
                   sessionId: sid,
                   segmentId: old.id,
+                }),
+              );
+            },
+          )
+
+          // ── studio_recording_segments (mobile cards) ────────────────
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "studio_recording_segments",
+              filter: `session_id=eq.${sid}`,
+            },
+            (payload) => {
+              if (payload.eventType === "DELETE") {
+                const old = payload.old as { id?: string } | undefined;
+                if (old?.id) {
+                  storeApi.dispatch(
+                    recordingSegmentRemoved({
+                      sessionId: sid,
+                      segmentId: old.id,
+                    }),
+                  );
+                }
+                return;
+              }
+              const row = payload.new as RecordingSegmentRow | undefined;
+              if (!row) return;
+              storeApi.dispatch(
+                recordingSegmentUpserted({
+                  sessionId: sid,
+                  segment: rowToRecordingSegment(row),
+                }),
+              );
+            },
+          )
+
+          // ── studio_documents (assistant working document) ───────────
+          // INSERT + UPDATE both upsert. The assistant's ctx_patch writes land
+          // here via the backend writeback handler and arrive as UPDATEs.
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "studio_documents",
+              filter: `session_id=eq.${sid}`,
+            },
+            (payload) => {
+              if (payload.eventType === "DELETE") return;
+              const row = payload.new as StudioDocumentRow | undefined;
+              if (!row) return;
+              storeApi.dispatch(
+                studioDocumentUpserted({
+                  sessionId: sid,
+                  document: rowToStudioDocument(row),
                 }),
               );
             },

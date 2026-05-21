@@ -20,7 +20,9 @@ import type {
   ConceptItem,
   ModuleSegment,
   RawSegment,
+  RecordingSegment,
   SessionSettings,
+  StudioDocument,
   StudioSession,
 } from "../types";
 import type { ColumnId } from "../constants";
@@ -88,6 +90,25 @@ export interface TranscriptStudioState {
    * first user-driven settings change.
    */
   settingsBySession: Record<string, SessionSettings>;
+  /**
+   * Recording-segment registry per session — one entry per start→stop cycle,
+   * ordered by `segmentIndex`. These back the mobile "recording cards": each
+   * carries the durable `audioPath` for playback and groups its raw chunks via
+   * `studio_raw_segments.recordingSegmentId`.
+   */
+  recordingSegmentsById: Record<string, Record<string, RecordingSegment>>;
+  recordingSegmentIdsBySession: Record<string, string[]>;
+  /**
+   * Working-document registry per session (studio_documents). The assistant
+   * edits these server-side via ctx_patch; updates arrive through realtime.
+   */
+  documentsById: Record<string, Record<string, StudioDocument>>;
+  documentIdsBySession: Record<string, string[]>;
+  /**
+   * The audio-first assistant's conversation id, keyed by session, so the
+   * conversation survives screen swaps within a session.
+   */
+  assistantConversationIdBySession: Record<string, string>;
 }
 
 const DEFAULT_UI: StudioUiState = {
@@ -115,6 +136,11 @@ const initialState: TranscriptStudioState = {
   moduleSegmentsById: {},
   moduleSegmentIdsBySession: {},
   settingsBySession: {},
+  recordingSegmentsById: {},
+  recordingSegmentIdsBySession: {},
+  documentsById: {},
+  documentIdsBySession: {},
+  assistantConversationIdBySession: {},
 };
 
 // ── Slice ─────────────────────────────────────────────────────────────
@@ -485,6 +511,85 @@ const slice = createSlice({
     ) {
       delete state.settingsBySession[action.payload.sessionId];
     },
+    recordingSegmentsLoaded(
+      state,
+      action: PayloadAction<{
+        sessionId: string;
+        segments: RecordingSegment[];
+      }>,
+    ) {
+      const { sessionId, segments } = action.payload;
+      state.recordingSegmentsById[sessionId] = {};
+      const ids: string[] = [];
+      for (const seg of segments) {
+        state.recordingSegmentsById[sessionId]![seg.id] = seg;
+        ids.push(seg.id);
+      }
+      state.recordingSegmentIdsBySession[sessionId] = ids;
+    },
+    recordingSegmentUpserted(
+      state,
+      action: PayloadAction<{ sessionId: string; segment: RecordingSegment }>,
+    ) {
+      const { sessionId, segment } = action.payload;
+      if (!state.recordingSegmentsById[sessionId])
+        state.recordingSegmentsById[sessionId] = {};
+      if (!state.recordingSegmentIdsBySession[sessionId])
+        state.recordingSegmentIdsBySession[sessionId] = [];
+      const byId = state.recordingSegmentsById[sessionId]!;
+      const ids = state.recordingSegmentIdsBySession[sessionId]!;
+      const isNew = !byId[segment.id];
+      byId[segment.id] = segment;
+      if (isNew) ids.push(segment.id);
+      ids.sort((a, b) => byId[a]!.segmentIndex - byId[b]!.segmentIndex);
+    },
+    recordingSegmentRemoved(
+      state,
+      action: PayloadAction<{ sessionId: string; segmentId: string }>,
+    ) {
+      const { sessionId, segmentId } = action.payload;
+      delete state.recordingSegmentsById[sessionId]?.[segmentId];
+      const ids = state.recordingSegmentIdsBySession[sessionId];
+      if (ids) {
+        const idx = ids.indexOf(segmentId);
+        if (idx >= 0) ids.splice(idx, 1);
+      }
+    },
+    studioDocumentsLoaded(
+      state,
+      action: PayloadAction<{ sessionId: string; documents: StudioDocument[] }>,
+    ) {
+      const { sessionId, documents } = action.payload;
+      state.documentsById[sessionId] = {};
+      const ids: string[] = [];
+      for (const doc of documents) {
+        state.documentsById[sessionId]![doc.id] = doc;
+        ids.push(doc.id);
+      }
+      state.documentIdsBySession[sessionId] = ids;
+    },
+    studioDocumentUpserted(
+      state,
+      action: PayloadAction<{ sessionId: string; document: StudioDocument }>,
+    ) {
+      const { sessionId, document } = action.payload;
+      if (!state.documentsById[sessionId])
+        state.documentsById[sessionId] = {};
+      if (!state.documentIdsBySession[sessionId])
+        state.documentIdsBySession[sessionId] = [];
+      const byId = state.documentsById[sessionId]!;
+      const ids = state.documentIdsBySession[sessionId]!;
+      const isNew = !byId[document.id];
+      byId[document.id] = document;
+      if (isNew) ids.push(document.id);
+    },
+    assistantConversationIdSet(
+      state,
+      action: PayloadAction<{ sessionId: string; conversationId: string }>,
+    ) {
+      state.assistantConversationIdBySession[action.payload.sessionId] =
+        action.payload.conversationId;
+    },
   },
 });
 
@@ -524,6 +629,12 @@ export const {
   moduleSwitched,
   sessionSettingsLoaded,
   sessionSettingsCleared,
+  recordingSegmentsLoaded,
+  recordingSegmentUpserted,
+  recordingSegmentRemoved,
+  studioDocumentsLoaded,
+  studioDocumentUpserted,
+  assistantConversationIdSet,
 } = slice.actions;
 
 export default slice.reducer;

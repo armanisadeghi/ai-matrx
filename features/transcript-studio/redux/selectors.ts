@@ -6,7 +6,13 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { RawSegment, StudioSession } from "../types";
+import type {
+  CleanedSegment,
+  RawSegment,
+  RecordingSegment,
+  StudioDocument,
+  StudioSession,
+} from "../types";
 
 const selectScope = (state: RootState) => state.transcriptStudio;
 
@@ -101,6 +107,107 @@ export const selectRawSegmentCount = (sessionId: string | null) =>
   (state: RootState): number => {
     if (!sessionId) return 0;
     return state.transcriptStudio.rawIdsBySession[sessionId]?.length ?? 0;
+  };
+
+// ── Cleaned segments ────────────────────────────────────────────────
+
+const EMPTY_CLEANED: CleanedSegment[] = [];
+
+const cleanedSegmentsCache = new WeakMap<
+  ReadonlyArray<string>,
+  { byId: Record<string, CleanedSegment>; result: CleanedSegment[] }
+>();
+
+export function selectCleanedSegments(sessionId: string | null) {
+  return (state: RootState): CleanedSegment[] => {
+    if (!sessionId) return EMPTY_CLEANED;
+    const ids = state.transcriptStudio.cleanedIdsBySession[sessionId];
+    const byId = state.transcriptStudio.cleanedById[sessionId];
+    if (!ids || !byId) return EMPTY_CLEANED;
+    const cached = cleanedSegmentsCache.get(ids);
+    if (cached && cached.byId === byId) return cached.result;
+    const result: CleanedSegment[] = [];
+    for (const id of ids) {
+      const seg = byId[id];
+      if (seg) result.push(seg);
+    }
+    cleanedSegmentsCache.set(ids, { byId, result });
+    return result;
+  };
+}
+
+// ── Recording segments (mobile cards) ───────────────────────────────
+
+const EMPTY_RECORDING: RecordingSegment[] = [];
+
+const recordingSegmentsCache = new WeakMap<
+  ReadonlyArray<string>,
+  { byId: Record<string, RecordingSegment>; result: RecordingSegment[] }
+>();
+
+export function selectRecordingSegments(sessionId: string | null) {
+  return (state: RootState): RecordingSegment[] => {
+    if (!sessionId) return EMPTY_RECORDING;
+    const ids = state.transcriptStudio.recordingSegmentIdsBySession[sessionId];
+    const byId = state.transcriptStudio.recordingSegmentsById[sessionId];
+    if (!ids || !byId) return EMPTY_RECORDING;
+    const cached = recordingSegmentsCache.get(ids);
+    if (cached && cached.byId === byId) return cached.result;
+    const result: RecordingSegment[] = [];
+    for (const id of ids) {
+      const seg = byId[id];
+      if (seg) result.push(seg);
+    }
+    recordingSegmentsCache.set(ids, { byId, result });
+    return result;
+  };
+}
+
+export const selectRecordingSegmentCount = (sessionId: string | null) =>
+  (state: RootState): number => {
+    if (!sessionId) return 0;
+    return (
+      state.transcriptStudio.recordingSegmentIdsBySession[sessionId]?.length ?? 0
+    );
+  };
+
+/** Raw chunks belonging to one recording cycle, ordered by tStart. */
+export function selectRawSegmentsForRecording(
+  sessionId: string | null,
+  recordingSegmentId: string | null,
+) {
+  return (state: RootState): RawSegment[] => {
+    if (!sessionId || !recordingSegmentId) return EMPTY_RAW;
+    const all = selectRawSegments(sessionId)(state);
+    const filtered = all.filter(
+      (s) => s.recordingSegmentId === recordingSegmentId,
+    );
+    return filtered.length === 0 ? EMPTY_RAW : filtered;
+  };
+}
+
+// ── Working document ────────────────────────────────────────────────
+
+export function selectWorkingDocument(sessionId: string | null) {
+  return (state: RootState): StudioDocument | null => {
+    if (!sessionId) return null;
+    const ids = state.transcriptStudio.documentIdsBySession[sessionId];
+    const byId = state.transcriptStudio.documentsById[sessionId];
+    if (!ids || !byId) return null;
+    for (const id of ids) {
+      const doc = byId[id];
+      if (doc && doc.kind === "working_document") return doc;
+    }
+    return null;
+  };
+}
+
+export const selectAssistantConversationId = (sessionId: string | null) =>
+  (state: RootState): string | null => {
+    if (!sessionId) return null;
+    return (
+      state.transcriptStudio.assistantConversationIdBySession[sessionId] ?? null
+    );
   };
 
 void selectScope; // reserved — fuller scope-getter once we add per-column buffers
