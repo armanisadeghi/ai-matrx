@@ -26,6 +26,7 @@ import {
   startRecordingSegmentThunk,
   startSessionRecordingThunk,
   stopSessionRecordingThunk,
+  uploadRecordingAudioThunk,
 } from "../redux/thunks";
 
 interface UseStudioSessionOptions {
@@ -125,20 +126,28 @@ export function useStudioSession({
       onComplete: (_result, audioBlob) => {
         const recordingSegmentId = recordingSegmentIdRef.current;
         if (recordingSegmentId) {
+          // Finalize the row instantly (card leaves "processing"), then run the
+          // cleaning pass. The audio file uploads in the background so the user
+          // never waits on the network.
           void dispatch(
             finalizeRecordingSegmentThunk({
               sessionId,
               recordingSegmentId,
-              audioBlob: audioBlob ?? null,
-              safetyId: safetyIdRef.current,
               tEnd: lastTEndRef.current,
             }),
           ).finally(() => {
-            // Auto-clean this cycle once its raw chunks have landed.
             void dispatch(
               runCleaningPassThunk({ sessionId, triggerCause: "session-stop" }),
             );
           });
+          void dispatch(
+            uploadRecordingAudioThunk({
+              sessionId,
+              recordingSegmentId,
+              audioBlob: audioBlob ?? null,
+              safetyId: safetyIdRef.current,
+            }),
+          );
         }
         recordingSegmentIdRef.current = null;
         safetyIdRef.current = null;

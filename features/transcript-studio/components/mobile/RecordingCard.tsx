@@ -78,7 +78,11 @@ export function RecordingCard({
   const [isPlaying, setIsPlaying] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const uploading = useAppSelector((s) =>
+    s.transcriptStudio.uploadingRecordingIds.includes(recording.id),
+  );
   const finalizing = !recording.endedAt;
+  const busy = finalizing || uploading;
   const canPlay = Boolean(audioSrc);
 
   // Long-press → open transcript. Cancelled by movement (so a horizontal swipe
@@ -299,6 +303,13 @@ export function RecordingCard({
             <span className="font-mono tabular-nums">
               {formatClock(durationSec)}
             </span>
+            {uploading && (
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <span aria-hidden>·</span>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving audio
+              </span>
+            )}
           </div>
           <p className="mt-1 line-clamp-2 text-sm text-foreground">
             {previewText || (
@@ -315,8 +326,8 @@ export function RecordingCard({
           onClick={togglePlay}
           disabled={!canPlay}
           aria-label={
-            finalizing
-              ? "Processing audio"
+            busy
+              ? "Saving audio"
               : canPlay
                 ? isPlaying
                   ? "Pause audio"
@@ -330,7 +341,7 @@ export function RecordingCard({
               : "bg-muted text-muted-foreground",
           )}
         >
-          {finalizing ? (
+          {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isPlaying ? (
             <Pause className="h-5 w-5" />

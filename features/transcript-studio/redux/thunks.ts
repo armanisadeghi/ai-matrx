@@ -71,6 +71,8 @@ import {
   rawSegmentUpdated,
   rawSegmentsAppended,
   rawSegmentsLoaded,
+  recordingAudioUploadFinished,
+  recordingAudioUploadStarted,
   recordingSegmentRemoved,
   recordingSegmentUpserted,
   recordingSegmentsLoaded,
@@ -464,47 +466,22 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
   {
     sessionId: string;
     recordingSegmentId: string;
-    /** Full assembled recording captured at completion (preferred source). */
-    audioBlob?: Blob | null;
-    /** Fallback: reassemble from the crash-safe IndexedDB entry. */
-    safetyId: string | null;
     tEnd: number;
   }
 >(
   "transcriptStudio/finalizeRecordingSegment",
   async (
-    { sessionId, recordingSegmentId, audioBlob, safetyId, tEnd },
+    { sessionId, recordingSegmentId, tEnd },
     { dispatch, rejectWithValue },
   ) => {
-    // Step 1 — upload the audio (best-effort). A failure here must NOT prevent
-    // finalizing the row: the transcript is already saved, and we still want
-    // the card to leave its "processing" state. Prefer the in-memory blob;
-    // fall back to the IndexedDB copy.
-    let audioPath: string | null = null;
-    try {
-      let blob: Blob | null = audioBlob ?? null;
-      if ((!blob || blob.size === 0) && safetyId) {
-        blob = await audioSafetyStore.getAudioBlob(safetyId);
-      }
-      if (blob && blob.size > 0) {
-        const userId = getUserId();
-        if (userId) {
-          const upload = await saveAudioToStorage(blob, userId, undefined, 5);
-          audioPath = upload.fileId;
-        }
-      }
-    } catch (err) {
-      // Audio is still safe in IndexedDB; surface quietly and continue.
-      // eslint-disable-next-line no-console
-      console.error("[studio] recording audio upload failed:", err);
-    }
-
-    // Step 2 — always finalize the row (tEnd/endedAt), with audioPath when ready.
+    // Finalize the row immediately (tEnd/endedAt) so the card leaves its
+    // "processing" state right away — the transcript is already saved. The
+    // audio file uploads separately in the background (uploadRecordingAudioThunk)
+    // so the user never waits on the network.
     try {
       const segment = await updateRecordingSegment(recordingSegmentId, {
         tEnd,
         endedAt: new Date().toISOString(),
-        ...(audioPath ? { audioPath } : {}),
       });
       dispatch(recordingSegmentUpserted({ sessionId, segment }));
       return segment;
@@ -515,6 +492,48 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
           : "Failed to finalize recording segment";
       toast.error(message);
       return rejectWithValue(message);
+    }
+  },
+);
+
+/**
+ * Upload a finished recording's audio in the background and patch `audioPath`
+ * when it lands. Non-blocking: the row is already finalized, and the audio is
+ * crash-safe in IndexedDB, so a failure here just leaves playback unavailable
+ * (the next session load reconciles it). Drives the per-card "Saving…" chip via
+ * `uploadingRecordingIds`.
+ */
+export const uploadRecordingAudioThunk = createAsyncThunk<
+  void,
+  {
+    sessionId: string;
+    recordingSegmentId: string;
+    audioBlob?: Blob | null;
+    safetyId: string | null;
+  }
+>(
+  "transcriptStudio/uploadRecordingAudio",
+  async ({ sessionId, recordingSegmentId, audioBlob, safetyId }, { dispatch }) => {
+    dispatch(recordingAudioUploadStarted({ recordingSegmentId }));
+    try {
+      let blob: Blob | null = audioBlob ?? null;
+      if ((!blob || blob.size === 0) && safetyId) {
+        blob = await audioSafetyStore.getAudioBlob(safetyId);
+      }
+      if (!blob || blob.size === 0) return;
+      const userId = getUserId();
+      if (!userId) return;
+      const upload = await saveAudioToStorage(blob, userId, undefined, 5);
+      const segment = await updateRecordingSegment(recordingSegmentId, {
+        audioPath: upload.fileId,
+      });
+      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+    } catch (err) {
+      // Audio is still safe in IndexedDB; surface quietly and continue.
+      // eslint-disable-next-line no-console
+      console.error("[studio] recording audio upload failed:", err);
+    } finally {
+      dispatch(recordingAudioUploadFinished({ recordingSegmentId }));
     }
   },
 );

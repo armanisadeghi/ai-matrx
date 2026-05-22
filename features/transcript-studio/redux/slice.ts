@@ -104,6 +104,8 @@ export interface TranscriptStudioState {
    */
   unsortedById: Record<string, RecordingSegment>;
   unsortedIds: string[];
+  /** Recording ids whose audio file is uploading in the background (post-stop). */
+  uploadingRecordingIds: string[];
   /**
    * Working-document registry per session (studio_documents). The assistant
    * edits these server-side via ctx_patch; updates arrive through realtime.
@@ -146,6 +148,7 @@ const initialState: TranscriptStudioState = {
   recordingSegmentIdsBySession: {},
   unsortedById: {},
   unsortedIds: [],
+  uploadingRecordingIds: [],
   documentsById: {},
   documentIdsBySession: {},
   assistantConversationIdBySession: {},
@@ -578,6 +581,24 @@ const slice = createSlice({
       }
       state.unsortedIds = ids;
     },
+    recordingAudioUploadStarted(
+      state,
+      action: PayloadAction<{ recordingSegmentId: string }>,
+    ) {
+      const { recordingSegmentId } = action.payload;
+      if (!state.uploadingRecordingIds.includes(recordingSegmentId)) {
+        state.uploadingRecordingIds.push(recordingSegmentId);
+      }
+    },
+    recordingAudioUploadFinished(
+      state,
+      action: PayloadAction<{ recordingSegmentId: string }>,
+    ) {
+      const idx = state.uploadingRecordingIds.indexOf(
+        action.payload.recordingSegmentId,
+      );
+      if (idx >= 0) state.uploadingRecordingIds.splice(idx, 1);
+    },
     studioDocumentsLoaded(
       state,
       action: PayloadAction<{ sessionId: string; documents: StudioDocument[] }>,
@@ -656,6 +677,8 @@ export const {
   recordingSegmentUpserted,
   recordingSegmentRemoved,
   unsortedRecordingsLoaded,
+  recordingAudioUploadStarted,
+  recordingAudioUploadFinished,
   studioDocumentsLoaded,
   studioDocumentUpserted,
   assistantConversationIdSet,

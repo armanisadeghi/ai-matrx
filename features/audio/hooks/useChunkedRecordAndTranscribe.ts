@@ -525,7 +525,13 @@ export function useChunkedRecordAndTranscribe({
       const mime = mimeTypeRef.current;
       const chunks: Blob[] = [];
       const idx = chunkIndexRef.current++;
-      const mr = new MediaRecorder(stream, { mimeType: mime });
+      // Voice-optimized: mono Opus at 32 kbps is transparent for speech and
+      // Whisper, and ~4x smaller than the browser default (~128 kbps), which
+      // makes the post-recording upload far quicker.
+      const mr = new MediaRecorder(stream, {
+        mimeType: mime,
+        audioBitsPerSecond: 32_000,
+      });
 
       // Anchor this chunk's session-relative window so downstream consumers
       // (transcript-studio Column 1) can place text on the audio timeline.
@@ -622,6 +628,7 @@ export function useChunkedRecordAndTranscribe({
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: 16_000,
+          channelCount: 1,
         },
       });
       streamRef.current = stream;
