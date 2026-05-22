@@ -21,6 +21,7 @@ import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useCartesia } from "@/hooks/tts/useCartesia";
+import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useStudioSession } from "../../hooks/useStudioSession";
 import { FocusedDocumentEditor } from "./FocusedDocumentEditor";
@@ -111,7 +112,10 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
     if (!tts.isAudioInitialized) await tts.initializeAudio();
     setReading(true);
     try {
-      await tts.sendMessage(docContent);
+      // Strip markdown/symbols so the document is spoken cleanly (matches the
+      // app's standard TTS path).
+      const spoken = parseMarkdownToText(docContent);
+      await tts.sendMessage(spoken || docContent);
     } finally {
       // Playback runs async; reset the toggle when the user stops or it ends.
       setReading(false);
