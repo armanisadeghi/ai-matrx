@@ -13,6 +13,7 @@ import {
     NotebookPen,
     Save,
     ScrollText,
+    Smartphone,
     Tag,
     Upload,
     Users,
@@ -152,9 +153,10 @@ export default function TranscriptionLanding() {
                         every conversation
                     </h1>
                     <p className="mt-6 mx-auto max-w-2xl text-[clamp(1rem,0.95rem+0.25vw,1.25rem)] text-muted-foreground leading-relaxed">
-                        Two ways in: a fast file-based <span className="font-semibold text-foreground">Processor</span> for one-shot transcripts,
-                        and the <span className="font-semibold text-foreground">Transcript Studio</span> — a four-column live workspace where
-                        AI agents clean, structure, and analyze your content as you record.
+                        Three ways in: a fast file-based <span className="font-semibold text-foreground">Processor</span> for one-shot transcripts,
+                        the <span className="font-semibold text-foreground">Transcript Studio</span> — a four-column live workspace where
+                        AI agents clean, structure, and analyze your content as you record — and <span className="font-semibold text-foreground">Mobile Capture</span>,
+                        an audio-first surface built for recording on the go.
                     </p>
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Button size="lg" className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2" asChild>
@@ -168,6 +170,12 @@ export default function TranscriptionLanding() {
                             <Link href="/transcription/processor">
                                 <FileAudio className="h-4 w-4" />
                                 Use the Processor
+                            </Link>
+                        </Button>
+                        <Button variant="outline" size="lg" className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2" asChild>
+                            <Link href="/transcription/mobile">
+                                <Smartphone className="h-4 w-4" />
+                                Mobile Capture
                             </Link>
                         </Button>
                     </div>
@@ -195,7 +203,7 @@ export default function TranscriptionLanding() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Studio — emphasized */}
                     <Link
                         href="/transcription/studio"
@@ -274,6 +282,46 @@ export default function TranscriptionLanding() {
                         </ul>
                         <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
                             Use the Processor
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </div>
+                    </Link>
+
+                    {/* Mobile Capture */}
+                    <Link
+                        href="/transcription/mobile"
+                        className={cn(
+                            "group relative rounded-3xl border border-border bg-card p-6 sm:p-8",
+                            "transition-all duration-300",
+                            "hover:border-primary/40 hover:shadow-lg",
+                        )}
+                    >
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
+                            On the go
+                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-foreground mb-5">
+                            <Smartphone className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-2xl font-bold tracking-tight mb-3">Mobile Capture</h3>
+                        <p className="text-muted-foreground leading-relaxed mb-5">
+                            An audio-first surface tuned for your phone. Record hands-free, organize takes into
+                            sessions with swipe-to-archive and an Unsorted pool, then let the assistant build a
+                            working document — speak and it sends automatically. Works on desktop too.
+                        </p>
+                        <ul className="grid grid-cols-1 gap-2 mb-6">
+                            {[
+                                "Audio-first, auto-send assistant",
+                                "Swipe to archive, unsort, or delete",
+                                "Sessions list + global Unsorted pool",
+                                "Focused full-screen document editor",
+                            ].map((item) => (
+                                <li key={item} className="flex items-start gap-2 text-sm">
+                                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                    <span className="text-foreground/90">{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                            Open Mobile Capture
                             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                         </div>
                     </Link>
@@ -512,6 +560,12 @@ export default function TranscriptionLanding() {
                             <Link href="/transcription/processor">
                                 <FileAudio className="h-4 w-4" />
                                 Use the Processor
+                            </Link>
+                        </Button>
+                        <Button variant="outline" size="lg" className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2" asChild>
+                            <Link href="/transcription/mobile">
+                                <Smartphone className="h-4 w-4" />
+                                Mobile Capture
                             </Link>
                         </Button>
                     </div>

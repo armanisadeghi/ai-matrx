@@ -35,6 +35,7 @@ import {
   updateRawSegmentText,
   updateRecordingSegment,
   updateSession,
+  updateStudioDocumentContent,
   upsertSessionSettings,
   type ConceptItemPatch,
   type UpsertSessionSettingsInput,
@@ -684,6 +685,25 @@ export const ensureWorkingDocumentThunk = createAsyncThunk<
         err instanceof Error
           ? err.message
           : "Failed to prepare working document";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+/** Direct user edit of the working document content (Focused Mode editor). */
+export const updateWorkingDocumentContentThunk = createAsyncThunk<
+  void,
+  { sessionId: string; documentId: string; content: string }
+>(
+  "transcriptStudio/updateWorkingDocumentContent",
+  async ({ sessionId, documentId, content }, { dispatch, rejectWithValue }) => {
+    try {
+      const document = await updateStudioDocumentContent(documentId, content);
+      dispatch(studioDocumentUpserted({ sessionId, document }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save document";
+      toast.error(message);
       return rejectWithValue(message);
     }
   },

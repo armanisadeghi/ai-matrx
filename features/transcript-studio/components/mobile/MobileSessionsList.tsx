@@ -1,9 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, Inbox, Loader2, Mic, Plus, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  ChevronRight,
+  Inbox,
+  Loader2,
+  Mic,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -16,7 +25,9 @@ import {
   deleteSessionThunk,
   fetchSessionsThunk,
   fetchUnsortedRecordingsThunk,
+  updateSessionThunk,
 } from "../../redux/thunks";
+import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { SwipeableRow, type SwipeAction } from "./SwipeableRow";
 
 interface MobileSessionsListProps {
@@ -46,6 +57,46 @@ export function MobileSessionsList({
   const fetchStatus = useAppSelector(selectFetchStatus);
   const unsortedCount = useAppSelector(selectUnsortedCount);
   const [creating, setCreating] = useState(false);
+  const [menuSessionId, setMenuSessionId] = useState<string | null>(null);
+  const [renameSessionId, setRenameSessionId] = useState<string | null>(null);
+
+  const menuSession = sessions.find((s) => s.id === menuSessionId) ?? null;
+  const renameSession = sessions.find((s) => s.id === renameSessionId) ?? null;
+
+  const confirmDelete = async (sessionId: string, title: string) => {
+    const ok = await confirm({
+      title: `Delete "${title || "Session"}"?`,
+      description:
+        "This removes the session and its recordings from your list.",
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (ok) void dispatch(deleteSessionThunk(sessionId));
+  };
+
+  const menuItems: ActionSheetItem[] = menuSession
+    ? [
+        {
+          key: "open",
+          label: "Open session",
+          icon: <Mic className="h-4 w-4" />,
+          onSelect: () => onOpenSession(menuSession.id),
+        },
+        {
+          key: "rename",
+          label: "Rename",
+          icon: <Pencil className="h-4 w-4" />,
+          onSelect: () => setRenameSessionId(menuSession.id),
+        },
+        {
+          key: "delete",
+          label: "Delete",
+          icon: <Trash2 className="h-4 w-4" />,
+          destructive: true,
+          onSelect: () => void confirmDelete(menuSession.id, menuSession.title),
+        },
+      ]
+    : [];
 
   useEffect(() => {
     if (fetchStatus === "idle") void dispatch(fetchSessionsThunk());
@@ -72,16 +123,7 @@ export function MobileSessionsList({
     label: "Delete",
     icon: <Trash2 className="h-5 w-5" />,
     className: "bg-destructive text-destructive-foreground",
-    onAction: async () => {
-      const ok = await confirm({
-        title: `Delete "${title || "Session"}"?`,
-        description:
-          "This removes the session and its recordings from your list.",
-        confirmLabel: "Delete",
-        variant: "destructive",
-      });
-      if (ok) void dispatch(deleteSessionThunk(sessionId));
-    },
+    onAction: () => void confirmDelete(sessionId, title),
   });
 
   return (
@@ -146,33 +188,69 @@ export function MobileSessionsList({
                 key={s.id}
                 trailingActions={[deleteAction(s.id, s.title)]}
               >
-                <button
-                  type="button"
-                  onClick={() => onOpenSession(s.id)}
-                  className="flex w-full items-center gap-3 border border-border bg-card p-3 text-left active:bg-accent"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Mic className="h-5 w-5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground">
-                      {s.title || "Untitled session"}
+                <div className="flex w-full items-center border border-border bg-card active:bg-accent">
+                  <button
+                    type="button"
+                    onClick={() => onOpenSession(s.id)}
+                    className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Mic className="h-5 w-5" />
                     </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {formatWhen(s.updatedAt)}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {s.title || "Untitled session"}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatWhen(s.updatedAt)}
+                      </span>
                     </span>
-                  </span>
-                  <ChevronRight
-                    className={cn(
-                      "h-5 w-5 shrink-0 text-muted-foreground",
-                    )}
-                  />
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuSessionId(s.id);
+                    }}
+                    aria-label="Session options"
+                    className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground active:bg-accent"
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </button>
+                </div>
               </SwipeableRow>
             ))}
           </div>
         )}
       </div>
+
+      <ActionSheet
+        open={menuSessionId !== null}
+        onOpenChange={(o) => {
+          if (!o) setMenuSessionId(null);
+        }}
+        title={menuSession?.title || "Session"}
+        items={menuItems}
+      />
+      <TextInputDialog
+        open={renameSessionId !== null}
+        onOpenChange={(o) => {
+          if (!o) setRenameSessionId(null);
+        }}
+        title="Rename session"
+        defaultValue={renameSession?.title ?? ""}
+        confirmLabel="Save"
+        onConfirm={(value) => {
+          if (renameSessionId) {
+            void dispatch(
+              updateSessionThunk({
+                id: renameSessionId,
+                patch: { title: value.trim() },
+              }),
+            );
+          }
+        }}
+      />
     </div>
   );
 }

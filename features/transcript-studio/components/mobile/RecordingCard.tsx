@@ -5,8 +5,10 @@ import {
   Archive,
   ArchiveRestore,
   Check,
+  FileText,
   Inbox,
   Loader2,
+  MoreHorizontal,
   Pause,
   Play,
   RotateCcw,
@@ -23,6 +25,7 @@ import {
   restoreRecordingThunk,
 } from "../../redux/thunks";
 import type { RecordingSegment } from "../../types";
+import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { SwipeableRow, type SwipeAction } from "./SwipeableRow";
 
 export type RecordingCardVariant = "active" | "archived" | "unsorted";
@@ -73,6 +76,7 @@ export function RecordingCard({
   );
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const finalizing = !recording.endedAt;
   const canPlay = Boolean(audioSrc);
@@ -128,82 +132,124 @@ export function RecordingCard({
     else void el.play();
   };
 
+  // ── Action handlers (shared by swipe actions and the More sheet) ──
+  const doArchive = (archived: boolean) =>
+    void dispatch(
+      archiveRecordingThunk({
+        sessionId,
+        recordingSegmentId: recording.id,
+        archived,
+      }),
+    );
+  const doUnsort = () =>
+    void dispatch(
+      detachRecordingThunk({ sessionId, recordingSegmentId: recording.id }),
+    );
+  const doRestore = () =>
+    void dispatch(restoreRecordingThunk({ recordingSegmentId: recording.id }));
+  const doDelete = () =>
+    void dispatch(
+      deleteRecordingSegmentThunk({ sessionId, recordingSegmentId: recording.id }),
+    );
+
   const deleteAction: SwipeAction = {
     key: "delete",
     label: "Delete",
     icon: <Trash2 className="h-5 w-5" />,
     className: "bg-destructive text-destructive-foreground",
-    onAction: () =>
-      void dispatch(
-        deleteRecordingSegmentThunk({ sessionId, recordingSegmentId: recording.id }),
-      ),
+    onAction: doDelete,
+  };
+  const moreAction: SwipeAction = {
+    key: "more",
+    label: "More",
+    icon: <MoreHorizontal className="h-5 w-5" />,
+    className: "bg-muted text-foreground",
+    onAction: () => setMenuOpen(true),
   };
 
   let leadingActions: SwipeAction[] = [];
   let trailingActions: SwipeAction[] = [];
+  const sheetItems: ActionSheetItem[] = [
+    {
+      key: "open",
+      label: "Open transcript",
+      icon: <FileText className="h-4 w-4" />,
+      onSelect: () => onOpenTranscript(recording.id),
+    },
+  ];
 
   if (variant === "active") {
     leadingActions = [
-      {
-        key: "unsort",
-        label: "Unsort",
-        icon: <Inbox className="h-5 w-5" />,
-        className: "bg-amber-500 text-white",
-        onAction: () =>
-          void dispatch(
-            detachRecordingThunk({ sessionId, recordingSegmentId: recording.id }),
-          ),
-      },
-    ];
-    trailingActions = [
       {
         key: "archive",
         label: "Archive",
         icon: <Archive className="h-5 w-5" />,
         className: "bg-muted-foreground/80 text-background",
-        onAction: () =>
-          void dispatch(
-            archiveRecordingThunk({
-              sessionId,
-              recordingSegmentId: recording.id,
-              archived: true,
-            }),
-          ),
+        onAction: () => doArchive(true),
       },
-      deleteAction,
     ];
+    trailingActions = [moreAction, deleteAction];
+    sheetItems.push(
+      {
+        key: "archive",
+        label: "Archive",
+        description: "Hide from this session, recover later",
+        icon: <Archive className="h-4 w-4" />,
+        onSelect: () => doArchive(true),
+      },
+      {
+        key: "unsort",
+        label: "Unsort",
+        description: "Move to the global Unsorted pool",
+        icon: <Inbox className="h-4 w-4" />,
+        onSelect: doUnsort,
+      },
+    );
   } else if (variant === "archived") {
-    trailingActions = [
+    leadingActions = [
       {
         key: "unarchive",
         label: "Restore",
         icon: <ArchiveRestore className="h-5 w-5" />,
         className: "bg-primary text-primary-foreground",
-        onAction: () =>
-          void dispatch(
-            archiveRecordingThunk({
-              sessionId,
-              recordingSegmentId: recording.id,
-              archived: false,
-            }),
-          ),
+        onAction: () => doArchive(false),
       },
-      deleteAction,
     ];
+    trailingActions = [moreAction, deleteAction];
+    sheetItems.push({
+      key: "unarchive",
+      label: "Restore to session",
+      icon: <ArchiveRestore className="h-4 w-4" />,
+      onSelect: () => doArchive(false),
+    });
   } else {
     // unsorted
-    trailingActions = [
+    leadingActions = [
       {
         key: "restore",
         label: "Restore",
         icon: <RotateCcw className="h-5 w-5" />,
         className: "bg-primary text-primary-foreground",
-        onAction: () =>
-          void dispatch(restoreRecordingThunk({ recordingSegmentId: recording.id })),
+        onAction: doRestore,
       },
-      deleteAction,
     ];
+    trailingActions = [moreAction, deleteAction];
+    sheetItems.push({
+      key: "restore",
+      label: "Restore to session",
+      icon: <RotateCcw className="h-4 w-4" />,
+      onSelect: doRestore,
+    });
   }
+
+  sheetItems.push({
+    key: "delete",
+    label: "Delete",
+    description: "Permanently remove audio and transcript",
+    icon: <Trash2 className="h-4 w-4" />,
+    destructive: true,
+    onSelect: doDelete,
+  });
 
   return (
     <SwipeableRow
@@ -305,6 +351,13 @@ export function RecordingCard({
           />
         )}
       </div>
+
+      <ActionSheet
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        title={`Recording ${index + 1}`}
+        items={sheetItems}
+      />
     </SwipeableRow>
   );
 }

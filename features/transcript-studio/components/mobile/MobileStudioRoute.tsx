@@ -12,7 +12,7 @@
  * (?session=<id>) opens that session directly, otherwise we land on the list.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFetchStatus } from "../../redux/selectors";
 import { fetchSessionsThunk } from "../../redux/thunks";
@@ -42,23 +42,32 @@ export function MobileStudioRoute({ initialSessionId }: MobileStudioRouteProps) 
     if (fetchStatus === "idle") void dispatch(fetchSessionsThunk());
   }, [fetchStatus, dispatch]);
 
+  let view_: ReactNode;
   if (view.kind === "session") {
-    return (
+    view_ = (
       <MobileStudioScreen
         sessionId={view.sessionId}
         onBack={() => setView({ kind: "list" })}
       />
     );
+  } else if (view.kind === "unsorted") {
+    view_ = <MobileUnsortedScreen onBack={() => setView({ kind: "list" })} />;
+  } else {
+    view_ = (
+      <MobileSessionsList
+        onOpenSession={(sessionId) => setView({ kind: "session", sessionId })}
+        onOpenUnsorted={() => setView({ kind: "unsorted" })}
+      />
+    );
   }
 
-  if (view.kind === "unsorted") {
-    return <MobileUnsortedScreen onBack={() => setView({ kind: "list" })} />;
-  }
-
+  // Phone-width column, centered on desktop so swipe distances and tap targets
+  // stay sensible on large screens (the whole surface is touch + mouse capable).
   return (
-    <MobileSessionsList
-      onOpenSession={(sessionId) => setView({ kind: "session", sessionId })}
-      onOpenUnsorted={() => setView({ kind: "unsorted" })}
-    />
+    <div className="flex h-dvh w-full justify-center bg-muted/20">
+      <div className="h-dvh w-full max-w-2xl overflow-hidden md:border-x md:border-border">
+        {view_}
+      </div>
+    </div>
   );
 }
