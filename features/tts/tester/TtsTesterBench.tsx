@@ -46,6 +46,7 @@ const baseConfig: TtsTestConfig = {
   speed: "normal",
   playbackBufferSec: 1.0,
   maxBufferDelayMs: 0,
+  emotions: [],
 };
 
 export function TtsTesterBench() {
