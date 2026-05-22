@@ -460,27 +460,43 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
   {
     sessionId: string;
     recordingSegmentId: string;
+    /** Full assembled recording captured at completion (preferred source). */
+    audioBlob?: Blob | null;
+    /** Fallback: reassemble from the crash-safe IndexedDB entry. */
     safetyId: string | null;
     tEnd: number;
   }
 >(
   "transcriptStudio/finalizeRecordingSegment",
   async (
-    { sessionId, recordingSegmentId, safetyId, tEnd },
+    { sessionId, recordingSegmentId, audioBlob, safetyId, tEnd },
     { dispatch, rejectWithValue },
   ) => {
+    // Step 1 — upload the audio (best-effort). A failure here must NOT prevent
+    // finalizing the row: the transcript is already saved, and we still want
+    // the card to leave its "processing" state. Prefer the in-memory blob;
+    // fall back to the IndexedDB copy.
+    let audioPath: string | null = null;
     try {
-      let audioPath: string | null = null;
-      if (safetyId) {
-        const blob = await audioSafetyStore.getAudioBlob(safetyId);
-        if (blob && blob.size > 0) {
-          const userId = getUserId();
-          if (userId) {
-            const upload = await saveAudioToStorage(blob, userId, undefined, 5);
-            audioPath = upload.fileId;
-          }
+      let blob: Blob | null = audioBlob ?? null;
+      if ((!blob || blob.size === 0) && safetyId) {
+        blob = await audioSafetyStore.getAudioBlob(safetyId);
+      }
+      if (blob && blob.size > 0) {
+        const userId = getUserId();
+        if (userId) {
+          const upload = await saveAudioToStorage(blob, userId, undefined, 5);
+          audioPath = upload.fileId;
         }
       }
+    } catch (err) {
+      // Audio is still safe in IndexedDB; surface quietly and continue.
+      // eslint-disable-next-line no-console
+      console.error("[studio] recording audio upload failed:", err);
+    }
+
+    // Step 2 — always finalize the row (tEnd/endedAt), with audioPath when ready.
+    try {
       const segment = await updateRecordingSegment(recordingSegmentId, {
         tEnd,
         endedAt: new Date().toISOString(),
@@ -493,8 +509,6 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
         err instanceof Error
           ? err.message
           : "Failed to finalize recording segment";
-      // Non-fatal: the transcript is already saved and the audio is still in
-      // IndexedDB for the orphan reconcile to retry.
       toast.error(message);
       return rejectWithValue(message);
     }

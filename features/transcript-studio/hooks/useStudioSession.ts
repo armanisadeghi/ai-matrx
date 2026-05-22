@@ -122,13 +122,14 @@ export function useStudioSession({
           }),
         );
       },
-      onComplete: () => {
+      onComplete: (_result, audioBlob) => {
         const recordingSegmentId = recordingSegmentIdRef.current;
         if (recordingSegmentId) {
           void dispatch(
             finalizeRecordingSegmentThunk({
               sessionId,
               recordingSegmentId,
+              audioBlob: audioBlob ?? null,
               safetyId: safetyIdRef.current,
               tEnd: lastTEndRef.current,
             }),

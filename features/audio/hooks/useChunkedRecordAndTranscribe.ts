@@ -53,7 +53,16 @@ export interface ChunkCompleteInfo {
 }
 
 export interface UseChunkedRecordAndTranscribeProps {
-  onTranscriptionComplete?: (result: TranscriptionResult) => void;
+  /**
+   * Fires once when the recording stops and the final transcript is ready.
+   * `audioBlob` is the full assembled recording (all chunks) captured in
+   * memory at completion — deterministic, no IndexedDB round-trip — so
+   * subscribers can upload/persist it directly. Null when no audio was captured.
+   */
+  onTranscriptionComplete?: (
+    result: TranscriptionResult,
+    audioBlob?: Blob | null,
+  ) => void;
   onChunkTranscribed?: (chunkText: string, accumulatedText: string) => void;
   onChunkComplete?: (info: ChunkCompleteInfo) => void;
   onChunkError?: (chunkIndex: number, error: string) => void;
@@ -283,7 +292,18 @@ export function useChunkedRecordAndTranscribe({
       } catch {}
     }
 
-    onTranscriptionCompleteRef.current?.({ success: true, text: finalText });
+    // Assemble the full recording from the in-memory chunk blobs and hand it
+    // to the subscriber directly — deterministic, avoids any IndexedDB read
+    // race in consumers that need to upload the per-recording audio.
+    const finalAudioBlob =
+      allChunkBlobsRef.current.length > 0
+        ? new Blob(allChunkBlobsRef.current, { type: mimeTypeRef.current })
+        : null;
+
+    onTranscriptionCompleteRef.current?.(
+      { success: true, text: finalText },
+      finalAudioBlob,
+    );
 
     // Auto-persist into transcripts system silently (skip on page unload).
     if (finalText && !isPageHidingRef.current) {

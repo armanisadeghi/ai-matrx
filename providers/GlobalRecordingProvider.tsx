@@ -58,7 +58,7 @@ export interface StartRecordingArgs {
   /** Per-chunk timing + text. Fires for every successful chunk transcription. */
   onChunkComplete?: (info: ChunkCompleteInfo) => void;
   /** Final accumulated text + status when the recording stops. */
-  onComplete?: (result: TranscriptionResult) => void;
+  onComplete?: (result: TranscriptionResult, audioBlob?: Blob | null) => void;
   /** Failed chunk index + error message (transcription failures, not capture failures). */
   onChunkError?: (chunkIndex: number, error: string) => void;
   /** Capture-level errors — e.g. permission denied. */
@@ -97,12 +97,12 @@ export function GlobalRecordingProvider({
     onChunkComplete: (info) => {
       chunkSubRef.current?.(info);
     },
-    onTranscriptionComplete: (result) => {
+    onTranscriptionComplete: (result, audioBlob) => {
       // Final state lands AFTER recordingStopped. Mirror final transcript,
       // then clear the slice context so a follow-up recording starts clean.
       dispatch(transcribingChanged(false));
       if (result.text) dispatch(liveTranscriptUpdated(result.text));
-      completeSubRef.current?.(result);
+      completeSubRef.current?.(result, audioBlob);
       dispatch(recordingFinalized());
       contextRef.current = null;
       chunkSubRef.current = undefined;

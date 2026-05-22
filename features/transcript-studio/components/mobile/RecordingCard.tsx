@@ -90,7 +90,11 @@ export function RecordingCard({
     }
   };
 
-  const audioPending = !recording.audioPath;
+  // "finalizing" is transient — finalize always stamps endedAt (even when the
+  // audio upload fails), so this resolves to a terminal play/disabled state
+  // rather than spinning forever.
+  const finalizing = !recording.endedAt;
+  const canPlay = Boolean(audioSrc);
 
   return (
     <div
@@ -149,16 +153,24 @@ export function RecordingCard({
       <button
         type="button"
         onClick={togglePlay}
-        disabled={audioPending || !audioSrc}
-        aria-label={isPlaying ? "Pause audio" : "Play audio"}
+        disabled={!canPlay}
+        aria-label={
+          finalizing
+            ? "Processing audio"
+            : canPlay
+              ? isPlaying
+                ? "Pause audio"
+                : "Play audio"
+              : "Audio unavailable"
+        }
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-          audioPending || !audioSrc
-            ? "bg-muted text-muted-foreground"
-            : "bg-accent text-accent-foreground active:bg-accent/70",
+          canPlay
+            ? "bg-accent text-accent-foreground active:bg-accent/70"
+            : "bg-muted text-muted-foreground",
         )}
       >
-        {audioPending ? (
+        {finalizing ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : isPlaying ? (
           <Pause className="h-5 w-5" />
