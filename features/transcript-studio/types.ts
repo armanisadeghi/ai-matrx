@@ -65,6 +65,12 @@ export interface RecordingSegment {
   audioPath: string | null;
   startedAt: string;
   endedAt: string | null;
+  /** Set when archived (hidden from the session list, recoverable in-place). */
+  archivedAt: string | null;
+  /** Set when detached from the session (lives in the global Unsorted pool). */
+  detachedAt: string | null;
+  /** Denormalized owner (from the parent session) for the cross-session Unsorted query. */
+  userId: string | null;
 }
 
 export interface RawSegment {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mic, Sparkles } from "lucide-react";
+import { ChevronLeft, Mic, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectSessionById } from "../../redux/selectors";
@@ -20,9 +20,13 @@ type Screen = "capture" | "assistant";
 
 interface MobileStudioScreenProps {
   sessionId: string;
+  onBack?: () => void;
 }
 
-export function MobileStudioScreen({ sessionId }: MobileStudioScreenProps) {
+export function MobileStudioScreen({
+  sessionId,
+  onBack,
+}: MobileStudioScreenProps) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
   const [screen, setScreen] = useState<Screen>("capture");
@@ -43,6 +47,16 @@ export function MobileStudioScreen({ sessionId }: MobileStudioScreenProps) {
       {/* Header (shell chrome is hidden on this route — see shell.css) */}
       <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="flex h-12 w-full items-center gap-2">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to sessions"
+              className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground active:bg-accent"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
           <div className="min-w-0 flex-1">
             {session ? (
               <EditableSessionTitle

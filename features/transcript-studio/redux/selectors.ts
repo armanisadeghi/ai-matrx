@@ -145,6 +145,11 @@ const recordingSegmentsCache = new WeakMap<
   { byId: Record<string, RecordingSegment>; result: RecordingSegment[] }
 >();
 
+/**
+ * Active recordings for a session — the main card list. Excludes archived and
+ * detached ("unsorted") recordings so the list, the assistant context, and the
+ * cleaned passes all see only what's actually in the session.
+ */
 export function selectRecordingSegments(sessionId: string | null) {
   return (state: RootState): RecordingSegment[] => {
     if (!sessionId) return EMPTY_RECORDING;
@@ -156,20 +161,68 @@ export function selectRecordingSegments(sessionId: string | null) {
     const result: RecordingSegment[] = [];
     for (const id of ids) {
       const seg = byId[id];
-      if (seg) result.push(seg);
+      if (seg && !seg.archivedAt && !seg.detachedAt) result.push(seg);
     }
     recordingSegmentsCache.set(ids, { byId, result });
     return result;
   };
 }
 
-export const selectRecordingSegmentCount = (sessionId: string | null) =>
-  (state: RootState): number => {
-    if (!sessionId) return 0;
-    return (
-      state.transcriptStudio.recordingSegmentIdsBySession[sessionId]?.length ?? 0
-    );
+const archivedRecordingsCache = new WeakMap<
+  ReadonlyArray<string>,
+  { byId: Record<string, RecordingSegment>; result: RecordingSegment[] }
+>();
+
+/** Archived (in-place) recordings for a session — the session's Archived view. */
+export function selectArchivedRecordingSegments(sessionId: string | null) {
+  return (state: RootState): RecordingSegment[] => {
+    if (!sessionId) return EMPTY_RECORDING;
+    const ids = state.transcriptStudio.recordingSegmentIdsBySession[sessionId];
+    const byId = state.transcriptStudio.recordingSegmentsById[sessionId];
+    if (!ids || !byId) return EMPTY_RECORDING;
+    const cached = archivedRecordingsCache.get(ids);
+    if (cached && cached.byId === byId) return cached.result;
+    const result: RecordingSegment[] = [];
+    for (const id of ids) {
+      const seg = byId[id];
+      if (seg && seg.archivedAt && !seg.detachedAt) result.push(seg);
+    }
+    archivedRecordingsCache.set(ids, { byId, result });
+    return result;
   };
+}
+
+export const selectRecordingSegmentCount = (sessionId: string | null) =>
+  (state: RootState): number =>
+    selectRecordingSegments(sessionId)(state).length;
+
+export const selectArchivedRecordingCount = (sessionId: string | null) =>
+  (state: RootState): number =>
+    selectArchivedRecordingSegments(sessionId)(state).length;
+
+const unsortedCache = new WeakMap<
+  ReadonlyArray<string>,
+  { byId: Record<string, RecordingSegment>; result: RecordingSegment[] }
+>();
+
+/** Global Unsorted pool (detached recordings across all the user's sessions). */
+export function selectUnsortedRecordings(state: RootState): RecordingSegment[] {
+  const ids = state.transcriptStudio.unsortedIds;
+  const byId = state.transcriptStudio.unsortedById;
+  if (ids.length === 0) return EMPTY_RECORDING;
+  const cached = unsortedCache.get(ids);
+  if (cached && cached.byId === byId) return cached.result;
+  const result: RecordingSegment[] = [];
+  for (const id of ids) {
+    const seg = byId[id];
+    if (seg) result.push(seg);
+  }
+  unsortedCache.set(ids, { byId, result });
+  return result;
+}
+
+export const selectUnsortedCount = (state: RootState): number =>
+  state.transcriptStudio.unsortedIds.length;
 
 /** Raw chunks belonging to one recording cycle, ordered by tStart. */
 export function selectRawSegmentsForRecording(

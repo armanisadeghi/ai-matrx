@@ -32,6 +32,11 @@ interface AgentMicrophoneButtonProps {
   size?: "xs" | "sm" | "md" | "lg";
   variant?: MicVariant;
   className?: string;
+  /**
+   * Fires after the final transcript is appended to the input, with the full
+   * resulting text. Lets an audio-first surface auto-send on speech end.
+   */
+  onTranscribed?: (fullText: string) => void;
 }
 
 export function AgentMicrophoneButton({
@@ -39,6 +44,7 @@ export function AgentMicrophoneButton({
   size = "sm",
   variant = "icon-only",
   className,
+  onTranscribed,
 }: AgentMicrophoneButtonProps) {
   const dispatch = useAppDispatch();
 
@@ -58,8 +64,9 @@ export function AgentMicrophoneButton({
           userValues: currentUserValues,
         }),
       );
+      onTranscribed?.(next);
     },
-    [inputText, currentUserValues, conversationId, dispatch],
+    [inputText, currentUserValues, conversationId, dispatch, onTranscribed],
   );
 
   return (

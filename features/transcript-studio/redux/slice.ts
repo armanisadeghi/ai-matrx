@@ -99,6 +99,12 @@ export interface TranscriptStudioState {
   recordingSegmentsById: Record<string, Record<string, RecordingSegment>>;
   recordingSegmentIdsBySession: Record<string, string[]>;
   /**
+   * Global "Unsorted" pool — detached recordings across ALL the user's
+   * sessions, loaded on demand for the Unsorted view (not per-session).
+   */
+  unsortedById: Record<string, RecordingSegment>;
+  unsortedIds: string[];
+  /**
    * Working-document registry per session (studio_documents). The assistant
    * edits these server-side via ctx_patch; updates arrive through realtime.
    */
@@ -138,6 +144,8 @@ const initialState: TranscriptStudioState = {
   settingsBySession: {},
   recordingSegmentsById: {},
   recordingSegmentIdsBySession: {},
+  unsortedById: {},
+  unsortedIds: [],
   documentsById: {},
   documentIdsBySession: {},
   assistantConversationIdBySession: {},
@@ -554,6 +562,21 @@ const slice = createSlice({
         const idx = ids.indexOf(segmentId);
         if (idx >= 0) ids.splice(idx, 1);
       }
+      delete state.unsortedById[segmentId];
+      const uidx = state.unsortedIds.indexOf(segmentId);
+      if (uidx >= 0) state.unsortedIds.splice(uidx, 1);
+    },
+    unsortedRecordingsLoaded(
+      state,
+      action: PayloadAction<{ segments: RecordingSegment[] }>,
+    ) {
+      state.unsortedById = {};
+      const ids: string[] = [];
+      for (const seg of action.payload.segments) {
+        state.unsortedById[seg.id] = seg;
+        ids.push(seg.id);
+      }
+      state.unsortedIds = ids;
     },
     studioDocumentsLoaded(
       state,
@@ -632,6 +655,7 @@ export const {
   recordingSegmentsLoaded,
   recordingSegmentUpserted,
   recordingSegmentRemoved,
+  unsortedRecordingsLoaded,
   studioDocumentsLoaded,
   studioDocumentUpserted,
   assistantConversationIdSet,

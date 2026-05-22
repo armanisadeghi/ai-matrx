@@ -26,6 +26,8 @@ import {
   listRecordingSegments,
   listSessions,
   listStudioDocuments,
+  listUnsortedRecordingSegments,
+  setRecordingSegmentState,
   softDeleteSession,
   updateCleanedSegmentText,
   updateConceptItem,
@@ -71,6 +73,7 @@ import {
   recordingSegmentRemoved,
   recordingSegmentUpserted,
   recordingSegmentsLoaded,
+  unsortedRecordingsLoaded,
   sessionRemoved,
   sessionSettingsLoaded,
   sessionsListFailed,
@@ -550,6 +553,97 @@ export const deleteRecordingSegmentThunk = createAsyncThunk<
           ? err.message
           : "Failed to delete recording";
       toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+// ── Archive (in-place) / Unsort (detach to global pool) ──────────────
+
+export const archiveRecordingThunk = createAsyncThunk<
+  void,
+  { sessionId: string; recordingSegmentId: string; archived: boolean }
+>(
+  "transcriptStudio/archiveRecording",
+  async (
+    { sessionId, recordingSegmentId, archived },
+    { dispatch, rejectWithValue },
+  ) => {
+    try {
+      const segment = await setRecordingSegmentState(recordingSegmentId, {
+        archivedAt: archived ? new Date().toISOString() : null,
+      });
+      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to archive recording";
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+/** Detach a recording from its session into the global Unsorted pool. */
+export const detachRecordingThunk = createAsyncThunk<
+  void,
+  { sessionId: string; recordingSegmentId: string }
+>(
+  "transcriptStudio/detachRecording",
+  async ({ sessionId, recordingSegmentId }, { dispatch, rejectWithValue }) => {
+    try {
+      const segment = await setRecordingSegmentState(recordingSegmentId, {
+        detachedAt: new Date().toISOString(),
+      });
+      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to remove recording";
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+/** Restore an Unsorted recording back to its original session. */
+export const restoreRecordingThunk = createAsyncThunk<
+  void,
+  { recordingSegmentId: string }
+>(
+  "transcriptStudio/restoreRecording",
+  async ({ recordingSegmentId }, { dispatch, rejectWithValue }) => {
+    try {
+      const segment = await setRecordingSegmentState(recordingSegmentId, {
+        detachedAt: null,
+      });
+      dispatch(
+        recordingSegmentUpserted({ sessionId: segment.sessionId, segment }),
+      );
+      // Refresh the Unsorted pool so the restored row drops out of it.
+      await dispatch(fetchUnsortedRecordingsThunk());
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to restore recording";
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
+export const fetchUnsortedRecordingsThunk = createAsyncThunk<
+  RecordingSegment[],
+  void
+>(
+  "transcriptStudio/fetchUnsortedRecordings",
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      const userId = getUserId();
+      if (!userId) return [];
+      const segments = await listUnsortedRecordingSegments(userId);
+      dispatch(unsortedRecordingsLoaded({ segments }));
+      return segments;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load Unsorted";
       return rejectWithValue(message);
     }
   },

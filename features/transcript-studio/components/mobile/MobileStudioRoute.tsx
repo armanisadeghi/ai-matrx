@@ -3,23 +3,27 @@
 /**
  * MobileStudioRoute
  *
- * Client entry for /transcription/mobile. Resolves an active session (creating
- * one on first visit) and mounts the MobileStudioScreen. Sessions are seeded
- * server-side via StudioHydrator; this only fills the gap when none exist yet.
+ * Client entry for /transcription/mobile. Drives the three mobile views:
+ *   - "list"     → MobileSessionsList (the grouping layer; sessions + Unsorted)
+ *   - session    → MobileStudioScreen (capture + assistant for one session)
+ *   - "unsorted" → MobileUnsortedScreen (the global detached pool)
+ *
+ * Sessions are seeded server-side via StudioHydrator; a deep link
+ * (?session=<id>) opens that session directly, otherwise we land on the list.
  */
 
-import { useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import {
-  selectActiveSessionId,
-  selectAllSessions,
-  selectFetchStatus,
-} from "../../redux/selectors";
-import { activeSessionIdSet } from "../../redux/slice";
-import { createSessionThunk, fetchSessionsThunk } from "../../redux/thunks";
+import { selectFetchStatus } from "../../redux/selectors";
+import { fetchSessionsThunk } from "../../redux/thunks";
+import { MobileSessionsList } from "./MobileSessionsList";
 import { MobileStudioScreen } from "./MobileStudioScreen";
+import { MobileUnsortedScreen } from "./MobileUnsortedScreen";
+
+type View =
+  | { kind: "list" }
+  | { kind: "session"; sessionId: string }
+  | { kind: "unsorted" };
 
 interface MobileStudioRouteProps {
   initialSessionId?: string | null;
@@ -27,51 +31,34 @@ interface MobileStudioRouteProps {
 
 export function MobileStudioRoute({ initialSessionId }: MobileStudioRouteProps) {
   const dispatch = useAppDispatch();
-  const userId = useAppSelector(selectUserId);
-  const sessions = useAppSelector(selectAllSessions);
-  const activeSessionId = useAppSelector(selectActiveSessionId);
   const fetchStatus = useAppSelector(selectFetchStatus);
-  const creatingRef = useRef(false);
+  const [view, setView] = useState<View>(
+    initialSessionId
+      ? { kind: "session", sessionId: initialSessionId }
+      : { kind: "list" },
+  );
 
-  // Client-side fetch if SSR didn't seed.
   useEffect(() => {
     if (fetchStatus === "idle") void dispatch(fetchSessionsThunk());
   }, [fetchStatus, dispatch]);
 
-  // Resolve the active session: prefer the URL-provided id, then the most
-  // recent session, otherwise create a fresh one.
-  useEffect(() => {
-    if (activeSessionId) return;
-    if (fetchStatus === "loading" || fetchStatus === "idle") return;
-    if (initialSessionId && sessions.some((s) => s.id === initialSessionId)) {
-      dispatch(activeSessionIdSet(initialSessionId));
-      return;
-    }
-    if (sessions.length > 0) {
-      dispatch(activeSessionIdSet(sessions[0]!.id));
-      return;
-    }
-    if (!userId || creatingRef.current) return;
-    creatingRef.current = true;
-    void dispatch(createSessionThunk({ userId, activate: true })).finally(() => {
-      creatingRef.current = false;
-    });
-  }, [
-    activeSessionId,
-    fetchStatus,
-    initialSessionId,
-    sessions,
-    userId,
-    dispatch,
-  ]);
-
-  if (!activeSessionId) {
+  if (view.kind === "session") {
     return (
-      <div className="flex h-dvh items-center justify-center bg-textured">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <MobileStudioScreen
+        sessionId={view.sessionId}
+        onBack={() => setView({ kind: "list" })}
+      />
     );
   }
 
-  return <MobileStudioScreen sessionId={activeSessionId} />;
+  if (view.kind === "unsorted") {
+    return <MobileUnsortedScreen onBack={() => setView({ kind: "list" })} />;
+  }
+
+  return (
+    <MobileSessionsList
+      onOpenSession={(sessionId) => setView({ kind: "session", sessionId })}
+      onOpenUnsorted={() => setView({ kind: "unsorted" })}
+    />
+  );
 }

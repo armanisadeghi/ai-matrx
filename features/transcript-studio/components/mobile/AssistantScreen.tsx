@@ -42,6 +42,18 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
     }
   };
 
+  // Audio-first: speaking auto-sends on speech end (no extra tap).
+  const handleSpoken = (text: string) => {
+    if (!conversationId || !text.trim() || sending) return;
+    setSending(true);
+    void assistant
+      .send(text)
+      .finally(() => {
+        dispatch(setUserInputText({ conversationId, text: "" }));
+        setSending(false);
+      });
+  };
+
   const handleReadAloud = async () => {
     if (!docContent.trim()) return;
     if (reading) {
@@ -115,13 +127,14 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
         />
       </div>
 
-      {/* Audio-first input */}
+      {/* Audio-first input — mic, field, and send share one container */}
       <div className="shrink-0 border-t border-border bg-card/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-1.5 rounded-3xl border border-border bg-background py-1.5 pl-1.5 pr-1.5 focus-within:border-primary">
           <AgentMicrophoneButton
             conversationId={conversationId}
-            size="lg"
-            variant="modal-controls"
+            size="md"
+            variant="icon-only"
+            onTranscribed={handleSpoken}
           />
           <textarea
             value={inputText}
@@ -130,9 +143,9 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
                 setUserInputText({ conversationId, text: e.target.value }),
               )
             }
-            placeholder="Speak or type — tell the assistant what to do…"
+            placeholder="Speak or type…"
             rows={1}
-            className="max-h-32 min-h-[44px] flex-1 resize-none rounded-2xl border border-border bg-background px-3 py-2.5 text-base text-foreground outline-none focus:border-primary"
+            className="max-h-32 min-h-[36px] flex-1 resize-none border-0 bg-transparent px-1 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground"
           />
           <button
             type="button"
@@ -140,19 +153,22 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
             disabled={!inputText.trim() || sending}
             aria-label="Send"
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
               inputText.trim() && !sending
                 ? "bg-primary text-primary-foreground active:bg-primary/90"
                 : "bg-muted text-muted-foreground",
             )}
           >
             {sending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
             )}
           </button>
         </div>
+        <p className="mt-1 px-2 text-center text-[11px] text-muted-foreground">
+          Tap the mic and speak — it sends automatically.
+        </p>
       </div>
     </div>
   );

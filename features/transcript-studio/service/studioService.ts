@@ -330,6 +330,9 @@ export interface RecordingSegmentRow {
   audio_path: string | null;
   started_at: string;
   ended_at: string | null;
+  archived_at: string | null;
+  detached_at: string | null;
+  user_id: string | null;
 }
 
 export function rowToRecordingSegment(
@@ -349,7 +352,53 @@ export function rowToRecordingSegment(
     audioPath: row.audio_path,
     startedAt: row.started_at,
     endedAt: row.ended_at,
+    archivedAt: row.archived_at ?? null,
+    detachedAt: row.detached_at ?? null,
+    userId: row.user_id ?? null,
   };
+}
+
+/**
+ * Set the soft-remove state of a recording: archive / unarchive (in-place) or
+ * detach / restore (global Unsorted pool). All four are simple timestamp flips.
+ */
+export async function setRecordingSegmentState(
+  id: string,
+  patch: { archivedAt?: string | null; detachedAt?: string | null },
+): Promise<import("../types").RecordingSegment> {
+  const update: Record<string, unknown> = {};
+  if (patch.archivedAt !== undefined) update.archived_at = patch.archivedAt;
+  if (patch.detachedAt !== undefined) update.detached_at = patch.detachedAt;
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .update(update)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(
+      `[studio] setRecordingSegmentState failed: ${error?.message ?? "no row"}`,
+    );
+  }
+  return rowToRecordingSegment(data as RecordingSegmentRow);
+}
+
+/** All of a user's detached ("Unsorted") recordings, newest first. */
+export async function listUnsortedRecordingSegments(
+  userId: string,
+): Promise<import("../types").RecordingSegment[]> {
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .select("*")
+    .eq("user_id", userId)
+    .not("detached_at", "is", null)
+    .order("detached_at", { ascending: false });
+  if (error) {
+    throw new Error(
+      `[studio] listUnsortedRecordingSegments failed: ${error.message}`,
+    );
+  }
+  return ((data ?? []) as RecordingSegmentRow[]).map(rowToRecordingSegment);
 }
 
 export async function insertRecordingSegment(
