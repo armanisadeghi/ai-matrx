@@ -316,6 +316,10 @@ export interface AskUserResponse {
   confirmed: boolean | null;
   action: string | null;
   freeform: string | null;
+  /** Optional freeform note the user attached ALONGSIDE their structured answer. */
+  additional_instructions: string | null;
+  /** True when the user declined the structured question(s) and typed a freeform reply (in `freeform`). */
+  wrote_instead: boolean;
   cancelled: boolean;
   timed_out: boolean;
 }
@@ -326,6 +330,8 @@ export const EMPTY_ASK_RESPONSE: AskUserResponse = {
   confirmed: null,
   action: null,
   freeform: null,
+  additional_instructions: null,
+  wrote_instead: false,
   cancelled: false,
   timed_out: false,
 };
@@ -341,4 +347,8 @@ export interface BatchedAskUserResponse {
   answers: AskUserResponse[];
   cancelled: boolean;
   timed_out: boolean;
+  /** Note the user attached on the final card (bubbled up from the last answered question). */
+  additional_instructions: string | null;
+  /** True when the user took the write-instead escape on any question (short-circuits the batch). */
+  wrote_instead: boolean;
 }
