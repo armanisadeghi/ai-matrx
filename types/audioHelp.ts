@@ -10,11 +10,6 @@ export interface AudioHelpMessage {
     description?: string;
 }
 
-export interface QuickAudioHelpProps {
-    messageId: string;
-    className?: string;
-}
-
 export interface AIHelpResponse {
     text: string;
     title: string;

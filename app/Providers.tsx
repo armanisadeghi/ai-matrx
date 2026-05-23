@@ -70,6 +70,7 @@ import {
   UploadGuardHost,
 } from "@/features/files";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { AudioModalHost } from "@/providers/AudioModalHost";
 
 // Side-effect import: registers every client-capability provider with the
 // tool-injection registry so `buildToolInjection` can walk them on every turn.
@@ -150,6 +151,11 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
                               <ConfirmDialogHost />
+                              {/* Imperative audio modal host. Exposes the global
+                                  `showAudioModal({ text, title, ... })` helper
+                                  (see utils/audio/audioModal.ts). The modal is
+                                  next/dynamic — no TTS code loads until first use. */}
+                              <AudioModalHost />
                               {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed
