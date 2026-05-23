@@ -14,5 +14,6 @@ import { registerClientCapability } from "./registry";
 
 registerClientCapability({
   name: "sandbox-fs",
-  selectPayload: (state) => getActiveSandboxBinding(state),
+  selectPayload: (state, conversationId) =>
+    getActiveSandboxBinding(state, conversationId),
 });

@@ -103,6 +103,7 @@ export const defaultUserPreferences: UserPreferences = {
     lastSandboxTier: "ec2",
     lastSandboxTemplate: "bare",
     monacoEnvironmentsEnabled: true,
+    activeAgentSandbox: null,
   },
   flashcard: {
     fontSize: 16,

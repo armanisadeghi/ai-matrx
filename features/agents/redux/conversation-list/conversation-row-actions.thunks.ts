@@ -30,7 +30,11 @@ import {
 } from "./conversation-list.slice";
 import { patchConversationInScopes } from "../conversation-history/slice";
 import { setConversationLabel as setMessagesConversationLabel } from "../execution-system/messages/messages.slice";
-import { setConversationLabel as setInstancesConversationLabel } from "../execution-system/conversations/conversations.slice";
+import {
+  setConversationLabel as setInstancesConversationLabel,
+  patchConversation as patchInstanceConversation,
+} from "../execution-system/conversations/conversations.slice";
+import { selectConversationIsEphemeral } from "../execution-system/conversations/conversations.selectors";
 import { forkConversationServer } from "../execution-system/message-crud/server/fork-conversation-server.thunk";
 
 interface ThunkApi {
@@ -306,5 +310,94 @@ export const duplicateConversation = createAsyncThunk<
       conversationId,
       newConversationId: result.payload.conversationId,
     };
+  },
+);
+
+// ── sandbox override (power-user "use a different box just here") ──────────────
+
+interface SetConversationSandboxOverrideArgs {
+  conversationId: string;
+  /** The box to pin to this conversation, or `null` to clear the override. */
+  ref: { rowId: string; proxyUrl: string } | null;
+}
+
+/**
+ * Pin (or clear) a per-conversation sandbox override. The rowId persists on
+ * `cx_conversation.sandbox_instance_id`; the proxyUrl mirrors into
+ * `cx_conversation.metadata.sandbox_override_proxy_url` so the binding
+ * resolves on reload with no extra fetch. Ephemeral conversations (no cx_*
+ * row) keep the override in-memory only — lost on reload, by design.
+ *
+ * The shared user-active sandbox is unaffected; this only changes which box
+ * THIS conversation routes its agent's fs/shell/git tools into.
+ */
+export const setConversationSandboxOverride = createAsyncThunk<
+  { conversationId: string },
+  SetConversationSandboxOverrideArgs,
+  ThunkApi
+>(
+  "conversationRow/setSandboxOverride",
+  async ({ conversationId, ref }, { dispatch, getState, rejectWithValue }) => {
+    const state = getState();
+    const previous =
+      state.conversations.byConversationId[conversationId]?.sandboxOverride ??
+      null;
+
+    // Optimistic — the resolver reads this off the conversation record.
+    dispatch(patchInstanceConversation({ conversationId, sandboxOverride: ref }));
+
+    // Ephemeral conversations have no DB row; in-memory only.
+    if (selectConversationIsEphemeral(conversationId)(state)) {
+      return { conversationId };
+    }
+
+    // Read-modify-write metadata so we never clobber the server-managed
+    // observational_memory block that also lives on cx_conversation.metadata.
+    const { data: row, error: readError } = await supabase
+      .from("cx_conversation")
+      .select("metadata")
+      .eq("id", conversationId)
+      .single();
+
+    if (readError) {
+      dispatch(
+        patchInstanceConversation({
+          conversationId,
+          sandboxOverride: previous,
+        }),
+      );
+      return rejectWithValue({ message: readError.message });
+    }
+
+    const metadata: Record<string, unknown> =
+      typeof row?.metadata === "object" && row.metadata !== null
+        ? { ...(row.metadata as Record<string, unknown>) }
+        : {};
+    if (ref) {
+      metadata["sandbox_override_proxy_url"] = ref.proxyUrl;
+    } else {
+      delete metadata["sandbox_override_proxy_url"];
+    }
+
+    const { error } = await supabase
+      .from("cx_conversation")
+      .update({
+        sandbox_instance_id: ref?.rowId ?? null,
+        metadata,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", conversationId);
+
+    if (error) {
+      dispatch(
+        patchInstanceConversation({
+          conversationId,
+          sandboxOverride: previous,
+        }),
+      );
+      return rejectWithValue({ message: error.message });
+    }
+
+    return { conversationId };
   },
 );

@@ -1,33 +1,59 @@
 /**
  * Resolve the active sandbox binding for outbound chat / agent requests.
  *
- * When the user has a sandbox active in the editor, the matrx-ai tools
- * running inside aidream need three things to route fs/shell calls into
- * the container instead of aidream's host:
+ * When a conversation is bound to a sandbox, the matrx-ai tools running inside
+ * aidream need three things to route fs/shell/git calls into the container
+ * instead of aidream's host:
  *
  *   1. sandbox_id   — the orchestrator's sbx-XXX id
  *   2. base_url     — orchestrator URL up to /sandboxes/<id>
  *   3. access_token — short-lived, sandbox-scoped HMAC bearer
  *
- * The first two come from `codeWorkspaceSlice` (already in Redux at activate
- * time). The third is minted on demand via `POST /api/sandbox/[id]/access-tokens`
- * and cached in module scope until ~30s before expiry. This module is the
- * single place execute thunks call to attach the binding to a request.
+ * ── Which box is bound? (resolution order) ───────────────────────────────
+ * The product model is "one shared box per user, by default, across every
+ * conversation" — so 20 agents feel like one agent sharing the same files,
+ * working state, and memory — with a power-user escape hatch to pin a
+ * different box to a single conversation. We resolve, highest priority first:
  *
- * Returning `null` is the "no sandbox bound" signal — callers fall through
- * to multi-tenant aidream behavior.
+ *   1. Conversation override — `cx_conversation.sandbox_instance_id`, surfaced
+ *      on the conversation record as `sandboxOverride`. The power-user "use a
+ *      different box just here" path. `null` for almost everyone.
+ *   2. User-active sandbox   — `userPreferences.coding.activeAgentSandbox`, the
+ *      shared default that follows the user across reloads, tabs, and surfaces.
+ *   3. Editor-active sandbox — `codeWorkspaceSlice` (session-only). A sensible
+ *      default inside the /code editor's own chat, below any explicit choice.
+ *   4. None → returns `null` → the capability is omitted → multi-tenant aidream.
+ *
+ * Both the override and the user-active preference store `{ rowId, proxyUrl }`
+ * together, so the common path needs no extra fetch. The access token is
+ * minted on demand via `POST /api/sandbox/[id]/access-tokens` and cached in
+ * module scope until ~30s before expiry. The mint route only issues tokens for
+ * a running box, so a terminal (stopped/expired/failed) bound box naturally
+ * resolves to `null` here — the UI surfaces a re-attach hint separately.
+ *
+ * This module is the single place execute thunks (via the `sandbox-fs`
+ * capability provider) call to attach the binding to a request.
  */
 
+import type { RootState } from "@/lib/redux/store";
 import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
 } from "@/features/code/redux/codeWorkspaceSlice";
+import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 
 export interface SandboxBindingPayload {
   sandbox_id: string;
   base_url: string;
   access_token: string;
   root_path: string;
+}
+
+/** A resolved sandbox reference — enough to build a binding with no fetch. */
+export interface ResolvedSandboxRef {
+  rowId: string;
+  proxyUrl: string;
+  source: "conversation-override" | "user-active" | "editor-active";
 }
 
 interface CachedToken {
@@ -48,8 +74,48 @@ function isStillValid(cached: CachedToken | undefined): cached is CachedToken {
 }
 
 /**
+ * Resolve which sandbox a conversation is bound to, highest priority first.
+ * Returns `null` when no box is bound at any level. Pure + synchronous — safe
+ * to call on every turn; does no network I/O (token mint happens in
+ * `getActiveSandboxBinding`).
+ */
+export function resolveAgentSandboxRef(
+  state: RootState,
+  conversationId: string | null | undefined,
+): ResolvedSandboxRef | null {
+  // 1. Per-conversation override (power-user pin).
+  if (conversationId) {
+    const override = selectConversationSandboxOverride(conversationId)(state);
+    if (override?.rowId && override.proxyUrl) {
+      return { ...override, source: "conversation-override" };
+    }
+  }
+
+  // 2. User's shared active sandbox.
+  const userActive = state.userPreferences?.coding?.activeAgentSandbox ?? null;
+  if (userActive?.rowId && userActive.proxyUrl) {
+    return { ...userActive, source: "user-active" };
+  }
+
+  // 3. Editor-active sandbox (session-only, /code workspace).
+  const editorRowId = selectActiveSandboxId(state);
+  const editorProxyUrl = selectActiveSandboxProxyUrl(state);
+  if (editorRowId && editorProxyUrl) {
+    return {
+      rowId: editorRowId,
+      proxyUrl: editorProxyUrl,
+      source: "editor-active",
+    };
+  }
+
+  return null;
+}
+
+/**
  * Fetch (or reuse) a sandbox access token. Network call only on first use
  * or when the cached token is within `REFRESH_LEEWAY_SECONDS` of expiring.
+ * Returns `null` (and the binding is omitted) when the box isn't running —
+ * the mint route rejects non-running sandboxes.
  */
 async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | null> {
   const cached = TOKEN_CACHE.get(sandboxRowId);
@@ -79,28 +145,30 @@ async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | nul
 }
 
 /**
- * Build the request-body sandbox block for the active sandbox, or `null`
- * if no sandbox is bound / token mint fails. Safe to call on every turn.
+ * Build the request-body sandbox block for the conversation's bound sandbox,
+ * or `null` if no sandbox is bound / the box isn't running / token mint fails.
+ * Safe to call on every turn.
  *
- * Pass either a Redux `getState` function (typical from inside a thunk)
- * or the already-snapshotted state. Both signatures supported so callers
- * don't have to wrap.
+ * Pass a Redux `getState` function (typical from inside a thunk) or the
+ * already-snapshotted state, plus the conversationId so the per-conversation
+ * override can win over the user-active default.
  */
 export async function getActiveSandboxBinding(
-  stateOrGetState: unknown | (() => unknown),
+  stateOrGetState: RootState | (() => RootState),
+  conversationId?: string | null,
 ): Promise<SandboxBindingPayload | null> {
   const state =
     typeof stateOrGetState === "function"
-      ? (stateOrGetState as () => unknown)()
+      ? stateOrGetState()
       : stateOrGetState;
-  const sandboxRowId = selectActiveSandboxId(state as never);
-  const proxyUrl = selectActiveSandboxProxyUrl(state as never);
-  if (!sandboxRowId || !proxyUrl) return null;
+
+  const ref = resolveAgentSandboxRef(state, conversationId);
+  if (!ref) return null;
 
   // The proxy_url shape is `<orchestrator>/sandboxes/sbx-XXX/proxy`.
   // The orchestrator's structured fs/exec endpoints live one level up at
   // `<orchestrator>/sandboxes/sbx-XXX/...`, so strip the trailing `/proxy`.
-  const baseUrl = proxyUrl.replace(/\/proxy\/?$/, "").replace(/\/$/, "");
+  const baseUrl = ref.proxyUrl.replace(/\/proxy\/?$/, "").replace(/\/$/, "");
 
   // Pull the orchestrator-side sandbox_id out of the URL — the segment
   // right after `/sandboxes/`. This is the id matrx-ai needs to log /
@@ -108,7 +176,7 @@ export async function getActiveSandboxBinding(
   const sandboxIdMatch = baseUrl.match(/\/sandboxes\/([^/]+)/);
   const sandboxId = sandboxIdMatch?.[1] ?? "";
 
-  const token = await fetchAccessToken(sandboxRowId);
+  const token = await fetchAccessToken(ref.rowId);
   if (!token) return null;
 
   return {

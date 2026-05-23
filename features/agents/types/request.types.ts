@@ -689,6 +689,16 @@ export interface AssembledAgentStartRequest {
   tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
   /** Capability envelope — declares what the calling surface can do. */
   client?: import("./tool-injection.types").ClientContext;
+  /**
+   * Top-level sandbox binding. aidream hydrates
+   * `ctx.metadata["active_sandbox"]` — which the matrx-ai fs/shell tools read
+   * to route into the container — ONLY from this field. The same payload also
+   * rides in `client.state["sandbox-fs"]`, but that lands on a different
+   * metadata key the proxy does not read; until aidream bridges the two, this
+   * top-level field is what actually routes tools into the box. Promoted from
+   * the `sandbox-fs` capability in the execute thunk — never assembled here.
+   */
+  sandbox?: import("./tool-injection.types").ClientCapabilityPayloads["sandbox-fs"];
   conversation_id?: string;
   is_new?: boolean | null;
   organization_id?: string;
@@ -726,6 +736,8 @@ export interface AssembledConversationRequest {
   tools?: import("./tool-injection.types").ToolSpec[];
   tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
   client?: import("./tool-injection.types").ClientContext;
+  /** See `AssembledAgentStartRequest.sandbox` — same top-level binding, forwarded on every turn. */
+  sandbox?: import("./tool-injection.types").ClientCapabilityPayloads["sandbox-fs"];
   organization_id?: string;
   project_id?: string;
   task_id?: string;

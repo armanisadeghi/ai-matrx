@@ -68,6 +68,8 @@ export interface CxConversationRow {
   organization_id: string | null;
   project_id: string | null;
   task_id: string | null;
+  /** Per-conversation sandbox override (power-user pin). NULL → user-active. */
+  sandbox_instance_id: string | null;
   is_public: boolean;
   is_ephemeral: boolean;
   source_app: string;

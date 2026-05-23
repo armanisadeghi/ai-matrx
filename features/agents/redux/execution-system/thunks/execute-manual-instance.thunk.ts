@@ -383,6 +383,15 @@ export async function assembleManualRequest(
       injection.tools_replace as ChatRequestPayload["tools_replace"];
   if (injection.client)
     request.client = injection.client as ChatRequestPayload["client"];
+  // Promote the sandbox binding to the top-level `sandbox` field — aidream
+  // reads `ctx.metadata["active_sandbox"]` (the key the fs/shell tools route
+  // on) only from here, not from `client.state["sandbox-fs"]`. See the same
+  // promotion in execute-instance.thunk.ts.
+  {
+    const sandboxBinding = injection.client?.state?.["sandbox-fs"];
+    if (sandboxBinding)
+      request.sandbox = sandboxBinding as ChatRequestPayload["sandbox"];
+  }
   if (structuredSystemInstruction) {
     request.system_instruction =
       structuredSystemInstruction as unknown as string;

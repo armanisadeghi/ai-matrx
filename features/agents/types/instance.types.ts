@@ -187,6 +187,17 @@ export interface ExecutionInstance {
 
   // ── Free-form metadata bag (ConversationInvocation.metadata) ────────────
   metadata?: Record<string, unknown>;
+
+  /**
+   * Per-conversation sandbox override (the power-user "use a different box
+   * just for this conversation" path). When set, the agent's fs/shell tools
+   * route into THIS box instead of the user's shared `activeAgentSandbox`
+   * preference. `null`/absent → fall back to the user-active sandbox.
+   * Persisted on `cx_conversation.sandbox_instance_id` (+ proxyUrl mirrored
+   * into `cx_conversation.metadata`); rehydrated by the conversation bundle.
+   * Ephemeral conversations keep this in-memory only.
+   */
+  sandboxOverride?: { rowId: string; proxyUrl: string } | null;
 }
 
 // =============================================================================

@@ -198,6 +198,22 @@ export const loadConversation = createAsyncThunk<
           typeof conv.metadata === "object" && conv.metadata !== null
             ? (conv.metadata as Record<string, unknown>)
             : undefined,
+        // Per-conversation sandbox override. rowId lives on the FK column;
+        // proxyUrl is mirrored into metadata by the write thunk so the
+        // binding resolves with no extra fetch on reload. Both required —
+        // a missing proxyUrl falls through to the user-active sandbox.
+        sandboxOverride: (() => {
+          const rowId = conv.sandbox_instance_id;
+          if (!rowId) return null;
+          const meta =
+            typeof conv.metadata === "object" && conv.metadata !== null
+              ? (conv.metadata as Record<string, unknown>)
+              : {};
+          const proxyUrl = meta["sandbox_override_proxy_url"];
+          return typeof proxyUrl === "string" && proxyUrl
+            ? { rowId, proxyUrl }
+            : null;
+        })(),
       }),
     );
 

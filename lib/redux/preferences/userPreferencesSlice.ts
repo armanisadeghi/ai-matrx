@@ -168,6 +168,16 @@ export interface CodingPreferences {
   /** Last-used sandbox template id (e.g. "bare", "node-20"). */
   lastSandboxTemplate: string;
   /**
+   * The user's shared "active agent sandbox" — the ONE box every conversation
+   * binds to by default, so 20 agents feel like one agent sharing the same
+   * files / working state / memory. `null` = no shared box (multi-tenant
+   * default). Persisted here (not editor-scoped `codeWorkspaceSlice`) so it
+   * follows the user across reloads, tabs, and every chat surface. A specific
+   * conversation can override this via `cx_conversation.sandbox_instance_id`.
+   * Stores `proxyUrl` alongside `rowId` so the binding needs no extra fetch.
+   */
+  activeAgentSandbox: { rowId: string; proxyUrl: string } | null;
+  /**
    * When true, the code workspace activates per-adapter Monaco type
    * environments (prompt-app, aga-app, tool-ui, library, sandbox-fs,
    * html). Disabling falls back to the bare baseline (vanilla TS) for
@@ -466,6 +476,7 @@ export const initializeUserPreferencesState = (
       lastSandboxTier: "ec2",
       lastSandboxTemplate: "bare",
       monacoEnvironmentsEnabled: true,
+      activeAgentSandbox: null,
     },
     playground: {
       lastRecipeId: "",

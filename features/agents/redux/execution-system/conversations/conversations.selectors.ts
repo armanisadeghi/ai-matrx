@@ -111,6 +111,18 @@ export const selectConversationSurfaceKey =
   (state: RootState): string | null =>
     state.conversations.byConversationId[conversationId]?.surfaceKey ?? null;
 
+/**
+ * Per-conversation sandbox override — `{ rowId, proxyUrl }` when this
+ * conversation is pinned to a specific box (power-user path), else `null`.
+ * The agent-sandbox resolver reads this first, falling back to the user's
+ * shared `activeAgentSandbox` preference.
+ */
+export const selectConversationSandboxOverride =
+  (conversationId: string) =>
+  (state: RootState): { rowId: string; proxyUrl: string } | null =>
+    state.conversations.byConversationId[conversationId]?.sandboxOverride ??
+    null;
+
 export const selectConversationScopeIds = (conversationId: string) =>
   createSelector(
     (state: RootState) => state.conversations.byConversationId[conversationId],

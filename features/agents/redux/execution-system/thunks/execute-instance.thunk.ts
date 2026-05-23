@@ -278,6 +278,17 @@ export const executeInstance = createAsyncThunk<
         payload.tools_replace = injection.tools_replace;
       if (injection.client) payload.client = injection.client;
 
+      // Promote the sandbox binding to the top-level `sandbox` field. aidream
+      // hydrates `ctx.metadata["active_sandbox"]` — the key the matrx-ai
+      // fs/shell tools read to route into the container — ONLY from this
+      // top-level field. The same payload rides in `client.state["sandbox-fs"]`
+      // (for forward-compat + surface declaration), but that lands on a
+      // different metadata key the proxy never reads. Until aidream bridges
+      // the capability payload to `active_sandbox`, this promotion is what
+      // actually makes the agent's tools execute inside the box.
+      const sandboxBinding = injection.client?.state?.["sandbox-fs"];
+      if (sandboxBinding) payload.sandbox = sandboxBinding;
+
       // Observational Memory — if we emitted a `memory` signal this turn,
       // (a) optimistically mirror it into the observational-memory slice so
       //     the Creator Panel toggle reflects the change immediately, and
@@ -423,6 +434,7 @@ export const executeInstance = createAsyncThunk<
             tools_replace: payload.tools_replace,
           }),
           ...(payload.client && { client: payload.client }),
+          ...(payload.sandbox && { sandbox: payload.sandbox }),
           ...(debug && { debug: true }),
           ...(payload.block_mode && { block_mode: true }),
           ...(payload.snapshot && { snapshot: true }),
