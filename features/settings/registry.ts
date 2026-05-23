@@ -93,6 +93,7 @@ const ExtensionTab = lazyTab(() => import("./tabs/ExtensionTab"));
 const ContentTemplatesTab = lazyTab(() => import("./tabs/ContentTemplatesTab"));
 const VoiceMicTab = lazyTab(() => import("./tabs/VoiceMicTab"));
 const TranscriptionTab = lazyTab(() => import("./tabs/TranscriptionTab"));
+const MemoryTab = lazyTab(() => import("./tabs/MemoryTab"));
 
 export const settingsRegistry: SettingsTabDef[] = [
   // ── General ───────────────────────────────────────────────────────────────
@@ -227,6 +228,24 @@ export const settingsRegistry: SettingsTabDef[] = [
     parentId: "ai",
     description: "Default assistant behaviour.",
     component: AssistantTab,
+    persistence: "synced",
+  },
+  {
+    id: "ai.memory",
+    label: "Memory",
+    icon: Brain,
+    parentId: "ai",
+    description:
+      "Cross-project notes your agents read and write — shared across every conversation and sandbox.",
+    searchKeywords: [
+      "memory",
+      "notes",
+      "preferences",
+      "remember",
+      "context",
+      "sandbox",
+    ],
+    component: MemoryTab,
     persistence: "synced",
   },
   {
