@@ -2,6 +2,13 @@
 import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
+import {
+    buildGenerationConfig,
+    CARTESIA_API_VERSION,
+    READING_VOICE_ID,
+    TTS_MODEL_ID,
+    TTS_PLAYBACK_BUFFER_SEC,
+} from "@/lib/cartesia/config";
 
 type ConnectionState = "idle" | "fetching-token" | "connecting" | "ready" | "disconnected";
 
@@ -10,11 +17,11 @@ export function useSimpleCartesia() {
     const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
     const [playerState, setPlayerState] = useState<"idle" | "playing">("idle");
     const [script, setScript] = useState("Hi. This is AI Matrix.");
-    const [voiceId, setVoiceId] = useState("156fb8d2-335b-4950-9cb3-a2d33befec77");
+    const [voiceId, setVoiceId] = useState(READING_VOICE_ID);
     const [emotions, setEmotions] = useState<Emotion[]>([]);
     const [language, setLanguage] = useState("en");
     const [speed, setSpeed] = useState<number>(0);
-    const [modelId, setModelId] = useState("sonic-2-2025-03-07");
+    const [modelId, setModelId] = useState(TTS_MODEL_ID);
 
     const connect = useCallback(async () => {
         try {
@@ -26,7 +33,9 @@ export function useSimpleCartesia() {
             }
             const data = await res.json();
             setConnectionState("connecting");
-            const cartesia = new CartesiaClient();
+            const cartesia = new CartesiaClient({
+                cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
+            });
             websocketRef.current = cartesia.tts.websocket({
                 container: "raw",
                 encoding: "pcm_f32le",
@@ -60,18 +69,12 @@ export function useSimpleCartesia() {
         try {
             const resp = await ctx.send({
                 modelId: modelId,
-                voice: {
-                    mode: "id",
-                    id: voiceId,
-                    experimentalControls: {
-                        speed: speed,
-                        emotion: emotions.length > 0 ? emotions : [],
-                    },
-                },
+                voice: { mode: "id", id: voiceId },
                 language: language,
                 transcript: script,
+                generationConfig: buildGenerationConfig({ speed }),
             });
-            const player = new WebPlayer({ bufferDuration: 600 });
+            const player = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
             setPlayerState("playing");
             await player.play(resp.source);
             setPlayerState("idle");

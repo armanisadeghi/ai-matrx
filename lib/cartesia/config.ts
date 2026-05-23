@@ -43,6 +43,12 @@ export const TTS_DEFAULT_VOLUME = 1.0;
  */
 export const TTS_PLAYBACK_BUFFER_SEC = 0.7;
 
+/**
+ * Lower buffer for token-by-token streaming (real-time LLM speech) where
+ * latency matters more — still well above the old 0.1s that stuttered.
+ */
+export const TTS_STREAMING_BUFFER_SEC = 0.3;
+
 /** A user's explicit voice preference wins; otherwise the purpose default. */
 export function resolveVoiceId(
   userVoiceId: string | null | undefined,

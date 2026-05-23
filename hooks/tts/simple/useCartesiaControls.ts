@@ -2,6 +2,13 @@
 import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
+import {
+    buildGenerationConfig,
+    CARTESIA_API_VERSION,
+    READING_VOICE_ID,
+    TTS_MODEL_ID,
+    TTS_PLAYBACK_BUFFER_SEC,
+} from "@/lib/cartesia/config";
 
 type ConnectionState = "idle" | "fetching-token" | "connecting" | "ready" | "disconnected";
 type PlayerState = "idle" | "playing" | "paused";
@@ -14,11 +21,11 @@ export function useCartesiaControls() {
     const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
     const [playerState, setPlayerState] = useState<PlayerState>("idle");
     const [script, setScript] = useState("Hi. This is AI Matrix.");
-    const [voiceId, setVoiceId] = useState("156fb8d2-335b-4950-9cb3-a2d33befec77");
+    const [voiceId, setVoiceId] = useState(READING_VOICE_ID);
     const [emotions, setEmotions] = useState<Emotion[]>([]);
     const [language, setLanguage] = useState("en");
     const [speed, setSpeed] = useState<number>(0);
-    const [modelId, setModelId] = useState("sonic-3");
+    const [modelId, setModelId] = useState(TTS_MODEL_ID);
 
     const connect = useCallback(async () => {
         try {
@@ -30,7 +37,9 @@ export function useCartesiaControls() {
             }
             const data = await res.json();
             setConnectionState("connecting");
-            const cartesia = new CartesiaClient();
+            const cartesia = new CartesiaClient({
+                cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
+            });
             websocketRef.current = cartesia.tts.websocket({
                 container: "raw",
                 encoding: "pcm_f32le",
@@ -75,7 +84,7 @@ export function useCartesiaControls() {
 
             // Create a new player if one doesn't exist or if we're starting a new speech
             if (!playerRef.current || playerState === "idle") {
-                playerRef.current = new WebPlayer({ bufferDuration: 0.25 }); // 250ms buffer for fast streaming
+                playerRef.current = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
             }
 
             // If player is paused, resume instead of starting new speech
@@ -94,16 +103,10 @@ export function useCartesiaControls() {
 
             const resp = await ctx.send({
                 modelId: modelId,
-                voice: {
-                    mode: "id",
-                    id: voiceId,
-                    experimentalControls: {
-                        speed: speed,
-                        emotion: emotions.length > 0 ? emotions : [],
-                    },
-                },
+                voice: { mode: "id", id: voiceId },
                 language: language,
                 transcript: textToSpeak,
+                generationConfig: buildGenerationConfig({ speed }),
             });
 
             setPlayerState("playing");

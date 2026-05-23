@@ -41,8 +41,13 @@ import { useAppSelector } from '@/lib/redux/hooks';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
 import { toast } from 'sonner';
 import { chunkTextForSpeech } from '../utils/chunk-text-for-speech';
-
-const DEFAULT_VOICE_ID = '156fb8d2-335b-4950-9cb3-a2d33befec77';
+import {
+  buildGenerationConfig,
+  CARTESIA_API_VERSION,
+  resolveVoiceId,
+  TTS_MODEL_ID,
+  TTS_STREAMING_BUFFER_SEC,
+} from '@/lib/cartesia/config';
 
 export type SpeakerPhase =
   | 'idle'
@@ -88,8 +93,8 @@ export function useCartesiaStreamingSpeaker(
 
   // Primitive selectors — each returns a scalar so unrelated userPreferences
   // updates don't re-render the speaker.
-  const voiceId = useAppSelector(
-    (s) => s.userPreferences.voice?.voice || DEFAULT_VOICE_ID,
+  const voiceId = useAppSelector((s) =>
+    resolveVoiceId(s.userPreferences.voice?.voice, 'assistant'),
   );
   const language = useAppSelector(
     (s) => s.userPreferences.voice?.language || 'en',
@@ -143,7 +148,9 @@ export function useCartesiaStreamingSpeaker(
 
     setPhaseIfMounted('connecting');
     try {
-      const client = new CartesiaClient();
+      const client = new CartesiaClient({
+        cartesiaVersion: CARTESIA_API_VERSION as unknown as '2024-06-10',
+      });
       const ws = client.tts.websocket({
         container: 'raw',
         encoding: 'pcm_f32le',
@@ -163,10 +170,11 @@ export function useCartesiaStreamingSpeaker(
     }
 
     if (!playerRef.current) {
-      // bufferDuration 0.1 — start playing as soon as ~100ms of audio has
-      // arrived. Lower = faster start, but too low risks underruns. 0.1 is
-      // a good balance for Cartesia's sub-300ms TTFB.
-      playerRef.current = new WebPlayer({ bufferDuration: 0.1 });
+      // Lower buffer for real-time streaming (latency-sensitive), centralized in
+      // lib/cartesia/config so it can't drift back to a stutter-prone value.
+      playerRef.current = new WebPlayer({
+        bufferDuration: TTS_STREAMING_BUFFER_SEC,
+      });
     }
   }, [setPhaseIfMounted]);
 
@@ -206,14 +214,11 @@ export function useCartesiaStreamingSpeaker(
 
         const contextId = cryptoRandomId();
         const baseRequest = {
-          modelId: 'sonic-3',
-          voice: {
-            mode: 'id' as const,
-            id: voiceId,
-            experimentalControls: { speed, emotion: [] },
-          },
+          modelId: TTS_MODEL_ID,
+          voice: { mode: 'id' as const, id: voiceId },
           language,
           contextId,
+          generationConfig: buildGenerationConfig({ speed }),
         };
 
         const ws = websocketRef.current!;

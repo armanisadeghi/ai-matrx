@@ -3,6 +3,13 @@ import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import {
+  buildGenerationConfig,
+  CARTESIA_API_VERSION,
+  resolveVoiceId,
+  TTS_MODEL_ID,
+  TTS_PLAYBACK_BUFFER_SEC,
+} from "@/lib/cartesia/config";
 
 type ConnectionState = "idle" | "fetching-token" | "connecting" | "ready" | "disconnected";
 type PlayerState = "idle" | "playing" | "paused";
@@ -31,10 +38,10 @@ export function useCartesiaWithPreferences({
 
   // Get voice preferences from Redux
   const voicePreferences = useAppSelector((state) => state.userPreferences.voice);
-  const voiceId = voicePreferences.voice || "156fb8d2-335b-4950-9cb3-a2d33befec77"; // Default voice
+  const voiceId = resolveVoiceId(voicePreferences.voice, "assistant");
   const language = voicePreferences.language || "en";
-  const speed = voicePreferences.speed || 0;
-  const modelId = "sonic-3";
+  const speed = voicePreferences.speed;
+  const modelId = TTS_MODEL_ID;
 
   const connect = useCallback(async () => {
     try {
@@ -43,7 +50,9 @@ export function useCartesiaWithPreferences({
       const data = await res.json();
       
       setConnectionState("connecting");
-      const cartesia = new CartesiaClient();
+      const cartesia = new CartesiaClient({
+        cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
+      });
       websocketRef.current = cartesia.tts.websocket({
         container: "raw",
         encoding: "pcm_f32le",
@@ -99,7 +108,7 @@ export function useCartesiaWithPreferences({
 
         // Create a new player for streaming playback
         if (!playerRef.current || playerState === "idle") {
-          playerRef.current = new WebPlayer({ bufferDuration: 0.25 }); // 250ms buffer for fast streaming
+          playerRef.current = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
         }
 
         // If player is paused, resume instead of starting new speech
@@ -113,16 +122,10 @@ export function useCartesiaWithPreferences({
 
         const resp = await ctx.send({
           modelId: modelId,
-          voice: {
-            mode: "id",
-            id: voiceId,
-            experimentalControls: {
-              speed: speed,
-              emotion: [], // Can be extended to use emotion preferences if needed
-            },
-          },
+          voice: { mode: "id", id: voiceId },
           language: language,
           transcript: processedText,
+          generationConfig: buildGenerationConfig({ speed }),
         });
 
         setPlayerState("playing");

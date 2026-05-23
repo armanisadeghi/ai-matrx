@@ -131,8 +131,17 @@ Verify exact schemas in Supabase before extending.
 
 ---
 
+## Cartesia TTS — single source of truth
+
+All in-app Cartesia text-to-speech routes through **`lib/cartesia/config.ts`** — the one place that defines the model (`sonic-3.5`), API version (`2026-03-01`), system default voices (Skylar = reading, Daniel = assistant), speed (1.2), volume, and playback buffers (`0.7s` standard, `0.3s` streaming), plus the resolvers `resolveVoiceId(userVoice, purpose)` / `resolveSpeed` / `buildGenerationConfig`. **Never hardcode a model id, voice id, `cartesiaVersion`, or `WebPlayer` `bufferDuration` in a hook/component — import from the config.** This is what keeps the old failures (choppy 0.25s buffer, stale `sonic-2`/`sonic-3`, deprecated `experimentalControls`, ignored voice prefs) from creeping back.
+
+**Canonical hook:** `features/tts/hooks/useCartesiaSpeaker` (one-shot read-aloud, prefs-aware, markdown-cleaned, pause/resume/stop). Use `{ purpose: "reading" | "assistant" }` to pick the default voice. For real-time token streaming use `useCartesiaStreamingSpeaker`. All other Cartesia hooks (`hooks/tts/useCartesia`, `hooks/tts/simple/*`) now consume the config too. User voice prefs live in `state.userPreferences.voice` (canonical selector `selectVoicePreferences`), persist to the `user_preferences` Supabase table (JSONB), and rehydrate on boot — set once, applied everywhere.
+
+**Known legacy not yet migrated (tracked):** the several `TextToSpeechPlayer` copies (`components/voice`, `components/audio`, `hooks/tts`, `app/.../flash-cards/audio`), the voice-assistant server actions (`actions/ai-actions/*`), and `app/api/voice*` routes still reference `sonic-english`. Migrate them to the config when next touched.
+
 ## Change log
 
+- `2026-05-23` — TTS consolidated onto `lib/cartesia/config.ts` (Sonic 3.5 + `2026-03-01` + `generation_config`). Migrated `useCartesiaSpeaker`, `useCartesiaStreamingSpeaker`, `useCartesia`, and `hooks/tts/simple/*` off hardcoded models/buffers/`experimentalControls`; default voices Skylar/Daniel via `resolveVoiceId(purpose)`; user voice/speed prefs respected everywhere. Mobile transcript studio moved to real per-session routes (`/transcription/mobile/[sessionId]`, `/unsorted`).
 - `2026-05-21` — `useChunkedRecordAndTranscribe` exposes the crash-safe `safetyId` (via `getSafetyId()` on its return and on every `ChunkCompleteInfo`) so subscribers can reassemble a recording cycle's audio with `audioSafetyStore.getAudioBlob(safetyId)`. Consumed by the transcript-studio mobile capture flow; additive — existing consumers unaffected.
 - `2026-05-07` — Transcript management UI route is `/transcription/processor` (permanent redirect from `/transcripts` in `next.config.js`).
 - `2026-05-03` — VoicePadAi: replaced 6 hardcoded user-owned cleaner agents with 3 system-owned agents in `ai-agents.ts`; added `contextVariableKey` field on the agent shape so context can be wired as a regular variable for agents that don't use a context slot. All transcription window panels (voicePad, voicePadAdvanced, voicePadAi) and the transcript processor viewer now expose `ContentActionBar` for Save to Notes/Tasks/Scratch/etc.

@@ -12,6 +12,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { selectVoicePreferences } from '@/lib/redux/preferences/userPreferenceSelectors';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
 import {
   buildGenerationConfig,
@@ -49,7 +50,7 @@ export function useCartesiaSpeaker({
   const hasPlayedRef = useRef(false);
   const mountedRef = useRef(true);
 
-  const voicePrefs = useAppSelector((s) => s.userPreferences.voice);
+  const voicePrefs = useAppSelector(selectVoicePreferences);
   const voiceId = resolveVoiceId(voicePrefs.voice, purpose);
   const language = voicePrefs.language || 'en';
   const speed = voicePrefs.speed;
