@@ -13,6 +13,14 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import {
+  buildGenerationConfig,
+  CARTESIA_API_VERSION,
+  resolveVoiceId,
+  TTS_MODEL_ID,
+  TTS_PLAYBACK_BUFFER_SEC,
+  type VoicePurpose,
+} from '@/lib/cartesia/config';
 import { toast } from 'sonner';
 
 export type SpeakerPhase =
@@ -26,9 +34,14 @@ export type SpeakerPhase =
 
 export interface UseCartesiaSpeakerOptions {
   processMarkdown?: boolean;
+  /** Which default voice applies when the user hasn't set one. */
+  purpose?: VoicePurpose;
 }
 
-export function useCartesiaSpeaker({ processMarkdown = true }: UseCartesiaSpeakerOptions = {}) {
+export function useCartesiaSpeaker({
+  processMarkdown = true,
+  purpose = 'assistant',
+}: UseCartesiaSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>('idle');
 
   const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
@@ -37,9 +50,9 @@ export function useCartesiaSpeaker({ processMarkdown = true }: UseCartesiaSpeake
   const mountedRef = useRef(true);
 
   const voicePrefs = useAppSelector((s) => s.userPreferences.voice);
-  const voiceId = voicePrefs.voice || '156fb8d2-335b-4950-9cb3-a2d33befec77';
+  const voiceId = resolveVoiceId(voicePrefs.voice, purpose);
   const language = voicePrefs.language || 'en';
-  const speed = voicePrefs.speed || 0;
+  const speed = voicePrefs.speed;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -76,7 +89,9 @@ export function useCartesiaSpeaker({ processMarkdown = true }: UseCartesiaSpeake
     if (mountedRef.current) setPhase('connecting');
 
     try {
-      const client = new CartesiaClient();
+      const client = new CartesiaClient({
+        cartesiaVersion: CARTESIA_API_VERSION as unknown as '2024-06-10',
+      });
       const ws = client.tts.websocket({
         container: 'raw',
         encoding: 'pcm_f32le',
@@ -109,18 +124,17 @@ export function useCartesiaSpeaker({ processMarkdown = true }: UseCartesiaSpeake
       if (mountedRef.current) setPhase('sending');
 
       const resp = await websocketRef.current!.send({
-        modelId: 'sonic-3',
-        voice: {
-          mode: 'id' as const,
-          id: voiceId,
-          experimentalControls: { speed, emotion: [] },
-        },
+        modelId: TTS_MODEL_ID,
+        voice: { mode: 'id' as const, id: voiceId },
         language,
         transcript: processed,
+        generationConfig: buildGenerationConfig({ speed }),
       });
 
       if (!playerRef.current) {
-        playerRef.current = new WebPlayer({ bufferDuration: 0.25 });
+        playerRef.current = new WebPlayer({
+          bufferDuration: TTS_PLAYBACK_BUFFER_SEC,
+        });
       }
 
       if (mountedRef.current) setPhase('playing');

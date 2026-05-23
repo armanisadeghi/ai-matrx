@@ -1,29 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Pause,
-  Play,
-  RotateCcw,
-  Square,
-} from "lucide-react";
+import { Loader2, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { WebPlayer } from "@cartesia/cartesia-js";
 import { cn } from "@/lib/utils";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import {
-  EMOTION_LEVELS,
-  EMOTION_NAMES,
+  EMOTION_OPTIONS,
   EMPTY_METRICS,
-  emotionTag,
   runTtsTest,
-  SPEED_OPTIONS,
   TEST_MODEL_OPTIONS,
   TEST_VOICE_OPTIONS,
-  type EmotionLevel,
-  type EmotionName,
   type TtsRunHandle,
   type TtsRunMetrics,
   type TtsRunPhase,
@@ -34,11 +20,8 @@ interface TtsTesterPanelProps {
   title: string;
   text: string;
   initialConfig: TtsTestConfig;
-  initialCleanMarkdown?: boolean;
   accent?: string;
 }
-
-type EmotionLevelChoice = EmotionLevel | "none";
 
 const selectCls =
   "w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary";
@@ -69,27 +52,14 @@ export function TtsTesterPanel({
   title,
   text,
   initialConfig,
-  initialCleanMarkdown = true,
   accent = "border-border",
 }: TtsTesterPanelProps) {
   const [config, setConfig] = useState<TtsTestConfig>(initialConfig);
   const [voiceMode, setVoiceMode] = useState<"select" | "manual">("select");
   const [manualVoiceId, setManualVoiceId] = useState("");
-  const [emotionLevels, setEmotionLevels] = useState<
-    Record<EmotionName, EmotionLevelChoice>
-  >(() =>
-    EMOTION_NAMES.reduce(
-      (acc, n) => ({ ...acc, [n]: "none" }),
-      {} as Record<EmotionName, EmotionLevelChoice>,
-    ),
-  );
-  const [showEmotions, setShowEmotions] = useState(false);
-  const [cleanMarkdown, setCleanMarkdown] = useState(initialCleanMarkdown);
   const [metrics, setMetrics] = useState<TtsRunMetrics>(EMPTY_METRICS);
   const [phase, setPhase] = useState<TtsRunPhase>("idle");
   const handleRef = useRef<TtsRunHandle | null>(null);
-  // One player per panel; recreated only when the playback buffer changes, so a
-  // long testing session doesn't exhaust the browser's AudioContext budget.
   const playerRef = useRef<{ player: WebPlayer; bufferSec: number } | null>(null);
 
   useEffect(() => {
@@ -135,9 +105,9 @@ export function TtsTesterPanel({
       setMetrics({ ...EMPTY_METRICS, error: "No voice id" });
       return;
     }
-    // Acquire the player synchronously (within the user gesture) so the browser
-    // unlocks the AudioContext, THEN fully tear down the previous run so this
-    // run's settings always take effect (no stale audio / overlapping context).
+    // Acquire the player synchronously (within the user gesture) to unlock the
+    // AudioContext, THEN fully tear down the previous run so this run's settings
+    // always take effect (no stale audio / overlapping context).
     const player = getPlayer(config.playbackBufferSec);
     if (handleRef.current) {
       await handleRef.current.stop();
@@ -146,19 +116,9 @@ export function TtsTesterPanel({
     setMetrics(EMPTY_METRICS);
     setPhase("connecting");
 
-    const emotions = EMOTION_NAMES.flatMap((name) => {
-      const level = emotionLevels[name];
-      return level === "none" ? [] : [emotionTag(name, level)];
-    });
-    const runConfig: TtsTestConfig = {
-      ...config,
-      voiceId: effectiveVoiceId,
-      emotions,
-    };
-    const spoken = cleanMarkdown ? parseMarkdownToText(text) : text;
-
+    const runConfig: TtsTestConfig = { ...config, voiceId: effectiveVoiceId };
     try {
-      handleRef.current = await runTtsTest(player, runConfig, spoken || text, {
+      handleRef.current = await runTtsTest(player, runConfig, text, {
         onMetrics: setMetrics,
         onPhase: setPhase,
         onPlaybackEnded: () => {},
@@ -186,7 +146,6 @@ export function TtsTesterPanel({
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <div className="flex items-center gap-1.5">
-          {/* Primary transport */}
           {synthesizing ? (
             <button
               type="button"
@@ -229,7 +188,6 @@ export function TtsTesterPanel({
               {ended ? "Replay" : "Play"}
             </button>
           )}
-          {/* Stop is available whenever a run is active */}
           {(synthesizing || playing || paused) && (
             <button
               type="button"
@@ -257,17 +215,15 @@ export function TtsTesterPanel({
             ))}
           </select>
         </Field>
-        <Field label="Speed (model)">
+        <Field label="Emotion" hint="normally none">
           <select
             className={selectCls}
-            value={config.speed}
-            onChange={(e) =>
-              set("speed", e.target.value as TtsTestConfig["speed"])
-            }
+            value={config.emotion}
+            onChange={(e) => set("emotion", e.target.value)}
           >
-            {SPEED_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            {EMOTION_OPTIONS.map((em) => (
+              <option key={em || "none"} value={em}>
+                {em || "none"}
               </option>
             ))}
           </select>
@@ -313,6 +269,29 @@ export function TtsTesterPanel({
           </button>
         </div>
 
+        <Field label="Speed" hint={`${config.speed.toFixed(2)}× (0.6–1.5)`}>
+          <input
+            type="range"
+            min={0.6}
+            max={1.5}
+            step={0.05}
+            value={config.speed}
+            onChange={(e) => set("speed", Number(e.target.value))}
+            className="w-full accent-primary"
+          />
+        </Field>
+        <Field label="Volume" hint={`${config.volume.toFixed(2)}× (0.5–2.0)`}>
+          <input
+            type="range"
+            min={0.5}
+            max={2}
+            step={0.05}
+            value={config.volume}
+            onChange={(e) => set("volume", Number(e.target.value))}
+            className="w-full accent-primary"
+          />
+        </Field>
+
         <div className="col-span-2">
           <Field
             label="Playback buffer (client)"
@@ -348,63 +327,6 @@ export function TtsTesterPanel({
               className="w-full accent-primary"
             />
           </Field>
-        </div>
-
-        <label className="col-span-2 flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={cleanMarkdown}
-            onChange={(e) => setCleanMarkdown(e.target.checked)}
-            className="h-4 w-4 accent-primary"
-          />
-          Clean markdown before speaking
-        </label>
-
-        {/* Emotions (experimental) */}
-        <div className="col-span-2">
-          <button
-            type="button"
-            onClick={() => setShowEmotions((v) => !v)}
-            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-          >
-            {showEmotions ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-            Emotions (experimental · Sonic 2-era)
-          </button>
-          {showEmotions && (
-            <div className="mt-2 grid grid-cols-1 gap-1.5">
-              {EMOTION_NAMES.map((name) => (
-                <div key={name} className="flex items-center gap-2">
-                  <span className="w-20 shrink-0 text-xs capitalize text-muted-foreground">
-                    {name}
-                  </span>
-                  <select
-                    className={selectCls}
-                    value={emotionLevels[name]}
-                    onChange={(e) =>
-                      setEmotionLevels((prev) => ({
-                        ...prev,
-                        [name]: e.target.value as EmotionLevelChoice,
-                      }))
-                    }
-                  >
-                    <option value="none">none</option>
-                    {EMOTION_LEVELS.map((lvl) => (
-                      <option key={lvl} value={lvl}>
-                        {lvl}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-              <p className="text-[10px] text-muted-foreground/70">
-                Applied via voice.experimentalControls; Sonic 3+ ignores these.
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

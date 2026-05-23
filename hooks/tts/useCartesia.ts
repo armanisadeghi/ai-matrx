@@ -15,6 +15,20 @@ import {
 } from '@/lib/cartesia/cartesia.types';
 import {WebPlayer} from "@cartesia/cartesia-js";
 import Source from '@cartesia/cartesia-js/wrapper/source';
+import {
+    buildGenerationConfig,
+    READING_VOICE_ID,
+    TTS_DEFAULT_SPEED,
+    TTS_MODEL_ID,
+} from '@/lib/cartesia/config';
+
+const VOICE_SPEED_TO_NUMBER: Record<VoiceSpeed, number> = {
+    [VoiceSpeed.SLOWEST]: 0.6,
+    [VoiceSpeed.SLOW]: 0.85,
+    [VoiceSpeed.NORMAL]: TTS_DEFAULT_SPEED,
+    [VoiceSpeed.FAST]: 1.35,
+    [VoiceSpeed.FASTEST]: 1.5,
+};
 
 interface UseCartesiaProps {
     container?: OutputContainer;
@@ -43,17 +57,13 @@ interface UseCartesiaResult {
     isAudioInitialized: boolean; // Track if audio has been initialized
 }
 
-function formatEmotionControl(emotion: EmotionName, intensity?: EmotionLevel): string {
-    return intensity ? `${emotion}:${intensity}` : emotion;
-}
-
 export function useCartesia(
     {
         container = OutputContainer.Raw,
         encoding = AudioEncoding.PCM_F32LE,
         sampleRate = 44100,
-        modelId = ModelId.Sonic2,
-        voice = {mode: "id", id: "a0e99841-438c-4a64-b679-ae501e7d6091"},
+        modelId = TTS_MODEL_ID as ModelId,
+        voice = {mode: "id", id: READING_VOICE_ID},
         language = Language.EN,
         bufferDuration = 1,
     }: UseCartesiaProps = {}): UseCartesiaResult {
@@ -162,7 +172,7 @@ export function useCartesia(
     const sendMessage = useCallback(async (
         transcript: string,
         speed: VoiceSpeed = VoiceSpeed.NORMAL,
-        voice: VoiceOptions = {mode: "id", id: "a0e99841-438c-4a64-b679-ae501e7d6091"},
+        voice: VoiceOptions = {mode: "id", id: READING_VOICE_ID},
         emotions?: Array<{ emotion: EmotionName, intensity?: EmotionLevel }>
     ) => {
         if (!websocket || !isConnected) {
@@ -180,18 +190,17 @@ export function useCartesia(
         }
         
         try {
-            const selectedModelId = language !== Language.EN ? ModelId.SonicMultilingual : modelId;
+            // Sonic 3.5 is multilingual, so no model switch is needed. Speed and
+            // emotion go through the latest generation_config format.
             const response = await websocket.send({
-                modelId: selectedModelId,
-                voice: {
-                    ...voice,
-                    __experimental_controls: {
-                        speed,
-                        emotion: emotions?.map(({emotion, intensity}) => formatEmotionControl(emotion, intensity)),
-                    },
-                },
+                modelId,
+                voice,
                 transcript,
                 language,
+                generationConfig: buildGenerationConfig({
+                    speed: VOICE_SPEED_TO_NUMBER[speed] ?? TTS_DEFAULT_SPEED,
+                    emotion: emotions?.[0]?.emotion,
+                }),
             });
             
             response.on("message", (message: any) => {

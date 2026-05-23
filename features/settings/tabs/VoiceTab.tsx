@@ -79,15 +79,15 @@ export default function VoiceTab() {
         />
         <SettingsSlider
           label="Speech speed"
-          description="Range: -1 (slower) to +1 (faster)."
+          description="Playback speed (1.0 = original). Our default is 1.2."
           value={speed}
           onValueChange={setSpeed}
-          min={-1}
-          max={1}
-          step={0.1}
-          precision={1}
+          min={0.6}
+          max={1.5}
+          step={0.05}
+          precision={2}
           minLabel="Slower"
-          midLabel="Normal"
+          midLabel="Default"
           maxLabel="Faster"
         />
         <SettingsTextInput

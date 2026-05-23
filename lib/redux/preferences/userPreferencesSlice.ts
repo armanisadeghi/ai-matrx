@@ -368,9 +368,12 @@ export const initializeUserPreferencesState = (
       autoClearResponsesInEditMode: true,
     },
     voice: {
-      voice: "156fb8d2-335b-4950-9cb3-a2d33befec77",
+      // Empty = no explicit choice → resolveVoiceId() falls back to the
+      // purpose default (Skylar for reading, Daniel for assistant).
+      voice: "",
       language: "en",
-      speed: 1,
+      // generation_config.speed scale (0.6–1.5); 1.2 is our chosen baseline.
+      speed: 1.2,
       emotion: "",
       microphone: false,
       speaker: false,

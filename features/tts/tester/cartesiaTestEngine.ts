@@ -2,14 +2,13 @@
 
 /**
  * cartesiaTestEngine — config-driven Cartesia TTS runner for the admin Voice
- * Tester. Every knob that affects perceived quality is observable side-by-side:
- * model, voice, speed, emotions (experimental), client playback buffer, and
- * server buffering (max_buffer_delay_ms), with time-to-first-audio / total-synth
- * metrics.
+ * Tester. Mirrors the production request shape (latest API: model + voice +
+ * generation_config { speed, volume, emotion } + client playback buffer +
+ * server max_buffer_delay_ms) so what you hear here is what ships.
  *
- * Crucially, playback control (pause/resume/stop) is owned by the returned
- * handle and driven by the WebPlayer — NOT by the synthesis lifecycle — so the
- * user can pause real playback even after all audio has been received.
+ * Playback control (pause/resume/stop) is owned by the returned handle and
+ * driven by the WebPlayer — NOT the synthesis lifecycle — so pause works even
+ * after all audio has been received.
  */
 
 import type { Cartesia, WebPlayer } from "@cartesia/cartesia-js";
@@ -20,63 +19,64 @@ import {
   Language,
   OutputContainer,
 } from "@/lib/cartesia/cartesia.types";
+import {
+  ASSISTANT_VOICE_ID,
+  buildGenerationConfig,
+  READING_VOICE_ID,
+  TTS_DEFAULT_SPEED,
+  TTS_DEFAULT_VOLUME,
+  TTS_MODEL_ID,
+} from "@/lib/cartesia/config";
 import { availableVoices } from "@/lib/cartesia/voices";
-
-export type TtsSpeed = "slow" | "normal" | "fast";
 
 export const TEST_MODEL_OPTIONS: ReadonlyArray<{ value: string; label: string }> =
   [
-    { value: "sonic-3.5", label: "Sonic 3.5 (latest)" },
+    { value: TTS_MODEL_ID, label: "Sonic 3.5 (latest)" },
     { value: "sonic-3", label: "Sonic 3" },
     { value: "sonic-2-2025-03-07", label: "Sonic 2" },
     { value: "sonic-turbo-2025-03-07", label: "Sonic Turbo" },
   ];
 
-export const STUDIO_VOICE_ID = "a0e99841-438c-4a64-b679-ae501e7d6091";
-export const DEFAULT_VOICE_ID = "156fb8d2-335b-4950-9cb3-a2d33befec77";
-
+/** Voice dropdown: the two system voices first, then the rest of the library. */
 export const TEST_VOICE_OPTIONS: ReadonlyArray<{ id: string; label: string }> = [
-  { id: STUDIO_VOICE_ID, label: "Studio voice (current studio Read-aloud)" },
-  { id: DEFAULT_VOICE_ID, label: "App default (standard Read-aloud)" },
+  { id: READING_VOICE_ID, label: "Skylar — reading default" },
+  { id: ASSISTANT_VOICE_ID, label: "Daniel — assistant default" },
   ...availableVoices
-    .filter((v) => v.id !== STUDIO_VOICE_ID && v.id !== DEFAULT_VOICE_ID)
+    .filter((v) => v.id !== READING_VOICE_ID && v.id !== ASSISTANT_VOICE_ID)
     .map((v) => ({ id: v.id, label: v.name })),
 ];
 
-export const SPEED_OPTIONS: ReadonlyArray<TtsSpeed> = ["slow", "normal", "fast"];
-
-/** Experimental emotion controls (Sonic 2-era; ignored by Sonic 3+). */
-export const EMOTION_NAMES = [
-  "positivity",
-  "curiosity",
-  "surprise",
-  "sadness",
-  "anger",
-] as const;
-export type EmotionName = (typeof EMOTION_NAMES)[number];
-export const EMOTION_LEVELS = ["lowest", "low", "medium", "high", "highest"] as const;
-export type EmotionLevel = (typeof EMOTION_LEVELS)[number];
-
-/** Build a Cartesia emotion tag from a name + level ("medium" omits the level). */
-export function emotionTag(
-  name: EmotionName,
-  level: EmotionLevel,
-): Cartesia.EmotionDeprecated {
-  const tag = level === "medium" ? name : `${name}:${level}`;
-  return tag as Cartesia.EmotionDeprecated;
-}
+/** A curated subset of the (large) emotion list; "" = none (the normal case). */
+export const EMOTION_OPTIONS: ReadonlyArray<string> = [
+  "",
+  "Neutral",
+  "Happy",
+  "Excited",
+  "Enthusiastic",
+  "Calm",
+  "Serene",
+  "Curious",
+  "Confident",
+  "Determined",
+  "Sad",
+  "Angry",
+  "Sarcastic",
+];
 
 export interface TtsTestConfig {
   modelId: string;
   voiceId: string;
   language: string;
-  speed: TtsSpeed;
+  /** generation_config.speed (0.6–1.5; 1.0 original). */
+  speed: number;
+  /** generation_config.volume (0.5–2.0; 1.0 original). */
+  volume: number;
+  /** generation_config.emotion; "" = none. */
+  emotion: string;
   /** Client-side WebPlayer buffer (seconds) before playback starts. */
   playbackBufferSec: number;
   /** Server-side text buffering. 0 = custom (immediate); >0 = managed. */
   maxBufferDelayMs: number;
-  /** Experimental emotion tags applied via voice.experimentalControls. */
-  emotions: Cartesia.EmotionDeprecated[];
 }
 
 export interface TtsRunMetrics {
@@ -110,25 +110,27 @@ export const EMPTY_METRICS: TtsRunMetrics = {
   error: null,
 };
 
+export const DEFAULT_TEST_CONFIG: Omit<TtsTestConfig, "voiceId"> = {
+  modelId: TTS_MODEL_ID,
+  language: "en",
+  speed: TTS_DEFAULT_SPEED,
+  volume: TTS_DEFAULT_VOLUME,
+  emotion: "",
+  playbackBufferSec: 0.7,
+  maxBufferDelayMs: 0,
+};
+
 interface RunCallbacks {
   onMetrics: (m: TtsRunMetrics) => void;
   onPhase: (phase: TtsRunPhase) => void;
-  /** Fires when actual audio playback finishes (not when synthesis completes). */
   onPlaybackEnded: () => void;
 }
-
-const NUMERIC_SPEED: Record<TtsSpeed, number> = {
-  slow: -0.4,
-  normal: 0,
-  fast: 0.4,
-};
 
 /**
  * Run one synthesis + playback pass on the supplied {@link WebPlayer}. The
  * caller owns the player (one per panel, recreated only when the playback buffer
- * changes) to avoid exhausting the browser's AudioContext budget across many
- * runs. Returns a handle that controls the *actual* playback. Call from a user
- * gesture so the browser can unlock the AudioContext.
+ * changes) to avoid exhausting the browser's AudioContext budget. Call from a
+ * user gesture so the browser can unlock the AudioContext.
  */
 export async function runTtsTest(
   player: WebPlayer,
@@ -151,26 +153,18 @@ export async function runTtsTest(
   metrics.connectMs = Math.round(performance.now() - t0);
   emit();
 
-  const voice: Cartesia.TtsRequestIdSpecifier = {
-    mode: "id",
-    id: config.voiceId,
-  };
-  if (config.emotions.length > 0) {
-    voice.experimentalControls = {
-      speed: NUMERIC_SPEED[config.speed],
-      emotion: config.emotions,
-    };
-  }
-
   const request: Cartesia.WebSocketTtsRequest = {
     modelId: config.modelId,
-    voice,
+    voice: { mode: "id", id: config.voiceId },
     transcript,
     language: config.language || Language.EN,
     continue: false,
     maxBufferDelayMs: config.maxBufferDelayMs,
-    // Top-level model speed only when not using the experimental controls speed.
-    ...(config.emotions.length === 0 ? { speed: config.speed } : {}),
+    generationConfig: buildGenerationConfig({
+      speed: config.speed,
+      volume: config.volume,
+      emotion: config.emotion || undefined,
+    }),
   };
 
   callbacks.onPhase("synthesizing");
@@ -203,7 +197,6 @@ export async function runTtsTest(
   });
 
   if (response.source instanceof Source) {
-    // Resolves when playback *finishes* — the source of truth for "ended".
     player
       .play(response.source)
       .then(() => {

@@ -20,8 +20,7 @@ import { AgentConversationDisplay } from "@/features/agents/components/messages-
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { useCartesia } from "@/hooks/tts/useCartesia";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useStudioSession } from "../../hooks/useStudioSession";
 import { FocusedDocumentEditor } from "./FocusedDocumentEditor";
@@ -53,8 +52,10 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
   const [sending, setSending] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
 
-  const tts = useCartesia();
-  const [reading, setReading] = useState(false);
+  // Studio Read-aloud uses the standard, prefs-aware speaker (reading purpose →
+  // Skylar by default; user's chosen voice wins). It cleans markdown itself.
+  const speaker = useCartesiaSpeaker({ purpose: "reading" });
+  const reading = speaker.isPlaying || speaker.isLoading;
 
   const workingDoc = assistant.workingDocument;
   const docContent = workingDoc?.content ?? "";
@@ -105,21 +106,10 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
   const handleReadAloud = async () => {
     if (!docContent.trim()) return;
     if (reading) {
-      await tts.stopPlayback();
-      setReading(false);
+      await speaker.stop();
       return;
     }
-    if (!tts.isAudioInitialized) await tts.initializeAudio();
-    setReading(true);
-    try {
-      // Strip markdown/symbols so the document is spoken cleanly (matches the
-      // app's standard TTS path).
-      const spoken = parseMarkdownToText(docContent);
-      await tts.sendMessage(spoken || docContent);
-    } finally {
-      // Playback runs async; reset the toggle when the user stops or it ends.
-      setReading(false);
-    }
+    await speaker.speak(docContent);
   };
 
   if (!conversationId) {

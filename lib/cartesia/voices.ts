@@ -3,6 +3,18 @@ const DEFAULT_IMAGE = '/assistants/matrx-ai-avatar-male.jpeg';
 
 export const availableVoices = [
     {
+        "id": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+        "name": "Skylar (default reading voice)",
+        "description": "Primary female voice — the default for reading and read-aloud.",
+        "image": DEFAULT_IMAGE,
+    },
+    {
+        "id": "47c38ca4-5f35-497b-b1a3-415245fb35e1",
+        "name": "Daniel (default assistant voice)",
+        "description": "Primary male voice — the default for assistant replies.",
+        "image": DEFAULT_IMAGE,
+    },
+    {
         "id": "97e7d7a9-dfaa-4758-a936-f5f844ac34cc",
         "name": "Japanese Man Book",
         "description": "This voice is deep and even, perfect for narrational content in Japanese",

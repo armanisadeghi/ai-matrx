@@ -14,10 +14,10 @@ import { useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
-  DEFAULT_VOICE_ID,
-  STUDIO_VOICE_ID,
-  type TtsTestConfig,
-} from "./cartesiaTestEngine";
+  ASSISTANT_VOICE_ID,
+  READING_VOICE_ID,
+} from "@/lib/cartesia/config";
+import { DEFAULT_TEST_CONFIG, type TtsTestConfig } from "./cartesiaTestEngine";
 import { TtsTesterPanel } from "./TtsTesterPanel";
 
 const PRESETS: ReadonlyArray<{ label: string; text: string }> = [
@@ -40,13 +40,8 @@ const PRESETS: ReadonlyArray<{ label: string; text: string }> = [
 ];
 
 const baseConfig: TtsTestConfig = {
-  modelId: "sonic-3.5",
-  voiceId: STUDIO_VOICE_ID,
-  language: "en",
-  speed: "normal",
-  playbackBufferSec: 1.0,
-  maxBufferDelayMs: 0,
-  emotions: [],
+  ...DEFAULT_TEST_CONFIG,
+  voiceId: READING_VOICE_ID,
 };
 
 export function TtsTesterBench() {
@@ -68,9 +63,10 @@ export function TtsTesterBench() {
       <header className="shrink-0 border-b border-border bg-card/95 px-4 py-3 backdrop-blur">
         <h1 className="text-base font-semibold text-foreground">Voice Tester</h1>
         <p className="text-xs text-muted-foreground">
-          Side-by-side Cartesia comparison. The default A/B isolates the client
-          playback buffer (1.0s vs 0.25s) on Sonic 3.5 — flip it to hear the
-          choppy "pauses" effect. Then vary model, voice, and server buffering.
+          Side-by-side Cartesia comparison on Sonic 3.5 (latest format:
+          generation_config speed/volume/emotion). The default A/B compares the
+          two system voices — Skylar (reading) vs Daniel (assistant) — at the
+          production buffer. Tune speed, buffer, and server buffering from there.
         </p>
       </header>
 
@@ -104,19 +100,15 @@ export function TtsTesterBench() {
         {/* A/B panels */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TtsTesterPanel
-            title="A"
+            title="A — Skylar (reading)"
             text={text}
             accent="border-primary/40"
-            initialConfig={{ ...baseConfig, playbackBufferSec: 1.0 }}
+            initialConfig={{ ...baseConfig, voiceId: READING_VOICE_ID }}
           />
           <TtsTesterPanel
-            title="B"
+            title="B — Daniel (assistant)"
             text={text}
-            initialConfig={{
-              ...baseConfig,
-              voiceId: DEFAULT_VOICE_ID,
-              playbackBufferSec: 0.25,
-            }}
+            initialConfig={{ ...baseConfig, voiceId: ASSISTANT_VOICE_ID }}
           />
         </div>
 
