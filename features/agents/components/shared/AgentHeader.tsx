@@ -37,13 +37,13 @@ export function AgentHeader({
   return (
     <>
       {/* ── Mobile layout (< lg) ─────────────────────────────────────────── */}
-      <div className="lg:hidden w-full">
+      {/* <div className="lg:hidden w-full">
         <AgentHeaderMobile
           agentId={agentId}
           agentName={agentName}
           basePath={basePath}
         />
-      </div>
+      </div> */}
 
       {/* ── Desktop layout (>= lg) ───────────────────────────────────────── */}
       <div className="hidden lg:flex items-center justify-between w-full gap-0 px-0">

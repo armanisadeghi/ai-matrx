@@ -1,8 +1,8 @@
 import React from "react";
 import { PublicProviders } from "./PublicProviders";
 import { PublicHeader } from "@/components/matrx/PublicHeader";
-import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
 import { CanvasReopenChip } from "@/features/canvas/core/CanvasReopenChip";
+import { CanvasSideSheetInner } from "@/features/canvas/core/CanvasSideSheetInner";
 
 export default function PublicLayout({
   children,
@@ -17,7 +17,7 @@ export default function PublicLayout({
       </div>
       {/* Canvas surface mounted at layout root so it sits above all page
           content (z-10000) and is available from every public route. */}
-      <CanvasSideSheet />
+      <CanvasSideSheetInner />
       <CanvasReopenChip />
     </PublicProviders>
   );
