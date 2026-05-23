@@ -126,7 +126,32 @@ identical. This is purely an AWS provisioning step (instance + image presence).
 | Agent tools (fs/exec/git/...) reach the box via scoped token | ✅ live + verified |
 | `/agent-binding` turnkey handoff object | ✅ live + verified |
 | aidream `active_sandbox` binding + chat `sandbox` field | ✅ present in aidream |
-| Frontend: claim → agent-binding → attach to chat | ⏳ frontend PR (their Vercel deploy) |
+| Frontend: attach a sandbox to chat (shared box + per-conversation override) | ✅ built (FE) |
+| Frontend: per-user Memory panel (settings → AI → Memory) | ✅ built (FE) |
 | AI Dream files bridge (PDFs/images in) | ⏳ operator action 1 |
 | EC2 chat-speed | ⏳ operator action 2 |
 | In-box loop (Model A, aidream box only) | not built; not required |
+
+### Frontend wiring — the contract correction (2026-05-23)
+
+The handoff above says to send the binding as a top-level `sandbox` field.
+The frontend had already migrated to shipping it inside the unified
+`client.state["sandbox-fs"]` capability — but **that path is a no-op for tool
+routing today.** aidream stashes the capability payload under
+`ctx.metadata["client_capabilities_payloads"]["sandbox-fs"]`, while the
+matrx-ai fs/shell tools read `ctx.metadata["active_sandbox"]`
+(`_sandbox_proxy.py#get_active_sandbox`), which aidream populates **only** from
+the top-level `request.sandbox` field (`routers/chat.py`, `core/agent_run.py`).
+There is no bridge between the two keys yet (aidream comment: client.state is
+the *intended-future* canonical transport).
+
+Fix shipped on the FE: the execute thunks now promote the binding to the
+top-level `sandbox` field (keeping the capability for forward-compat). When
+aidream bridges `client_capabilities_payloads["sandbox-fs"]` → `active_sandbox`,
+delete the promotion lines in `execute-instance.thunk.ts` /
+`execute-manual-instance.thunk.ts`.
+
+Binding model on the FE: one shared `userPreferences.coding.activeAgentSandbox`
+box across all conversations, with a per-conversation override on
+`cx_conversation.sandbox_instance_id`. Resolved by `lib/sandbox/active-binding.ts`
+(`resolveAgentSandboxRef`): override → user-active → editor-active → none.
