@@ -157,6 +157,24 @@ export function AgentConversationDisplay({
       });
     }
 
+    // The virtual streaming entry. When a request is active but the server has
+    // not yet reserved its assistant cx_message (the pre-token gap on every
+    // turn) — or never will, because the fetch failed before any event landed
+    // (immediate error: chunkCount 0, firstChunkAt null) — there is no real
+    // assistant record to render. Synthesize one anchored to the live request
+    // so the pre-token indicator AND the error state have a bubble to live in.
+    // Once the server reserves the real record, `streamingAssistantId` becomes
+    // non-null and this block is skipped — a seamless swap to the real entry.
+    if (isActive && latestRequestId && streamingAssistantId === null) {
+      entries.push({
+        key: `__streaming__:${latestRequestId}`,
+        role: "assistant",
+        messageId: null,
+        requestId: latestRequestId,
+        isStreamActive: true,
+      });
+    }
+
     return entries;
   }, [messages, isActive, latestRequestId]);
 

@@ -34,8 +34,12 @@ import { useCallback, useMemo, useState } from "react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDebugContext } from "@/hooks/useDebugContext";
-import { selectErrorIsFatal } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  selectErrorIsFatal,
+  selectRequestError,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   selectMessageById,
   extractFlatText,
@@ -43,12 +47,13 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
 import { AssistantError } from "../../run/AssistantError";
+import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
 import { RetryConfirmDialog } from "@/features/agents/components/messages-display/message-options/RetryConfirmDialog";
 import { atomicRetry } from "@/features/agents/redux/execution-system/message-crud/atomic-retry.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { Button } from "@/components/ui/button";
-import { Loader2, RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
@@ -102,6 +107,13 @@ export function AgentAssistantMessage({
   // instead of the live token text so the response paints in one frame
   // on completion. Default false; existing surfaces are unaffected.
   const bufferStream = useAppSelector(selectBufferStream(conversationId));
+
+  // The full backend/client error (e.g. "Failed to fetch") for this request,
+  // and the unified stream phase that drives the live indicator below.
+  const streamError = useAppSelector(
+    requestId ? selectRequestError(requestId) : () => undefined,
+  );
+  const phase = useAppSelector(selectStreamPhase(conversationId));
 
   const record = useAppSelector(
     messageId ? selectMessageById(conversationId, messageId) : () => undefined,
@@ -191,7 +203,13 @@ export function AgentAssistantMessage({
   if (isFatalError) {
     return (
       <div className="flex flex-col gap-2 mt-1">
-        <AssistantError error="An error occurred during streaming." />
+        <AssistantError
+          error={
+            streamError?.user_message ??
+            streamError?.message ??
+            "An error occurred during streaming."
+          }
+        />
         {canRetry && (
           <div className="ml-10">
             <Button
@@ -254,23 +272,40 @@ export function AgentAssistantMessage({
       className="group/assistant-msg rounded transition-shadow"
     >
       {bufferStream && isStreamActive ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Working on it…</p>
+        <div className="flex items-center justify-center py-12">
+          <BreathingOrb size={32} />
         </div>
       ) : (
-        <MarkdownStream
-          requestId={effectiveRequestId}
-          turnId={messageId}
-          conversationId={conversationId}
-          messageId={messageId ?? undefined}
-          content={flatText}
-          isStreamActive={isStreamActive}
-          hideCopyButton={true}
-          allowFullScreenEditor={false}
-          serverProcessedBlocks={serverProcessedBlocks}
-          onContentChange={handleInlineContentChange}
-        />
+        <>
+          <MarkdownStream
+            requestId={effectiveRequestId}
+            turnId={messageId}
+            conversationId={conversationId}
+            messageId={messageId ?? undefined}
+            content={flatText}
+            isStreamActive={isStreamActive}
+            hideCopyButton={true}
+            allowFullScreenEditor={false}
+            serverProcessedBlocks={serverProcessedBlocks}
+            onContentChange={handleInlineContentChange}
+          />
+          {/* Live indicator, just below the streaming content. The first
+              (connecting) beat is a brief text status with NO animation; once
+              server events start flowing it becomes the breathing orb, which
+              moves down as content grows above it and unmounts when the stream
+              ends (replaced by the action bar). Server-driven statuses
+              ("Thinking…", tool phases) keep coming from the stream itself. */}
+          {isStreamActive && phase === "connecting" && (
+            <p className="mt-1.5 text-sm text-muted-foreground">Processing…</p>
+          )}
+          {isStreamActive &&
+            (phase === "pre_token" ||
+              phase === "reasoning" ||
+              phase === "text_streaming" ||
+              phase === "interstitial") && (
+              <BreathingOrb className="mt-1.5" size={24} />
+            )}
+        </>
       )}
       {messageId && (
         <MessageFilesStrip

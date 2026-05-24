@@ -14,7 +14,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import {
+  selectUserInputText,
+  selectSubmissionPhase,
+} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
@@ -22,7 +25,7 @@ import {
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Mic, Braces, CornerDownLeft } from "lucide-react";
 
@@ -49,8 +52,14 @@ export function CompactAssistantInput({
 
   // ── Redux state ─────────────────────────────────────────────────────────────
   const inputText = useAppSelector(selectUserInputText(conversationId));
+  const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
+
+  // Hide the in-flight message from the box (it moves into the conversation);
+  // the text stays in Redux as the non-visual backup. `inputText` is still used
+  // by the voice-append/auto-submit logic below.
+  const visibleText = submissionPhase === "pending" ? "" : inputText;
   const variableDefs = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
   );
@@ -98,12 +107,12 @@ export function CompactAssistantInput({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 100)}px`;
-  }, [inputText]);
+  }, [visibleText]);
 
   // ── Send logic ──────────────────────────────────────────────────────────────
   const handleSend = useCallback(() => {
     if (isSendDisabled) return;
-    dispatch(executeInstance({ conversationId }));
+    dispatch(smartExecute({ conversationId }));
   }, [isSendDisabled, conversationId, dispatch]);
 
   const handleKeyDown = useCallback(
@@ -130,7 +139,7 @@ export function CompactAssistantInput({
       <div className="px-2 pt-1">
         <textarea
           ref={textareaRef}
-          value={inputText}
+          value={visibleText}
           onChange={(e) =>
             dispatch(setUserInputText({ conversationId, text: e.target.value }))
           }

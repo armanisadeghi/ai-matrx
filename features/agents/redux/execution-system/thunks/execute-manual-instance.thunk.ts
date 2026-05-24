@@ -722,6 +722,13 @@ export const executeManualInstance = createAsyncThunk<
         }),
       );
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
+      // Pre-persistence failure: clear the hidden input so the message doesn't
+      // linger in the box. It survives as the optimistic user bubble + the
+      // `lastSubmittedText` re-apply backup, so nothing is lost.
+      const { clearUserInput } = await import(
+        "../instance-user-input/instance-user-input.slice"
+      );
+      dispatch(clearUserInput(conversationId));
 
       return rejectWithValue(
         error instanceof Error ? error.message : "Manual execution failed",

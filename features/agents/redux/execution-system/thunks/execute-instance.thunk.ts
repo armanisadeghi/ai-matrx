@@ -579,6 +579,15 @@ export const executeInstance = createAsyncThunk<
         }),
       );
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
+      // Pre-persistence failure (e.g. "Failed to fetch"): clear the hidden
+      // input so the message doesn't linger in the box. It survives as the
+      // optimistic user bubble + the `lastSubmittedText` re-apply backup, so
+      // nothing is lost. (markInputPersisted, which normally clears it on
+      // success, never ran on this path.)
+      const { clearUserInput } = await import(
+        "../instance-user-input/instance-user-input.slice"
+      );
+      dispatch(clearUserInput(conversationId));
 
       return rejectWithValue(
         error instanceof Error ? error.message : "Execution failed",

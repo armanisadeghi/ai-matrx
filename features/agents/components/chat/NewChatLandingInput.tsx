@@ -14,6 +14,7 @@ import { selectIsExecuting } from "@/features/agents/redux/execution-system/sele
 import {
   selectUserInputText,
   selectInputCharCount,
+  selectSubmissionPhase,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { cn } from "@/lib/utils";
@@ -47,8 +48,13 @@ export function NewChatLandingInput({
   const dispatch = useAppDispatch();
   const text = useAppSelector(selectUserInputText(conversationId));
   const charCount = useAppSelector(selectInputCharCount(conversationId));
+  const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const canSend = !isExecuting && charCount > 0;
+
+  // Hide the message while a submit is in flight (it moves into the streaming
+  // conversation); the text stays in Redux as the non-visual backup.
+  const visibleText = submissionPhase === "pending" ? "" : text;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Once the textarea exceeds a single line we flip the grid layout so the
@@ -66,7 +72,7 @@ export function NewChatLandingInput({
     // Threshold: one line of text-base + leading-relaxed ≈ 28px. Use a small
     // buffer so wrapping kicks in only on a real second line.
     setIsExpanded(next > 36);
-  }, [text]);
+  }, [visibleText]);
 
   const submit = useCallback(() => {
     if (isExecuting) {
@@ -122,7 +128,7 @@ export function NewChatLandingInput({
       {/* Primary — textarea */}
       <textarea
         ref={textareaRef}
-        value={text}
+        value={visibleText}
         onChange={(e) =>
           dispatch(setUserInputText({ conversationId, text: e.target.value }))
         }

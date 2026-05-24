@@ -27,6 +27,7 @@ import type {
   InitCompletionStatus,
   RenderBlockPayload,
   CompletionPayload,
+  ErrorPayload,
   WarningPayload,
   InfoPayload,
   UserRequestResult,
@@ -1081,6 +1082,16 @@ export const selectErrorIsFatal =
   (requestId: string) =>
   (state: RootState): boolean =>
     state.activeRequests.byRequestId[requestId]?.status === "error";
+
+/**
+ * The backend `ErrorPayload` for this request, if it failed. Returns undefined
+ * when there is no error. Consumers decide whether to show `error.user_message`
+ * (human-friendly) or `error.message` (technical) — we don't collapse them here.
+ */
+export const selectRequestError =
+  (requestId: string) =>
+  (state: RootState): ErrorPayload | undefined =>
+    state.activeRequests.byRequestId[requestId]?.error ?? undefined;
 
 // =============================================================================
 // Conversation Tree

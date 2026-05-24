@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import {
   selectUserInputText,
   selectInputCharCount,
+  selectSubmissionPhase,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -88,7 +89,17 @@ export function AgentTextarea({
   // Redux — primitive selectors, no object churn
   const inputText = useAppSelector(selectUserInputText(conversationId));
   const charCount = useAppSelector(selectInputCharCount(conversationId));
+  const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
+
+  // While a submit is in flight (phase "pending"), hide the message from the
+  // box so it appears to move straight into the conversation. The text stays in
+  // Redux (`entry.text`) as the non-visual backup that `assembleRequest` reads
+  // to build the request — it is NOT cleared here. On success it's cleared for
+  // real (markInputPersisted); on failure clearUserInput keeps the box empty
+  // (the message survives as the failed turn + the re-apply backup).
+  const isSubmitting = submissionPhase === "pending";
+  const visibleText = isSubmitting ? "" : inputText;
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const reduxPlaceholder = useAppSelector(
     selectInputPlaceholder(conversationId),
@@ -103,7 +114,8 @@ export function AgentTextarea({
   useInstanceInputUndoRedo({ conversationId });
 
   // Expand icon: show whenever expanded OR text is long enough to need it (hidden in singleRow)
-  const showExpand = !singleRow && (isExpanded || charCount > 80);
+  const showExpand =
+    !singleRow && (isExpanded || (isSubmitting ? 0 : charCount) > 80);
 
   // ── File upload ─────────────────────────────────────────────────────────────
   const { upload } = useFileUpload();
@@ -218,7 +230,7 @@ export function AgentTextarea({
     el.style.height = "auto"; // reset so scrollHeight reflects actual content
     const natural = Math.max(minH, Math.min(el.scrollHeight, 200));
     el.style.height = `${natural}px`;
-  }, [inputText, isExpanded, singleRow, compact]);
+  }, [visibleText, isExpanded, singleRow, compact]);
 
   // ── Auto-focus ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -235,7 +247,7 @@ export function AgentTextarea({
       <div className="relative flex items-center min-w-0">
         <textarea
           ref={textareaRef}
-          value={inputText}
+          value={visibleText}
           onChange={(e) => handleTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholderText}
@@ -252,7 +264,7 @@ export function AgentTextarea({
       <div className="relative">
         <textarea
           ref={textareaRef}
-          value={inputText}
+          value={visibleText}
           onChange={(e) => handleTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholderText}
