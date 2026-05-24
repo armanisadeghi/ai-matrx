@@ -300,7 +300,7 @@ export const scratchpadArgsSchema = z.object({
 export type ScratchpadArgs = z.infer<typeof scratchpadArgsSchema>;
 
 export const storageArgsSchema = z.object({
-  action: z.enum(["get", "set", "list"]),
+  action: z.enum(["get", "set", "list", "delete"]),
   key: z.string().min(1).max(120).optional(),
   value: z.unknown().optional(),
 });
