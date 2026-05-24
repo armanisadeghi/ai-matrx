@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
+import SandboxAttachControl from "@/features/agents/components/chat/SandboxAttachControl";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
@@ -166,6 +167,11 @@ export function InputActionButtons({
             uploadPath={uploadPath}
           />
         )}
+
+        {/* Attach an agent sandbox (shared box by default; per-conversation
+            override is the advanced path). Lives in the shared input toolbar so
+            every chat surface gets it. */}
+        <SandboxAttachControl conversationId={conversationId} />
 
         {isAdmin && isDebugMode && (
           <InputButton

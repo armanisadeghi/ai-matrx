@@ -170,15 +170,15 @@ export default function SandboxAttachControl({
               ? `Agent sandbox attached${resolvedSource === "override" ? " (this conversation)" : " (shared)"}`
               : "Attach an agent sandbox"
           }
-          className={`relative p-1.5 rounded-md transition-colors ${
+          className={`relative h-8 w-8 flex items-center justify-center rounded-full transition-colors ${
             resolved
-              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30"
-              : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/50 border border-transparent"
+              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/15"
+              : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"
           }`}
         >
-          <Box className="h-3.5 w-3.5" />
+          <Box className="h-4 w-4" />
           {resolved && (
-            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
           )}
         </button>
       </PopoverTrigger>

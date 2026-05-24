@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
+import SandboxAttachControl from "@/features/agents/components/chat/SandboxAttachControl";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import {
@@ -117,6 +118,8 @@ export function SingleRowActionButtons({
           uploadPath={uploadPath}
         />
       )}
+
+      <SandboxAttachControl conversationId={conversationId} />
 
       {isAdmin && isDebugMode && (
         <InputButton

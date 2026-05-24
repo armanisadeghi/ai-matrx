@@ -30,7 +30,6 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
-import SandboxAttachControl from "./SandboxAttachControl";
 
 const ShareModal = dynamic(
   () => import("@/features/sharing").then((m) => ({ default: m.ShareModal })),
@@ -60,11 +59,7 @@ export default function ChatHeaderControls() {
   // not gated behind admin like the block/snapshot toggles. The widget
   // self-hides until the slice has a real measurement.
   const showGauge = isAuthenticated && !!conversationId;
-  // The sandbox attach control sets the user's SHARED active box, so it shows
-  // for any authenticated user — even outside a conversation. Inside a
-  // conversation it also offers the per-conversation override.
-  const showSandbox = isAuthenticated;
-  if (!showShare && !isAdmin && !showGauge && !showSandbox) return null;
+  if (!showShare && !isAdmin && !showGauge) return null;
 
   return (
     <>
@@ -106,10 +101,6 @@ export default function ChatHeaderControls() {
                 <Camera className="h-3.5 w-3.5" />
               </button>
             </>
-          )}
-
-          {showSandbox && (
-            <SandboxAttachControl conversationId={conversationId} />
           )}
 
           {showShare && (
