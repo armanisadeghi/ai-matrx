@@ -58,7 +58,7 @@ export function newRequestId(): string {
  * Priority:
  *   1. Explicit `override` (tests, edge cases).
  *   2. Redux `apiConfigSlice.activeServer` (set by the admin server-toggle UI
- *      — `production` / `development` / `staging` / `localhost` / `gpu` /
+ *      — `production` / `development` / `ec2` / `staging` / `localhost` / `gpu` /
  *      `custom`). This is the SAME selector `useBackendApi` reads, so the
  *      cloud-files client follows whichever server the user picked instead
  *      of hard-locking to production.

@@ -2,6 +2,8 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import type { FlashcardState } from "@/lib/redux/slices/flashcardChatSlice";
+import type { ChatMessage } from "@/types/flashcards.types";
 
 const selectFlashcardsRecord = (state: RootState) =>
   state.flashcardChat.flashcards;
@@ -24,6 +26,8 @@ const selectActiveFlashcard = createSelector(
   },
 );
 
+const EMPTY_CHAT: ChatMessage[] = [];
+
 // Select all flashcard data (without chat history)
 const selectAllFlashcardData = createSelector(
   [selectAllFlashcards],
@@ -33,7 +37,7 @@ const selectAllFlashcardData = createSelector(
 // Select chat history for the active flashcard
 const selectActiveFlashcardChat = createSelector(
   [selectActiveFlashcard],
-  (activeFlashcard) => (activeFlashcard ? activeFlashcard.chat : []),
+  (activeFlashcard) => activeFlashcard?.chat ?? EMPTY_CHAT,
 );
 
 // Select total correct and incorrect counts
@@ -49,9 +53,24 @@ const selectPerformanceCounts = createSelector(
   }),
 );
 
-// Select a specific flashcard by ID
-const selectFlashcardById = (id: string) => (state: RootState) =>
-  state.flashcardChat.flashcards[id] || null;
+const flashcardByIdSelectorCache = new Map<
+  string,
+  (state: RootState) => FlashcardState | undefined
+>();
+
+/** Memoized lookup for a single flashcard id — stable ref when record unchanged. */
+const selectFlashcardById = (id: string) => {
+  if (!flashcardByIdSelectorCache.has(id)) {
+    flashcardByIdSelectorCache.set(
+      id,
+      createSelector(
+        [selectFlashcardsRecord],
+        (flashcards): FlashcardState | undefined => flashcards[id],
+      ),
+    );
+  }
+  return flashcardByIdSelectorCache.get(id)!;
+};
 
 export {
   selectAllFlashcards,

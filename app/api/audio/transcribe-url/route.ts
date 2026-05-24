@@ -28,6 +28,7 @@ const groq = new Groq({
 const ALLOWED_URL_HOSTS = [
   process.env.NEXT_PUBLIC_BACKEND_URL_PROD,
   process.env.NEXT_PUBLIC_BACKEND_URL_DEV,
+  process.env.NEXT_PUBLIC_BACKEND_URL_EC2,
   process.env.NEXT_PUBLIC_BACKEND_URL_STAGING,
   process.env.NEXT_PUBLIC_BACKEND_URL_LOCAL,
   process.env.NEXT_PUBLIC_BACKEND_URL_GPU,
@@ -68,7 +69,8 @@ async function transcribeUrlWithRetry(
       const result = await groq.audio.transcriptions.create(options as never);
       return { data: result, attempts: attempt };
     } catch (err: unknown) {
-      lastError = err instanceof Error ? err : new Error(extractErrorMessage(err));
+      lastError =
+        err instanceof Error ? err : new Error(extractErrorMessage(err));
       const status = (err as { status?: number })?.status;
       const retryAfter = (
         err as { headers?: { get?: (k: string) => string | null } }
@@ -137,7 +139,10 @@ export async function POST(request: NextRequest) {
 
     if (!isAllowedUrl(url)) {
       return NextResponse.json(
-        { error: "URL is not on the transcription allowlist (cld_files signed URLs only)." },
+        {
+          error:
+            "URL is not on the transcription allowlist (cld_files signed URLs only).",
+        },
         { status: 400 },
       );
     }
@@ -176,7 +181,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(extractErrorMessage(error));
+    const err =
+      error instanceof Error ? error : new Error(extractErrorMessage(error));
     const status = (error as { status?: number })?.status;
 
     console.error("[/api/audio/transcribe-url] Final failure:", err.message);

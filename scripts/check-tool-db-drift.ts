@@ -170,7 +170,15 @@ function compareTool(name: string, schema: z.ZodTypeAny, db: DbToolRow): string[
     }
     const le = l.enum ? asSet((l.enum as unknown[]).map(String)) : null;
     const de = d.enum ? asSet((d.enum as unknown[]).map(String)) : null;
-    if (le && de) {
+    // One-sided enum drift matters too: if the DB constrains a field to an enum
+    // but the code uses a plain string (or vice-versa), the model and the
+    // dispatcher disagree on what's valid. (Without this, "fixing" a drift by
+    // deleting the Zod enum would falsely go green.)
+    if (le && !de) {
+      issues.push(`${field}: code constrains to enum ${JSON.stringify([...le])} but DB has no enum`);
+    } else if (!le && de) {
+      issues.push(`${field}: DB constrains to enum ${JSON.stringify([...de])} but code has no enum`);
+    } else if (le && de) {
       const ed = setDiff(le, de);
       if (ed.onlyA.length || ed.onlyB.length) {
         issues.push(`${field}: enum drift (code-only=${JSON.stringify(ed.onlyA)}, db-only=${JSON.stringify(ed.onlyB)})`);

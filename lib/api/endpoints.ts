@@ -252,16 +252,13 @@ export const ENDPOINTS = {
 
     // ── Phase 3 — layout analysis ─────────────────────────────────────────
     /** POST — Detect headers / footers / watermarks / recurring side notes. Returns `RepeatedRegionsReport`. */
-    detectRepeatedRegions:
-      "/utilities/pdf/detect-repeated-regions" as const,
+    detectRepeatedRegions: "/utilities/pdf/detect-repeated-regions" as const,
     /** POST — Detect + strip repeated regions from per-page text. Returns `StripRepeatedRegionsResultSchema`. */
-    stripRepeatedRegions:
-      "/utilities/pdf/strip-repeated-regions" as const,
+    stripRepeatedRegions: "/utilities/pdf/strip-repeated-regions" as const,
     /** POST — Classify every page (cover / TOC / body / exhibit / signature / billing / ...). Returns `LayoutClassificationReport`. */
     classifyPages: "/utilities/pdf/classify-pages" as const,
     /** POST — Multi-column → linear reading order. Returns `ReadingOrderReport`. */
-    extractReadingOrder:
-      "/utilities/pdf/extract-reading-order" as const,
+    extractReadingOrder: "/utilities/pdf/extract-reading-order" as const,
 
     // ── Phase 4 — redaction & privacy ─────────────────────────────────────
     /** GET — Builtin redaction pattern catalog (SSN / email / phone / MRN / ...). */
@@ -271,15 +268,13 @@ export const ENDPOINTS = {
     /** POST — Redact every regex match (builtin id or raw pattern). PDF blob or persisted JSON. */
     redactPattern: "/utilities/pdf/redact-pattern" as const,
     /** POST — Detect repeated regions then redact selected/all. PDF blob or persisted JSON. */
-    redactRepeatedRegions:
-      "/utilities/pdf/redact-repeated-regions" as const,
+    redactRepeatedRegions: "/utilities/pdf/redact-repeated-regions" as const,
     /** POST — Wipe /Info + XMP metadata + thumbnails. */
     stripMetadata: "/utilities/pdf/strip-metadata" as const,
     /** POST — Granular composite scrub (metadata / attachments / JS / flatten). */
     scrub: "/utilities/pdf/scrub" as const,
     /** POST — Bake annotations + widgets into page content. */
-    flattenAnnotations:
-      "/utilities/pdf/flatten-annotations" as const,
+    flattenAnnotations: "/utilities/pdf/flatten-annotations" as const,
   },
 
   /**
@@ -450,6 +445,7 @@ export const ENDPOINTS = {
  * Environment variables:
  *   NEXT_PUBLIC_BACKEND_URL_PROD     → production server
  *   NEXT_PUBLIC_BACKEND_URL_DEV      → development/feature-branch server
+ *   NEXT_PUBLIC_BACKEND_URL_EC2      → EC2 server
  *   NEXT_PUBLIC_BACKEND_URL_STAGING  → staging server
  *   NEXT_PUBLIC_BACKEND_URL_LOCAL    → local dev (default: http://localhost:8000)
  *   NEXT_PUBLIC_BACKEND_URL_GPU      → dedicated GPU inference server
@@ -464,6 +460,7 @@ export const ENDPOINTS = {
 export const BACKEND_URLS: Record<string, string | undefined> = {
   production: process.env.NEXT_PUBLIC_BACKEND_URL_PROD,
   development: process.env.NEXT_PUBLIC_BACKEND_URL_DEV,
+  ec2: process.env.NEXT_PUBLIC_BACKEND_URL_EC2,
   staging: process.env.NEXT_PUBLIC_BACKEND_URL_STAGING,
   localhost:
     process.env.NEXT_PUBLIC_BACKEND_URL_LOCAL ?? "http://localhost:8000",

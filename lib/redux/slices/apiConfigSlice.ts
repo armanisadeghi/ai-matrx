@@ -48,6 +48,7 @@ import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 export type ServerEnvironment =
   | "production"
   | "development"
+  | "ec2"
   | "staging"
   | "localhost"
   | "gpu"

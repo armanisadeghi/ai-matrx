@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useLayoutEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   Flashcard,
@@ -117,8 +117,8 @@ export const useFlashcard = (initialFlashcards: FlashcardData[]) => {
     }, []),
   };
 
-  // Initialize flashcards
-  useEffect(() => {
+  // Sync static deck into Redux before paint so client singleton stays aligned with route data.
+  useLayoutEffect(() => {
     const flashcardsToInitialize = initialFlashcards.map((card, index) => ({
       ...card,
       id: `flashcard-${index}`,
