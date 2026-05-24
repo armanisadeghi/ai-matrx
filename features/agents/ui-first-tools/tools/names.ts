@@ -18,7 +18,7 @@ export const UI_FIRST_TOOL_NAMES = [
   "request_user_takeover",
   "tasks",
   "user_todos",
-  "memory",
+  "scratchpad",
   "storage",
 ] as const;
 

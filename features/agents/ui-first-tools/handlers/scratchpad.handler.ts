@@ -1,11 +1,16 @@
 /**
- * `memory` handler — get / set / list / delete on the per-conversation
- * scratchpad (cx_agent_memory). Ephemeral concept — cleared on conversation
- * delete (CASCADE).
+ * `scratchpad` handler — get / set / list / delete on the per-conversation
+ * scratchpad (cx_agent_memory). EPHEMERAL, single-session — cleared on
+ * conversation delete (CASCADE).
+ *
+ * This is DISTINCT from the persistent, semantic `memory` tool (server-side,
+ * source_app=matrx_ai: recall/search/store/update/forget). They are NOT the same
+ * thing and must never share a name — that collision is exactly what this rename
+ * fixed.
  */
 
 import type { ToolHandler } from "./types";
-import type { MemoryArgs } from "../tools/schemas";
+import type { ScratchpadArgs } from "../tools/schemas";
 import type { MemoryResult } from "../tools/types";
 import {
   getMemory,
@@ -14,8 +19,8 @@ import {
   deleteMemory,
 } from "../service/agent-memory.service";
 
-export const memoryHandler: ToolHandler<MemoryArgs, MemoryResult> = {
-  name: "memory",
+export const scratchpadHandler: ToolHandler<ScratchpadArgs, MemoryResult> = {
+  name: "scratchpad",
   async run(args, ctx) {
     const { conversationId, userId } = ctx;
 

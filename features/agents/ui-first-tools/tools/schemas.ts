@@ -13,8 +13,8 @@
  *   - requestTakeoverArgsSchema  — reason + expected_action? + instructions?
  *   - tasksArgsSchema            — eight actions on cx_agent_task
  *   - userTodosArgsSchema        — six actions on cx_user_todo
- *   - memoryArgsSchema           — get | set | list | delete on cx_agent_memory
- *   - storageArgsSchema          — get | set | list | delete on agent_user_kv
+ *   - scratchpadArgsSchema       — get | set | list | delete on cx_agent_memory (ephemeral)
+ *   - storageArgsSchema          — get | set | list on agent_user_kv
  *
  * Plus the response envelopes the dispatcher emits back to the server.
  */
@@ -217,7 +217,8 @@ export const requestTakeoverArgsSchema = z.object({
   reason: z.string().min(1),
   expected_action: z.string().optional(),
   instructions: z.string().optional(),
-  timeout_seconds: z.number().int().min(1).max(900).optional(),
+  // tab_id matches the DB contract (browser surfaces use it; the web app ignores it).
+  tab_id: z.string().optional(),
 });
 
 export type RequestTakeoverArgs = z.infer<typeof requestTakeoverArgsSchema>;
@@ -284,18 +285,21 @@ export const userTodosArgsSchema = z.object({
 export type UserTodosArgs = z.infer<typeof userTodosArgsSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// memory / storage — KV stores
+// scratchpad / storage — KV stores
+//   scratchpad = ephemeral, single-session (cx_agent_memory). Distinct from the
+//   persistent semantic `memory` tool (server-side) — never the same thing.
+//   storage   = persistent per-user KV (agent_user_kv).
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const memoryArgsSchema = z.object({
+export const scratchpadArgsSchema = z.object({
   action: z.enum(["get", "set", "list", "delete"]),
   key: z.string().min(1).max(120).optional(),
   value: z.unknown().optional(),
 });
-export type MemoryArgs = z.infer<typeof memoryArgsSchema>;
+export type ScratchpadArgs = z.infer<typeof scratchpadArgsSchema>;
 
 export const storageArgsSchema = z.object({
-  action: z.enum(["get", "set", "list", "delete"]),
+  action: z.enum(["get", "set", "list"]),
   key: z.string().min(1).max(120).optional(),
   value: z.unknown().optional(),
 });

@@ -6,12 +6,7 @@
 import type { ToolHandler } from "./types";
 import type { StorageArgs } from "../tools/schemas";
 import type { StorageResult } from "../tools/types";
-import {
-  getKv,
-  setKv,
-  listKvKeys,
-  deleteKv,
-} from "../service/agent-user-kv.service";
+import { getKv, setKv, listKvKeys } from "../service/agent-user-kv.service";
 
 export const storageHandler: ToolHandler<StorageArgs, StorageResult> = {
   name: "storage",
@@ -36,13 +31,6 @@ export const storageHandler: ToolHandler<StorageArgs, StorageResult> = {
       case "list": {
         const keys = await listKvKeys(userId);
         return { ok: true, action: "list", keys };
-      }
-      case "delete": {
-        if (!args.key) {
-          return { ok: false, action: "delete", message: "key is required" };
-        }
-        await deleteKv(userId, args.key);
-        return { ok: true, action: "delete", key: args.key };
       }
     }
   },

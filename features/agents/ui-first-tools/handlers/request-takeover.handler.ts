@@ -31,10 +31,9 @@ export const requestTakeoverHandler: ToolHandler<
       ? `${args.reason}\n\nExpected: ${args.expected_action}`
       : args.reason;
 
-    const expiresAtMs =
-      typeof args.timeout_seconds === "number"
-        ? Date.now() + args.timeout_seconds * 1000
-        : undefined;
+    // No model-controlled timeout (the DB contract carries no timeout_seconds);
+    // the takeover stays open until the user responds.
+    const expiresAtMs: number | undefined = undefined;
 
     dispatch(
       enqueuePendingAsk({

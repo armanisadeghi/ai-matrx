@@ -193,7 +193,10 @@ export function ChatRoomClient({
           state.messages?.byConversationId?.[conversationIdProp]?.orderedIds
             ?.length ?? 0;
         if (exists && alreadyLiveCount > 0) {
-          // Make sure focus points at this conversation, then bail.
+          // Make sure focus points at this conversation, then bail — unless
+          // this load was already superseded by a navigation (don't revert the
+          // surface back to the conversation the user just left).
+          if (ctrl.signal.aborted) return;
           dispatch(setFocus({ surfaceKey, conversationId: conversationIdProp }));
           return;
         }
@@ -213,6 +216,7 @@ export function ChatRoomClient({
           loadConversation({
             conversationId: conversationIdProp,
             surfaceKey,
+            signal: ctrl.signal,
           }),
         ).unwrap();
       } catch (err) {
@@ -294,21 +298,6 @@ export function ChatRoomClient({
   // ── Single source of truth ───────────────────────────────────────────────
   // Prop wins when present (loading existing). Otherwise launcher's id wins.
   const conversationId = conversationIdProp ?? liveConversationId ?? null;
-
-  // TEMP [chatdbg] revival diagnostic — remove once the +/agent-switch revival
-  // is fixed. Shows what the surface resolves to on each render.
-  if (typeof window !== "undefined") {
-    // eslint-disable-next-line no-console
-    console.log("[chatdbg] ChatRoomClient render", {
-      agentId,
-      surfaceKey,
-      conversationIdProp: conversationIdProp ?? null,
-      isInitializing,
-      liveConversationId: liveConversationId ?? null,
-      conversationId,
-      pendingNav: pendingNavigation?.conversationId ?? null,
-    });
-  }
 
   const handlePickAgent = (nextAgentId: string) => {
     if (nextAgentId === agentId) return;

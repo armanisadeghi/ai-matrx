@@ -249,15 +249,6 @@ export function useAgentLauncher(
 
     let createdId: string | null = null;
 
-    // TEMP [chatdbg]
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
-      console.log("[chatdbg] launcher effect → launchAgent", {
-        agentId,
-        surfaceKey,
-      });
-    }
-
     launchAgent(agentId!, {
       surfaceKey,
       sourceFeature,
@@ -272,21 +263,12 @@ export function useAgentLauncher(
     })
       .then((result) => {
         createdId = result.conversationId;
-        // TEMP [chatdbg]
-        if (typeof window !== "undefined") {
-          // eslint-disable-next-line no-console
-          console.log("[chatdbg] launcher created + setFocus", {
-            surfaceKey,
-            conversationId: result.conversationId,
-          });
-        }
         dispatch(
           setFocus({ surfaceKey, conversationId: result.conversationId }),
         );
       })
       .catch((err) =>
-        // eslint-disable-next-line no-console
-        console.error("[chatdbg] launcher FAILED to create:", surfaceKey, err),
+        console.error("Failed to create agent conversation:", err),
       );
 
     return () => {

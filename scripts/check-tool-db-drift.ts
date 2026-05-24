@@ -29,7 +29,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
-  memoryArgsSchema,
+  scratchpadArgsSchema,
   requestTakeoverArgsSchema,
   storageArgsSchema,
   tasksArgsSchema,
@@ -47,7 +47,7 @@ const SCHEMAS: Record<string, z.ZodTypeAny> = {
   request_user_takeover: requestTakeoverArgsSchema,
   tasks: tasksArgsSchema,
   user_todos: userTodosArgsSchema,
-  memory: memoryArgsSchema,
+  scratchpad: scratchpadArgsSchema,
   storage: storageArgsSchema,
 };
 

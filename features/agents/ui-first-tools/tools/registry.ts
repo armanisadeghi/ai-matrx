@@ -16,7 +16,7 @@ import {
   requestTakeoverArgsSchema,
   tasksArgsSchema,
   userTodosArgsSchema,
-  memoryArgsSchema,
+  scratchpadArgsSchema,
   storageArgsSchema,
 } from "./schemas";
 import { userHandler } from "../handlers/user.handler";
@@ -24,7 +24,7 @@ import { updatePlanHandler } from "../handlers/update-plan.handler";
 import { requestTakeoverHandler } from "../handlers/request-takeover.handler";
 import { tasksHandler } from "../handlers/tasks.handler";
 import { userTodosHandler } from "../handlers/user-todos.handler";
-import { memoryHandler } from "../handlers/memory.handler";
+import { scratchpadHandler } from "../handlers/scratchpad.handler";
 import { storageHandler } from "../handlers/storage.handler";
 
 export interface ToolRegistryEntry {
@@ -43,7 +43,7 @@ const registry: Record<string, ToolRegistryEntry> = {
   },
   tasks: { schema: tasksArgsSchema, handler: tasksHandler },
   user_todos: { schema: userTodosArgsSchema, handler: userTodosHandler },
-  memory: { schema: memoryArgsSchema, handler: memoryHandler },
+  scratchpad: { schema: scratchpadArgsSchema, handler: scratchpadHandler },
   storage: { schema: storageArgsSchema, handler: storageHandler },
 };
 

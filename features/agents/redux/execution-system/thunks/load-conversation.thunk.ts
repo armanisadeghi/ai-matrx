@@ -79,6 +79,13 @@ export interface LoadConversationArgs {
    * Used for pagination when scrolling older turns into view.
    */
   beforePosition?: number | null;
+  /**
+   * Optional abort signal from the calling surface. When it's aborted (the
+   * surface navigated away before this load resolved), the terminal `setFocus`
+   * is skipped — otherwise a late-resolving load reverts the surface back to
+   * this conversation after the user already moved on (e.g. clicked `+`).
+   */
+  signal?: AbortSignal;
 }
 
 interface ThunkApi {
@@ -105,7 +112,7 @@ export const loadConversation = createAsyncThunk<
 >(
   "conversations/load",
   async (
-    { conversationId, surfaceKey, messageLimit, beforePosition },
+    { conversationId, surfaceKey, messageLimit, beforePosition, signal },
     { dispatch },
   ) => {
     // Auth diagnostics — RLS-denied reads return as `PGRST116` with
@@ -411,8 +418,12 @@ export const loadConversation = createAsyncThunk<
       );
     }
 
-    // ── 7. Focus (if a surface was given) ────────────────────────────────────
-    if (surfaceKey) {
+    // ── 7. Focus (if a surface was given AND we weren't superseded) ──────────
+    // If the calling surface navigated away mid-load (signal aborted), skip the
+    // focus write. Otherwise this late-resolving load reverts the surface back
+    // to this conversation after the user already moved on — the "click + and
+    // it snaps back to the old chat" bug.
+    if (surfaceKey && !signal?.aborted) {
       dispatch(setFocus({ surfaceKey, conversationId }));
     }
 

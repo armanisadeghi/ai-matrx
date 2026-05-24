@@ -102,15 +102,6 @@ export function ChatPageShell({
   }, [isMobile, historyExpanded, historyDrawerOpen]);
 
   const handleNewChat = useCallback(() => {
-    // TEMP [chatdbg]
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
-      console.log("[chatdbg] handleNewChat", {
-        activeAgentId: activeAgentId ?? null,
-        hasOnNewChat: !!onNewChat,
-        target: activeAgentId ? `/chat/a/${activeAgentId}` : "/chat/new",
-      });
-    }
     if (onNewChat) {
       onNewChat();
       return;
