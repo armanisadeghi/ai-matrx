@@ -174,7 +174,7 @@ function PlanSection({ conversationId }: { conversationId: string }) {
             {plan.reasoning}
           </div>
         )}
-        {plan.steps.length > 0 && (
+        {plan.steps && plan.steps.length > 0 && (
           <ol className="list-decimal pl-5 space-y-0.5 text-sm">
             {plan.steps.map((s, i) => (
               <li key={i}>{s}</li>
@@ -322,8 +322,7 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
             onClick={() => setEditing(true)}
             className={cn(
               "text-sm text-left w-full leading-snug",
-              task.status === "done" &&
-                "text-muted-foreground line-through",
+              task.status === "done" && "text-muted-foreground line-through",
             )}
           >
             {task.title}

@@ -248,6 +248,7 @@ export function useAgentLauncher(
     if (!isManaged || !ready || !surfaceKey) return;
 
     let createdId: string | null = null;
+    let cancelled = false;
 
     launchAgent(agentId!, {
       surfaceKey,
@@ -263,6 +264,10 @@ export function useAgentLauncher(
     })
       .then((result) => {
         createdId = result.conversationId;
+        // If this effect was torn down before the launch resolved (agent
+        // switch / route change), the surface has moved on — setting focus now
+        // would revert it to this stale conversation. Skip it.
+        if (cancelled) return;
         dispatch(
           setFocus({ surfaceKey, conversationId: result.conversationId }),
         );
@@ -272,6 +277,7 @@ export function useAgentLauncher(
       );
 
     return () => {
+      cancelled = true;
       if (createdId) {
         // retainOnUnmount surfaces (chat route) keep started conversations
         // alive across the route change that promotes /chat/new →

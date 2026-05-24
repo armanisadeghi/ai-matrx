@@ -219,6 +219,7 @@ export const requestTakeoverArgsSchema = z.object({
   instructions: z.string().optional(),
   // tab_id matches the DB contract (browser surfaces use it; the web app ignores it).
   tab_id: z.string().optional(),
+  timeout_seconds: z.number().int().min(1).max(900).optional(),
 });
 
 export type RequestTakeoverArgs = z.infer<typeof requestTakeoverArgsSchema>;
