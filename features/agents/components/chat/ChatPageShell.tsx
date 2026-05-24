@@ -8,6 +8,8 @@ import {
   PanelLeftTapButton,
   PlusTapButton,
 } from "@/components/icons/tap-buttons";
+import { Menu } from "lucide-react";
+import PageHeaderPortal from "@/features/shell/components/header/PageHeaderPortal";
 import {
   Drawer,
   DrawerContent,
@@ -259,7 +261,7 @@ export function ChatPageShell({
     <div className="h-full flex overflow-hidden bg-textured">
       {!isMobile && historyExpanded && (
         <aside
-          className="hidden lg:flex w-64 shrink-0 border-r border-border flex-col overflow-hidden bg-card"
+          className="hidden md:flex w-64 shrink-0 border-r border-border flex-col overflow-hidden bg-card"
           aria-label="Chat history"
         >
           <ChatHistorySidebar
@@ -284,44 +286,55 @@ export function ChatPageShell({
             chat. Same height + same left offset as the in-sidebar header,
             so the layout reads as one continuous bar. */}
         {!isMobile && !historyExpanded && (
-          <div className="absolute top-0 left-0 z-30 hidden lg:block w-72">
+          <div className="absolute top-0 left-0 z-30 hidden md:block w-72">
             {renderDesktopHeader(true)}
           </div>
         )}
 
+        {/* Mobile: inject the chat controls into the app header's center slot
+            (#shell-header-center) so they sit BETWEEN the app menu (left) and
+            the profile avatar (right) — never overlapping them. The chat used
+            to render its own full-width header here, which collided with the
+            app's hamburger and avatar. */}
         {isMobile && (
-          <header
-            className={cn(
-              "shrink-0 flex items-center justify-between gap-1 px-0.5",
-              "h-11 border-b border-border bg-card/60 backdrop-blur-sm",
-            )}
-          >
-            <PanelLeftTapButton
-              onClick={() => setHistoryDrawerOpen(true)}
-              ariaLabel="Show history"
-              tooltip={false}
-            />
-            <div
-              data-chat-agent-picker-trigger
-              className="flex min-w-0 flex-1 items-center justify-center"
-            >
-              <AgentListDropdown
-                key={`mobile-header-${activeAgentId ?? "no-agent"}`}
-                onSelect={onAgentSelect}
-                label={pickerLabel}
-                noBorder
-                className="w-full justify-center bg-transparent"
+          <PageHeaderPortal>
+            <div className="flex h-11 w-full items-center gap-1">
+              <PanelLeftTapButton
+                onClick={() => setHistoryDrawerOpen(true)}
+                ariaLabel="Chat menu"
+                tooltip={false}
+              />
+              <div
+                data-chat-agent-picker-trigger
+                className="flex min-w-0 flex-1 items-center"
+              >
+                <AgentListDropdown
+                  key={`mobile-header-${activeAgentId ?? "no-agent"}`}
+                  onSelect={onAgentSelect}
+                  label={pickerLabel}
+                  compact
+                  noBorder
+                  className="w-full justify-between bg-transparent"
+                />
+              </div>
+              <PlusTapButton
+                onClick={handleNewChat}
+                ariaLabel="New chat"
+                tooltip={false}
               />
             </div>
-            <PlusTapButton
-              onClick={handleNewChat}
-              ariaLabel="New chat"
-              tooltip={false}
-            />
-          </header>
+          </PageHeaderPortal>
         )}
 
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div
+          className={cn(
+            "flex-1 min-h-0 overflow-hidden flex flex-col",
+            // On mobile the global app header overlays the top of the content
+            // area; offset by its height so the conversation isn't hidden
+            // beneath it.
+            isMobile && "pt-[var(--shell-header-h)]",
+          )}
+        >
           {children}
         </div>
       </div>
@@ -336,25 +349,48 @@ export function ChatPageShell({
                   : "Conversation history"}
               </DrawerTitle>
             </DrawerHeader>
-            <div className="flex-1 min-h-0 overflow-hidden pb-safe">
-              <ChatHistorySidebar
-                scopeId={CHAT_HISTORY_SCOPE}
-                activeConversationId={activeConversationId ?? null}
-                onOpenConversation={(conv) => {
+            <div className="flex-1 min-h-0 overflow-hidden pb-safe flex flex-col">
+              {/* App menu access — the chat route hides the app dock, so offer
+                  a way back to the global app navigation from the top of the
+                  chat menu. Opens the app's mobile nav (#shell-mobile-menu). */}
+              <button
+                type="button"
+                onClick={() => {
                   setHistoryDrawerOpen(false);
-                  router.push(`/chat/${conv.conversationId}`);
+                  // Open the app's mobile nav AFTER the chat drawer closes so
+                  // it isn't hidden behind it.
+                  window.setTimeout(() => {
+                    const cb = document.getElementById(
+                      "shell-mobile-menu",
+                    ) as HTMLInputElement | null;
+                    if (cb && !cb.checked) cb.click();
+                  }, 60);
                 }}
-                headerSlot={mobileTopRow}
-                topSlot={
-                  <PinnedAgentsSection
-                    activeAgentId={activeAgentId}
-                    onSelect={(id) => {
-                      setHistoryDrawerOpen(false);
-                      handlePinnedAgentSelect(id);
-                    }}
-                  />
-                }
-              />
+                className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3 text-sm font-medium text-muted-foreground hover:bg-accent/50"
+              >
+                <Menu className="h-4 w-4" />
+                App menu
+              </button>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <ChatHistorySidebar
+                  scopeId={CHAT_HISTORY_SCOPE}
+                  activeConversationId={activeConversationId ?? null}
+                  onOpenConversation={(conv) => {
+                    setHistoryDrawerOpen(false);
+                    router.push(`/chat/${conv.conversationId}`);
+                  }}
+                  headerSlot={mobileTopRow}
+                  topSlot={
+                    <PinnedAgentsSection
+                      activeAgentId={activeAgentId}
+                      onSelect={(id) => {
+                        setHistoryDrawerOpen(false);
+                        handlePinnedAgentSelect(id);
+                      }}
+                    />
+                  }
+                />
+              </div>
             </div>
           </DrawerContent>
         </Drawer>

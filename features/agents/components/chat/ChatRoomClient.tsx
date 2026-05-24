@@ -291,9 +291,27 @@ export function ChatRoomClient({
     if (conversationIdProp) return; // already at /chat/[cid]
     if (!liveConversationId || messageCount < 2) return;
     if (promotedRef.current === liveConversationId) return;
+    // Stale-closure guard — THE fix for "click + and it snaps back to the old
+    // chat". `/chat/[id]` and `/chat/a/[agentId]` share the same surfaceKey, so
+    // when you click `+` from an existing conversation this effect can be
+    // scheduled with the INHERITED `liveConversationId` (the old conversation,
+    // which already has >=2 messages) for one transitional render — before the
+    // launcher swaps focus to the fresh conversation. Promoting that would
+    // `router.replace` you straight back to the old chat. Only promote the
+    // conversation that is STILL the focused one on this surface right now.
+    const currentInputFocus =
+      store.getState().conversationFocus?.bySurface[surfaceKey]?.input ?? null;
+    if (currentInputFocus !== liveConversationId) return;
     promotedRef.current = liveConversationId;
     router.replace(`/chat/${liveConversationId}`);
-  }, [conversationIdProp, liveConversationId, messageCount, router]);
+  }, [
+    conversationIdProp,
+    liveConversationId,
+    messageCount,
+    router,
+    store,
+    surfaceKey,
+  ]);
 
   // ── Single source of truth ───────────────────────────────────────────────
   // Prop wins when present (loading existing). Otherwise launcher's id wins.
