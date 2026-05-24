@@ -46,6 +46,29 @@ interface BuildOptions {
   seedTools?: ToolSpec[];
 }
 
+/**
+ * TEMPORARY STOPGAP — remove once the aidream `sandbox-fs` capability ships
+ * `enabled_tools` (see packages/matrx-ai/matrx_ai/capabilities/built_in.py).
+ *
+ * Arming the coding toolset is the server's job: declaring the `sandbox-fs`
+ * capability should auto-inject these via the capability registry. Until that
+ * deploys, a bound box is inert (a normal agent carries none of these tools),
+ * so we push them as additive request tools whenever the binding is active.
+ * Delete this list + its use below the moment the capability change is live.
+ */
+const SANDBOX_FS_STOPGAP_TOOL_NAMES = [
+  "fs_read",
+  "fs_write",
+  "fs_edit",
+  "fs_patch",
+  "fs_list",
+  "fs_mkdir",
+  "fs_search",
+  "shell_execute",
+  "shell_python",
+  "git_ingest",
+] as const;
+
 export async function buildToolInjection(
   state: RootState,
   conversationId: string,
@@ -107,6 +130,15 @@ export async function buildToolInjection(
     (stateMap as Record<string, ClientCapabilityPayloads[ClientCapabilityName]>)[
       entry.name
     ] = entry.payload;
+  }
+
+  // STOPGAP: arm the coding toolset client-side while a sandbox is bound.
+  // Remove once aidream's `sandbox-fs` capability declares `enabled_tools`.
+  if (activeCapabilities.includes("sandbox-fs")) {
+    for (const name of SANDBOX_FS_STOPGAP_TOOL_NAMES) {
+      // delegate:false — these run server-side and proxy into the box.
+      allTools.push({ kind: "registered", name, delegate: false });
+    }
   }
 
   // The DB-registered surface name from the current pathname (matrx-user/chat,
