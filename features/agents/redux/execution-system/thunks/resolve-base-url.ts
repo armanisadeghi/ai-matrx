@@ -1,5 +1,8 @@
 import type { RootState } from "@/lib/redux/store";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectResolvedBaseUrl,
+  selectActiveServer,
+} from "@/lib/redux/slices/apiConfigSlice";
 import {
   selectAccessToken,
   selectFingerprintId,
@@ -29,13 +32,21 @@ const EC2_SANDBOX_SERVER_URL =
  * their own server and are handled by the explicit `serverOverrideUrl` path,
  * so they never reach this branch.
  *
- * Returns the trimmed URL, or `null` when the box isn't EC2-tier or the env
- * var is unset (→ caller falls back to the global server, no behavior change).
+ * Returns the trimmed URL, or `null` when the box isn't EC2-tier, the env var
+ * is unset, OR the user has deliberately switched servers.
+ *
+ * CRITICAL: this NEVER overrides an explicit server selection. The server
+ * toggle (localhost / custom / dev / staging / gpu) is a deliberate developer
+ * choice and always wins — auto-routing to the EC2 server only kicks in when
+ * the app is on the default `production` server. Otherwise clicking
+ * "localhost" would silently do nothing for any sandbox-bound conversation.
  */
 function dedicatedEc2ServerForConversation(
   state: RootState,
   conversationId: string,
 ): string | null {
+  // Respect an explicit server choice — only auto-route on the prod default.
+  if (selectActiveServer(state) !== "production") return null;
   const ref = resolveAgentSandboxRef(state, conversationId);
   if (ref?.tier !== "ec2") return null;
   if (!EC2_SANDBOX_SERVER_URL) return null;
