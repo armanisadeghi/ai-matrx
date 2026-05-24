@@ -47,6 +47,7 @@ import {
   RotateCcw,
   ChevronRight,
   ChevronDown,
+  MinusCircle,
   File as FileIcon,
   Folder as FolderIcon,
   FolderOpen,
@@ -576,23 +577,38 @@ export function SandboxDiagnosticsPanel({
       {showStatus && (
         <>
           {/* Top status bar */}
-          <div className="flex items-center justify-between border-b border-border pb-2">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between border-b border-border pb-2 gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               {diag.overall_ok ? (
                 <Badge
-                  variant="default"
-                  className="bg-success text-success-foreground gap-1"
+                  variant="outline"
+                  className="gap-1 border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300"
                 >
                   <CheckCircle2 className="h-3 w-3" /> Ready
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="gap-1">
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
+                >
                   <Activity className="h-3 w-3 animate-pulse" /> Booting
                 </Badge>
               )}
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground font-mono">
                 {diag.sandbox_id}
               </span>
+              {(diag.sandbox.template || diag.sandbox.tier) && (
+                <span className="text-xs text-muted-foreground">
+                  ·{" "}
+                  <span className="font-mono">
+                    {diag.sandbox.template ?? "default"}
+                  </span>{" "}
+                  on{" "}
+                  <span className="font-mono uppercase">
+                    {diag.sandbox.tier}
+                  </span>
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {showResetButton && (
@@ -623,34 +639,31 @@ export function SandboxDiagnosticsPanel({
             </div>
           </div>
 
-          {/* Layer-by-layer checks */}
+          {/* Layer-by-layer checks — every card honors the orchestrator's
+              `checked` flag. A check the orchestrator skipped for this
+              template (e.g. aidream on a non-aidream image) renders as a
+              neutral "Not applicable" card, never as a red failure. */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <CheckCard
               label="Container"
-              ok={!!diag.container.running}
-              detail={`${diag.container.status ?? "?"} · ${diag.container.health ?? "?"} · ip ${diag.container.container_ip ?? "?"}`}
+              {...formatContainerCheck(diag.container)}
             />
             <CheckCard
-              label="matrx_agent :8000"
+              label="Matrx agent · :8000"
               {...formatCheck(diag.checks.matrx_agent_8000)}
             />
             <CheckCard
-              label="aidream :8001 (health)"
+              label="AI Dream health · :8001"
               {...formatCheck(diag.checks.aidream_health_8001)}
             />
             <CheckCard
-              label="aidream :8001 (ready)"
+              label="AI Dream ready · :8001"
               {...formatCheck(diag.checks.aidream_ready_8001)}
               colSpan="md:col-span-2"
             />
             <CheckCard
               label="Env passthrough"
-              ok={(diag.container.passthrough_landed?.length ?? 0) > 50}
-              detail={
-                diag.container.passthrough_landed
-                  ? `${diag.container.passthrough_landed.length} landed · ${diag.container.passthrough_missing_count ?? 0} missing`
-                  : "no data"
-              }
+              {...formatPassthroughCheck(diag.container)}
             />
           </div>
         </>
@@ -1123,37 +1136,121 @@ function formatBytes(n: number): string {
   return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-function formatCheck(c: DiagCheck): { ok: boolean; detail: string } {
-  if (!c.checked) return { ok: false, detail: c.reason ?? "not checked" };
-  if (c.error)
-    return { ok: false, detail: `${c.error} · ${c.latency_ms ?? "?"}ms` };
-  const okFlag = c.ok ?? false;
+/** Tri-state status for a single readiness card. */
+type CheckState = "ok" | "fail" | "na";
+
+interface CheckCardData {
+  state: CheckState;
+  detail: string;
+}
+
+/**
+ * Map an orchestrator `DiagCheck` to a tri-state card.
+ *
+ * The orchestrator sets `checked: false` when a probe is intentionally skipped
+ * for the current template/tier (e.g. the `aidream` health probe on a
+ * minimal-shell template that doesn't ship the AI Dream service). The previous
+ * version of this UI mapped `checked: false` → `ok: false` → red X, which
+ * flagged every non-AI template as "broken" out of the box. We honor the
+ * server's intent instead and render those as a neutral "Not applicable" card.
+ */
+function formatCheck(c: DiagCheck): CheckCardData {
+  if (!c.checked) {
+    return {
+      state: "na",
+      detail: c.reason ?? "not applicable for this template",
+    };
+  }
+  if (c.error) {
+    return {
+      state: "fail",
+      detail: `${c.error} · ${c.latency_ms ?? "?"}ms`,
+    };
+  }
   return {
-    ok: okFlag,
+    state: c.ok ? "ok" : "fail",
     detail: `HTTP ${c.status ?? "?"} · ${c.latency_ms ?? "?"}ms`,
+  };
+}
+
+function formatContainerCheck(
+  container: SandboxDiagnostics["container"],
+): CheckCardData {
+  if (!container.present) {
+    return { state: "fail", detail: container.error ?? "container missing" };
+  }
+  return {
+    state: container.running ? "ok" : "fail",
+    detail: `${container.status ?? "?"} · ${container.health ?? "?"} · ip ${container.container_ip ?? "?"}`,
+  };
+}
+
+/**
+ * Env passthrough check. Previously hard-coded `> 50` as the success threshold,
+ * which had nothing to do with what the current template actually needs — a
+ * minimal-shell template might only need 5 vars; aidream templates need ~60.
+ *
+ * We don't have a per-template manifest of "required" vars on the client, so
+ * we treat passthrough as informational by default: any landed vars at all
+ * counts as healthy, and we only flag a failure when the container truly
+ * inherited zero env (which always means the entrypoint is broken).
+ */
+function formatPassthroughCheck(
+  container: SandboxDiagnostics["container"],
+): CheckCardData {
+  const landed = container.passthrough_landed?.length ?? 0;
+  const missing = container.passthrough_missing_count ?? 0;
+  if (!container.passthrough_landed) {
+    return { state: "na", detail: "no data reported" };
+  }
+  if (landed === 0) {
+    return { state: "fail", detail: "no env landed in container" };
+  }
+  return {
+    state: "ok",
+    detail: `${landed} landed · ${missing} missing`,
   };
 }
 
 function CheckCard({
   label,
-  ok,
+  state,
   detail,
   colSpan,
 }: {
   label: string;
-  ok: boolean;
+  state: CheckState;
   detail: string;
   colSpan?: string;
 }) {
+  const Icon =
+    state === "ok" ? CheckCircle2 : state === "fail" ? XCircle : MinusCircle;
+  const iconClass =
+    state === "ok"
+      ? "text-green-600 dark:text-green-400"
+      : state === "fail"
+        ? "text-destructive"
+        : "text-muted-foreground/60";
+  const ring =
+    state === "fail"
+      ? "border-destructive/40 bg-destructive/5"
+      : state === "na"
+        ? "border-dashed border-border/60 bg-muted/30"
+        : "border-border";
   return (
-    <div className={`border border-border rounded-md p-2 ${colSpan ?? ""}`}>
+    <div className={`border rounded-md p-2 ${ring} ${colSpan ?? ""}`}>
       <div className="flex items-center gap-2">
-        {ok ? (
-          <CheckCircle2 className="h-4 w-4 text-success" />
-        ) : (
-          <XCircle className="h-4 w-4 text-destructive" />
+        <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} />
+        <span
+          className={`text-xs font-medium ${state === "na" ? "text-muted-foreground" : ""}`}
+        >
+          {label}
+        </span>
+        {state === "na" && (
+          <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground/70">
+            N/A
+          </span>
         )}
-        <span className="text-xs font-medium">{label}</span>
       </div>
       <div className="text-[11px] text-muted-foreground mt-1 font-mono break-all">
         {detail}

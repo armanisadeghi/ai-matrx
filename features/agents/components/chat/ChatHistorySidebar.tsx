@@ -56,6 +56,12 @@ export interface ChatHistorySidebarProps {
   headerSlot?: React.ReactNode;
   /** Optional surface rendered between header and list (e.g. pinned agents). */
   topSlot?: React.ReactNode;
+  /**
+   * Start with the search field open and focused. Used when this list is
+   * summoned specifically to search (e.g. the collapsed-rail "Search chats"
+   * popover) rather than as the always-on sidebar where search is quiet.
+   */
+  initialSearchOpen?: boolean;
   className?: string;
 }
 
@@ -67,6 +73,7 @@ export function ChatHistorySidebar({
   onOpenConversation,
   headerSlot,
   topSlot,
+  initialSearchOpen = false,
   className,
 }: ChatHistorySidebarProps) {
   const dispatch = useAppDispatch();
@@ -118,12 +125,19 @@ export function ChatHistorySidebar({
   // ── Search — collapsed by default, expands inline when the user clicks
   //    the icon. Mirrors ChatGPT/Claude where search is summoned, not always
   //    eating header real estate.
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(initialSearchOpen);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     requestAnimationFrame(() => searchInputRef.current?.focus());
   }, []);
+  // When summoned in search mode, focus the field on mount so the user can
+  // start typing immediately.
+  useEffect(() => {
+    if (initialSearchOpen) {
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [initialSearchOpen]);
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     dispatch(setScopeSearch({ scopeId, searchTerm: "" }));

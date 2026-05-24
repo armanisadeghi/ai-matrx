@@ -49,8 +49,14 @@ export function ChatRunHeader({
     }
   };
 
+  // Desktop: `lg:w-full` makes this fill the header center slot so its contents
+  // sit at the START (left edge, right after the sidebar) — forming a fixed
+  // [collapse · agent · +] cluster with the sidebar's collapse toggle that never
+  // drifts to center, mirroring AgentRunHeader. Mobile keeps the shrink-to-fit
+  // centered layout (parent slot is `justify-center`) so the picker stays
+  // between the hamburger and the avatar.
   return (
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="flex min-w-0 items-center gap-1 lg:w-full">
       <div data-chat-agent-picker-trigger className="flex min-w-0 items-center">
         <AgentListDropdown
           onSelect={handleAgentSelect}

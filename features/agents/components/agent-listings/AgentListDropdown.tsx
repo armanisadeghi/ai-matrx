@@ -39,6 +39,13 @@ interface AgentListDropdownProps {
   noBorder?: boolean;
   /** Use a compact (h-5) trigger instead of the default h-7. */
   compact?: boolean;
+  /**
+   * Which side the desktop popover opens toward. Defaults to Radix's "bottom".
+   * Pass "right" when the trigger lives in a narrow vertical rail (e.g. the
+   * collapsed chat sidebar) so the panel opens beside the rail instead of
+   * covering it. Ignored on mobile (uses a Drawer).
+   */
+  contentSide?: "top" | "right" | "bottom" | "left";
 }
 
 export function AgentListDropdown({
@@ -49,6 +56,7 @@ export function AgentListDropdown({
   triggerSlot,
   noBorder = false,
   compact = false,
+  contentSide,
 }: AgentListDropdownProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -232,6 +240,7 @@ export function AgentListDropdown({
     <Popover open={open} onOpenChange={handleOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
+        side={contentSide}
         align="start"
         sideOffset={4}
         className={cn(

@@ -47,6 +47,7 @@ import {
   StickyNote,
   Layers,
   Clock,
+  Sparkles,
   Building2,
   Kanban,
   ListTodo,
@@ -118,13 +119,17 @@ const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
 
 // ── Group-by modes ──────────────────────────────────────────────────────────
 const GROUP_MODES: {
-  mode: NoteGroupBy | "recent";
+  mode: NoteGroupBy | "recent" | "default";
   label: string;
   icon: typeof Folder;
 }[] = [
+  { mode: "default", label: "Default", icon: Sparkles },
   { mode: "folder", label: "Folder", icon: Folder },
   { mode: "recent", label: "Recent", icon: Clock },
 ];
+
+// Number of recent notes to show at the top in "default" mode
+const DEFAULT_MODE_RECENT_COUNT = 10;
 
 interface NoteSidebarProps {
   instanceId: string;
@@ -202,7 +207,9 @@ export function NoteSidebar({
   });
   const [sortField, setSortField] = useState<NoteSortField>("updated_at");
   const [sortOrder, setSortOrder] = useState<NoteSortOrder>("desc");
-  const [groupBy, setGroupBy] = useState<NoteGroupBy | "recent">("folder");
+  const [groupBy, setGroupBy] = useState<NoteGroupBy | "recent" | "default">(
+    "default",
+  );
   const [trashOpen, setTrashOpen] = useState(false);
   const trashFetchedRef = useRef(false);
   const deletedNotes = useAppSelector(selectDeletedNotesList);
@@ -247,8 +254,11 @@ export function NoteSidebar({
   const searchFocusedRef = useRef(false);
 
   // ── Auto-expand folder of active note ──────────────────────────────
+  // Skipped in "default" mode — recents at the top surface the active note,
+  // and the user explicitly wants folders to start collapsed there.
   useEffect(() => {
     if (!activeTabId) return;
+    if (groupBy === "default") return;
     const note = allNotes.find((n) => n.id === activeTabId);
     if (note?.folder_name) {
       setExpandedFolders((prev) => {
@@ -258,7 +268,7 @@ export function NoteSidebar({
         return next;
       });
     }
-  }, [activeTabId, allNotes]);
+  }, [activeTabId, allNotes, groupBy]);
 
   // ── Auto-scroll active note into view ──────────────────────────────
   useEffect(() => {
@@ -386,6 +396,7 @@ export function NoteSidebar({
         case "task":
           key = n.task_id || "__none__";
           break;
+        case "default":
         default: // "folder"
           key = n.folder_name || "Uncategorized";
           break;
@@ -402,12 +413,21 @@ export function NoteSidebar({
     return map;
   }, [filteredNotes, groupBy, sortNotes]);
 
+  // Top-N most recent notes for "default" mode (always by updated_at desc,
+  // independent of the user's sort field/order which applies to folder groups).
+  const defaultModeRecent = useMemo(() => {
+    if (groupBy !== "default") return [] as NoteRecord[];
+    return [...filteredNotes]
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+      .slice(0, DEFAULT_MODE_RECENT_COUNT);
+  }, [groupBy, filteredNotes]);
+
   // Get group labels for display
   const getGroupLabel = useCallback(
     (key: string): string => {
       if (key === "__all__") return "All Notes";
       if (key === "__none__" || key === "Unassigned") return "Unassigned";
-      if (groupBy === "folder") return key;
+      if (groupBy === "folder" || groupBy === "default") return key;
       // Scope keys are already human-readable: "Department: SEO"
       if (groupBy === "scope") return key;
       // For org/project/task, the key is a UUID — show context name if matching
@@ -421,7 +441,7 @@ export function NoteSidebar({
 
   // Ordered group keys
   const groupKeys = useMemo(() => {
-    if (groupBy === "folder") return folders;
+    if (groupBy === "folder" || groupBy === "default") return folders;
     if (groupBy === "recent") return ["__all__"];
     if (groupBy === "scope") {
       // Sort scope groups alphabetically, "Unassigned" last
@@ -810,150 +830,202 @@ export function NoteSidebar({
             })}
           </div>
         ) : (
-          /* ── Grouped mode: collapsible sections ──────────────────── */
-          groupKeys.map((groupKey) => {
-            const groupNotes = groupedNotes.get(groupKey) ?? [];
-            const isExpanded = expandedFolders.has(groupKey);
-            const label = getGroupLabel(groupKey);
-            const count = groupNotes.length;
-
-            // For folder mode, use folder icons with colors
-            const isFolderMode = groupBy === "folder";
-            const { icon: FolderIcon, color: iconColor } = isFolderMode
-              ? getFolderIconAndColor(groupKey)
-              : {
-                  icon:
-                    GROUP_MODES.find((m) => m.mode === groupBy)?.icon ?? Folder,
-                  color: undefined,
-                };
-
-            if (searchQuery && count === 0) return null;
-
-            return (
-              <div
-                key={groupKey}
-                onDragOver={
-                  isFolderMode
-                    ? (e) => handleFolderDragOver(e, groupKey)
-                    : undefined
-                }
-                onDragLeave={isFolderMode ? handleFolderDragLeave : undefined}
-                onDrop={
-                  isFolderMode
-                    ? (e) => handleFolderDrop(e, groupKey)
-                    : undefined
-                }
-              >
-                <button
-                  className={cn(
-                    "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
-                    isFolderMode &&
-                      dropTargetFolder === groupKey &&
-                      "bg-primary/10 border-l-2 border-primary",
-                  )}
-                  onClick={() => toggleFolder(groupKey)}
-                  onContextMenu={
-                    isFolderMode
-                      ? (e) => {
+          /* ── Grouped mode: collapsible sections (folder + default + hierarchy) ── */
+          <>
+            {/* Default mode: top-N recent notes, then all folders collapsed below */}
+            {groupBy === "default" && defaultModeRecent.length > 0 && (
+              <div className="border-y border-border/30 pb-1 mb-1">
+                <div className="ml-1">
+                  {defaultModeRecent.map((note) => {
+                    const isActive = activeTabId === note.id;
+                    const isOpenTab = openTabIds?.includes(note.id) ?? false;
+                    return (
+                      <button
+                        key={note.id}
+                        data-note-id={note.id}
+                        className={cn(
+                          "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors group/item",
+                          isActive
+                            ? "bg-accent text-foreground"
+                            : isOpenTab
+                              ? "bg-accent/30 text-foreground/80"
+                              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                        )}
+                        onClick={() => selectNote(note.id)}
+                        onContextMenu={(e) => {
                           e.preventDefault();
-                          setNoteCtx(null);
-                          setFolderCtx({
-                            folder: groupKey,
+                          setFolderCtx(null);
+                          setNoteCtx({
+                            noteId: note.id,
+                            noteLabel: note.label,
+                            folder: note.folder_name || "Uncategorized",
                             x: e.clientX,
                             y: e.clientY,
                           });
-                        }
+                        }}
+                      >
+                        <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                        <span className="flex-1 text-xs truncate leading-tight">
+                          {note.label}
+                        </span>
+                        <span className="text-[0.5625rem] opacity-30 shrink-0 truncate max-w-[50px]">
+                          {note.folder_name || "Draft"}
+                        </span>
+                        <span className="text-[0.625rem] opacity-40 tabular-nums shrink-0">
+                          {formatTime(note.updated_at)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {groupKeys.map((groupKey) => {
+              const groupNotes = groupedNotes.get(groupKey) ?? [];
+              const isExpanded = expandedFolders.has(groupKey);
+              const label = getGroupLabel(groupKey);
+              const count = groupNotes.length;
+
+              // Folder + Default modes both render folder icons/colors and DnD
+              const isFolderMode =
+                groupBy === "folder" || groupBy === "default";
+              const { icon: FolderIcon, color: iconColor } = isFolderMode
+                ? getFolderIconAndColor(groupKey)
+                : {
+                    icon:
+                      GROUP_MODES.find((m) => m.mode === groupBy)?.icon ??
+                      Folder,
+                    color: undefined,
+                  };
+
+              if (searchQuery && count === 0) return null;
+
+              return (
+                <div
+                  key={groupKey}
+                  onDragOver={
+                    isFolderMode
+                      ? (e) => handleFolderDragOver(e, groupKey)
+                      : undefined
+                  }
+                  onDragLeave={isFolderMode ? handleFolderDragLeave : undefined}
+                  onDrop={
+                    isFolderMode
+                      ? (e) => handleFolderDrop(e, groupKey)
                       : undefined
                   }
                 >
-                  {isExpanded ? (
-                    <ChevronDown className="opacity-60" />
-                  ) : (
-                    <ChevronRight className="opacity-60" />
-                  )}
-                  {isExpanded ? (
-                    <FolderOpen className={cn("opacity-70", iconColor)} />
-                  ) : (
-                    <FolderIcon className={cn("opacity-70", iconColor)} />
-                  )}
-                  <span className="flex-1 text-left truncate">{label}</span>
-                  <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
-                    {count}
-                  </span>
-                  {isFolderMode && (
-                    <Plus
-                      className="w-3 h-3 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNewNote(groupKey);
-                      }}
-                    />
-                  )}
-                </button>
-
-                {isExpanded && (
-                  <div className="ml-2">
-                    {groupNotes.length === 0 ? (
-                      <div className="px-5 py-2 text-[0.625rem] text-muted-foreground/50 italic">
-                        Empty
-                      </div>
-                    ) : (
-                      groupNotes.map((note) => {
-                        const isActive = activeTabId === note.id;
-                        const isOpenTab =
-                          openTabIds?.includes(note.id) ?? false;
-                        const isDragging = draggedNoteId === note.id;
-                        return (
-                          <button
-                            key={note.id}
-                            data-note-id={note.id}
-                            draggable={isFolderMode}
-                            onDragStart={
-                              isFolderMode
-                                ? (e) => handleNoteDragStart(e, note.id)
-                                : undefined
-                            }
-                            onDragEnd={
-                              isFolderMode ? handleNoteDragEnd : undefined
-                            }
-                            className={cn(
-                              "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors group/item",
-                              isActive
-                                ? "bg-accent text-foreground"
-                                : isOpenTab
-                                  ? "bg-accent/30 text-foreground/80"
-                                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                              isDragging && "opacity-40",
-                            )}
-                            onClick={() => selectNote(note.id)}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              setFolderCtx(null);
-                              setNoteCtx({
-                                noteId: note.id,
-                                noteLabel: note.label,
-                                folder: note.folder_name || "Uncategorized",
-                                x: e.clientX,
-                                y: e.clientY,
-                              });
-                            }}
-                          >
-                            <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                            <span className="flex-1 text-xs truncate leading-tight">
-                              {note.label}
-                            </span>
-                            <span className="text-[0.625rem] opacity-40 tabular-nums shrink-0">
-                              {formatTime(note.updated_at)}
-                            </span>
-                          </button>
-                        );
-                      })
+                  <button
+                    className={cn(
+                      "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
+                      isFolderMode &&
+                        dropTargetFolder === groupKey &&
+                        "bg-primary/10 border-l-2 border-primary",
                     )}
-                  </div>
-                )}
-              </div>
-            );
-          })
+                    onClick={() => toggleFolder(groupKey)}
+                    onContextMenu={
+                      isFolderMode
+                        ? (e) => {
+                            e.preventDefault();
+                            setNoteCtx(null);
+                            setFolderCtx({
+                              folder: groupKey,
+                              x: e.clientX,
+                              y: e.clientY,
+                            });
+                          }
+                        : undefined
+                    }
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="opacity-60" />
+                    ) : (
+                      <ChevronRight className="opacity-60" />
+                    )}
+                    {isExpanded ? (
+                      <FolderOpen className={cn("opacity-70", iconColor)} />
+                    ) : (
+                      <FolderIcon className={cn("opacity-70", iconColor)} />
+                    )}
+                    <span className="flex-1 text-left truncate">{label}</span>
+                    <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                      {count}
+                    </span>
+                    {isFolderMode && (
+                      <Plus
+                        className="w-3 h-3 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNewNote(groupKey);
+                        }}
+                      />
+                    )}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="ml-2">
+                      {groupNotes.length === 0 ? (
+                        <div className="px-5 py-2 text-[0.625rem] text-muted-foreground/50 italic">
+                          Empty
+                        </div>
+                      ) : (
+                        groupNotes.map((note) => {
+                          const isActive = activeTabId === note.id;
+                          const isOpenTab =
+                            openTabIds?.includes(note.id) ?? false;
+                          const isDragging = draggedNoteId === note.id;
+                          return (
+                            <button
+                              key={note.id}
+                              data-note-id={note.id}
+                              draggable={isFolderMode}
+                              onDragStart={
+                                isFolderMode
+                                  ? (e) => handleNoteDragStart(e, note.id)
+                                  : undefined
+                              }
+                              onDragEnd={
+                                isFolderMode ? handleNoteDragEnd : undefined
+                              }
+                              className={cn(
+                                "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors group/item",
+                                isActive
+                                  ? "bg-accent text-foreground"
+                                  : isOpenTab
+                                    ? "bg-accent/30 text-foreground/80"
+                                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                                isDragging && "opacity-40",
+                              )}
+                              onClick={() => selectNote(note.id)}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setFolderCtx(null);
+                                setNoteCtx({
+                                  noteId: note.id,
+                                  noteLabel: note.label,
+                                  folder: note.folder_name || "Uncategorized",
+                                  x: e.clientX,
+                                  y: e.clientY,
+                                });
+                              }}
+                            >
+                              <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                              <span className="flex-1 text-xs truncate leading-tight">
+                                {note.label}
+                              </span>
+                              <span className="text-[0.625rem] opacity-40 tabular-nums shrink-0">
+                                {formatTime(note.updated_at)}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
 

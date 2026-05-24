@@ -95,6 +95,9 @@ export default function SandboxListPage() {
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
+  const [deleting, setDeleting] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [ttlHours, setTtlHours] = useState(2);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -197,9 +200,24 @@ export default function SandboxListPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return;
-    await deleteInstance(deleteTarget.id);
-    setDeleteTarget(null);
+    if (!deleteTarget || deleting) return;
+    const sandboxId = deleteTarget.sandbox_id;
+    setDeleting(true);
+    setDeleteError(null);
+    const ok = await deleteInstance(deleteTarget.id);
+    setDeleting(false);
+    if (ok) {
+      setDeleteSuccess(true);
+      toast.success(`Sandbox ${sandboxId} deleted`);
+      setTimeout(() => {
+        setDeleteTarget(null);
+        setDeleteSuccess(false);
+      }, 700);
+    } else {
+      const msg = "Failed to delete sandbox. Please try again.";
+      setDeleteError(msg);
+      toast.error(msg);
+    }
   };
 
   // Deduplicate instances before rendering to prevent React key conflicts
@@ -696,34 +714,90 @@ export default function SandboxListPage() {
         </div>
       </div>
 
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleting && !deleteSuccess) {
+            setDeleteTarget(null);
+            setDeleteError(null);
+          }
+        }}
+      >
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Sandbox</DialogTitle>
-            <DialogDescription>
-              This is a destructive action.
-              {deleteTarget &&
-              ["ready", "running"].includes(deleteTarget.status)
-                ? " The running container will be destroyed and "
-                : " "}
-              the sandbox row will be removed from your list.{" "}
-              <strong>
-                Your /home/agent volume on this tier is not deleted
-              </strong>{" "}
-              — it stays put and will be re-mounted on the next sandbox you
-              create. To wipe persistent storage entirely, use Settings →
-              Sandbox Storage. If you just want to stop this container, use Stop
-              instead.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete Sandbox
-            </Button>
-          </DialogFooter>
+          {deleteSuccess ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">Sandbox Deleted</h3>
+                {deleteTarget && (
+                  <p className="text-xs text-muted-foreground mt-2 font-mono">
+                    {deleteTarget.sandbox_id}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : deleting ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-destructive" />
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">Deleting Sandbox</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {deleteTarget &&
+                  ["ready", "running"].includes(deleteTarget.status)
+                    ? "Destroying the container and removing the record..."
+                    : "Removing the sandbox record..."}
+                </p>
+                {deleteTarget && (
+                  <p className="text-xs text-muted-foreground mt-2 font-mono">
+                    {deleteTarget.sandbox_id}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Delete Sandbox</DialogTitle>
+                <DialogDescription>
+                  This is a destructive action.
+                  {deleteTarget &&
+                  ["ready", "running"].includes(deleteTarget.status)
+                    ? " The running container will be destroyed and "
+                    : " "}
+                  the sandbox row will be removed from your list.{" "}
+                  <strong>
+                    Your /home/agent volume on this tier is not deleted
+                  </strong>{" "}
+                  — it stays put and will be re-mounted on the next sandbox you
+                  create. To wipe persistent storage entirely, use Settings →
+                  Sandbox Storage. If you just want to stop this container, use
+                  Stop instead.
+                </DialogDescription>
+              </DialogHeader>
+              {deleteError && (
+                <div className="px-1 text-sm text-destructive">
+                  {deleteError}
+                </div>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteTarget(null);
+                    setDeleteError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDelete}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Sandbox
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

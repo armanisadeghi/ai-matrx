@@ -232,7 +232,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           e.dataTransfer.setData("text/plain", noteId);
         }}
         className={cn(
-          "group flex items-center gap-0 h-7 px-[6px] text-[0.6875rem] font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
+          "group flex items-center gap-0 h-8 px-[6px] text-[0.6875rem] font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
           isActive
             ? "max-w-[340px] bg-accent/60 text-foreground"
             : "max-w-[160px] bg-transparent text-muted-foreground hover:bg-accent/30 cursor-pointer",

@@ -305,6 +305,24 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
     // This prevents paragraph text from being interpreted as h2 headings
     processed = processed.replace(/([^\n])\n---/g, "$1\n\n---");
 
+    // Same guard for `===` — without a preceding blank line, CommonMark treats
+    // the line above as an H1 setext heading. We use standalone `={3,}` lines
+    // as a thick blue thematic break (see the `p` renderer below), so force a
+    // blank line before any pure-equals line to keep its meaning paragraph-level.
+    processed = processed.replace(
+      /([^\n])\n(={3,})[ \t]*(?=\n|$)/g,
+      "$1\n\n$2",
+    );
+
+    // Convert standalone `===` (3+ equals on their own line) into a sentinel
+    // paragraph. The `p` renderer below detects this exact token and emits a
+    // thicker blue <hr>. We use a private-use unicode marker so it cannot
+    // collide with any plausible user content.
+    processed = processed.replace(
+      /^[ \t]*={3,}[ \t]*$/gm,
+      "\uE000THICK_HR\uE000",
+    );
+
     // Ensure proper line breaks after bold text that should start a new line
     // This handles cases like "**Meta Title:**\n[content]" to ensure proper paragraph separation
     // BUT exclude cases where bold text is immediately followed by a list item (including indented ones)
@@ -396,6 +414,21 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
         const childArray = React.Children.toArray(children);
         if (childArray.length === 1 && childArray[0] === "\u00A0") {
           return <div className="h-[0.75em]" />;
+        }
+
+        // Thick blue thematic break — sentinel emitted by preprocessContent for
+        // standalone `={3,}` lines. Rendered as a heavier blue rule than the
+        // default `---` <hr>, with extra vertical breathing room.
+        if (
+          childArray.length === 1 &&
+          childArray[0] === "\uE000THICK_HR\uE000"
+        ) {
+          return (
+            <hr
+              className="my-5 border-0 h-[3px] rounded-full bg-blue-500 dark:bg-blue-400"
+              role="separator"
+            />
+          );
         }
 
         // Check if this paragraph only contains math (display math should be centered)

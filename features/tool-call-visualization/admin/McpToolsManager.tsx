@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -1037,527 +1038,530 @@ export function McpToolsManager() {
   };
 
   return (
-    <div className="space-y-3 px-4 py-3 pb-safe min-w-max">
-      {/* Toolbar — row 1: search + actions */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search name, description, path, tags…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-            style={{ fontSize: "16px" }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          {activeFilterCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-              Clear ({activeFilterCount})
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refetch}
-            disabled={isLoading}
-            className="h-8 gap-1.5"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-shrink-0 space-y-3 px-4 py-3 border-b border-border">
+        {/* Toolbar — row 1: search + actions */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name, description, path, tags…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              style={{ fontSize: "16px" }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            {activeFilterCount > 0 && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                disabled={bulkBusy || filteredTools.length === 0}
-                className="h-8 gap-1.5"
-                title={
-                  bulkScope === "selected" && selectedToolIds.size > 0
-                    ? `Acts on ${targetIds.length} selected tool${targetIds.length === 1 ? "" : "s"}`
-                    : `Acts on all ${filteredTools.length} visible tool${filteredTools.length === 1 ? "" : "s"}`
-                }
+                onClick={clearFilters}
+                className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
               >
-                {bulkBusy ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ListChecks className="h-3.5 w-3.5" />
-                )}
-                <span className="hidden sm:inline">Bulk</span>
-                <Badge
-                  variant="secondary"
-                  className="h-4 px-1 text-[10px] tabular-nums"
-                >
-                  {targetIds.length}
-                </Badge>
-                <ChevronDown className="h-3 w-3 opacity-60" />
+                <X className="h-3.5 w-3.5" />
+                Clear ({activeFilterCount})
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[260px]">
-              <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                Scope
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => setBulkScope("visible")}
-                className={`text-xs gap-2 ${bulkScope === "visible" ? "font-medium" : ""}`}
-              >
-                <span className="flex-1">All visible</span>
-                <Badge variant="outline" className="text-[10px]">
-                  {filteredTools.length}
-                </Badge>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setBulkScope("selected")}
-                disabled={selectedToolIds.size === 0}
-                className={`text-xs gap-2 ${bulkScope === "selected" ? "font-medium" : ""}`}
-              >
-                <span className="flex-1">Selected only</span>
-                <Badge variant="outline" className="text-[10px]">
-                  {selectedToolIds.size}
-                </Badge>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                Selection
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={toggleSelectAllVisible}
-                className="text-xs"
-              >
-                {allVisibleSelected
-                  ? "Deselect all visible"
-                  : "Select all visible"}
-              </DropdownMenuItem>
-              {selectedToolIds.size > 0 && (
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refetch}
+              disabled={isLoading}
+              className="h-8 gap-1.5"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkBusy || filteredTools.length === 0}
+                  className="h-8 gap-1.5"
+                  title={
+                    bulkScope === "selected" && selectedToolIds.size > 0
+                      ? `Acts on ${targetIds.length} selected tool${targetIds.length === 1 ? "" : "s"}`
+                      : `Acts on all ${filteredTools.length} visible tool${filteredTools.length === 1 ? "" : "s"}`
+                  }
+                >
+                  {bulkBusy ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ListChecks className="h-3.5 w-3.5" />
+                  )}
+                  <span className="hidden sm:inline">Bulk</span>
+                  <Badge
+                    variant="secondary"
+                    className="h-4 px-1 text-[10px] tabular-nums"
+                  >
+                    {targetIds.length}
+                  </Badge>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[260px]">
+                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                  Scope
+                </DropdownMenuLabel>
                 <DropdownMenuItem
-                  onClick={() => setSelectedToolIds(new Set())}
+                  onClick={() => setBulkScope("visible")}
+                  className={`text-xs gap-2 ${bulkScope === "visible" ? "font-medium" : ""}`}
+                >
+                  <span className="flex-1">All visible</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {filteredTools.length}
+                  </Badge>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setBulkScope("selected")}
+                  disabled={selectedToolIds.size === 0}
+                  className={`text-xs gap-2 ${bulkScope === "selected" ? "font-medium" : ""}`}
+                >
+                  <span className="flex-1">Selected only</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {selectedToolIds.size}
+                  </Badge>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                  Selection
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={toggleSelectAllVisible}
                   className="text-xs"
                 >
-                  Clear selection ({selectedToolIds.size})
+                  {allVisibleSelected
+                    ? "Deselect all visible"
+                    : "Select all visible"}
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                Actions on {targetIds.length} tool
-                {targetIds.length === 1 ? "" : "s"}
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => void handleBulkSetActive(true)}
-                disabled={bulkBusy || targetIds.length === 0}
-                className="text-xs"
-              >
-                Activate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => void handleBulkSetActive(false)}
-                disabled={bulkBusy || targetIds.length === 0}
-                className="text-xs"
-              >
-                Deactivate
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => void handleBulkDelete()}
-                disabled={bulkBusy || targetIds.length === 0}
-                className="text-xs text-destructive focus:text-destructive"
-              >
-                Delete permanently…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            size="sm"
-            onClick={() => navigateTo("/administration/mcp-tools/new")}
-            disabled={isPending}
-            className="h-8 gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Tool
-          </Button>
-        </div>
-      </div>
-
-      {/* Toolbar — row 2: top-level quick filters (preserved) */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <Select value={selectedSourceApp} onValueChange={setSelectedSourceApp}>
-          <SelectTrigger
-            className={`h-8 w-40 text-xs ${selectedSourceApp !== "all" ? "border-primary text-primary" : ""}`}
-          >
-            <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-            <SelectValue placeholder="Source App" />
-          </SelectTrigger>
-          <SelectContent>
-            {sourceApps.map((app) => (
-              <SelectItem key={app} value={app} className="text-xs">
-                {app === "all" ? "All Source Apps" : formatText(app)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger
-            className={`h-8 w-40 text-xs ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
-          >
-            <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat} className="text-xs">
-                {cat === "all" ? "All Categories" : formatText(cat)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={selectedStatus}
-          onValueChange={(v) =>
-            setSelectedStatus(v as "all" | "active" | "inactive")
-          }
-        >
-          <SelectTrigger
-            className={`h-8 w-36 text-xs ${selectedStatus !== "all" ? "border-primary text-primary" : ""}`}
-          >
-            <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              All Statuses
-            </SelectItem>
-            <SelectItem value="active" className="text-xs">
-              Active only
-            </SelectItem>
-            <SelectItem value="inactive" className="text-xs">
-              Inactive only
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        {allTags.length > 1 && (
-          <Select value={selectedTag} onValueChange={setSelectedTag}>
-            <SelectTrigger
-              className={`h-8 w-36 text-xs ${selectedTag !== "all" ? "border-primary text-primary" : ""}`}
+                {selectedToolIds.size > 0 && (
+                  <DropdownMenuItem
+                    onClick={() => setSelectedToolIds(new Set())}
+                    className="text-xs"
+                  >
+                    Clear selection ({selectedToolIds.size})
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                  Actions on {targetIds.length} tool
+                  {targetIds.length === 1 ? "" : "s"}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => void handleBulkSetActive(true)}
+                  disabled={bulkBusy || targetIds.length === 0}
+                  className="text-xs"
+                >
+                  Activate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => void handleBulkSetActive(false)}
+                  disabled={bulkBusy || targetIds.length === 0}
+                  className="text-xs"
+                >
+                  Deactivate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => void handleBulkDelete()}
+                  disabled={bulkBusy || targetIds.length === 0}
+                  className="text-xs text-destructive focus:text-destructive"
+                >
+                  Delete permanently…
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              size="sm"
+              onClick={() => navigateTo("/administration/mcp-tools/new")}
+              disabled={isPending}
+              className="h-8 gap-1.5"
             >
-              <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
-              <SelectValue placeholder="Tag" />
+              <Plus className="h-3.5 w-3.5" />
+              Add Tool
+            </Button>
+          </div>
+        </div>
+
+        {/* Toolbar — row 2: top-level quick filters (preserved) */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select
+            value={selectedSourceApp}
+            onValueChange={setSelectedSourceApp}
+          >
+            <SelectTrigger
+              className={`h-8 w-40 text-xs ${selectedSourceApp !== "all" ? "border-primary text-primary" : ""}`}
+            >
+              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+              <SelectValue placeholder="Source App" />
             </SelectTrigger>
             <SelectContent>
-              {allTags.map((tag) => (
-                <SelectItem key={tag} value={tag} className="text-xs">
-                  {tag === "all" ? "All Tags" : tag}
+              {sourceApps.map((app) => (
+                <SelectItem key={app} value={app} className="text-xs">
+                  {app === "all" ? "All Source Apps" : formatText(app)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
 
-        <Select
-          value={selectedTestFilter}
-          onValueChange={(v) => setSelectedTestFilter(v as TestFilter)}
-        >
-          <SelectTrigger
-            className={`h-8 w-48 text-xs ${selectedTestFilter !== "all" ? "border-primary text-primary" : ""}`}
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger
+              className={`h-8 w-40 text-xs ${selectedCategory !== "all" ? "border-primary text-primary" : ""}`}
+            >
+              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat} className="text-xs">
+                  {cat === "all" ? "All Categories" : formatText(cat)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedStatus}
+            onValueChange={(v) =>
+              setSelectedStatus(v as "all" | "active" | "inactive")
+            }
           >
-            <TestTube2 className="h-3 w-3 mr-1 flex-shrink-0" />
-            <SelectValue placeholder="Test Readiness" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              All Tools
-            </SelectItem>
-            <SelectItem value="fully_ready" className="text-xs">
-              Fully Ready (all 4)
-            </SelectItem>
-            <SelectItem value="has_samples" className="text-xs">
-              Has Samples
-            </SelectItem>
-            <SelectItem value="no_samples" className="text-xs">
-              Missing Samples
-            </SelectItem>
-            <SelectItem value="has_ui" className="text-xs">
-              Has UI Component
-            </SelectItem>
-            <SelectItem value="no_ui" className="text-xs">
-              Missing UI Component
-            </SelectItem>
-            <SelectItem value="has_output_schema" className="text-xs">
-              Has Output Schema
-            </SelectItem>
-            <SelectItem value="no_output_schema" className="text-xs">
-              Missing Output Schema
-            </SelectItem>
-            <SelectItem value="has_annotations" className="text-xs">
-              Has Annotations
-            </SelectItem>
-            <SelectItem value="no_annotations" className="text-xs">
-              Missing Annotations
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            <SelectTrigger
+              className={`h-8 w-36 text-xs ${selectedStatus !== "all" ? "border-primary text-primary" : ""}`}
+            >
+              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">
+                All Statuses
+              </SelectItem>
+              <SelectItem value="active" className="text-xs">
+                Active only
+              </SelectItem>
+              <SelectItem value="inactive" className="text-xs">
+                Inactive only
+              </SelectItem>
+            </SelectContent>
+          </Select>
 
-      {/* Stats row */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>
-          <span className="font-semibold text-foreground">
-            {filteredTools.length}
-          </span>{" "}
-          of {tools.length} tools
-        </span>
-        <span>
-          <span className="font-semibold text-success">
-            {filteredTools.filter((t) => t.is_active).length}
-          </span>{" "}
-          active
-        </span>
-        <span className="border-l border-border pl-4">
-          <span className="font-semibold text-info">
-            {
-              filteredTools.filter((t) => {
-                const c = toolCounts[t.name] ?? {
-                  sampleCount: 0,
-                  uiComponentCount: 0,
-                };
-                return (
-                  c.sampleCount > 0 &&
-                  c.uiComponentCount > 0 &&
-                  hasOutputSchema(t) &&
-                  hasAnnotations(t)
-                );
-              }).length
-            }
-          </span>{" "}
-          fully ready
-        </span>
-        <span>
-          <span className="font-semibold text-success">
-            {
-              filteredTools.filter(
-                (t) => (toolCounts[t.name]?.sampleCount ?? 0) > 0,
-              ).length
-            }
-          </span>{" "}
-          w/ samples
-        </span>
-        <span>
-          <span className="font-semibold text-success">
-            {
-              filteredTools.filter(
-                (t) => (toolCounts[t.name]?.uiComponentCount ?? 0) > 0,
-              ).length
-            }
-          </span>{" "}
-          w/ UI
-        </span>
-        <span>
-          <span className="font-semibold text-warning">
-            {filteredTools.filter((t) => !hasOutputSchema(t)).length}
-          </span>{" "}
-          no output schema
-        </span>
-        <span>
-          <span className="font-semibold text-warning">
-            {filteredTools.filter((t) => !hasAnnotations(t)).length}
-          </span>{" "}
-          no annotations
-        </span>
+          {allTags.length > 1 && (
+            <Select value={selectedTag} onValueChange={setSelectedTag}>
+              <SelectTrigger
+                className={`h-8 w-36 text-xs ${selectedTag !== "all" ? "border-primary text-primary" : ""}`}
+              >
+                <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
+                <SelectValue placeholder="Tag" />
+              </SelectTrigger>
+              <SelectContent>
+                {allTags.map((tag) => (
+                  <SelectItem key={tag} value={tag} className="text-xs">
+                    {tag === "all" ? "All Tags" : tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Select
+            value={selectedTestFilter}
+            onValueChange={(v) => setSelectedTestFilter(v as TestFilter)}
+          >
+            <SelectTrigger
+              className={`h-8 w-48 text-xs ${selectedTestFilter !== "all" ? "border-primary text-primary" : ""}`}
+            >
+              <TestTube2 className="h-3 w-3 mr-1 flex-shrink-0" />
+              <SelectValue placeholder="Test Readiness" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">
+                All Tools
+              </SelectItem>
+              <SelectItem value="fully_ready" className="text-xs">
+                Fully Ready (all 4)
+              </SelectItem>
+              <SelectItem value="has_samples" className="text-xs">
+                Has Samples
+              </SelectItem>
+              <SelectItem value="no_samples" className="text-xs">
+                Missing Samples
+              </SelectItem>
+              <SelectItem value="has_ui" className="text-xs">
+                Has UI Component
+              </SelectItem>
+              <SelectItem value="no_ui" className="text-xs">
+                Missing UI Component
+              </SelectItem>
+              <SelectItem value="has_output_schema" className="text-xs">
+                Has Output Schema
+              </SelectItem>
+              <SelectItem value="no_output_schema" className="text-xs">
+                Missing Output Schema
+              </SelectItem>
+              <SelectItem value="has_annotations" className="text-xs">
+                Has Annotations
+              </SelectItem>
+              <SelectItem value="no_annotations" className="text-xs">
+                Missing Annotations
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Stats row */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            <span className="font-semibold text-foreground">
+              {filteredTools.length}
+            </span>{" "}
+            of {tools.length} tools
+          </span>
+          <span>
+            <span className="font-semibold text-success">
+              {filteredTools.filter((t) => t.is_active).length}
+            </span>{" "}
+            active
+          </span>
+          <span className="border-l border-border pl-4">
+            <span className="font-semibold text-info">
+              {
+                filteredTools.filter((t) => {
+                  const c = toolCounts[t.name] ?? {
+                    sampleCount: 0,
+                    uiComponentCount: 0,
+                  };
+                  return (
+                    c.sampleCount > 0 &&
+                    c.uiComponentCount > 0 &&
+                    hasOutputSchema(t) &&
+                    hasAnnotations(t)
+                  );
+                }).length
+              }
+            </span>{" "}
+            fully ready
+          </span>
+          <span>
+            <span className="font-semibold text-success">
+              {
+                filteredTools.filter(
+                  (t) => (toolCounts[t.name]?.sampleCount ?? 0) > 0,
+                ).length
+              }
+            </span>{" "}
+            w/ samples
+          </span>
+          <span>
+            <span className="font-semibold text-success">
+              {
+                filteredTools.filter(
+                  (t) => (toolCounts[t.name]?.uiComponentCount ?? 0) > 0,
+                ).length
+              }
+            </span>{" "}
+            w/ UI
+          </span>
+          <span>
+            <span className="font-semibold text-warning">
+              {filteredTools.filter((t) => !hasOutputSchema(t)).length}
+            </span>{" "}
+            no output schema
+          </span>
+          <span>
+            <span className="font-semibold text-warning">
+              {filteredTools.filter((t) => !hasAnnotations(t)).length}
+            </span>{" "}
+            no annotations
+          </span>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="border border-border rounded-md bg-card overflow-hidden">
-        <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_var(--border)]">
-            <tr className="border-b border-border">
-              <th className="w-[36px] px-2 py-2 text-left">
-                <input
-                  type="checkbox"
-                  checked={allVisibleSelected}
-                  onChange={toggleSelectAllVisible}
-                  className="accent-primary cursor-pointer"
-                  aria-label="Select all visible"
-                />
-              </th>
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className={cn(
-                    "px-2 py-2 text-left align-middle text-[11px] font-medium text-muted-foreground whitespace-nowrap",
-                    col.width,
-                  )}
-                >
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleSort(col.key)}
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
-                      title={`Sort by ${col.header}`}
-                    >
-                      <span>{col.header}</span>
-                      <SortIcon active={sortKey === col.key} dir={sortDir} />
-                    </button>
-                    <ColumnFilterControl
-                      column={col}
-                      value={columnFilters[col.key]}
-                      onChange={(v) => setColumnFilter(col.key, v)}
-                      enumOptions={enumValuesByColumn[col.key] ?? []}
-                    />
-                  </div>
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 pb-safe">
+        <div className="border border-border rounded-md bg-card">
+          <table className="w-full min-w-max text-sm border-collapse">
+            <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_var(--border)]">
+              <tr className="border-b border-border">
+                <th className="w-[36px] px-2 py-2 text-left">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    onCheckedChange={toggleSelectAllVisible}
+                    aria-label="Select all visible"
+                  />
                 </th>
-              ))}
-              <th className="w-[220px] px-2 py-2 text-left text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTools.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length + 2}
-                  className="text-center py-16 text-muted-foreground text-sm"
-                >
-                  <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  {searchQuery || activeFilterCount > 0
-                    ? "No tools match your filters"
-                    : "No tools in the system"}
-                </td>
-              </tr>
-            ) : (
-              filteredTools.map((tool) => {
-                const counts = toolCounts[tool.name] ?? {
-                  sampleCount: 0,
-                  uiComponentCount: 0,
-                };
-                const isSelected = selectedToolIds.has(tool.id);
-                return (
-                  <tr
-                    key={tool.id}
+                {columns.map((col) => (
+                  <th
+                    key={col.key}
                     className={cn(
-                      "border-b border-border hover:bg-accent/30 transition-colors",
-                      !tool.is_active && "opacity-60",
-                      isSelected && "bg-accent/20",
+                      "px-2 py-2 text-left align-middle text-[11px] font-medium text-muted-foreground whitespace-nowrap",
+                      col.width,
                     )}
                   >
-                    <td className="px-2 py-1.5 align-middle">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleToolSelection(tool.id)}
-                        className="accent-primary cursor-pointer"
-                        aria-label={`Select ${tool.name}`}
-                      />
-                    </td>
-                    {columns.map((col) => (
-                      <td
-                        key={col.key}
-                        className={cn(
-                          "px-2 py-1.5 align-middle cursor-pointer",
-                          col.width,
-                        )}
-                        onClick={() =>
-                          navigateTo(`/administration/mcp-tools/${tool.id}`)
-                        }
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSort(col.key)}
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        title={`Sort by ${col.header}`}
                       >
-                        {col.render(tool, counts)}
-                      </td>
-                    ))}
-                    <td
-                      className="px-2 py-1.5 align-middle whitespace-nowrap"
-                      onClick={(e) => e.stopPropagation()}
+                        <span>{col.header}</span>
+                        <SortIcon active={sortKey === col.key} dir={sortDir} />
+                      </button>
+                      <ColumnFilterControl
+                        column={col}
+                        value={columnFilters[col.key]}
+                        onChange={(v) => setColumnFilter(col.key, v)}
+                        enumOptions={enumValuesByColumn[col.key] ?? []}
+                      />
+                    </div>
+                  </th>
+                ))}
+                <th className="w-[220px] px-2 py-2 text-left text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTools.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length + 2}
+                    className="text-center py-16 text-muted-foreground text-sm"
+                  >
+                    <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    {searchQuery || activeFilterCount > 0
+                      ? "No tools match your filters"
+                      : "No tools in the system"}
+                  </td>
+                </tr>
+              ) : (
+                filteredTools.map((tool) => {
+                  const counts = toolCounts[tool.name] ?? {
+                    sampleCount: 0,
+                    uiComponentCount: 0,
+                  };
+                  const isSelected = selectedToolIds.has(tool.id);
+                  return (
+                    <tr
+                      key={tool.id}
+                      className={cn(
+                        "border-b border-border hover:bg-accent/30 transition-colors",
+                        !tool.is_active && "opacity-60",
+                        isSelected && "bg-accent/20",
+                      )}
                     >
-                      <div className="flex items-center gap-0.5">
-                        <Switch
-                          checked={tool.is_active ?? false}
-                          onCheckedChange={(v) =>
-                            handleToggleActive(tool.id, v)
-                          }
-                          className="scale-75"
+                      <td className="px-2 py-1.5 align-middle">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleToolSelection(tool.id)}
+                          aria-label={`Select ${tool.name}`}
                         />
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                      </td>
+                      {columns.map((col) => (
+                        <td
+                          key={col.key}
+                          className={cn(
+                            "px-2 py-1.5 align-middle cursor-pointer",
+                            col.width,
+                          )}
                           onClick={() =>
                             navigateTo(`/administration/mcp-tools/${tool.id}`)
                           }
-                          title="View Samples"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                         >
-                          <FlaskConical className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            navigateTo(
-                              `/administration/mcp-tools/${tool.id}/ui`,
-                            )
-                          }
-                          title="UI Component"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                        >
-                          <Zap className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            navigateTo(
-                              `/administration/mcp-tools/${tool.id}/incidents`,
-                            )
-                          }
-                          title="Incidents"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
-                        >
-                          <Bug className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            navigateTo(
-                              `/administration/mcp-tools/${tool.id}/edit`,
-                            )
-                          }
-                          title="Edit Tool"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTool(tool.id, tool.name)}
-                          title="Delete Tool"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                          {col.render(tool, counts)}
+                        </td>
+                      ))}
+                      <td
+                        className="px-2 py-1.5 align-middle whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-0.5">
+                          <Switch
+                            checked={tool.is_active ?? false}
+                            onCheckedChange={(v) =>
+                              handleToggleActive(tool.id, v)
+                            }
+                            className="scale-75"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              navigateTo(`/administration/mcp-tools/${tool.id}`)
+                            }
+                            title="View Samples"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          >
+                            <FlaskConical className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              navigateTo(
+                                `/administration/mcp-tools/${tool.id}/ui`,
+                              )
+                            }
+                            title="UI Component"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                          >
+                            <Zap className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              navigateTo(
+                                `/administration/mcp-tools/${tool.id}/incidents`,
+                              )
+                            }
+                            title="Incidents"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
+                          >
+                            <Bug className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              navigateTo(
+                                `/administration/mcp-tools/${tool.id}/edit`,
+                              )
+                            }
+                            title="Edit Tool"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteTool(tool.id, tool.name)}
+                            title="Delete Tool"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AlertDialog
@@ -1680,10 +1684,9 @@ function ColumnFilterControl({
                     key={opt}
                     className="flex items-center gap-2 text-xs cursor-pointer py-0.5"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selected}
-                      onChange={() => {
+                      onCheckedChange={() => {
                         const cur = new Set(value?.enumValues ?? []);
                         if (cur.has(opt)) cur.delete(opt);
                         else cur.add(opt);
@@ -1692,7 +1695,6 @@ function ColumnFilterControl({
                           enumValues: Array.from(cur),
                         });
                       }}
-                      className="accent-primary"
                     />
                     <span className="truncate" title={opt}>
                       {formatText(opt)}
