@@ -60,7 +60,19 @@ const nextConfig = {
         optimizePackageImports: ['lucide-react', 'zustand'],
     },
     // Turbopack configuration (Next.js 16 default bundler)
-    turbopack: {},
+    turbopack: {
+        // jspdf's package `exports` map resolves the "node" condition to
+        // dist/jspdf.node.min.js during the SSR pass, which pulls in fflate's
+        // Node `worker_threads` build (`new Worker(c + workerAdd, { eval: true })`).
+        // Turbopack can't resolve that dynamic Worker, so a clean/cold build
+        // fails — and because the chat-assistant → jspdf chain is reachable from
+        // the global (a) layout, it breaks EVERY authenticated route, not just
+        // chat. jspdf is only ever used client-side (DOM-capture PDF export), so
+        // pin it to its browser ES build everywhere.
+        resolveAlias: {
+            jspdf: "jspdf/dist/jspdf.es.min.js",
+        },
+    },
     serverExternalPackages: ["canvas", "next-mdx-remote", "vscode-oniguruma", "websocket"],
     // Force Next.js's transformer over packages that ship pre-compiled output
     // using the classic JSX runtime (`import React from "react"` +
