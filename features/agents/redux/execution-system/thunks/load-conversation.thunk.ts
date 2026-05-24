@@ -217,8 +217,13 @@ export const loadConversation = createAsyncThunk<
               ? (conv.metadata as Record<string, unknown>)
               : {};
           const proxyUrl = meta["sandbox_override_proxy_url"];
+          const tier = meta["sandbox_override_tier"];
           return typeof proxyUrl === "string" && proxyUrl
-            ? { rowId, proxyUrl }
+            ? {
+                rowId,
+                proxyUrl,
+                tier: tier === "ec2" || tier === "hosted" ? tier : undefined,
+              }
             : null;
         })(),
       }),

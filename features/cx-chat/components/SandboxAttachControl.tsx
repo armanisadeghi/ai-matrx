@@ -19,7 +19,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Plus, Loader2, X, Check } from "lucide-react";
+import { Box, Plus, Loader2, X, Check, GitBranch } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -32,6 +32,7 @@ import { selectConversationSandboxOverride } from "@/features/agents/redux/execu
 import { selectConversationIsEphemeral } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { setConversationSandboxOverride } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
+import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
 import {
   getEffectiveStatus,
   statusPillClasses,
@@ -44,7 +45,11 @@ interface SandboxAttachControlProps {
   conversationId: string | null;
 }
 
-type SandboxRef = { rowId: string; proxyUrl: string };
+type SandboxRef = {
+  rowId: string;
+  proxyUrl: string;
+  tier?: "ec2" | "hosted";
+};
 
 function shortLabel(instance: SandboxInstance): string {
   const sbx = instance.proxy_url?.match(/\/sandboxes\/([^/]+)/)?.[1];
@@ -58,6 +63,7 @@ export default function SandboxAttachControl({
 }: SandboxAttachControlProps) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const [cloneOpen, setCloneOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   // When true, picking a box pins it to THIS conversation instead of setting
   // the shared default. Only meaningful inside a (non-ephemeral) conversation.
@@ -144,13 +150,18 @@ export default function SandboxAttachControl({
         toast.error("Sandbox created but has no proxy URL yet — try again");
         return;
       }
-      applyRef({ rowId: instance.id, proxyUrl: instance.proxy_url });
+      applyRef({
+        rowId: instance.id,
+        proxyUrl: instance.proxy_url,
+        tier: instance.tier ?? undefined,
+      });
     } finally {
       setCreating(false);
     }
   }, [createInstance, applyRef]);
 
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
@@ -194,14 +205,27 @@ export default function SandboxAttachControl({
                   : "Shared — all conversations"}
               </p>
             </div>
-            <button
-              onClick={() => applyRef(null)}
-              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
-              title="Detach"
-            >
-              <X className="h-3 w-3" />
-              Detach
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setCloneOpen(true);
+                }}
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                title="Clone a git repo into this box"
+              >
+                <GitBranch className="h-3 w-3" />
+                Clone repo
+              </button>
+              <button
+                onClick={() => applyRef(null)}
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+                title="Detach"
+              >
+                <X className="h-3 w-3" />
+                Detach
+              </button>
+            </div>
           </div>
         )}
 
@@ -225,7 +249,11 @@ export default function SandboxAttachControl({
                   key={inst.id}
                   onClick={() =>
                     inst.proxy_url &&
-                    applyRef({ rowId: inst.id, proxyUrl: inst.proxy_url })
+                    applyRef({
+                      rowId: inst.id,
+                      proxyUrl: inst.proxy_url,
+                      tier: inst.tier ?? undefined,
+                    })
                   }
                   disabled={!inst.proxy_url}
                   className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-accent/60 transition-colors disabled:opacity-50"
@@ -278,5 +306,12 @@ export default function SandboxAttachControl({
         </div>
       </PopoverContent>
     </Popover>
+
+    <CloneRepoDialog
+      instanceId={resolved?.rowId ?? null}
+      open={cloneOpen}
+      onOpenChange={setCloneOpen}
+    />
+    </>
   );
 }

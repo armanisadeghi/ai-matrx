@@ -197,7 +197,11 @@ export interface ExecutionInstance {
    * into `cx_conversation.metadata`); rehydrated by the conversation bundle.
    * Ephemeral conversations keep this in-memory only.
    */
-  sandboxOverride?: { rowId: string; proxyUrl: string } | null;
+  sandboxOverride?: {
+    rowId: string;
+    proxyUrl: string;
+    tier?: "ec2" | "hosted";
+  } | null;
 }
 
 // =============================================================================

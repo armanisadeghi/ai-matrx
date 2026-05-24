@@ -318,7 +318,7 @@ export const duplicateConversation = createAsyncThunk<
 interface SetConversationSandboxOverrideArgs {
   conversationId: string;
   /** The box to pin to this conversation, or `null` to clear the override. */
-  ref: { rowId: string; proxyUrl: string } | null;
+  ref: { rowId: string; proxyUrl: string; tier?: "ec2" | "hosted" } | null;
 }
 
 /**
@@ -375,8 +375,11 @@ export const setConversationSandboxOverride = createAsyncThunk<
         : {};
     if (ref) {
       metadata["sandbox_override_proxy_url"] = ref.proxyUrl;
+      if (ref.tier) metadata["sandbox_override_tier"] = ref.tier;
+      else delete metadata["sandbox_override_tier"];
     } else {
       delete metadata["sandbox_override_proxy_url"];
+      delete metadata["sandbox_override_tier"];
     }
 
     const { error } = await supabase

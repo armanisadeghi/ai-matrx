@@ -53,6 +53,13 @@ export interface SandboxBindingPayload {
 export interface ResolvedSandboxRef {
   rowId: string;
   proxyUrl: string;
+  /**
+   * "ec2" (slim) boxes have no in-box server — the conversation's loop runs on
+   * the nearby dedicated EC2 server (see `resolveBackendForConversation`).
+   * "hosted" (heavy) boxes carry the loop themselves. May be absent on refs
+   * stored before tier was tracked, or for the editor-active source.
+   */
+  tier?: "ec2" | "hosted";
   source: "conversation-override" | "user-active" | "editor-active";
 }
 

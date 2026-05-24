@@ -175,8 +175,15 @@ export interface CodingPreferences {
    * follows the user across reloads, tabs, and every chat surface. A specific
    * conversation can override this via `cx_conversation.sandbox_instance_id`.
    * Stores `proxyUrl` alongside `rowId` so the binding needs no extra fetch.
+   * `tier` drives where the agent loop runs: "ec2" (slim) boxes route the
+   * conversation's /ai/* to the nearby dedicated server; "hosted" (heavy)
+   * boxes carry the loop themselves.
    */
-  activeAgentSandbox: { rowId: string; proxyUrl: string } | null;
+  activeAgentSandbox: {
+    rowId: string;
+    proxyUrl: string;
+    tier?: "ec2" | "hosted";
+  } | null;
   /**
    * When true, the code workspace activates per-adapter Monaco type
    * environments (prompt-app, aga-app, tool-ui, library, sandbox-fs,

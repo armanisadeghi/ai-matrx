@@ -4,8 +4,34 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
+import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
+import { BACKEND_URLS } from "@/lib/api/endpoints";
 
-export type BackendChannel = "global" | "override";
+export type BackendChannel = "global" | "override" | "ec2-dedicated";
+
+/**
+ * If this conversation is bound to an **EC2 (slim)** sandbox, its agent loop
+ * should run on the dedicated server that sits in the same AZ as the sandbox
+ * host and close to the LLM providers (`NEXT_PUBLIC_BACKEND_URL_EC2`, e.g.
+ * `https://sandbox.matrxserver.com`) instead of the far global server. The
+ * slim box has no in-box server; the loop runs there and reaches its fs/shell
+ * tools into the box via the `sandbox` binding. Hosted (heavy) boxes carry
+ * their own server and are handled by the explicit `serverOverrideUrl` path,
+ * so they never reach this branch.
+ *
+ * Returns the trimmed URL, or `null` when the box isn't EC2-tier or the env
+ * var is unset (→ caller falls back to the global server, no behavior change).
+ */
+function dedicatedEc2ServerForConversation(
+  state: RootState,
+  conversationId: string,
+): string | null {
+  const ref = resolveAgentSandboxRef(state, conversationId);
+  if (ref?.tier !== "ec2") return null;
+  const url = BACKEND_URLS.ec2;
+  if (!url) return null;
+  return url.endsWith("/") ? url.slice(0, -1) : url;
+}
 
 export interface ResolvedBackend {
   /** Fully-qualified base URL with no trailing slash. */
@@ -48,6 +74,8 @@ export function resolveBaseUrlForConversation(
   if (override) {
     return override.endsWith("/") ? override.slice(0, -1) : override;
   }
+  const ec2Dedicated = dedicatedEc2ServerForConversation(state, conversationId);
+  if (ec2Dedicated) return ec2Dedicated;
   const resolved = selectResolvedBaseUrl(state);
   if (!resolved) return null;
   return resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
@@ -101,6 +129,15 @@ export function resolveBackendForConversation(
       ? overrideUrl.slice(0, -1)
       : overrideUrl;
     return { baseUrl, channel: "override", headers };
+  }
+
+  // EC2 (slim) sandbox conversations run the loop on the nearby dedicated
+  // server. Same auth (Supabase JWT) — it's the same aidream codebase reading
+  // the same Supabase, so the conversation/RLS identity is intact, exactly
+  // like the in-box-proxy override channel.
+  const ec2Dedicated = dedicatedEc2ServerForConversation(state, conversationId);
+  if (ec2Dedicated) {
+    return { baseUrl: ec2Dedicated, channel: "ec2-dedicated", headers };
   }
 
   const resolved = selectResolvedBaseUrl(state);
