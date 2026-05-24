@@ -38,24 +38,6 @@ export const selectGlobalConversationList = createSelector(
 export const selectGlobalConversationIds = (state: RootState): string[] =>
   state.conversationList.allConversationIds;
 
-/**
- * The current user's last-used agentId — the `agentId` of the most-recent
- * conversation. Derived from the global list (already sorted updated_at DESC).
- * Returns `null` when the user has no conversations, or none of their
- * conversations have a resolvable agent (legacy rows). Powers the chat
- * route's `+` button: when last-used is known we route to /chat/a/[id],
- * otherwise we fall through to the agent picker at /chat/new.
- */
-export const selectLastUsedAgentId = createSelector(
-  [selectGlobalConversationList],
-  (list): string | null => {
-    for (const item of list) {
-      if (item.agentId) return item.agentId;
-    }
-    return null;
-  },
-);
-
 export const selectGlobalListStatus = (
   state: RootState,
 ): ConversationListLoadStatus => state.conversationList.globalStatus;

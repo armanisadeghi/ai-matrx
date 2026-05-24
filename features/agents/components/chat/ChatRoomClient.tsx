@@ -16,7 +16,10 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import {
+  setFocus,
+  clearFocus,
+} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import {
   registerSurface,
@@ -125,6 +128,23 @@ export function ChatRoomClient({
       cancelled = true;
     };
   }, [agentId, dispatch, executionPayload.isReady]);
+
+  // ── Fresh-start guard (agent route only) ─────────────────────────────────
+  // The agent route means "start a NEW conversation with this agent." The
+  // surface key is `chat-route:<agentId>`, and the focus slice retains the
+  // last conversation per surface across route changes (the launcher uses
+  // `retainOnUnmount` so non-empty conversations stay cached). Without this,
+  // returning to an agent you recently used would revive that agent's old
+  // conversation. Clear the stale per-agent focus whenever we (re)enter a
+  // fresh agent route so the launcher mints a brand-new conversation. This
+  // effect MUST re-run on every agent/route change — ChatRoomClient is reused
+  // (not remounted) across chat navigations, so a once-per-mount guard would
+  // miss agent switches and `+` clicks. Skipped when loading an existing
+  // conversation (/chat/[conversationId]), where the prop is the source.
+  useEffect(() => {
+    if (conversationIdProp) return;
+    dispatch(clearFocus(surfaceKey));
+  }, [conversationIdProp, surfaceKey, dispatch]);
 
   // ── Launcher (active only on /chat/a/[agentId]) ──────────────────────────
   // When `conversationIdProp` is set, we're loading an existing conversation
@@ -274,6 +294,21 @@ export function ChatRoomClient({
   // ── Single source of truth ───────────────────────────────────────────────
   // Prop wins when present (loading existing). Otherwise launcher's id wins.
   const conversationId = conversationIdProp ?? liveConversationId ?? null;
+
+  // TEMP [chatdbg] revival diagnostic — remove once the +/agent-switch revival
+  // is fixed. Shows what the surface resolves to on each render.
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("[chatdbg] ChatRoomClient render", {
+      agentId,
+      surfaceKey,
+      conversationIdProp: conversationIdProp ?? null,
+      isInitializing,
+      liveConversationId: liveConversationId ?? null,
+      conversationId,
+      pendingNav: pendingNavigation?.conversationId ?? null,
+    });
+  }
 
   const handlePickAgent = (nextAgentId: string) => {
     if (nextAgentId === agentId) return;

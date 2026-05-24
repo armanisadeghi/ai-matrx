@@ -31,6 +31,7 @@ import {
   Gauge,
   Server,
   MessageSquare,
+  AppWindow,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,10 @@ import CreatorRunTabContent, {
 } from "@/features/agents/components/run-controls/CreatorRunTabContent";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
+import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { StreamDebugPanel } from "@/features/agents/components/debug/StreamDebugPanel";
+import { ObservationalMemoryCore } from "@/features/agents/components/observational-memory/ObservationalMemoryCore";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
 
@@ -57,16 +61,20 @@ interface CreatorHubTabDef {
   icon: LucideIcon;
   /** Present for conversation-scoped tabs that defer to CreatorRunTabContent. */
   runTabId?: RunTabId;
+  /** Admin-only tabs are hidden for non-super-admins. */
+  adminOnly?: boolean;
 }
 
 // Settings + Data first (page-agnostic), then the run-control tabs — a faithful
-// duplicate of CreatorRunPanel's tab list. The run panel's Run tab is id
-// "settings" there; here it's id "run" so the creator Settings page owns
-// "settings".
+// duplicate of CreatorRunPanel's tab list, followed by the dedicated tabs that
+// promote the most-used Actions buttons (Stream Debug, Memory) into first-class
+// tabs. The Actions tab itself moves to the very end since its remaining
+// buttons (Reset Conversation, etc.) are one-shots rather than primary views.
+// Note: the run panel's Run tab is id "settings" there; here it's id "run" so
+// the creator Settings page owns "settings".
 const CREATOR_HUB_TABS: CreatorHubTabDef[] = [
   { id: "settings", label: "Settings", icon: Settings },
   { id: "data", label: "Data", icon: Database },
-  { id: "actions", label: "Actions", icon: Play, runTabId: "actions" },
   { id: "context", label: "Context", icon: Layers, runTabId: "context" },
   { id: "payload", label: "Payload", icon: FileJson, runTabId: "payload" },
   {
@@ -87,6 +95,9 @@ const CREATOR_HUB_TABS: CreatorHubTabDef[] = [
   { id: "session", label: "Session", icon: BarChart3, runTabId: "session" },
   { id: "client", label: "Client", icon: Gauge, runTabId: "client" },
   { id: "backend", label: "Backend", icon: Server, runTabId: "backend" },
+  { id: "stream_debug", label: "Stream Debug", icon: AppWindow },
+  { id: "memory", label: "Memory", icon: Brain, adminOnly: true },
+  { id: "actions", label: "Actions", icon: Play, runTabId: "actions" },
 ];
 
 function HubEmptyConversation() {
@@ -126,6 +137,10 @@ export default function CreatorHubWindow({
   // agent/conversation the hub is referencing (and spot a wrong guess). Run /
   // chat surface keys embed the agentId after the ":".
   const isCreator = useAppSelector(selectIsCreator);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const visibleTabs = CREATOR_HUB_TABS.filter(
+    (t) => !t.adminOnly || isSuperAdmin,
+  );
   const activeAgentId =
     surfaceKey && surfaceKey.includes(":")
       ? surfaceKey.slice(surfaceKey.indexOf(":") + 1)
@@ -145,12 +160,11 @@ export default function CreatorHubWindow({
 
   if (!isOpen) return null;
 
-  const active =
-    CREATOR_HUB_TABS.find((t) => t.id === activeTab) ?? CREATOR_HUB_TABS[0];
+  const active = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
 
   const sidebar = (
     <nav className="flex h-full flex-col gap-0.5 overflow-y-auto p-2">
-      {CREATOR_HUB_TABS.map((tab) => {
+      {visibleTabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = tab.id === activeTab;
         return (
@@ -179,6 +193,20 @@ export default function CreatorHubWindow({
     body = <CreatorSettingsTab />;
   } else if (active.id === "data") {
     body = <CreatorDataTab />;
+  } else if (active.id === "stream_debug") {
+    body = displayConvId ? (
+      <StreamDebugPanel conversationId={displayConvId} />
+    ) : (
+      <HubEmptyConversation />
+    );
+  } else if (active.id === "memory") {
+    body = inputConvId ? (
+      <div className="h-full overflow-y-auto">
+        <ObservationalMemoryCore conversationId={inputConvId} layout="split" />
+      </div>
+    ) : (
+      <HubEmptyConversation />
+    );
   } else if (active.runTabId) {
     body = inputConvId ? (
       <div className="h-full overflow-y-auto">

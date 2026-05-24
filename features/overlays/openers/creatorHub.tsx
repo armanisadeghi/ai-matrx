@@ -26,7 +26,6 @@ const OVERLAY_ID = "creatorHub" as const;
 export type CreatorHubTabId =
   | "settings"
   | "data"
-  | "actions"
   | "context"
   | "payload"
   | "widget_invoker"
@@ -36,7 +35,10 @@ export type CreatorHubTabId =
   | "model_context"
   | "session"
   | "client"
-  | "backend";
+  | "backend"
+  | "stream_debug"
+  | "memory"
+  | "actions";
 
 export interface OpenCreatorHubOptions {
   initialTab?: CreatorHubTabId | null;

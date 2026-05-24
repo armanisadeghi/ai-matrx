@@ -141,7 +141,11 @@ function compareTool(name: string, schema: z.ZodTypeAny, db: DbToolRow): string[
   const issues: string[] = [];
   const js = toObjectSchema(name, schema);
   const localProps = js.properties ?? {};
-  const dbProps = db.parameters ?? {};
+  // `$`-prefixed keys ($variants, …) are contract metadata, NOT tool parameters.
+  // They never appear in code and must not be compared as fields.
+  const dbProps = Object.fromEntries(
+    Object.entries(db.parameters ?? {}).filter(([k]) => !k.startsWith("$")),
+  );
 
   const localFields = asSet(Object.keys(localProps));
   const dbFields = asSet(Object.keys(dbProps));

@@ -14,15 +14,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
-import {
-  selectLastUsedAgentId,
-  selectGlobalListStatus,
-} from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import { fetchGlobalConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 interface ChatPageShellProps {
@@ -67,7 +61,6 @@ export function ChatPageShell({
   children,
 }: ChatPageShellProps) {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   // Desktop sidebar collapse state. Defaults expanded so the user lands
   // with their conversation history visible on first paint.
@@ -75,19 +68,6 @@ export function ChatPageShell({
   // Mobile drawer is a separate, transient overlay.
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
 
-  // ── Last-used agent ─────────────────────────────────────────────────────
-  // Drives the `+` button: when a last-used agent can be derived from the
-  // user's most recent conversation, route directly to /chat/a/[id] instead
-  // of forcing the picker. Fetch the global conversation list on mount as a
-  // safety net so the selector is populated whenever the shell mounts —
-  // including direct deep-links to /chat/[conversationId] or /chat/a/[id].
-  const globalListStatus = useAppSelector(selectGlobalListStatus);
-  const lastUsedAgentId = useAppSelector(selectLastUsedAgentId);
-  useEffect(() => {
-    if (globalListStatus === "idle") {
-      dispatch(fetchGlobalConversations({ limit: 25 }));
-    }
-  }, [dispatch, globalListStatus]);
   // NOTE: we do NOT eagerly fetch the agent list here. The chat sidebar's
   // PinnedAgentsSection reads from the centralized agent-consumers pipeline
   // and renders nothing until that data is already loaded — same lazy
@@ -122,19 +102,29 @@ export function ChatPageShell({
   }, [isMobile, historyExpanded, historyDrawerOpen]);
 
   const handleNewChat = useCallback(() => {
+    // TEMP [chatdbg]
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line no-console
+      console.log("[chatdbg] handleNewChat", {
+        activeAgentId: activeAgentId ?? null,
+        hasOnNewChat: !!onNewChat,
+        target: activeAgentId ? `/chat/a/${activeAgentId}` : "/chat/new",
+      });
+    }
     if (onNewChat) {
       onNewChat();
       return;
     }
-    // Prefer the user's last-used agent so the `+` button feels stateful —
-    // pressing it from any chat lands you back on the agent you've been
-    // talking to most. Falls through to the picker for brand-new users.
-    if (lastUsedAgentId) {
-      router.push(`/chat/a/${encodeURIComponent(lastUsedAgentId)}`);
+    // `+` starts a NEW conversation with the ACTIVE agent (the one shown in
+    // the picker). The agent route always mints a fresh conversation — it
+    // never revives a past one. With no active agent we land on /chat/new
+    // (the default-agent greeting). Never route by "last-used agent".
+    if (activeAgentId) {
+      router.push(`/chat/a/${encodeURIComponent(activeAgentId)}`);
     } else {
       router.push("/chat/new");
     }
-  }, [onNewChat, router, lastUsedAgentId]);
+  }, [onNewChat, router, activeAgentId]);
 
   const handlePinnedAgentSelect = useCallback(
     (agentId: string) => {

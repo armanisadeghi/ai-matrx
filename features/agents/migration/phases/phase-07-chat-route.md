@@ -5,6 +5,8 @@
 **Prerequisites:** Phase 5 (context menu live); Phase 1 (shortcuts) recommended for in-chat shortcuts
 **Unblocks:** Phase 20 (retire `aiChatSlice`)
 
+> **⚠ Living source moved.** This is the Phase-7 build log (historical). The authoritative, current spec for the live chat route is [`features/agents/components/chat/FEATURE.md`](../../components/chat/FEATURE.md). Some "current behavior" notes below were corrected on 2026-05-23 (see Change log); where they conflict, the FEATURE.md wins.
+
 ## Goal
 
 Ship `app/(a)/chat/` as a thin shell over the existing agent runner. Chat is an agent runner where the "agent" is selected from the user's own agents, system agents, and community agents. If the execution-system is correct, this is ~95% automatic.
@@ -14,7 +16,7 @@ Ship `app/(a)/chat/` as a thin shell over the existing agent runner. Chat is an 
 Per user: "the single most important feature we'll ever build for our application." Treat it as such — extra care on mobile, accessibility, keyboard shortcuts, streaming smoothness, and first-paint time.
 
 ## Success criteria
-- [x] `/chat` entry route opens a default conversation — redirects to the most recent conversation if any exists, otherwise to `/chat/new` (agent picker).
+- [x] `/chat` entry route always `redirect("/chat/new")` (the agent picker) — it never resumes the most recent conversation. (Corrected 2026-05-23: an earlier build redirected to the last conversation; that "resume-last" behavior was removed as an unwanted revival pattern. Users reach prior conversations via the history sidebar.)
 - [x] Agent picker scoped across own / system / community (community is a disabled tab with a "coming soon" stub until the community catalog lands).
 - [x] Conversation list + deep-link to specific conversation (`/chat/[conversationId]`). Deep link resolves the owning agentId server-side for SSR first-paint.
 - [x] Uses `features/agents/redux/execution-system` + `conversation-list` entirely — no new slices. Extended `conversationList` with a `fetchGlobalConversations` thunk that reuses the already-existing `setGlobalListLoading/Success/Error` reducers.
@@ -26,7 +28,7 @@ Per user: "the single most important feature we'll ever build for our applicatio
 
 ### Files created
 - `app/(a)/chat/layout.tsx` — route metadata (CH letter badge) + shell dock hide.
-- `app/(a)/chat/page.tsx` — landing that mounts `ChatLandingClient`.
+- `app/(a)/chat/page.tsx` — bare `/chat`; `redirect("/chat/new")`. (Earlier mounted `ChatLandingClient`, since removed.)
 - `app/(a)/chat/new/page.tsx` — Suspense-wrapped `ChatNewClient` (uses `useSearchParams`).
 - `app/(a)/chat/[conversationId]/page.tsx` — server component that SSR-resolves `cx_conversation.initial_agent_id` and mounts `ChatRoomClient`.
 - ~~`features/agents/components/chat/ChatAgentPicker.tsx`~~ — removed. Replaced by the shared `AgentListDropdown` (`features/agents/components/agent-listings/AgentListDropdown`) — same component used by `/agents/[id]/build` and `/agents/[id]/run` via `AgentSelectorIsland`.
@@ -34,7 +36,7 @@ Per user: "the single most important feature we'll ever build for our applicatio
 - ~~`features/agents/components/chat/ChatHistorySidebar.tsx`~~ — removed; replaced by `features/agents/components/conversation-history/ConversationHistorySidebar` (scoped, paginated, search + grouping).
 - `features/agents/components/chat/ChatRoomClient.tsx` — the single-conversation client shell (new or loaded).
 - `features/agents/components/chat/ChatNewClient.tsx` — agent picker landing for `/chat/new`.
-- `features/agents/components/chat/ChatLandingClient.tsx` — redirects to last conversation or `/chat/new`.
+- ~~`features/agents/components/chat/ChatLandingClient.tsx`~~ — removed. `app/(a)/chat/page.tsx` now redirects to `/chat/new` directly (no resume-last).
 
 ### Reused components (no fork, no copy)
 - `features/agents/hooks/useAgentLauncher.ts` — managed mode creates the instance + conversation; imperative mode would power future entry points.
@@ -46,7 +48,7 @@ Per user: "the single most important feature we'll ever build for our applicatio
 - `features/agents/redux/conversation-list/*` — entity store + new `fetchGlobalConversations` thunk (extension, not a new slice).
 
 ### First-paint strategy
-- Server component `app/(a)/chat/[conversationId]/page.tsx` reads only `initial_agent_id` from `cx_conversation` (single-column query) so SSR is sub-RPC cost. The full message bundle hydrates client-side via `loadConversation`, streaming the run in as data lands. `/chat` landing performs a lightweight `limit: 5` fetch client-side purely to decide where to redirect.
+- Server component `app/(a)/chat/[conversationId]/page.tsx` reads only `initial_agent_id` from `cx_conversation` (single-column query) so SSR is sub-RPC cost. The full message bundle hydrates client-side via `loadConversation`, streaming the run in as data lands. `/chat` no longer fetches anything — it redirects straight to `/chat/new`.
 
 ### Agent picker scope
 - `own` → `selectOwnedAgents`.
@@ -66,6 +68,7 @@ Per user: "the single most important feature we'll ever build for our applicatio
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-05-23 | claude | Corrected stale claims: `/chat` always redirects to `/chat/new` (resume-last removed); `ChatLandingClient` no longer exists. Fixed two revival bugs in the live route — agent re-selection reviving an agent's last conversation (added a `clearFocus` fresh-start guard in `ChatRoomClient`) and `+` using last-used/default instead of the active agent (`ChatPageShell.handleNewChat`); removed the dead `selectLastUsedAgentId`. Authoritative spec now lives in `features/agents/components/chat/FEATURE.md`. |
 | 2026-04-21 | claude (phase-7) | Phase 7 code-complete (partially — community picker stubbed, keyboard shortcuts hardcoded). Added `app/(a)/chat/{layout,page,new/page,[conversationId]/page}.tsx` and `features/agents/components/chat/{ChatAgentPicker,ChatPageShell,ChatHistorySidebar,ChatRoomClient,ChatNewClient,ChatLandingClient}.tsx`. Extended `conversation-list.thunks.ts` with `fetchGlobalConversations` (reuses existing `setGlobalList*` reducers; no new slice). Reused `AgentConversationColumn`, `useAgentLauncher`, `createManualInstance`, `loadConversation`, `selectOwnedAgents`, `selectSystemAgents`. Mobile handling: drawer-swapped picker + history via `useIsMobile()`; `pb-safe` on drawer footers; 16px picker search input. |
 | 2026-05-05 | composer | Replaced the route-specific `ChatHistorySidebar` with the reusable `ConversationHistorySidebar` (scope `chat-route`). Desktop aside + mobile drawer now share a small `ChatHistoryPanel` wrapper that adds the "Conversations / + New" header. Deleted `features/agents/components/chat/ChatHistorySidebar.tsx`. Search and date/agent grouping are now built-in; favorites are not yet wired (no chat-scoped preferences field — follow-up if needed). |
 | 2026-05-05 | composer | Made the desktop sidebar collapsible (`w-64` ↔ `w-9`) with the chevron anchored at the top-left in both states; dropped the inner "Conversations / + New" header. Replaced `ChatAgentPicker` (3-tab popover/drawer) with the shared `AgentListDropdown` from `/agents/[id]/build|run` so all agent surfaces use one component. New shell API: `activeAgentId`, `activeAgentName`, `pickerPlaceholder`, `onAgentSelect`, `onNewChat` (replaces the previous `headerSlot` prop). Sidebar top row = `[chevron] [AgentListDropdown] [+ new chat]`; mobile mirrors the same row in the chat-content header and inside the drawer. Added `⌘B` to toggle history. Deleted `features/agents/components/chat/ChatAgentPicker.tsx`. Updated `ChatRoomClient` and `ChatNewClient` to the new shell API. |

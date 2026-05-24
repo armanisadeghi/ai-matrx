@@ -171,7 +171,7 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
 | Artifacts + Canvas | `features/artifacts/FEATURE.md` |
-| Chat + Conversation | `features/conversation/FEATURE.md` |
+| Chat + Conversation | **Live `/chat` route:** `features/agents/components/chat/FEATURE.md` (the real route, on `features/agents/`). Unified shell (future) + legacy surfaces: `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |
 | Permissions & Sharing | `features/sharing/FEATURE.md` |
 | Code editor | `features/code-editor/FEATURE.md` |
