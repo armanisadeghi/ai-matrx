@@ -662,8 +662,7 @@ export function NoteSidebar({
               }
             }}
             placeholder="Search notes..."
-            className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-            style={{ fontSize: "16px" }}
+            className="flex-1 min-w-0 bg-transparent text-base md:text-xs outline-none placeholder:text-muted-foreground/50"
           />
           {searchQuery && (
             <button

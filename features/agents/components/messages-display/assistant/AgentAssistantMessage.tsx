@@ -44,16 +44,15 @@ import {
   selectMessageById,
   extractFlatText,
   extractContentBlocks,
+  isFailedRecord,
+  extractRecordError,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
 import { AssistantError } from "../../run/AssistantError";
 import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
-import { RetryConfirmDialog } from "@/features/agents/components/messages-display/message-options/RetryConfirmDialog";
-import { atomicRetry } from "@/features/agents/redux/execution-system/message-crud/atomic-retry.thunk";
+import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
-import { Button } from "@/components/ui/button";
-import { RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
@@ -77,6 +76,13 @@ interface AgentAssistantMessageProps {
    * the print/full-DOM capture target also lifts to the group container.
    */
   hideActionBar?: boolean;
+  /**
+   * Show the Retry control when this turn failed. Set by the transcript only
+   * for the conversation's LAST (recoverable) failed turn — historical failed
+   * attempts that were already followed by a retry render the error with no
+   * button. Retry is non-destructive (the failed turn stays in history).
+   */
+  canRetry?: boolean;
 }
 
 export function AgentAssistantMessage({
@@ -86,11 +92,12 @@ export function AgentAssistantMessage({
   isStreamActive = false,
   surfaceKey,
   hideActionBar = false,
+  canRetry = false,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
 
   const dispatch = useAppDispatch();
-  const [retryDialogOpen, setRetryDialogOpen] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
   const handleFullPrint = useCallback(() => {
@@ -178,17 +185,10 @@ export function AgentAssistantMessage({
     [dispatch, conversationId, messageId, requestId],
   );
 
-  const canRetry = Boolean(messageId);
-
   const handleRetry = useCallback(async () => {
-    if (!messageId) return;
+    setRetrying(true);
     try {
-      await dispatch(
-        atomicRetry({
-          conversationId,
-          failedMessageId: messageId,
-        }),
-      ).unwrap();
+      await dispatch(retryConversationTurn({ conversationId })).unwrap();
     } catch (err) {
       const message =
         err instanceof Error
@@ -197,40 +197,46 @@ export function AgentAssistantMessage({
             ? String((err as { message?: string }).message)
             : "Retry failed";
       toast.error(message);
+    } finally {
+      setRetrying(false);
     }
-  }, [dispatch, conversationId, messageId]);
+  }, [dispatch, conversationId]);
 
-  if (isFatalError) {
+  // A turn is failed when the live request errored (in-session) OR the
+  // persisted record is `status='failed'` / `metadata.failed` (reloaded from
+  // the DB, or stamped mid-stream via record_update). Both render the same
+  // error bubble so a live failure and a reloaded one look identical. The
+  // failed turn stays in history; retry (when offered) re-runs it without
+  // deleting anything. See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
+  const failed = isFatalError || isFailedRecord(record);
+
+  if (failed) {
+    const recordError = extractRecordError(record);
+    const friendly =
+      streamError?.user_message ??
+      streamError?.message ??
+      recordError ??
+      "The response failed.";
+    const technical = streamError?.message;
+    const detail = technical && technical !== friendly ? technical : undefined;
+    const code =
+      streamError?.code ??
+      (streamError?.details &&
+      typeof streamError.details === "object" &&
+      "status_code" in streamError.details
+        ? (streamError.details as { status_code?: string | number })
+            .status_code
+        : undefined);
     return (
-      <div className="flex flex-col gap-2 mt-1">
+      <div className="mt-1" data-message-id={messageId ?? undefined}>
         <AssistantError
-          error={
-            streamError?.user_message ??
-            streamError?.message ??
-            "An error occurred during streaming."
-          }
+          message={friendly}
+          detail={detail}
+          errorType={streamError?.error_type}
+          code={code}
+          onRetry={canRetry ? handleRetry : undefined}
+          retrying={retrying}
         />
-        {canRetry && (
-          <div className="ml-10">
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => setRetryDialogOpen(true)}
-            >
-              <RotateCw className="w-3.5 h-3.5" />
-              Retry from scratch
-            </Button>
-          </div>
-        )}
-        {messageId && (
-          <RetryConfirmDialog
-            open={retryDialogOpen}
-            onOpenChange={setRetryDialogOpen}
-            failedMessageId={messageId}
-            onConfirm={handleRetry}
-          />
-        )}
       </div>
     );
   }

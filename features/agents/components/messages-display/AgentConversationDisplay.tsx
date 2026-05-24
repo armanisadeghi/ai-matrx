@@ -21,7 +21,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectConversationMessages,
+  isFailedRecord,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
   selectStreamPhase,
   selectLatestRequestId,
@@ -32,6 +35,17 @@ const AssistantTurnGroup = dynamic(
   () =>
     import("./assistant/AssistantTurnGroup").then((m) => ({
       default: m.AssistantTurnGroup,
+    })),
+  { ssr: false },
+);
+
+// Dynamic (ssr:false) — same as AssistantTurnGroup. AgentAssistantMessage
+// pulls in useDomCapturePrint → jspdf → fflate, whose Node Worker import
+// cannot be resolved during SSR. A static import here 500s the route.
+const AgentAssistantMessage = dynamic(
+  () =>
+    import("./assistant/AgentAssistantMessage").then((m) => ({
+      default: m.AgentAssistantMessage,
     })),
   { ssr: false },
 );
@@ -52,6 +66,10 @@ interface DisplayEntry {
   /** Live stream request id — set only on the `__streaming__` entry. */
   requestId: string | null;
   isStreamActive: boolean;
+  /** This assistant turn failed (persisted `status='failed'` or live error). */
+  isFailed: boolean;
+  /** Offer Retry — true only on the conversation's last, failed, recoverable turn. */
+  canRetry: boolean;
 }
 
 /**
@@ -66,6 +84,17 @@ type DisplayGroup =
       kind: "assistant";
       key: string;
       members: AssistantTurnGroupMember[];
+    }
+  // A failed turn renders on its own — never folded into a sibling answer's
+  // turn group, so the answer's action bar (copy / speak / print) never
+  // aggregates the error text or the retry that replaced it.
+  | {
+      kind: "assistant-failed";
+      key: string;
+      messageId: string | null;
+      requestId: string | null;
+      isStreamActive: boolean;
+      canRetry: boolean;
     };
 
 interface AgentConversationDisplayProps {
@@ -137,6 +166,8 @@ export function AgentConversationDisplay({
       }
     }
 
+    const isErrorPhase = phase === "error";
+
     const entries: DisplayEntry[] = [];
     for (const rec of messages) {
       const isStreamingMessage = rec.id === streamingAssistantId;
@@ -144,6 +175,14 @@ export function AgentConversationDisplay({
       // bubble (in which case the requestId-driven MarkdownStream path
       // renders the in-flight chunks even though byId.content is still empty).
       if (isEmptyReservedAssistant(rec) && !isStreamingMessage) continue;
+      // A turn is failed when its persisted record says so (`status='failed'`
+      // / `metadata.failed`), OR when it is the live streaming bubble and the
+      // request just errored (record_update may not have stamped the status
+      // yet). Failed turns render standalone so they never fold into a
+      // successful answer's copy / speak / print aggregation.
+      const recFailed =
+        rec.role === "assistant" &&
+        (isFailedRecord(rec) || (isStreamingMessage && isErrorPhase));
       // Always use the record's own `_streamRequestId` — never override
       // with `latestRequestId`. This is what guarantees prior turns stay
       // pinned to their own (already-completed) streaming source, even
@@ -154,6 +193,8 @@ export function AgentConversationDisplay({
         messageId: rec.id,
         requestId: rec._streamRequestId ?? null,
         isStreamActive: isStreamingMessage,
+        isFailed: recFailed,
+        canRetry: false,
       });
     }
 
@@ -172,11 +213,25 @@ export function AgentConversationDisplay({
         messageId: null,
         requestId: latestRequestId,
         isStreamActive: true,
+        // When the request errored before the server reserved an assistant
+        // cx_message (immediate "Failed to fetch"), this synthetic entry IS
+        // the failed bubble — there is no persisted record to carry it.
+        isFailed: isErrorPhase,
+        canRetry: false,
       });
     }
 
+    // Offer Retry only on the conversation's LAST turn, and only when it
+    // failed. Historical failed attempts (already followed by a retry) keep
+    // their error bubble but no button. Once a retry is in flight the last
+    // entry is the new streaming bubble (not failed), so the button is gone.
+    const last = entries[entries.length - 1];
+    if (last && last.role === "assistant" && last.isFailed) {
+      last.canRetry = true;
+    }
+
     return entries;
-  }, [messages, isActive, latestRequestId]);
+  }, [messages, isActive, latestRequestId, phase]);
 
   // Group contiguous assistant entries into one logical turn each.
   // Multi-iteration agentic flows produce many adjacent assistant
@@ -203,6 +258,20 @@ export function AgentConversationDisplay({
     };
     for (const entry of displayEntries) {
       if (entry.role === "assistant") {
+        if (entry.isFailed) {
+          // Failed turn → its own group. Close any open run first so the
+          // failed bubble sits between (not inside) the surrounding turns.
+          flush();
+          groups.push({
+            kind: "assistant-failed",
+            key: entry.key,
+            messageId: entry.messageId,
+            requestId: entry.requestId,
+            isStreamActive: entry.isStreamActive,
+            canRetry: entry.canRetry,
+          });
+          continue;
+        }
         buffer.push({
           key: entry.key,
           messageId: entry.messageId,
@@ -276,6 +345,24 @@ export function AgentConversationDisplay({
               messageId={group.messageId}
               surfaceKey={surfaceKey}
               compact={compact}
+            />
+          );
+        }
+
+        if (group.kind === "assistant-failed") {
+          // Rendered directly (not via AssistantTurnGroup): AgentAssistantMessage
+          // short-circuits to the error bubble for a failed turn, so there is
+          // no body or action bar for a turn group to coordinate.
+          return (
+            <AgentAssistantMessage
+              key={group.key}
+              conversationId={conversationId}
+              requestId={group.requestId ?? undefined}
+              messageId={group.messageId ?? undefined}
+              isStreamActive={group.isStreamActive}
+              surfaceKey={surfaceKey}
+              compact={compact}
+              canRetry={group.canRetry}
             />
           );
         }

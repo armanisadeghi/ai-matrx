@@ -67,6 +67,23 @@ export interface MessageRecord {
   _streamRequestId?: string;
 }
 
+/**
+ * Transcript ordering. Primary key is `position`; `createdAt` breaks ties.
+ *
+ * The tie-break is load-bearing: a failed turn and its successful retry SHARE
+ * a `position` (the backend has no unique `(conversation_id, position)`
+ * constraint), so position alone leaves their order undefined. Ordering by
+ * `(position, created_at)` renders the failed attempt just before the retry
+ * that replaced it. See
+ * `aidream/api/docs/CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md`.
+ */
+function byPositionThenCreatedAt(a: MessageRecord, b: MessageRecord): number {
+  if (a.position !== b.position) return a.position - b.position;
+  if (a.createdAt < b.createdAt) return -1;
+  if (a.createdAt > b.createdAt) return 1;
+  return 0;
+}
+
 // =============================================================================
 // Entry / State
 // =============================================================================
@@ -330,7 +347,7 @@ const messagesSlice = createSlice({
     ) {
       const { conversationId, messages, pagination } = action.payload;
       const entry = getOrCreate(state, conversationId);
-      const sorted = [...messages].sort((a, b) => a.position - b.position);
+      const sorted = [...messages].sort(byPositionThenCreatedAt);
       entry.byId = {};
       entry.orderedIds = [];
       for (const msg of sorted) {
@@ -378,7 +395,7 @@ const messagesSlice = createSlice({
       const entry = state.byConversationId[conversationId];
       if (!entry) return;
 
-      const sorted = [...messages].sort((a, b) => a.position - b.position);
+      const sorted = [...messages].sort(byPositionThenCreatedAt);
       const newIds: string[] = [];
       for (const msg of sorted) {
         if (entry.byId[msg.id]) continue; // never overwrite

@@ -317,7 +317,15 @@ export async function fetchConversationBundle(
   }
 
   const rawMessages = (messagesRes.data ?? []) as unknown as CxMessageRow[];
-  const sortedAsc = [...rawMessages].sort((a, b) => a.position - b.position);
+  // Order by (position, created_at). A failed turn and its retry share a
+  // position; created_at keeps the failed attempt just before its retry.
+  // See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
+  const sortedAsc = [...rawMessages].sort((a, b) => {
+    if (a.position !== b.position) return a.position - b.position;
+    if (a.created_at < b.created_at) return -1;
+    if (a.created_at > b.created_at) return 1;
+    return 0;
+  });
   const messageIds = sortedAsc.map((m) => m.id);
 
   let toolCalls: CxToolCallRow[] = [];

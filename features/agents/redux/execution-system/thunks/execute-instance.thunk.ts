@@ -210,6 +210,17 @@ export function assembleRequest(
 interface ExecuteInstanceArgs {
   conversationId: string;
   debug?: boolean;
+  /**
+   * Re-run the last turn instead of sending new input. When true, NO user
+   * input is read or sent — the payload carries `{ retry: true }` and the
+   * backend re-attempts the conversation's current persisted state (the
+   * failed assistant turn is `is_visible_to_model=false`, so the model's
+   * context ends at the user's message). Non-destructive: nothing is
+   * deleted, the failed turn stays in history. Only valid as a continuation
+   * (there must already be at least one persisted turn). Dispatched via the
+   * `retryConversationTurn` thunk, which picks this vs. a re-send.
+   */
+  retry?: boolean;
 }
 
 interface ExecuteInstanceResult {
@@ -223,7 +234,7 @@ export const executeInstance = createAsyncThunk<
 >(
   "instances/execute",
   async (
-    { conversationId, debug = false },
+    { conversationId, debug = false, retry = false },
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
@@ -362,7 +373,13 @@ export const executeInstance = createAsyncThunk<
         .join("\n");
 
       let userMessageClientTempId: string | undefined;
-      if (displayContent || userMessageParts || resourceBlocks.length > 0) {
+      // On a retry we send NO new input, so there is no optimistic user
+      // bubble to add — the existing (persisted) user message stays put and
+      // the backend re-attempts it.
+      if (
+        !retry &&
+        (displayContent || userMessageParts || resourceBlocks.length > 0)
+      ) {
         // Optimistically push the user's message into messages.byId under a
         // client-generated UUID. When `record_reserved cx_message role=user`
         // lands on the stream, process-stream promotes this temp id to the
@@ -422,8 +439,16 @@ export const executeInstance = createAsyncThunk<
         // forwarded so each turn honors the latest toggle value, not just
         // turn 1. `tools` / `tools_replace` / `client` come from
         // buildToolInjection above.
+        //
+        // Retry: omit `user_input` entirely and send `{ retry: true }`. The
+        // backend re-runs the conversation's persisted state (the failed
+        // assistant turn is hidden from the model) and re-attempts. Every
+        // other field (tools, capabilities, memory, scope) resolves
+        // identically to a normal turn — see CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
         routedPayload = {
-          user_input: payload.user_input,
+          ...(retry
+            ? { retry: true }
+            : { user_input: payload.user_input }),
           stream: true,
           ...(payload.config_overrides && {
             config_overrides: payload.config_overrides,
@@ -584,10 +609,16 @@ export const executeInstance = createAsyncThunk<
       // optimistic user bubble + the `lastSubmittedText` re-apply backup, so
       // nothing is lost. (markInputPersisted, which normally clears it on
       // success, never ran on this path.)
-      const { clearUserInput } = await import(
-        "../instance-user-input/instance-user-input.slice"
-      );
-      dispatch(clearUserInput(conversationId));
+      //
+      // A retry sends no input and reads none, so there is nothing of ours to
+      // clear — and the box may hold an unrelated draft the user is typing.
+      // Leave it untouched.
+      if (!retry) {
+        const { clearUserInput } = await import(
+          "../instance-user-input/instance-user-input.slice"
+        );
+        dispatch(clearUserInput(conversationId));
+      }
 
       return rejectWithValue(
         error instanceof Error ? error.message : "Execution failed",

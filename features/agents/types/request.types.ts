@@ -730,7 +730,20 @@ export interface AssembledAgentStartRequest {
  * Assembled snake_case wire payload for POST /ai/conversations/{conversation_id}.
  */
 export interface AssembledConversationRequest {
-  user_input: string | MessagePart[];
+  /**
+   * Omitted on a retry (`retry: true`). On a normal continuation it carries
+   * the user's turn. Exactly one of `user_input` / `retry` must be present —
+   * the backend returns 422 `user_input_required` if neither is.
+   */
+  user_input?: string | MessagePart[];
+  /**
+   * Re-run the conversation's current persisted state with NO new input. The
+   * backend re-attempts the last turn; because a failed assistant turn is
+   * persisted `is_visible_to_model=false`, the model's context ends at the
+   * user's message and it tries again. See
+   * `aidream/api/docs/CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md`.
+   */
+  retry?: boolean;
   config_overrides?: Record<string, unknown>;
   context?: Record<string, unknown>;
   tools?: import("./tool-injection.types").ToolSpec[];

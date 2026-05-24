@@ -101,6 +101,7 @@ import {
   reserveMessage,
   updateMessageRecord,
   promoteMessageId,
+  type MessageRecord,
 } from "../messages/messages.slice";
 import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
@@ -1206,7 +1207,18 @@ export async function processStream({
           updateMessageRecord({
             conversationId,
             messageId: d.record_id,
-            patch: { status: d.status },
+            // On a failed transition, carry the metadata through too so the
+            // in-session record reflects { failed:true, error } exactly as
+            // the DB serves it back on reload — the failed-turn renderer
+            // reads `metadata.error`. Non-failed transitions stay status-only
+            // to avoid re-rendering message bodies on bookkeeping changes.
+            patch:
+              d.status === "failed" && d.metadata
+                ? {
+                    status: d.status,
+                    metadata: d.metadata as MessageRecord["metadata"],
+                  }
+                : { status: d.status },
           }),
         );
       } else if (d.table === "cx_user_request") {

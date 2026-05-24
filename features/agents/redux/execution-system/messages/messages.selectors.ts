@@ -38,9 +38,13 @@ export const EMPTY_CONVERSATION_MESSAGES: MessageRecord[] = EMPTY_RECORDS;
 const EMPTY_IDS: string[] = [];
 const EMPTY_SEGMENTS: ContentSegment[] = [];
 
+// Typed as the concrete selector signature, not `ReturnType<typeof
+// createSelector>` — that overload-collapse resolved to `{}`, so every
+// consumer saw `selectConversationMessages(id)` return `{}` and lost
+// `MessageRecord[]` (broke `.length` / iteration at call sites).
 const conversationMessagesSelectorCache = new Map<
   string,
-  ReturnType<typeof createSelector>
+  (state: RootState) => MessageRecord[]
 >();
 
 // ---------------------------------------------------------------------------
@@ -250,6 +254,45 @@ export function extractFlatText(record: MessageRecord | undefined): string {
     }
   }
   return out;
+}
+
+/**
+ * True when a message record represents a FAILED turn. The backend persists a
+ * failed assistant turn as a real `cx_message` with `status='failed'` and
+ * `metadata.failed===true` (kept in history, hidden from the model). Both the
+ * transcript grouping and the message renderer read this so live and reloaded
+ * failures look identical. See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
+ */
+export function isFailedRecord(record: MessageRecord | undefined): boolean {
+  if (!record) return false;
+  if (record.status === "failed") return true;
+  const md = record.metadata;
+  return (
+    !!md &&
+    typeof md === "object" &&
+    !Array.isArray(md) &&
+    (md as Record<string, unknown>).failed === true
+  );
+}
+
+/**
+ * The persisted error text for a failed turn. The backend stores it on
+ * `metadata.error`; the message `content` is also a single text block holding
+ * the same error, so we fall back to the flat text. Undefined when neither
+ * exists (e.g. an in-session failure where only the active request carries the
+ * error — the renderer reads that separately).
+ */
+export function extractRecordError(
+  record: MessageRecord | undefined,
+): string | undefined {
+  if (!record) return undefined;
+  const md = record.metadata;
+  if (md && typeof md === "object" && !Array.isArray(md)) {
+    const err = (md as Record<string, unknown>).error;
+    if (typeof err === "string" && err.length > 0) return err;
+  }
+  const flat = extractFlatText(record);
+  return flat.length > 0 ? flat : undefined;
 }
 
 /**
