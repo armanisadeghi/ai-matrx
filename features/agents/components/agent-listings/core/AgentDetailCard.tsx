@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Star,
   Tag,
   Folder,
   Users,
@@ -24,6 +23,7 @@ import {
   AgentSneakPeekCopyMenu,
 } from "../AgentSneakPeekModal";
 import { Button } from "@/components/ui/button";
+import { FavoriteAgentButton } from "../FavoriteAgentButton";
 
 export interface AgentDetailCardProps {
   agent: AgentDefinitionRecord;
@@ -55,13 +55,13 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
             </h3>
             {agent.isFavorite && (
               <div className="flex items-center gap-1 mt-0.5">
-                <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
                 <span className="text-[11px] text-amber-600 dark:text-amber-400">
-                  Favorite
+                  Pinned to favorites
                 </span>
               </div>
             )}
           </div>
+          <FavoriteAgentButton id={agent.id} variant="list" />
         </div>
       </div>
 
