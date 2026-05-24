@@ -134,8 +134,10 @@ export default function RouteMenuSlot() {
   if (!match) return null;
 
   const switchVisible = loading || !!RouteMenu;
-  const switchIconName =
-    currentView === "route" ? "LayoutDashboard" : match.iconName;
+  // Constant swap glyph in BOTH views — the control reads identically whether
+  // you're in the route menu or the main menu, so it's recognizable as ONE
+  // reversible mode-switch (not a nav item). Only the destination label flips.
+  const switchIconName = "ArrowLeftRight";
   const switchLabel = currentView === "route" ? "Main Menu" : match.label;
 
   return (

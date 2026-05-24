@@ -809,22 +809,26 @@
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.1875rem 0.25rem;
-  margin-bottom: 0;
-  border-radius: 0.25rem;
+  padding: 0.3125rem 0.375rem;
+  /* Sits apart from the menu it controls. */
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  color: var(--shell-nav-icon);
+  color: var(--shell-nav-text);
   transition:
     background var(--shell-duration-fast) var(--shell-ease-smooth),
+    border-color var(--shell-duration-fast) var(--shell-ease-smooth),
     color var(--shell-duration-fast) var(--shell-ease-smooth);
-  border: none;
-  background: none;
+  /* Bordered glass pill — deliberately distinct from the borderless nav rows
+     so it reads as a CONTROL (mode switch), not a destination. */
+  border: 1px solid var(--matrx-glass-border-color);
+  background: var(--matrx-glass-bg);
   width: 100%;
 }
 
 .shell-sidebar-switch:hover {
   background: var(--matrx-glass-bg-hover);
-  color: var(--shell-nav-icon-hover);
+  color: var(--shell-nav-text-hover);
 }
 
 .shell-sidebar-switch[data-visible="true"] {
@@ -1309,7 +1313,8 @@ body:has(.shell-root[data-pathname^="/transcription/mobile"]) .shell-dock {
 .shell-mobile-sheet-brand-text {
   font-weight: 700;
   font-size: 1.125rem;
-  letter-spacing: -0.01em;
+  /* All-caps wordmark reads cleaner with positive tracking. */
+  letter-spacing: 0.06em;
   color: var(--shell-nav-text-hover);
 }
 
@@ -1353,16 +1358,20 @@ body:has(.shell-root[data-pathname^="/transcription/mobile"]) .shell-dock {
   align-items: center;
   gap: 0.625rem;
   padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
   border-radius: 0.625rem;
   cursor: pointer;
   color: var(--shell-nav-text);
   font-size: 0.8125rem;
-  font-weight: 500;
-  border: none;
-  background: none;
+  font-weight: 600;
+  /* Bordered glass pill — distinct from nav rows; reads as a mode switch. */
+  border: 1px solid var(--matrx-glass-border-color);
+  background: var(--matrx-glass-bg);
   width: 100%;
   text-align: left;
-  transition: background var(--shell-duration-fast) var(--shell-ease-smooth);
+  transition:
+    background var(--shell-duration-fast) var(--shell-ease-smooth),
+    border-color var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
 .shell-mobile-switch:hover {

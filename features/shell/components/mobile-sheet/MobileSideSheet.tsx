@@ -39,10 +39,9 @@ export default function MobileSideSheet() {
           <ShellIcon name="X" size={18} strokeWidth={2} />
         </label>
 
-        {/* Brand */}
+        {/* Brand — wordmark only (no logo icon). */}
         <div className="shell-mobile-sheet-brand">
-          <ShellIcon name="LayoutDashboard" size={22} strokeWidth={1.75} />
-          <span className="shell-mobile-sheet-brand-text">AI Matrx</span>
+          <span className="shell-mobile-sheet-brand-text">MATRX</span>
         </div>
 
         {/* Navigation with dual-view support */}

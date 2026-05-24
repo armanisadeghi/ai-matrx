@@ -93,8 +93,10 @@ export default function MobileRouteMenuSlot() {
   if (!match) return null;
 
   const switchVisible = loading || !!RouteMenu;
-  const switchIconName =
-    currentView === "route" ? "LayoutDashboard" : match.iconName;
+  // Constant swap glyph in BOTH views — see RouteMenuSlot for rationale. The
+  // control reads identically in either menu so it's clearly one reversible
+  // switch; only the destination label flips.
+  const switchIconName = "ArrowLeftRight";
   const switchLabel = currentView === "route" ? "Main Menu" : match.label;
 
   return (
