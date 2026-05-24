@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-19` (user-tool parity refresh)
+**Last updated:** `2026-05-24` (tool↔DB reconciliation)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -13,7 +13,7 @@
 ## Purpose
 
 The agent calls a small set of "UI-first" tools (`user`, `update_plan`,
-`request_user_takeover`, `tasks`, `user_todos`, `memory`, `storage`) that
+`request_user_takeover`, `tasks`, `user_todos`, `scratchpad`, `storage`) that
 have no server-side execution — the Next.js client validates the args,
 runs a handler (UI render or Supabase CRUD), and POSTs `tool_results`
 back so the model resumes. Tightly paired with the `nextjs-surface`
@@ -220,6 +220,16 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-05-24` — Tool↔DB reconciliation with matrx-extend (cross-surface
+  `tl_def` drift work). Fixed stale `memory` references to `scratchpad`
+  (the ephemeral client tool was renamed; `memory` is reserved for the
+  persistent server-side semantic tool). Tightened `scratchpadArgsSchema.value`
+  from `z.unknown()` to `z.string()` to match `tl_def` exactly (matrx-extend
+  parity). `scripts/check-tool-db-drift.ts` now also diffs each parameter's
+  `default` (the last piece of the shared "what match means" spec). Verified
+  the `user` tool honors the always-append-"Other" escape, the
+  `additional_instructions` / `wrote_instead` envelope fields, and `secret`
+  UI masking; no hardcoded tool descriptions in code. All drift checks green.
 - `2026-05-19` — `user` tool parity refresh to match matrx-extend's
   May 2026 updates. Schema now accepts rich `options` objects
   (`{label, description?, preview?}`) alongside bare strings, an optional

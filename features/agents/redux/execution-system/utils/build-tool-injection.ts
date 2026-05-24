@@ -124,7 +124,7 @@ export async function buildToolInjection(
   }
 
   // The seven UI-first tools (user / update_plan / request_user_takeover /
-  // tasks / user_todos / memory / storage) used to be hardcoded here for
+  // tasks / user_todos / scratchpad / storage) used to be hardcoded here for
   // every authenticated user. They now ride into the request as
   // ``enabled_tools`` on the ``nextjs-surface`` capability registered in
   // aidream/api/client_capabilities.py — the server auto-injects them

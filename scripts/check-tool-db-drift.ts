@@ -9,6 +9,15 @@
  * (`entry.schema.safeParse`) — and diffs it against tl_def.parameters. There is
  * NO intermediate file: the schema we check is the schema that runs.
  *
+ * What it checks per tool — the shared "what match means" spec across all three
+ * surfaces (aidream, matrx-extend, matrx-frontend; see TOOL_SOURCE_OF_TRUTH.md):
+ * the argument set, and for every field its type, required-ness, enum members
+ * (incl. one-sided), and DEFAULT. tier / admin_only / category are part of the
+ * shared spec but are NOT checked HERE: unlike matrx-extend's catalog manifest,
+ * the frontend registry declares only `{schema, handler}` — those three are
+ * DB-only metadata this surface never redeclares, so there is nothing in code to
+ * diff them against (checking them would be the forbidden DB→DB compare, Rule 5).
+ *
  * Descriptions are NOT checked — they are not code; they live only in the DB.
  *
  *   pnpm gate:tools
@@ -187,6 +196,24 @@ function compareTool(name: string, schema: z.ZodTypeAny, db: DbToolRow): string[
       if (ed.onlyA.length || ed.onlyB.length) {
         issues.push(`${field}: enum drift (code-only=${JSON.stringify(ed.onlyA)}, db-only=${JSON.stringify(ed.onlyB)})`);
       }
+    }
+
+    // Default value — the last piece of the shared "what match means" spec
+    // (TOOL_SOURCE_OF_TRUTH.md GAP 3; mirrors matrx-extend's checker). A default
+    // on one side but not the other, or differing defaults, is real drift: the
+    // model and the dispatcher disagree on what an omitted field becomes.
+    const lDef = (l as { default?: unknown }).default;
+    const dDef = (d as { default?: unknown }).default;
+    const lHasDef = lDef !== undefined;
+    const dHasDef = dDef !== undefined;
+    if (lHasDef !== dHasDef) {
+      issues.push(
+        `${field}: default ${lHasDef ? `only in code (${JSON.stringify(lDef)})` : `only in DB (${JSON.stringify(dDef)})`}`,
+      );
+    } else if (lHasDef && dHasDef && JSON.stringify(lDef) !== JSON.stringify(dDef)) {
+      issues.push(
+        `${field}: default differs (code=${JSON.stringify(lDef)}, db=${JSON.stringify(dDef)})`,
+      );
     }
   }
   return issues;

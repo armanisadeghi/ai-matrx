@@ -295,13 +295,18 @@ export type UserTodosArgs = z.infer<typeof userTodosArgsSchema>;
 export const scratchpadArgsSchema = z.object({
   action: z.enum(["get", "set", "list", "delete"]),
   key: z.string().min(1).max(120).optional(),
-  value: z.unknown().optional(),
+  // DB declares `value` as a string (tl_def: scratchpad.value.type='string') and
+  // the model is told to stringify objects before passing — so the contract is a
+  // plain string, matching matrx-extend's `ScratchpadArgs.value` (z.string()).
+  value: z.string().optional(),
 });
 export type ScratchpadArgs = z.infer<typeof scratchpadArgsSchema>;
 
 export const storageArgsSchema = z.object({
   action: z.enum(["get", "set", "list", "delete"]),
   key: z.string().min(1).max(120).optional(),
+  // `storage.value` is intentionally untyped in tl_def ({} — any JSON-serializable
+  // value), unlike scratchpad above; keep z.unknown() to match the DB exactly.
   value: z.unknown().optional(),
 });
 export type StorageArgs = z.infer<typeof storageArgsSchema>;
