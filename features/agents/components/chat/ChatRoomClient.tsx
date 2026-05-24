@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import {
-  selectAgentById,
-  selectAgentExecutionPayload,
-  selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -28,7 +24,6 @@ import {
   clearPendingNavigation,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { ChatPageShell } from "./ChatPageShell";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
 
 interface ChatRoomClientProps {
@@ -37,13 +32,6 @@ interface ChatRoomClientProps {
    *  `/chat/[conversationId]`. When absent (mounted by `/chat/a/[agentId]`),
    *  the launcher creates a fresh instance. */
   conversationId?: string;
-  /**
-   * Agent name resolved server-side. Used as the picker placeholder so the
-   * lazy `AgentListDropdown` shows the right label on first paint without
-   * forcing an early agents-list fetch. The dropdown still loads its full
-   * list lazily on user click.
-   */
-  initialAgentName?: string;
   /**
    * Optional empty-state surface — rendered in place of the message list
    * while the conversation has zero messages. Forwarded to
@@ -72,7 +60,6 @@ const SOURCE_FEATURE = "chat-route";
 export function ChatRoomClient({
   agentId,
   conversationId: conversationIdProp,
-  initialAgentName,
   landingContent,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
@@ -102,8 +89,6 @@ export function ChatRoomClient({
   const executionPayload = useAppSelector((state) =>
     selectAgentExecutionPayload(state, agentId),
   );
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
-  const agent = useAppSelector((state) => selectAgentById(state, agentId));
 
   const [isInitializing, setIsInitializing] = useState(true);
   useEffect(() => {
@@ -317,37 +302,20 @@ export function ChatRoomClient({
   // Prop wins when present (loading existing). Otherwise launcher's id wins.
   const conversationId = conversationIdProp ?? liveConversationId ?? null;
 
-  const handlePickAgent = (nextAgentId: string) => {
-    if (nextAgentId === agentId) return;
-    router.push(`/chat/a/${encodeURIComponent(nextAgentId)}`);
-  };
-
-  // Picker label. Never "Loading…": the dropdown is deliberately lazy and the
-  // SSR-fetched `initialAgentName` is enough for first paint; the placeholder
-  // ("Select an agent") kicks in only when no agent is selected at all.
-  const displayAgentName =
-    agentName || agent?.name || initialAgentName || undefined;
-
+  // The agent picker + new-chat live in the shell header (ChatRunHeader, via
+  // <PageHeader> on the route page); conversation history is the shell
+  // sidebar's route menu (ChatSidebarMenu). This component renders only the
+  // conversation column — exactly like AgentRunnerPage.
   if (isInitializing || !conversationId) {
     return (
-      <ChatPageShell
-        activeConversationId={conversationIdProp}
-        activeAgentId={agentId}
-        activeAgentName={displayAgentName}
-        onAgentSelect={handlePickAgent}
-      >
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
         <ChatRoomSkeleton />
-      </ChatPageShell>
+      </div>
     );
   }
 
   return (
-    <ChatPageShell
-      activeConversationId={conversationId}
-      activeAgentId={agentId}
-      activeAgentName={displayAgentName}
-      onAgentSelect={handlePickAgent}
-    >
+    <div className="flex h-full flex-col overflow-hidden bg-textured">
       <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
         <AgentConversationColumn
           conversationId={conversationId}
@@ -360,6 +328,6 @@ export function ChatRoomClient({
           landingContent={landingContent}
         />
       </div>
-    </ChatPageShell>
+    </div>
   );
 }

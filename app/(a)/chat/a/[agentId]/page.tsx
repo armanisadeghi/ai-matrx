@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
+import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface DirectAgentChatPageProps {
   params: Promise<{ agentId: string }>;
@@ -35,9 +37,14 @@ export default async function DirectAgentChatPage({
   const { agentId } = await params;
   const agentName = await resolveAgentName(agentId);
   return (
-    <ChatRoomClient
-      agentId={agentId}
-      initialAgentName={agentName ?? undefined}
-    />
+    <>
+      <PageHeader>
+        <ChatRunHeader
+          activeAgentId={agentId}
+          initialAgentName={agentName ?? undefined}
+        />
+      </PageHeader>
+      <ChatRoomClient agentId={agentId} />
+    </>
   );
 }

@@ -5,12 +5,6 @@ import { ChatRoomClient } from "./ChatRoomClient";
 import { NewChatGreeting } from "./NewChatGreeting";
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "./chat-quick-actions.config";
 
-interface ChatNewClientProps {
-  /** Server-resolved name of the default agent — fed through as the picker
-   *  placeholder so the input bar shows a real label on first paint. */
-  defaultAgentName?: string;
-}
-
 /**
  * `/chat/new` — landing surface.
  *
@@ -23,7 +17,7 @@ interface ChatNewClientProps {
  *
  * Agent IDs and chip labels live in `chat-quick-actions.config.ts`.
  */
-export function ChatNewClient({ defaultAgentName }: ChatNewClientProps) {
+export function ChatNewClient() {
   // No eager agent-list fetch here. Chip labels are hardcoded in
   // chat-quick-actions.config.ts (no agent registry lookup) and the default
   // agent's execution payload is fetched on-demand by ChatRoomClient via
@@ -47,7 +41,6 @@ export function ChatNewClient({ defaultAgentName }: ChatNewClientProps) {
   return (
     <ChatRoomClient
       agentId={DEFAULT_NEW_CHAT_AGENT_ID}
-      initialAgentName={defaultAgentName}
       landingContent={
         <NewChatGreeting
           sourceConversationId={sourceConversationId}

@@ -41,10 +41,15 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 - `[conversationId]/page.tsx` — `/chat/[conversationId]`; SSR-resolves the owning agent from `cx_conversation.initial_agent_id`, mounts `ChatRoomClient` **with** the `conversationId` prop (loads the existing transcript).
 
 **Components** (`features/agents/components/chat/`)
-- `ChatRoomClient.tsx` — orchestrates one conversation surface. Two mount paths (fresh vs. existing). Owns the fresh-start guard and post-submit URL promotion.
-- `ChatPageShell.tsx` — layout shell: history sidebar, agent picker (`AgentListDropdown`), pinned agents, `+` button, keyboard shortcuts. Owns `handleNewChat`.
+- `ChatRoomClient.tsx` — orchestrates one conversation surface; renders ONLY the `AgentConversationColumn` (like `AgentRunnerPage`). Two mount paths (fresh vs. existing). Owns the fresh-start guard and post-submit URL promotion.
+- `ChatRunHeader.tsx` — controls injected into the **app shell header** (`#shell-header-center`) via `<PageHeader>`: a COMPACT agent picker (`AgentListDropdown compact`, never full-width) + the `+` new-chat. Owns new-chat / agent-select navigation. Mirrors `AgentRunHeader`.
+- `ChatSidebarMenu.tsx` — conversation history (+ pinned agents) rendered INSIDE the **app shell sidebar** as a Large-Route menu (registered in `features/shell/constants/route-menu-registry.ts`). Wraps `ChatHistorySidebar`. Mirrors `AgentRunSidebarMenu`.
 - `ChatNewClient.tsx` — `/chat/new` landing (default agent + greeting).
 - `NewChatGreeting.tsx` — greeting + chips; chip click stashes a draft and pushes to `/chat/a/[chipAgentId]`.
+
+**App-shell integration (this is HOW chat gets its sidebar + header — do NOT rebuild a custom one).** The chat route is a "Large Route", exactly like `/agents/[id]/run`:
+- Each `page.tsx` renders `<PageHeader><ChatRunHeader …/></PageHeader>` + the content — the header portals into the shell header center slot.
+- `route-menu-registry` maps `/^\/chat(?:\/|$)/` → `ChatSidebarMenu`. The shell's `RouteMenuSlot` auto-switches the sidebar to it (defaults to the chat-history "local" menu) and provides the **switch button to the main app menu** — on the desktop sidebar AND in the mobile shell drawer. The shell owns all the chrome (collapse/expand, mobile drawer, switch).
 
 **Hooks**
 - `useAgentLauncher(agentId, { surfaceKey, ready, retainOnUnmount })` (`features/agents/hooks/useAgentLauncher.ts`) — managed mode creates + tracks the conversation; returns the focused conversation id for the surface.
@@ -70,7 +75,7 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 3. Picker shows the initiating agent (read-only provenance).
 
 ### Flow 3 — `+` new chat
-- `ChatPageShell.handleNewChat`: `activeAgentId ? push('/chat/a/[activeAgentId]') : push('/chat/new')`. Both destinations start fresh (Flow 1).
+- `ChatRunHeader.handleNewChat`: `activeAgentId ? push('/chat/a/[activeAgentId]') : push('/chat/new')`. Both destinations start fresh (Flow 1). `activeAgentId` is the route's agent, passed in by the page.
 
 ---
 
@@ -83,8 +88,8 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 - **`initial_agent_id` is provenance, not a live link.** Show it; never use it to reopen or re-bind a conversation to an agent.
 - **First-turn promotion timing:** promote on `messageCount >= 2`, not on the optimistic local message — promoting earlier races the server's `cx_conversation` insert and 404s back to `/chat/new`.
 - **The "`+`/agent-switch snaps back to the old chat" bug lived in the post-submit promotion effect** — NOT in focus or `loadConversation`. `/chat/[id]` and `/chat/a/[agentId]` share the same `surfaceKey`, so on a `+` click the promotion effect could fire with a STALE-CLOSURE `liveConversationId` (the previous conversation, already at `messageCount >= 2`) and `router.replace` back to it, one render before the launcher swapped focus to the fresh conversation. **Guard (do not remove):** the effect only promotes when `liveConversationId` is STILL the surface's focused input conversation, read live from the store (`store.getState().conversationFocus.bySurface[surfaceKey].input`).
-- **The mobile header lives in the app shell's center slot, never a local `<header>`.** The chat injects `[chat-menu][picker][+]` into `#shell-header-center` via `PageHeaderPortal` (gated by `useIsMobile()`), so the controls sit BETWEEN the app's hamburger (left) and the avatar (right). A local full-width `<header>` here overlaps the global shell header and buries the `+` under the avatar — the exact bug this replaced. Mobile content is offset by `var(--shell-header-h)` because the global header overlays the top of `shell-main`. The chat drawer's top "App menu" row opens the app nav (`#shell-mobile-menu`) since the chat route hides the app dock.
-- **Breakpoints must stay aligned.** The desktop sidebar shows at `md:` (≥768) to match `useIsMobile()`'s 768px threshold. A mismatch (e.g. sidebar at `lg:` while the mobile controls flip at 768) creates a dead zone where neither renders — no picker, no `+`, no history.
+- **Chat does NOT own a sidebar or header — the app shell does, exactly like `/agents/[id]/run`.** History is a Large-Route menu (`ChatSidebarMenu`) in `route-menu-registry`; controls (compact picker + `+`) are injected into `#shell-header-center` via `ChatRunHeader` + `<PageHeader>`. The shell's `RouteMenuSlot` auto-switches the sidebar to the chat-history ("local") view and renders the **switch button to the Main Menu** — on desktop and in the mobile drawer (so the picker/`+` sit between the app hamburger and the avatar, never overlapping). **Never** rebuild a bespoke chat sidebar/header: the old `ChatPageShell` did, which overlapped the global header on mobile and created a 768–1023px dead zone (both gone). To change chat sidebar/header behavior, edit `ChatSidebarMenu` / `ChatRunHeader`, or the shell (`features/shell/components/sidebar/`).
+- **The agent picker is COMPACT (`AgentListDropdown compact`), never full-width.**
 
 ---
 
@@ -112,6 +117,7 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 
 ## Change log
 
+- `2026-05-24` — claude: **rebuilt chat onto the app shell, mirroring `/agents/[id]/run`.** Deleted the bespoke `ChatPageShell` (custom sidebar + header that overlapped the global header on mobile and created a 768–1023px dead zone). History is now a Large-Route menu (`ChatSidebarMenu`) in `route-menu-registry`; controls are a compact picker + `+` in the shell header via `ChatRunHeader`/`<PageHeader>`. The shell sidebar defaults to the chat-history view with a switch to the main app menu (desktop + mobile drawer). `ChatRoomClient` now renders only the conversation column. Verified in-browser at 375 / 1280: history, switch, compact picker, conversation load, and `+`-no-revert all work.
 - `2026-05-24` — claude: fixed the real "`+`/agent-switch snaps back to the old conversation" cause — the post-submit promotion effect firing on a stale-closure `liveConversationId` during the shared-`surfaceKey` route transition (added a live-focus freshness guard in `ChatRoomClient`). Reworked the mobile header to inject `[chat-menu][picker][+]` into the app shell's `#shell-header-center` via `PageHeaderPortal` (was a local `<header>` overlapping the app hamburger + avatar); added an "App menu" entry atop the chat drawer; aligned the desktop-sidebar breakpoint to `md:` (768) to kill the 768–1023 dead zone. Verified in-browser at 375 / 768 / 900 / 1280.
 - `2026-05-23` — claude: documented the live chat route for the first time. Fixed two revival bugs — agent re-selection reviving the agent's last conversation (stale per-agent focus; added a fresh-start `clearFocus` guard in `ChatRoomClient`) and `+` using the last-used/default agent instead of the active agent (`ChatPageShell.handleNewChat`). Removed the dead `selectLastUsedAgentId` selector. Established the agent≠conversation rules above as the surface's load-bearing invariants.
 

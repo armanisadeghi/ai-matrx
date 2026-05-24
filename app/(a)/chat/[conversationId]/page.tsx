@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
+import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface ConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -49,10 +51,14 @@ export default async function ChatConversationPage({
   }
 
   return (
-    <ChatRoomClient
-      agentId={seed.agentId}
-      conversationId={conversationId}
-      initialAgentName={seed.agentName ?? undefined}
-    />
+    <>
+      <PageHeader>
+        <ChatRunHeader
+          activeAgentId={seed.agentId}
+          initialAgentName={seed.agentName ?? undefined}
+        />
+      </PageHeader>
+      <ChatRoomClient agentId={seed.agentId} conversationId={conversationId} />
+    </>
   );
 }
