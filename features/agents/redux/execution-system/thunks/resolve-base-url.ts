@@ -5,9 +5,19 @@ import {
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
 import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
-import { BACKEND_URLS } from "@/lib/api/endpoints";
 
 export type BackendChannel = "global" | "override" | "ec2-dedicated";
+
+/**
+ * Dedicated aidream server for EC2 (slim) sandbox conversations — close to the
+ * LLM providers and in the sandbox host's AZ (e.g. `https://sandbox.matrxserver.com`).
+ * MUST be HTTPS (the app runs on https; http would be blocked as mixed content).
+ * Deliberately a distinct var from `NEXT_PUBLIC_BACKEND_URL_EC2` (the admin
+ * "ec2" server toggle, historically the orchestrator host) so the two concepts
+ * never collide. Unset → EC2 conversations fall back to the global server.
+ */
+const EC2_SANDBOX_SERVER_URL =
+  process.env.NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL || "";
 
 /**
  * If this conversation is bound to an **EC2 (slim)** sandbox, its agent loop
@@ -28,9 +38,10 @@ function dedicatedEc2ServerForConversation(
 ): string | null {
   const ref = resolveAgentSandboxRef(state, conversationId);
   if (ref?.tier !== "ec2") return null;
-  const url = BACKEND_URLS.ec2;
-  if (!url) return null;
-  return url.endsWith("/") ? url.slice(0, -1) : url;
+  if (!EC2_SANDBOX_SERVER_URL) return null;
+  return EC2_SANDBOX_SERVER_URL.endsWith("/")
+    ? EC2_SANDBOX_SERVER_URL.slice(0, -1)
+    : EC2_SANDBOX_SERVER_URL;
 }
 
 export interface ResolvedBackend {
