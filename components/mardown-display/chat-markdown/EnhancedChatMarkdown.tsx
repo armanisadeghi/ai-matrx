@@ -523,7 +523,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
           <div className={containerStyles}>
             <div className="flex items-center justify-start py-1">
-              <ShimmerText text="Processing…" className="text-sm" />
+              <ShimmerText text="Planning…" className="text-sm" />
             </div>
           </div>
         </div>
