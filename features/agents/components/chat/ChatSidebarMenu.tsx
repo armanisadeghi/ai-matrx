@@ -69,7 +69,10 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           onSelect={selectPinnedAgent}
         />
       }
-      className="bg-transparent"
+      // `flex-1 min-h-0` (matching AgentRunSidebarMenu) lets the inner list's
+      // `overflow-y-auto` actually scroll inside the shell's flex sidebar /
+      // mobile drawer instead of overflowing it.
+      className="bg-transparent min-h-0 flex-1"
     />
   );
 }

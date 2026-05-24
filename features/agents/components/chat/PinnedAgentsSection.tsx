@@ -78,21 +78,23 @@ export function PinnedAgentsSection({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 hover:text-foreground"
         aria-expanded={open}
         aria-label="Toggle pinned agents"
       >
-        <span className="flex items-center gap-1.5">
-          {open ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
+        {/* Label keeps the shared 12px left edge; the collapse chevron sits on
+            the RIGHT so the text aligns with every other section + row. */}
+        <span className="flex items-baseline gap-1.5">
           <span>Pinned</span>
           <span className="text-[10px] text-muted-foreground/70 normal-case tracking-normal">
             {pinned.length}
           </span>
         </span>
+        {open ? (
+          <ChevronDown className="h-3 w-3 shrink-0" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0" />
+        )}
       </button>
       {open && (
         <ul className="pb-1.5">
@@ -102,7 +104,7 @@ export function PinnedAgentsSection({
               <li
                 key={agent.id}
                 className={cn(
-                  "group flex items-center gap-2 px-2 py-1 text-xs cursor-pointer",
+                  "group mx-1 flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm cursor-pointer",
                   "text-foreground/90 hover:bg-accent/60",
                   isActive && "bg-accent/70",
                 )}

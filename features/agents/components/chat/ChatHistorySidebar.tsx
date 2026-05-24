@@ -152,7 +152,7 @@ export function ChatHistorySidebar({
       {headerSlot}
 
       {/* Search affordance — quiet by default, expands inline on click. */}
-      <div className="shrink-0 px-2 pt-2">
+      <div className="shrink-0 px-1 pt-2">
         {searchOpen ? (
           <div className="relative flex items-center">
             <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -185,7 +185,7 @@ export function ChatHistorySidebar({
           <button
             type="button"
             onClick={openSearch}
-            className="flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="flex h-8 w-full items-center gap-1.5 rounded-lg px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             aria-label="Search conversations"
           >
             <Search className="h-3.5 w-3.5" />
@@ -266,11 +266,14 @@ interface SectionProps {
 }
 
 const Section: React.FC<SectionProps> = ({ label, children }) => (
-  <div className="mb-3">
-    <div className="px-3 pb-1 pt-3 text-[11px] font-medium text-muted-foreground/80">
+  <div className="mb-2">
+    {/* Label and rows share the SAME 12px left edge (px-3 here, mx-1+px-2 on
+        rows). Hierarchy comes from type — uppercase/semibold/muted — not from
+        indentation. */}
+    <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
       {label}
     </div>
-    <div className="px-2">{children}</div>
+    <div>{children}</div>
   </div>
 );
 
@@ -291,7 +294,7 @@ const Row: React.FC<RowProps> = ({ conv, active, onOpen, onOpenMenu }) => {
   return (
     <div
       className={cn(
-        "group relative flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm cursor-pointer",
+        "group relative mx-1 flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm cursor-pointer",
         "text-foreground/90 transition-colors",
         active
           ? "bg-accent text-foreground"
@@ -304,13 +307,15 @@ const Row: React.FC<RowProps> = ({ conv, active, onOpen, onOpenMenu }) => {
         onOpenMenu(conv, e);
       }}
     >
-      {/* Status / favorite indicator on the left — only renders when there's
-          something to show (streaming OR starred). Idle rows get no glyph,
-          matching ChatGPT/Claude minimalism. */}
+      {/* Title owns the shared left edge — no leading glyph, so every row's
+          text starts at the exact same x as the section labels. */}
+      <span className="min-w-0 flex-1 truncate">{title}</span>
+
+      {/* Indicators live on the RIGHT so they never shift the title. */}
       {isStreaming ? (
-        <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+        <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
         </span>
       ) : conv.isFavorite ? (
         <Star
@@ -320,11 +325,6 @@ const Row: React.FC<RowProps> = ({ conv, active, onOpen, onOpenMenu }) => {
         />
       ) : null}
 
-      <span className="min-w-0 flex-1 truncate">{title}</span>
-
-      {/* Kebab — reserved width via `w-6`, invisible until row hover so the
-          title doesn't shift. On mobile we keep it always visible because
-          there's no hover signal. */}
       {onOpenMenu && (
         <button
           ref={menuBtnRef}
