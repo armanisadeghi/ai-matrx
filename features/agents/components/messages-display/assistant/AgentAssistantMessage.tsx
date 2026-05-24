@@ -289,20 +289,14 @@ export function AgentAssistantMessage({
             serverProcessedBlocks={serverProcessedBlocks}
             onContentChange={handleInlineContentChange}
           />
-          {/* Live indicator, just below the streaming content. The first
-              (connecting) beat is a brief text status with NO animation; once
-              server events start flowing it becomes the breathing orb, which
-              moves down as content grows above it and unmounts when the stream
-              ends (replaced by the action bar). Server-driven statuses
-              ("Thinking…", tool phases) keep coming from the stream itself. */}
-          {isStreamActive && phase === "connecting" && (
-            <p className="mt-1.5 text-sm text-muted-foreground">Processing…</p>
-          )}
+          {/* While content is streaming, the breathing orb trails just below
+              it, moving down as the message grows, then unmounts at completion
+              (its slot becomes the action bar). The pre-token / "waiting for
+              the server" beat is owned by the markdown engine's ShimmerText
+              ("Processing…"), so the orb deliberately stays out of the
+              connecting / pre_token window — no two indicators at once. */}
           {isStreamActive &&
-            (phase === "pre_token" ||
-              phase === "reasoning" ||
-              phase === "text_streaming" ||
-              phase === "interstitial") && (
+            (phase === "text_streaming" || phase === "interstitial") && (
               <BreathingOrb className="mt-1.5" size={24} />
             )}
         </>

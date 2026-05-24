@@ -16,7 +16,7 @@ import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
-import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { ShimmerText } from "@/components/loaders/ShimmerText";
 import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
 import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
 import {
@@ -522,8 +522,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
       return (
         <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
           <div className={containerStyles}>
-            <div className="flex items-center justify-start py-6">
-              <MatrxMiniLoader />
+            <div className="flex items-center justify-start py-1">
+              <ShimmerText text="Processing…" className="text-sm" />
             </div>
           </div>
         </div>
