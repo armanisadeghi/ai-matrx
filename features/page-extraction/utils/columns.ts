@@ -154,6 +154,68 @@ export function cellValueFor(
   }
 }
 
+/**
+ * Build the "merge view" from a result set that a validation pass has
+ * soft-flagged for duplicates.
+ *
+ * A duplicate row carries `payload.is_duplicate === true` and
+ * `payload.canonical_entry === <canonical result id>`. Rather than just
+ * hiding duplicates, the merge view ABSORBS each duplicate into its
+ * canonical row: any field the canonical row is missing (null / "" /
+ * undefined) is back-filled from a duplicate that has it. This is the
+ * "take the complete copy's details" behavior — e.g. a report split
+ * across a chunk boundary leaves the canonical entry missing some
+ * details that its duplicate captured.
+ *
+ * Returns the canonical/standalone rows (duplicates removed) with merged
+ * payloads, plus a map of canonicalId → how many duplicates folded in
+ * (for the "+N merged" badge).
+ */
+export function buildMergedDuplicateView(
+  results: PageExtractionResult[],
+): {
+  rows: PageExtractionResult[];
+  mergedCountById: Map<string, number>;
+} {
+  const dupesByCanonical = new Map<string, PageExtractionResult[]>();
+  for (const r of results) {
+    const p = (r.payload ?? {}) as Record<string, unknown>;
+    if (p.is_duplicate && typeof p.canonical_entry === "string") {
+      const arr = dupesByCanonical.get(p.canonical_entry) ?? [];
+      arr.push(r);
+      dupesByCanonical.set(p.canonical_entry, arr);
+    }
+  }
+
+  const rows: PageExtractionResult[] = [];
+  const mergedCountById = new Map<string, number>();
+
+  for (const r of results) {
+    const p = (r.payload ?? {}) as Record<string, unknown>;
+    if (p.is_duplicate) continue; // absorbed into its canonical row
+
+    const dupes = dupesByCanonical.get(r.id);
+    if (!dupes || dupes.length === 0) {
+      rows.push(r);
+      continue;
+    }
+
+    const merged: Record<string, unknown> = { ...p };
+    for (const d of dupes) {
+      const dp = (d.payload ?? {}) as Record<string, unknown>;
+      for (const [k, v] of Object.entries(dp)) {
+        if (k === "is_duplicate" || k === "canonical_entry") continue;
+        const cur = merged[k];
+        if (cur == null || cur === "") merged[k] = v;
+      }
+    }
+    rows.push({ ...r, payload: merged });
+    mergedCountById.set(r.id, dupes.length);
+  }
+
+  return { rows, mergedCountById };
+}
+
 export const COLUMN_SOURCE_META: Record<
   ColumnSource,
   { label: string; hint: string; editable: boolean }

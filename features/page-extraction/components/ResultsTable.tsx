@@ -42,10 +42,15 @@ import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/us
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 import {
+  buildMergedDuplicateView,
   cellValueFor,
   COLUMN_SOURCE_META,
   parseTemplateColumns,
 } from "@/features/page-extraction/utils/columns";
+
+// Stable empty map so the no-duplicates path doesn't allocate a new
+// reference each render.
+const EMPTY_MERGED_COUNTS: Map<string, number> = new Map();
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
   ExtractionColumn,
@@ -111,8 +116,8 @@ function SingleJobResultsTable({
   });
 
   // Rows a validation pass soft-flagged as duplicates carry
-  // payload.is_duplicate === true. Hidden by default; the toggle reveals
-  // them. Soft-flag only — the rows are never deleted.
+  // payload.is_duplicate === true + canonical_entry pointing at the row
+  // they duplicate. Soft-flag only — rows are never deleted.
   const dupeCount = useMemo(
     () =>
       results.filter(
@@ -120,16 +125,14 @@ function SingleJobResultsTable({
       ).length,
     [results],
   );
-  const visibleResults = useMemo(
-    () =>
-      hideDuplicates
-        ? results.filter(
-            (r) =>
-              !(r.payload as Record<string, unknown> | null)?.is_duplicate,
-          )
-        : results,
-    [results, hideDuplicates],
-  );
+  // Merge view (default): absorb each duplicate into its canonical row,
+  // back-filling missing fields, and show a "+N merged" badge. Toggle off
+  // to see every raw row including the duplicates.
+  const merged = useMemo(() => buildMergedDuplicateView(results), [results]);
+  const visibleResults = hideDuplicates ? merged.rows : results;
+  const mergedCountById = hideDuplicates
+    ? merged.mergedCountById
+    : EMPTY_MERGED_COUNTS;
 
   const handleClearData = async () => {
     if (!jobId) return;
@@ -254,7 +257,7 @@ function SingleJobResultsTable({
             >
               {hideDuplicates
                 ? `Show ${dupeCount} duplicate${dupeCount === 1 ? "" : "s"}`
-                : "Hide duplicates"}
+                : "Merge duplicates"}
             </Button>
           )}
           <Button
@@ -279,6 +282,7 @@ function SingleJobResultsTable({
           <SchemaResultsBody
             columns={templateCols}
             results={visibleResults}
+            mergedCountById={mergedCountById}
             onJumpToPage={onJumpToPage}
             onRefetch={refetch}
           />
@@ -337,11 +341,13 @@ function SingleJobResultsTable({
 function SchemaResultsBody({
   columns,
   results,
+  mergedCountById,
   onJumpToPage,
   onRefetch,
 }: {
   columns: ExtractionColumn[];
   results: PageExtractionResult[];
+  mergedCountById: Map<string, number>;
   onJumpToPage?: (page: number) => void;
   onRefetch: () => void;
 }) {
@@ -389,6 +395,14 @@ function SchemaResultsBody({
                   formatPageRange(
                     Array.isArray(r.source_pages) ? r.source_pages : [],
                   )}
+                {(mergedCountById.get(r.id) ?? 0) > 0 && (
+                  <span
+                    className="ml-1 px-1 py-px rounded bg-primary/10 text-primary text-[8px] font-medium align-middle"
+                    title={`${mergedCountById.get(r.id)} duplicate row(s) merged into this entry`}
+                  >
+                    +{mergedCountById.get(r.id)} merged
+                  </span>
+                )}
               </TableCell>
               {columns.map((col) => {
                 const editable = COLUMN_SOURCE_META[col.source].editable;
