@@ -529,7 +529,7 @@ export const SPECIAL_RENDER_BLOCK_TYPES = new Set<string>([
 
 const PHASE_LABELS: Record<string, string> = {
   connected: "Connected",
-  processing: "Processing…",
+  processing: "Planning…",
   generating: "Generating…",
   using_tools: "Using tools…",
   persisting: "Saving…",

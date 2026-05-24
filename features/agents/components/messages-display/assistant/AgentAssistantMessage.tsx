@@ -293,7 +293,7 @@ export function AgentAssistantMessage({
               it, moving down as the message grows, then unmounts at completion
               (its slot becomes the action bar). The pre-token / "waiting for
               the server" beat is owned by the markdown engine's ShimmerText
-              ("Planning…"), so the orb deliberately stays out of the
+              ("Processing…"), so the orb deliberately stays out of the
               connecting / pre_token window — no two indicators at once. */}
           {isStreamActive &&
             (phase === "text_streaming" || phase === "interstitial") && (
