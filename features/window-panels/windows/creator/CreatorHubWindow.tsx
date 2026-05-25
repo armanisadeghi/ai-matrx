@@ -32,6 +32,7 @@ import {
   Server,
   MessageSquare,
   AppWindow,
+  Route,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { StreamDebugPanel } from "@/features/agents/components/debug/StreamDebugPanel";
+import { RoutingPanel } from "@/features/agents/components/debug/RoutingPanel";
 import { ObservationalMemoryCore } from "@/features/agents/components/observational-memory/ObservationalMemoryCore";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
@@ -96,6 +98,7 @@ const CREATOR_HUB_TABS: CreatorHubTabDef[] = [
   { id: "client", label: "Client", icon: Gauge, runTabId: "client" },
   { id: "backend", label: "Backend", icon: Server, runTabId: "backend" },
   { id: "stream_debug", label: "Stream Debug", icon: AppWindow },
+  { id: "routing", label: "Routing", icon: Route },
   { id: "memory", label: "Memory", icon: Brain, adminOnly: true },
   { id: "actions", label: "Actions", icon: Play, runTabId: "actions" },
 ];
@@ -196,6 +199,12 @@ export default function CreatorHubWindow({
   } else if (active.id === "stream_debug") {
     body = displayConvId ? (
       <StreamDebugPanel conversationId={displayConvId} />
+    ) : (
+      <HubEmptyConversation />
+    );
+  } else if (active.id === "routing") {
+    body = displayConvId ? (
+      <RoutingPanel conversationId={displayConvId} />
     ) : (
       <HubEmptyConversation />
     );

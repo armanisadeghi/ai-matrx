@@ -88,9 +88,12 @@ import { selectResolvedVariables } from "../instance-variable-values/instance-va
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
 import { resolveBackendForConversation } from "./resolve-base-url";
+import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
+import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import {
   createRequest,
   setRequestStatus,
+  setRequestRouting,
 } from "../active-requests/active-requests.slice";
 import { addOptimisticUserMessage } from "../messages/messages.slice";
 import { processStream } from "./process-stream";
@@ -529,6 +532,32 @@ export const executeManualInstance = createAsyncThunk<
       );
 
       const url = `${baseUrl}${ENDPOINTS.ai.manual}`;
+
+      // Factual routing record — see execute-instance.thunk for the rationale.
+      {
+        const routedTools = (request.tools_replace ??
+          request.tools ??
+          []) as Array<{ name?: string }>;
+        dispatch(
+          setRequestRouting({
+            requestId,
+            routing: {
+              url,
+              channel: backend.channel,
+              activeServer: selectActiveServer(state),
+              sandboxRef: resolveAgentSandboxRef(state, conversationId),
+              sandboxAttached: request.sandbox != null,
+              capabilities:
+                (request.client as { capabilities?: string[] } | undefined)
+                  ?.capabilities ?? [],
+              toolNames: routedTools
+                .map((t) => t?.name)
+                .filter((n): n is string => typeof n === "string"),
+              recordedAt: new Date().toISOString(),
+            },
+          }),
+        );
+      }
 
       // Dev-mode hard guard. This path CANNOT EVER hit an agent endpoint —
       // the whole point of /ai/manual is to send the live agent definition

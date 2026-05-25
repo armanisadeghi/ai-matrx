@@ -44,9 +44,12 @@ import {
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { resolveBackendForConversation } from "./resolve-base-url";
+import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
+import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import {
   createRequest,
   setRequestStatus,
+  setRequestRouting,
 } from "../active-requests/active-requests.slice";
 import { addOptimisticUserMessage } from "../messages/messages.slice";
 import { selectMessageCount } from "../messages/messages.selectors";
@@ -493,6 +496,37 @@ export const executeInstance = createAsyncThunk<
           ...(isEphemeral && { store: false }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
         } as Record<string, unknown>;
+      }
+
+      // Stamp the factual routing record — exactly what we're about to send.
+      // Ground truth for the Creator Hub Routing tab: where the turn went and
+      // whether the sandbox binding attached. `sandboxRef` is the sync resolve
+      // (was a box selected); `sandboxAttached` is whether the binding survived
+      // token mint — ref-present-but-not-attached === mint failed.
+      {
+        const routedClient = routedPayload.client as
+          | { capabilities?: string[] }
+          | undefined;
+        const routedTools = (routedPayload.tools ??
+          routedPayload.tools_replace ??
+          []) as Array<{ name?: string }>;
+        dispatch(
+          setRequestRouting({
+            requestId,
+            routing: {
+              url,
+              channel: backend.channel,
+              activeServer: selectActiveServer(state),
+              sandboxRef: resolveAgentSandboxRef(state, conversationId),
+              sandboxAttached: routedPayload.sandbox != null,
+              capabilities: routedClient?.capabilities ?? [],
+              toolNames: routedTools
+                .map((t) => t?.name)
+                .filter((n): n is string => typeof n === "string"),
+              recordedAt: new Date().toISOString(),
+            },
+          }),
+        );
       }
 
       // Record the true submit moment — this is t=0 for all client timing.

@@ -27,6 +27,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ActiveRequest,
+  RequestRouting,
   RequestStatus,
   PendingToolCall,
   ClientMetrics,
@@ -208,12 +209,29 @@ const activeRequestsSlice = createSlice({
         firstChunkAt: null,
         completedAt: null,
         clientMetrics: null,
+        routing: null,
       };
 
       if (!state.byConversationId[conversationId]) {
         state.byConversationId[conversationId] = [];
       }
       state.byConversationId[conversationId].push(requestId);
+    },
+
+    /**
+     * Stamp the factual routing record for a request at send time. Ground
+     * truth for the Creator Hub Routing tab — where the turn went + whether
+     * the sandbox binding attached.
+     */
+    setRequestRouting(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        routing: RequestRouting;
+      }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (request) request.routing = action.payload.routing;
     },
 
     setRequestStatus(
@@ -963,6 +981,7 @@ const activeRequestsSlice = createSlice({
 export const {
   createRequest,
   setRequestStatus,
+  setRequestRouting,
   appendChunk,
   appendReasoningChunk,
   finalizeAccumulatedReasoning,

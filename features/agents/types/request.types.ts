@@ -329,6 +329,50 @@ export interface ActiveRequest {
   firstChunkAt: string | null;
   completedAt: string | null;
   clientMetrics: ClientMetrics | null;
+
+  /**
+   * Factual routing record stamped at send time — the literal target URL, the
+   * channel, and the sandbox-binding outcome for THIS request. This is ground
+   * truth (it mirrors the exact fetch args + payload), so the Creator Hub
+   * Routing tab can show "where did this turn actually go, and did the box
+   * bind" without anyone guessing. `null` until the send fires.
+   */
+  routing: RequestRouting | null;
+}
+
+/**
+ * Send-time routing facts for one request. Everything here reflects what was
+ * actually put on the wire, not intent.
+ */
+export interface RequestRouting {
+  /** Full URL the request was POSTed to (e.g. https://sandbox.matrxserver.com/ai/agents/<id>). */
+  url: string;
+  /** Which backend channel resolved it: global / override (in-box proxy) / ec2-dedicated. */
+  channel: "global" | "override" | "ec2-dedicated";
+  /** The active server toggle at send time (production / localhost / custom / …). */
+  activeServer: string;
+  /**
+   * The sandbox the conversation resolved to (sync, pre-mint), or null if none
+   * was selected. `source` tells you whether it came from the per-conversation
+   * override, the shared user-active preference, or the editor.
+   */
+  sandboxRef: {
+    rowId: string;
+    tier?: "ec2" | "hosted";
+    source: "conversation-override" | "user-active" | "editor-active";
+  } | null;
+  /**
+   * Whether the `sandbox` binding actually attached to the payload. When a
+   * `sandboxRef` exists but this is false, the binding failed at token mint
+   * (box not running / mint error) — the agent got NO sandbox tools.
+   */
+  sandboxAttached: boolean;
+  /** `client.capabilities` sent on the wire (e.g. ["sandbox-fs", "nextjs-surface"]). */
+  capabilities: string[];
+  /** Tool names sent in `tools` / `tools_replace` (additive request tools). */
+  toolNames: string[];
+  /** ISO timestamp of the send. */
+  recordedAt: string;
 }
 
 /**
