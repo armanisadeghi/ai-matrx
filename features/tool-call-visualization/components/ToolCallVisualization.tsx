@@ -15,26 +15,26 @@
  * doing that produced the legacy "every card shows every tool" bug.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  AlertCircle,
   CheckCircle,
   ChevronDown,
   ChevronUp,
   Loader2,
   Maximize2,
   PanelRightOpen,
-  Gem,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectResponseDensity } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import {
   getInlineRenderer,
   getToolDisplayName,
+  hasCustomRenderer,
   shouldKeepExpandedOnStream,
 } from "../registry/registry";
 import { prefetchRenderer } from "../dynamic/fetcher";
@@ -50,13 +50,9 @@ export interface ToolCallVisualizationProps {
    * window. Never used to fetch "all tools for this request".
    */
   requestId?: string;
-  /**
-   * Optional. When provided, the shell subscribes to
-   * `selectResponseDensity(conversationId)` and switches to the compact,
-   * hover-only chrome when the surface is in agentic / coding-style mode.
-   */
+  /** Optional. Metadata only — passed through for overlay / window grouping. */
   conversationId?: string;
-  /** True when content has started streaming — triggers auto-collapse. */
+  /** Accepted for caller compatibility; the row always collapses when done. */
   hasContent?: boolean;
   /** Persisted (post-stream) snapshot — some renderers render compactly. */
   isPersisted?: boolean;
@@ -78,22 +74,16 @@ const ToolCallVisualizationInner: React.FC<{
   hasContent?: boolean;
   isPersisted?: boolean;
   className?: string;
-}> = ({
-  entries,
-  requestId,
-  conversationId,
-  hasContent = false,
-  isPersisted = false,
-  className,
-}) => {
-  const density = useAppSelector(
-    conversationId
-      ? selectResponseDensity(conversationId)
-      : () => "comfortable",
+}> = ({ entries, requestId, isPersisted = false, className }) => {
+  // A tool call is a single line by default. Only the rich, opted-in custom
+  // renderers (web_search, deep research, …) start expanded so their data
+  // streams in; everything else stays one line until clicked.
+  const keepExpanded = entries.some(
+    (e) =>
+      hasCustomRenderer(e.toolName) && shouldKeepExpandedOnStream(e.toolName),
   );
-  const isCompact = density === "compact";
-  // Compact mode starts collapsed — every tool call is a single line until clicked.
-  const [isExpanded, setIsExpanded] = useState<boolean>(!isCompact);
+  // React Compiler memoizes these derivations — no manual useMemo/useCallback.
+  const [isExpanded, setIsExpanded] = useState<boolean>(keepExpanded);
   const [isOverlayOpen, setIsOverlayOpen] = useState<boolean>(false);
   const [initialOverlayTab, setInitialOverlayTab] = useState<
     string | undefined
@@ -107,35 +97,35 @@ const ToolCallVisualizationInner: React.FC<{
     }
   }, [entries]);
 
-  const phase = useMemo<"starting" | "processing" | "complete">(() => {
-    if (entries.length === 0) return "starting";
-    const anyActive = entries.some(
-      (e) =>
-        e.status === "started" ||
-        e.status === "progress" ||
-        e.status === "step",
-    );
-    if (anyActive) return "processing";
-    const allTerminal = entries.every(
-      (e) => e.status === "completed" || e.status === "error",
-    );
-    return allTerminal ? "complete" : "processing";
-  }, [entries]);
+  const anyActive = entries.some(
+    (e) =>
+      e.status === "started" || e.status === "progress" || e.status === "step",
+  );
+  const allTerminal =
+    entries.length > 0 &&
+    entries.every((e) => e.status === "completed" || e.status === "error");
+  const phase: "starting" | "processing" | "complete" | "error" =
+    entries.length === 0
+      ? "starting"
+      : anyActive || !allTerminal
+        ? "processing"
+        : entries.some((e) => e.status === "error")
+          ? "error"
+          : "complete";
 
   const headerTool = entries[0] ?? null;
-  const toolDisplayName = useMemo(() => {
-    if (entries.length > 1) return `${entries.length} Tools`;
-    if (!headerTool) return getToolDisplayName(null);
-    if (
-      headerTool.displayName &&
-      headerTool.displayName !== headerTool.toolName
-    ) {
-      return headerTool.displayName;
-    }
-    return getToolDisplayName(headerTool.toolName);
-  }, [entries.length, headerTool?.toolName, headerTool?.displayName]);
 
-  const headerSubtitle = useMemo(() => {
+  const toolDisplayName =
+    entries.length > 1
+      ? `${entries.length} Tools`
+      : !headerTool
+        ? getToolDisplayName(null)
+        : headerTool.displayName &&
+            headerTool.displayName !== headerTool.toolName
+          ? headerTool.displayName
+          : getToolDisplayName(headerTool.toolName);
+
+  const headerSubtitle = ((): string | null => {
     if (!headerTool) return null;
     const args = headerTool.arguments ?? {};
     const val =
@@ -145,18 +135,16 @@ const ToolCallVisualizationInner: React.FC<{
     if (typeof val === "string" && val.length > 0) return val;
     if (Array.isArray(val) && val.length > 0) return String(val[0]);
     return null;
-  }, [headerTool]);
+  })();
 
-  // Comfortable mode: auto-collapse once the tool is done AND content is streaming.
-  // Compact mode: auto-collapse as soon as the tool completes regardless of content.
-  useEffect(() => {
-    if (phase !== "complete") return;
-    const anyStayExpanded = entries.some((e) =>
-      shouldKeepExpandedOnStream(e.toolName),
-    );
-    if (anyStayExpanded) return;
-    if (isCompact || hasContent) setIsExpanded(false);
-  }, [hasContent, phase, entries, isCompact]);
+  // The one-line message: what failed, what's happening, or what it ran.
+  const headerSecondary: string | null = !headerTool
+    ? null
+    : phase === "error"
+      ? (headerTool.errorMessage ?? "Failed")
+      : phase !== "complete"
+        ? (headerTool.latestMessage ?? headerSubtitle)
+        : headerSubtitle;
 
   if (entries.length === 0) return null;
 
@@ -165,106 +153,80 @@ const ToolCallVisualizationInner: React.FC<{
     setIsOverlayOpen(true);
   };
 
-  const handleOpenWindowPanel = useCallback(
-    (initialTab?: string) => {
-      // Live mode: ONE window per request. Re-clicking from any tool group in
-      // the same request focuses the same window, and `callIds: []` tells the
-      // panel "show every tool in the request" via LiveEntriesProvider — so
-      // the sidebar fills up as new tools stream in. The clicked tool is
-      // hinted via initialCallId so the window opens focused on it.
-      //
-      // Snapshot mode (no requestId): each group is a self-contained snapshot.
-      // Stable per-group id keeps re-clicks from spawning duplicates.
-      const seedCallId = entries[0]?.callId ?? "no-entry";
-      const instanceId = requestId
-        ? `tool-call-request-${requestId}`
-        : `tool-call-snapshot-${seedCallId}`;
-      dispatch(
-        openOverlay({
-          overlayId: "toolCallWindow",
-          instanceId,
-          data: {
-            requestId: requestId ?? null,
-            callIds: requestId ? [] : entries.map((e) => e.callId),
-            entries: requestId ? null : entries,
-            initialCallId: seedCallId !== "no-entry" ? seedCallId : null,
-            initialTab: initialTab ?? null,
-          },
-        }),
-      );
-    },
-    [dispatch, entries, requestId],
-  );
+  const handleOpenWindowPanel = (initialTab?: string) => {
+    // Live mode: ONE window per request. Re-clicking from any tool group in
+    // the same request focuses the same window, and `callIds: []` tells the
+    // panel "show every tool in the request" via LiveEntriesProvider — so
+    // the sidebar fills up as new tools stream in. The clicked tool is
+    // hinted via initialCallId so the window opens focused on it.
+    //
+    // Snapshot mode (no requestId): each group is a self-contained snapshot.
+    // Stable per-group id keeps re-clicks from spawning duplicates.
+    const seedCallId = entries[0]?.callId ?? "no-entry";
+    const instanceId = requestId
+      ? `tool-call-request-${requestId}`
+      : `tool-call-snapshot-${seedCallId}`;
+    dispatch(
+      openOverlay({
+        overlayId: "toolCallWindow",
+        instanceId,
+        data: {
+          requestId: requestId ?? null,
+          callIds: requestId ? [] : entries.map((e) => e.callId),
+          entries: requestId ? null : entries,
+          initialCallId: seedCallId !== "no-entry" ? seedCallId : null,
+          initialTab: initialTab ?? null,
+        },
+      }),
+    );
+  };
 
   return (
     <div
       className={cn(
-        "group/toolcard relative w-full overflow-hidden",
-        isCompact
-          ? cn(
-              "mb-0.5 rounded-sm",
-              // No persistent border in compact — only on hover, so the row
-              // reads as plain text height. The collapsed state is one line.
-              "border border-transparent hover:border-border/60",
-              "hover:bg-muted/30 dark:hover:bg-muted/20",
-            )
-          : cn(
-              "mb-2 rounded-md",
-              "bg-muted/30 dark:bg-muted/20",
-              "border border-border/60",
-            ),
+        "group/toolcard relative my-0.5 w-full overflow-hidden rounded-sm",
+        // No persistent border — only on hover, so the row reads as plain text
+        // height. The collapsed state is a single line in the transcript.
+        "border border-transparent hover:border-border/60",
+        "hover:bg-muted/30 dark:hover:bg-muted/20",
         className,
       )}
     >
       <button
         onClick={() => setIsExpanded((v) => !v)}
         className={cn(
-          "w-full flex items-center justify-between text-left transition-colors",
-          isCompact
-            ? "px-1.5 py-0.5 hover:bg-muted/40 dark:hover:bg-muted/30"
-            : "px-2.5 py-1 hover:bg-muted/60 dark:hover:bg-muted/40",
-          isExpanded && !isCompact && "border-b border-border/60",
-          isExpanded && isCompact && "border-b border-border/40",
+          "flex w-full items-center justify-between px-1.5 py-0.5 text-left transition-colors hover:bg-muted/40 dark:hover:bg-muted/30",
+          isExpanded && "border-b border-border/40",
         )}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {phase === "complete" ? (
-            <CheckCircle
-              className={cn(
-                "shrink-0 text-emerald-600 dark:text-emerald-400",
-                isCompact ? "w-3 h-3" : "w-3.5 h-3.5",
-              )}
-            />
+          {phase === "error" ? (
+            <AlertCircle className="h-3 w-3 shrink-0 text-red-600 dark:text-red-400" />
+          ) : phase === "complete" ? (
+            <CheckCircle className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
           ) : (
-            <Loader2
-              className={cn(
-                "shrink-0 text-blue-500 dark:text-blue-400 animate-spin",
-                isCompact ? "w-3 h-3" : "w-3.5 h-3.5",
-              )}
-            />
+            <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500 dark:text-blue-400" />
           )}
-          <span className="font-medium text-xs text-foreground truncate">
+          <span className="truncate text-xs font-medium text-foreground">
             {toolDisplayName}
           </span>
-          {headerSubtitle && (
-            <span className="text-xs text-muted-foreground font-mono truncate">
-              · {headerSubtitle}
+          {headerSecondary && (
+            <span
+              className={cn(
+                "truncate text-xs",
+                phase === "error"
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-muted-foreground",
+              )}
+            >
+              · {headerSecondary}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0">
-          {/* Action buttons — always visible in comfortable, hover-only in compact */}
-          <div
-            className={cn(
-              "flex items-center gap-0.5 transition-opacity",
-              isCompact &&
-                "opacity-0 group-hover/toolcard:opacity-100 focus-within:opacity-100",
-            )}
-          >
-            {phase !== "complete" && !isCompact && (
-              <Gem className="w-3 h-3 mr-0.5 text-blue-500 dark:text-blue-400 animate-pulse" />
-            )}
+          {/* Action buttons — hover-only so the row stays a clean single line. */}
+          <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/toolcard:opacity-100">
             <span
               role="button"
               tabIndex={0}
@@ -316,11 +278,7 @@ const ToolCallVisualizationInner: React.FC<{
       </button>
 
       {isExpanded && (
-        <div
-          className={cn(
-            isCompact ? "px-1.5 py-1 space-y-1.5" : "px-2 py-1.5 space-y-2",
-          )}
-        >
+        <div className="space-y-1.5 px-1.5 py-1">
           {entries.map((entry) => {
             const InlineRenderer = getInlineRenderer(entry.toolName);
             const groupDisplayName = getToolDisplayName(entry.toolName);

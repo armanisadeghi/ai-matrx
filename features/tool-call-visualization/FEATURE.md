@@ -2,15 +2,17 @@
 
 **Status:** `consolidated — canonical home for all tool-call UI`
 **Tier:** `1` — tools are first-class product surface, not auxiliary output
-**Last updated:** `2026-04-23`
+**Last updated:** `2026-05-25`
 
 ---
 
 ## Purpose
 
-Tool call visualization turns raw backend tool invocations (args, streamed progress, output, errors) into purpose-built UI — custom per-tool components rendered as inline cards during streaming and as overlay modals on demand. Every tool is a first-class citizen: a web-research call renders as a research panel, an SEO check as a pass/fail matrix, a news fetch as article tiles — never a raw JSON dump.
+Tool call visualization turns raw backend tool invocations (args, streamed progress, output, errors) into purpose-built UI. Execution state (lifecycle building) lives in the agents feature; this feature only reads from it.
 
-This feature owns **everything** related to tool-call UI: the renderer contract, the registry, hardcoded renderers, dynamic (DB-stored) renderers, the canonical shell, admin tooling, and the testing harness. Execution state (lifecycle building) lives in the agents feature; this feature only reads from it.
+**Default rendering = one inline line.** A tool call reads like a line of the transcript: a status icon (running spinner / green check / red error) + display name + the tool's message (latestMessage / error / query). No box, no card chrome. Click to expand the rich renderer; tools that opt in via `keepExpandedOnStream` (web research, news, SEO) open expanded so their data streams in. This is the same single-line shell across **every** source — live stream, static markdown, and DB-loaded turns — so a tool looks identical wherever it appears. The reasoning/thinking trace got the same text-first treatment (see `features/agents/docs/STREAMING_SYSTEM.md` → `ThinkingTrace`).
+
+The rich, purpose-built per-tool displays (a web-research panel, an SEO pass/fail matrix, news tiles — never a raw JSON dump) are the **custom variation** shown on expand or for opted-in tools. This feature owns **everything** related to tool-call UI: the renderer contract, the registry, hardcoded renderers, dynamic (DB-stored) renderers, the canonical shell, admin tooling, and the testing harness.
 
 ---
 
@@ -178,4 +180,5 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-05-25` — claude: **Tool calls now render as a single inline line by default**, unified across live-stream, static, and DB sources. The `ToolCallVisualization` shell dropped the heavy "comfortable" box branch — every tool is a borderless one-line row (status icon · display name · message) that collapses by default; click to expand the custom/generic renderer. Added the missing **error** state (red `AlertCircle` + `errorMessage`) to the header. `responseDensity` no longer drives tool chrome (slim is universal; the setting's plumbing in shortcuts/config is untouched but currently a no-op for this shell — candidate for repurpose/removal). Removed the manual `useMemo`/`useCallback`/auto-collapse `useEffect` (React Compiler handles memoization; normal tools simply start collapsed). **Next:** port matrx-extend's declarative per-tool display registry (`inline`/`results`/`alwaysShow`/`CustomComponent`, phase-aware) to grow the custom-variation set.
 - `2026-04-25` — Consumers of `ToolCallVisualization` and `toolCallBlockToLifecycleEntry` import from `components/ToolCallVisualization` and `utils/toolCallBlockToLifecycleEntry` instead of the feature root barrel.

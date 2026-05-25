@@ -60,7 +60,6 @@ export const InlineToolCard: React.FC<InlineToolCardProps> = ({
       requestId={requestId}
       conversationId={conversationId}
       hasContent
-      className="my-2"
     />
   );
 };
@@ -131,7 +130,6 @@ export const DbToolCard: React.FC<DbToolCardProps> = ({
       conversationId={conversationId}
       hasContent
       isPersisted
-      className="my-2"
     />
   );
 };
