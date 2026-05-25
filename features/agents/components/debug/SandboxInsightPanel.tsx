@@ -14,13 +14,14 @@
  */
 
 import { useState } from "react";
-import { Box, FolderTree, TerminalSquare } from "lucide-react";
+import { Box, FolderTree, TerminalSquare, FileText } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
+import { SandboxFileViewer } from "./SandboxFileViewer";
 
-type View = "files" | "terminal";
+type View = "files" | "terminal" | "viewer";
 
 export function SandboxInsightPanel({
   conversationId,
@@ -98,6 +99,17 @@ export function SandboxInsightPanel({
             <TerminalSquare className="h-3.5 w-3.5" />
             Terminal
           </button>
+          <button
+            onClick={() => setView("viewer")}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
+              view === "viewer"
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent/50"
+            }`}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            File
+          </button>
         </div>
       </div>
 
@@ -107,9 +119,13 @@ export function SandboxInsightPanel({
           <div className="h-full overflow-y-auto">
             <SandboxDiagnosticsPanel sandboxId={boundRowId} view="all" />
           </div>
-        ) : (
+        ) : view === "terminal" ? (
           <div className="h-full overflow-hidden">
             <SimpleTerminal sandboxId={boundRowId} />
+          </div>
+        ) : (
+          <div className="h-full overflow-hidden">
+            <SandboxFileViewer sandboxRowId={boundRowId} />
           </div>
         )}
       </div>
