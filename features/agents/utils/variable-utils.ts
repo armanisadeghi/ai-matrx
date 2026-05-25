@@ -2,6 +2,8 @@
  * Utility functions for handling agent variables.
  */
 
+import { isPicklistRef } from "@/features/agents/types/agent-definition.types";
+
 /**
  * Sanitizes a variable name for use in {{variable_name}} placeholders.
  *
@@ -72,6 +74,23 @@ export const formatVariableDisplayName = (name: string): string =>
     .trim();
 
 /**
+ * Renders a variable value for human display. Picklist reference envelopes show their
+ * public LABEL (never the secret description, which the client never has); arrays render as
+ * comma-joined labels; everything else stringifies. Use this anywhere a variable value is
+ * shown to a user, so an envelope never renders as "[object Object]".
+ */
+export const variableValueToDisplay = (value: unknown): string => {
+  if (isPicklistRef(value)) return value.label;
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => (isPicklistRef(v) ? v.label : v == null ? "" : String(v)))
+      .filter(Boolean)
+      .join(", ");
+  }
+  return value == null ? "" : String(value);
+};
+
+/**
  * Formats a resolved variables record into display lines for the user bubble.
  * Returns an empty string when there are no non-empty values.
  *
@@ -81,8 +100,8 @@ export const formatVariablesForDisplay = (
   variables: Record<string, unknown>,
 ): string =>
   Object.entries(variables)
-    .filter(([, v]) => v != null && v !== "")
-    .map(([k, v]) => `${formatVariableDisplayName(k)}: ${String(v)}`)
+    .filter(([, v]) => v != null && v !== "" && !(Array.isArray(v) && v.length === 0))
+    .map(([k, v]) => `${formatVariableDisplayName(k)}: ${variableValueToDisplay(v)}`)
     .join("\n");
 
 /** Regex matching auto-generated placeholder names like `new_variable_7`. */

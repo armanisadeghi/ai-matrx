@@ -69,6 +69,42 @@ export function isMediaVariableType(
 /** The input UI type for a variable's custom component. Derived from the const above. */
 export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
 
+/**
+ * Binding of a variable to a user picklist (udt_picklists). When set, the variable's
+ * options are hydrated at runtime from the picklist (labels only — the secret `description`
+ * never reaches the client) and the emitted value is a {@link PicklistRefEnvelope}, not text.
+ * Orthogonal to `type`, so a picklist can render as select / radio / buttons / checkbox.
+ */
+export interface PicklistBinding {
+  /** udt_picklists.id */
+  listId: string;
+  /** Optional: restrict to a single group; otherwise all groups render as sections. */
+  groupName?: string;
+  /** Allow selecting multiple items (value becomes PicklistRefEnvelope[]). */
+  multiple?: boolean;
+}
+
+/**
+ * The wire value of a picklist-bound variable: a reference, never the resolved text. The
+ * server reconciles `list_item_id` to the item's hidden `description` and injects THAT into
+ * the prompt. `label` is carried for display + the server's safe fallback only.
+ */
+export interface PicklistRefEnvelope {
+  type: "picklist_ref";
+  list_id: string;
+  list_item_id: string;
+  label: string;
+}
+
+export function isPicklistRef(value: unknown): value is PicklistRefEnvelope {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    (value as { type?: unknown }).type === "picklist_ref" &&
+    typeof (value as { list_item_id?: unknown }).list_item_id === "string"
+  );
+}
+
 /** Configuration for a variable's custom UI input component. */
 export interface VariableCustomComponent {
   type: VariableComponentType;
@@ -78,6 +114,12 @@ export interface VariableCustomComponent {
   min?: number;
   max?: number;
   step?: number;
+  /**
+   * Picklist binding. When present, options come from the bound picklist and the variable's
+   * value is a PicklistRefEnvelope (single) or PicklistRefEnvelope[] (multi-select). Kept
+   * top-level (not stashable) so it survives component-type switches.
+   */
+  picklist?: PicklistBinding;
   /**
    * Preserved config fragments for other component types.
    * Written when the user edits a field that isn't used by the current type

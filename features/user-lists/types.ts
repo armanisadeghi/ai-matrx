@@ -81,6 +81,28 @@ export interface GroupedItem {
   icon_name?: string | null;
 }
 
+// ─── Selection (label-only) read path ────────────────────────────────────────
+// The consumer-facing shape: labels/help/groups/icons ONLY. The secret `description`
+// is never present — it is resolved server-side at agent-run time. Returned by the
+// get_picklist_for_selection RPC (SECURITY DEFINER, no description column selected).
+
+export interface PicklistSelectionItem {
+  id: string;
+  label: string;
+  help_text: string | null;
+  group_name: string | null;
+  icon_name: string | null;
+}
+
+export interface PicklistForSelection {
+  list_id: string;
+  list_name: string;
+  description: string | null; // list-level metadata (not the secret item description)
+  is_public: boolean;
+  public_read: boolean;
+  items_grouped: Record<string, PicklistSelectionItem[]> | null;
+}
+
 // ─── Bookmark types ──────────────────────────────────────────────────────────
 
 export interface FullListBookmark {

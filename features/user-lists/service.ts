@@ -12,6 +12,7 @@ import type {
   UserListWithItems,
   CreateListInput,
   UpdateListInput,
+  PicklistForSelection,
 } from "./types";
 import { normalizeUserList } from "./types";
 
@@ -56,6 +57,23 @@ export async function getListWithItems(
   });
   if (error) throw new Error(`Failed to load list: ${error.message}`);
   return (data as unknown as UserListWithItems) ?? null;
+}
+
+/**
+ * Label-only read path for CONSUMERS (chat / agent apps / widgets). Returns
+ * labels / help_text / groups / icons but NEVER the secret item `description`.
+ * Backed by the get_picklist_for_selection RPC (SECURITY DEFINER) so it works
+ * even for a private list bound to an agent the caller is running. Use this —
+ * never getListWithItems — anywhere a non-owner can see the result.
+ */
+export async function getPicklistForSelection(
+  listId: string,
+): Promise<PicklistForSelection | null> {
+  const { data, error } = await supabase.rpc("get_picklist_for_selection", {
+    p_list_id: listId,
+  });
+  if (error) throw new Error(`Failed to load picklist: ${error.message}`);
+  return (data as unknown as PicklistForSelection) ?? null;
 }
 
 // ─── Create ────────────────────────────────────────────────────────────────────

@@ -11,6 +11,7 @@
  */
 
 import type {
+  PicklistBinding,
   VariableComponentType,
   VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
@@ -94,6 +95,13 @@ export function readStep(cc: VariableCustomComponent | undefined): number {
   return cc?.step ?? cc?.stash?.step ?? 1;
 }
 
+/** The picklist binding, if this variable is bound to a picklist. Top-level only. */
+export function readPicklist(
+  cc: VariableCustomComponent | undefined,
+): PicklistBinding | undefined {
+  return cc?.picklist;
+}
+
 // ─── Builder ──────────────────────────────────────────────────────────────────
 
 export interface BuildCustomComponentInput {
@@ -104,6 +112,8 @@ export interface BuildCustomComponentInput {
   min?: number;
   max?: number;
   step?: number;
+  /** Picklist binding — type-independent, always carried top-level (never stashed). */
+  picklist?: PicklistBinding;
 }
 
 /**
@@ -157,7 +167,13 @@ export function buildCustomComponent(
     cc.stash = stash;
   }
 
-  if (type === "textarea" && !cc.stash) return undefined;
+  // Picklist binding is type-independent: always preserved top-level, regardless of the
+  // chosen display component. Its presence also means this is never a bare textarea.
+  if (input.picklist?.listId) {
+    cc.picklist = input.picklist;
+  }
+
+  if (type === "textarea" && !cc.stash && !cc.picklist) return undefined;
   return cc;
 }
 
@@ -167,8 +183,9 @@ export function buildCustomComponent(
  */
 export function extractEffectiveValues(
   cc: VariableCustomComponent | undefined,
-): Required<Omit<BuildCustomComponentInput, "type">> & {
+): Required<Omit<BuildCustomComponentInput, "type" | "picklist">> & {
   type: VariableComponentType;
+  picklist: PicklistBinding | undefined;
 } {
   return {
     type: cc?.type ?? "textarea",
@@ -178,6 +195,7 @@ export function extractEffectiveValues(
     min: readMin(cc) as number,
     max: readMax(cc) as number,
     step: readStep(cc),
+    picklist: readPicklist(cc),
   };
 }
 
@@ -198,6 +216,6 @@ export function normalizeCustomComponent(
     next = rest;
   }
 
-  if (next.type === "textarea" && !next.stash) return undefined;
+  if (next.type === "textarea" && !next.stash && !next.picklist) return undefined;
   return next;
 }

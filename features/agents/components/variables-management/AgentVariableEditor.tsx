@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   sanitizeVariableName,
   shouldShowSanitizationPreview,
+  variableValueToDisplay,
 } from "@/features/agents/utils/variable-utils";
 import type {
   VariableCustomComponent,
@@ -46,6 +47,8 @@ import {
   type BuildCustomComponentInput,
 } from "@/features/agents/utils/variable-customcomponent";
 import { OptionsEditor } from "./OptionsEditor";
+import { PicklistBindingEditor } from "./PicklistBindingEditor";
+import type { PicklistBinding } from "@/features/agents/types/agent-definition.types";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -192,6 +195,11 @@ export function AgentVariableEditor({
 
   const handleStepChange = (step: number) => updateCustomComponent({ step });
 
+  const handlePicklistChange = (picklist: PicklistBinding | undefined) =>
+    updateCustomComponent({ picklist });
+
+  const isPicklistBound = !!effective.picklist?.listId;
+
   // ── Preview custom-component (for the default-value input at the bottom) ──
   const previewCc: VariableCustomComponent | undefined = buildCustomComponent({
     type: componentType,
@@ -201,6 +209,7 @@ export function AgentVariableEditor({
     min: effective.min,
     max: effective.max,
     step: effective.step,
+    picklist: effective.picklist,
   });
 
   const defaultValueStr = String(variable.defaultValue ?? "");
@@ -292,6 +301,13 @@ export function AgentVariableEditor({
         </Select>
       </div>
 
+      {/* ── Picklist binding ─────────────────────────────────────────────── */}
+      <PicklistBindingEditor
+        binding={effective.picklist}
+        onChange={handlePicklistChange}
+        readonly={readonly}
+      />
+
       {/* ── Toggle / light-switch labels ─────────────────────────────────── */}
       {meta.requiresToggleValues && (
         <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
@@ -325,32 +341,53 @@ export function AgentVariableEditor({
         </div>
       )}
 
-      {/* ── Options — always rendered, with "unused" note when inactive ──── */}
-      <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-        <Label className="text-sm font-medium">Options</Label>
-        <OptionsEditor
-          options={effective.options}
-          onChange={handleOptionsChange}
-          readonly={readonly}
-          unusedNote={
-            meta.requiresOptions
-              ? undefined
-              : `Not used by ${meta.label} — saved in case you switch to a list/dropdown input.`
-          }
-        />
-        {meta.requiresOptions && (
-          <div className="flex items-center justify-between pt-1.5 border-t border-border">
-            <Label className="text-sm cursor-pointer">
-              Allow &ldquo;Other&rdquo; option
-            </Label>
-            <Switch
-              checked={effective.allowOther}
-              onCheckedChange={handleAllowOtherChange}
-              disabled={readonly}
-            />
-          </div>
-        )}
-      </div>
+      {/* ── Options — static list, hidden when bound to a picklist ───────── */}
+      {isPicklistBound ? (
+        <div className="space-y-1 p-3 bg-muted/30 rounded-lg border border-border">
+          <Label className="text-sm font-medium">Options</Label>
+          <p className="text-xs text-muted-foreground">
+            Options come from the bound picklist.
+          </p>
+          {meta.requiresOptions && (
+            <div className="flex items-center justify-between pt-1.5 border-t border-border">
+              <Label className="text-sm cursor-pointer">
+                Allow &ldquo;Other&rdquo; option
+              </Label>
+              <Switch
+                checked={effective.allowOther}
+                onCheckedChange={handleAllowOtherChange}
+                disabled={readonly}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
+          <Label className="text-sm font-medium">Options</Label>
+          <OptionsEditor
+            options={effective.options}
+            onChange={handleOptionsChange}
+            readonly={readonly}
+            unusedNote={
+              meta.requiresOptions
+                ? undefined
+                : `Not used by ${meta.label} — saved in case you switch to a list/dropdown input.`
+            }
+          />
+          {meta.requiresOptions && (
+            <div className="flex items-center justify-between pt-1.5 border-t border-border">
+              <Label className="text-sm cursor-pointer">
+                Allow &ldquo;Other&rdquo; option
+              </Label>
+              <Switch
+                checked={effective.allowOther}
+                onCheckedChange={handleAllowOtherChange}
+                disabled={readonly}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Number / slider settings ─────────────────────────────────────── */}
       {(meta.requiresMinMax || componentType === "number") && (
@@ -415,11 +452,11 @@ export function AgentVariableEditor({
         </p>
         {readonly ? (
           <p className="text-sm text-foreground">
-            {defaultValueStr || (
+            {variableValueToDisplay(variable.defaultValue) || (
               <span className="text-muted-foreground italic">None</span>
             )}
           </p>
-        ) : componentType === "textarea" ? (
+        ) : componentType === "textarea" && !isPicklistBound ? (
           <Textarea
             autoGrow
             value={defaultValueStr}
@@ -430,7 +467,7 @@ export function AgentVariableEditor({
           />
         ) : (
           <VariableInputComponent
-            value={defaultValueStr}
+            value={isPicklistBound ? variable.defaultValue : defaultValueStr}
             onChange={handleDefaultValueChange}
             variableName={variableName || "variable"}
             customComponent={previewCc}

@@ -33,6 +33,7 @@ import {
 import { setExpandedVariableId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
 import { formatText } from "@/utils/text/text-case-converter";
+import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 
 interface AgentVariablesInlineProps {
   conversationId: string;
@@ -116,10 +117,10 @@ export function AgentVariablesInline({
         const isExpanded = expandedVariableId === variable.name;
         const rawValue =
           userValues[variable.name] ?? variable.defaultValue ?? "";
-        // Variable values are strings (text-style or URL for media). Coerce
-        // defensively so legacy object shapes don't render as "[object Object]".
-        const displayValue: string =
-          typeof rawValue === "string" ? rawValue : String(rawValue ?? "");
+        // Envelope-aware: picklist values render as their public label, never
+        // "[object Object]" and never the secret description.
+        const displayValue: string = variableValueToDisplay(rawValue);
+        const isPicklistBound = !!variable.customComponent?.picklist?.listId;
 
         if (isExpanded) {
           return (
@@ -164,7 +165,7 @@ export function AgentVariablesInline({
                 sideOffset={6}
               >
                 <VariableInputComponent
-                  value={displayValue}
+                  value={rawValue}
                   onChange={(v) => handleValueChange(variable.name, v)}
                   variableName={variable.name}
                   customComponent={variable.customComponent}
@@ -188,20 +189,38 @@ export function AgentVariablesInline({
             >
               {formatText(variable.name)}:
             </Label>
-            <input
-              type="text"
-              value={
-                displayValue.includes("\n")
-                  ? displayValue.replace(/\n/g, " ↵ ")
-                  : displayValue
-              }
-              onChange={(e) => handleValueChange(variable.name, e.target.value)}
-              onKeyDown={(e) => handleVariableKeyDown(e, index)}
-              placeholder={variable.helpText ?? "Enter value..."}
-              className="flex-1 text-sm bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/60 min-w-0"
-              data-variable-index={index}
-              tabIndex={index + 1}
-            />
+            {isPicklistBound ? (
+              <button
+                type="button"
+                onClick={() => handleExpand(variable.name)}
+                className="flex-1 text-left text-sm bg-transparent text-foreground min-w-0 truncate cursor-pointer"
+                data-variable-index={index}
+                tabIndex={index + 1}
+              >
+                {displayValue || (
+                  <span className="text-muted-foreground/60">
+                    {variable.helpText ?? "Choose…"}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <input
+                type="text"
+                value={
+                  displayValue.includes("\n")
+                    ? displayValue.replace(/\n/g, " ↵ ")
+                    : displayValue
+                }
+                onChange={(e) =>
+                  handleValueChange(variable.name, e.target.value)
+                }
+                onKeyDown={(e) => handleVariableKeyDown(e, index)}
+                placeholder={variable.helpText ?? "Enter value..."}
+                className="flex-1 text-sm bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/60 min-w-0"
+                data-variable-index={index}
+                tabIndex={index + 1}
+              />
+            )}
             <button
               type="button"
               onClick={() => handleExpand(variable.name)}

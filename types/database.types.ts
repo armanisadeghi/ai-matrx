@@ -26204,6 +26204,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_picklist_for_selection: { Args: { p_list_id: string }; Returns: Json }
       get_project_members_with_users: {
         Args: { p_project_id: string }
         Returns: {

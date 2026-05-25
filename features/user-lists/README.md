@@ -23,6 +23,14 @@ layout.tsx (Server)
 
 All mutations use Server Actions (`features/user-lists/actions/list-actions.ts`) with `revalidatePath` so data stays fresh without manual cache management.
 
+### Item `description` is an owner-only secret (migration 0064)
+
+A picklist item's `description` is the payload injected into agent prompts when a variable is bound to a list (see the agents feature). It is an **absolute secret to non-owners** and must never reach a consumer's client:
+
+- **Consumer read path:** `getPicklistForSelection(listId)` → `get_picklist_for_selection` RPC returns **labels only** (`id,label,help_text,group_name,icon_name`), never `description`. Use this anywhere a non-owner can see the result (agent runtime dropdowns, etc.).
+- **Owner/editor read path:** `getListWithItems` → `get_user_list_with_items` returns `description` **only** to the list owner/editor (`auth.uid()` gate); non-owners get `null`. The editor (`useQuickLists`) reads items directly — RLS now restricts `udt_picklist_items` SELECT to owner+editor, so `.select('*')` still works for them and returns nothing for everyone else.
+- **Server injection:** the Python backend resolves `description` via the service connection (bypasses RLS) and injects it only into the in-flight provider request — never persisted. Do NOT add a client read path that returns `description`.
+
 ### Key components
 
 | Component | Purpose |

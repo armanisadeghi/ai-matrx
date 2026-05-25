@@ -98,22 +98,23 @@ export const selectMissingRequiredVariables = (conversationId: string) =>
 
       const { definitions, userValues, scopeValues } = entry;
 
+      // Empty includes the multi-select picklist case: an empty array (nothing chosen).
+      const isEmpty = (v: unknown) =>
+        v === null ||
+        v === undefined ||
+        v === "" ||
+        (Array.isArray(v) && v.length === 0);
+
       const missing = definitions
         .filter((def) => {
           if (!def.required) return false;
           if (def.name in userValues) {
-            const v = userValues[def.name];
-            return v === null || v === undefined || v === "";
+            return isEmpty(userValues[def.name]);
           }
           if (def.name in scopeValues) {
-            const v = scopeValues[def.name];
-            return v === null || v === undefined || v === "";
+            return isEmpty(scopeValues[def.name]);
           }
-          return (
-            def.defaultValue === undefined ||
-            def.defaultValue === null ||
-            def.defaultValue === ""
-          );
+          return isEmpty(def.defaultValue);
         })
         .map((def) => def.name);
 

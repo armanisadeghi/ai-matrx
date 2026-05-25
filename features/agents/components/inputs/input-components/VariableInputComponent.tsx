@@ -14,6 +14,7 @@ import { AudioVariableInput } from "./AudioVariableInput";
 import { VideoVariableInput } from "./VideoVariableInput";
 import { DocumentVariableInput } from "./DocumentVariableInput";
 import { YoutubeVariableInput } from "./YoutubeVariableInput";
+import { PicklistVariableInput } from "./PicklistVariableInput";
 import {
   isMediaVariableType,
   type VariableCustomComponent,
@@ -90,8 +91,21 @@ export function VariableInputComponent({
 
   let inputComponent: React.ReactNode;
 
-  // Media types: pass the raw value through, expect MediaRef-shaped onChange.
-  if (isMediaVariableType(type)) {
+  // Picklist-bound: options come from the bound list (labels only) and the value is a
+  // PicklistRefEnvelope, not text. Orthogonal to `type` — the adapter renders the chosen
+  // choice component in label space. This single branch covers Inline / Stacked / Cards /
+  // Wizard (all route through VariableInputComponent).
+  if (customComponent?.picklist?.listId) {
+    inputComponent = (
+      <PicklistVariableInput
+        value={value}
+        onChange={onChange}
+        variableName={formattedName}
+        customComponent={customComponent}
+        {...sharedProps}
+      />
+    );
+  } else if (isMediaVariableType(type)) {
     switch (type) {
       case "image":
         inputComponent = (
