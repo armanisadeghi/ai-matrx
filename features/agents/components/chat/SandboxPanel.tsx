@@ -14,7 +14,7 @@
  * by `lib/sandbox/active-binding.ts`; this panel only records WHICH box is bound.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Loader2, X, Check, GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -85,43 +85,38 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     void fetchInstances({ limit: 50 });
   }, [fetchInstances]);
 
-  const runningInstances = useMemo(
-    () =>
-      instances.filter((i) =>
-        ACTIVE_EFFECTIVE_STATUSES.includes(getEffectiveStatus(i)),
-      ),
-    [instances],
+  // No useMemo/useCallback in this file — React Compiler memoizes
+  // (CLAUDE.md core invariant).
+  const runningInstances = instances.filter((i) =>
+    ACTIVE_EFFECTIVE_STATUSES.includes(getEffectiveStatus(i)),
   );
 
   const canOverride = !!conversationId && !isEphemeral;
   const effectiveOverrideMode = overrideMode && canOverride;
 
-  const applyRef = useCallback(
-    (ref: SandboxRef | null) => {
-      if (effectiveOverrideMode && conversationId) {
-        void dispatch(setConversationSandboxOverride({ conversationId, ref }));
-        toast.success(
-          ref
-            ? "Sandbox attached to this conversation"
-            : "Conversation override cleared",
-        );
-      } else {
-        dispatch(
-          setPreference({
-            module: "coding",
-            preference: "activeAgentSandbox",
-            value: ref,
-          }),
-        );
-        toast.success(
-          ref ? "Active sandbox set for all conversations" : "Sandbox detached",
-        );
-      }
-    },
-    [dispatch, effectiveOverrideMode, conversationId],
-  );
+  const applyRef = (ref: SandboxRef | null) => {
+    if (effectiveOverrideMode && conversationId) {
+      void dispatch(setConversationSandboxOverride({ conversationId, ref }));
+      toast.success(
+        ref
+          ? "Sandbox attached to this conversation"
+          : "Conversation override cleared",
+      );
+    } else {
+      dispatch(
+        setPreference({
+          module: "coding",
+          preference: "activeAgentSandbox",
+          value: ref,
+        }),
+      );
+      toast.success(
+        ref ? "Active sandbox set for all conversations" : "Sandbox detached",
+      );
+    }
+  };
 
-  const handleClaimNew = useCallback(async () => {
+  const handleClaimNew = async () => {
     setCreating(true);
     try {
       const { instance, error } = await createInstance({});
@@ -141,7 +136,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     } finally {
       setCreating(false);
     }
-  }, [createInstance, applyRef]);
+  };
 
   return (
     <>

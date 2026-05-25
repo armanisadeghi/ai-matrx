@@ -17,7 +17,7 @@
  * to the model, but a real call to one can't be fulfilled here yet.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronsUpDown, Monitor, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
@@ -69,8 +69,9 @@ export function SurfaceSimulatorSelect({
 
   useEffect(() => {
     if (surfaceCache) return;
+    // `loading` already initializes to `!surfaceCache` (true here), so no
+    // synchronous setState in the effect body (react-hooks/set-state-in-effect).
     let active = true;
-    setLoading(true);
     listSurfaceOptions()
       .then((rows) => {
         if (!active) return;
@@ -102,15 +103,16 @@ export function SurfaceSimulatorSelect({
     setOpen(false);
   };
 
-  const groups = useMemo(() => {
-    const byClient = new Map<string, SurfaceOption[]>();
-    for (const s of surfaces) {
-      const arr = byClient.get(s.client_name) ?? [];
-      arr.push(s);
-      byClient.set(s.client_name, arr);
-    }
-    return [...byClient.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [surfaces]);
+  // No useMemo — React Compiler memoizes (CLAUDE.md core invariant).
+  const byClient = new Map<string, SurfaceOption[]>();
+  for (const s of surfaces) {
+    const arr = byClient.get(s.client_name) ?? [];
+    arr.push(s);
+    byClient.set(s.client_name, arr);
+  }
+  const groups = [...byClient.entries()].sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
 
   return (
     <div className="py-1">

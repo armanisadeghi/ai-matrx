@@ -57,6 +57,7 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
     outputSchema: null,
     customTools: [],
     mcpServers: [],
+    autoToolsDisabled: false,
 
     userId: null,
     organizationId: null,

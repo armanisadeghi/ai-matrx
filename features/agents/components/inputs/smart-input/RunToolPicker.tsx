@@ -9,7 +9,7 @@
  * Reads the shared tools catalog (`selectAllTools`) and ensures it's loaded.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, X, Check } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
     useAppSelector(selectBuilderAdvancedSettings(conversationId)) ??
     DEFAULT_BUILDER_ADVANCED_SETTINGS;
   const addedList = settings.addedTools ?? [];
-  const added = useMemo(() => new Set(addedList), [addedList]);
+  const added = new Set(addedList);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -54,20 +54,19 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
       added.has(id) ? addedList.filter((t) => t !== id) : [...addedList, id],
     );
 
-  const visible = useMemo(() => {
-    const list = tools ?? [];
-    if (!search.trim()) {
-      // Selected first so the user can see/remove their picks at a glance.
-      const sel = list.filter((t) => added.has(t.id));
-      const rest = list.filter((t) => !added.has(t.id));
-      return [...sel, ...rest];
-    }
-    return filterAndSortBySearch(list, search, [
-      { get: (t) => t.name, weight: "title" },
-      { get: (t) => t.description, weight: "body" },
-      { get: (t) => t.category, weight: "tag" },
-    ]);
-  }, [tools, search, added]);
+  // No useMemo — React Compiler memoizes (CLAUDE.md core invariant).
+  const list = tools ?? [];
+  const visible = !search.trim()
+    ? // Selected first so the user can see/remove their picks at a glance.
+      [
+        ...list.filter((t) => added.has(t.id)),
+        ...list.filter((t) => !added.has(t.id)),
+      ]
+    : filterAndSortBySearch(list, search, [
+        { get: (t) => t.name, weight: "title" },
+        { get: (t) => t.description, weight: "body" },
+        { get: (t) => t.category, weight: "tag" },
+      ]);
 
   const loadingEmpty = status === "loading" && (tools?.length ?? 0) === 0;
 
