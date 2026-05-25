@@ -163,20 +163,34 @@ async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | nul
     return null;
   }
   const json = (await resp.json().catch(() => null)) as
-    | { token?: string; exp?: number }
+    | { token?: string; exp?: number; expires_at?: string }
     | null;
-  if (!json?.token || typeof json.exp !== "number") {
+
+  // Expiry comes back as EITHER `exp` (unix seconds, legacy) OR `expires_at`
+  // (ISO string — what the orchestrator actually returns:
+  // `{ token, expires_at, sandbox_id, tier, direct_url, ws_base }`). Accept
+  // both. The previous code only read `exp`, so every valid token was rejected
+  // and the binding silently dropped.
+  let expSec: number | null = null;
+  if (typeof json?.exp === "number") {
+    expSec = json.exp;
+  } else if (json?.expires_at) {
+    const ms = new Date(json.expires_at).getTime();
+    if (!Number.isNaN(ms)) expSec = Math.floor(ms / 1000);
+  }
+
+  if (!json?.token || expSec == null) {
     console.error(
-      `${LOG} ❌ token mint returned 200 but the body has no usable {token, exp} for box ${sandboxRowId}. Body:`,
+      `${LOG} ❌ token mint returned 200 but the body has no usable token/expiry for box ${sandboxRowId}. Expected { token, expires_at|exp }. Body:`,
       json,
     );
     return null;
   }
 
-  const fresh: CachedToken = { token: json.token, exp: json.exp };
+  const fresh: CachedToken = { token: json.token, exp: expSec };
   TOKEN_CACHE.set(sandboxRowId, fresh);
   console.info(
-    `${LOG} ✅ minted access token for box ${sandboxRowId} (exp ${new Date(json.exp * 1000).toISOString()}).`,
+    `${LOG} ✅ minted access token for box ${sandboxRowId} (expires ${new Date(expSec * 1000).toISOString()}).`,
   );
   return fresh;
 }
