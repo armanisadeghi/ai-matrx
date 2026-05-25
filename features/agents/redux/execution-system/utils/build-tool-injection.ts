@@ -117,9 +117,18 @@ export async function buildToolInjection(
     delegate: true,
   }));
 
+  // Per-conversation tools the user added from the Smart Input tools menu
+  // (registry UUIDs → server-executed registry specs). Explicit picks, so they
+  // ride regardless of the disable-injection brake (which only gates the
+  // surface's AUTOMATIC tools, not deliberate additions).
+  const addedToolSpecs: ToolSpec[] = (perConversation?.addedTools ?? []).map(
+    (id) => ({ kind: "registered", name: id, delegate: false }),
+  );
+
   const allTools: ToolSpec[] = [
     ...(options.seedTools ?? []),
     ...clientToolSpecs,
+    ...addedToolSpecs,
   ];
 
   // ── 2. Client envelope — walk capability providers in parallel ──────────

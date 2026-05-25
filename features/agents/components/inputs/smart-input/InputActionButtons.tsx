@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
-import SandboxAttachControl from "@/features/agents/components/chat/SandboxAttachControl";
+import { InputControlsMenu } from "./InputControlsMenu";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
@@ -168,10 +168,10 @@ export function InputActionButtons({
           />
         )}
 
-        {/* Attach an agent sandbox (shared box by default; per-conversation
-            override is the advanced path). Lives in the shared input toolbar so
-            every chat surface gets it. */}
-        <SandboxAttachControl conversationId={conversationId} />
+        {/* Consolidated run controls — Tools (add tools to this run), Sandbox
+            binding, and run Settings (disable injection, Surface Simulator, …)
+            in one tabbed popover. Replaces the standalone sandbox icon. */}
+        <InputControlsMenu conversationId={conversationId} />
 
         {isAdmin && isDebugMode && (
           <InputButton

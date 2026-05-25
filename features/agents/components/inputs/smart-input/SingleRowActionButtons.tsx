@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
-import SandboxAttachControl from "@/features/agents/components/chat/SandboxAttachControl";
+import { InputControlsMenu } from "./InputControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import {
@@ -119,7 +119,7 @@ export function SingleRowActionButtons({
         />
       )}
 
-      <SandboxAttachControl conversationId={conversationId} />
+      <InputControlsMenu conversationId={conversationId} />
 
       {isAdmin && isDebugMode && (
         <InputButton

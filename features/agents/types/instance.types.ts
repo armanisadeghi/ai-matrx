@@ -404,6 +404,16 @@ export interface BuilderAdvancedSettings {
    * and cannot tell it is simulated. null/empty → use the detected surface.
    */
   surfaceOverride?: string | null;
+
+  /**
+   * Tools the user added to THIS conversation from the Smart Input tools menu
+   * — registry tool UUIDs, server-executed (delegate:false), additive on top of
+   * the agent's own saved tools. `buildToolInjection` folds them into the
+   * request `tools`. These are explicit picks, so they ride regardless of the
+   * disable-injection brake (which only suppresses the surface's AUTOMATIC
+   * tools, not deliberate additions).
+   */
+  addedTools?: string[];
 }
 
 export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
@@ -415,6 +425,7 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   structuredInstruction: {},
   disableToolInjection: false,
   surfaceOverride: null,
+  addedTools: [],
 };
 
 // =============================================================================

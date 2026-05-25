@@ -1,35 +1,28 @@
 "use client";
 
 /**
- * SandboxAttachControl — attach a sandbox to the agent from the chat header.
+ * SandboxPanel — the sandbox-binding body, extracted from the old
+ * SandboxAttachControl so it can be embedded in the Smart Input's consolidated
+ * controls menu (Sandbox tab) instead of being its own popover button.
  *
  * Product model: a user has ONE shared "active agent sandbox" that every
- * conversation binds to by default — so talking to 20 agents feels like one
- * agent sharing the same files, working state, and memory. Picking or claiming
- * a box here sets that shared default (persisted in user preferences, follows
- * the user across reloads/tabs/surfaces).
+ * conversation binds to by default. Picking/claiming a box here sets that
+ * shared default (persisted in user preferences). "Use only for this
+ * conversation" writes a per-conversation override that wins for this thread.
  *
- * Power-user escape hatch: "Use only for this conversation" writes a
- * per-conversation override (`cx_conversation.sandbox_instance_id`) that wins
- * over the shared default for this thread only.
- *
- * The actual binding (token mint + routing into the box) is resolved at
- * turn-assembly time by `lib/sandbox/active-binding.ts`; this control only
- * records WHICH box is bound.
+ * The actual binding (token mint + routing) is resolved at turn-assembly time
+ * by `lib/sandbox/active-binding.ts`; this panel only records WHICH box is bound.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Plus, Loader2, X, Check, GitBranch } from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Plus, Loader2, X, Check, GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectConversationIsEphemeral } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import {
+  selectConversationSandboxOverride,
+  selectConversationIsEphemeral,
+} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { setConversationSandboxOverride } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
@@ -41,7 +34,7 @@ import {
 } from "@/lib/sandbox/status";
 import type { SandboxInstance } from "@/types/sandbox";
 
-interface SandboxAttachControlProps {
+interface SandboxPanelProps {
   conversationId: string | null;
 }
 
@@ -58,11 +51,8 @@ function shortLabel(instance: SandboxInstance): string {
   return instance.id.slice(0, 8);
 }
 
-export default function SandboxAttachControl({
-  conversationId,
-}: SandboxAttachControlProps) {
+export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const dispatch = useAppDispatch();
-  const [open, setOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   // When true, picking a box pins it to THIS conversation instead of setting
@@ -87,17 +77,13 @@ export default function SandboxAttachControl({
       ? "shared"
       : null;
 
-  const {
-    instances,
-    loading,
-    fetchInstances,
-    createInstance,
-  } = useSandboxInstances();
+  const { instances, loading, fetchInstances, createInstance } =
+    useSandboxInstances();
 
-  // Fetch the user's boxes when the popover opens.
+  // Fetch the user's boxes when the panel mounts (i.e. the Sandbox tab opens).
   useEffect(() => {
-    if (open) void fetchInstances({ limit: 50 });
-  }, [open, fetchInstances]);
+    void fetchInstances({ limit: 50 });
+  }, [fetchInstances]);
 
   const runningInstances = useMemo(
     () =>
@@ -113,9 +99,7 @@ export default function SandboxAttachControl({
   const applyRef = useCallback(
     (ref: SandboxRef | null) => {
       if (effectiveOverrideMode && conversationId) {
-        void dispatch(
-          setConversationSandboxOverride({ conversationId, ref }),
-        );
+        void dispatch(setConversationSandboxOverride({ conversationId, ref }));
         toast.success(
           ref
             ? "Sandbox attached to this conversation"
@@ -133,7 +117,6 @@ export default function SandboxAttachControl({
           ref ? "Active sandbox set for all conversations" : "Sandbox detached",
         );
       }
-      setOpen(false);
     },
     [dispatch, effectiveOverrideMode, conversationId],
   );
@@ -162,27 +145,7 @@ export default function SandboxAttachControl({
 
   return (
     <>
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          title={
-            resolved
-              ? `Agent sandbox attached${resolvedSource === "override" ? " (this conversation)" : " (shared)"}`
-              : "Attach an agent sandbox"
-          }
-          className={`relative h-8 w-8 flex items-center justify-center rounded-full transition-colors ${
-            resolved
-              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/15"
-              : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"
-          }`}
-        >
-          <Box className="h-4 w-4" />
-          {resolved && (
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
+      <div className="flex flex-col">
         <div className="border-b border-border px-3 py-2.5">
           <p className="text-sm font-medium text-foreground">Agent sandbox</p>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -207,10 +170,7 @@ export default function SandboxAttachControl({
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => {
-                  setOpen(false);
-                  setCloneOpen(true);
-                }}
+                onClick={() => setCloneOpen(true)}
                 className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                 title="Clone a git repo into this box"
               >
@@ -304,14 +264,13 @@ export default function SandboxAttachControl({
             </label>
           )}
         </div>
-      </PopoverContent>
-    </Popover>
+      </div>
 
-    <CloneRepoDialog
-      instanceId={resolved?.rowId ?? null}
-      open={cloneOpen}
-      onOpenChange={setCloneOpen}
-    />
+      <CloneRepoDialog
+        instanceId={resolved?.rowId ?? null}
+        open={cloneOpen}
+        onOpenChange={setCloneOpen}
+      />
     </>
   );
 }
