@@ -32,6 +32,7 @@ import { RunToolPicker } from "./RunToolPicker";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
 import { RunSettingsEditor } from "@/features/agents/components/run-controls/RunSettingsEditor";
 import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
+import { RunAdvancedSettings } from "@/features/agents/components/run-controls/RunAdvancedSettings";
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
@@ -157,7 +158,10 @@ export function InputControlsMenu({
           className="h-80"
         >
           {activeTab === "model" && (
-            <RunModelPicker conversationId={conversationId} />
+            <div className="h-full overflow-y-auto">
+              <RunModelPicker conversationId={conversationId} />
+              <RunAdvancedSettings conversationId={conversationId} />
+            </div>
           )}
           {activeTab === "tools" && (
             <RunToolPicker conversationId={conversationId} />
