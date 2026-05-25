@@ -24,17 +24,8 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   upsertAgent,
 } from "@/features/agents/redux/agent-definition/slice";
+import { SYNTHETIC_AGENT_ID_PREFIX } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-
-/**
- * Prefix used to identify synthetic comparison-variant agent records.
- * Save thunks should reject any agent id starting with this string.
- */
-export const SYNTHETIC_AGENT_ID_PREFIX = "cmp-";
-
-export function isSyntheticAgentId(id: string | null | undefined): boolean {
-  return typeof id === "string" && id.startsWith(SYNTHETIC_AGENT_ID_PREFIX);
-}
 
 /**
  * Returns a fresh synthetic agent id. Caller is responsible for seeding

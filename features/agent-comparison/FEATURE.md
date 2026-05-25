@@ -151,3 +151,14 @@ attributable to this page in analytics.
 ## Change Log
 
 - 2026-05-17 — Initial scaffold (Phase 1).
+- 2026-05-24 — Added **Variations** mode (`/agents/battle/variations`): start
+  from a template agent, edit the FULL agent definition per variation in a
+  tabbed floating editor window (reuses the Agent Builder's `AgentBuilderLeftPanel`),
+  run the same test input against all via the manual endpoint, nothing
+  persisted. Includes a "Save as new agent" promote path and full-snapshot
+  save/load. Hardened the agent-definition save thunks (`saveAgent`,
+  `saveAgentField`) to structurally reject synthetic `cmp-` ids — canonical
+  helper now at `features/agents/redux/agent-definition/synthetic-id.ts`
+  (re-export removed from `forkAgentForVariant.ts`; System Prompt / Tools /
+  Tuning updated to import from source). Mode catalog + mechanics in
+  [MODES.md](./MODES.md).

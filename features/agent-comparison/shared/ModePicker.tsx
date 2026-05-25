@@ -22,6 +22,7 @@ import {
   Workflow,
   Cpu,
   Gauge,
+  Boxes,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,13 @@ const MODES: ModeEntry[] = [
     href: "/agents/battle",
     icon: Layers,
     hint: "Anything goes — pick any agent + version per column",
+  },
+  {
+    id: "variations",
+    label: "Variations",
+    href: "/agents/battle/variations",
+    icon: Boxes,
+    hint: "Start from a template; edit everything per variation (full builder, manual mode, never saved)",
   },
   {
     id: "model",

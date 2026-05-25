@@ -49,6 +49,7 @@ import type {
   PromoteVersionResult,
   AgentVersionSnapshot,
 } from "../../types/agent-definition.types";
+import { isSyntheticAgentId } from "./synthetic-id";
 import {
   upsertAgent,
   mergePartialAgent,
@@ -406,6 +407,15 @@ export const saveAgentField = createAsyncThunk<
 >(
   "agentDefinition/saveField",
   async ({ agentId, field, value }, { dispatch, getState }) => {
+    // Synthetic comparison/variation agents (`cmp-` ids) live only in Redux
+    // and must never hit the DB. The builder editing components reused by
+    // those features dispatch field-setters directly (not this thunk), so in
+    // practice this never fires — it makes the no-persist guarantee structural.
+    if (isSyntheticAgentId(agentId)) {
+      dispatch(setAgentField({ id: agentId, field, value }));
+      return;
+    }
+
     const existing = selectAgentById(getState(), agentId);
     const snapshot = existing ? { [field]: existing[field] } : {};
 
@@ -449,6 +459,8 @@ export const saveAgentField = createAsyncThunk<
 export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
   "agentDefinition/save",
   async (agentId, { dispatch, getState }) => {
+    // Synthetic comparison/variation agents never persist — see saveAgentField.
+    if (isSyntheticAgentId(agentId)) return;
     const record = selectAgentById(getState(), agentId);
     if (!record || !record._dirty) return;
 

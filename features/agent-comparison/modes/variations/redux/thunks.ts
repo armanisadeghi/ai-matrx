@@ -1,16 +1,18 @@
 /**
- * Tools-mode thunks.
+ * Variations-mode thunks.
  *
- * Locked across columns: agent (source) + version + variables + user
- * message + system prompt + LLM settings. Varied per column: the
- * agent's attached tools (built-in tool ids, custom tools, MCP
- * servers). Each column owns a SYNTHETIC clone of the locked agent —
- * a `cmp-<uuid>` AgentDefinition record kept entirely in Redux.
+ * Locked across variations: the test input only (variables + user message).
+ * Varied per variation: the ENTIRE editable agent definition. Each variation
+ * owns a SYNTHETIC clone of the template agent — a `cmp-<uuid>` record kept
+ * entirely in Redux. The variation's manual instance is keyed to that
+ * synthetic id so the execute-manual-instance thunk reads the per-variation
+ * Builder edits live from `state.agentDefinition.agents[syntheticId]`.
  *
- * The per-column tools editor is the existing `AgentToolsManager`
- * component pointed at the synthetic id, so adding/removing tools
- * writes to the synthetic record and the manual-execute path sends
- * the column's tool list with each request — no special routing.
+ * Why the manual endpoint? The Agent Builder's manual path ships the full
+ * agent definition with every request — exactly what lets us vary everything
+ * per variation without ever persisting a "false agent" to the DB. The `cmp-`
+ * id prefix structurally gates the save thunks (see
+ * `agent-definition/synthetic-id.ts`).
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -26,14 +28,20 @@ import {
   fetchFullAgent,
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
+  createAgent,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   removeAgent,
+  setAgentField,
+  setAgentSettings,
+  setAgentMessages,
+  setAgentVariableDefinitions,
+  setAgentContextSlots,
+  setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,
-  setAgentTools,
 } from "@/features/agents/redux/agent-definition/slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -45,27 +53,26 @@ import {
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
-import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import {
-  addToolsColumn,
-  removeToolsColumn,
-  replaceToolsColumn,
-  resetTools,
-  setActiveToolsSet,
+  addVariationColumn,
+  removeVariationColumn,
+  replaceVariationColumn,
+  resetVariations,
+  setActiveVariationsSet,
   setLocked,
-  setToolsColumns,
+  setVariationColumns,
   submitAllFinished,
   submitAllStarted,
 } from "./slice";
-import type { ToolsColumn } from "../types";
+import type { VariationAgentSnapshot, VariationColumn } from "../types";
 
 // =============================================================================
 // Page-wide constants
 // =============================================================================
 
-export const TOOLS_SURFACE_KEY = "agent-comparison-tools";
-const TOOLS_SOURCE_FEATURE = "agent-comparison" as const;
+export const VARIATIONS_SURFACE_KEY = "agent-comparison-variations";
+const VARIATIONS_SOURCE_FEATURE = "agent-comparison" as const;
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -73,72 +80,101 @@ interface ThunkApi {
 }
 
 // =============================================================================
-// Tool-bundle helpers
+// Synthetic-agent snapshot helpers
 // =============================================================================
 
-interface ToolBundle {
-  tools: AgentDefinition["tools"];
-  customTools: AgentDefinition["customTools"];
-  mcpServers: AgentDefinition["mcpServers"];
-}
-
-const EMPTY_BUNDLE: ToolBundle = {
-  tools: [],
-  customTools: [],
-  mcpServers: [],
-};
-
-function extractToolBundle(state: RootState, agentId: string): ToolBundle {
-  const agent = state.agentDefinition.agents?.[agentId];
-  if (!agent) return EMPTY_BUNDLE;
+/**
+ * Read the editable slice of a synthetic agent's definition. Used at save
+ * time so the loader can rebuild each variation with the same configuration.
+ */
+function extractVariationSnapshot(
+  state: RootState,
+  agentId: string,
+): VariationAgentSnapshot | null {
+  const a = state.agentDefinition.agents?.[agentId];
+  if (!a) return null;
   return {
-    tools: agent.tools ?? [],
-    customTools: agent.customTools ?? [],
-    mcpServers: agent.mcpServers ?? [],
+    modelId: a.modelId ?? null,
+    settings: a.settings ?? ({} as AgentDefinition["settings"]),
+    messages: a.messages ?? [],
+    variableDefinitions: a.variableDefinitions ?? null,
+    contextSlots: a.contextSlots ?? [],
+    tools: a.tools ?? [],
+    customTools: a.customTools ?? [],
+    mcpServers: a.mcpServers ?? [],
   };
 }
 
-function applyToolBundle(
+/**
+ * Write an editable snapshot back onto a synthetic agent record. Mirrors the
+ * field-setter actions the Builder dispatches so the same components drive
+ * these synthetics with no special casing.
+ */
+function applyVariationSnapshot(
   dispatch: AppDispatch,
   agentId: string,
-  bundle: ToolBundle,
+  snap: VariationAgentSnapshot,
 ) {
-  dispatch(setAgentTools({ id: agentId, tools: bundle.tools }));
+  dispatch(setAgentField({ id: agentId, field: "modelId", value: snap.modelId }));
+  dispatch(setAgentSettings({ id: agentId, settings: snap.settings }));
+  dispatch(setAgentMessages({ id: agentId, messages: snap.messages }));
   dispatch(
-    setAgentCustomTools({ id: agentId, customTools: bundle.customTools }),
+    setAgentVariableDefinitions({
+      id: agentId,
+      variableDefinitions: snap.variableDefinitions,
+    }),
   );
-  dispatch(
-    setAgentMcpServers({ id: agentId, mcpServers: bundle.mcpServers }),
-  );
+  dispatch(setAgentContextSlots({ id: agentId, contextSlots: snap.contextSlots }));
+  dispatch(setAgentTools({ id: agentId, tools: snap.tools }));
+  dispatch(setAgentCustomTools({ id: agentId, customTools: snap.customTools }));
+  dispatch(setAgentMcpServers({ id: agentId, mcpServers: snap.mcpServers }));
 }
 
-function teardownColumn(dispatch: AppDispatch, col: ToolsColumn) {
+/**
+ * Tear down a variation: destroy its instance and remove its synthetic agent
+ * record (saves are structurally gated by the `cmp-` prefix, so leaving it
+ * would be harmless — but pruning keeps the slice tidy).
+ */
+function teardownColumn(dispatch: AppDispatch, col: VariationColumn) {
   dispatch(destroyInstance(col.conversationId));
-  if (isSyntheticAgentId(col.syntheticAgentId)) {
-    dispatch(removeAgent(col.syntheticAgentId));
-  }
+  dispatch(removeAgent(col.syntheticAgentId));
+}
+
+/** The id to fork from: the live template, or a pinned version snapshot. */
+function resolveForkSourceId(locked: {
+  sourceAgentId: string | null;
+  agentVersion: "current" | number | null;
+  agentVersionId: string | null;
+}): string | null {
+  if (!locked.sourceAgentId) return null;
+  return locked.agentVersion === "current" || !locked.agentVersionId
+    ? locked.sourceAgentId
+    : locked.agentVersionId;
 }
 
 // =============================================================================
-// Locked-axis configuration
+// Locked-axis configuration (the template)
 // =============================================================================
 
+/**
+ * Set the template agent. Re-forks every existing variation from the new
+ * template — old per-variation edits drop, which is the expected behavior
+ * (a new template is a new baseline).
+ */
 export const setLockedSourceAgent = createAsyncThunk<
   void,
   { agentId: string },
   ThunkApi
 >(
-  "agentComparisonTools/setLockedSourceAgent",
+  "agentComparisonVariations/setLockedSourceAgent",
   async ({ agentId }, { dispatch, getState }) => {
     const state = getState();
-    const prev = state.agentComparisonTools.locked;
+    const prev = state.agentComparisonVariations.locked;
     if (prev.sourceAgentId === agentId) return;
 
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
-      dispatch(
-        fetchAgentVersionHistory({ agentId, limit: 100 }),
-      ).unwrap(),
+      dispatch(fetchAgentVersionHistory({ agentId, limit: 100 })).unwrap(),
     ]);
 
     dispatch(
@@ -150,13 +186,10 @@ export const setLockedSourceAgent = createAsyncThunk<
       }),
     );
 
-    // Recreate every column with a fresh synthetic forked from the new
-    // source agent. Per-column tool edits drop with the source change —
-    // a new agent is a new baseline.
     const post = getState();
-    for (const col of post.agentComparisonTools.columns) {
+    for (const col of post.agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
-      const syntheticId = forkAgentForVariant(dispatch, post, agentId);
+      const syntheticId = forkAgentForVariant(dispatch, getState(), agentId);
       if (!syntheticId) continue;
       const conversationId = generateConversationId();
       await dispatch(
@@ -164,11 +197,11 @@ export const setLockedSourceAgent = createAsyncThunk<
           agentId: syntheticId,
           conversationId,
           apiEndpointMode: "manual",
-          sourceFeature: TOOLS_SOURCE_FEATURE,
+          sourceFeature: VARIATIONS_SOURCE_FEATURE,
         }),
       ).unwrap();
       dispatch(
-        replaceToolsColumn({
+        replaceVariationColumn({
           columnId: col.columnId,
           next: { conversationId, syntheticAgentId: syntheticId },
         }),
@@ -177,15 +210,20 @@ export const setLockedSourceAgent = createAsyncThunk<
   },
 );
 
+/**
+ * Pin a version on the template. Re-forks each variation from the pinned
+ * snapshot (so the synthetic carries that version's definition, not head).
+ */
 export const setLockedVersion = createAsyncThunk<
   void,
   { version: "current" | number; versionId?: string },
   ThunkApi
 >(
-  "agentComparisonTools/setLockedVersion",
+  "agentComparisonVariations/setLockedVersion",
   async ({ version, versionId }, { dispatch, getState }) => {
     const state = getState();
-    const { sourceAgentId, agentVersion } = state.agentComparisonTools.locked;
+    const { sourceAgentId, agentVersion } =
+      state.agentComparisonVariations.locked;
     if (!sourceAgentId) return;
     if (agentVersion === version) return;
 
@@ -207,12 +245,14 @@ export const setLockedVersion = createAsyncThunk<
     );
 
     const post = getState();
-    const forkSourceId =
-      version === "current" ? sourceAgentId : versionId ?? sourceAgentId;
+    const forkSourceId = resolveForkSourceId(
+      post.agentComparisonVariations.locked,
+    );
+    if (!forkSourceId) return;
 
-    for (const col of post.agentComparisonTools.columns) {
+    for (const col of post.agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
-      const syntheticId = forkAgentForVariant(dispatch, post, forkSourceId);
+      const syntheticId = forkAgentForVariant(dispatch, getState(), forkSourceId);
       if (!syntheticId) continue;
       const conversationId = generateConversationId();
       await dispatch(
@@ -220,11 +260,11 @@ export const setLockedVersion = createAsyncThunk<
           agentId: syntheticId,
           conversationId,
           apiEndpointMode: "manual",
-          sourceFeature: TOOLS_SOURCE_FEATURE,
+          sourceFeature: VARIATIONS_SOURCE_FEATURE,
         }),
       ).unwrap();
       dispatch(
-        replaceToolsColumn({
+        replaceVariationColumn({
           columnId: col.columnId,
           next: { conversationId, syntheticAgentId: syntheticId },
         }),
@@ -234,25 +274,21 @@ export const setLockedVersion = createAsyncThunk<
 );
 
 // =============================================================================
-// Columns
+// Variations (columns)
 // =============================================================================
 
-export const addColumnToToolsBattle = createAsyncThunk<
+export const addColumnToVariationsBattle = createAsyncThunk<
   string | null,
   { label?: string } | undefined,
   ThunkApi
 >(
-  "agentComparisonTools/addColumn",
+  "agentComparisonVariations/addColumn",
   async (arg, { dispatch, getState }) => {
     const state = getState();
-    const { sourceAgentId, agentVersion, agentVersionId } =
-      state.agentComparisonTools.locked;
-    if (!sourceAgentId) return null;
-
-    const forkSourceId =
-      agentVersion === "current" || !agentVersionId
-        ? sourceAgentId
-        : agentVersionId;
+    const forkSourceId = resolveForkSourceId(
+      state.agentComparisonVariations.locked,
+    );
+    if (!forkSourceId) return null;
 
     const syntheticId = forkAgentForVariant(dispatch, state, forkSourceId);
     if (!syntheticId) return null;
@@ -261,19 +297,19 @@ export const addColumnToToolsBattle = createAsyncThunk<
     const conversationId = generateConversationId();
     const label =
       arg?.label ??
-      `Variant ${state.agentComparisonTools.columns.length + 1}`;
+      `Variation ${state.agentComparisonVariations.columns.length + 1}`;
 
     await dispatch(
       createManualInstance({
         agentId: syntheticId,
         conversationId,
         apiEndpointMode: "manual",
-        sourceFeature: TOOLS_SOURCE_FEATURE,
+        sourceFeature: VARIATIONS_SOURCE_FEATURE,
       }),
     ).unwrap();
 
     dispatch(
-      addToolsColumn({
+      addVariationColumn({
         columnId,
         conversationId,
         syntheticAgentId: syntheticId,
@@ -284,19 +320,90 @@ export const addColumnToToolsBattle = createAsyncThunk<
   },
 );
 
-export const removeColumnFromToolsBattle = createAsyncThunk<
+/**
+ * Spawn N variations at once — backs the "how many variations?" picker.
+ * Each is forked fresh from the template (identical baseline; the user then
+ * edits each one).
+ */
+export const addVariationColumns = createAsyncThunk<
+  number,
+  { count: number },
+  ThunkApi
+>(
+  "agentComparisonVariations/addColumns",
+  async ({ count }, { dispatch, getState }) => {
+    const forkSourceId = resolveForkSourceId(
+      getState().agentComparisonVariations.locked,
+    );
+    if (!forkSourceId) return 0;
+
+    const target = Math.max(0, Math.min(count, 12));
+    let created = 0;
+    for (let i = 0; i < target; i += 1) {
+      const columnId = await dispatch(
+        addColumnToVariationsBattle(undefined),
+      ).unwrap();
+      if (columnId) created += 1;
+    }
+    return created;
+  },
+);
+
+export const removeColumnFromVariationsBattle = createAsyncThunk<
   void,
   { columnId: string },
   ThunkApi
 >(
-  "agentComparisonTools/removeColumn",
+  "agentComparisonVariations/removeColumn",
   async ({ columnId }, { dispatch, getState }) => {
-    const state = getState();
-    const col = state.agentComparisonTools.columns.find(
+    const col = getState().agentComparisonVariations.columns.find(
       (c) => c.columnId === columnId,
     );
     if (col) teardownColumn(dispatch, col);
-    dispatch(removeToolsColumn({ columnId }));
+    dispatch(removeVariationColumn({ columnId }));
+  },
+);
+
+// =============================================================================
+// Promote a winning variation into a real, saved agent
+// =============================================================================
+
+export const promoteVariationToAgent = createAsyncThunk<
+  string,
+  { columnId: string; name: string },
+  ThunkApi
+>(
+  "agentComparisonVariations/promoteToAgent",
+  async ({ columnId, name }, { dispatch, getState }) => {
+    const state = getState();
+    const col = state.agentComparisonVariations.columns.find(
+      (c) => c.columnId === columnId,
+    );
+    if (!col) throw new Error("Variation not found");
+    const synthetic = state.agentDefinition.agents?.[col.syntheticAgentId];
+    if (!synthetic) throw new Error("Variation agent not loaded");
+
+    // createAgent omits id and mints a fresh uuid — the synthetic never
+    // becomes the saved row; we copy its editable config into a new agent.
+    const newId = await dispatch(
+      createAgent({
+        name: name.trim() || synthetic.name || "Untitled variation",
+        description: synthetic.description ?? null,
+        category: synthetic.category ?? null,
+        tags: synthetic.tags ?? [],
+        agentType: synthetic.agentType ?? "user",
+        modelId: synthetic.modelId ?? null,
+        messages: synthetic.messages ?? [],
+        variableDefinitions: synthetic.variableDefinitions ?? null,
+        settings: synthetic.settings,
+        tools: synthetic.tools ?? [],
+        customTools: synthetic.customTools ?? [],
+        contextSlots: synthetic.contextSlots ?? [],
+        mcpServers: synthetic.mcpServers ?? [],
+      }),
+    ).unwrap();
+
+    return newId;
   },
 );
 
@@ -304,24 +411,26 @@ export const removeColumnFromToolsBattle = createAsyncThunk<
 // Submit All
 // =============================================================================
 
-export const submitAllTools = createAsyncThunk<
+export const submitAllVariations = createAsyncThunk<
   { launched: number; failed: number; skipped: number },
   void,
   ThunkApi
 >(
-  "agentComparisonTools/submitAll",
+  "agentComparisonVariations/submitAll",
   async (_arg, { dispatch, getState }) => {
     dispatch(submitAllStarted());
     try {
       const state = getState();
       const { sourceAgentId, variables, userMessage } =
-        state.agentComparisonTools.locked;
-      const columns = state.agentComparisonTools.columns;
+        state.agentComparisonVariations.locked;
+      const columns = state.agentComparisonVariations.columns;
 
       if (!sourceAgentId || columns.length === 0) {
         return { launched: 0, failed: 0, skipped: columns.length };
       }
 
+      // Broadcast the shared test input to every variation's per-instance
+      // slices before firing.
       for (const col of columns) {
         if (userMessage) {
           dispatch(
@@ -346,7 +455,7 @@ export const submitAllTools = createAsyncThunk<
           dispatch(
             smartExecute({
               conversationId: col.conversationId,
-              surfaceKey: TOOLS_SURFACE_KEY,
+              surfaceKey: VARIATIONS_SURFACE_KEY,
             }),
           ).unwrap(),
         ),
@@ -356,21 +465,17 @@ export const submitAllTools = createAsyncThunk<
       const launched = results.length - failed;
 
       const post = getState();
-      const activeSetId = post.agentComparisonTools.activeSetId;
+      const activeSetId = post.agentComparisonVariations.activeSetId;
       if (activeSetId) {
-        const entries = buildToolsEntries(post);
         try {
-          await replaceEntries(activeSetId, entries);
+          await replaceEntries(activeSetId, buildVariationEntries(post));
           await renameComparisonSet(
             activeSetId,
-            post.agentComparisonTools.activeSetName ?? "Untitled comparison",
+            post.agentComparisonVariations.activeSetName ??
+              "Untitled comparison",
           );
         } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[tools] failed to persist comparison entries:",
-            err,
-          );
+          console.error("[variations] failed to persist entries:", err);
         }
       }
 
@@ -385,59 +490,56 @@ export const submitAllTools = createAsyncThunk<
 // Clear / reset
 // =============================================================================
 
-export const clearToolsBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonTools/clear",
+export const clearVariationsBattle = createAsyncThunk<void, void, ThunkApi>(
+  "agentComparisonVariations/clear",
   async (_arg, { dispatch, getState }) => {
-    const state = getState();
-    for (const col of state.agentComparisonTools.columns) {
+    for (const col of getState().agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
     }
-    dispatch(resetTools());
+    dispatch(resetVariations());
   },
 );
 
-export const resetAllToolsConversations = createAsyncThunk<
+/**
+ * Reset every variation's conversation. preserveInputs=true keeps each
+ * variation's current Builder edits; false resets every variation back to the
+ * template baseline.
+ */
+export const resetAllVariationsConversations = createAsyncThunk<
   void,
   { preserveInputs?: boolean } | undefined,
   ThunkApi
 >(
-  "agentComparisonTools/resetAllConversations",
+  "agentComparisonVariations/resetAllConversations",
   async (arg, { dispatch, getState }) => {
     const preserveInputs = arg?.preserveInputs ?? true;
-    const state = getState();
-    const { sourceAgentId, agentVersion, agentVersionId } =
-      state.agentComparisonTools.locked;
-    if (!sourceAgentId) return;
+    const forkSourceId = resolveForkSourceId(
+      getState().agentComparisonVariations.locked,
+    );
+    if (!forkSourceId) return;
 
-    const forkSourceId =
-      agentVersion === "current" || !agentVersionId
-        ? sourceAgentId
-        : agentVersionId;
-
-    for (const col of state.agentComparisonTools.columns) {
-      const savedBundle = preserveInputs
-        ? extractToolBundle(state, col.syntheticAgentId)
+    for (const col of getState().agentComparisonVariations.columns) {
+      const savedSnapshot = preserveInputs
+        ? extractVariationSnapshot(getState(), col.syntheticAgentId)
         : null;
 
       teardownColumn(dispatch, col);
 
-      const fresh = getState();
-      const syntheticId = forkAgentForVariant(dispatch, fresh, forkSourceId);
+      const syntheticId = forkAgentForVariant(dispatch, getState(), forkSourceId);
       if (!syntheticId) continue;
+      if (savedSnapshot) applyVariationSnapshot(dispatch, syntheticId, savedSnapshot);
+
       const conversationId = generateConversationId();
       await dispatch(
         createManualInstance({
           agentId: syntheticId,
           conversationId,
           apiEndpointMode: "manual",
-          sourceFeature: TOOLS_SOURCE_FEATURE,
+          sourceFeature: VARIATIONS_SOURCE_FEATURE,
         }),
       ).unwrap();
-      if (savedBundle) {
-        applyToolBundle(dispatch, syntheticId, savedBundle);
-      }
       dispatch(
-        replaceToolsColumn({
+        replaceVariationColumn({
           columnId: col.columnId,
           next: { conversationId, syntheticAgentId: syntheticId },
         }),
@@ -450,34 +552,26 @@ export const resetAllToolsConversations = createAsyncThunk<
 // Save / Load
 // =============================================================================
 
-interface PersistedToolsEntryMeta {
+interface PersistedVariationEntryMeta {
   label: string;
-  tools: AgentDefinition["tools"];
-  custom_tools: AgentDefinition["customTools"];
-  mcp_servers: AgentDefinition["mcpServers"];
+  agent: VariationAgentSnapshot;
 }
 
-function buildToolsEntries(state: RootState): UpsertEntryInput[] {
+function buildVariationEntries(state: RootState): UpsertEntryInput[] {
   const out: UpsertEntryInput[] = [];
   const { sourceAgentId, agentVersion, agentVersionId } =
-    state.agentComparisonTools.locked;
+    state.agentComparisonVariations.locked;
   if (!sourceAgentId) return out;
-  state.agentComparisonTools.columns.forEach((col, idx) => {
-    const bundle = extractToolBundle(state, col.syntheticAgentId);
-    const meta: PersistedToolsEntryMeta = {
-      label: col.label,
-      tools: bundle.tools,
-      custom_tools: bundle.customTools,
-      mcp_servers: bundle.mcpServers,
-    };
+  state.agentComparisonVariations.columns.forEach((col, idx) => {
+    const snapshot = extractVariationSnapshot(state, col.syntheticAgentId);
+    if (!snapshot) return;
+    const meta: PersistedVariationEntryMeta = { label: col.label, agent: snapshot };
     out.push({
       conversationId: col.conversationId,
       displayOrder: idx,
       agentId: sourceAgentId,
       agentVersion:
-        agentVersion === "current" || agentVersion == null
-          ? null
-          : agentVersion,
+        agentVersion === "current" || agentVersion == null ? null : agentVersion,
       agentVersionSnapshotId: agentVersionId,
       metadata: meta as unknown as Record<string, unknown>,
     });
@@ -486,15 +580,10 @@ function buildToolsEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const {
-    sourceAgentId,
-    agentVersion,
-    agentVersionId,
-    variables,
-    userMessage,
-  } = state.agentComparisonTools.locked;
+  const { sourceAgentId, agentVersion, agentVersionId, variables, userMessage } =
+    state.agentComparisonVariations.locked;
   return {
-    mode: "tools",
+    mode: "variations",
     locked: {
       source_agent_id: sourceAgentId,
       agent_version: agentVersion,
@@ -505,12 +594,12 @@ function buildSetMetadata(state: RootState): Record<string, unknown> {
   };
 }
 
-export const saveToolsBattleAs = createAsyncThunk<
+export const saveVariationsBattleAs = createAsyncThunk<
   { id: string; name: string },
   { name: string },
   ThunkApi
 >(
-  "agentComparisonTools/saveAs",
+  "agentComparisonVariations/saveAs",
   async ({ name }, { dispatch, getState }) => {
     const state = getState();
     const userId = selectUserId(state);
@@ -521,23 +610,22 @@ export const saveToolsBattleAs = createAsyncThunk<
       userId,
       metadata: buildSetMetadata(state),
     });
-    const entries = buildToolsEntries(state);
+    const entries = buildVariationEntries(state);
     if (entries.length > 0) {
       await replaceEntries(set.id, entries);
     }
-    dispatch(setActiveToolsSet({ id: set.id, name: set.name }));
+    dispatch(setActiveVariationsSet({ id: set.id, name: set.name }));
     return { id: set.id, name: set.name };
   },
 );
 
-export const saveToolsBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonTools/save",
+export const saveVariationsBattle = createAsyncThunk<void, void, ThunkApi>(
+  "agentComparisonVariations/save",
   async (_arg, { getState }) => {
     const state = getState();
-    const setId = state.agentComparisonTools.activeSetId;
+    const setId = state.agentComparisonVariations.activeSetId;
     if (!setId) throw new Error("No active comparison set");
-    const entries = buildToolsEntries(state);
-    await replaceEntries(setId, entries);
+    await replaceEntries(setId, buildVariationEntries(state));
   },
 );
 
@@ -549,27 +637,28 @@ interface LoadedLockedSpec {
   user_message: string;
 }
 
-export const loadToolsBattleSet = createAsyncThunk<
+export const loadVariationsBattleSet = createAsyncThunk<
   void,
   { setId: string },
   ThunkApi
 >(
-  "agentComparisonTools/loadSet",
+  "agentComparisonVariations/loadSet",
   async ({ setId }, { dispatch, getState }) => {
-    const before = getState();
-    for (const col of before.agentComparisonTools.columns) {
+    for (const col of getState().agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
     }
-    dispatch(resetTools());
+    dispatch(resetVariations());
 
     const { set, entries } = await loadComparisonSet(setId);
     const meta = (set.metadata ?? {}) as {
       mode?: string;
       locked?: LoadedLockedSpec;
     };
-    if (meta.mode !== "tools") {
+    if (meta.mode !== "variations") {
       throw new Error(
-        `Comparison set "${set.name}" is not a tools-mode set (mode=${meta.mode ?? "?"})`,
+        `Comparison set "${set.name}" is not a variations-mode set (mode=${
+          meta.mode ?? "?"
+        })`,
       );
     }
 
@@ -621,24 +710,20 @@ export const loadToolsBattleSet = createAsyncThunk<
       );
     }
 
-    const nextColumns: ToolsColumn[] = [];
+    const nextColumns: VariationColumn[] = [];
     for (const entry of entries) {
-      const columnId = crypto.randomUUID();
       const entryMeta = (entry.metadata ?? {}) as
-        | Partial<PersistedToolsEntryMeta>
+        | Partial<PersistedVariationEntryMeta>
         | undefined;
 
-      const fresh = getState();
       const syntheticId = forkSourceId
-        ? forkAgentForVariant(dispatch, fresh, forkSourceId)
+        ? forkAgentForVariant(dispatch, getState(), forkSourceId)
         : null;
       if (!syntheticId) continue;
 
-      applyToolBundle(dispatch, syntheticId, {
-        tools: entryMeta?.tools ?? [],
-        customTools: entryMeta?.custom_tools ?? [],
-        mcpServers: entryMeta?.mcp_servers ?? [],
-      });
+      if (entryMeta?.agent) {
+        applyVariationSnapshot(dispatch, syntheticId, entryMeta.agent);
+      }
 
       try {
         await dispatch(
@@ -646,7 +731,7 @@ export const loadToolsBattleSet = createAsyncThunk<
             agentId: syntheticId,
             conversationId: entry.conversation_id,
             apiEndpointMode: "manual",
-            sourceFeature: TOOLS_SOURCE_FEATURE,
+            sourceFeature: VARIATIONS_SOURCE_FEATURE,
           }),
         ).unwrap();
       } catch {
@@ -656,7 +741,7 @@ export const loadToolsBattleSet = createAsyncThunk<
             agentId: syntheticId,
             agentType: "user",
             origin: "manual",
-            sourceFeature: TOOLS_SOURCE_FEATURE,
+            sourceFeature: VARIATIONS_SOURCE_FEATURE,
           }),
         );
       }
@@ -665,24 +750,23 @@ export const loadToolsBattleSet = createAsyncThunk<
         await dispatch(
           loadConversation({
             conversationId: entry.conversation_id,
-            surfaceKey: TOOLS_SURFACE_KEY,
+            surfaceKey: VARIATIONS_SURFACE_KEY,
           }),
         ).unwrap();
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn("[tools] loadConversation failed:", err);
+        console.warn("[variations] loadConversation failed:", err);
       }
 
       nextColumns.push({
-        columnId,
+        columnId: crypto.randomUUID(),
         conversationId: entry.conversation_id,
         syntheticAgentId: syntheticId,
-        label: entryMeta?.label ?? `Variant ${nextColumns.length + 1}`,
+        label: entryMeta?.label ?? `Variation ${nextColumns.length + 1}`,
         collapsed: false,
       });
     }
 
-    dispatch(setToolsColumns(nextColumns));
-    dispatch(setActiveToolsSet({ id: set.id, name: set.name }));
+    dispatch(setVariationColumns(nextColumns));
+    dispatch(setActiveVariationsSet({ id: set.id, name: set.name }));
   },
 );

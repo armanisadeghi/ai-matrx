@@ -44,10 +44,8 @@ import {
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
-import {
-  forkAgentForVariant,
-  isSyntheticAgentId,
-} from "@/features/agent-comparison/shared/forkAgentForVariant";
+import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
+import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import {
   addTuningColumn,

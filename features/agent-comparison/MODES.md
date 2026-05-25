@@ -12,6 +12,7 @@ conversations + telemetry + feedback for whatever the mode hands it.
 | Mode | Locked | Free per column | Route | Slice |
 |---|---|---|---|---|
 | **Open** ("anything goes") ✅ | nothing | agent, version, variables, message, settings, context, tools | `/agents/battle` | `agentComparison` |
+| **Variations** ✅ | nothing but the shared test input (variables + user message) | the ENTIRE editable agent definition per variation (full Builder, tabbed editor window) | `/agents/battle/variations` | `agentComparisonVariations` |
 | **Model** ✅ | agent, version, variables, message, settings, system prompt, tools | model id only (server normalizes settings) | `/agents/battle/model` | `agentComparisonModel` |
 | **Tuning** ✅ | source agent, version, variables, message, system prompt, tools | model id + full agent settings (via Builder UI) | `/agents/battle/tuning` | `agentComparisonTuning` |
 | **Settings** ✅ (legacy/quick) | agent, version, variables, message | model, temperature, top_p, max output tokens, reasoning effort, thinking level | `/agents/battle/settings` | `agentComparisonSettings` |
@@ -41,7 +42,7 @@ conversations + telemetry + feedback for whatever the mode hands it.
   `instanceModelOverrides` and its editor catch up to the modern
   model-aware shape; until then, both coexist.
 
-### The synthetic-agent pattern (used by System Prompt + Tools modes)
+### The synthetic-agent pattern (used by System Prompt, Tools, Tuning, and Variations modes)
 
 System Prompt and Tools mode both vary properties of the *agent definition*
 (system message, tools[]). To avoid a per-request override channel, both
@@ -54,17 +55,44 @@ reads the agent definition LIVE from that slice via
 `state.agentDefinition.agents[sourceId]`, so per-column edits to the
 synthetic flow through with no special routing.
 
-Why `cmp-` prefix: every save thunk in the agent system rejects ids
-starting with `cmp-` (server-side, `agx_agent.id` is `uuid` only, so
-even if the gate slipped, PostgREST would reject the id format). Helper:
-`shared/forkAgentForVariant.ts` — `forkAgentForVariant(dispatch, state, sourceId)`
-returns a fresh synthetic id; `isSyntheticAgentId(id)` for the save-side guard.
+Why `cmp-` prefix: the agent-definition save thunks (`saveAgent`,
+`saveAgentField`) structurally early-return on these ids, so a synthetic can
+never reach `supabase.from('agx_agent')` (and server-side, `agx_agent.id` is
+`uuid` only, so even if the gate slipped, PostgREST would reject the id
+format). Canonical helpers live in
+`features/agents/redux/agent-definition/synthetic-id.ts` —
+`isSyntheticAgentId(id)` and `SYNTHETIC_AGENT_ID_PREFIX`. `shared/forkAgentForVariant.ts`
+adds `forkAgentForVariant(dispatch, state, sourceId)`, which returns a fresh
+synthetic id.
 
 This is how the System Prompt mode "hijacks" the existing
 `SystemMessage` editor and the Tools mode "hijacks" the existing
 `AgentToolsManager` / `AgentToolsModal` — both take `agentId: string`
 as props and dispatch field-setter actions keyed by that id, so
 pointing them at the synthetic agent id just works.
+
+### Variations — full builder from a template
+
+The broadest synthetic-fork mode. Where System Prompt / Tools / Tuning each
+vary ONE axis, **Variations varies the ENTIRE editable agent definition per
+column**. It reuses the Agent Builder's whole left panel
+(`AgentBuilderLeftPanel`) — model, settings, system prompt, seed messages,
+variables, context slots, tools, MCP — pointed at each column's synthetic
+agent id. Because the full builder panel is large, the per-variation editors
+live as TABS inside one floating `WindowPanel` (one tab per variation,
+`VariationsEditorWindow`) instead of inline in each column; the run columns
+stay compact for side-by-side response comparison. `apiEndpointMode: "manual"`.
+
+Extras unique to this mode:
+- **Count picker** — the empty state spawns N variations at once
+  (`addVariationColumns`), matching "pick how many variations you want".
+- **Promote** — `promoteVariationToAgent` calls the real `createAgent` to
+  save a winning variation as a brand-new agent. This is the ONLY path from
+  this mode to the DB; the variations themselves never persist.
+- **Full-snapshot save/load** — each saved entry's `metadata.agent` carries
+  the variation's complete editable definition (`VariationAgentSnapshot`),
+  re-applied to a fresh synthetic on load via the agent-definition field
+  setters.
 
 ### Request Modification — no synthetic agent
 
