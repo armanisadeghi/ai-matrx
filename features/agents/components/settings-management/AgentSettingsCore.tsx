@@ -13,6 +13,7 @@ import {
   ClipboardCopy,
   Plus,
   X,
+  Braces,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -70,6 +71,7 @@ import {
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
+import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
 import {
   buildSettingsRows,
   type SettingsRow,
@@ -86,7 +88,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
-type SettingsTab = "settings" | "raw" | "raw-edit" | "model-config";
+type SettingsTab =
+  | "settings"
+  | "raw"
+  | "raw-edit"
+  | "model-config"
+  | "output-schema";
 
 // NOTE: media inputs (image_input, start_image, end_image, mask, etc.) do
 // NOT belong on agent settings — they're per-run user inputs that flow
@@ -985,6 +992,11 @@ function TabBar({ active, onChange, issueCount }: TabBarProps) {
       id: "model-config",
       label: "Model Config",
       icon: <Settings2 className="h-3 w-3" />,
+    },
+    {
+      id: "output-schema",
+      label: "Output Schema",
+      icon: <Braces className="h-3 w-3" />,
     },
   ];
 
@@ -1937,6 +1949,9 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
         {activeTab === "model-config" && normalizedControls && (
           <ModelConfigViewer normalizedControls={normalizedControls} />
         )}
+
+        {/* ── OUTPUT SCHEMA TAB ──────────────────────────────────────────── */}
+        {activeTab === "output-schema" && <OutputSchemaTab agentId={agentId} />}
       </div>
 
       {/* Model-change reconciliation dialog */}
