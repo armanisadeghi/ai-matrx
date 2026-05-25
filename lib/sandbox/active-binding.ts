@@ -97,12 +97,6 @@ export function resolveAgentSandboxRef(
     ? selectConversationSandboxOverride(conversationId)(state)
     : null;
   const userActive = state.userPreferences?.coding?.activeAgentSandbox ?? null;
-  console.log(
-    `${LOG} resolveAgentSandboxRef: conversationOverride=`,
-    override,
-    `| userActive(pref)=`,
-    userActive,
-  );
 
   // 1. Per-conversation override (power-user pin).
   if (override?.rowId && override.proxyUrl) {
@@ -189,9 +183,6 @@ async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | nul
 
   const fresh: CachedToken = { token: json.token, exp: expSec };
   TOKEN_CACHE.set(sandboxRowId, fresh);
-  console.info(
-    `${LOG} ✅ minted access token for box ${sandboxRowId} (expires ${new Date(expSec * 1000).toISOString()}).`,
-  );
   return fresh;
 }
 
@@ -214,17 +205,7 @@ export async function getActiveSandboxBinding(
       : stateOrGetState;
 
   const ref = resolveAgentSandboxRef(state, conversationId);
-  if (!ref) {
-    // Not necessarily an error (the user may not have attached a box), but
-    // never silent — this is the #1 reason "the agent has no sandbox access".
-    console.warn(
-      `${LOG} no sandbox bound for conversation ${conversationId ?? "(none)"} — checked: conversation override, user-active preference (userPreferences.coding.activeAgentSandbox), editor-active. Agent will run with NO sandbox tools. Attach a box from the chat input controls.`,
-    );
-    return null;
-  }
-  console.info(
-    `${LOG} resolved box ${ref.rowId} (tier=${ref.tier ?? "?"}, source=${ref.source}) for conversation ${conversationId ?? "(none)"}; minting token…`,
-  );
+  if (!ref) return null;
 
   // The proxy_url shape is `<orchestrator>/sandboxes/sbx-XXX/proxy`.
   // The orchestrator's structured fs/exec endpoints live one level up at
@@ -238,16 +219,8 @@ export async function getActiveSandboxBinding(
   const sandboxId = sandboxIdMatch?.[1] ?? "";
 
   const token = await fetchAccessToken(ref.rowId);
-  if (!token) {
-    console.error(
-      `${LOG} ❌ dropping sandbox binding for box ${ref.rowId} — token mint failed (see error above). The turn will be sent WITHOUT a sandbox; the agent gets no fs/shell/git tools.`,
-    );
-    return null;
-  }
+  if (!token) return null; // fetchAccessToken already logged the failure reason.
 
-  console.info(
-    `${LOG} ✅ binding ready for box ${sandboxId || ref.rowId} → ${baseUrl}. sandbox-fs capability + top-level sandbox field will be attached to this turn.`,
-  );
   return {
     sandbox_id: sandboxId,
     base_url: baseUrl,

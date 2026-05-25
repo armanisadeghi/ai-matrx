@@ -147,9 +147,6 @@ export async function buildToolInjection(
   const resolved = await Promise.all(
     providers.map(async (p) => {
       const payload = await p.selectPayload(state, conversationId);
-      console.log(
-        `[SBX] provider "${p.name}" → ${payload == null ? "NULL (not active this turn)" : "ACTIVE"}`,
-      );
       return payload == null ? null : { name: p.name, payload };
     }),
   );

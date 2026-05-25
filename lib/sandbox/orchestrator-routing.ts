@@ -52,10 +52,6 @@ const HOSTED_KEY = process.env.MATRX_HOSTED_ORCHESTRATOR_API_KEY || "";
     console.error(
       `${LOG} ⚠️ ${problems.length} sandbox env problem(s) detected at server start:\n  - ${problems.join("\n  - ")}`,
     );
-  } else {
-    console.info(
-      `${LOG} ✅ all four orchestrator env vars present (EC2 url+key, HOSTED url+key).`,
-    );
   }
 })();
 
