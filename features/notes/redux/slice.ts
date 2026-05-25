@@ -649,21 +649,107 @@ const notesSlice = createSlice({
 
     openFindReplace(
       state,
-      action: PayloadAction<{ instanceId: string; showReplace?: boolean }>,
+      action: PayloadAction<{
+        instanceId: string;
+        showReplace?: boolean;
+        /**
+         * If provided and non-empty, overwrites the current query (standard
+         * "search selected text" behavior). When undefined the existing
+         * query is preserved so the bar remembers the last search.
+         */
+        prefillQuery?: string;
+        /**
+         * Optional scope override. When opening via Ctrl+Shift+F we set this
+         * to "global" and also flip `showAdvanced` on so the user sees the
+         * include/exclude filters and the global results panel.
+         */
+        scope?: "file" | "global";
+      }>,
     ) {
       const inst = state.instances[action.payload.instanceId];
       if (!inst) return;
+      const { showReplace, prefillQuery, scope } = action.payload;
       if (inst.findReplace) {
         inst.findReplace.isOpen = true;
-        if (action.payload.showReplace !== undefined) {
-          inst.findReplace.showReplace = action.payload.showReplace;
+        if (showReplace !== undefined) {
+          inst.findReplace.showReplace = showReplace;
         }
+        if (scope !== undefined) {
+          inst.findReplace.scope = scope;
+          if (scope === "global") inst.findReplace.showAdvanced = true;
+        }
+        if (prefillQuery !== undefined && prefillQuery.length > 0) {
+          inst.findReplace.query = prefillQuery;
+          inst.findReplace.currentMatchIndex = 0;
+        }
+        inst.findReplace.focusRequestId += 1;
       } else {
         inst.findReplace = {
           ...FIND_REPLACE_DEFAULTS,
-          showReplace: action.payload.showReplace ?? false,
+          showReplace: showReplace ?? false,
+          scope: scope ?? FIND_REPLACE_DEFAULTS.scope,
+          showAdvanced:
+            scope === "global" ? true : FIND_REPLACE_DEFAULTS.showAdvanced,
+          query: prefillQuery && prefillQuery.length > 0 ? prefillQuery : "",
+          focusRequestId: 1,
         };
       }
+    },
+
+    setFindScope(
+      state,
+      action: PayloadAction<{ instanceId: string; scope: "file" | "global" }>,
+    ) {
+      const fr = state.instances[action.payload.instanceId]?.findReplace;
+      if (!fr) return;
+      fr.scope = action.payload.scope;
+      if (action.payload.scope === "global") fr.showAdvanced = true;
+    },
+
+    setFindShowAdvanced(
+      state,
+      action: PayloadAction<{ instanceId: string; showAdvanced: boolean }>,
+    ) {
+      const fr = state.instances[action.payload.instanceId]?.findReplace;
+      if (fr) fr.showAdvanced = action.payload.showAdvanced;
+    },
+
+    setFindIncludePaths(
+      state,
+      action: PayloadAction<{ instanceId: string; value: string }>,
+    ) {
+      const fr = state.instances[action.payload.instanceId]?.findReplace;
+      if (fr) fr.includePaths = action.payload.value;
+    },
+
+    setFindExcludePaths(
+      state,
+      action: PayloadAction<{ instanceId: string; value: string }>,
+    ) {
+      const fr = state.instances[action.payload.instanceId]?.findReplace;
+      if (fr) fr.excludePaths = action.payload.value;
+    },
+
+    /**
+     * Queue a jump to a specific match in a (possibly non-active) note.
+     * Used when clicking a row in the global search results panel.
+     *   1. The caller separately opens / activates the target note.
+     *   2. `setFindMatchResults` for that note will then consume the
+     *      pending index and set `currentMatchIndex` once matches are
+     *      computed for the now-active note.
+     */
+    requestActiveMatch(
+      state,
+      action: PayloadAction<{
+        instanceId: string;
+        noteId: string;
+        matchIndex: number;
+      }>,
+    ) {
+      const fr = state.instances[action.payload.instanceId]?.findReplace;
+      if (!fr) return;
+      fr.pendingActiveNoteId = action.payload.noteId;
+      fr.pendingActiveMatchIndex = action.payload.matchIndex;
     },
 
     closeFindReplace(state, action: PayloadAction<{ instanceId: string }>) {
@@ -679,6 +765,10 @@ const notesSlice = createSlice({
       if (fr) {
         fr.query = action.payload.query;
         fr.currentMatchIndex = 0;
+        // A new query invalidates any queued "jump to match in note X"
+        // request — the old match indices belong to the old query.
+        fr.pendingActiveNoteId = null;
+        fr.pendingActiveMatchIndex = null;
       }
     },
 
@@ -701,6 +791,9 @@ const notesSlice = createSlice({
       if (fr) {
         fr[action.payload.option] = !fr[action.payload.option];
         fr.currentMatchIndex = 0;
+        // Match positions shift when options change — drop any stale jump.
+        fr.pendingActiveNoteId = null;
+        fr.pendingActiveMatchIndex = null;
       }
     },
 
@@ -714,17 +807,46 @@ const notesSlice = createSlice({
 
     setFindMatchResults(
       state,
-      action: PayloadAction<{ instanceId: string; matchCount: number }>,
+      action: PayloadAction<{
+        instanceId: string;
+        matchCount: number;
+        /**
+         * The note these matches were computed for. Used to consume any
+         * pending "jump to match N in note X" request set by a global
+         * search-result click.
+         */
+        noteId?: string | null;
+      }>,
     ) {
       const fr = state.instances[action.payload.instanceId]?.findReplace;
-      if (fr) {
-        fr.matchCount = action.payload.matchCount;
-        if (fr.currentMatchIndex >= action.payload.matchCount) {
-          fr.currentMatchIndex = action.payload.matchCount > 0 ? 0 : -1;
+      if (!fr) return;
+      const { matchCount, noteId } = action.payload;
+      fr.matchCount = matchCount;
+
+      // Consume any pending jump request whose target just became active.
+      // We always clear the pending fields when their target is the current
+      // note — even if the index is out of range — so a stale request can't
+      // strand and re-fire setFindMatchResults forever via the useFindReplace
+      // effect's `pendingForThisNote` branch.
+      if (noteId && fr.pendingActiveNoteId === noteId) {
+        const pendingIdx = fr.pendingActiveMatchIndex;
+        fr.pendingActiveNoteId = null;
+        fr.pendingActiveMatchIndex = null;
+        if (
+          pendingIdx !== null &&
+          pendingIdx >= 0 &&
+          pendingIdx < matchCount
+        ) {
+          fr.currentMatchIndex = pendingIdx;
+          return;
         }
-        if (action.payload.matchCount > 0 && fr.currentMatchIndex === -1) {
-          fr.currentMatchIndex = 0;
-        }
+      }
+
+      if (fr.currentMatchIndex >= matchCount) {
+        fr.currentMatchIndex = matchCount > 0 ? 0 : -1;
+      }
+      if (matchCount > 0 && fr.currentMatchIndex === -1) {
+        fr.currentMatchIndex = 0;
       }
     },
 
@@ -821,6 +943,11 @@ export const {
   setFindShowReplace,
   setFindMatchResults,
   navigateFindMatch,
+  setFindScope,
+  setFindShowAdvanced,
+  setFindIncludePaths,
+  setFindExcludePaths,
+  requestActiveMatch,
 } = notesSlice.actions;
 
 export default notesSlice.reducer;

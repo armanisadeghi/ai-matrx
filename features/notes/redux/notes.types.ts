@@ -67,6 +67,13 @@ export type NoteFieldSnapshot = Partial<
 
 // ── Find & Replace state ────────────────────────────────────────────────────
 
+/**
+ * Search scope for find-and-replace.
+ * - "file"   : current active note only (default — Ctrl+F)
+ * - "global" : every note the user can see (Ctrl+Shift+F)
+ */
+export type FindScope = "file" | "global";
+
 export interface FindReplaceState {
   isOpen: boolean;
   query: string;
@@ -75,8 +82,43 @@ export interface FindReplaceState {
   useRegex: boolean;
   wholeWord: boolean;
   showReplace: boolean;
+  /**
+   * Reveals the advanced/global section in the bar (include/exclude filters
+   * and the global results panel). When false the bar behaves as a simple
+   * per-file find. Independent of `scope` so the user can collapse the
+   * advanced UI while keeping global mode active.
+   */
+  showAdvanced: boolean;
+  scope: FindScope;
+  /**
+   * Comma-separated patterns matched against `<folder>/<label>` for each
+   * note. Supports `*` as a wildcard. Empty string = match everything.
+   * Mirrors VS Code's "files to include" field.
+   */
+  includePaths: string;
+  /** Same syntax as `includePaths`. Empty string = exclude nothing. */
+  excludePaths: string;
   matchCount: number;
   currentMatchIndex: number; // 0-based, -1 = no match
+  /**
+   * Monotonic counter incremented every time the bar should re-focus and
+   * select-all the find input (e.g. user re-presses Ctrl+F while the bar
+   * is already open). The bar watches this id and, on change, calls
+   * focus() + select() on the find input so the next keystroke replaces
+   * the existing query — matching VS Code / Chrome / Google Docs behavior.
+   */
+  focusRequestId: number;
+  /**
+   * When the user clicks a global search result for a note that isn't the
+   * currently-active one, we open that note and stash the desired match
+   * index here. The match list for that note is computed asynchronously
+   * (after the editor re-renders), so we cannot just `setCurrentMatchIndex`
+   * synchronously — it would get clamped by stale `matchCount`. Instead,
+   * the file-scoped match-results reducer consumes this pending index the
+   * moment the matches for the target note are produced.
+   */
+  pendingActiveNoteId: string | null;
+  pendingActiveMatchIndex: number | null;
 }
 
 export const FIND_REPLACE_DEFAULTS: FindReplaceState = {
@@ -87,8 +129,15 @@ export const FIND_REPLACE_DEFAULTS: FindReplaceState = {
   useRegex: false,
   wholeWord: false,
   showReplace: false,
+  showAdvanced: false,
+  scope: "file",
+  includePaths: "",
+  excludePaths: "",
   matchCount: 0,
   currentMatchIndex: -1,
+  focusRequestId: 0,
+  pendingActiveNoteId: null,
+  pendingActiveMatchIndex: null,
 };
 
 // ── Notes Instance (Layer 6 — multi-instance support) ───────────────────────
