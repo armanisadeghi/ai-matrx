@@ -323,18 +323,9 @@ export function ModelSettings({
       setEnabledSettings(new Set(enabledSettings).add(key));
     }
 
-    // response_format: convert string enum values to dict format
-    // "text" -> undefined (default, omit), "json_object" -> { type: "json_object" }
+    // response_format: store the user's pick verbatim — including "text".
+    // Canonical { type: <value> } shape; never drop a selection.
     if (key === "response_format" && typeof value === "string") {
-      if (value === "text" || value === "") {
-        const {
-          response_format: _removed,
-          output_format: _legacy,
-          ...rest
-        } = settings;
-        onSettingsChange(rest as PromptSettings);
-        return;
-      }
       onSettingsChange({
         ...settings,
         response_format: { type: value } as any,
@@ -342,32 +333,13 @@ export function ModelSettings({
       return;
     }
 
-    // Special handling for include_thoughts
-    if (key === "include_thoughts") {
-      if (value === false) {
-        onSettingsChange({
-          ...settings,
-          [key]: value,
-          thinking_budget: -1,
-        });
-      } else if (value === true && settings.thinking_budget === -1) {
-        onSettingsChange({
-          ...settings,
-          [key]: value,
-          thinking_budget: normalizedControls?.thinking_budget?.default ?? 1024,
-        });
-      } else {
-        onSettingsChange({
-          ...settings,
-          [key]: value,
-        });
-      }
-    } else {
-      onSettingsChange({
-        ...settings,
-        [key]: value,
-      });
-    }
+    // No key here silently rewrites a *different* setting. Cross-field
+    // couplings (e.g. include_thoughts ↔ thinking_budget) surface as caution
+    // issues with a one-click fix — never auto-applied.
+    onSettingsChange({
+      ...settings,
+      [key]: value,
+    });
   };
 
   const handleToggleSetting = (key: keyof PromptSettings, enabled: boolean) => {
@@ -400,13 +372,10 @@ export function ModelSettings({
             defaultValue = [];
           }
         }
-        // response_format: convert string enum default to dict
+        // response_format: store the canonical dict — keep "text" too.
         if (key === "response_format" && typeof defaultValue === "string") {
-          if (defaultValue === "text" || defaultValue === "") {
-            defaultValue = undefined;
-          } else {
-            defaultValue = { type: defaultValue };
-          }
+          defaultValue =
+            defaultValue === "" ? undefined : { type: defaultValue };
         }
         if (defaultValue !== undefined) {
           onSettingsChange({ ...settings, [key]: defaultValue });

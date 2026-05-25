@@ -1034,9 +1034,18 @@ function TabBar({ active, onChange, issueCount }: TabBarProps) {
 
 interface AgentSettingsCoreProps {
   agentId: string;
+  /**
+   * Reports whether the currently-open JSON editor (Raw Editable / Output
+   * Schema) has unapplied edits — buffer changes that will be lost unless the
+   * user clicks Apply. Lets the host (modal) warn before closing.
+   */
+  onUnappliedEditsChange?: (dirty: boolean) => void;
 }
 
-export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
+export function AgentSettingsCore({
+  agentId,
+  onUnappliedEditsChange,
+}: AgentSettingsCoreProps) {
   const dispatch = useAppDispatch();
 
   const settings = useAppSelector((state) =>
@@ -1064,6 +1073,17 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
   }, [modelId, models]);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("settings");
+
+  // Unapplied-edits tracking for the JSON editors (Raw Editable / Output
+  // Schema). Only one editor is mounted at a time; switching tabs discards any
+  // pending buffer, so reset on tab change and report the state to the host.
+  const [editorDirty, setEditorDirty] = useState(false);
+  useEffect(() => {
+    setEditorDirty(false);
+  }, [activeTab]);
+  useEffect(() => {
+    onUnappliedEditsChange?.(editorDirty);
+  }, [editorDirty, onUnappliedEditsChange]);
 
   // Track enabled settings (keys with non-null values)
   const [enabledSettings, setEnabledSettings] = useState<Set<string>>(() => {
@@ -1195,13 +1215,9 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     }
 
     if (key === "response_format" && typeof value === "string") {
-      if (value === "text" || value === "") {
-        const { response_format: _r, ...rest } = currentSettings;
-        dispatch(
-          setAgentSettings({ id: agentId, settings: rest as LLMParams }),
-        );
-        return;
-      }
+      // Store EXACTLY what the user picked — including "text". Never drop a
+      // selection on the user's behalf. The canonical { type: <value> } shape
+      // matches how json_schema / json_object are stored.
       dispatch(
         setAgentSettings({
           id: agentId,
@@ -1211,42 +1227,9 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
       return;
     }
 
-    if (key === "include_thoughts") {
-      if (value === false) {
-        dispatch(
-          setAgentSettings({
-            id: agentId,
-            settings: {
-              ...currentSettings,
-              include_thoughts: false,
-              thinking_budget: -1,
-            },
-          }),
-        );
-      } else if (value === true && currentSettings.thinking_budget === -1) {
-        dispatch(
-          setAgentSettings({
-            id: agentId,
-            settings: {
-              ...currentSettings,
-              include_thoughts: true,
-              thinking_budget:
-                (normalizedControls?.thinking_budget?.default as number) ??
-                1024,
-            },
-          }),
-        );
-      } else {
-        dispatch(
-          setAgentSettings({
-            id: agentId,
-            settings: { ...currentSettings, [key]: value },
-          }),
-        );
-      }
-      return;
-    }
-
+    // No key here silently rewrites a *different* setting. Cross-field
+    // couplings (e.g. include_thoughts ↔ thinking_budget) surface as caution
+    // issues with a one-click fix — they are never auto-applied.
     dispatch(
       setAgentSettings({
         id: agentId,
@@ -1289,10 +1272,9 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
           }
         }
         if (key === "response_format" && typeof defaultValue === "string") {
+          // Keep "text" too — store the canonical dict, never drop it.
           defaultValue =
-            defaultValue === "text" || defaultValue === ""
-              ? undefined
-              : { type: defaultValue };
+            defaultValue === "" ? undefined : { type: defaultValue };
         }
         if (defaultValue !== undefined) {
           dispatch(
@@ -1981,6 +1963,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
                 setActiveTab("settings");
               }}
               onReset={() => setJsonText(buildFullSettingsJson())}
+              onDirtyChange={setEditorDirty}
               minHeight={360}
             />
           </div>
@@ -1992,7 +1975,9 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
         )}
 
         {/* ── OUTPUT SCHEMA TAB ──────────────────────────────────────────── */}
-        {activeTab === "output-schema" && <OutputSchemaTab agentId={agentId} />}
+        {activeTab === "output-schema" && (
+          <OutputSchemaTab agentId={agentId} onDirtyChange={setEditorDirty} />
+        )}
       </div>
 
       {/* Model-change reconciliation dialog */}

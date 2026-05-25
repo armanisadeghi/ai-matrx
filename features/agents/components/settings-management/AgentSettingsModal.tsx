@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,6 +76,10 @@ export function AgentSettingsModal({
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const discardedRef = useRef(false);
+  // Unapplied edits in a JSON editor (Raw Editable / Output Schema) that would
+  // be lost on close unless the user clicks Apply. Reported up by the core.
+  const [hasUnappliedEdits, setHasUnappliedEdits] = useState(false);
+  const [showUnappliedConfirm, setShowUnappliedConfirm] = useState(false);
 
   useEffect(() => {
     if (isControlled && controlledOpen && !snapshot) {
@@ -86,6 +90,8 @@ export function AgentSettingsModal({
     }
     if (isControlled && !controlledOpen) {
       setSnapshot(null);
+      setHasUnappliedEdits(false);
+      setShowUnappliedConfirm(false);
     }
   }, [isControlled, controlledOpen, currentSettings, currentModelId, snapshot]);
 
@@ -94,6 +100,8 @@ export function AgentSettingsModal({
       settings: currentSettings ?? {},
       modelId: currentModelId ?? null,
     });
+    setHasUnappliedEdits(false);
+    setShowUnappliedConfirm(false);
     setOpen(true);
   };
 
@@ -139,11 +147,25 @@ export function AgentSettingsModal({
     revertToSnapshot();
     setShowCancelConfirm(false);
     setSnapshot(null);
+    setHasUnappliedEdits(false);
+    setShowUnappliedConfirm(false);
+  };
+
+  // Close the panel keeping applied changes (unapplied editor buffers are
+  // discarded — that's what the confirm warns about).
+  const closeClean = () => {
+    setSnapshot(null);
+    setHasUnappliedEdits(false);
+    setShowUnappliedConfirm(false);
+    setOpen(false);
   };
 
   const handleDone = () => {
-    setSnapshot(null);
-    setOpen(false);
+    if (hasUnappliedEdits) {
+      setShowUnappliedConfirm(true);
+      return;
+    }
+    closeClean();
   };
 
   const trigger = isControlled ? null : (
@@ -158,7 +180,34 @@ export function AgentSettingsModal({
     </Button>
   );
 
-  const footer = (
+  const footer = showUnappliedConfirm ? (
+    <div className="flex items-center justify-between px-4 py-1.5 border-t border-border bg-red-50 dark:bg-red-950/30 flex-shrink-0 gap-2">
+      <span className="flex items-center gap-1.5 min-w-0 text-xs text-red-700 dark:text-red-300">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">
+          You have unapplied editor changes — they&apos;ll be lost.
+        </span>
+      </span>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowUnappliedConfirm(false)}
+          className="h-7 text-xs"
+        >
+          Keep editing
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={closeClean}
+          className="h-7 text-xs"
+        >
+          Discard &amp; close
+        </Button>
+      </div>
+    </div>
+  ) : (
     <div className="flex items-center justify-between px-4 py-1.5 border-t border-border bg-gray-50 dark:bg-gray-900/50 flex-shrink-0 gap-2">
       <Button
         variant="outline"
@@ -168,9 +217,22 @@ export function AgentSettingsModal({
       >
         Cancel
       </Button>
-      <Button size="sm" onClick={handleDone} className="h-7 text-xs">
-        Done
-      </Button>
+      <div className="flex items-center gap-2">
+        {hasUnappliedEdits && (
+          <span className="flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-3 w-3" />
+            Unapplied edits
+          </span>
+        )}
+        <Button
+          size="sm"
+          variant={hasUnappliedEdits ? "destructive" : "default"}
+          onClick={handleDone}
+          className="h-7 text-xs"
+        >
+          Done
+        </Button>
+      </div>
     </div>
   );
 
@@ -192,7 +254,10 @@ export function AgentSettingsModal({
               </DrawerTitle>
             </DrawerHeader>
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden pb-2">
-              <AgentSettingsCore agentId={agentId} />
+              <AgentSettingsCore
+              agentId={agentId}
+              onUnappliedEditsChange={setHasUnappliedEdits}
+            />
             </div>
             {footer}
           </DrawerContent>
@@ -251,7 +316,10 @@ export function AgentSettingsModal({
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 flex flex-col px-3 py-1 overflow-hidden">
-            <AgentSettingsCore agentId={agentId} />
+            <AgentSettingsCore
+              agentId={agentId}
+              onUnappliedEditsChange={setHasUnappliedEdits}
+            />
           </div>
           {footer}
         </DialogContent>

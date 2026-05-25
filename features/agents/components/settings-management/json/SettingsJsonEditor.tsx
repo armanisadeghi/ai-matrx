@@ -33,6 +33,13 @@ interface SettingsJsonEditorProps {
   onApply: (parsed: Record<string, unknown>) => void;
   /** Called when the user clicks Reset. Editor re-syncs from initialValue. */
   onReset?: () => void;
+  /**
+   * Called whenever the buffer's "unapplied edits" state changes. True when the
+   * text differs from the last applied/synced value — i.e. the user has typed
+   * changes they haven't Applied yet (which would be lost on close). Lets a
+   * parent warn before discarding.
+   */
+  onDirtyChange?: (dirty: boolean) => void;
   placeholder?: string;
   /** Min textarea height in pixels. Ignored when `fillHeight` is set. */
   minHeight?: number;
@@ -90,6 +97,7 @@ export function SettingsJsonEditor({
   onParse,
   onApply,
   onReset,
+  onDirtyChange,
   placeholder,
   minHeight = 240,
   showFooter = true,
@@ -127,6 +135,14 @@ export function SettingsJsonEditor({
     };
   }, [text, onParse]);
 
+  // Surface "unapplied edits" to the caller: the buffer differs from the last
+  // applied/synced baseline. The baseline (lastInitialRef) only changes in
+  // paths that also setText (apply / reset / re-sync), so keying on `text` is
+  // sufficient. Read the ref inside the effect — never during render.
+  useEffect(() => {
+    onDirtyChange?.(text !== lastInitialRef.current);
+  }, [text, onDirtyChange]);
+
   const handleBlur = useCallback(() => {
     // Pretty-print on blur if the buffer parses cleanly. Use native JSON.stringify
     // on the parsed object so output is canonical JSON (not JSON5).
@@ -140,7 +156,15 @@ export function SettingsJsonEditor({
   const handleApply = useCallback(() => {
     const result = parseJson5(text);
     setParseResult(result);
-    if (result.ok && result.parsed) onApply(result.parsed);
+    if (result.ok && result.parsed) {
+      // Canonicalize the buffer and adopt it as the new baseline so the editor
+      // immediately reads as "clean" (not dirty) after a successful apply, even
+      // if the parent doesn't push a fresh initialValue back down.
+      const formatted = JSON.stringify(result.parsed, null, 2);
+      setText(formatted);
+      lastInitialRef.current = formatted;
+      onApply(result.parsed);
+    }
   }, [text, onApply]);
 
   const handleReset = useCallback(() => {

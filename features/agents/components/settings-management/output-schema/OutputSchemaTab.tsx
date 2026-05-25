@@ -48,9 +48,11 @@ const PLACEHOLDER = `Structured-output schema — saved to output_schema, applie
 
 interface OutputSchemaTabProps {
   agentId: string;
+  /** Forwarded to the editor so the modal can warn about unapplied edits. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export function OutputSchemaTab({ agentId }: OutputSchemaTabProps) {
+export function OutputSchemaTab({ agentId, onDirtyChange }: OutputSchemaTabProps) {
   const dispatch = useAppDispatch();
   const outputSchema = useAppSelector((state) =>
     selectAgentOutputSchema(state, agentId),
@@ -85,6 +87,7 @@ export function OutputSchemaTab({ agentId }: OutputSchemaTabProps) {
         placeholder={PLACEHOLDER}
         onParse={setParsed}
         onApply={handleApply}
+        onDirtyChange={onDirtyChange}
         fillHeight
       />
 
