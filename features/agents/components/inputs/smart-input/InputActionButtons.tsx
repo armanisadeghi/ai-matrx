@@ -168,9 +168,9 @@ export function InputActionButtons({
           />
         )}
 
-        {/* Consolidated run controls — Tools (add tools to this run), Sandbox
-            binding, and run Settings (disable injection, Surface Simulator, …)
-            in one tabbed popover. Replaces the standalone sandbox icon. */}
+        {/* Consolidated run controls — Model (per-conversation model override),
+            Tools (add tools to this run), Sandbox binding, and run Settings
+            (disable injection, Surface Simulator, …) in one tabbed popover. */}
         <InputControlsMenu conversationId={conversationId} />
 
         {isAdmin && isDebugMode && (

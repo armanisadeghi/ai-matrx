@@ -4,6 +4,8 @@
  * InputControlsMenu — the single consolidated run-controls icon in the Smart
  * Input. One button opens a tabbed popover:
  *
+ *   - Model    — per-conversation model override (RunModelPicker). Only shown
+ *                for instances that own an override layer (not manual runs).
  *   - Tools    — add registry tools to THIS run (RunToolPicker)
  *   - Sandbox  — bind an agent sandbox (SandboxPanel)
  *   - Settings — run settings: disable tool injection, Surface Simulator,
@@ -18,7 +20,7 @@
  */
 
 import { useState, type ComponentType } from "react";
-import { SlidersHorizontal, Wrench, Box, Settings2 } from "lucide-react";
+import { SlidersHorizontal, Wrench, Box, Settings2, Cpu } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   Popover,
@@ -29,12 +31,20 @@ import { cn } from "@/lib/utils";
 import { RunToolPicker } from "./RunToolPicker";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
 import { RunSettingsEditor } from "@/features/agents/components/run-controls/RunSettingsEditor";
+import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 
-type Tab = "tools" | "sandbox" | "settings";
+type Tab = "model" | "tools" | "sandbox" | "settings";
 
-const TABS: { id: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
+const MODEL_TAB: { id: Tab; label: string; icon: ComponentType<{ className?: string }> } = {
+  id: "model",
+  label: "Model",
+  icon: Cpu,
+};
+
+const BASE_TABS: { id: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { id: "tools", label: "Tools", icon: Wrench },
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "settings", label: "Settings", icon: Settings2 },
@@ -45,9 +55,6 @@ export function InputControlsMenu({
 }: {
   conversationId: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("tools");
-
   const settings = useAppSelector(selectBuilderAdvancedSettings(conversationId));
   const sandboxOverride = useAppSelector(
     selectConversationSandboxOverride(conversationId),
@@ -55,12 +62,30 @@ export function InputControlsMenu({
   const userSandbox = useAppSelector(
     (s) => s.userPreferences.coding.activeAgentSandbox,
   );
+  const overrideState = useAppSelector(
+    selectInstanceOverrideState(conversationId),
+  );
+
+  // The Model tab (and per-run model/settings overrides) only applies to
+  // instances that own an override layer — manual/builder-test runs read the
+  // agent live and have no override state, so we hide it there.
+  const hasOverrideLayer = !!overrideState;
+  const hasModelOverride = !!(
+    overrideState?.overrides && "model" in overrideState.overrides
+  );
+  const tabs = hasOverrideLayer ? [MODEL_TAB, ...BASE_TABS] : BASE_TABS;
+
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>(hasOverrideLayer ? "model" : "tools");
+  // Guard: if the model tab vanishes (manual instance) fall back to tools.
+  const activeTab: Tab = tab === "model" && !hasOverrideLayer ? "tools" : tab;
 
   const addedCount = settings?.addedTools?.length ?? 0;
   const hasSandbox = !!(sandboxOverride ?? userSandbox);
   const active =
     addedCount > 0 ||
     hasSandbox ||
+    hasModelOverride ||
     !!settings?.disableToolInjection ||
     !!settings?.surfaceOverride;
 
@@ -69,7 +94,7 @@ export function InputControlsMenu({
       <PopoverTrigger asChild>
         <button
           type="button"
-          title="Tools, sandbox & run settings"
+          title="Model, tools, sandbox & run settings"
           className={cn(
             "relative h-8 w-8 flex items-center justify-center rounded-full transition-colors",
             active
@@ -88,14 +113,18 @@ export function InputControlsMenu({
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex border-b border-border">
-          {TABS.map((t) => {
+        <div role="tablist" aria-label="Run controls" className="flex border-b border-border">
+          {tabs.map((t) => {
             const Icon = t.icon;
-            const on = tab === t.id;
+            const on = activeTab === t.id;
             return (
               <button
                 key={t.id}
                 type="button"
+                role="tab"
+                id={`runctl-tab-${t.id}-${conversationId}`}
+                aria-selected={on}
+                aria-controls={`runctl-panel-${conversationId}`}
                 onClick={() => setTab(t.id)}
                 className={cn(
                   "-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2 text-xs font-medium transition-colors",
@@ -111,18 +140,34 @@ export function InputControlsMenu({
                     {addedCount}
                   </span>
                 )}
+                {t.id === "model" && hasModelOverride && (
+                  <span
+                    className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary"
+                    aria-label="overridden"
+                  />
+                )}
               </button>
             );
           })}
         </div>
-        <div className="h-80">
-          {tab === "tools" && <RunToolPicker conversationId={conversationId} />}
-          {tab === "sandbox" && (
+        <div
+          role="tabpanel"
+          id={`runctl-panel-${conversationId}`}
+          aria-labelledby={`runctl-tab-${activeTab}-${conversationId}`}
+          className="h-80"
+        >
+          {activeTab === "model" && (
+            <RunModelPicker conversationId={conversationId} />
+          )}
+          {activeTab === "tools" && (
+            <RunToolPicker conversationId={conversationId} />
+          )}
+          {activeTab === "sandbox" && (
             <div className="h-full overflow-y-auto">
               <SandboxPanel conversationId={conversationId} />
             </div>
           )}
-          {tab === "settings" && (
+          {activeTab === "settings" && (
             <div className="h-full overflow-y-auto px-3 py-2">
               <RunSettingsEditor conversationId={conversationId} />
             </div>
