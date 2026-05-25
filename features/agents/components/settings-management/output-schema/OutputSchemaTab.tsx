@@ -29,7 +29,11 @@ import {
   type OutputSchemaValidation,
 } from "./validateOutputSchema";
 
-const STARTER_TEMPLATE = `{
+// Shown only when the editor is empty — carries the "what is this" context so
+// it doesn't take permanent vertical space, plus a starter shape.
+const PLACEHOLDER = `Structured-output schema — saved to output_schema, applied when the model's Response Format is json_schema (set that on the Settings tab yourself). Editing here changes only the schema.
+
+{
   "name": "response",
   "strict": true,
   "schema": {
@@ -75,25 +79,17 @@ export function OutputSchemaTab({ agentId }: OutputSchemaTabProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3 pb-2">
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Structured-output schema for this agent (saved to{" "}
-        <code className="font-mono">output_schema</code>). It takes effect when
-        the model&apos;s Response Format is set to{" "}
-        <code className="font-mono">json_schema</code>. Editing here changes only
-        the schema — set the response format on the Settings tab yourself.
-      </p>
-
+    <div className="flex flex-col h-full gap-2">
       <SettingsJsonEditor
         initialValue={initialText}
-        placeholder={STARTER_TEMPLATE}
+        placeholder={PLACEHOLDER}
         onParse={setParsed}
         onApply={handleApply}
-        minHeight={260}
+        fillHeight
       />
 
       {/* Validation tool — advisory only, never mutates or auto-applies. */}
-      <div className="flex items-center gap-2 border-t border-border pt-2">
+      <div className="flex items-center gap-2 border-t border-border pt-2 flex-shrink-0">
         <Button
           type="button"
           variant="outline"
@@ -110,7 +106,11 @@ export function OutputSchemaTab({ agentId }: OutputSchemaTabProps) {
         </span>
       </div>
 
-      {report && <ValidationReport report={report} />}
+      {report && (
+        <div className="flex-shrink-0 max-h-44 overflow-y-auto">
+          <ValidationReport report={report} />
+        </div>
+      )}
     </div>
   );
 }

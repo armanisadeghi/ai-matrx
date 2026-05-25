@@ -34,10 +34,16 @@ interface SettingsJsonEditorProps {
   /** Called when the user clicks Reset. Editor re-syncs from initialValue. */
   onReset?: () => void;
   placeholder?: string;
-  /** Min textarea height in pixels. */
+  /** Min textarea height in pixels. Ignored when `fillHeight` is set. */
   minHeight?: number;
   /** Show the Apply/Reset footer. Default true. */
   showFooter?: boolean;
+  /**
+   * When true, the editor grows to fill its flex parent instead of using a
+   * fixed minHeight — the textarea takes all available vertical space. The
+   * parent must be a flex column with a bounded height.
+   */
+  fillHeight?: boolean;
 }
 
 interface ParseResult {
@@ -87,6 +93,7 @@ export function SettingsJsonEditor({
   placeholder,
   minHeight = 240,
   showFooter = true,
+  fillHeight = false,
 }: SettingsJsonEditorProps) {
   const [text, setText] = useState(initialValue);
   const [parseResult, setParseResult] = useState<ParseResult>({
@@ -166,22 +173,36 @@ export function SettingsJsonEditor({
     [text, handleApply],
   );
 
+  // The shared Textarea wraps the <textarea> in a (block) focus-ring div, so a
+  // bare flex-1 on the textarea won't fill. Passing `h-full` makes the wrapper
+  // auto-stretch (see textarea.tsx); we nest it in its own flex-1 box so it
+  // fills the space ABOVE the footer rather than overlapping it.
+  const textareaEl = (
+    <Textarea
+      ref={textareaRef}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      placeholder={
+        placeholder ??
+        '{"temperature": 0.7, "max_output_tokens": 1024} — trailing commas and // comments OK'
+      }
+      className={`font-mono text-xs leading-5 ${fillHeight ? "h-full" : "resize-y"}`}
+      style={{ minHeight: fillHeight ? undefined : minHeight, fontSize: "14px" }}
+      spellCheck={false}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-2">
-      <Textarea
-        ref={textareaRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        placeholder={
-          placeholder ??
-          '{"temperature": 0.7, "max_output_tokens": 1024} — trailing commas and // comments OK'
-        }
-        className="font-mono text-xs leading-5 resize-y"
-        style={{ minHeight, fontSize: "14px" }}
-        spellCheck={false}
-      />
+    <div
+      className={`flex flex-col gap-2${fillHeight ? " flex-1 min-h-0" : ""}`}
+    >
+      {fillHeight ? (
+        <div className="flex-1 min-h-0">{textareaEl}</div>
+      ) : (
+        textareaEl
+      )}
 
       {!parseResult.ok && parseResult.error && (
         <div className="flex items-start gap-2 px-3 py-2 text-xs bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-300">

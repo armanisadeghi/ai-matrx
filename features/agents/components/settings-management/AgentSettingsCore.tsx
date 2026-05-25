@@ -45,6 +45,7 @@ import {
   selectAgentSettings,
   selectAgentModelId,
   selectAgentTools,
+  selectAgentOutputSchema,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   setAgentSettings,
@@ -72,6 +73,7 @@ import {
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
+import { validateOutputSchema } from "./output-schema/validateOutputSchema";
 import {
   buildSettingsRows,
   type SettingsRow,
@@ -1045,6 +1047,9 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     selectAgentTools(state, agentId),
   );
   const models = useAppSelector(selectAllModels);
+  const outputSchema = useAppSelector((state) =>
+    selectAgentOutputSchema(state, agentId),
+  );
 
   const { normalizedControls, error } = useModelControls(models, modelId ?? "");
 
@@ -1785,6 +1790,20 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     currentSettings as Record<string, unknown>,
   );
 
+  // Gentle (non-blocking) reminder: response_format is json_schema but no
+  // usable output schema exists yet. Surfaces a nudge on the Settings tab that
+  // links to the Output Schema tab. Not enforced — just a hint.
+  const responseFormat = (currentSettings as Record<string, unknown>)
+    .response_format;
+  const wantsJsonSchema =
+    responseFormat === "json_schema" ||
+    (typeof responseFormat === "object" &&
+      responseFormat !== null &&
+      (responseFormat as Record<string, unknown>).type === "json_schema");
+  const outputSchemaUsable =
+    outputSchema != null && validateOutputSchema(outputSchema).ok;
+  const showSchemaReminder = wantsJsonSchema && !outputSchemaUsable;
+
   // ── Early returns ─────────────────────────────────────────────────────────
   if (error) {
     return (
@@ -1810,7 +1829,7 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
 
       {/* Tab content — fills remaining height */}
       <div
-        className={`flex-1 min-h-0 ${activeTab === "raw-edit" ? "flex flex-col" : "overflow-y-auto"} pt-3`}
+        className={`flex-1 min-h-0 ${activeTab === "raw-edit" || activeTab === "output-schema" ? "flex flex-col" : "overflow-y-auto"} pt-3`}
       >
         {/* ── SETTINGS TAB ───────────────────────────────────────────────── */}
         {(activeTab === "settings" || noControls) && (
@@ -1848,6 +1867,28 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
                 fixableCount={fixableIssues.length}
                 unknownCount={unknownIssues.length}
               />
+            )}
+
+            {/* Gentle, non-blocking reminder: json_schema selected but no
+                usable output schema yet. Whole banner links to the tab. */}
+            {!noControls && showSchemaReminder && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("output-schema")}
+                className="flex w-full items-start gap-2 rounded-md border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 px-3 py-2 text-left text-xs text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/50 transition-colors"
+              >
+                <Braces className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span className="flex-1 leading-snug">
+                  Response format is{" "}
+                  <code className="font-mono">json_schema</code>, but{" "}
+                  {outputSchema == null
+                    ? "no output schema is set"
+                    : "the output schema has issues"}
+                  . Open the{" "}
+                  <span className="font-semibold underline">Output Schema</span>{" "}
+                  tab to add one.
+                </span>
+              </button>
             )}
 
             {/* Every catalogue setting renders for every model. The model's
