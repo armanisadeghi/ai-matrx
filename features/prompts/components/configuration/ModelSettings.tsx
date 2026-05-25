@@ -785,9 +785,10 @@ export function ModelSettings({
               </div>
             )}
 
-            {/* All catalogue settings — always shown, never filtered by the
-                model. The audio group and `tools` are handled by the dedicated
-                sections below, so they're excluded here. */}
+            {/* Supported settings (buildSettingsRows returns only the keys this
+                model declares). Audio and `tools` are handled by the dedicated
+                sections below, so they're excluded here. Set-but-unsupported
+                keys surface via the Unrecognized Settings warning + JSON editor. */}
             {settingGroups
               .filter((group) => group.id !== "audio")
               .map((group) => {
@@ -816,9 +817,9 @@ export function ModelSettings({
                 );
               })}
 
-            {/* TTS / Audio Settings — always shown so audio settings are never
-                hidden based on the selected model. */}
-            {
+            {/* TTS Settings — shown only when the model supports them. */}
+            {(normalizedControls.tts_voice ||
+              normalizedControls.audio_format) && (
               <div className="border-t pt-2.5 mt-2.5">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Volume2 className="w-3.5 h-3.5 text-primary" />
@@ -826,19 +827,21 @@ export function ModelSettings({
                 </div>
 
                 {/* tts_voice — single speaker */}
-                {!isMultiSpeakerActive &&
+                {normalizedControls.tts_voice &&
+                  !isMultiSpeakerActive &&
                   renderControl(
                     "tts_voice" as keyof PromptSettings,
                     "Voice",
-                    normalizedControls.tts_voice ?? null,
+                    normalizedControls.tts_voice,
                   )}
 
                 {/* audio_format */}
-                {renderControl(
-                  "audio_format" as keyof PromptSettings,
-                  "Audio Format",
-                  normalizedControls.audio_format ?? null,
-                )}
+                {normalizedControls.audio_format &&
+                  renderControl(
+                    "audio_format" as keyof PromptSettings,
+                    "Audio Format",
+                    normalizedControls.audio_format,
+                  )}
 
                 {/* Multi-speaker (Google only) */}
                 {normalizedControls.multi_speaker && (
@@ -925,11 +928,10 @@ export function ModelSettings({
                   </div>
                 )}
               </div>
-            }
+            )}
 
-            {/* Tools Section — shown whenever tools are available; no longer
-                hidden based on whether the model declares a tools control. */}
-            {availableTools.length > 0 && (
+            {/* Tools Section — shown only when the model supports tools. */}
+            {normalizedControls.tools && availableTools.length > 0 && (
               <div className="border-t pt-2.5 mt-2.5">
                 <div className="flex items-center gap-3 mb-2">
                   <div

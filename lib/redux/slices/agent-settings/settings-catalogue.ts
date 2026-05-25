@@ -1,26 +1,30 @@
 /**
- * Model Settings Catalogue — the single source of truth for WHICH settings the
- * Model Settings UI renders, and the one chokepoint that guarantees they are
- * ALWAYS rendered.
+ * Model Settings Catalogue — the single source of truth for the STANDARD
+ * settings list, and the one chokepoint that decides which keys it contains.
  *
- * ── The invariant this module exists to protect ──────────────────────────────
- *   Every setting in the catalogue is ALWAYS shown on the Settings tab,
- *   regardless of whether the selected model declares a control for it.
- *   A model's `controls` schema only DECORATES a row (supported vs. caution) —
- *   it must NEVER decide whether the row renders.
+ * ── The model (two distinct surfaces) ────────────────────────────────────────
+ *   1. STANDARD list  — ONLY the keys the selected model explicitly declares in
+ *      its `controls` config (i.e. the parameters this model actually supports).
+ *      `buildSettingsRows()` returns exactly these, grouped + ordered. Catalogue
+ *      keys the model does not declare are NOT shown here.
+ *   2. CAUTION surface — settings the agent has SET that the model does NOT
+ *      support. These are never hidden: they are flagged as "not valid for this
+ *      model" and made repairable by the validation layer (the IssueTable, fed
+ *      by the `unsupported_by_model` rule). They do NOT belong in the standard
+ *      list — that is exactly the "showing all possible keys" bug.
  *
- * Historically each settings panel kept its own `textModelSettings` /
- * `booleanSettings` / `imageVideoSettings` arrays AND filtered them by
- * `getControl(key)` before rendering. That filter is what hid most settings
- * when a model declared a sparse `controls` object, and because the arrays +
- * filter were copy-pasted into three components, fixing one never fixed the
- * others. This module replaces all of that: `buildSettingsRows()` returns
- * every catalogue entry (plus any extra valued / model-declared key) and has
- * no way to drop a row. Consumers map over its output — they cannot filter.
+ * The catalogue exists so the standard list's labels, grouping and order live
+ * in ONE place (previously copy-pasted as `textModelSettings` /
+ * `booleanSettings` / ... into three components, each filtering by
+ * `getControl(key)` inline — which drifted and regressed). Components map over
+ * `buildSettingsRows()`; they must not filter by model themselves (ESLint
+ * enforces). The original recurring bug — set values silently dropped when a
+ * model didn't support them — is fixed by the CAUTION surface, not by dumping
+ * every key into the standard list.
  *
- * Guardrail: `settings-catalogue.test.ts` asserts that an empty/sparse control
- * set still yields one row per catalogue entry. If anyone reintroduces
- * filtering here, that test fails.
+ * Guardrail: `settings-catalogue.test.ts` asserts the standard list contains
+ * ONLY supported keys (never the full catalogue), and `unsupported-by-model.
+ * test.ts` asserts set-but-unsupported keys surface in the caution layer.
  */
 
 import type { ControlDefinition } from "./types";
@@ -172,10 +176,10 @@ export interface SettingsRow {
   key: string;
   label: string;
   group: SettingsGroupId;
-  /** The model's control definition for this key, or null when the model
-   *  declares none. NEVER used to decide whether the row renders. */
+  /** The model's control definition for this key. Standard rows are always
+   *  supported, so this is present; typed nullable for consumer convenience. */
   control: ControlDefinition | null;
-  /** True when the selected model declares a control for this key. */
+  /** Always true for rows returned by buildSettingsRows (standard = supported). */
   supported: boolean;
   /** True when the current settings hold a non-null value for this key. */
   hasValue: boolean;
@@ -231,15 +235,16 @@ export function humanizeSettingKey(key: string): string {
 }
 
 /**
- * Build the full, ordered list of render groups for the Settings tab.
+ * Build the STANDARD settings list for the selected model.
  *
- * GUARANTEE: every catalogue entry is present in the output exactly once,
- * regardless of `controls`. `controls` only sets each row's `supported` flag
- * and attaches its `control`. There is no code path that omits a catalogue row.
+ * CONTRACT: returns ONLY keys the model declares a control for (supported).
+ * Catalogue keys the model does not declare are omitted — they are not "shown"
+ * in the standard list. Set-but-unsupported keys are NOT returned here either;
+ * the caution layer (validation IssueTable) surfaces and repairs those.
  *
- * Additionally surfaces an "Other" group for any key that has a value or is
- * declared by the model but is not already in the catalogue — so a value can
- * never be hidden, and brand-new model controls appear without a code change.
+ * The catch-all "Other" group carries supported keys the model declares that
+ * the catalogue doesn't name yet — so a brand-new model control still appears
+ * without a code change. Empty groups are returned (consumers skip them).
  */
 export function buildSettingsRows(
   controls: ControlsLike,
@@ -248,48 +253,43 @@ export function buildSettingsRows(
   const groups: RenderGroup[] = SETTINGS_CATALOGUE.map((group) => ({
     id: group.id,
     label: group.label,
-    rows: group.entries.map((entry) => {
+    rows: group.entries.flatMap((entry) => {
       const control = lookupControl(controls, entry.key);
-      return {
-        key: entry.key,
-        label: entry.label,
-        group: group.id,
-        control,
-        supported: control !== null,
-        hasValue: hasMeaningfulValue(settings, entry.key),
-      };
+      // Standard list = supported keys only. Unsupported keys never enter it;
+      // if the agent has set one, the caution/validation layer surfaces it.
+      if (!control) return [];
+      return [
+        {
+          key: entry.key,
+          label: entry.label,
+          group: group.id,
+          control,
+          supported: true,
+          hasValue: hasMeaningfulValue(settings, entry.key),
+        },
+      ];
     }),
   }));
 
-  // ── Catch-all: keys with a value or a model control that the catalogue
-  //    doesn't already cover. Guarantees no valued setting is ever hidden. ──
-  const extraKeys = new Set<string>();
-
-  if (settings) {
-    for (const key of Object.keys(settings)) {
-      if (CATALOGUE_KEYS.has(key) || CATCHALL_EXCLUDED.has(key)) continue;
-      if (hasMeaningfulValue(settings, key)) extraKeys.add(key);
-    }
-  }
+  // ── Catch-all: keys the model DECLARES (supported) that the catalogue
+  //    doesn't name. Unsupported keys never appear here. ──
+  const declaredExtra: string[] = [];
   if (controls) {
     for (const key of Object.keys(controls as Record<string, unknown>)) {
       if (CATALOGUE_KEYS.has(key) || CATCHALL_EXCLUDED.has(key)) continue;
-      if (lookupControl(controls, key)) extraKeys.add(key);
+      if (lookupControl(controls, key)) declaredExtra.push(key);
     }
   }
 
-  if (extraKeys.size > 0) {
-    const rows: SettingsRow[] = [...extraKeys].sort().map((key) => {
-      const control = lookupControl(controls, key);
-      return {
-        key,
-        label: humanizeSettingKey(key),
-        group: "other" as const,
-        control,
-        supported: control !== null,
-        hasValue: hasMeaningfulValue(settings, key),
-      };
-    });
+  if (declaredExtra.length > 0) {
+    const rows: SettingsRow[] = declaredExtra.sort().map((key) => ({
+      key,
+      label: humanizeSettingKey(key),
+      group: "other" as const,
+      control: lookupControl(controls, key),
+      supported: true,
+      hasValue: hasMeaningfulValue(settings, key),
+    }));
     groups.push({ id: "other", label: "Other Settings", rows });
   }
 

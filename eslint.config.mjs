@@ -442,16 +442,18 @@ export default [
         },
     },
     {
-        // ─── Model Settings visibility invariant ──────────────────────────
-        // Every setting must ALWAYS render on the settings panels; a model's
-        // `controls` only DECORATE a row (supported vs. caution), never decide
-        // whether it shows. Filtering the settings list by getControl()/
-        // controls[key]/normalizedControls[key] is the recurring "hidden
-        // settings" bug (settings vanished when a model declared a sparse
-        // controls object). Render the full catalogue via buildSettingsRows()
-        // (lib/redux/slices/agent-settings/settings-catalogue.ts) and branch on
-        // the row's `supported` flag instead. This override re-includes the
-        // global syntax bans (flat-config replaces, not merges, per rule).
+        // ─── Model Settings: one place decides the standard list ───────────
+        // The STANDARD settings list is selected in exactly ONE place —
+        // buildSettingsRows() (lib/redux/slices/agent-settings/
+        // settings-catalogue.ts), which returns the model's supported keys.
+        // Set-but-unsupported keys are surfaced separately by the validation /
+        // caution layer (the IssueTable). Components must NOT re-filter the
+        // settings list by model inline (getControl()/controls[key]/
+        // normalizedControls[key]) — that ad-hoc filtering is what drifted and
+        // regressed across the three panels (settings vanishing per model, then
+        // the inverse "all keys in the standard list" bug). Map over
+        // buildSettingsRows() instead. This override re-includes the global
+        // syntax bans (flat-config replaces, not merges, per rule).
         files: [
             'features/agents/components/settings-management/**/*.{ts,tsx}',
             'features/prompts/components/configuration/ModelSettings.tsx',
@@ -467,13 +469,13 @@ export default [
                     selector:
                         "CallExpression[callee.property.name=/^(filter|some)$/]:has(CallExpression[callee.name=/^getControl/])",
                     message:
-                        'Do not filter the settings list by model support (getControl). Every setting must always render — use buildSettingsRows() (settings-catalogue.ts) and the row\'s `supported` flag to DECORATE, never to drop. This is the recurring "hidden settings" bug.',
+                        'Do not select the settings list by model support (getControl) in a component. buildSettingsRows() (settings-catalogue.ts) is the ONE place that picks the standard (supported) keys; set-but-unsupported keys go to the caution layer. Map over buildSettingsRows() instead. Ad-hoc filtering here is the class of bug that kept regressing.',
                 },
                 {
                     selector:
                         "CallExpression[callee.property.name=/^(filter|some)$/]:has(MemberExpression[object.name=/^(controls|normalizedControls)$/][computed=true])",
                     message:
-                        'Do not filter the settings list by controls[key]/normalizedControls[key]. Every setting must always render — use buildSettingsRows() (settings-catalogue.ts) and the row\'s `supported` flag. This is the recurring "hidden settings" bug.',
+                        'Do not select the settings list by controls[key]/normalizedControls[key] in a component. buildSettingsRows() (settings-catalogue.ts) is the ONE place that picks the standard (supported) keys; set-but-unsupported keys go to the caution layer. Map over buildSettingsRows() instead. Ad-hoc filtering here is the class of bug that kept regressing.',
                 },
             ],
         },

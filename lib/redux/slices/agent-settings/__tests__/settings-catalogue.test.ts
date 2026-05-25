@@ -1,93 +1,79 @@
 /**
- * Guardrail test for the Model Settings visibility invariant.
+ * Guardrail test for the Model Settings STANDARD-list contract.
  *
- * THE INVARIANT: every catalogue setting renders for every model. The model's
- * controls only DECORATE a row (supported flag), never decide whether it shows.
+ * THE CONTRACT: buildSettingsRows returns ONLY the keys the selected model
+ * declares a control for (supported). It must NOT return the whole catalogue,
+ * and it must NOT return set-but-unsupported keys — those belong to the caution
+ * layer (see unsupported-by-model.test.ts), never the standard list.
  *
- * This is the structural lock that replaced the recurring "filter settings by
- * model support" bug. If anyone reintroduces filtering inside buildSettingsRows
- * (or drops a catalogue entry), these tests fail.
+ * This locks both failure modes: the original "settings filtered out per model"
+ * bug AND the later "showing all possible keys in the standard list" bug.
  */
 
 import {
-  SETTINGS_CATALOGUE,
   CATALOGUE_KEYS,
   buildSettingsRows,
 } from "../settings-catalogue";
-
-const TOTAL_CATALOGUE_ENTRIES = SETTINGS_CATALOGUE.reduce(
-  (n, g) => n + g.entries.length,
-  0,
-);
 
 const flatRows = (
   controls: Record<string, unknown> | null,
   settings: Record<string, unknown> | null,
 ) => buildSettingsRows(controls, settings).flatMap((g) => g.rows);
 
-describe("buildSettingsRows — visibility invariant", () => {
-  it("renders EVERY catalogue setting when the model declares NO controls", () => {
-    const rows = flatRows(null, {});
-    for (const key of CATALOGUE_KEYS) {
-      expect(rows.filter((r) => r.key === key)).toHaveLength(1);
-    }
-    expect(rows).toHaveLength(TOTAL_CATALOGUE_ENTRIES);
-    // Shown, but every one is flagged unsupported — never dropped.
+const num = (min: number, max: number) => ({ type: "number", min, max });
+const enumc = (...e: string[]) => ({ type: "enum", enum: e });
+
+describe("buildSettingsRows — standard list = supported only", () => {
+  it("returns NOTHING when the model declares no controls", () => {
+    expect(flatRows(null, {})).toHaveLength(0);
+    expect(
+      flatRows({ rawControls: {}, unmappedControls: {} }, { temperature: 1 }),
+    ).toHaveLength(0);
+  });
+
+  it("returns ONLY the keys the model declares (not the whole catalogue)", () => {
+    const controls = {
+      temperature: num(0, 2),
+      reasoning_effort: enumc("low", "high"),
+      rawControls: {},
+      unmappedControls: {},
+    };
+    const rows = flatRows(controls, {});
+    expect(rows.map((r) => r.key).sort()).toEqual([
+      "reasoning_effort",
+      "temperature",
+    ]);
+    // sanity: the catalogue is much larger than what's returned
+    expect(rows.length).toBeLessThan(CATALOGUE_KEYS.size);
+  });
+
+  it("every returned row is supported and carries its control", () => {
+    const rows = flatRows(
+      { temperature: num(0, 2), rawControls: {}, unmappedControls: {} },
+      {},
+    );
     for (const r of rows) {
-      expect(r.supported).toBe(false);
-      expect(r.control).toBeNull();
+      expect(r.supported).toBe(true);
+      expect(r.control).not.toBeNull();
     }
   });
 
-  it("renders the SAME number of rows regardless of how many controls the model declares (regression guard)", () => {
-    const none = flatRows(null, {}).length;
-    const sparse = flatRows(
-      {
-        temperature: { type: "number", min: 0, max: 2 },
-        rawControls: {},
-        unmappedControls: {},
-      },
-      {},
-    ).length;
-    // The historical bug filtered rows by getControl(key); this asserts the
-    // visible set is model-independent.
-    expect(sparse).toBe(none);
-    expect(sparse).toBe(TOTAL_CATALOGUE_ENTRIES);
-  });
-
-  it("decorates supported rows but still shows unsupported ones", () => {
+  it("does NOT include set-but-unsupported keys in the standard list", () => {
+    // top_k is set on the agent but the model declares no control for it.
     const rows = flatRows(
-      {
-        temperature: { type: "number", min: 0, max: 2 },
-        reasoning_effort: { type: "enum", enum: ["low", "high"] },
-        rawControls: {},
-        unmappedControls: {},
-      },
-      {},
+      { temperature: num(0, 2), rawControls: {}, unmappedControls: {} },
+      { temperature: 1, top_k: 40, reasoning_effort: "high" },
     );
-    expect(rows.find((r) => r.key === "temperature")?.supported).toBe(true);
-    expect(rows.find((r) => r.key === "reasoning_effort")?.supported).toBe(true);
-    // top_k is in the catalogue but not declared → shown, flagged unsupported.
-    const topK = rows.find((r) => r.key === "top_k");
-    expect(topK).toBeDefined();
-    expect(topK?.supported).toBe(false);
+    const keys = rows.map((r) => r.key);
+    expect(keys).toContain("temperature"); // supported → standard
+    expect(keys).not.toContain("top_k"); // set-but-unsupported → caution, not here
+    expect(keys).not.toContain("reasoning_effort"); // ditto
   });
 
-  it("never hides a setting that holds a value, even outside the catalogue", () => {
-    const rows = flatRows(
-      { rawControls: {}, unmappedControls: {} },
-      { some_brand_new_param: "x" },
-    );
-    const extra = rows.find((r) => r.key === "some_brand_new_param");
-    expect(extra).toBeDefined();
-    expect(extra?.hasValue).toBe(true);
-    expect(extra?.group).toBe("other");
-  });
-
-  it("surfaces a model-declared control that the catalogue doesn't cover", () => {
+  it("surfaces a supported model-declared control the catalogue doesn't name", () => {
     const rows = flatRows(
       {
-        weird_provider_param: { type: "number", min: 0, max: 1 },
+        weird_provider_param: num(0, 1),
         rawControls: {},
         unmappedControls: {},
       },
@@ -95,11 +81,11 @@ describe("buildSettingsRows — visibility invariant", () => {
     );
     const extra = rows.find((r) => r.key === "weird_provider_param");
     expect(extra).toBeDefined();
-    expect(extra?.supported).toBe(true);
     expect(extra?.group).toBe("other");
+    expect(extra?.supported).toBe(true);
   });
 
-  it("excludes bookkeeping / identity / coupled keys from the catch-all", () => {
+  it("never treats bookkeeping / identity / coupled keys as standard rows", () => {
     const rows = flatRows(
       { rawControls: { a: 1 }, unmappedControls: { b: 2 } },
       { model_id: "abc", multi_speaker: true },
