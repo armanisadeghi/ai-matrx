@@ -93,16 +93,23 @@ export function resolveAgentSandboxRef(
   state: RootState,
   conversationId: string | null | undefined,
 ): ResolvedSandboxRef | null {
+  const override = conversationId
+    ? selectConversationSandboxOverride(conversationId)(state)
+    : null;
+  const userActive = state.userPreferences?.coding?.activeAgentSandbox ?? null;
+  console.log(
+    `${LOG} resolveAgentSandboxRef: conversationOverride=`,
+    override,
+    `| userActive(pref)=`,
+    userActive,
+  );
+
   // 1. Per-conversation override (power-user pin).
-  if (conversationId) {
-    const override = selectConversationSandboxOverride(conversationId)(state);
-    if (override?.rowId && override.proxyUrl) {
-      return { ...override, source: "conversation-override" };
-    }
+  if (override?.rowId && override.proxyUrl) {
+    return { ...override, source: "conversation-override" };
   }
 
   // 2. User's shared active sandbox.
-  const userActive = state.userPreferences?.coding?.activeAgentSandbox ?? null;
   if (userActive?.rowId && userActive.proxyUrl) {
     return { ...userActive, source: "user-active" };
   }

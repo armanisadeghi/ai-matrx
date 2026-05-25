@@ -37,6 +37,13 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
+// CRITICAL: register the capability providers in the SAME (client) module graph
+// that reads them. They were previously only imported from app/Providers.tsx —
+// a Server Component — so the side-effect ran server-side and the client
+// registry Map was always empty (capabilities: [] on every turn → no sandbox
+// binding ever attached). Importing here guarantees registration before this
+// consumer runs. See features/.../client-capabilities/register-all.ts.
+import "../client-capabilities/register-all";
 import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
 import { selectCreatorSettings } from "@/lib/redux/preferences/creatorDebugSlice";
 
@@ -140,6 +147,9 @@ export async function buildToolInjection(
   const resolved = await Promise.all(
     providers.map(async (p) => {
       const payload = await p.selectPayload(state, conversationId);
+      console.log(
+        `[SBX] provider "${p.name}" → ${payload == null ? "NULL (not active this turn)" : "ACTIVE"}`,
+      );
       return payload == null ? null : { name: p.name, payload };
     }),
   );
