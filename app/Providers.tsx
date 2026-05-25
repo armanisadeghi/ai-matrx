@@ -72,12 +72,12 @@ import {
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
 
-// Side-effect import: registers every client-capability provider with the
-// tool-injection registry so `buildToolInjection` can walk them on every turn.
-// Adding a new surface (Chrome extension, desktop app, etc.) is a new file in
-// features/agents/redux/execution-system/client-capabilities/ + an import line
-// in register-all.ts — no edits to the agents thunks.
-import "@/features/agents/redux/execution-system/client-capabilities/register-all";
+// NOTE: client-capability providers are registered by `register-all`, which is
+// imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
+// This file is a Server Component, so a side-effect import here populates the
+// server's registry Map while `buildToolInjection` reads the client's empty
+// one (capabilities: [] on every turn → no sandbox/editor binding ever).
+// See docs/sandbox/BINDING_POSTMORTEM.md. Do not re-add the import here.
 
 // Phase 11 — legacy file system providers removed:
 //   - lib/redux/fileSystem/Provider (FileSystemProvider)
