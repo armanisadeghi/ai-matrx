@@ -33,6 +33,7 @@ import {
   MessageSquare,
   AppWindow,
   Route,
+  Box,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { StreamDebugPanel } from "@/features/agents/components/debug/StreamDebugPanel";
 import { RoutingPanel } from "@/features/agents/components/debug/RoutingPanel";
+import { SandboxInsightPanel } from "@/features/agents/components/debug/SandboxInsightPanel";
 import { ObservationalMemoryCore } from "@/features/agents/components/observational-memory/ObservationalMemoryCore";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
@@ -99,6 +101,7 @@ const CREATOR_HUB_TABS: CreatorHubTabDef[] = [
   { id: "backend", label: "Backend", icon: Server, runTabId: "backend" },
   { id: "stream_debug", label: "Stream Debug", icon: AppWindow },
   { id: "routing", label: "Routing", icon: Route },
+  { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "memory", label: "Memory", icon: Brain, adminOnly: true },
   { id: "actions", label: "Actions", icon: Play, runTabId: "actions" },
 ];
@@ -205,6 +208,12 @@ export default function CreatorHubWindow({
   } else if (active.id === "routing") {
     body = displayConvId ? (
       <RoutingPanel conversationId={displayConvId} />
+    ) : (
+      <HubEmptyConversation />
+    );
+  } else if (active.id === "sandbox") {
+    body = displayConvId ? (
+      <SandboxInsightPanel conversationId={displayConvId} />
     ) : (
       <HubEmptyConversation />
     );

@@ -38,6 +38,7 @@ export type CreatorHubTabId =
   | "backend"
   | "stream_debug"
   | "routing"
+  | "sandbox"
   | "memory"
   | "actions";
 
