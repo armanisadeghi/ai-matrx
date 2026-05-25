@@ -49,7 +49,12 @@ function dedicatedEc2ServerForConversation(
   if (selectActiveServer(state) !== "production") return null;
   const ref = resolveAgentSandboxRef(state, conversationId);
   if (ref?.tier !== "ec2") return null;
-  if (!EC2_SANDBOX_SERVER_URL) return null;
+  if (!EC2_SANDBOX_SERVER_URL) {
+    console.error(
+      `[sandbox-routing] ❌ conversation ${conversationId} is bound to an EC2 (slim) box but NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL is NOT set — the turn will hit the FAR global server instead of the nearby EC2 server. Set NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL (and rebuild — it's inlined at build time).`,
+    );
+    return null;
+  }
   return EC2_SANDBOX_SERVER_URL.endsWith("/")
     ? EC2_SANDBOX_SERVER_URL.slice(0, -1)
     : EC2_SANDBOX_SERVER_URL;

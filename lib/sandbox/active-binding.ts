@@ -42,6 +42,9 @@ import {
 } from "@/features/code/redux/codeWorkspaceSlice";
 import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 
+/** Loud, greppable prefix. Every branch of the binding chain logs under this. */
+const LOG = "[sandbox-binding]";
+
 export interface SandboxBindingPayload {
   sandbox_id: string;
   base_url: string;
@@ -135,19 +138,39 @@ async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | nul
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scopes: ["ai"] }),
     });
-  } catch {
+  } catch (err) {
+    // LOUD: network-level failure reaching our own mint route. Never silent.
+    console.error(
+      `${LOG} ❌ token mint request THREW for box ${sandboxRowId}. The /api/sandbox/${sandboxRowId}/access-tokens fetch could not complete. The agent will get NO sandbox tools this turn.`,
+      err,
+    );
     return null;
   }
   if (!resp.ok) {
+    // LOUD: read the body so the REAL reason (missing orchestrator API key,
+    // box not running, orchestrator unreachable) is visible — not swallowed.
+    const body = await resp.text().catch(() => "(no body)");
+    console.error(
+      `${LOG} ❌ token mint FAILED for box ${sandboxRowId}: HTTP ${resp.status} ${resp.statusText}. The agent will get NO sandbox tools this turn. Server said: ${body}`,
+    );
     return null;
   }
   const json = (await resp.json().catch(() => null)) as
     | { token?: string; exp?: number }
     | null;
-  if (!json?.token || typeof json.exp !== "number") return null;
+  if (!json?.token || typeof json.exp !== "number") {
+    console.error(
+      `${LOG} ❌ token mint returned 200 but the body has no usable {token, exp} for box ${sandboxRowId}. Body:`,
+      json,
+    );
+    return null;
+  }
 
   const fresh: CachedToken = { token: json.token, exp: json.exp };
   TOKEN_CACHE.set(sandboxRowId, fresh);
+  console.info(
+    `${LOG} ✅ minted access token for box ${sandboxRowId} (exp ${new Date(json.exp * 1000).toISOString()}).`,
+  );
   return fresh;
 }
 
@@ -170,7 +193,17 @@ export async function getActiveSandboxBinding(
       : stateOrGetState;
 
   const ref = resolveAgentSandboxRef(state, conversationId);
-  if (!ref) return null;
+  if (!ref) {
+    // Not necessarily an error (the user may not have attached a box), but
+    // never silent — this is the #1 reason "the agent has no sandbox access".
+    console.warn(
+      `${LOG} no sandbox bound for conversation ${conversationId ?? "(none)"} — checked: conversation override, user-active preference (userPreferences.coding.activeAgentSandbox), editor-active. Agent will run with NO sandbox tools. Attach a box from the chat input controls.`,
+    );
+    return null;
+  }
+  console.info(
+    `${LOG} resolved box ${ref.rowId} (tier=${ref.tier ?? "?"}, source=${ref.source}) for conversation ${conversationId ?? "(none)"}; minting token…`,
+  );
 
   // The proxy_url shape is `<orchestrator>/sandboxes/sbx-XXX/proxy`.
   // The orchestrator's structured fs/exec endpoints live one level up at
@@ -184,8 +217,16 @@ export async function getActiveSandboxBinding(
   const sandboxId = sandboxIdMatch?.[1] ?? "";
 
   const token = await fetchAccessToken(ref.rowId);
-  if (!token) return null;
+  if (!token) {
+    console.error(
+      `${LOG} ❌ dropping sandbox binding for box ${ref.rowId} — token mint failed (see error above). The turn will be sent WITHOUT a sandbox; the agent gets no fs/shell/git tools.`,
+    );
+    return null;
+  }
 
+  console.info(
+    `${LOG} ✅ binding ready for box ${sandboxId || ref.rowId} → ${baseUrl}. sandbox-fs capability + top-level sandbox field will be attached to this turn.`,
+  );
   return {
     sandbox_id: sandboxId,
     base_url: baseUrl,

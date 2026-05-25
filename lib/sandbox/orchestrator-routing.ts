@@ -13,6 +13,13 @@
 import { createClient } from "@/utils/supabase/server";
 import type { SandboxConfig, SandboxTier } from "@/types/sandbox";
 
+const LOG = "[sandbox-orchestrator-env]";
+
+// Capture whether each var was actually provided BEFORE applying any default,
+// so we can scream when a hardcoded fallback is silently masking a missing var.
+const EC2_URL_PROVIDED = !!process.env.MATRX_ORCHESTRATOR_URL;
+const HOSTED_URL_PROVIDED = !!process.env.MATRX_HOSTED_ORCHESTRATOR_URL;
+
 const EC2_URL =
   process.env.MATRX_ORCHESTRATOR_URL || "http://54.144.86.132:8000";
 const EC2_KEY = process.env.MATRX_ORCHESTRATOR_API_KEY || "";
@@ -20,6 +27,37 @@ const HOSTED_URL =
   process.env.MATRX_HOSTED_ORCHESTRATOR_URL ||
   "https://orchestrator.dev.codematrx.com";
 const HOSTED_KEY = process.env.MATRX_HOSTED_ORCHESTRATOR_API_KEY || "";
+
+// Boot-time scream. Runs once per server process when this module first loads.
+// No silent failures: every missing sandbox env var is named here, loudly.
+(function assertSandboxEnvLoudly() {
+  const problems: string[] = [];
+  if (!EC2_URL_PROVIDED)
+    problems.push(
+      `MATRX_ORCHESTRATOR_URL is MISSING — falling back to hardcoded ${EC2_URL} (a backup that can mask the real value).`,
+    );
+  if (!EC2_KEY)
+    problems.push(
+      "MATRX_ORCHESTRATOR_API_KEY is MISSING/empty — EC2 sandbox token mint will FAIL (401) and no agent will get EC2 sandbox tools.",
+    );
+  if (!HOSTED_URL_PROVIDED)
+    problems.push(
+      `MATRX_HOSTED_ORCHESTRATOR_URL is MISSING — falling back to hardcoded ${HOSTED_URL}.`,
+    );
+  if (!HOSTED_KEY)
+    problems.push(
+      "MATRX_HOSTED_ORCHESTRATOR_API_KEY is MISSING/empty — HOSTED sandbox token mint will FAIL (401).",
+    );
+  if (problems.length > 0) {
+    console.error(
+      `${LOG} ⚠️ ${problems.length} sandbox env problem(s) detected at server start:\n  - ${problems.join("\n  - ")}`,
+    );
+  } else {
+    console.info(
+      `${LOG} ✅ all four orchestrator env vars present (EC2 url+key, HOSTED url+key).`,
+    );
+  }
+})();
 
 export interface OrchestratorTarget {
   /** Base URL, no trailing slash. */
@@ -39,12 +77,20 @@ export function resolveOrchestratorByTier(
   tier: SandboxTier | null | undefined,
 ): OrchestratorTarget {
   if (tier === "hosted") {
+    if (!HOSTED_KEY)
+      console.error(
+        `${LOG} ❌ resolving HOSTED orchestrator but MATRX_HOSTED_ORCHESTRATOR_API_KEY is empty — this request's token mint WILL fail.`,
+      );
     return {
       url: HOSTED_URL.replace(/\/$/, ""),
       apiKey: HOSTED_KEY,
       tier: "hosted",
     };
   }
+  if (!EC2_KEY)
+    console.error(
+      `${LOG} ❌ resolving EC2 orchestrator but MATRX_ORCHESTRATOR_API_KEY is empty — this request's token mint WILL fail.`,
+    );
   return { url: EC2_URL.replace(/\/$/, ""), apiKey: EC2_KEY, tier: "ec2" };
 }
 
