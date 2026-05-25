@@ -82,6 +82,9 @@ export function canFixIssue(
   switch (issue.category) {
     case "unrecognized_key":
       return true;
+    case "unsupported_by_model":
+      // Deterministic: clear the key the model can't accept.
+      return true;
     case "deprecated_key":
       return issue.key in DEPRECATED_KEY_REMAP;
     case "invalid_value":
@@ -120,6 +123,14 @@ export function applyFixForIssue(
 
   switch (issue.category) {
     case "unrecognized_key": {
+      return omitKey(settings, key);
+    }
+
+    case "unsupported_by_model": {
+      // No control exists on this model, so there is nowhere to coerce the
+      // value to — the honest deterministic repair is to remove it. (Value
+      // translations only apply when a control is present; those are handled by
+      // range_violation / invalid_value / deprecated_key.)
       return omitKey(settings, key);
     }
 

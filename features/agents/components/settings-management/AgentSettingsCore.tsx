@@ -71,6 +71,10 @@ import {
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import {
+  buildSettingsRows,
+  type SettingsRow,
+} from "@/lib/redux/slices/agent-settings/settings-catalogue";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -233,14 +237,6 @@ function FallbackValueInput({
       style={{ fontSize: "16px" }}
     />
   );
-}
-
-/** Pretty-print a snake_case key as a human label. */
-function humanizeKey(key: string): string {
-  return key
-    .split("_")
-    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
-    .join(" ");
 }
 
 function NumberInput({
@@ -1556,17 +1552,16 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     const hasIssue = keyIssues.length > 0;
     const hasControl = !!control;
 
-    // Three-state validity:
-    //   valid    — control exists AND no issues (or setting is not enabled)
+    // Three-state validity (independent of enabled state, so incompatibility
+    // is never hidden):
     //   invalid  — has validation issue(s)
-    //   unknown  — no control on the current model → we can't confirm
-    const state: "valid" | "invalid" | "unknown" = !isEnabled
-      ? "valid"
-      : hasIssue
-        ? "invalid"
-        : !hasControl
-          ? "unknown"
-          : "valid";
+    //   unknown  — no control on the current model → not valid for this model
+    //   valid    — control exists and no issues
+    const state: "valid" | "invalid" | "unknown" = hasIssue
+      ? "invalid"
+      : hasControl
+        ? "valid"
+        : "unknown";
 
     const firstIssue = keyIssues[0];
     const fixable = !!firstIssue && canFixIssue(firstIssue, normalizedControls);
@@ -1695,86 +1690,88 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
     );
   };
 
-  // Setting groups
-  const textModelSettings: { key: keyof FeLlmParams; label: string }[] = [
-    { key: "response_format", label: "Response Format" },
-    { key: "stop_sequences", label: "Stop Sequences" },
-    { key: "temperature", label: "Temperature" },
-    { key: "max_output_tokens", label: "Max Output Tokens" },
-    { key: "top_p", label: "Top P" },
-    { key: "top_k", label: "Top K" },
-    { key: "thinking_budget", label: "Thinking Budget" },
-    { key: "thinking_level", label: "Thinking Level" },
-    { key: "reasoning_effort", label: "Reasoning Effort" },
-    { key: "reasoning_summary", label: "Reasoning Summary" },
-    { key: "verbosity", label: "Verbosity" },
-    { key: "tool_choice", label: "Tool Choice" },
-  ];
+  // tts_voice gets the dedicated multi-speaker editor when the model supports
+  // it; otherwise it degrades to a normal row so it is never hidden.
+  const renderVoiceRow = (row: SettingsRow) => {
+    const voiceControl = getControl("tts_voice");
+    if (!voiceControl || !voiceControl.enum?.length) {
+      return renderControl("tts_voice", row.label, getControl("tts_voice") ?? null);
+    }
+    const voiceEnum = voiceControl.enum ?? [];
+    const ttsEnabled = enabledSettings.has("tts_voice");
+    const multiControl = getControl("multi_speaker");
+    const multiAllowed = !!multiControl;
+    const maxSpeakers = multiControl?.max;
+    return (
+      <div className="mb-2" key="tts_voice">
+        <div className="flex items-center gap-3 mb-1">
+          <div
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleToggleSetting("tts_voice", !ttsEnabled)}
+          >
+            <Checkbox
+              id="setting-agent-tts_voice"
+              checked={ttsEnabled}
+              onCheckedChange={(checked) =>
+                handleToggleSetting("tts_voice", checked as boolean)
+              }
+              className="cursor-pointer"
+            />
+            <Label
+              htmlFor="setting-agent-tts_voice"
+              className={`text-xs flex-shrink-0 w-36 cursor-pointer ${
+                ttsEnabled
+                  ? "text-gray-700 dark:text-gray-300"
+                  : "text-gray-400 dark:text-gray-600"
+              }`}
+            >
+              Voice
+            </Label>
+          </div>
+        </div>
+        <div
+          className={`pl-[calc(1rem+8px+0.75rem)] ${!ttsEnabled ? "opacity-50 pointer-events-none" : ""}`}
+        >
+          <TtsVoiceEditor
+            voiceEnum={voiceEnum}
+            ttsValue={(currentSettings as Record<string, unknown>).tts_voice}
+            multiSpeakerAllowed={multiAllowed}
+            maxSpeakers={maxSpeakers}
+            isEnabled={ttsEnabled}
+            onSave={(ttsVoice, multi) => {
+              dispatch(
+                setAgentSettings({
+                  id: agentId,
+                  settings: {
+                    ...currentSettings,
+                    tts_voice: ttsVoice,
+                    multi_speaker: multi,
+                  } as LLMParams,
+                }),
+              );
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
 
-  const booleanSettings: { key: keyof FeLlmParams; label: string }[] = [
-    { key: "stream", label: "Stream Response" },
-    { key: "store", label: "Store Conversation" },
-    { key: "parallel_tool_calls", label: "Parallel Tool Calls" },
-    { key: "include_thoughts", label: "Include Thoughts" },
-    { key: "internal_web_search", label: "Internal Web Search" },
-    { key: "internal_url_context", label: "Internal URL Context" },
-    { key: "disable_safety_checker", label: "Disable Safety Checker" },
-    { key: "clear_thinking", label: "Clear Thinking" },
-    { key: "disable_reasoning", label: "Disable Reasoning" },
-    // Media-gen booleans (canonical + provider-native)
-    { key: "generate_audio", label: "Generate Audio" },
-    { key: "enhance_prompt", label: "Enhance Prompt" },
-    { key: "include_rai_reason", label: "Include RAI Reason" },
-  ];
+  const renderSettingRow = (row: SettingsRow) => {
+    if (row.key === "tts_voice") return renderVoiceRow(row);
+    return renderControl(
+      row.key as keyof FeLlmParams,
+      row.label,
+      (row.control as ControlDefinition | null) ?? null,
+    );
+  };
 
-  const imageVideoSettings: { key: keyof FeLlmParams; label: string }[] = [
-    // ── Existing keys — some are legacy/alias names sent to Python which
-    // aliases them transparently. All are declared in FeLlmParams. ──
-    { key: "size", label: "Size" },
-    { key: "quality", label: "Quality" },
-    { key: "count", label: "Count" },
-    { key: "steps", label: "Steps" },
-    { key: "guidance_scale", label: "Guidance Scale" },
-    { key: "seed", label: "Seed" },
-    { key: "width", label: "Width" },
-    { key: "height", label: "Height" },
-    { key: "fps", label: "FPS" },
-    { key: "seconds", label: "Duration (s) [legacy string]" },
-    { key: "output_quality", label: "Output Quality" },
-    { key: "negative_prompt", label: "Negative Prompt" },
-
-    // ── Media-gen extensions (May 2026) ──
-    // Dimensions
-    { key: "aspect_ratio", label: "Aspect Ratio" },
-    { key: "ratio", label: "Aspect Ratio (Together/Runway)" },
-    { key: "resolution", label: "Resolution" },
-    { key: "image_size", label: "Image Size" },
-    { key: "num_outputs", label: "Outputs" },
-    { key: "number_of_images", label: "Number of Images" },
-
-    // Image quality / encoding
-    { key: "render_quality", label: "Render Quality" },
-    { key: "background", label: "Background" },
-    { key: "input_fidelity", label: "Input Fidelity" },
-    { key: "output_compression", label: "Output Compression" },
-    { key: "moderation", label: "Moderation" },
-    { key: "partial_images", label: "Partial Images" },
-    { key: "output_mime_type", label: "Output MIME Type" },
-    { key: "person_generation", label: "Person Generation" },
-    { key: "image_format", label: "Image Format" },
-    { key: "style", label: "Style" },
-    { key: "reference_strength", label: "Reference Strength" },
-
-    // Video
-    { key: "duration_seconds", label: "Duration (s)" },
-    { key: "duration", label: "Duration" },
-    { key: "encode_quality", label: "Encode Quality" },
-    { key: "video_action", label: "Video Action" },
-  ];
-
-  const audioSettings: { key: keyof FeLlmParams; label: string }[] = [
-    { key: "audio_format", label: "Audio Format" },
-  ];
+  // Every catalogue setting renders, for every model. The model's controls
+  // only decorate each row (supported vs. caution) — they never decide whether
+  // a row appears. See lib/redux/slices/agent-settings/settings-catalogue.ts.
+  const settingGroups = buildSettingsRows(
+    normalizedControls as Record<string, unknown> | null,
+    currentSettings as Record<string, unknown>,
+  );
 
   // ── Early returns ─────────────────────────────────────────────────────────
   if (error) {
@@ -1841,195 +1838,26 @@ export function AgentSettingsCore({ agentId }: AgentSettingsCoreProps) {
               />
             )}
 
-            {/* Text model settings — render every key the active model supports.
-                Visibility is purely model-driven; whether the setting is
-                included on output is controlled by the row checkbox.
-                Mismatches (agent has a value but model doesn't support)
-                surface in the IssueTable at the top, NOT in this list. */}
-            {(() => {
-              const rows = textModelSettings.filter(
-                ({ key }) => !!getControl(key),
-              );
-              return rows.map(({ key, label }) =>
-                renderControl(key, label, getControl(key) ?? null),
-              );
-            })()}
-
-            {/* Audio settings — same model-driven visibility */}
-            {(() => {
-              const audioRows = audioSettings.filter(
-                ({ key }) => !!getControl(key),
-              );
-              const hasTtsVoice = !!getControl("tts_voice");
-              if (!hasTtsVoice && audioRows.length === 0) return null;
-              return (
-                <div className="border-t pt-2 mt-2">
-                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Audio Settings
-                  </div>
-
-                  {/* Voice — custom editor with single/multi speaker modes */}
-                  {(() => {
-                    const voiceControl = getControl("tts_voice");
-                    if (!voiceControl) return null;
-                    const voiceEnum = voiceControl.enum ?? [];
-                    const ttsEnabled = enabledSettings.has("tts_voice");
-                    const multiControl = getControl("multi_speaker");
-                    const multiAllowed = !!multiControl;
-                    const maxSpeakers = multiControl?.max;
-
-                    return (
-                      <div className="mb-2">
-                        <div className="flex items-center gap-3 mb-1">
-                          <div
-                            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() =>
-                              handleToggleSetting("tts_voice", !ttsEnabled)
-                            }
-                          >
-                            <Checkbox
-                              id="setting-agent-tts_voice"
-                              checked={ttsEnabled}
-                              onCheckedChange={(checked) =>
-                                handleToggleSetting(
-                                  "tts_voice",
-                                  checked as boolean,
-                                )
-                              }
-                              className="cursor-pointer"
-                            />
-                            <Label
-                              htmlFor="setting-agent-tts_voice"
-                              className={`text-xs flex-shrink-0 w-36 cursor-pointer ${
-                                ttsEnabled
-                                  ? "text-gray-700 dark:text-gray-300"
-                                  : "text-gray-400 dark:text-gray-600"
-                              }`}
-                            >
-                              Voice
-                            </Label>
-                          </div>
-                        </div>
-                        <div
-                          className={`pl-[calc(1rem+8px+0.75rem)] ${!ttsEnabled ? "opacity-50 pointer-events-none" : ""}`}
-                        >
-                          <TtsVoiceEditor
-                            voiceEnum={voiceEnum}
-                            ttsValue={
-                              (currentSettings as Record<string, unknown>)
-                                .tts_voice
-                            }
-                            multiSpeakerAllowed={multiAllowed}
-                            maxSpeakers={maxSpeakers}
-                            isEnabled={ttsEnabled}
-                            onSave={(ttsVoice, multi) => {
-                              dispatch(
-                                setAgentSettings({
-                                  id: agentId,
-                                  settings: {
-                                    ...currentSettings,
-                                    tts_voice: ttsVoice,
-                                    multi_speaker: multi,
-                                  } as LLMParams,
-                                }),
-                              );
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {audioRows.map(({ key, label }) =>
-                    renderControl(key, label, getControl(key) ?? null),
+            {/* Every catalogue setting renders for every model. The model's
+                controls only decorate each row (supported vs. caution). A
+                setting unsupported by the model is NEVER hidden — it shows a
+                caution dot, and when it holds a value it also surfaces in the
+                IssueTable above with a one-click fix. */}
+            {settingGroups.map((group) =>
+              group.rows.length === 0 ? null : (
+                <div
+                  key={group.id}
+                  className={group.label ? "border-t pt-2 mt-2" : undefined}
+                >
+                  {group.label && (
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      {group.label}
+                    </div>
                   )}
+                  {group.rows.map(renderSettingRow)}
                 </div>
-              );
-            })()}
-
-            {/* Image/Video settings — model-driven visibility */}
-            {(() => {
-              const rows = imageVideoSettings.filter(
-                ({ key }) => !!getControl(key),
-              );
-              if (rows.length === 0) return null;
-              return (
-                <div className="border-t pt-2 mt-2">
-                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Image / Video Settings
-                  </div>
-                  {rows.map(({ key, label }) =>
-                    renderControl(key, label, getControl(key) ?? null),
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Boolean / Feature flags */}
-            {/* Boolean / Feature flags — model-driven visibility.
-                A boolean setting whose value is `false` (or any value) is
-                visible iff the active model declares the control. The
-                checkbox state reflects whether the value is currently
-                included in the agent's settings dict. */}
-            {(() => {
-              const rows = booleanSettings.filter(
-                ({ key }) => !!getControl(key),
-              );
-              if (rows.length === 0) return null;
-              return (
-                <div className="border-t pt-2 mt-2">
-                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Feature Flags
-                  </div>
-                  {rows.map(({ key, label }) =>
-                    renderControl(key, label, getControl(key) ?? null),
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Other settings — keys the active model declares that no
-                hardcoded group claims (e.g. a brand new control we haven't
-                categorized yet). Model-driven visibility: only show when
-                the model actually declares the control. Mismatched keys
-                that exist on the agent but aren't supported show in the
-                IssueTable above, NOT here. */}
-            {(() => {
-              const hardcodedKeys = new Set<string>([
-                ...textModelSettings.map((s) => s.key as string),
-                ...imageVideoSettings.map((s) => s.key as string),
-                ...audioSettings.map((s) => s.key as string),
-                ...booleanSettings.map((s) => s.key as string),
-                "tts_voice",
-                "multi_speaker",
-              ]);
-              // Iterate every control the model declares; surface anything
-              // not in a hardcoded group. This way new model controls
-              // appear automatically without an FE code change.
-              const declaredKeys = normalizedControls
-                ? Object.keys(normalizedControls).filter(
-                    (k) => k !== "rawControls" && k !== "unmappedControls",
-                  )
-                : [];
-              const otherKeys = declaredKeys.filter(
-                (k) => !hardcodedKeys.has(k),
-              );
-              if (otherKeys.length === 0) return null;
-              return (
-                <div className="border-t pt-2 mt-2">
-                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Other Settings
-                  </div>
-                  {otherKeys.map((key) =>
-                    renderControl(
-                      key as keyof FeLlmParams,
-                      humanizeKey(key),
-                      getControl(key) ?? null,
-                    ),
-                  )}
-                </div>
-              );
-            })()}
+              ),
+            )}
           </div>
         )}
 

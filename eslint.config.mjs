@@ -442,6 +442,43 @@ export default [
         },
     },
     {
+        // ─── Model Settings visibility invariant ──────────────────────────
+        // Every setting must ALWAYS render on the settings panels; a model's
+        // `controls` only DECORATE a row (supported vs. caution), never decide
+        // whether it shows. Filtering the settings list by getControl()/
+        // controls[key]/normalizedControls[key] is the recurring "hidden
+        // settings" bug (settings vanished when a model declared a sparse
+        // controls object). Render the full catalogue via buildSettingsRows()
+        // (lib/redux/slices/agent-settings/settings-catalogue.ts) and branch on
+        // the row's `supported` flag instead. This override re-includes the
+        // global syntax bans (flat-config replaces, not merges, per rule).
+        files: [
+            'features/agents/components/settings-management/**/*.{ts,tsx}',
+            'features/prompts/components/configuration/ModelSettings.tsx',
+            'features/agent-settings/components/LLMParamsGrid.tsx',
+        ],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                {
+                    selector:
+                        "CallExpression[callee.property.name=/^(filter|some)$/]:has(CallExpression[callee.name=/^getControl/])",
+                    message:
+                        'Do not filter the settings list by model support (getControl). Every setting must always render — use buildSettingsRows() (settings-catalogue.ts) and the row\'s `supported` flag to DECORATE, never to drop. This is the recurring "hidden settings" bug.',
+                },
+                {
+                    selector:
+                        "CallExpression[callee.property.name=/^(filter|some)$/]:has(MemberExpression[object.name=/^(controls|normalizedControls)$/][computed=true])",
+                    message:
+                        'Do not filter the settings list by controls[key]/normalizedControls[key]. Every setting must always render — use buildSettingsRows() (settings-catalogue.ts) and the row\'s `supported` flag. This is the recurring "hidden settings" bug.',
+                },
+            ],
+        },
+    },
+    {
         files: ['features/files/**/*'],
         rules: {
             // The files feature owns the supabase.storage / cloud-files

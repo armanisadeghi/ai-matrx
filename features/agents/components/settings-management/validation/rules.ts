@@ -432,6 +432,67 @@ const integerTypeEnforcement: ValidationRule = {
 };
 
 // =============================================================================
+// Rule: Unsupported by the selected model
+// =============================================================================
+
+// Frontend capability flags are model-independent (stripped before the API
+// call), so they must never be flagged as "unsupported".
+const UI_CAPABILITY_KEYS = new Set([
+  "tools",
+  "image_urls",
+  "file_urls",
+  "youtube_videos",
+  "multi_speaker",
+]);
+
+const unsupportedByModel: ValidationRule = {
+  id: "unsupported-by-model",
+  description:
+    "Flags settings that hold a value but the selected model does not declare a control for",
+  severity: "warning",
+  category: "unsupported_by_model",
+  inspects: [],
+  validate(config: ResolvedConfig): ValidationIssue[] {
+    const controls = config.normalizedControls;
+    if (!controls) return []; // no model selected → nothing to confirm against
+
+    // Only run when the model actually declares a control schema. A model with
+    // zero declared controls is a data gap, not a real incompatibility — those
+    // settings surface via the inline "unknown" caution dot instead of a hard
+    // issue, so we don't flood the IssueTable with false positives.
+    const declaredKeys = Object.keys(
+      controls as unknown as Record<string, unknown>,
+    ).filter((k) => k !== "rawControls" && k !== "unmappedControls");
+    if (declaredKeys.length === 0) return [];
+
+    const issues: ValidationIssue[] = [];
+    const settings = config.settings as Record<string, unknown>;
+
+    for (const [key, value] of Object.entries(settings)) {
+      if (value === null || value === undefined) continue;
+      if (key === "model_id") continue;
+      if (UI_CAPABILITY_KEYS.has(key)) continue; // model-independent flags
+      if (key in LEGACY_KEY_MAP) continue; // handled by the deprecated-key rule
+      if (!config.recognizedKeys.has(key)) continue; // handled by unrecognized-keys
+      if (getControlForKey(config.normalizedControls, key)) continue; // supported
+
+      issues.push({
+        ruleId: "unsupported-by-model",
+        key,
+        severity: "warning",
+        category: "unsupported_by_model",
+        message: `"${key}" is not supported by the selected model`,
+        value,
+        suggestion:
+          "Remove this setting, or switch to a model that supports it",
+      });
+    }
+
+    return issues;
+  },
+};
+
+// =============================================================================
 // Rule: Model-level constraints (DB-driven)
 // =============================================================================
 
@@ -464,6 +525,7 @@ export const RULES: readonly ValidationRule[] = [
   deprecatedKeys,
   responseFormatStructure,
   integerTypeEnforcement,
+  unsupportedByModel,
   modelConstraints,
 ] as const;
 

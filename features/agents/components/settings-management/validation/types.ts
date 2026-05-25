@@ -16,7 +16,11 @@ export type ValidationCategory =
   | "type_mismatch"
   | "deprecated_key"
   | "missing_required"
-  | "schema";
+  | "schema"
+  // A recognized LLM param that holds a value but the SELECTED model does not
+  // declare a control for it. The setting is still shown (never hidden) — this
+  // category drives the caution + one-click "clear" repair.
+  | "unsupported_by_model";
 
 // =============================================================================
 // Validation Result

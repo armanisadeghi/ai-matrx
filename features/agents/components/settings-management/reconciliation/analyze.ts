@@ -46,6 +46,7 @@ export interface ModelChangePlan {
 function mapIssueToKind(issue: ValidationIssue): IncompatibilityKind {
   switch (issue.category) {
     case "unrecognized_key":
+    case "unsupported_by_model":
       return "unsupported-key";
     case "invalid_value":
       return "invalid-enum";
@@ -111,6 +112,7 @@ export function analyzeModelChange(
   // Dedupe issues by key — keep the highest-priority one per key.
   const priority: Record<string, number> = {
     unrecognized_key: 5,
+    unsupported_by_model: 5,
     invalid_value: 4,
     range_violation: 4,
     type_mismatch: 4,

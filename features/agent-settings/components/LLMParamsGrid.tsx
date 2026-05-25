@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ import type {
   AgentSettings,
   ControlDefinition,
 } from "@/lib/redux/slices/agent-settings/types";
+import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 
 // ── NumberInput ───────────────────────────────────────────────────────────────
 // Mirrors the existing ModelSettings NumberInput exactly:
@@ -131,7 +133,8 @@ function NumberInput({
 interface ControlRowProps {
   fieldKey: keyof AgentSettings;
   label: string;
-  control: ControlDefinition;
+  /** null when the selected model declares no control for this key. */
+  control: ControlDefinition | null;
   value: unknown;
   enabled: boolean;
   onToggle: (key: keyof AgentSettings, enabled: boolean) => void;
@@ -148,6 +151,57 @@ function ControlRow({
   onChange,
 }: ControlRowProps) {
   const checkboxId = `ags-${String(fieldKey)}`;
+
+  // Unsupported by the selected model: still shown (never hidden), value
+  // displayed read-only with a caution so it is never silently changed.
+  if (!control) {
+    const display =
+      value === undefined || value === null
+        ? ""
+        : typeof value === "object"
+          ? JSON.stringify(value)
+          : String(value);
+    return (
+      <div className="flex items-center gap-3 mb-2">
+        <div
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+          onClick={() => onToggle(fieldKey, !enabled)}
+        >
+          <Checkbox
+            id={checkboxId}
+            checked={enabled}
+            onCheckedChange={(checked) => onToggle(fieldKey, checked as boolean)}
+            className="cursor-pointer"
+          />
+          <Label
+            htmlFor={checkboxId}
+            className={`text-xs w-36 shrink-0 cursor-pointer ${
+              enabled
+                ? "text-gray-700 dark:text-gray-300"
+                : "text-gray-400 dark:text-gray-600"
+            }`}
+          >
+            {label}
+          </Label>
+        </div>
+        <div className="flex-1 min-w-0">
+          <Input
+            type="text"
+            readOnly
+            value={display}
+            placeholder="Not supported by this model"
+            className="h-7 px-2 text-xs w-full opacity-70"
+          />
+        </div>
+        <span
+          className="text-amber-500 shrink-0"
+          title="Not valid for this model"
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+        </span>
+      </div>
+    );
+  }
 
   const resolvedValue =
     value ??
@@ -282,52 +336,6 @@ function ControlRow({
   );
 }
 
-// ── Section group definitions ─────────────────────────────────────────────────
-
-const TEXT_SETTINGS: Array<{ key: keyof AgentSettings; label: string }> = [
-  { key: "response_format", label: "Response Format" },
-  { key: "temperature", label: "Temperature" },
-  { key: "max_output_tokens", label: "Max Output Tokens" },
-  { key: "top_p", label: "Top P" },
-  { key: "top_k", label: "Top K" },
-  { key: "thinking_budget", label: "Thinking Budget" },
-  { key: "reasoning_effort", label: "Reasoning Effort" },
-  { key: "reasoning_summary", label: "Reasoning Summary" },
-  { key: "verbosity", label: "Verbosity" },
-  { key: "tool_choice", label: "Tool Choice" },
-  { key: "seed", label: "Seed" },
-];
-
-const IMAGE_VIDEO_SETTINGS: Array<{ key: keyof AgentSettings; label: string }> =
-  [
-    { key: "steps", label: "Steps" },
-    { key: "guidance_scale", label: "Guidance Scale" },
-    { key: "width", label: "Width" },
-    { key: "height", label: "Height" },
-    { key: "fps", label: "FPS" },
-    { key: "seconds", label: "Duration (seconds)" },
-    { key: "output_quality", label: "Output Quality" },
-    { key: "negative_prompt", label: "Negative Prompt" },
-  ];
-
-const TTS_SETTINGS: Array<{ key: keyof AgentSettings; label: string }> = [
-  { key: "tts_voice", label: "Voice" },
-  { key: "audio_format", label: "Audio Format" },
-];
-
-const BOOLEAN_SETTINGS: Array<{ key: keyof AgentSettings; label: string }> = [
-  { key: "store", label: "Store Conversation" },
-  { key: "stream", label: "Stream Response" },
-  { key: "parallel_tool_calls", label: "Parallel Tool Calls" },
-  { key: "include_thoughts", label: "Include Thoughts" },
-  { key: "image_urls", label: "Image URLs" },
-  { key: "file_urls", label: "File URLs" },
-  { key: "internal_web_search", label: "Internal Web Search" },
-  { key: "internal_url_context", label: "Internal URL Context" },
-  { key: "youtube_videos", label: "YouTube Videos" },
-  { key: "disable_safety_checker", label: "Disable Safety Checker" },
-];
-
 // ── Main component ─────────────────────────────────────────────────────────────
 
 interface LLMParamsGridProps {
@@ -424,74 +432,45 @@ export function LLMParamsGrid({ agentId }: LLMParamsGridProps) {
     );
   };
 
-  const renderSection = (
-    items: Array<{ key: keyof AgentSettings; label: string }>,
-  ) =>
-    items
-      .filter(({ key }) => controls[key as string] !== undefined)
-      .map(({ key, label }) => {
-        const control = controls[key as string] as ControlDefinition;
-        return (
-          <ControlRow
-            key={key as string}
-            fieldKey={key}
-            label={label}
-            control={control}
-            value={
-              (effectiveSettings as Record<string, unknown>)[key as string]
-            }
-            enabled={enabled.has(key as string)}
-            onToggle={handleToggle}
-            onChange={handleChange}
-          />
-        );
-      });
-
-  const hasText = TEXT_SETTINGS.some(({ key }) => controls[key as string]);
-  const hasImgVideo = IMAGE_VIDEO_SETTINGS.some(
-    ({ key }) => controls[key as string],
+  // Every catalogue setting renders for every model — the model's controls only
+  // decorate each row (supported vs. caution), never decide whether it shows.
+  // `tools` is excluded because it is a tool LIST managed elsewhere, not a
+  // simple toggle.
+  const settingGroups = buildSettingsRows(
+    normalizedControls as unknown as Record<string, unknown> | null,
+    effectiveSettings as Record<string, unknown>,
   );
-  const hasTTS = TTS_SETTINGS.some(({ key }) => controls[key as string]);
-  const hasBool = BOOLEAN_SETTINGS.some(({ key }) => controls[key as string]);
-
-  if (!hasText && !hasImgVideo && !hasTTS && !hasBool) {
-    return (
-      <p className="text-xs text-muted-foreground px-2 py-3">
-        No configurable parameters for this model.
-      </p>
-    );
-  }
 
   return (
     <div className="space-y-0.5">
-      {hasText && <div>{renderSection(TEXT_SETTINGS)}</div>}
-
-      {hasImgVideo && (
-        <div className="border-t pt-2.5 mt-2.5">
-          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Image / Video
+      {settingGroups.map((group) => {
+        const rows = group.rows.filter((r) => r.key !== "tools");
+        if (rows.length === 0) return null;
+        return (
+          <div
+            key={group.id}
+            className={group.label ? "border-t pt-2.5 mt-2.5" : undefined}
+          >
+            {group.label && (
+              <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                {group.label}
+              </div>
+            )}
+            {rows.map((r) => (
+              <ControlRow
+                key={r.key}
+                fieldKey={r.key as keyof AgentSettings}
+                label={r.label}
+                control={(r.control as ControlDefinition | null) ?? null}
+                value={(effectiveSettings as Record<string, unknown>)[r.key]}
+                enabled={enabled.has(r.key)}
+                onToggle={handleToggle}
+                onChange={handleChange}
+              />
+            ))}
           </div>
-          {renderSection(IMAGE_VIDEO_SETTINGS)}
-        </div>
-      )}
-
-      {hasTTS && (
-        <div className="border-t pt-2.5 mt-2.5">
-          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Text-to-Speech
-          </div>
-          {renderSection(TTS_SETTINGS)}
-        </div>
-      )}
-
-      {hasBool && (
-        <div className="border-t pt-2.5 mt-2.5">
-          <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Feature Flags
-          </div>
-          {renderSection(BOOLEAN_SETTINGS)}
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 }

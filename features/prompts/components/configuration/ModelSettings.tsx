@@ -37,6 +37,7 @@ import {
 import { PromptSettings } from "@/features/prompts/types/core";
 import { SettingsJsonEditor } from "./SettingsJsonEditor";
 import { getUnrecognizedSettings } from "@/features/prompts/utils/settings-filter";
+import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 
 // ── NumberInput ──────────────────────────────────────────────────────────────
 // Text-based number input: no browser spinner, no mid-edit validation.
@@ -498,11 +499,15 @@ export function ModelSettings({
   const formatVoiceLabel = (value: string) =>
     value.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // Helper to render a setting control consistently
+  // Helper to render a setting control consistently. `control` may be null when
+  // the selected model declares no schema for the key — the row is still shown
+  // (never hidden), flagged with a caution icon, and its value is displayed
+  // read-only (edit unsupported values via the JSON editor) so it is never
+  // silently changed.
   const renderControl = (
     key: keyof PromptSettings,
     label: string,
-    control: ControlDefinition,
+    control: ControlDefinition | null,
   ) => {
     const isEnabled = enabledSettings.has(key);
     const value = (settings as any)[key];
@@ -532,8 +537,36 @@ export function ModelSettings({
         <div
           className={`flex-1 ${!isEnabled ? "opacity-50 pointer-events-none" : ""}`}
         >
-          {renderControlInput(key, control, value, isEnabled)}
+          {control ? (
+            renderControlInput(key, control, value, isEnabled)
+          ) : (
+            <input
+              type="text"
+              readOnly
+              value={
+                value === undefined || value === null
+                  ? ""
+                  : typeof value === "object"
+                    ? JSON.stringify(value)
+                    : String(value)
+              }
+              placeholder="Not supported by this model"
+              className="h-7 px-2 text-xs text-gray-900 dark:text-gray-100 bg-textured border border-border rounded w-full opacity-70"
+            />
+          )}
         </div>
+        {!control && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-amber-500 flex-shrink-0 cursor-help">
+                <AlertTriangle className="h-3.5 w-3.5" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs max-w-[220px]">
+              Not valid for this model — edit via the JSON editor if needed
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     );
   };
@@ -671,53 +704,15 @@ export function ModelSettings({
     );
   };
 
-  // Define setting groups and order
-  const textModelSettings = [
-    { key: "response_format", label: "Response Format" },
-    { key: "temperature", label: "Temperature" },
-    { key: "max_output_tokens", label: "Max Output Tokens" },
-    { key: "max_tokens", label: "Max Tokens" },
-    { key: "top_p", label: "Top P" },
-    { key: "top_k", label: "Top K" },
-    { key: "thinking_budget", label: "Thinking Budget" },
-    { key: "thinking_level", label: "Thinking Level" },
-    { key: "reasoning_effort", label: "Reasoning Effort" },
-    { key: "reasoning_summary", label: "Reasoning Summary" },
-    { key: "verbosity", label: "Verbosity" },
-    { key: "tool_choice", label: "Tool Choice" },
-  ];
-
-  const imageVideoSettings = [
-    { key: "size", label: "Size" },
-    { key: "quality", label: "Quality" },
-    { key: "count", label: "Count" },
-    { key: "steps", label: "Steps" },
-    { key: "guidance_scale", label: "Guidance Scale" },
-    { key: "seed", label: "Seed" },
-    { key: "n", label: "Number of Outputs" },
-    { key: "width", label: "Width" },
-    { key: "height", label: "Height" },
-    { key: "fps", label: "FPS" },
-    { key: "seconds", label: "Duration (seconds)" },
-    { key: "output_quality", label: "Output Quality" },
-    { key: "negative_prompt", label: "Negative Prompt" },
-    { key: "reference_images", label: "Reference Images" },
-  ];
-
-  const booleanSettings = [
-    { key: "store", label: "Store Conversation" },
-    { key: "stream", label: "Stream Response" },
-    { key: "parallel_tool_calls", label: "Parallel Tool Calls" },
-    { key: "include_thoughts", label: "Include Thoughts" },
-    { key: "clear_thinking", label: "Clear Thinking" },
-    { key: "disable_reasoning", label: "Disable Reasoning" },
-    { key: "image_urls", label: "Image URLs" },
-    { key: "file_urls", label: "File URLs" },
-    { key: "internal_web_search", label: "Internal Web Search" },
-    { key: "internal_url_context", label: "Internal URL Context" },
-    { key: "youtube_videos", label: "YouTube Videos" },
-    { key: "disable_safety_checker", label: "Disable Safety Checker" },
-  ];
+  // Every catalogue setting renders for every model (see settings-catalogue.ts) —
+  // the model's controls only decorate each row, never decide whether it shows.
+  // The `audio` group (tts_voice/audio_format) is rendered by the bespoke TTS
+  // section below, and `tools` by the dedicated tool picker, so both are
+  // excluded from this generic loop to avoid double-rendering.
+  const settingGroups = buildSettingsRows(
+    normalizedControls as Record<string, unknown> | null,
+    settings as Record<string, unknown>,
+  );
 
   return (
     <div className="relative" style={{ perspective: "1200px" }}>
@@ -790,36 +785,40 @@ export function ModelSettings({
               </div>
             )}
 
-            {/* Text Model Settings */}
-            {textModelSettings.map(({ key, label }) => {
-              const control = (normalizedControls as any)[key];
-              if (!control) return null;
-              return renderControl(key as keyof PromptSettings, label, control);
-            })}
+            {/* All catalogue settings — always shown, never filtered by the
+                model. The audio group and `tools` are handled by the dedicated
+                sections below, so they're excluded here. */}
+            {settingGroups
+              .filter((group) => group.id !== "audio")
+              .map((group) => {
+                const rows = group.rows.filter((r) => r.key !== "tools");
+                if (rows.length === 0) return null;
+                return (
+                  <div
+                    key={group.id}
+                    className={
+                      group.label ? "border-t pt-2.5 mt-2.5" : undefined
+                    }
+                  >
+                    {group.label && (
+                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        {group.label}
+                      </div>
+                    )}
+                    {rows.map((r) =>
+                      renderControl(
+                        r.key as keyof PromptSettings,
+                        r.label,
+                        (r.control as ControlDefinition | null) ?? null,
+                      ),
+                    )}
+                  </div>
+                );
+              })}
 
-            {/* Image/Video Settings */}
-            {imageVideoSettings.some(
-              ({ key }) => (normalizedControls as any)[key],
-            ) && (
-              <div className="border-t pt-2.5 mt-2.5">
-                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Image/Video Settings
-                </div>
-                {imageVideoSettings.map(({ key, label }) => {
-                  const control = (normalizedControls as any)[key];
-                  if (!control) return null;
-                  return renderControl(
-                    key as keyof PromptSettings,
-                    label,
-                    control,
-                  );
-                })}
-              </div>
-            )}
-
-            {/* TTS Settings */}
-            {(normalizedControls.tts_voice ||
-              normalizedControls.audio_format) && (
+            {/* TTS / Audio Settings — always shown so audio settings are never
+                hidden based on the selected model. */}
+            {
               <div className="border-t pt-2.5 mt-2.5">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Volume2 className="w-3.5 h-3.5 text-primary" />
@@ -827,21 +826,19 @@ export function ModelSettings({
                 </div>
 
                 {/* tts_voice — single speaker */}
-                {normalizedControls.tts_voice &&
-                  !isMultiSpeakerActive &&
+                {!isMultiSpeakerActive &&
                   renderControl(
                     "tts_voice" as keyof PromptSettings,
                     "Voice",
-                    normalizedControls.tts_voice,
+                    normalizedControls.tts_voice ?? null,
                   )}
 
                 {/* audio_format */}
-                {normalizedControls.audio_format &&
-                  renderControl(
-                    "audio_format" as keyof PromptSettings,
-                    "Audio Format",
-                    normalizedControls.audio_format,
-                  )}
+                {renderControl(
+                  "audio_format" as keyof PromptSettings,
+                  "Audio Format",
+                  normalizedControls.audio_format ?? null,
+                )}
 
                 {/* Multi-speaker (Google only) */}
                 {normalizedControls.multi_speaker && (
@@ -928,30 +925,11 @@ export function ModelSettings({
                   </div>
                 )}
               </div>
-            )}
+            }
 
-            {/* Boolean Settings */}
-            {booleanSettings.some(
-              ({ key }) => (normalizedControls as any)[key],
-            ) && (
-              <div className="border-t pt-2.5 mt-2.5">
-                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Feature Flags
-                </div>
-                {booleanSettings.map(({ key, label }) => {
-                  const control = (normalizedControls as any)[key];
-                  if (!control) return null;
-                  return renderControl(
-                    key as keyof PromptSettings,
-                    label,
-                    control,
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Tools Section */}
-            {normalizedControls.tools && availableTools.length > 0 && (
+            {/* Tools Section — shown whenever tools are available; no longer
+                hidden based on whether the model declares a tools control. */}
+            {availableTools.length > 0 && (
               <div className="border-t pt-2.5 mt-2.5">
                 <div className="flex items-center gap-3 mb-2">
                   <div
