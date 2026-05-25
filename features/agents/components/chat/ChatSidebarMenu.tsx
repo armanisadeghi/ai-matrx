@@ -16,7 +16,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Bot, Plus, Search } from "lucide-react";
+import { Plus, Search, Webhook } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -143,7 +143,9 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
               title="Search agents"
               aria-label="Search agents"
             >
-              <Bot className="h-[18px] w-[18px]" />
+              {/* Webhook mirrors the app's "Agents" nav icon for a consistent
+                  visual language (Bot is banned as an AI-cliché glyph). */}
+              <Webhook className="h-[18px] w-[18px]" />
             </button>
           }
         />
