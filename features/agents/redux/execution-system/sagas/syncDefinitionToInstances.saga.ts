@@ -14,7 +14,10 @@
  *
  * Design rules — this saga intentionally does NOT watch:
  *   - setAgentMessages     — fires on every keystroke; instance UI doesn't render messages
- *   - setAgentField        — generic catch-all; callers that need sync use dedicated actions
+ *   - setAgentField        — generic catch-all; mostly ignored. EXCEPTION: the
+ *                            model swap (field "modelId") flows through it and
+ *                            IS watched (handleModelChanged) so the instance
+ *                            base model stays in sync with the agent.
  *   - upsertAgent          — full server refresh; next startNewConversation re-snapshots
  *   - mergePartialAgent    — same reason as upsertAgent
  *   - setAgentTools / setAgentContextSlots / etc. — not rendered by instance UI
@@ -34,14 +37,16 @@
  *     5. Fork the watcher from rootSaga
  */
 
-import { debounce, put, select } from "redux-saga/effects";
+import { debounce, put, select, takeEvery } from "redux-saga/effects";
 import type { RootState } from "@/lib/redux/rootReducer";
 import {
   setAgentVariableDefinitions,
   setAgentSettings,
+  setAgentField,
 } from "../../agent-definition/slice";
 import { updateInstanceDefinitions } from "../instance-variable-values/instance-variable-values.slice";
 import { updateBaseSettings } from "../instance-model-overrides/instance-model-overrides.slice";
+import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -86,6 +91,10 @@ function* handleSettingsChanged(
   const { id: agentId, settings } = action.payload;
 
   const state = (yield select()) as RootState;
+  // updateBaseSettings REPLACES baseSettings wholesale, so we must re-fold the
+  // agent's current model — otherwise editing any setting silently drops
+  // `model` from the instance base and defeats the override delta guard.
+  const modelId = state.agentDefinition.agents?.[agentId]?.modelId;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
 
@@ -94,7 +103,38 @@ function* handleSettingsChanged(
       yield put(
         updateBaseSettings({
           conversationId,
-          baseSettings: settings ?? {},
+          baseSettings: buildInstanceBaseSettings(settings, modelId),
+        }),
+      );
+    }
+  }
+}
+
+/**
+ * The model lives on `agent.modelId` (separate from settings) and changes via
+ * `setAgentField({ field: "modelId" })`. Keep each live instance's base model
+ * in sync so the override delta guard stays correct after a builder model swap.
+ */
+function* handleModelChanged(
+  action: ReturnType<typeof setAgentField>,
+): Generator {
+  if (action.payload.field !== "modelId") return;
+  const agentId = action.payload.id;
+
+  const state = (yield select()) as RootState;
+  const agent = state.agentDefinition.agents?.[agentId];
+  const allIds = state.conversations.allConversationIds;
+  const byId = state.conversations.byConversationId;
+
+  for (const conversationId of allIds) {
+    if (byId[conversationId]?.agentId === agentId) {
+      yield put(
+        updateBaseSettings({
+          conversationId,
+          baseSettings: buildInstanceBaseSettings(
+            agent?.settings,
+            agent?.modelId,
+          ),
         }),
       );
     }
@@ -112,4 +152,8 @@ export function* watchDefinitionChanges(): Generator {
     handleVariableDefinitionsChanged,
   );
   yield debounce(DEBOUNCE_MS, setAgentSettings.type, handleSettingsChanged);
+  // setAgentField is a generic catch-all (normally NOT watched), but a model
+  // swap flows through it and must keep the instance base model in sync. The
+  // handler early-returns for every non-model field, so this is cheap.
+  yield takeEvery(setAgentField.type, handleModelChanged);
 }

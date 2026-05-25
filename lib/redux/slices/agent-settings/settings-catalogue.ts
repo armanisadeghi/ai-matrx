@@ -167,6 +167,7 @@ const CATCHALL_EXCLUDED = new Set<string>([
   "rawControls",
   "unmappedControls",
   "model_id",
+  "model", // chosen via the dedicated model picker, never a generic settings row
   "multi_speaker", // edited via the Voice editor alongside tts_voice
 ]);
 

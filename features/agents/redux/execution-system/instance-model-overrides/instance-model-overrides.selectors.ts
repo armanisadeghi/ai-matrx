@@ -71,8 +71,12 @@ export const selectCurrentSettings =
  * Returns ONLY the keys that differ from the instance's snapshotted base settings.
  * This is what gets sent as config_overrides in the request.
  *
- * CRITICAL: Sending a base-value as an override causes an API error on some models.
- * This selector guarantees only true deltas are included.
+ * CRITICAL: Sending a base value disguised as an override causes an API error on
+ * some models (the backend rejects a default supplied as an override). This
+ * selector RE-DIFFS every override against baseSettings here, so a base-equal
+ * value can never reach the wire — no matter what a UI wrote into `overrides`.
+ * `model` is included via this same path (baseSettings carries the agent's model),
+ * so picking the agent's own model produces no override.
  */
 export const selectSettingsOverridesForApi =
   (conversationId: string) =>
@@ -86,14 +90,23 @@ export const selectSettingsOverridesForApi =
 
     if (!hasOverrides && !hasRemovals) return undefined;
 
+    const base = overrideState.baseSettings as Record<string, unknown>;
     const result: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(overrideState.overrides)) {
       if (UI_CAPABILITY_KEYS.has(key)) continue;
+      // Genuine delta only — drop anything equal to the agent's default. Matches
+      // the JSON.stringify-diff convention used by computeOverrideDiff in the
+      // agent-settings slice. NOTE: stringify is key-order sensitive, so an
+      // object value (e.g. response_format) must be built with the same key
+      // order as the base snapshot to compare equal — true today since both
+      // originate from the agent definition.
+      if (JSON.stringify(value) === JSON.stringify(base[key])) continue;
       result[key] = value;
     }
 
-    // Explicit nulls signal "remove this setting" to the API
+    // Explicit nulls signal "remove this setting" to the API. (Left as-is: a
+    // removal can null out a model-level default that isn't in baseSettings.)
     for (const key of overrideState.removals) {
       if (UI_CAPABILITY_KEYS.has(key)) continue;
       result[key] = null;

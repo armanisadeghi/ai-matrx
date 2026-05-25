@@ -282,10 +282,15 @@ export const loadConversation = createAsyncThunk<
     }
 
     // ── 4. Model config (overrides + last model id) ──────────────────────────
+    // Seed the base model from the conversation's last_model_id so the model
+    // picker has a base to diff against — picking that same model on a resumed
+    // conversation must NOT ship a config_overrides.model equal to the default.
+    // (Settings base stays empty here: the server applies the agent defaults
+    // and conv.overrides carries the persisted setting deltas.)
     dispatch(
       initInstanceOverrides({
         conversationId,
-        baseSettings: {},
+        baseSettings: conv.last_model_id ? { model: conv.last_model_id } : {},
       }),
     );
     if (

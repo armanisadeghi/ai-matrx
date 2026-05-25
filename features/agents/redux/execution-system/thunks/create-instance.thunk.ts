@@ -37,6 +37,7 @@ import {
   setDisplayFocus,
 } from "../conversation-focus/conversation-focus.slice";
 import { initInstanceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
+import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 import {
   initInstanceVariables,
   setUserVariableValues,
@@ -85,7 +86,9 @@ function readAgentSnapshot(
   return {
     agentType: agent?.agentType ?? "user",
     variableDefinitions: agent?.variableDefinitions ?? [],
-    baseSettings: agent?.settings ?? {},
+    // Fold the agent's model into the snapshot so the per-instance override
+    // layer owns it (see buildInstanceBaseSettings for the full invariant).
+    baseSettings: buildInstanceBaseSettings(agent?.settings, agent?.modelId),
     contextSlots: agent?.contextSlots ?? [],
     isCreator: agent?.isOwner ?? false,
   };
@@ -416,6 +419,11 @@ export const createInstanceFromShortcut = createAsyncThunk<
       // Shortcuts don't carry the agent's baseSettings — those stay with
       // the agent and are applied server-side. Only `llmOverrides` (the
       // partial delta the shortcut author set) is applied below.
+      // INVARIANT for Phase 2+: shortcut llmOverrides are authored deltas and
+      // must never include a value (incl. `model`) equal to the agent default —
+      // base is empty here, so the override delta guard cannot protect this
+      // path. If a runtime model/settings picker is ever shown on a
+      // shortcut-launched instance, seed a real base model first.
       baseSettings: {},
     }),
   );

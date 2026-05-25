@@ -257,6 +257,7 @@ export function ModelSettings({
     const keys = new Set<string>([
       // Always-valid submission keys (full LLM_PARAMS_KEYS set)
       "model_id",
+      "model", // per-instance override layer carries the model as LLMParams.model
       "temperature",
       "max_output_tokens",
       "max_tokens",
