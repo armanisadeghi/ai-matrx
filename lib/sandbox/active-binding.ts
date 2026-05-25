@@ -10,21 +10,23 @@
  *   3. access_token — short-lived, sandbox-scoped HMAC bearer
  *
  * ── Which box is bound? (resolution order) ───────────────────────────────
- * The product model is "one shared box per user, by default, across every
- * conversation" — so 20 agents feel like one agent sharing the same files,
- * working state, and memory — with a power-user escape hatch to pin a
- * different box to a single conversation. We resolve, highest priority first:
+ * The binding is SURFACE-scoped, never global. A box bound from one surface's
+ * input (e.g. chat) applies to every conversation ON THAT SURFACE and NOTHING
+ * else — it must never silently bind a conversation on a surface with no
+ * visible/unbindable control (transcription cleanup, other AI integrations).
+ * We resolve, highest priority first:
  *
  *   1. Conversation override — `cx_conversation.sandbox_instance_id`, surfaced
- *      on the conversation record as `sandboxOverride`. The power-user "use a
- *      different box just here" path. `null` for almost everyone.
- *   2. User-active sandbox   — `userPreferences.coding.activeAgentSandbox`, the
- *      shared default that follows the user across reloads, tabs, and surfaces.
- *   3. Editor-active sandbox — `codeWorkspaceSlice` (session-only). A sensible
- *      default inside the /code editor's own chat, below any explicit choice.
+ *      on the conversation record as `sandboxOverride`. The "use a different box
+ *      just here" path, valid on any surface. `null` for almost everyone.
+ *   2. Surface-active sandbox — `userPreferences.coding.activeAgentSandboxBySurface`
+ *      keyed by the conversation's OWN `sourceFeature` ("chat-route", …). Not
+ *      route-derived (a background turn can run while you're on another route).
+ *   3. Editor-active sandbox — `codeWorkspaceSlice` (session-only), applied ONLY
+ *      when `sourceFeature === "code-editor"`.
  *   4. None → returns `null` → the capability is omitted → multi-tenant aidream.
  *
- * Both the override and the user-active preference store `{ rowId, proxyUrl }`
+ * The override and each per-surface entry store `{ rowId, proxyUrl, tier }`
  * together, so the common path needs no extra fetch. The access token is
  * minted on demand via `POST /api/sandbox/[id]/access-tokens` and cached in
  * module scope until ~30s before expiry. The mint route only issues tokens for
@@ -63,7 +65,7 @@ export interface ResolvedSandboxRef {
    * stored before tier was tracked, or for the editor-active source.
    */
   tier?: "ec2" | "hosted";
-  source: "conversation-override" | "user-active" | "editor-active";
+  source: "conversation-override" | "surface-active" | "editor-active";
 }
 
 interface CachedToken {
@@ -93,30 +95,46 @@ export function resolveAgentSandboxRef(
   state: RootState,
   conversationId: string | null | undefined,
 ): ResolvedSandboxRef | null {
+  // Level 1: explicit per-conversation override (applies on ANY surface — the
+  // user pinned this specific conversation to a box).
   const override = conversationId
     ? selectConversationSandboxOverride(conversationId)(state)
     : null;
-  const userActive = state.userPreferences?.coding?.activeAgentSandbox ?? null;
-
-  // 1. Per-conversation override (power-user pin).
   if (override?.rowId && override.proxyUrl) {
     return { ...override, source: "conversation-override" };
   }
 
-  // 2. User's shared active sandbox.
-  if (userActive?.rowId && userActive.proxyUrl) {
-    return { ...userActive, source: "user-active" };
+  // The surface this conversation belongs to ("chat-route", "transcript-studio",
+  // "agent-runner", …). This is the load-bearing scope: a box bound from one
+  // surface's input must NEVER bind a conversation on another surface (where
+  // there's no visible/unbindable control). Route-based detection is unsafe
+  // (a background transcription runs while the user sits on /chat), so we read
+  // the conversation's OWN persisted sourceFeature.
+  const sourceFeature = conversationId
+    ? state.conversations?.byConversationId?.[conversationId]?.sourceFeature
+    : undefined;
+  if (!sourceFeature) return null;
+
+  // Level 2: the box bound for THIS surface, if any.
+  const surfaceBound =
+    state.userPreferences?.coding?.activeAgentSandboxBySurface?.[sourceFeature] ??
+    null;
+  if (surfaceBound?.rowId && surfaceBound.proxyUrl) {
+    return { ...surfaceBound, source: "surface-active" };
   }
 
-  // 3. Editor-active sandbox (session-only, /code workspace).
-  const editorRowId = selectActiveSandboxId(state);
-  const editorProxyUrl = selectActiveSandboxProxyUrl(state);
-  if (editorRowId && editorProxyUrl) {
-    return {
-      rowId: editorRowId,
-      proxyUrl: editorProxyUrl,
-      source: "editor-active",
-    };
+  // The /code editor's connected box — scoped to the code-editor surface ONLY,
+  // so it never leaks into chat/transcription/etc.
+  if (sourceFeature === "code-editor") {
+    const editorRowId = selectActiveSandboxId(state);
+    const editorProxyUrl = selectActiveSandboxProxyUrl(state);
+    if (editorRowId && editorProxyUrl) {
+      return {
+        rowId: editorRowId,
+        proxyUrl: editorProxyUrl,
+        source: "editor-active",
+      };
+    }
   }
 
   return null;

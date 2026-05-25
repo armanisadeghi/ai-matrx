@@ -57,8 +57,8 @@ export function SandboxInsightPanel({
   const sourceLabel =
     source === "conversation-override"
       ? "this conversation"
-      : source === "user-active"
-        ? "shared (all conversations)"
+      : source === "surface-active"
+        ? "this surface"
         : "editor";
 
   return (

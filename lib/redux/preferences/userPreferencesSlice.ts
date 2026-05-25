@@ -168,22 +168,21 @@ export interface CodingPreferences {
   /** Last-used sandbox template id (e.g. "bare", "node-20"). */
   lastSandboxTemplate: string;
   /**
-   * The user's shared "active agent sandbox" — the ONE box every conversation
-   * binds to by default, so 20 agents feel like one agent sharing the same
-   * files / working state / memory. `null` = no shared box (multi-tenant
-   * default). Persisted here (not editor-scoped `codeWorkspaceSlice`) so it
-   * follows the user across reloads, tabs, and every chat surface. A specific
-   * conversation can override this via `cx_conversation.sandbox_instance_id`.
-   * Stores `proxyUrl` alongside `rowId` so the binding needs no extra fetch.
-   * `tier` drives where the agent loop runs: "ec2" (slim) boxes route the
-   * conversation's /ai/* to the nearby dedicated server; "hosted" (heavy)
-   * boxes carry the loop themselves.
+   * Per-SURFACE active agent sandbox — Level 2 of the binding model. Keyed by
+   * the conversation's `sourceFeature` (e.g. "chat-route", "agent-runner",
+   * "code-editor"). A box bound from a surface's input applies to every
+   * conversation ON THAT SURFACE — and NOTHING else. It is deliberately NOT
+   * global: a box bound in chat must never leak into transcription cleanup or
+   * any other surface whose input has no visible/unbindable binding control.
+   * (Level 1 is the per-conversation override on `cx_conversation`.)
+   * Each entry stores `proxyUrl` alongside `rowId` (no extra fetch) and `tier`
+   * (drives whether the loop runs on the nearby EC2 server). Empty `{}` = no
+   * surface bound. Persisted so the binding survives reloads/tabs.
    */
-  activeAgentSandbox: {
-    rowId: string;
-    proxyUrl: string;
-    tier?: "ec2" | "hosted";
-  } | null;
+  activeAgentSandboxBySurface: Record<
+    string,
+    { rowId: string; proxyUrl: string; tier?: "ec2" | "hosted" }
+  >;
   /**
    * When true, the code workspace activates per-adapter Monaco type
    * environments (prompt-app, aga-app, tool-ui, library, sandbox-fs,
@@ -483,7 +482,7 @@ export const initializeUserPreferencesState = (
       lastSandboxTier: "ec2",
       lastSandboxTemplate: "bare",
       monacoEnvironmentsEnabled: true,
-      activeAgentSandbox: null,
+      activeAgentSandboxBySurface: {},
     },
     playground: {
       lastRecipeId: "",

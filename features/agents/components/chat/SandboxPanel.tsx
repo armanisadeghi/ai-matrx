@@ -59,9 +59,18 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   // the shared default. Only meaningful inside a (non-ephemeral) conversation.
   const [overrideMode, setOverrideMode] = useState(false);
 
-  const userActive = useAppSelector(
-    (s) => s.userPreferences.coding.activeAgentSandbox,
+  // The surface this conversation belongs to — Level 2 is keyed by it, so a box
+  // bound here only affects conversations on THIS surface (never transcription,
+  // etc.). See active-binding.ts#resolveAgentSandboxRef.
+  const sourceFeature = useAppSelector((s) =>
+    conversationId
+      ? (s.conversations.byConversationId[conversationId]?.sourceFeature ?? null)
+      : null,
   );
+  const bySurface = useAppSelector(
+    (s) => s.userPreferences.coding.activeAgentSandboxBySurface,
+  );
+  const surfaceBound = sourceFeature ? (bySurface[sourceFeature] ?? null) : null;
   const override = useAppSelector(
     selectConversationSandboxOverride(conversationId ?? ""),
   );
@@ -69,12 +78,13 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     selectConversationIsEphemeral(conversationId ?? ""),
   );
 
-  // Resolution mirrors active-binding.ts: override wins over shared default.
-  const resolved = override ?? userActive ?? null;
-  const resolvedSource: "override" | "shared" | null = override
+  // Resolution mirrors active-binding.ts: conversation override wins over the
+  // per-surface binding.
+  const resolved = override ?? surfaceBound ?? null;
+  const resolvedSource: "override" | "surface" | null = override
     ? "override"
-    : userActive
-      ? "shared"
+    : surfaceBound
+      ? "surface"
       : null;
 
   const { instances, loading, fetchInstances, createInstance } =
@@ -103,15 +113,25 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           : "Conversation override cleared",
       );
     } else {
+      if (!sourceFeature) {
+        toast.error("This conversation has no surface yet — try again in a moment.");
+        return;
+      }
+      // Read-modify-write the per-surface map so we only touch THIS surface.
+      const next = { ...bySurface };
+      if (ref) next[sourceFeature] = ref;
+      else delete next[sourceFeature];
       dispatch(
         setPreference({
           module: "coding",
-          preference: "activeAgentSandbox",
-          value: ref,
+          preference: "activeAgentSandboxBySurface",
+          value: next,
         }),
       );
       toast.success(
-        ref ? "Active sandbox set for all conversations" : "Sandbox detached",
+        ref
+          ? "Sandbox bound for this surface (every chat here)"
+          : "Sandbox detached from this surface",
       );
     }
   };
@@ -144,8 +164,8 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
         <div className="border-b border-border px-3 py-2.5">
           <p className="text-sm font-medium text-foreground">Agent sandbox</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            The box your agents read, write, and run commands in. Shared across
-            all your conversations by default.
+            The box your agents read, write, and run commands in. Binds to every
+            conversation on THIS surface — not other surfaces.
           </p>
         </div>
 
@@ -160,7 +180,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
               <p className="text-[11px] text-muted-foreground">
                 {resolvedSource === "override"
                   ? "Pinned to this conversation"
-                  : "Shared — all conversations"}
+                  : "Bound for this surface (every chat here)"}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">

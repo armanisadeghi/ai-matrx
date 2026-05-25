@@ -359,7 +359,7 @@ export interface RequestRouting {
   sandboxRef: {
     rowId: string;
     tier?: "ec2" | "hosted";
-    source: "conversation-override" | "user-active" | "editor-active";
+    source: "conversation-override" | "surface-active" | "editor-active";
   } | null;
   /**
    * Whether the `sandbox` binding actually attached to the payload. When a

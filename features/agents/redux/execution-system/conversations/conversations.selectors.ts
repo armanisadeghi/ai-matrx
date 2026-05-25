@@ -115,7 +115,7 @@ export const selectConversationSurfaceKey =
  * Per-conversation sandbox override — `{ rowId, proxyUrl }` when this
  * conversation is pinned to a specific box (power-user path), else `null`.
  * The agent-sandbox resolver reads this first, falling back to the user's
- * shared `activeAgentSandbox` preference.
+ * per-surface `activeAgentSandboxBySurface` preference.
  */
 export const selectConversationSandboxOverride =
   (conversationId: string) =>

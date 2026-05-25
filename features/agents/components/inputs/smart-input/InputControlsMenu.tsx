@@ -60,9 +60,13 @@ export function InputControlsMenu({
   const sandboxOverride = useAppSelector(
     selectConversationSandboxOverride(conversationId),
   );
-  const userSandbox = useAppSelector(
-    (s) => s.userPreferences.coding.activeAgentSandbox,
-  );
+  // Surface-scoped binding: a box bound for THIS conversation's surface.
+  const surfaceSandbox = useAppSelector((s) => {
+    const sf = s.conversations.byConversationId[conversationId]?.sourceFeature;
+    return sf
+      ? (s.userPreferences.coding.activeAgentSandboxBySurface[sf] ?? null)
+      : null;
+  });
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
@@ -82,7 +86,7 @@ export function InputControlsMenu({
   const activeTab: Tab = tab === "model" && !hasOverrideLayer ? "tools" : tab;
 
   const addedCount = settings?.addedTools?.length ?? 0;
-  const hasSandbox = !!(sandboxOverride ?? userSandbox);
+  const hasSandbox = !!(sandboxOverride ?? surfaceSandbox);
   const active =
     addedCount > 0 ||
     hasSandbox ||
