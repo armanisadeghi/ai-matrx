@@ -175,7 +175,10 @@ export interface GlobalSearchResults {
  * `offset`, but cheap enough for typical note sizes and called at most
  * `matchCount` times per note.
  */
-function locateLine(content: string, offset: number): {
+function locateLine(
+  content: string,
+  offset: number,
+): {
   line: number;
   lineStart: number;
   lineEnd: number;

@@ -329,6 +329,28 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "listManager" },
   },
 
+  // ── Picklist Manager V1 (sidebar + spreadsheet) ───────────────────────────
+  {
+    slug: "picklist-manager-v1-window",
+    overlayId: "picklistManagerV1Window",
+    kind: "window",
+    label: "Picklists — v1",
+    defaultData: { forcedListId: null, title: null },
+    mobilePresentation: "fullscreen",
+    urlSync: { key: "picklistManagerV1" },
+  },
+
+  // ── Picklist Manager V2 (compact switcher + flat table) ───────────────────
+  {
+    slug: "picklist-manager-v2-window",
+    overlayId: "picklistManagerV2Window",
+    kind: "window",
+    label: "Picklists — v2",
+    defaultData: { forcedListId: null, title: null },
+    mobilePresentation: "fullscreen",
+    urlSync: { key: "picklistManagerV2" },
+  },
+
   // ── Settings ──────────────────────────────────────────────────────────────
   {
     slug: "user-preferences-window",
@@ -549,7 +571,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     overlayId: "imageViewer",
     kind: "window",
     label: "Image Viewer",
-    defaultData: { images: [], initialIndex: 0, alts: undefined, title: undefined },
+    defaultData: {
+      images: [],
+      initialIndex: 0,
+      alts: undefined,
+      title: undefined,
+    },
     mobilePresentation: "fullscreen",
     instanceMode: "multi",
   },

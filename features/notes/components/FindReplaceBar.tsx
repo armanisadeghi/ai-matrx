@@ -163,11 +163,12 @@ export function FindReplaceBar({ noteId, textareaRef }: FindReplaceBarProps) {
   // the cross-note totals live in the results panel header below. The "No
   // results" copy is suppressed in global mode so the user isn't confused
   // when the active note has zero hits but other notes do.
-  const matchCounter = fr.matchCount > 0
-    ? `${fr.currentMatchIndex + 1}/${fr.matchCount}`
-    : fr.query && !isGlobal
-      ? "No results"
-      : "";
+  const matchCounter =
+    fr.matchCount > 0
+      ? `${fr.currentMatchIndex + 1}/${fr.matchCount}`
+      : fr.query && !isGlobal
+        ? "No results"
+        : "";
 
   return (
     <div className="flex flex-col gap-1 px-3 py-1.5 border-b border-border bg-muted/30 shrink-0">

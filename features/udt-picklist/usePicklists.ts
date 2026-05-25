@@ -14,7 +14,7 @@ import {
 } from "@/features/user-lists/service";
 import type { UserList, UserListItem } from "@/features/user-lists/types";
 
-export interface QuickListSummary extends UserList {
+export interface PicklistSummary extends UserList {
   item_count: number;
 }
 
@@ -30,14 +30,14 @@ type ItemPatch = Partial<
 >;
 
 /**
- * Data + optimistic-mutation hook for the quick lists editor.
+ * Data + optimistic-mutation hook for the udt_picklists editor (V2 / table layout).
  * - Loads all accessible lists (RLS-filtered) up front (lightweight).
  * - Loads items lazily when a list is activated; caches them in-memory.
- * - All mutations are optimistic; server errors revert and toast.
+ * - All mutations are optimistic; server errors revert and surface in `error`.
  */
-export function useQuickLists() {
+export function usePicklists() {
   const userId = useAppSelector(selectUserId);
-  const [lists, setLists] = useState<QuickListSummary[]>([]);
+  const [lists, setLists] = useState<PicklistSummary[]>([]);
   const [itemsByList, setItemsByList] = useState<
     Record<string, UserListItem[]>
   >({});
@@ -60,7 +60,7 @@ export function useQuickLists() {
           .order("updated_at", { ascending: false, nullsFirst: false });
         if (err) throw err;
         if (cancelled) return;
-        const mapped: QuickListSummary[] = (data ?? []).map((row: any) => ({
+        const mapped: PicklistSummary[] = (data ?? []).map((row: any) => ({
           id: row.id,
           list_name: row.list_name ?? "",
           description: row.description,
@@ -135,7 +135,7 @@ export function useQuickLists() {
           p_is_public: false,
           p_public_read: true,
         })) as unknown as string;
-        const fresh: QuickListSummary = {
+        const fresh: PicklistSummary = {
           id,
           list_name: name,
           description: null,

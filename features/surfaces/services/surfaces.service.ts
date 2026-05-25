@@ -360,10 +360,27 @@ export async function listAgentBindings(surfaceName: string) {
 export async function listToolBindings(surfaceName: string) {
   const { data, error } = await sb()
     .from("tl_def_surface")
-    .select("tool_id, arg_mappings")
+    .select(
+      "tool_id, arg_mappings, tool:tl_def!tl_def_surface_tool_id_fkey(name, category, is_active)",
+    )
     .eq("surface_name", surfaceName);
   if (error) throw error;
-  return data ?? [];
+  type Row = {
+    tool_id: string;
+    arg_mappings: unknown;
+    tool: {
+      name: string | null;
+      category: string | null;
+      is_active: boolean | null;
+    } | null;
+  };
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    tool_id: r.tool_id,
+    arg_mappings: r.arg_mappings,
+    tool_name: r.tool?.name ?? null,
+    tool_category: r.tool?.category ?? null,
+    tool_is_active: r.tool?.is_active ?? null,
+  }));
 }
 
 /** Calls the admin drift-report endpoint. Throws on non-2xx. */

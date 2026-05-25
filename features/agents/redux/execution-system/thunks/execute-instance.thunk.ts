@@ -50,6 +50,7 @@ import {
   createRequest,
   setRequestStatus,
   setRequestRouting,
+  failPendingToolLifecycle,
 } from "../active-requests/active-requests.slice";
 import { addOptimisticUserMessage } from "../messages/messages.slice";
 import { selectMessageCount } from "../messages/messages.selectors";
@@ -449,9 +450,7 @@ export const executeInstance = createAsyncThunk<
         // other field (tools, capabilities, memory, scope) resolves
         // identically to a normal turn — see CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
         routedPayload = {
-          ...(retry
-            ? { retry: true }
-            : { user_input: payload.user_input }),
+          ...(retry ? { retry: true } : { user_input: payload.user_input }),
           stream: true,
           ...(payload.config_overrides && {
             config_overrides: payload.config_overrides,
@@ -610,6 +609,18 @@ export const executeInstance = createAsyncThunk<
         getState: getState as () => RootState,
         jsonExtraction: currentUiState?.jsonExtraction ?? undefined,
         userMessageClientTempId,
+        // Heartbeat-based liveness. The server emits {type:"heartbeat"}
+        // every ~10s independent of tool progress, so a 30s deadline is
+        // ~3 missed beats — long enough to tolerate jitter, short enough
+        // to surface a dead socket fast. monitorStream resets the deadline
+        // on EVERY event (including heartbeat), so a 30-minute shell_execute
+        // is fine as long as heartbeats keep flowing. The absolute lifetime
+        // ceiling is set to 24h so that — by design — heartbeat-loss is the
+        // ONLY way a healthy long-running stream can fail. Tool inactivity
+        // is never a timeout signal here.
+        abortController,
+        heartbeatTimeoutMs: 30_000,
+        maxLifetimeMs: 24 * 60 * 60 * 1000,
       });
 
       unregisterAbortController(conversationId);
@@ -622,22 +633,57 @@ export const executeInstance = createAsyncThunk<
 
       if (error instanceof Error && error.name === "AbortError") {
         dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
+        // A user-initiated cancel orphans any in-flight tool just as surely
+        // as a heartbeat timeout does — clear the shimmers.
+        dispatch(
+          failPendingToolLifecycle({
+            requestId,
+            errorType: "stream_cancelled",
+            errorMessage: "Stream was cancelled before this tool completed.",
+          }),
+        );
         return rejectWithValue("Cancelled");
       }
 
       // Client-side error (network failure, abort, etc.) — synthesise the
       // backend's ErrorPayload shape so all error consumers see one canonical
-      // structure regardless of source. error_type=client_error makes the
-      // origin clear.
+      // structure regardless of source. error_type distinguishes the cause:
+      // heartbeat_timeout = the server stopped sending heartbeats (the only
+      // designed-for failure signal for long-running tools); total_timeout =
+      // the 24h absolute ceiling fired (effectively never); client_error =
+      // anything else (fetch failure, parse error, etc.).
+      const isHeartbeat =
+        error instanceof Error && error.name === "HeartbeatTimeoutError";
+      const isTotal =
+        error instanceof Error && error.name === "TotalTimeoutError";
+      const errorType = isHeartbeat
+        ? "heartbeat_timeout"
+        : isTotal
+          ? "total_timeout"
+          : "client_error";
       const message = error instanceof Error ? error.message : "Unknown error";
       dispatch(
         setRequestStatus({
           requestId,
           status: "error",
-          error: { error_type: "client_error", message },
+          error: { error_type: errorType, message },
         }),
       );
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
+      // Force-terminal any tool that the stream left mid-flight. Without
+      // this, `LiveToolCallCard` keeps shimmering "Using tool …" forever
+      // because the toolLifecycle entry never receives its terminal event.
+      dispatch(
+        failPendingToolLifecycle({
+          requestId,
+          errorType,
+          errorMessage: isHeartbeat
+            ? "Heartbeat stopped — the stream is no longer alive."
+            : isTotal
+              ? "Stream exceeded its maximum lifetime."
+              : message,
+        }),
+      );
       // Pre-persistence failure (e.g. "Failed to fetch"): clear the hidden
       // input so the message doesn't linger in the box. It survives as the
       // optimistic user bubble + the `lastSubmittedText` re-apply backup, so
@@ -648,9 +694,8 @@ export const executeInstance = createAsyncThunk<
       // clear — and the box may hold an unrelated draft the user is typing.
       // Leave it untouched.
       if (!retry) {
-        const { clearUserInput } = await import(
-          "../instance-user-input/instance-user-input.slice"
-        );
+        const { clearUserInput } =
+          await import("../instance-user-input/instance-user-input.slice");
         dispatch(clearUserInput(conversationId));
       }
 

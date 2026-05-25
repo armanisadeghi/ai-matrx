@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   Check,
   CheckCircle2,
   Edit2,
+  ExternalLink,
   Loader2,
   Trash2,
   X,
@@ -623,14 +625,38 @@ export function SurfaceDetailPanel({
                     ? Object.keys(b.arg_mappings as Record<string, unknown>)
                         .length
                     : 0;
+                const toolHref = `/administration/mcp-tools/${b.tool_id}`;
                 return (
                   <div
                     key={b.tool_id}
                     className="px-2 py-1.5 flex items-center gap-2"
                   >
-                    <span className="font-mono text-[11px] truncate flex-1">
-                      {b.tool_id}
-                    </span>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <Link
+                        href={toolHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[12px] font-medium truncate text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+                        title={b.tool_name ?? b.tool_id}
+                      >
+                        <span className="truncate">
+                          {b.tool_name ?? "(unnamed tool)"}
+                        </span>
+                        <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+                      </Link>
+                      <span className="font-mono text-[10px] text-muted-foreground truncate">
+                        {b.tool_category ? `${b.tool_category} · ` : ""}
+                        {b.tool_id}
+                      </span>
+                    </div>
+                    {b.tool_is_active === false && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] text-muted-foreground"
+                      >
+                        inactive
+                      </Badge>
+                    )}
                     <Badge
                       variant={mappingCount > 0 ? "default" : "outline"}
                       className="text-[10px] tabular-nums"

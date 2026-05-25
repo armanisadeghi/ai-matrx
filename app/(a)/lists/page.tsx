@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { QuickListsManager } from "@/features/lists-quick/QuickListsManager";
+import PicklistLanding from "@/features/udt-picklist/PicklistLanding";
 
 export const metadata: Metadata = {
-  title: "Lists",
+  title: "Picklists",
   description:
-    "Create and manage picklists — fast, inline editing for dropdowns, grouped options, and reusable option sets.",
+    "Create and manage reusable option sets (udt_picklists) for dropdowns, dependent pickers, and forms.",
 };
 
-export default function ListsPage() {
+export default function PicklistsLandingPage() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-      <QuickListsManager />
+    <div className="h-dvh w-full overflow-y-auto bg-textured">
+      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
+      <PicklistLanding />
     </div>
   );
 }

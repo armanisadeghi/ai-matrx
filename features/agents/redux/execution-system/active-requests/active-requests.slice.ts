@@ -609,6 +609,51 @@ const activeRequestsSlice = createSlice({
       }
     },
 
+    /**
+     * Terminal-out every non-terminal tool the stream left behind.
+     *
+     * Called when the request itself ends in error/timeout/cancel: any
+     * `toolLifecycle` entry still in a live status (`started` / `progress` /
+     * `step` / `result_preview`) is force-transitioned to `error` and any
+     * unresolved `pendingToolCalls` are marked resolved. Without this the
+     * `LiveToolCallCard` shimmer ("Using tool …") keeps spinning forever
+     * after the parent stream died — the very bug a heartbeat-timeout was
+     * supposed to surface.
+     *
+     * The error metadata (`errorType` / `errorMessage`) is synthesized
+     * client-side because the server never sent the tool's terminal event —
+     * this is the canonical "stream_aborted" / "heartbeat_timeout" shape so
+     * downstream UI can distinguish a tool that the model declared failed
+     * from one whose status was never resolved.
+     */
+    failPendingToolLifecycle(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        errorType: string;
+        errorMessage: string;
+      }>,
+    ) {
+      const { requestId, errorType, errorMessage } = action.payload;
+      const request = state.byRequestId[requestId];
+      if (!request) return;
+
+      const now = new Date().toISOString();
+      for (const callId of Object.keys(request.toolLifecycle)) {
+        const entry = request.toolLifecycle[callId];
+        if (!entry) continue;
+        if (entry.status === "completed" || entry.status === "error") continue;
+        entry.status = "error";
+        entry.completedAt = now;
+        entry.errorType = entry.errorType ?? errorType;
+        entry.errorMessage = entry.errorMessage ?? errorMessage;
+      }
+
+      for (const call of request.pendingToolCalls) {
+        if (!call.resolved) call.resolved = true;
+      }
+    },
+
     // ── Completion ─────────────────────────────────────────────
 
     setCompletion(
@@ -898,9 +943,7 @@ const activeRequestsSlice = createSlice({
       }>,
     ) {
       const { conversationId, rows } = action.payload;
-      const existingIds = new Set(
-        state.byConversationId[conversationId] ?? [],
-      );
+      const existingIds = new Set(state.byConversationId[conversationId] ?? []);
       const newIds: string[] = [];
       for (const row of rows) {
         if (state.byRequestId[row.id]) {
@@ -996,6 +1039,7 @@ export const {
   upsertToolLifecycle,
   addPendingToolCall,
   resolveToolCall,
+  failPendingToolLifecycle,
   setCompletion,
   appendDataPayload,
   addWarning,

@@ -29,26 +29,27 @@ import {
   type CuratedIconPickerHandle,
 } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
 import type { UserListItem } from "@/features/user-lists/types";
-import { useQuickLists, type QuickListSummary } from "./useQuickLists";
+import { usePicklists, type PicklistSummary } from "./usePicklists";
 
-interface QuickListsManagerProps {
+interface PicklistManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */
   forcedListId?: string;
   className?: string;
 }
 
 /**
- * Spreadsheet-style picklist manager.
+ * PicklistManagerV2 — flat-table picklist manager (`udt_picklists` /
+ * `udt_picklist_items`).
  *
  * One screen, one table, five editable columns
  * (Label / Description / Help Text / Group / Icon). Embeddable as-is in a
  * route, modal, or window panel — pass `forcedListId` to lock to one list.
  */
-export function QuickListsManager({
+export function PicklistManagerV2({
   forcedListId,
   className,
-}: QuickListsManagerProps) {
-  const q = useQuickLists();
+}: PicklistManagerV2Props) {
+  const q = usePicklists();
   useEffect(() => {
     if (forcedListId) q.setActiveListId(forcedListId);
   }, [forcedListId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -145,13 +146,13 @@ const VISIBILITY_OPTIONS: Array<{
 ];
 
 interface TopBarProps {
-  list: QuickListSummary | null;
-  lists: QuickListSummary[];
+  list: PicklistSummary | null;
+  lists: PicklistSummary[];
   loadingLists: boolean;
   forced: boolean;
   onSelect: (id: string) => void;
   onNewList: () => void;
-  onPatchList: (patch: Partial<QuickListSummary>) => void;
+  onPatchList: (patch: Partial<PicklistSummary>) => void;
   onDeleteList: () => void;
 }
 
@@ -339,7 +340,7 @@ function ListSwitcher({
   onSelect,
   onNew,
 }: {
-  lists: QuickListSummary[];
+  lists: PicklistSummary[];
   activeId: string | null;
   loading: boolean;
   onSelect: (id: string) => void;
@@ -524,7 +525,7 @@ function VisibilityChip({
 type Col = "label" | "description" | "help_text" | "group" | "icon";
 
 interface ItemsTableProps {
-  list: QuickListSummary;
+  list: PicklistSummary;
   items: UserListItem[];
   loading: boolean;
   onAdd: (seed: {

@@ -122,8 +122,7 @@ export function useFindReplace(instanceId: string, noteId: string | null) {
   }, [dispatch, instanceId, findReplace]);
 
   const setScope = useCallback(
-    (scope: "file" | "global") =>
-      dispatch(setFindScope({ instanceId, scope })),
+    (scope: "file" | "global") => dispatch(setFindScope({ instanceId, scope })),
     [dispatch, instanceId],
   );
 

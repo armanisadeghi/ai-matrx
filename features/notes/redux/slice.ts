@@ -832,11 +832,7 @@ const notesSlice = createSlice({
         const pendingIdx = fr.pendingActiveMatchIndex;
         fr.pendingActiveNoteId = null;
         fr.pendingActiveMatchIndex = null;
-        if (
-          pendingIdx !== null &&
-          pendingIdx >= 0 &&
-          pendingIdx < matchCount
-        ) {
+        if (pendingIdx !== null && pendingIdx >= 0 && pendingIdx < matchCount) {
           fr.currentMatchIndex = pendingIdx;
           return;
         }

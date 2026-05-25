@@ -10,10 +10,7 @@
 
 import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectAllNotesList,
-  selectFindReplaceState,
-} from "../redux/selectors";
+import { selectAllNotesList, selectFindReplaceState } from "../redux/selectors";
 import {
   computeGlobalMatches,
   parsePathPatterns,

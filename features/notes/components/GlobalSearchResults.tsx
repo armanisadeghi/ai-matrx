@@ -118,9 +118,7 @@ export function GlobalSearchResults({
           {totalMatches} {totalMatches === 1 ? "result" : "results"} in{" "}
           {matchedNotes} {matchedNotes === 1 ? "note" : "notes"}
         </span>
-        <span className="tabular-nums">
-          {searchedNotes} searched
-        </span>
+        <span className="tabular-nums">{searchedNotes} searched</span>
       </div>
 
       <div className="flex-1 overflow-y-auto py-1 max-h-[40vh]">
@@ -128,9 +126,7 @@ export function GlobalSearchResults({
           <div key={group.folder || "__unfiled__"} className="mb-1">
             <div className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
               <Folder className="w-3 h-3" />
-              <span className="truncate">
-                {group.folder || "(unfiled)"}
-              </span>
+              <span className="truncate">{group.folder || "(unfiled)"}</span>
             </div>
             {group.notes.map((note) => {
               const isCollapsed = collapsed[note.noteId];

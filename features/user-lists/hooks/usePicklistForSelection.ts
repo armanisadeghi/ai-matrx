@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  getPicklistForSelection,
-} from "@/features/user-lists/service";
+import { getPicklistForSelection } from "@/features/user-lists/service";
 import type {
   PicklistForSelection,
   PicklistSelectionItem,
@@ -25,7 +23,7 @@ export interface UsePicklistForSelectionResult {
 }
 
 // Module-level cache keyed by listId — labels are public and rarely change within a session.
-// Mirrors the in-memory cache pattern used by useQuickLists.
+// Mirrors the in-memory cache pattern used by usePicklists (@/features/udt-picklist).
 const _cache = new Map<string, PicklistForSelection | null>();
 
 function flatten(data: PicklistForSelection | null): {
@@ -101,9 +99,7 @@ export function usePicklistForSelection(
   const groups = groupName
     ? flat.groups.filter((g) => g.group === groupName)
     : flat.groups;
-  const items = groupName
-    ? groups.flatMap((g) => g.items)
-    : flat.items;
+  const items = groupName ? groups.flatMap((g) => g.items) : flat.items;
 
   const unavailable = !loading && !!listId && (errored || data === null);
 

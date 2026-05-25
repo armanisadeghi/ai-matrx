@@ -75,11 +75,15 @@ const StateViewerWindow = dynamic(
   { ssr: false },
 );
 const AgentAdminFindUsagesWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then((m) => ({ default: m.AgentAdminFindUsagesWindow })),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+      (m) => ({ default: m.AgentAdminFindUsagesWindow }),
+    ),
   { ssr: false },
 );
 const AgentShortcutQuickCreateWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentShortcutQuickCreateWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentShortcutQuickCreateWindow"),
   { ssr: false },
 );
 const AgentContentWindow = dynamic(
@@ -87,35 +91,51 @@ const AgentContentWindow = dynamic(
   { ssr: false },
 );
 const AgentAssistantMarkdownDebugWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow"),
   { ssr: false },
 );
 const AgentChatAssistant = dynamic(
-  () => import("@/features/agents/components/agent-widgets/chat-assistant/AgentChatAssistant").then((m) => ({ default: m.AgentChatAssistant })),
+  () =>
+    import("@/features/agents/components/agent-widgets/chat-assistant/AgentChatAssistant").then(
+      (m) => ({ default: m.AgentChatAssistant }),
+    ),
   { ssr: false },
 );
 const AgentChatBubble = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentChatBubble").then((m) => ({ default: m.AgentChatBubble })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentChatBubble").then(
+      (m) => ({ default: m.AgentChatBubble }),
+    ),
   { ssr: false },
 );
 const ChatCollapsible = dynamic(
-  () => import("@/features/agents/components/agent-widgets/ChatCollapsible").then((m) => ({ default: m.ChatCollapsible })),
+  () =>
+    import("@/features/agents/components/agent-widgets/ChatCollapsible").then(
+      (m) => ({ default: m.ChatCollapsible }),
+    ),
   { ssr: false },
 );
 const AgentCompactModal = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentCompactModal").then((m) => ({ default: m.AgentCompactModal })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentCompactModal").then(
+      (m) => ({ default: m.AgentCompactModal }),
+    ),
   { ssr: false },
 );
 const AgentConnectionsWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentConnectionsWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentConnectionsWindow"),
   { ssr: false },
 );
 const AgentContentSidebarWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentContentSidebarWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentContentSidebarWindow"),
   { ssr: false },
 );
 const AgentConvertSystemWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentConvertSystemWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentConvertSystemWindow"),
   { ssr: false },
 );
 const AgentCreateAppWindow = dynamic(
@@ -123,7 +143,10 @@ const AgentCreateAppWindow = dynamic(
   { ssr: false },
 );
 const AgentDataStorageWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then((m) => ({ default: m.AgentDataStorageWindow })),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+      (m) => ({ default: m.AgentDataStorageWindow }),
+    ),
   { ssr: false },
 );
 const AgentDebugWindow = dynamic(
@@ -131,19 +154,31 @@ const AgentDebugWindow = dynamic(
   { ssr: false },
 );
 const AgentFindUsagesWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then((m) => ({ default: m.AgentFindUsagesWindow })),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+      (m) => ({ default: m.AgentFindUsagesWindow }),
+    ),
   { ssr: false },
 );
 const AgentFlexiblePanel = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentFlexiblePanel").then((m) => ({ default: m.AgentFlexiblePanel })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentFlexiblePanel").then(
+      (m) => ({ default: m.AgentFlexiblePanel }),
+    ),
   { ssr: false },
 );
 const AgentFloatingChat = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentFloatingChat").then((m) => ({ default: m.AgentFloatingChat })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentFloatingChat").then(
+      (m) => ({ default: m.AgentFloatingChat }),
+    ),
   { ssr: false },
 );
 const AgentFullModal = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentFullModal").then((m) => ({ default: m.AgentFullModal })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentFullModal").then(
+      (m) => ({ default: m.AgentFullModal }),
+    ),
   { ssr: false },
 );
 const AgentGateWindow = dynamic(
@@ -155,19 +190,31 @@ const AgentImportWindow = dynamic(
   { ssr: false },
 );
 const AgentInlineOverlay = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentInlineOverlay").then((m) => ({ default: m.AgentInlineOverlay })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentInlineOverlay").then(
+      (m) => ({ default: m.AgentInlineOverlay }),
+    ),
   { ssr: false },
 );
 const AgentInterfaceVariationsWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then((m) => ({ default: m.AgentInterfaceVariationsWindow })),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+      (m) => ({ default: m.AgentInterfaceVariationsWindow }),
+    ),
   { ssr: false },
 );
 const AgentOptimizerWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then((m) => ({ default: m.AgentOptimizerWindow })),
+  () =>
+    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+      (m) => ({ default: m.AgentOptimizerWindow }),
+    ),
   { ssr: false },
 );
 const AgentPanelOverlay = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentPanelOverlay").then((m) => ({ default: m.AgentPanelOverlay })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentPanelOverlay").then(
+      (m) => ({ default: m.AgentPanelOverlay }),
+    ),
   { ssr: false },
 );
 const AgentRunHistoryWindow = dynamic(
@@ -183,11 +230,17 @@ const AgentSettingsWindow = dynamic(
   { ssr: false },
 );
 const AgentSidebarOverlay = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then((m) => ({ default: m.AgentSidebarOverlay })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then(
+      (m) => ({ default: m.AgentSidebarOverlay }),
+    ),
   { ssr: false },
 );
 const AgentToastOverlay = dynamic(
-  () => import("@/features/agents/components/agent-widgets/AgentToastOverlay").then((m) => ({ default: m.AgentToastOverlay })),
+  () =>
+    import("@/features/agents/components/agent-widgets/AgentToastOverlay").then(
+      (m) => ({ default: m.AgentToastOverlay }),
+    ),
   { ssr: false },
 );
 const AiVoiceWindow = dynamic(
@@ -195,11 +248,17 @@ const AiVoiceWindow = dynamic(
   { ssr: false },
 );
 const AnnouncementsViewer = dynamic(
-  () => import("@/components/layout/AnnouncementsViewer").then((m) => ({ default: m.AnnouncementsViewer })),
+  () =>
+    import("@/components/layout/AnnouncementsViewer").then((m) => ({
+      default: m.AnnouncementsViewer,
+    })),
   { ssr: false },
 );
 const AuthGateDialog = dynamic(
-  () => import("@/components/dialogs/AuthGateDialog").then((m) => ({ default: m.AuthGateDialog })),
+  () =>
+    import("@/components/dialogs/AuthGateDialog").then((m) => ({
+      default: m.AuthGateDialog,
+    })),
   { ssr: false },
 );
 const FullscreenBrokerState = dynamic(
@@ -211,11 +270,15 @@ const BrowserFrameWindow = dynamic(
   { ssr: false },
 );
 const BrowserWorkbenchWindow = dynamic(
-  () => import("@/features/window-panels/windows/iframe/BrowserWorkbenchWindow"),
+  () =>
+    import("@/features/window-panels/windows/iframe/BrowserWorkbenchWindow"),
   { ssr: false },
 );
 const CanvasViewerWindow = dynamic(
-  () => import("@/features/window-panels/windows/CanvasViewerWindow").then((m) => ({ default: m.CanvasViewerWindow })),
+  () =>
+    import("@/features/window-panels/windows/CanvasViewerWindow").then((m) => ({
+      default: m.CanvasViewerWindow,
+    })),
   { ssr: false },
 );
 const ChatDebugWindow = dynamic(
@@ -231,35 +294,59 @@ const CreatorHubWindow = dynamic(
   { ssr: false },
 );
 const CodeEditorWindow = dynamic(
-  () => import("@/features/window-panels/windows/code/CodeEditorWindow").then((m) => ({ default: m.CodeEditorWindow })),
+  () =>
+    import("@/features/window-panels/windows/code/CodeEditorWindow").then(
+      (m) => ({ default: m.CodeEditorWindow }),
+    ),
   { ssr: false },
 );
 const CodeFileManagerWindow = dynamic(
-  () => import("@/features/window-panels/windows/code/CodeFileManagerWindow").then((m) => ({ default: m.CodeFileManagerWindow })),
+  () =>
+    import("@/features/window-panels/windows/code/CodeFileManagerWindow").then(
+      (m) => ({ default: m.CodeFileManagerWindow }),
+    ),
   { ssr: false },
 );
 const CodeWorkspaceWindow = dynamic(
-  () => import("@/features/code/host/CodeWorkspaceWindow").then((m) => ({ default: m.CodeWorkspaceWindow })),
+  () =>
+    import("@/features/code/host/CodeWorkspaceWindow").then((m) => ({
+      default: m.CodeWorkspaceWindow,
+    })),
   { ssr: false },
 );
 const ContentEditorListWindow = dynamic(
-  () => import("@/features/window-panels/windows/content-editors/ContentEditorListWindow").then((m) => ({ default: m.ContentEditorListWindow })),
+  () =>
+    import("@/features/window-panels/windows/content-editors/ContentEditorListWindow").then(
+      (m) => ({ default: m.ContentEditorListWindow }),
+    ),
   { ssr: false },
 );
 const ContentEditorWindow = dynamic(
-  () => import("@/features/window-panels/windows/content-editors/ContentEditorWindow").then((m) => ({ default: m.ContentEditorWindow })),
+  () =>
+    import("@/features/window-panels/windows/content-editors/ContentEditorWindow").then(
+      (m) => ({ default: m.ContentEditorWindow }),
+    ),
   { ssr: false },
 );
 const ContentEditorWorkspaceWindow = dynamic(
-  () => import("@/features/window-panels/windows/content-editors/ContentEditorWorkspaceWindow").then((m) => ({ default: m.ContentEditorWorkspaceWindow })),
+  () =>
+    import("@/features/window-panels/windows/content-editors/ContentEditorWorkspaceWindow").then(
+      (m) => ({ default: m.ContentEditorWorkspaceWindow }),
+    ),
   { ssr: false },
 );
 const ContentHistoryViewer = dynamic(
-  () => import("@/features/agents/components/TO-BE-ORGANIZED/ContentHistoryViewer").then((m) => ({ default: m.ContentHistoryViewer })),
+  () =>
+    import("@/features/agents/components/TO-BE-ORGANIZED/ContentHistoryViewer").then(
+      (m) => ({ default: m.ContentHistoryViewer }),
+    ),
   { ssr: false },
 );
 const ContextSwitcherWindow = dynamic(
-  () => import("@/features/window-panels/windows/context-scopes/ContextSwitcherWindow").then((m) => ({ default: m.ContextSwitcherWindow })),
+  () =>
+    import("@/features/window-panels/windows/context-scopes/ContextSwitcherWindow").then(
+      (m) => ({ default: m.ContextSwitcherWindow }),
+    ),
   { ssr: false },
 );
 const CropStudioWindow = dynamic(
@@ -267,7 +354,10 @@ const CropStudioWindow = dynamic(
   { ssr: false },
 );
 const CuratedIconPickerWindow = dynamic(
-  () => import("@/features/window-panels/windows/icons/CuratedIconPickerWindow").then((m) => ({ default: m.CuratedIconPickerWindow })),
+  () =>
+    import("@/features/window-panels/windows/icons/CuratedIconPickerWindow").then(
+      (m) => ({ default: m.CuratedIconPickerWindow }),
+    ),
   { ssr: false },
 );
 const EmailDialogBridge = dynamic(
@@ -279,19 +369,27 @@ const EmailDialogWindow = dynamic(
   { ssr: false },
 );
 const ExecutionInspectorWindow = dynamic(
-  () => import("@/features/window-panels/windows/admin/ExecutionInspectorWindow"),
+  () =>
+    import("@/features/window-panels/windows/admin/ExecutionInspectorWindow"),
   { ssr: false },
 );
 const FeedbackWindow = dynamic(
-  () => import("@/features/window-panels/windows/FeedbackWindow").then((m) => ({ default: m.FeedbackWindow })),
+  () =>
+    import("@/features/window-panels/windows/FeedbackWindow").then((m) => ({
+      default: m.FeedbackWindow,
+    })),
   { ssr: false },
 );
 const FilePreviewWindow = dynamic(
-  () => import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
+  () =>
+    import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
   { ssr: false },
 );
 const FullScreenMarkdownEditorBridge = dynamic(
-  () => import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge").then((m) => ({ default: m.FullScreenMarkdownEditorBridge })),
+  () =>
+    import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge").then(
+      (m) => ({ default: m.FullScreenMarkdownEditorBridge }),
+    ),
   { ssr: false },
 );
 const GalleryWindow = dynamic(
@@ -299,15 +397,22 @@ const GalleryWindow = dynamic(
   { ssr: false },
 );
 const HierarchyCreationWindow = dynamic(
-  () => import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
+  () =>
+    import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
   { ssr: false },
 );
 const HtmlPreviewBridge = dynamic(
-  () => import("@/features/cx-conversation/components/HtmlPreviewBridge").then((m) => ({ default: m.HtmlPreviewBridge })),
+  () =>
+    import("@/features/cx-conversation/components/HtmlPreviewBridge").then(
+      (m) => ({ default: m.HtmlPreviewBridge }),
+    ),
   { ssr: false },
 );
 const ImageArrivalPeekHost = dynamic(
-  () => import("@/features/agents/components/notifications/ImageArrivalPeekHost").then((m) => ({ default: m.ImageArrivalPeekHost })),
+  () =>
+    import("@/features/agents/components/notifications/ImageArrivalPeekHost").then(
+      (m) => ({ default: m.ImageArrivalPeekHost }),
+    ),
   { ssr: false },
 );
 const ImageUploaderWindow = dynamic(
@@ -315,7 +420,10 @@ const ImageUploaderWindow = dynamic(
   { ssr: false },
 );
 const ImageViewerWindow = dynamic(
-  () => import("@/features/window-panels/windows/image/ImageViewerWindow").then((m) => ({ default: m.ImageViewerWindow })),
+  () =>
+    import("@/features/window-panels/windows/image/ImageViewerWindow").then(
+      (m) => ({ default: m.ImageViewerWindow }),
+    ),
   { ssr: false },
 );
 const InstanceUIStateWindow = dynamic(
@@ -323,15 +431,25 @@ const InstanceUIStateWindow = dynamic(
   { ssr: false },
 );
 const JsonTruncatorDialog = dynamic(
-  () => import("@/components/official-candidate/json-truncator/JsonTruncatorDialog"),
+  () =>
+    import("@/components/official-candidate/json-truncator/JsonTruncatorDialog"),
   { ssr: false },
 );
 const ListManagerWindow = dynamic(
   () => import("@/features/window-panels/windows/ListManagerWindow"),
   { ssr: false },
 );
+const PicklistManagerV1Window = dynamic(
+  () => import("@/features/window-panels/windows/PicklistManagerV1Window"),
+  { ssr: false },
+);
+const PicklistManagerV2Window = dynamic(
+  () => import("@/features/window-panels/windows/PicklistManagerV2Window"),
+  { ssr: false },
+);
 const FullscreenMarkdownEditor = dynamic(
-  () => import("@/components/mardown-display/markdown-classification/FullscreenMarkdownEditor"),
+  () =>
+    import("@/components/mardown-display/markdown-classification/FullscreenMarkdownEditor"),
   { ssr: false },
 );
 const MarkdownEditorWindow = dynamic(
@@ -347,7 +465,10 @@ const MessagesWindow = dynamic(
   { ssr: false },
 );
 const MultiFileSmartCodeEditorWindow = dynamic(
-  () => import("@/features/window-panels/windows/multi-file-smart-code-editor/MultiFileSmartCodeEditorWindow").then((m) => ({ default: m.MultiFileSmartCodeEditorWindow })),
+  () =>
+    import("@/features/window-panels/windows/multi-file-smart-code-editor/MultiFileSmartCodeEditorWindow").then(
+      (m) => ({ default: m.MultiFileSmartCodeEditorWindow }),
+    ),
   { ssr: false },
 );
 const NewsWindow = dynamic(
@@ -355,15 +476,22 @@ const NewsWindow = dynamic(
   { ssr: false },
 );
 const NotesBetaWindow = dynamic(
-  () => import("@/features/window-panels/windows/notes/NotesBetaWindow").then((m) => ({ default: m.NotesBetaWindow })),
+  () =>
+    import("@/features/window-panels/windows/notes/NotesBetaWindow").then(
+      (m) => ({ default: m.NotesBetaWindow }),
+    ),
   { ssr: false },
 );
 const NotesWindow = dynamic(
-  () => import("@/features/window-panels/windows/notes/NotesWindow").then((m) => ({ default: m.NotesWindow })),
+  () =>
+    import("@/features/window-panels/windows/notes/NotesWindow").then((m) => ({
+      default: m.NotesWindow,
+    })),
   { ssr: false },
 );
 const ObservationalMemoryWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/ObservationalMemoryWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/ObservationalMemoryWindow"),
   { ssr: false },
 );
 const PdfExtractorWindow = dynamic(
@@ -371,11 +499,15 @@ const PdfExtractorWindow = dynamic(
   { ssr: false },
 );
 const ProjectsWindow = dynamic(
-  () => import("@/features/window-panels/windows/context-scopes/ProjectsWindow"),
+  () =>
+    import("@/features/window-panels/windows/context-scopes/ProjectsWindow"),
   { ssr: false },
 );
 const QuickChatSheet = dynamic(
-  () => import("@/features/quick-actions/components/QuickChatSheet").then((m) => ({ default: m.QuickChatSheet })),
+  () =>
+    import("@/features/quick-actions/components/QuickChatSheet").then((m) => ({
+      default: m.QuickChatSheet,
+    })),
   { ssr: false },
 );
 const ChatHistoryWindow = dynamic(
@@ -383,7 +515,10 @@ const ChatHistoryWindow = dynamic(
   { ssr: false },
 );
 const QuickDataSheet = dynamic(
-  () => import("@/features/quick-actions/components/QuickDataSheet").then((m) => ({ default: m.QuickDataSheet })),
+  () =>
+    import("@/features/quick-actions/components/QuickDataSheet").then((m) => ({
+      default: m.QuickDataSheet,
+    })),
   { ssr: false },
 );
 const QuickDataWindow = dynamic(
@@ -395,31 +530,50 @@ const QuickNoteSaveWindow = dynamic(
   { ssr: false },
 );
 const QuickNotesSheet = dynamic(
-  () => import("@/features/notes/actions/QuickNotesSheet").then((m) => ({ default: m.QuickNotesSheet })),
+  () =>
+    import("@/features/notes/actions/QuickNotesSheet").then((m) => ({
+      default: m.QuickNotesSheet,
+    })),
   { ssr: false },
 );
 const QuickTasksSheet = dynamic(
-  () => import("@/features/tasks/components/QuickTasksSheet").then((m) => ({ default: m.QuickTasksSheet })),
+  () =>
+    import("@/features/tasks/components/QuickTasksSheet").then((m) => ({
+      default: m.QuickTasksSheet,
+    })),
   { ssr: false },
 );
 const QuickTasksWindow = dynamic(
-  () => import("@/features/window-panels/windows/context-scopes/QuickTasksWindow"),
+  () =>
+    import("@/features/window-panels/windows/context-scopes/QuickTasksWindow"),
   { ssr: false },
 );
 const UtilitiesOverlay = dynamic(
-  () => import("@/features/quick-actions/components/UtilitiesOverlay").then((m) => ({ default: m.UtilitiesOverlay })),
+  () =>
+    import("@/features/quick-actions/components/UtilitiesOverlay").then(
+      (m) => ({ default: m.UtilitiesOverlay }),
+    ),
   { ssr: false },
 );
 const ResourcePickerWindow = dynamic(
-  () => import("@/features/window-panels/windows/ResourcePickerWindow").then((m) => ({ default: m.ResourcePickerWindow })),
+  () =>
+    import("@/features/window-panels/windows/ResourcePickerWindow").then(
+      (m) => ({ default: m.ResourcePickerWindow }),
+    ),
   { ssr: false },
 );
 const QuickSaveCodeDialog = dynamic(
-  () => import("@/features/code-files/actions/QuickSaveCodeDialog").then((m) => ({ default: m.QuickSaveCodeDialog })),
+  () =>
+    import("@/features/code-files/actions/QuickSaveCodeDialog").then((m) => ({
+      default: m.QuickSaveCodeDialog,
+    })),
   { ssr: false },
 );
 const QuickNoteSaveOverlay = dynamic(
-  () => import("@/features/notes/actions/quick-save/QuickNoteSaveOverlay").then((m) => ({ default: m.QuickNoteSaveOverlay })),
+  () =>
+    import("@/features/notes/actions/quick-save/QuickNoteSaveOverlay").then(
+      (m) => ({ default: m.QuickNoteSaveOverlay }),
+    ),
   { ssr: false },
 );
 const ScraperWindow = dynamic(
@@ -427,7 +581,10 @@ const ScraperWindow = dynamic(
   { ssr: false },
 );
 const ShareModal = dynamic(
-  () => import("@/features/sharing/components/ShareModal").then((m) => ({ default: m.ShareModal })),
+  () =>
+    import("@/features/sharing/components/ShareModal").then((m) => ({
+      default: m.ShareModal,
+    })),
   { ssr: false },
 );
 const ShareModalWindow = dynamic(
@@ -435,11 +592,15 @@ const ShareModalWindow = dynamic(
   { ssr: false },
 );
 const SingleMessageWindow = dynamic(
-  () => import("@/features/window-panels/windows/messaging/SingleMessageWindow"),
+  () =>
+    import("@/features/window-panels/windows/messaging/SingleMessageWindow"),
   { ssr: false },
 );
 const SmartCodeEditorWindow = dynamic(
-  () => import("@/features/window-panels/windows/smart-code-editor/SmartCodeEditorWindow").then((m) => ({ default: m.SmartCodeEditorWindow })),
+  () =>
+    import("@/features/window-panels/windows/smart-code-editor/SmartCodeEditorWindow").then(
+      (m) => ({ default: m.SmartCodeEditorWindow }),
+    ),
   { ssr: false },
 );
 const FullscreenSocketAccordion = dynamic(
@@ -447,11 +608,15 @@ const FullscreenSocketAccordion = dynamic(
   { ssr: false },
 );
 const StreamDebugFloating = dynamic(
-  () => import("@/features/agents/components/debug/StreamDebugFloating").then((m) => ({ default: m.StreamDebugFloating })),
+  () =>
+    import("@/features/agents/components/debug/StreamDebugFloating").then(
+      (m) => ({ default: m.StreamDebugFloating }),
+    ),
   { ssr: false },
 );
 const StreamDebugHistoryWindow = dynamic(
-  () => import("@/features/window-panels/windows/admin/StreamDebugHistoryWindow"),
+  () =>
+    import("@/features/window-panels/windows/admin/StreamDebugHistoryWindow"),
   { ssr: false },
 );
 const TaskQuickCreateWindow = dynamic(
@@ -459,15 +624,22 @@ const TaskQuickCreateWindow = dynamic(
   { ssr: false },
 );
 const ToolCallWindowPanel = dynamic(
-  () => import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
+  () =>
+    import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
   { ssr: false },
 );
 const TranscriptStudioWindow = dynamic(
-  () => import("@/features/window-panels/windows/transcript-studio/TranscriptStudioWindow").then((m) => ({ default: m.TranscriptStudioWindow })),
+  () =>
+    import("@/features/window-panels/windows/transcript-studio/TranscriptStudioWindow").then(
+      (m) => ({ default: m.TranscriptStudioWindow }),
+    ),
   { ssr: false },
 );
 const UndoHistoryOverlay = dynamic(
-  () => import("@/features/agents/components/undo-history/UndoHistoryOverlay").then((m) => ({ default: m.UndoHistoryOverlay })),
+  () =>
+    import("@/features/agents/components/undo-history/UndoHistoryOverlay").then(
+      (m) => ({ default: m.UndoHistoryOverlay }),
+    ),
   { ssr: false },
 );
 const SettingsShellOverlay = dynamic(
@@ -479,23 +651,34 @@ const VoicePad = dynamic(
   { ssr: false },
 );
 const VoicePadAdvanced = dynamic(
-  () => import("@/components/official-candidate/voice-pad/components/VoicePadAdvanced"),
+  () =>
+    import("@/components/official-candidate/voice-pad/components/VoicePadAdvanced"),
   { ssr: false },
 );
 const VoicePadAi = dynamic(
-  () => import("@/components/official-candidate/voice-pad/components/VoicePadAi"),
+  () =>
+    import("@/components/official-candidate/voice-pad/components/VoicePadAi"),
   { ssr: false },
 );
 const WhatsAppMediaWindow = dynamic(
-  () => import("@/features/whatsapp-clone/windows/WhatsAppMediaWindow").then((m) => ({ default: m.WhatsAppMediaWindow })),
+  () =>
+    import("@/features/whatsapp-clone/windows/WhatsAppMediaWindow").then(
+      (m) => ({ default: m.WhatsAppMediaWindow }),
+    ),
   { ssr: false },
 );
 const WhatsAppSettingsWindow = dynamic(
-  () => import("@/features/whatsapp-clone/windows/WhatsAppSettingsWindow").then((m) => ({ default: m.WhatsAppSettingsWindow })),
+  () =>
+    import("@/features/whatsapp-clone/windows/WhatsAppSettingsWindow").then(
+      (m) => ({ default: m.WhatsAppSettingsWindow }),
+    ),
   { ssr: false },
 );
 const WhatsAppShellWindow = dynamic(
-  () => import("@/features/whatsapp-clone/windows/WhatsAppShellWindow").then((m) => ({ default: m.WhatsAppShellWindow })),
+  () =>
+    import("@/features/whatsapp-clone/windows/WhatsAppShellWindow").then(
+      (m) => ({ default: m.WhatsAppShellWindow }),
+    ),
   { ssr: false },
 );
 
@@ -517,195 +700,538 @@ export default function OverlayController() {
   // so a state change in overlay A doesn't re-run the JSX of overlay B beyond
   // React's normal reconciliation.
   const isOpenById = {
-    adminIndicator: useAppSelector((s) => selectIsOverlayOpen(s, "adminIndicator")),
-    adminStateAnalyzer: useAppSelector((s) => selectIsOverlayOpen(s, "adminStateAnalyzer")),
-    adminStateAnalyzerWindow: useAppSelector((s) => selectIsOverlayOpen(s, "adminStateAnalyzerWindow")),
-    agentAdminFindUsagesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentAdminFindUsagesWindow")),
-    agentAdminShortcutWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentAdminShortcutWindow")),
-    agentAdvancedEditorWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentAdvancedEditorWindow")),
-    agentAssistantMarkdownDebugWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentAssistantMarkdownDebugWindow")),
-    agentConnectionsWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentConnectionsWindow")),
-    agentContentSidebarWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentContentSidebarWindow")),
-    agentConvertSystemWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentConvertSystemWindow")),
-    agentCreateAppWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentCreateAppWindow")),
-    agentDataStorageWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentDataStorageWindow")),
-    agentDebugWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentDebugWindow")),
-    agentFindUsagesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentFindUsagesWindow")),
-    agentImportWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentImportWindow")),
-    agentInterfaceVariationsWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentInterfaceVariationsWindow")),
-    agentOptimizerWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentOptimizerWindow")),
-    agentRunHistoryWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentRunHistoryWindow")),
-    agentRunWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentRunWindow")),
-    agentSettingsWindow: useAppSelector((s) => selectIsOverlayOpen(s, "agentSettingsWindow")),
-    aiVoiceWindow: useAppSelector((s) => selectIsOverlayOpen(s, "aiVoiceWindow")),
-    announcements: useAppSelector((s) => selectIsOverlayOpen(s, "announcements")),
+    adminIndicator: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "adminIndicator"),
+    ),
+    adminStateAnalyzer: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "adminStateAnalyzer"),
+    ),
+    adminStateAnalyzerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "adminStateAnalyzerWindow"),
+    ),
+    agentAdminFindUsagesWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentAdminFindUsagesWindow"),
+    ),
+    agentAdminShortcutWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentAdminShortcutWindow"),
+    ),
+    agentAdvancedEditorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentAdvancedEditorWindow"),
+    ),
+    agentAssistantMarkdownDebugWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentAssistantMarkdownDebugWindow"),
+    ),
+    agentConnectionsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentConnectionsWindow"),
+    ),
+    agentContentSidebarWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentContentSidebarWindow"),
+    ),
+    agentConvertSystemWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentConvertSystemWindow"),
+    ),
+    agentCreateAppWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentCreateAppWindow"),
+    ),
+    agentDataStorageWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentDataStorageWindow"),
+    ),
+    agentDebugWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentDebugWindow"),
+    ),
+    agentFindUsagesWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentFindUsagesWindow"),
+    ),
+    agentImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentImportWindow"),
+    ),
+    agentInterfaceVariationsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentInterfaceVariationsWindow"),
+    ),
+    agentOptimizerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentOptimizerWindow"),
+    ),
+    agentRunHistoryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentRunHistoryWindow"),
+    ),
+    agentRunWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentRunWindow"),
+    ),
+    agentSettingsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentSettingsWindow"),
+    ),
+    aiVoiceWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "aiVoiceWindow"),
+    ),
+    announcements: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "announcements"),
+    ),
     authGate: useAppSelector((s) => selectIsOverlayOpen(s, "authGate")),
     brokerState: useAppSelector((s) => selectIsOverlayOpen(s, "brokerState")),
-    browserFrameWindow: useAppSelector((s) => selectIsOverlayOpen(s, "browserFrameWindow")),
-    browserWorkbenchWindow: useAppSelector((s) => selectIsOverlayOpen(s, "browserWorkbenchWindow")),
-    canvasViewerWindow: useAppSelector((s) => selectIsOverlayOpen(s, "canvasViewerWindow")),
-    chatDebugWindow: useAppSelector((s) => selectIsOverlayOpen(s, "chatDebugWindow")),
-    cloudFilesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "cloudFilesWindow")),
-    contextSwitcherWindow: useAppSelector((s) => selectIsOverlayOpen(s, "contextSwitcherWindow")),
+    browserFrameWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "browserFrameWindow"),
+    ),
+    browserWorkbenchWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "browserWorkbenchWindow"),
+    ),
+    canvasViewerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "canvasViewerWindow"),
+    ),
+    chatDebugWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "chatDebugWindow"),
+    ),
+    cloudFilesWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "cloudFilesWindow"),
+    ),
+    contextSwitcherWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "contextSwitcherWindow"),
+    ),
     creatorHub: useAppSelector((s) => selectIsOverlayOpen(s, "creatorHub")),
-    cropStudioWindow: useAppSelector((s) => selectIsOverlayOpen(s, "cropStudioWindow")),
+    cropStudioWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "cropStudioWindow"),
+    ),
     emailDialog: useAppSelector((s) => selectIsOverlayOpen(s, "emailDialog")),
-    emailDialogWindow: useAppSelector((s) => selectIsOverlayOpen(s, "emailDialogWindow")),
-    executionInspectorWindow: useAppSelector((s) => selectIsOverlayOpen(s, "executionInspectorWindow")),
-    feedbackDialog: useAppSelector((s) => selectIsOverlayOpen(s, "feedbackDialog")),
-    filePreviewWindow: useAppSelector((s) => selectIsOverlayOpen(s, "filePreviewWindow")),
-    galleryWindow: useAppSelector((s) => selectIsOverlayOpen(s, "galleryWindow")),
-    hierarchyCreationWindow: useAppSelector((s) => selectIsOverlayOpen(s, "hierarchyCreationWindow")),
-    imagePeekHost: useAppSelector((s) => selectIsOverlayOpen(s, "imagePeekHost")),
-    instanceUIStateWindow: useAppSelector((s) => selectIsOverlayOpen(s, "instanceUIStateWindow")),
-    jsonTruncator: useAppSelector((s) => selectIsOverlayOpen(s, "jsonTruncator")),
-    listManagerWindow: useAppSelector((s) => selectIsOverlayOpen(s, "listManagerWindow")),
-    markdownEditor: useAppSelector((s) => selectIsOverlayOpen(s, "markdownEditor")),
-    markdownEditorWindow: useAppSelector((s) => selectIsOverlayOpen(s, "markdownEditorWindow")),
-    messageAnalysisWindow: useAppSelector((s) => selectIsOverlayOpen(s, "messageAnalysisWindow")),
-    messagesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "messagesWindow")),
+    emailDialogWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "emailDialogWindow"),
+    ),
+    executionInspectorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "executionInspectorWindow"),
+    ),
+    feedbackDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "feedbackDialog"),
+    ),
+    filePreviewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "filePreviewWindow"),
+    ),
+    galleryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "galleryWindow"),
+    ),
+    hierarchyCreationWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "hierarchyCreationWindow"),
+    ),
+    imagePeekHost: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "imagePeekHost"),
+    ),
+    instanceUIStateWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "instanceUIStateWindow"),
+    ),
+    jsonTruncator: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "jsonTruncator"),
+    ),
+    listManagerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "listManagerWindow"),
+    ),
+    markdownEditor: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "markdownEditor"),
+    ),
+    markdownEditorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "markdownEditorWindow"),
+    ),
+    messageAnalysisWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "messageAnalysisWindow"),
+    ),
+    messagesWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "messagesWindow"),
+    ),
     newsWindow: useAppSelector((s) => selectIsOverlayOpen(s, "newsWindow")),
     notesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "notesWindow")),
-    observationalMemoryWindow: useAppSelector((s) => selectIsOverlayOpen(s, "observationalMemoryWindow")),
-    pdfExtractorWindow: useAppSelector((s) => selectIsOverlayOpen(s, "pdfExtractorWindow")),
-    projectsWindow: useAppSelector((s) => selectIsOverlayOpen(s, "projectsWindow")),
+    observationalMemoryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "observationalMemoryWindow"),
+    ),
+    pdfExtractorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "pdfExtractorWindow"),
+    ),
+    picklistManagerV1Window: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "picklistManagerV1Window"),
+    ),
+    picklistManagerV2Window: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "picklistManagerV2Window"),
+    ),
+    projectsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "projectsWindow"),
+    ),
     quickChat: useAppSelector((s) => selectIsOverlayOpen(s, "quickChat")),
-    quickChatHistory: useAppSelector((s) => selectIsOverlayOpen(s, "quickChatHistory")),
-    quickChatWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickChatWindow")),
+    quickChatHistory: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickChatHistory"),
+    ),
+    quickChatWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickChatWindow"),
+    ),
     quickData: useAppSelector((s) => selectIsOverlayOpen(s, "quickData")),
-    quickDataWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickDataWindow")),
-    quickNoteSaveWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickNoteSaveWindow")),
+    quickDataWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickDataWindow"),
+    ),
+    quickNoteSaveWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickNoteSaveWindow"),
+    ),
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
     quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
-    quickTasksWindow: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasksWindow")),
-    quickUtilities: useAppSelector((s) => selectIsOverlayOpen(s, "quickUtilities")),
-    resourcePickerWindow: useAppSelector((s) => selectIsOverlayOpen(s, "resourcePickerWindow")),
-    scraperWindow: useAppSelector((s) => selectIsOverlayOpen(s, "scraperWindow")),
-    shareModalWindow: useAppSelector((s) => selectIsOverlayOpen(s, "shareModalWindow")),
-    socketAccordion: useAppSelector((s) => selectIsOverlayOpen(s, "socketAccordion")),
+    quickTasksWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickTasksWindow"),
+    ),
+    quickUtilities: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "quickUtilities"),
+    ),
+    resourcePickerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "resourcePickerWindow"),
+    ),
+    scraperWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "scraperWindow"),
+    ),
+    shareModalWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "shareModalWindow"),
+    ),
+    socketAccordion: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "socketAccordion"),
+    ),
     streamDebug: useAppSelector((s) => selectIsOverlayOpen(s, "streamDebug")),
-    streamDebugHistoryWindow: useAppSelector((s) => selectIsOverlayOpen(s, "streamDebugHistoryWindow")),
-    taskQuickCreateWindow: useAppSelector((s) => selectIsOverlayOpen(s, "taskQuickCreateWindow")),
-    transcriptStudioWindow: useAppSelector((s) => selectIsOverlayOpen(s, "transcriptStudioWindow")),
+    streamDebugHistoryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "streamDebugHistoryWindow"),
+    ),
+    taskQuickCreateWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "taskQuickCreateWindow"),
+    ),
+    transcriptStudioWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "transcriptStudioWindow"),
+    ),
     undoHistory: useAppSelector((s) => selectIsOverlayOpen(s, "undoHistory")),
-    userPreferences: useAppSelector((s) => selectIsOverlayOpen(s, "userPreferences")),
-    userPreferencesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "userPreferencesWindow")),
-    whatsappMedia: useAppSelector((s) => selectIsOverlayOpen(s, "whatsappMedia")),
-    whatsappSettings: useAppSelector((s) => selectIsOverlayOpen(s, "whatsappSettings")),
-    whatsappShellWindow: useAppSelector((s) => selectIsOverlayOpen(s, "whatsappShellWindow")),
+    userPreferences: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "userPreferences"),
+    ),
+    userPreferencesWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "userPreferencesWindow"),
+    ),
+    whatsappMedia: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "whatsappMedia"),
+    ),
+    whatsappSettings: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "whatsappSettings"),
+    ),
+    whatsappShellWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "whatsappShellWindow"),
+    ),
   };
 
   const dataById = {
-    adminIndicator: useAppSelector((s) => selectOverlayData(s, "adminIndicator")) as Record<string, unknown> | null,
-    adminStateAnalyzer: useAppSelector((s) => selectOverlayData(s, "adminStateAnalyzer")) as Record<string, unknown> | null,
-    adminStateAnalyzerWindow: useAppSelector((s) => selectOverlayData(s, "adminStateAnalyzerWindow")) as Record<string, unknown> | null,
-    agentAdminFindUsagesWindow: useAppSelector((s) => selectOverlayData(s, "agentAdminFindUsagesWindow")) as Record<string, unknown> | null,
-    agentAdminShortcutWindow: useAppSelector((s) => selectOverlayData(s, "agentAdminShortcutWindow")) as Record<string, unknown> | null,
-    agentAdvancedEditorWindow: useAppSelector((s) => selectOverlayData(s, "agentAdvancedEditorWindow")) as Record<string, unknown> | null,
-    agentAssistantMarkdownDebugWindow: useAppSelector((s) => selectOverlayData(s, "agentAssistantMarkdownDebugWindow")) as Record<string, unknown> | null,
-    agentConnectionsWindow: useAppSelector((s) => selectOverlayData(s, "agentConnectionsWindow")) as Record<string, unknown> | null,
-    agentContentSidebarWindow: useAppSelector((s) => selectOverlayData(s, "agentContentSidebarWindow")) as Record<string, unknown> | null,
-    agentConvertSystemWindow: useAppSelector((s) => selectOverlayData(s, "agentConvertSystemWindow")) as Record<string, unknown> | null,
-    agentCreateAppWindow: useAppSelector((s) => selectOverlayData(s, "agentCreateAppWindow")) as Record<string, unknown> | null,
-    agentDataStorageWindow: useAppSelector((s) => selectOverlayData(s, "agentDataStorageWindow")) as Record<string, unknown> | null,
-    agentDebugWindow: useAppSelector((s) => selectOverlayData(s, "agentDebugWindow")) as Record<string, unknown> | null,
-    agentFindUsagesWindow: useAppSelector((s) => selectOverlayData(s, "agentFindUsagesWindow")) as Record<string, unknown> | null,
-    agentImportWindow: useAppSelector((s) => selectOverlayData(s, "agentImportWindow")) as Record<string, unknown> | null,
-    agentInterfaceVariationsWindow: useAppSelector((s) => selectOverlayData(s, "agentInterfaceVariationsWindow")) as Record<string, unknown> | null,
-    agentOptimizerWindow: useAppSelector((s) => selectOverlayData(s, "agentOptimizerWindow")) as Record<string, unknown> | null,
-    agentRunHistoryWindow: useAppSelector((s) => selectOverlayData(s, "agentRunHistoryWindow")) as Record<string, unknown> | null,
-    agentRunWindow: useAppSelector((s) => selectOverlayData(s, "agentRunWindow")) as Record<string, unknown> | null,
-    agentSettingsWindow: useAppSelector((s) => selectOverlayData(s, "agentSettingsWindow")) as Record<string, unknown> | null,
-    aiVoiceWindow: useAppSelector((s) => selectOverlayData(s, "aiVoiceWindow")) as Record<string, unknown> | null,
-    announcements: useAppSelector((s) => selectOverlayData(s, "announcements")) as Record<string, unknown> | null,
-    authGate: useAppSelector((s) => selectOverlayData(s, "authGate")) as Record<string, unknown> | null,
-    brokerState: useAppSelector((s) => selectOverlayData(s, "brokerState")) as Record<string, unknown> | null,
-    browserFrameWindow: useAppSelector((s) => selectOverlayData(s, "browserFrameWindow")) as Record<string, unknown> | null,
-    browserWorkbenchWindow: useAppSelector((s) => selectOverlayData(s, "browserWorkbenchWindow")) as Record<string, unknown> | null,
-    canvasViewerWindow: useAppSelector((s) => selectOverlayData(s, "canvasViewerWindow")) as Record<string, unknown> | null,
-    chatDebugWindow: useAppSelector((s) => selectOverlayData(s, "chatDebugWindow")) as Record<string, unknown> | null,
-    cloudFilesWindow: useAppSelector((s) => selectOverlayData(s, "cloudFilesWindow")) as Record<string, unknown> | null,
-    contextSwitcherWindow: useAppSelector((s) => selectOverlayData(s, "contextSwitcherWindow")) as Record<string, unknown> | null,
-    creatorHub: useAppSelector((s) => selectOverlayData(s, "creatorHub")) as Record<string, unknown> | null,
-    cropStudioWindow: useAppSelector((s) => selectOverlayData(s, "cropStudioWindow")) as Record<string, unknown> | null,
-    emailDialogWindow: useAppSelector((s) => selectOverlayData(s, "emailDialogWindow")) as Record<string, unknown> | null,
-    executionInspectorWindow: useAppSelector((s) => selectOverlayData(s, "executionInspectorWindow")) as Record<string, unknown> | null,
-    feedbackDialog: useAppSelector((s) => selectOverlayData(s, "feedbackDialog")) as Record<string, unknown> | null,
-    filePreviewWindow: useAppSelector((s) => selectOverlayData(s, "filePreviewWindow")) as Record<string, unknown> | null,
-    galleryWindow: useAppSelector((s) => selectOverlayData(s, "galleryWindow")) as Record<string, unknown> | null,
-    hierarchyCreationWindow: useAppSelector((s) => selectOverlayData(s, "hierarchyCreationWindow")) as Record<string, unknown> | null,
-    imagePeekHost: useAppSelector((s) => selectOverlayData(s, "imagePeekHost")) as Record<string, unknown> | null,
-    instanceUIStateWindow: useAppSelector((s) => selectOverlayData(s, "instanceUIStateWindow")) as Record<string, unknown> | null,
-    jsonTruncator: useAppSelector((s) => selectOverlayData(s, "jsonTruncator")) as Record<string, unknown> | null,
-    listManagerWindow: useAppSelector((s) => selectOverlayData(s, "listManagerWindow")) as Record<string, unknown> | null,
-    markdownEditor: useAppSelector((s) => selectOverlayData(s, "markdownEditor")) as Record<string, unknown> | null,
-    markdownEditorWindow: useAppSelector((s) => selectOverlayData(s, "markdownEditorWindow")) as Record<string, unknown> | null,
-    messageAnalysisWindow: useAppSelector((s) => selectOverlayData(s, "messageAnalysisWindow")) as Record<string, unknown> | null,
-    messagesWindow: useAppSelector((s) => selectOverlayData(s, "messagesWindow")) as Record<string, unknown> | null,
-    newsWindow: useAppSelector((s) => selectOverlayData(s, "newsWindow")) as Record<string, unknown> | null,
-    notesWindow: useAppSelector((s) => selectOverlayData(s, "notesWindow")) as Record<string, unknown> | null,
-    observationalMemoryWindow: useAppSelector((s) => selectOverlayData(s, "observationalMemoryWindow")) as Record<string, unknown> | null,
-    pdfExtractorWindow: useAppSelector((s) => selectOverlayData(s, "pdfExtractorWindow")) as Record<string, unknown> | null,
-    projectsWindow: useAppSelector((s) => selectOverlayData(s, "projectsWindow")) as Record<string, unknown> | null,
-    quickChat: useAppSelector((s) => selectOverlayData(s, "quickChat")) as Record<string, unknown> | null,
-    quickChatHistory: useAppSelector((s) => selectOverlayData(s, "quickChatHistory")) as Record<string, unknown> | null,
-    quickChatWindow: useAppSelector((s) => selectOverlayData(s, "quickChatWindow")) as Record<string, unknown> | null,
-    quickData: useAppSelector((s) => selectOverlayData(s, "quickData")) as Record<string, unknown> | null,
-    quickDataWindow: useAppSelector((s) => selectOverlayData(s, "quickDataWindow")) as Record<string, unknown> | null,
-    quickNoteSaveWindow: useAppSelector((s) => selectOverlayData(s, "quickNoteSaveWindow")) as Record<string, unknown> | null,
-    quickNotes: useAppSelector((s) => selectOverlayData(s, "quickNotes")) as Record<string, unknown> | null,
-    quickTasksWindow: useAppSelector((s) => selectOverlayData(s, "quickTasksWindow")) as Record<string, unknown> | null,
-    quickUtilities: useAppSelector((s) => selectOverlayData(s, "quickUtilities")) as Record<string, unknown> | null,
-    resourcePickerWindow: useAppSelector((s) => selectOverlayData(s, "resourcePickerWindow")) as Record<string, unknown> | null,
-    scraperWindow: useAppSelector((s) => selectOverlayData(s, "scraperWindow")) as Record<string, unknown> | null,
-    shareModalWindow: useAppSelector((s) => selectOverlayData(s, "shareModalWindow")) as Record<string, unknown> | null,
-    socketAccordion: useAppSelector((s) => selectOverlayData(s, "socketAccordion")) as Record<string, unknown> | null,
-    streamDebug: useAppSelector((s) => selectOverlayData(s, "streamDebug")) as Record<string, unknown> | null,
-    streamDebugHistoryWindow: useAppSelector((s) => selectOverlayData(s, "streamDebugHistoryWindow")) as Record<string, unknown> | null,
-    taskQuickCreateWindow: useAppSelector((s) => selectOverlayData(s, "taskQuickCreateWindow")) as Record<string, unknown> | null,
-    transcriptStudioWindow: useAppSelector((s) => selectOverlayData(s, "transcriptStudioWindow")) as Record<string, unknown> | null,
-    undoHistory: useAppSelector((s) => selectOverlayData(s, "undoHistory")) as Record<string, unknown> | null,
-    whatsappMedia: useAppSelector((s) => selectOverlayData(s, "whatsappMedia")) as Record<string, unknown> | null,
-    whatsappSettings: useAppSelector((s) => selectOverlayData(s, "whatsappSettings")) as Record<string, unknown> | null,
-    whatsappShellWindow: useAppSelector((s) => selectOverlayData(s, "whatsappShellWindow")) as Record<string, unknown> | null,
+    adminIndicator: useAppSelector((s) =>
+      selectOverlayData(s, "adminIndicator"),
+    ) as Record<string, unknown> | null,
+    adminStateAnalyzer: useAppSelector((s) =>
+      selectOverlayData(s, "adminStateAnalyzer"),
+    ) as Record<string, unknown> | null,
+    adminStateAnalyzerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "adminStateAnalyzerWindow"),
+    ) as Record<string, unknown> | null,
+    agentAdminFindUsagesWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentAdminFindUsagesWindow"),
+    ) as Record<string, unknown> | null,
+    agentAdminShortcutWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentAdminShortcutWindow"),
+    ) as Record<string, unknown> | null,
+    agentAdvancedEditorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentAdvancedEditorWindow"),
+    ) as Record<string, unknown> | null,
+    agentAssistantMarkdownDebugWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentAssistantMarkdownDebugWindow"),
+    ) as Record<string, unknown> | null,
+    agentConnectionsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentConnectionsWindow"),
+    ) as Record<string, unknown> | null,
+    agentContentSidebarWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentContentSidebarWindow"),
+    ) as Record<string, unknown> | null,
+    agentConvertSystemWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentConvertSystemWindow"),
+    ) as Record<string, unknown> | null,
+    agentCreateAppWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentCreateAppWindow"),
+    ) as Record<string, unknown> | null,
+    agentDataStorageWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentDataStorageWindow"),
+    ) as Record<string, unknown> | null,
+    agentDebugWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentDebugWindow"),
+    ) as Record<string, unknown> | null,
+    agentFindUsagesWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentFindUsagesWindow"),
+    ) as Record<string, unknown> | null,
+    agentImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentImportWindow"),
+    ) as Record<string, unknown> | null,
+    agentInterfaceVariationsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentInterfaceVariationsWindow"),
+    ) as Record<string, unknown> | null,
+    agentOptimizerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentOptimizerWindow"),
+    ) as Record<string, unknown> | null,
+    agentRunHistoryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentRunHistoryWindow"),
+    ) as Record<string, unknown> | null,
+    agentRunWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentRunWindow"),
+    ) as Record<string, unknown> | null,
+    agentSettingsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentSettingsWindow"),
+    ) as Record<string, unknown> | null,
+    aiVoiceWindow: useAppSelector((s) =>
+      selectOverlayData(s, "aiVoiceWindow"),
+    ) as Record<string, unknown> | null,
+    announcements: useAppSelector((s) =>
+      selectOverlayData(s, "announcements"),
+    ) as Record<string, unknown> | null,
+    authGate: useAppSelector((s) => selectOverlayData(s, "authGate")) as Record<
+      string,
+      unknown
+    > | null,
+    brokerState: useAppSelector((s) =>
+      selectOverlayData(s, "brokerState"),
+    ) as Record<string, unknown> | null,
+    browserFrameWindow: useAppSelector((s) =>
+      selectOverlayData(s, "browserFrameWindow"),
+    ) as Record<string, unknown> | null,
+    browserWorkbenchWindow: useAppSelector((s) =>
+      selectOverlayData(s, "browserWorkbenchWindow"),
+    ) as Record<string, unknown> | null,
+    canvasViewerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "canvasViewerWindow"),
+    ) as Record<string, unknown> | null,
+    chatDebugWindow: useAppSelector((s) =>
+      selectOverlayData(s, "chatDebugWindow"),
+    ) as Record<string, unknown> | null,
+    cloudFilesWindow: useAppSelector((s) =>
+      selectOverlayData(s, "cloudFilesWindow"),
+    ) as Record<string, unknown> | null,
+    contextSwitcherWindow: useAppSelector((s) =>
+      selectOverlayData(s, "contextSwitcherWindow"),
+    ) as Record<string, unknown> | null,
+    creatorHub: useAppSelector((s) =>
+      selectOverlayData(s, "creatorHub"),
+    ) as Record<string, unknown> | null,
+    cropStudioWindow: useAppSelector((s) =>
+      selectOverlayData(s, "cropStudioWindow"),
+    ) as Record<string, unknown> | null,
+    emailDialogWindow: useAppSelector((s) =>
+      selectOverlayData(s, "emailDialogWindow"),
+    ) as Record<string, unknown> | null,
+    executionInspectorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "executionInspectorWindow"),
+    ) as Record<string, unknown> | null,
+    feedbackDialog: useAppSelector((s) =>
+      selectOverlayData(s, "feedbackDialog"),
+    ) as Record<string, unknown> | null,
+    filePreviewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "filePreviewWindow"),
+    ) as Record<string, unknown> | null,
+    galleryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "galleryWindow"),
+    ) as Record<string, unknown> | null,
+    hierarchyCreationWindow: useAppSelector((s) =>
+      selectOverlayData(s, "hierarchyCreationWindow"),
+    ) as Record<string, unknown> | null,
+    imagePeekHost: useAppSelector((s) =>
+      selectOverlayData(s, "imagePeekHost"),
+    ) as Record<string, unknown> | null,
+    instanceUIStateWindow: useAppSelector((s) =>
+      selectOverlayData(s, "instanceUIStateWindow"),
+    ) as Record<string, unknown> | null,
+    jsonTruncator: useAppSelector((s) =>
+      selectOverlayData(s, "jsonTruncator"),
+    ) as Record<string, unknown> | null,
+    listManagerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "listManagerWindow"),
+    ) as Record<string, unknown> | null,
+    markdownEditor: useAppSelector((s) =>
+      selectOverlayData(s, "markdownEditor"),
+    ) as Record<string, unknown> | null,
+    markdownEditorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "markdownEditorWindow"),
+    ) as Record<string, unknown> | null,
+    messageAnalysisWindow: useAppSelector((s) =>
+      selectOverlayData(s, "messageAnalysisWindow"),
+    ) as Record<string, unknown> | null,
+    messagesWindow: useAppSelector((s) =>
+      selectOverlayData(s, "messagesWindow"),
+    ) as Record<string, unknown> | null,
+    newsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "newsWindow"),
+    ) as Record<string, unknown> | null,
+    notesWindow: useAppSelector((s) =>
+      selectOverlayData(s, "notesWindow"),
+    ) as Record<string, unknown> | null,
+    observationalMemoryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "observationalMemoryWindow"),
+    ) as Record<string, unknown> | null,
+    pdfExtractorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "pdfExtractorWindow"),
+    ) as Record<string, unknown> | null,
+    picklistManagerV1Window: useAppSelector((s) =>
+      selectOverlayData(s, "picklistManagerV1Window"),
+    ) as Record<string, unknown> | null,
+    picklistManagerV2Window: useAppSelector((s) =>
+      selectOverlayData(s, "picklistManagerV2Window"),
+    ) as Record<string, unknown> | null,
+    projectsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "projectsWindow"),
+    ) as Record<string, unknown> | null,
+    quickChat: useAppSelector((s) =>
+      selectOverlayData(s, "quickChat"),
+    ) as Record<string, unknown> | null,
+    quickChatHistory: useAppSelector((s) =>
+      selectOverlayData(s, "quickChatHistory"),
+    ) as Record<string, unknown> | null,
+    quickChatWindow: useAppSelector((s) =>
+      selectOverlayData(s, "quickChatWindow"),
+    ) as Record<string, unknown> | null,
+    quickData: useAppSelector((s) =>
+      selectOverlayData(s, "quickData"),
+    ) as Record<string, unknown> | null,
+    quickDataWindow: useAppSelector((s) =>
+      selectOverlayData(s, "quickDataWindow"),
+    ) as Record<string, unknown> | null,
+    quickNoteSaveWindow: useAppSelector((s) =>
+      selectOverlayData(s, "quickNoteSaveWindow"),
+    ) as Record<string, unknown> | null,
+    quickNotes: useAppSelector((s) =>
+      selectOverlayData(s, "quickNotes"),
+    ) as Record<string, unknown> | null,
+    quickTasksWindow: useAppSelector((s) =>
+      selectOverlayData(s, "quickTasksWindow"),
+    ) as Record<string, unknown> | null,
+    quickUtilities: useAppSelector((s) =>
+      selectOverlayData(s, "quickUtilities"),
+    ) as Record<string, unknown> | null,
+    resourcePickerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "resourcePickerWindow"),
+    ) as Record<string, unknown> | null,
+    scraperWindow: useAppSelector((s) =>
+      selectOverlayData(s, "scraperWindow"),
+    ) as Record<string, unknown> | null,
+    shareModalWindow: useAppSelector((s) =>
+      selectOverlayData(s, "shareModalWindow"),
+    ) as Record<string, unknown> | null,
+    socketAccordion: useAppSelector((s) =>
+      selectOverlayData(s, "socketAccordion"),
+    ) as Record<string, unknown> | null,
+    streamDebug: useAppSelector((s) =>
+      selectOverlayData(s, "streamDebug"),
+    ) as Record<string, unknown> | null,
+    streamDebugHistoryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "streamDebugHistoryWindow"),
+    ) as Record<string, unknown> | null,
+    taskQuickCreateWindow: useAppSelector((s) =>
+      selectOverlayData(s, "taskQuickCreateWindow"),
+    ) as Record<string, unknown> | null,
+    transcriptStudioWindow: useAppSelector((s) =>
+      selectOverlayData(s, "transcriptStudioWindow"),
+    ) as Record<string, unknown> | null,
+    undoHistory: useAppSelector((s) =>
+      selectOverlayData(s, "undoHistory"),
+    ) as Record<string, unknown> | null,
+    whatsappMedia: useAppSelector((s) =>
+      selectOverlayData(s, "whatsappMedia"),
+    ) as Record<string, unknown> | null,
+    whatsappSettings: useAppSelector((s) =>
+      selectOverlayData(s, "whatsappSettings"),
+    ) as Record<string, unknown> | null,
+    whatsappShellWindow: useAppSelector((s) =>
+      selectOverlayData(s, "whatsappShellWindow"),
+    ) as Record<string, unknown> | null,
   };
 
   const instancesById = {
-    agentChatAssistant: useAppSelector((s) => selectOpenInstances(s, "agentChatAssistant")),
-    agentChatBubble: useAppSelector((s) => selectOpenInstances(s, "agentChatBubble")),
-    agentChatCollapsible: useAppSelector((s) => selectOpenInstances(s, "agentChatCollapsible")),
-    agentCompactModal: useAppSelector((s) => selectOpenInstances(s, "agentCompactModal")),
-    agentFlexiblePanel: useAppSelector((s) => selectOpenInstances(s, "agentFlexiblePanel")),
-    agentFloatingChat: useAppSelector((s) => selectOpenInstances(s, "agentFloatingChat")),
-    agentFullModal: useAppSelector((s) => selectOpenInstances(s, "agentFullModal")),
-    agentGateWindow: useAppSelector((s) => selectOpenInstances(s, "agentGateWindow")),
-    agentInlineOverlay: useAppSelector((s) => selectOpenInstances(s, "agentInlineOverlay")),
-    agentPanelOverlay: useAppSelector((s) => selectOpenInstances(s, "agentPanelOverlay")),
-    agentSidebarOverlay: useAppSelector((s) => selectOpenInstances(s, "agentSidebarOverlay")),
-    agentToastOverlay: useAppSelector((s) => selectOpenInstances(s, "agentToastOverlay")),
-    codeEditorWindow: useAppSelector((s) => selectOpenInstances(s, "codeEditorWindow")),
-    codeFileManagerWindow: useAppSelector((s) => selectOpenInstances(s, "codeFileManagerWindow")),
-    codeWorkspaceWindow: useAppSelector((s) => selectOpenInstances(s, "codeWorkspaceWindow")),
-    contentEditorListWindow: useAppSelector((s) => selectOpenInstances(s, "contentEditorListWindow")),
-    contentEditorWindow: useAppSelector((s) => selectOpenInstances(s, "contentEditorWindow")),
-    contentEditorWorkspaceWindow: useAppSelector((s) => selectOpenInstances(s, "contentEditorWorkspaceWindow")),
-    contentHistory: useAppSelector((s) => selectOpenInstances(s, "contentHistory")),
-    curatedIconPickerWindow: useAppSelector((s) => selectOpenInstances(s, "curatedIconPickerWindow")),
-    fullScreenEditor: useAppSelector((s) => selectOpenInstances(s, "fullScreenEditor")),
+    agentChatAssistant: useAppSelector((s) =>
+      selectOpenInstances(s, "agentChatAssistant"),
+    ),
+    agentChatBubble: useAppSelector((s) =>
+      selectOpenInstances(s, "agentChatBubble"),
+    ),
+    agentChatCollapsible: useAppSelector((s) =>
+      selectOpenInstances(s, "agentChatCollapsible"),
+    ),
+    agentCompactModal: useAppSelector((s) =>
+      selectOpenInstances(s, "agentCompactModal"),
+    ),
+    agentFlexiblePanel: useAppSelector((s) =>
+      selectOpenInstances(s, "agentFlexiblePanel"),
+    ),
+    agentFloatingChat: useAppSelector((s) =>
+      selectOpenInstances(s, "agentFloatingChat"),
+    ),
+    agentFullModal: useAppSelector((s) =>
+      selectOpenInstances(s, "agentFullModal"),
+    ),
+    agentGateWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "agentGateWindow"),
+    ),
+    agentInlineOverlay: useAppSelector((s) =>
+      selectOpenInstances(s, "agentInlineOverlay"),
+    ),
+    agentPanelOverlay: useAppSelector((s) =>
+      selectOpenInstances(s, "agentPanelOverlay"),
+    ),
+    agentSidebarOverlay: useAppSelector((s) =>
+      selectOpenInstances(s, "agentSidebarOverlay"),
+    ),
+    agentToastOverlay: useAppSelector((s) =>
+      selectOpenInstances(s, "agentToastOverlay"),
+    ),
+    codeEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "codeEditorWindow"),
+    ),
+    codeFileManagerWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "codeFileManagerWindow"),
+    ),
+    codeWorkspaceWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "codeWorkspaceWindow"),
+    ),
+    contentEditorListWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "contentEditorListWindow"),
+    ),
+    contentEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "contentEditorWindow"),
+    ),
+    contentEditorWorkspaceWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "contentEditorWorkspaceWindow"),
+    ),
+    contentHistory: useAppSelector((s) =>
+      selectOpenInstances(s, "contentHistory"),
+    ),
+    curatedIconPickerWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "curatedIconPickerWindow"),
+    ),
+    fullScreenEditor: useAppSelector((s) =>
+      selectOpenInstances(s, "fullScreenEditor"),
+    ),
     htmlPreview: useAppSelector((s) => selectOpenInstances(s, "htmlPreview")),
-    imageUploaderWindow: useAppSelector((s) => selectOpenInstances(s, "imageUploaderWindow")),
+    imageUploaderWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "imageUploaderWindow"),
+    ),
     imageViewer: useAppSelector((s) => selectOpenInstances(s, "imageViewer")),
-    multiFileSmartCodeEditorWindow: useAppSelector((s) => selectOpenInstances(s, "multiFileSmartCodeEditorWindow")),
-    notesBetaWindow: useAppSelector((s) => selectOpenInstances(s, "notesBetaWindow")),
+    multiFileSmartCodeEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "multiFileSmartCodeEditorWindow"),
+    ),
+    notesBetaWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "notesBetaWindow"),
+    ),
     saveToCode: useAppSelector((s) => selectOpenInstances(s, "saveToCode")),
     saveToNotes: useAppSelector((s) => selectOpenInstances(s, "saveToNotes")),
-    saveToNotesFullscreen: useAppSelector((s) => selectOpenInstances(s, "saveToNotesFullscreen")),
+    saveToNotesFullscreen: useAppSelector((s) =>
+      selectOpenInstances(s, "saveToNotesFullscreen"),
+    ),
     shareModal: useAppSelector((s) => selectOpenInstances(s, "shareModal")),
-    singleMessageWindow: useAppSelector((s) => selectOpenInstances(s, "singleMessageWindow")),
-    smartCodeEditorWindow: useAppSelector((s) => selectOpenInstances(s, "smartCodeEditorWindow")),
-    toolCallWindow: useAppSelector((s) => selectOpenInstances(s, "toolCallWindow")),
+    singleMessageWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "singleMessageWindow"),
+    ),
+    smartCodeEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "smartCodeEditorWindow"),
+    ),
+    toolCallWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "toolCallWindow"),
+    ),
     voicePad: useAppSelector((s) => selectOpenInstances(s, "voicePad")),
-    voicePadAdvanced: useAppSelector((s) => selectOpenInstances(s, "voicePadAdvanced")),
+    voicePadAdvanced: useAppSelector((s) =>
+      selectOpenInstances(s, "voicePadAdvanced"),
+    ),
     voicePadAi: useAppSelector((s) => selectOpenInstances(s, "voicePadAi")),
   };
 
@@ -714,12 +1240,17 @@ export default function OverlayController() {
       {/* adminIndicator */}
       {(() => {
         const isOpen = isOpenById.adminIndicator;
-        const data = dataById.adminIndicator as Record<string, unknown> | null | undefined;
+        const data = dataById.adminIndicator as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AdminIndicator
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "adminIndicator" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "adminIndicator" }))
+            }
           />
         );
       })()}
@@ -727,12 +1258,17 @@ export default function OverlayController() {
       {/* adminStateAnalyzer */}
       {(() => {
         const isOpen = isOpenById.adminStateAnalyzer;
-        const data = dataById.adminStateAnalyzer as Record<string, unknown> | null | undefined;
+        const data = dataById.adminStateAnalyzer as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <StateViewerOverlay
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "adminStateAnalyzer" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "adminStateAnalyzer" }))
+            }
           />
         );
       })()}
@@ -740,12 +1276,17 @@ export default function OverlayController() {
       {/* adminStateAnalyzerWindow */}
       {(() => {
         const isOpen = isOpenById.adminStateAnalyzerWindow;
-        const data = dataById.adminStateAnalyzerWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.adminStateAnalyzerWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <StateViewerWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "adminStateAnalyzerWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "adminStateAnalyzerWindow" }))
+            }
           />
         );
       })()}
@@ -753,12 +1294,19 @@ export default function OverlayController() {
       {/* agentAdminFindUsagesWindow */}
       {(() => {
         const isOpen = isOpenById.agentAdminFindUsagesWindow;
-        const data = dataById.agentAdminFindUsagesWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentAdminFindUsagesWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentAdminFindUsagesWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentAdminFindUsagesWindow" }))}
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "agentAdminFindUsagesWindow" }),
+              )
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -768,14 +1316,21 @@ export default function OverlayController() {
       {/* agentAdminShortcutWindow */}
       {(() => {
         const isOpen = isOpenById.agentAdminShortcutWindow;
-        const data = dataById.agentAdminShortcutWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentAdminShortcutWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentShortcutQuickCreateWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentAdminShortcutWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentAdminShortcutWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
-            initialActiveTab={data?.initialActiveTab as QuickCreateTab | undefined}
+            initialActiveTab={
+              data?.initialActiveTab as QuickCreateTab | undefined
+            }
           />
         );
       })()}
@@ -784,16 +1339,34 @@ export default function OverlayController() {
       {/* agentAdvancedEditorWindow */}
       {(() => {
         const isOpen = isOpenById.agentAdvancedEditorWindow;
-        const data = dataById.agentAdvancedEditorWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentAdvancedEditorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentContentWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentAdvancedEditorWindow" }))}
-            initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentAdvancedEditorWindow" }))
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : null
+            }
             initialTab={data?.initialTab as AgentContentTab | undefined}
-            tabs={(Array.isArray(data?.tabs) || (typeof data?.tabs === "object" && data?.tabs !== null) ? data.tabs : undefined) as AgentContentTab[] | undefined}
-            multiAgentMode={typeof data?.multiAgentMode === "boolean" ? data.multiAgentMode : undefined}
+            tabs={
+              (Array.isArray(data?.tabs) ||
+              (typeof data?.tabs === "object" && data?.tabs !== null)
+                ? data.tabs
+                : undefined) as AgentContentTab[] | undefined
+            }
+            multiAgentMode={
+              typeof data?.multiAgentMode === "boolean"
+                ? data.multiAgentMode
+                : undefined
+            }
           />
         );
       })()}
@@ -801,12 +1374,21 @@ export default function OverlayController() {
       {/* agentAssistantMarkdownDebugWindow */}
       {(() => {
         const isOpen = isOpenById.agentAssistantMarkdownDebugWindow;
-        const data = dataById.agentAssistantMarkdownDebugWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentAssistantMarkdownDebugWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentAssistantMarkdownDebugWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentAssistantMarkdownDebugWindow" }))}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentAssistantMarkdownDebugWindow",
+                }),
+              )
+            }
           />
         );
       })()}
@@ -817,9 +1399,22 @@ export default function OverlayController() {
         return (
           <AgentChatAssistant
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentChatAssistant", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
-            stackIndex={typeof data?.stackIndex === "number" ? data.stackIndex : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentChatAssistant",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
+            stackIndex={
+              typeof data?.stackIndex === "number" ? data.stackIndex : undefined
+            }
           />
         );
       })}
@@ -830,8 +1425,19 @@ export default function OverlayController() {
         return (
           <AgentChatBubble
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentChatBubble", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentChatBubble",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -842,8 +1448,19 @@ export default function OverlayController() {
         return (
           <ChatCollapsible
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentChatCollapsible", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentChatCollapsible",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -854,8 +1471,19 @@ export default function OverlayController() {
         return (
           <AgentCompactModal
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentCompactModal", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentCompactModal",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -864,15 +1492,28 @@ export default function OverlayController() {
       {/* agentConnectionsWindow */}
       {(() => {
         const isOpen = isOpenById.agentConnectionsWindow;
-        const data = dataById.agentConnectionsWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentConnectionsWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentConnectionsWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentConnectionsWindow" }))}
-            initialSection={data?.initialSection as AgentConnectionsSection | undefined}
-            initialScope={data?.initialScope as AgentConnectionsScope | undefined}
-            initialSelectedItemId={typeof data?.initialSelectedItemId === "string" ? data.initialSelectedItemId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentConnectionsWindow" }))
+            }
+            initialSection={
+              data?.initialSection as AgentConnectionsSection | undefined
+            }
+            initialScope={
+              data?.initialScope as AgentConnectionsScope | undefined
+            }
+            initialSelectedItemId={
+              typeof data?.initialSelectedItemId === "string"
+                ? data.initialSelectedItemId
+                : null
+            }
           />
         );
       })()}
@@ -881,13 +1522,22 @@ export default function OverlayController() {
       {/* agentContentSidebarWindow */}
       {(() => {
         const isOpen = isOpenById.agentContentSidebarWindow;
-        const data = dataById.agentContentSidebarWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentContentSidebarWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentContentSidebarWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentContentSidebarWindow" }))}
-            initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentContentSidebarWindow" }))
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : null
+            }
             initialTab={data?.initialTab as AgentContentTab | undefined}
           />
         );
@@ -896,12 +1546,17 @@ export default function OverlayController() {
       {/* agentConvertSystemWindow */}
       {(() => {
         const isOpen = isOpenById.agentConvertSystemWindow;
-        const data = dataById.agentConvertSystemWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentConvertSystemWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentConvertSystemWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentConvertSystemWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentConvertSystemWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -910,12 +1565,17 @@ export default function OverlayController() {
       {/* agentCreateAppWindow */}
       {(() => {
         const isOpen = isOpenById.agentCreateAppWindow;
-        const data = dataById.agentCreateAppWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentCreateAppWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentCreateAppWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentCreateAppWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentCreateAppWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -924,12 +1584,17 @@ export default function OverlayController() {
       {/* agentDataStorageWindow */}
       {(() => {
         const isOpen = isOpenById.agentDataStorageWindow;
-        const data = dataById.agentDataStorageWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentDataStorageWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentDataStorageWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentDataStorageWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentDataStorageWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -938,14 +1603,27 @@ export default function OverlayController() {
       {/* agentDebugWindow */}
       {(() => {
         const isOpen = isOpenById.agentDebugWindow;
-        const data = dataById.agentDebugWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentDebugWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentDebugWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentDebugWindow" }))}
-            initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : null}
-            initialConversationId={typeof data?.initialConversationId === "string" ? data.initialConversationId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentDebugWindow" }))
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : null
+            }
+            initialConversationId={
+              typeof data?.initialConversationId === "string"
+                ? data.initialConversationId
+                : null
+            }
           />
         );
       })()}
@@ -953,12 +1631,17 @@ export default function OverlayController() {
       {/* agentFindUsagesWindow */}
       {(() => {
         const isOpen = isOpenById.agentFindUsagesWindow;
-        const data = dataById.agentFindUsagesWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentFindUsagesWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentFindUsagesWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentFindUsagesWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentFindUsagesWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -970,8 +1653,19 @@ export default function OverlayController() {
         return (
           <AgentFlexiblePanel
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentFlexiblePanel", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentFlexiblePanel",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -982,8 +1676,19 @@ export default function OverlayController() {
         return (
           <AgentFloatingChat
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentFloatingChat", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentFloatingChat",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -994,8 +1699,19 @@ export default function OverlayController() {
         return (
           <AgentFullModal
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentFullModal", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentFullModal",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -1009,9 +1725,22 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentGateWindow", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
-            downstreamOverlayId={data?.downstreamOverlayId as OverlayId | undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentGateWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
+            downstreamOverlayId={
+              data?.downstreamOverlayId as OverlayId | undefined
+            }
           />
         );
       })}
@@ -1019,12 +1748,17 @@ export default function OverlayController() {
       {/* agentImportWindow */}
       {(() => {
         const isOpen = isOpenById.agentImportWindow;
-        const data = dataById.agentImportWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentImportWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentImportWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentImportWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentImportWindow" }))
+            }
           />
         );
       })()}
@@ -1035,8 +1769,19 @@ export default function OverlayController() {
         return (
           <AgentInlineOverlay
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentInlineOverlay", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentInlineOverlay",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -1044,12 +1789,19 @@ export default function OverlayController() {
       {/* agentInterfaceVariationsWindow */}
       {(() => {
         const isOpen = isOpenById.agentInterfaceVariationsWindow;
-        const data = dataById.agentInterfaceVariationsWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentInterfaceVariationsWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentInterfaceVariationsWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentInterfaceVariationsWindow" }))}
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "agentInterfaceVariationsWindow" }),
+              )
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -1058,12 +1810,17 @@ export default function OverlayController() {
       {/* agentOptimizerWindow */}
       {(() => {
         const isOpen = isOpenById.agentOptimizerWindow;
-        const data = dataById.agentOptimizerWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentOptimizerWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentOptimizerWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentOptimizerWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentOptimizerWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
@@ -1075,8 +1832,19 @@ export default function OverlayController() {
         return (
           <AgentPanelOverlay
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentPanelOverlay", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentPanelOverlay",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -1084,14 +1852,23 @@ export default function OverlayController() {
       {/* agentRunHistoryWindow */}
       {(() => {
         const isOpen = isOpenById.agentRunHistoryWindow;
-        const data = dataById.agentRunHistoryWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentRunHistoryWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentRunHistoryWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentRunHistoryWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentRunHistoryWindow" }))
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
-            initialSelectedConversationId={typeof data?.initialSelectedConversationId === "string" ? data.initialSelectedConversationId : null}
+            initialSelectedConversationId={
+              typeof data?.initialSelectedConversationId === "string"
+                ? data.initialSelectedConversationId
+                : null
+            }
           />
         );
       })()}
@@ -1099,14 +1876,27 @@ export default function OverlayController() {
       {/* agentRunWindow */}
       {(() => {
         const isOpen = isOpenById.agentRunWindow;
-        const data = dataById.agentRunWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentRunWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentRunWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentRunWindow" }))}
-            initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : null}
-            initialSelectedConversationId={typeof data?.initialSelectedConversationId === "string" ? data.initialSelectedConversationId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentRunWindow" }))
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : null
+            }
+            initialSelectedConversationId={
+              typeof data?.initialSelectedConversationId === "string"
+                ? data.initialSelectedConversationId
+                : null
+            }
           />
         );
       })()}
@@ -1114,13 +1904,22 @@ export default function OverlayController() {
       {/* agentSettingsWindow */}
       {(() => {
         const isOpen = isOpenById.agentSettingsWindow;
-        const data = dataById.agentSettingsWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.agentSettingsWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AgentSettingsWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentSettingsWindow" }))}
-            initialAgentId={typeof data?.initialAgentId === "string" ? data.initialAgentId : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentSettingsWindow" }))
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : undefined
+            }
           />
         );
       })()}
@@ -1131,8 +1930,19 @@ export default function OverlayController() {
         return (
           <AgentSidebarOverlay
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentSidebarOverlay", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentSidebarOverlay",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })}
@@ -1143,8 +1953,19 @@ export default function OverlayController() {
         return (
           <AgentToastOverlay
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "agentToastOverlay", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentToastOverlay",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
             index={typeof data?.index === "number" ? data.index : undefined}
           />
         );
@@ -1153,7 +1974,10 @@ export default function OverlayController() {
       {/* aiVoiceWindow */}
       {(() => {
         const isOpen = isOpenById.aiVoiceWindow;
-        const data = dataById.aiVoiceWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.aiVoiceWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AiVoiceWindow
@@ -1165,12 +1989,17 @@ export default function OverlayController() {
       {/* announcements */}
       {(() => {
         const isOpen = isOpenById.announcements;
-        const data = dataById.announcements as Record<string, unknown> | null | undefined;
+        const data = dataById.announcements as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AnnouncementsViewer
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "announcements" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "announcements" }))
+            }
           />
         );
       })()}
@@ -1178,14 +2007,25 @@ export default function OverlayController() {
       {/* authGate */}
       {(() => {
         const isOpen = isOpenById.authGate;
-        const data = dataById.authGate as Record<string, unknown> | null | undefined;
+        const data = dataById.authGate as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <AuthGateDialog
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "authGate" }))}
-            featureName={typeof data?.featureName === "string" ? data.featureName : undefined}
-            featureDescription={typeof data?.featureDescription === "string" ? data.featureDescription : undefined}
+            featureName={
+              typeof data?.featureName === "string"
+                ? data.featureName
+                : undefined
+            }
+            featureDescription={
+              typeof data?.featureDescription === "string"
+                ? data.featureDescription
+                : undefined
+            }
           />
         );
       })()}
@@ -1194,15 +2034,28 @@ export default function OverlayController() {
       {/* brokerState */}
       {(() => {
         const isOpen = isOpenById.brokerState;
-        const data = dataById.brokerState as Record<string, unknown> | null | undefined;
+        const data = dataById.brokerState as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <FullscreenBrokerState
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "brokerState" }))}
-            triggerClassName={typeof data?.triggerClassName === "string" ? data.triggerClassName : undefined}
-            triggerLabel={typeof data?.triggerLabel === "string" ? data.triggerLabel : undefined}
-            onOpen={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            triggerClassName={
+              typeof data?.triggerClassName === "string"
+                ? data.triggerClassName
+                : undefined
+            }
+            triggerLabel={
+              typeof data?.triggerLabel === "string"
+                ? data.triggerLabel
+                : undefined
+            }
+            onOpen={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
           />
         );
       })()}
@@ -1210,14 +2063,25 @@ export default function OverlayController() {
       {/* browserFrameWindow */}
       {(() => {
         const isOpen = isOpenById.browserFrameWindow;
-        const data = dataById.browserFrameWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.browserFrameWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <BrowserFrameWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "browserFrameWindow" }))}
-            initialUrl={typeof data?.initialUrl === "string" ? data.initialUrl : null}
-            initialWindowTitle={typeof data?.initialWindowTitle === "string" ? data.initialWindowTitle : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "browserFrameWindow" }))
+            }
+            initialUrl={
+              typeof data?.initialUrl === "string" ? data.initialUrl : null
+            }
+            initialWindowTitle={
+              typeof data?.initialWindowTitle === "string"
+                ? data.initialWindowTitle
+                : null
+            }
           />
         );
       })()}
@@ -1226,15 +2090,24 @@ export default function OverlayController() {
       {/* browserWorkbenchWindow */}
       {(() => {
         const isOpen = isOpenById.browserWorkbenchWindow;
-        const data = dataById.browserWorkbenchWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.browserWorkbenchWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <BrowserWorkbenchWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "browserWorkbenchWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "browserWorkbenchWindow" }))
+            }
             initialBookmarks={data?.initialBookmarks as unknown}
             initialTabs={data?.initialTabs as unknown}
-            initialActiveTabId={typeof data?.initialActiveTabId === "string" ? data.initialActiveTabId : null}
+            initialActiveTabId={
+              typeof data?.initialActiveTabId === "string"
+                ? data.initialActiveTabId
+                : null
+            }
           />
         );
       })()}
@@ -1242,14 +2115,23 @@ export default function OverlayController() {
       {/* canvasViewerWindow */}
       {(() => {
         const isOpen = isOpenById.canvasViewerWindow;
-        const data = dataById.canvasViewerWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.canvasViewerWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <CanvasViewerWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "canvasViewerWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "canvasViewerWindow" }))
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
-            initialShareToken={typeof data?.initialShareToken === "string" ? data.initialShareToken : undefined}
+            initialShareToken={
+              typeof data?.initialShareToken === "string"
+                ? data.initialShareToken
+                : undefined
+            }
           />
         );
       })()}
@@ -1257,13 +2139,20 @@ export default function OverlayController() {
       {/* chatDebugWindow */}
       {(() => {
         const isOpen = isOpenById.chatDebugWindow;
-        const data = dataById.chatDebugWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.chatDebugWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ChatDebugWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "chatDebugWindow" }))}
-            sessionId={typeof data?.sessionId === "string" ? data.sessionId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "chatDebugWindow" }))
+            }
+            sessionId={
+              typeof data?.sessionId === "string" ? data.sessionId : null
+            }
           />
         );
       })()}
@@ -1272,12 +2161,17 @@ export default function OverlayController() {
       {/* cloudFilesWindow */}
       {(() => {
         const isOpen = isOpenById.cloudFilesWindow;
-        const data = dataById.cloudFilesWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.cloudFilesWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <CloudFilesWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "cloudFilesWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "cloudFilesWindow" }))
+            }
             initialTab={data?.initialTab as CloudFilesWindowTab | undefined}
           />
         );
@@ -1286,13 +2180,20 @@ export default function OverlayController() {
       {/* creatorHub */}
       {(() => {
         const isOpen = isOpenById.creatorHub;
-        const data = dataById.creatorHub as Record<string, unknown> | null | undefined;
+        const data = dataById.creatorHub as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <CreatorHubWindow
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "creatorHub" }))}
-            initialTab={typeof data?.initialTab === "string" ? (data.initialTab as CreatorHubTabId) : undefined}
+            initialTab={
+              typeof data?.initialTab === "string"
+                ? (data.initialTab as CreatorHubTabId)
+                : undefined
+            }
           />
         );
       })()}
@@ -1304,14 +2205,49 @@ export default function OverlayController() {
         return (
           <CodeEditorWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "codeEditorWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : []) as MultiFileCoreCodeFile[]}
-            fileIds={Array.isArray(data?.fileIds) && data.fileIds.every((v) => typeof v === "string") ? (data.fileIds as string[]) : undefined}
-            activeFileId={typeof data?.activeFileId === "string" ? data.activeFileId : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "codeEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
+            files={
+              (Array.isArray(data?.files) ||
+              (typeof data?.files === "object" && data?.files !== null)
+                ? data.files
+                : []) as MultiFileCoreCodeFile[]
+            }
+            fileIds={
+              Array.isArray(data?.fileIds) &&
+              data.fileIds.every((v) => typeof v === "string")
+                ? (data.fileIds as string[])
+                : undefined
+            }
+            activeFileId={
+              typeof data?.activeFileId === "string"
+                ? data.activeFileId
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : null}
-            defaultWordWrap={(["on", "off"] as ReadonlyArray<unknown>).includes(data?.defaultWordWrap) ? (data?.defaultWordWrap as "on" | "off") : undefined}
-            autoFormatOnOpen={typeof data?.autoFormatOnOpen === "boolean" ? data.autoFormatOnOpen : undefined}
+            defaultWordWrap={
+              (["on", "off"] as ReadonlyArray<unknown>).includes(
+                data?.defaultWordWrap,
+              )
+                ? (data?.defaultWordWrap as "on" | "off")
+                : undefined
+            }
+            autoFormatOnOpen={
+              typeof data?.autoFormatOnOpen === "boolean"
+                ? data.autoFormatOnOpen
+                : undefined
+            }
           />
         );
       })}
@@ -1322,8 +2258,19 @@ export default function OverlayController() {
         return (
           <CodeFileManagerWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "codeFileManagerWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "codeFileManagerWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
           />
         );
       })}
@@ -1335,15 +2282,32 @@ export default function OverlayController() {
         return (
           <CodeWorkspaceWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "codeWorkspaceWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "codeWorkspaceWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
             title={typeof data?.title === "string" ? data.title : null}
             adapter={data?.adapter as FilesystemAdapter | undefined}
             process={data?.process as ProcessAdapter | undefined}
             rightSlot={data?.rightSlot as ReactNode}
             farRightSlot={data?.farRightSlot as ReactNode}
-            hideChat={typeof data?.hideChat === "boolean" ? data.hideChat : undefined}
-            hideHistory={typeof data?.hideHistory === "boolean" ? data.hideHistory : undefined}
+            hideChat={
+              typeof data?.hideChat === "boolean" ? data.hideChat : undefined
+            }
+            hideHistory={
+              typeof data?.hideHistory === "boolean"
+                ? data.hideHistory
+                : undefined
+            }
           />
         );
       })}
@@ -1355,12 +2319,38 @@ export default function OverlayController() {
         return (
           <ContentEditorListWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "contentEditorListWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            documents={(Array.isArray(data?.documents) || (typeof data?.documents === "object" && data?.documents !== null) ? data.documents : undefined) as ContentEditorSeedDocument[] | undefined}
-            activeDocumentId={typeof data?.activeDocumentId === "string" ? data.activeDocumentId : null}
-            listTitle={typeof data?.listTitle === "string" ? data.listTitle : null}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "contentEditorListWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            documents={
+              (Array.isArray(data?.documents) ||
+              (typeof data?.documents === "object" && data?.documents !== null)
+                ? data.documents
+                : undefined) as ContentEditorSeedDocument[] | undefined
+            }
+            activeDocumentId={
+              typeof data?.activeDocumentId === "string"
+                ? data.activeDocumentId
+                : null
+            }
+            listTitle={
+              typeof data?.listTitle === "string" ? data.listTitle : null
+            }
             title={typeof data?.title === "string" ? data.title : null}
           />
         );
@@ -1372,12 +2362,37 @@ export default function OverlayController() {
         return (
           <ContentEditorWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "contentEditorWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            documentId={typeof data?.documentId === "string" ? data.documentId : undefined}
-            documentTitle={typeof data?.documentTitle === "string" ? data.documentTitle : undefined}
-            initialValue={typeof data?.initialValue === "string" ? data.initialValue : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "contentEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            documentId={
+              typeof data?.documentId === "string" ? data.documentId : undefined
+            }
+            documentTitle={
+              typeof data?.documentTitle === "string"
+                ? data.documentTitle
+                : undefined
+            }
+            initialValue={
+              typeof data?.initialValue === "string"
+                ? data.initialValue
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : null}
           />
         );
@@ -1390,13 +2405,44 @@ export default function OverlayController() {
         return (
           <ContentEditorWorkspaceWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "contentEditorWorkspaceWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            documents={(Array.isArray(data?.documents) || (typeof data?.documents === "object" && data?.documents !== null) ? data.documents : undefined) as ContentEditorSeedDocument[] | undefined}
-            openDocumentIds={Array.isArray(data?.openDocumentIds) && data.openDocumentIds.every((v) => typeof v === "string") ? (data.openDocumentIds as string[]) : undefined}
-            activeDocumentId={typeof data?.activeDocumentId === "string" ? data.activeDocumentId : null}
-            listTitle={typeof data?.listTitle === "string" ? data.listTitle : null}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "contentEditorWorkspaceWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            documents={
+              (Array.isArray(data?.documents) ||
+              (typeof data?.documents === "object" && data?.documents !== null)
+                ? data.documents
+                : undefined) as ContentEditorSeedDocument[] | undefined
+            }
+            openDocumentIds={
+              Array.isArray(data?.openDocumentIds) &&
+              data.openDocumentIds.every((v) => typeof v === "string")
+                ? (data.openDocumentIds as string[])
+                : undefined
+            }
+            activeDocumentId={
+              typeof data?.activeDocumentId === "string"
+                ? data.activeDocumentId
+                : null
+            }
+            listTitle={
+              typeof data?.listTitle === "string" ? data.listTitle : null
+            }
             title={typeof data?.title === "string" ? data.title : null}
           />
         );
@@ -1409,9 +2455,20 @@ export default function OverlayController() {
           <ContentHistoryViewer
             key={inst.instanceId}
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "contentHistory", instanceId: inst.instanceId }))}
-            sessionId={typeof data?.sessionId === "string" ? data.sessionId : ""}
-            messageId={typeof data?.messageId === "string" ? data.messageId : ""}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "contentHistory",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            sessionId={
+              typeof data?.sessionId === "string" ? data.sessionId : ""
+            }
+            messageId={
+              typeof data?.messageId === "string" ? data.messageId : ""
+            }
           />
         );
       })}
@@ -1419,12 +2476,17 @@ export default function OverlayController() {
       {/* contextSwitcherWindow */}
       {(() => {
         const isOpen = isOpenById.contextSwitcherWindow;
-        const data = dataById.contextSwitcherWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.contextSwitcherWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ContextSwitcherWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "contextSwitcherWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "contextSwitcherWindow" }))
+            }
           />
         );
       })()}
@@ -1432,15 +2494,32 @@ export default function OverlayController() {
       {/* cropStudioWindow */}
       {(() => {
         const isOpen = isOpenById.cropStudioWindow;
-        const data = dataById.cropStudioWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.cropStudioWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <CropStudioWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "cropStudioWindow" }))}
-            initialFolderId={typeof data?.initialFolderId === "string" ? data.initialFolderId : null}
-            defaultFolderPath={typeof data?.defaultFolderPath === "string" ? data.defaultFolderPath : undefined}
-            initialAspect={typeof data?.initialAspect === "number" ? data.initialAspect : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "cropStudioWindow" }))
+            }
+            initialFolderId={
+              typeof data?.initialFolderId === "string"
+                ? data.initialFolderId
+                : null
+            }
+            defaultFolderPath={
+              typeof data?.defaultFolderPath === "string"
+                ? data.defaultFolderPath
+                : undefined
+            }
+            initialAspect={
+              typeof data?.initialAspect === "number"
+                ? data.initialAspect
+                : undefined
+            }
           />
         );
       })()}
@@ -1453,8 +2532,19 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "curatedIconPickerWindow", instanceId: inst.instanceId }))}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "curatedIconPickerWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
           />
         );
       })}
@@ -1466,16 +2556,31 @@ export default function OverlayController() {
       {/* emailDialogWindow */}
       {(() => {
         const isOpen = isOpenById.emailDialogWindow;
-        const data = dataById.emailDialogWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.emailDialogWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <EmailDialogWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "emailDialogWindow" }))}
-            onSubmit={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "emailDialogWindow" }))
+            }
+            onSubmit={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
             title={typeof data?.title === "string" ? data.title : undefined}
-            description={typeof data?.description === "string" ? data.description : undefined}
-            submitLabel={typeof data?.submitLabel === "string" ? data.submitLabel : undefined}
+            description={
+              typeof data?.description === "string"
+                ? data.description
+                : undefined
+            }
+            submitLabel={
+              typeof data?.submitLabel === "string"
+                ? data.submitLabel
+                : undefined
+            }
           />
         );
       })()}
@@ -1483,12 +2588,17 @@ export default function OverlayController() {
       {/* executionInspectorWindow */}
       {(() => {
         const isOpen = isOpenById.executionInspectorWindow;
-        const data = dataById.executionInspectorWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.executionInspectorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ExecutionInspectorWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "executionInspectorWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "executionInspectorWindow" }))
+            }
           />
         );
       })()}
@@ -1496,7 +2606,10 @@ export default function OverlayController() {
       {/* feedbackDialog */}
       {(() => {
         const isOpen = isOpenById.feedbackDialog;
-        const data = dataById.feedbackDialog as Record<string, unknown> | null | undefined;
+        const data = dataById.feedbackDialog as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <FeedbackWindow
@@ -1508,12 +2621,17 @@ export default function OverlayController() {
       {/* filePreviewWindow */}
       {(() => {
         const isOpen = isOpenById.filePreviewWindow;
-        const data = dataById.filePreviewWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.filePreviewWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <FilePreviewWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "filePreviewWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "filePreviewWindow" }))
+            }
             fileId={typeof data?.fileId === "string" ? data.fileId : null}
           />
         );
@@ -1528,19 +2646,61 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId: inst.instanceId }))}
-            content={typeof data?.content === "string" ? data.content : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "fullScreenEditor",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            content={
+              typeof data?.content === "string" ? data.content : undefined
+            }
             mode={data?.mode as FullScreenEditorMode | undefined}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : undefined}
-            messageId={typeof data?.messageId === "string" ? data.messageId : undefined}
-            onSave={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            tabs={(Array.isArray(data?.tabs) || (typeof data?.tabs === "object" && data?.tabs !== null) ? data.tabs : undefined) as never}  /* TODO: review — TabId is a non-exported local type */
-            initialTab={data?.initialTab as never}  /* TODO: review — TabId is a non-exported local type */
-            analysisData={(Array.isArray(data?.analysisData) || (typeof data?.analysisData === "object" && data?.analysisData !== null) ? data.analysisData : undefined) as Record<string, unknown> | undefined}
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : undefined
+            }
+            messageId={
+              typeof data?.messageId === "string" ? data.messageId : undefined
+            }
+            onSave={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            tabs={
+              (Array.isArray(data?.tabs) ||
+              (typeof data?.tabs === "object" && data?.tabs !== null)
+                ? data.tabs
+                : undefined) as never
+            } /* TODO: review — TabId is a non-exported local type */
+            initialTab={
+              data?.initialTab as never
+            } /* TODO: review — TabId is a non-exported local type */
+            analysisData={
+              (Array.isArray(data?.analysisData) ||
+              (typeof data?.analysisData === "object" &&
+                data?.analysisData !== null)
+                ? data.analysisData
+                : undefined) as Record<string, unknown> | undefined
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
-            description={typeof data?.description === "string" ? data.description : undefined}
-            showSaveButton={typeof data?.showSaveButton === "boolean" ? data.showSaveButton : undefined}
-            showCopyButton={typeof data?.showCopyButton === "boolean" ? data.showCopyButton : undefined}
+            description={
+              typeof data?.description === "string"
+                ? data.description
+                : undefined
+            }
+            showSaveButton={
+              typeof data?.showSaveButton === "boolean"
+                ? data.showSaveButton
+                : undefined
+            }
+            showCopyButton={
+              typeof data?.showCopyButton === "boolean"
+                ? data.showCopyButton
+                : undefined
+            }
           />
         );
       })}
@@ -1548,12 +2708,17 @@ export default function OverlayController() {
       {/* galleryWindow */}
       {(() => {
         const isOpen = isOpenById.galleryWindow;
-        const data = dataById.galleryWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.galleryWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <GalleryWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "galleryWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "galleryWindow" }))
+            }
           />
         );
       })()}
@@ -1562,12 +2727,17 @@ export default function OverlayController() {
       {/* hierarchyCreationWindow */}
       {(() => {
         const isOpen = isOpenById.hierarchyCreationWindow;
-        const data = dataById.hierarchyCreationWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.hierarchyCreationWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <HierarchyCreationWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))
+            }
             data={data?.data as HierarchyCreationWindowData | undefined}
           />
         );
@@ -1580,15 +2750,42 @@ export default function OverlayController() {
         return (
           <HtmlPreviewBridge
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "htmlPreview", instanceId: inst.instanceId }))}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "htmlPreview",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
             content={typeof data?.content === "string" ? data.content : ""}
-            messageId={typeof data?.messageId === "string" ? data.messageId : undefined}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : undefined}
+            messageId={
+              typeof data?.messageId === "string" ? data.messageId : undefined
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
-            description={typeof data?.description === "string" ? data.description : undefined}
-            onSave={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            showSaveButton={typeof data?.showSaveButton === "boolean" ? data.showSaveButton : undefined}
-            isAgentSystem={typeof data?.isAgentSystem === "boolean" ? data.isAgentSystem : undefined}
+            description={
+              typeof data?.description === "string"
+                ? data.description
+                : undefined
+            }
+            onSave={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            showSaveButton={
+              typeof data?.showSaveButton === "boolean"
+                ? data.showSaveButton
+                : undefined
+            }
+            isAgentSystem={
+              typeof data?.isAgentSystem === "boolean"
+                ? data.isAgentSystem
+                : undefined
+            }
           />
         );
       })}
@@ -1596,12 +2793,17 @@ export default function OverlayController() {
       {/* imagePeekHost */}
       {(() => {
         const isOpen = isOpenById.imagePeekHost;
-        const data = dataById.imagePeekHost as Record<string, unknown> | null | undefined;
+        const data = dataById.imagePeekHost as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ImageArrivalPeekHost
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "imagePeekHost" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "imagePeekHost" }))
+            }
           />
         );
       })()}
@@ -1615,14 +2817,33 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "imageUploaderWindow", instanceId: inst.instanceId }))}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "imageUploaderWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
             preset={data?.preset as AssetPreset | undefined}
             folder={typeof data?.folder === "string" ? data.folder : undefined}
             title={typeof data?.title === "string" ? data.title : null}
-            description={typeof data?.description === "string" ? data.description : null}
-            currentUrl={typeof data?.currentUrl === "string" ? data.currentUrl : null}
-            allowUrlPaste={typeof data?.allowUrlPaste === "boolean" ? data.allowUrlPaste : undefined}
+            description={
+              typeof data?.description === "string" ? data.description : null
+            }
+            currentUrl={
+              typeof data?.currentUrl === "string" ? data.currentUrl : null
+            }
+            allowUrlPaste={
+              typeof data?.allowUrlPaste === "boolean"
+                ? data.allowUrlPaste
+                : undefined
+            }
           />
         );
       })}
@@ -1636,12 +2857,39 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "imageViewer", instanceId: inst.instanceId }))}
-            images={Array.isArray(data?.images) && data.images.every((v) => typeof v === "string") ? (data.images as string[]) : []}
-            initialIndex={typeof data?.initialIndex === "number" ? data.initialIndex : undefined}
-            alts={Array.isArray(data?.alts) && data.alts.every((v) => typeof v === "string") ? (data.alts as string[]) : undefined}
-            activeIndex={typeof data?.activeIndex === "number" ? data.activeIndex : undefined}
-            onIndexChange={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "imageViewer",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            images={
+              Array.isArray(data?.images) &&
+              data.images.every((v) => typeof v === "string")
+                ? (data.images as string[])
+                : []
+            }
+            initialIndex={
+              typeof data?.initialIndex === "number"
+                ? data.initialIndex
+                : undefined
+            }
+            alts={
+              Array.isArray(data?.alts) &&
+              data.alts.every((v) => typeof v === "string")
+                ? (data.alts as string[])
+                : undefined
+            }
+            activeIndex={
+              typeof data?.activeIndex === "number"
+                ? data.activeIndex
+                : undefined
+            }
+            onIndexChange={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
             title={typeof data?.title === "string" ? data.title : undefined}
           />
         );
@@ -1650,13 +2898,22 @@ export default function OverlayController() {
       {/* instanceUIStateWindow */}
       {(() => {
         const isOpen = isOpenById.instanceUIStateWindow;
-        const data = dataById.instanceUIStateWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.instanceUIStateWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <InstanceUIStateWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "instanceUIStateWindow" }))}
-            initialConversationId={typeof data?.initialConversationId === "string" ? data.initialConversationId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "instanceUIStateWindow" }))
+            }
+            initialConversationId={
+              typeof data?.initialConversationId === "string"
+                ? data.initialConversationId
+                : null
+            }
           />
         );
       })()}
@@ -1665,12 +2922,17 @@ export default function OverlayController() {
       {/* jsonTruncator */}
       {(() => {
         const isOpen = isOpenById.jsonTruncator;
-        const data = dataById.jsonTruncator as Record<string, unknown> | null | undefined;
+        const data = dataById.jsonTruncator as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <JsonTruncatorDialog
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "jsonTruncator" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "jsonTruncator" }))
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
             id={typeof data?.id === "string" ? data.id : undefined}
             defaultTab={data?.defaultTab as JsonTruncatorTab | undefined}
@@ -1681,7 +2943,10 @@ export default function OverlayController() {
       {/* listManagerWindow */}
       {(() => {
         const isOpen = isOpenById.listManagerWindow;
-        const data = dataById.listManagerWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.listManagerWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ListManagerWindow
@@ -1694,18 +2959,45 @@ export default function OverlayController() {
       {/* markdownEditor */}
       {(() => {
         const isOpen = isOpenById.markdownEditor;
-        const data = dataById.markdownEditor as Record<string, unknown> | null | undefined;
+        const data = dataById.markdownEditor as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <FullscreenMarkdownEditor
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "markdownEditor" }))}
-            triggerClassName={typeof data?.triggerClassName === "string" ? data.triggerClassName : undefined}
-            triggerLabel={typeof data?.triggerLabel === "string" ? data.triggerLabel : undefined}
-            initialMarkdown={typeof data?.initialMarkdown === "string" ? data.initialMarkdown : undefined}
-            showSampleSelector={typeof data?.showSampleSelector === "boolean" ? data.showSampleSelector : undefined}
-            showConfigSelector={typeof data?.showConfigSelector === "boolean" ? data.showConfigSelector : undefined}
-            onOpen={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "markdownEditor" }))
+            }
+            triggerClassName={
+              typeof data?.triggerClassName === "string"
+                ? data.triggerClassName
+                : undefined
+            }
+            triggerLabel={
+              typeof data?.triggerLabel === "string"
+                ? data.triggerLabel
+                : undefined
+            }
+            initialMarkdown={
+              typeof data?.initialMarkdown === "string"
+                ? data.initialMarkdown
+                : undefined
+            }
+            showSampleSelector={
+              typeof data?.showSampleSelector === "boolean"
+                ? data.showSampleSelector
+                : undefined
+            }
+            showConfigSelector={
+              typeof data?.showConfigSelector === "boolean"
+                ? data.showConfigSelector
+                : undefined
+            }
+            onOpen={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
           />
         );
       })()}
@@ -1713,15 +3005,32 @@ export default function OverlayController() {
       {/* markdownEditorWindow */}
       {(() => {
         const isOpen = isOpenById.markdownEditorWindow;
-        const data = dataById.markdownEditorWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.markdownEditorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <MarkdownEditorWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "markdownEditorWindow" }))}
-            initialMarkdown={typeof data?.initialMarkdown === "string" ? data.initialMarkdown : undefined}
-            showSampleSelector={typeof data?.showSampleSelector === "boolean" ? data.showSampleSelector : undefined}
-            showConfigSelector={typeof data?.showConfigSelector === "boolean" ? data.showConfigSelector : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "markdownEditorWindow" }))
+            }
+            initialMarkdown={
+              typeof data?.initialMarkdown === "string"
+                ? data.initialMarkdown
+                : undefined
+            }
+            showSampleSelector={
+              typeof data?.showSampleSelector === "boolean"
+                ? data.showSampleSelector
+                : undefined
+            }
+            showConfigSelector={
+              typeof data?.showConfigSelector === "boolean"
+                ? data.showConfigSelector
+                : undefined
+            }
           />
         );
       })()}
@@ -1729,15 +3038,28 @@ export default function OverlayController() {
       {/* messageAnalysisWindow */}
       {(() => {
         const isOpen = isOpenById.messageAnalysisWindow;
-        const data = dataById.messageAnalysisWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.messageAnalysisWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <MessageAnalysisWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "messageAnalysisWindow" }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : null}
-            requestId={typeof data?.requestId === "string" ? data.requestId : null}
-            messageId={typeof data?.messageId === "string" ? data.messageId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "messageAnalysisWindow" }))
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
+            }
+            requestId={
+              typeof data?.requestId === "string" ? data.requestId : null
+            }
+            messageId={
+              typeof data?.messageId === "string" ? data.messageId : null
+            }
           />
         );
       })()}
@@ -1745,13 +3067,22 @@ export default function OverlayController() {
       {/* messagesWindow */}
       {(() => {
         const isOpen = isOpenById.messagesWindow;
-        const data = dataById.messagesWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.messagesWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <MessagesWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "messagesWindow" }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "messagesWindow" }))
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
+            }
           />
         );
       })()}
@@ -1763,16 +3094,52 @@ export default function OverlayController() {
         return (
           <MultiFileSmartCodeEditorWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "multiFileSmartCodeEditorWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "multiFileSmartCodeEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
             agentId={typeof data?.agentId === "string" ? data.agentId : ""}
-            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : []) as MultiFileCoreCodeFile[]}
-            initialActiveFile={typeof data?.initialActiveFile === "string" ? data.initialActiveFile : null}
+            files={
+              (Array.isArray(data?.files) ||
+              (typeof data?.files === "object" && data?.files !== null)
+                ? data.files
+                : []) as MultiFileCoreCodeFile[]
+            }
+            initialActiveFile={
+              typeof data?.initialActiveFile === "string"
+                ? data.initialActiveFile
+                : null
+            }
             title={typeof data?.title === "string" ? data.title : null}
-            defaultWordWrap={(["on", "off"] as ReadonlyArray<unknown>).includes(data?.defaultWordWrap) ? (data?.defaultWordWrap as "on" | "off") : undefined}
-            autoFormatOnOpen={typeof data?.autoFormatOnOpen === "boolean" ? data.autoFormatOnOpen : undefined}
-            variables={data?.variables as Record<string, unknown> | null | undefined}
+            defaultWordWrap={
+              (["on", "off"] as ReadonlyArray<unknown>).includes(
+                data?.defaultWordWrap,
+              )
+                ? (data?.defaultWordWrap as "on" | "off")
+                : undefined
+            }
+            autoFormatOnOpen={
+              typeof data?.autoFormatOnOpen === "boolean"
+                ? data.autoFormatOnOpen
+                : undefined
+            }
+            variables={
+              data?.variables as Record<string, unknown> | null | undefined
+            }
           />
         );
       })}
@@ -1780,7 +3147,10 @@ export default function OverlayController() {
       {/* newsWindow */}
       {(() => {
         const isOpen = isOpenById.newsWindow;
-        const data = dataById.newsWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.newsWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <NewsWindow
@@ -1797,7 +3167,11 @@ export default function OverlayController() {
           <NotesBetaWindow
             key={inst.instanceId}
             title={typeof data?.title === "string" ? data.title : undefined}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : undefined}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : undefined
+            }
           />
         );
       })}
@@ -1805,14 +3179,28 @@ export default function OverlayController() {
       {/* notesWindow */}
       {(() => {
         const isOpen = isOpenById.notesWindow;
-        const data = dataById.notesWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.notesWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <NotesWindow
             title={typeof data?.title === "string" ? data.title : undefined}
-            initialTabs={Array.isArray(data?.initialTabs) && data.initialTabs.every((v) => typeof v === "string") ? (data.initialTabs as string[]) : undefined}
-            initialActiveTab={typeof data?.initialActiveTab === "string" ? data.initialActiveTab : null}
-            singleNoteId={typeof data?.singleNoteId === "string" ? data.singleNoteId : null}
+            initialTabs={
+              Array.isArray(data?.initialTabs) &&
+              data.initialTabs.every((v) => typeof v === "string")
+                ? (data.initialTabs as string[])
+                : undefined
+            }
+            initialActiveTab={
+              typeof data?.initialActiveTab === "string"
+                ? data.initialActiveTab
+                : null
+            }
+            singleNoteId={
+              typeof data?.singleNoteId === "string" ? data.singleNoteId : null
+            }
           />
         );
       })()}
@@ -1820,13 +3208,22 @@ export default function OverlayController() {
       {/* observationalMemoryWindow */}
       {(() => {
         const isOpen = isOpenById.observationalMemoryWindow;
-        const data = dataById.observationalMemoryWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.observationalMemoryWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ObservationalMemoryWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "observationalMemoryWindow" }))}
-            initialSelectedConversationId={typeof data?.initialSelectedConversationId === "string" ? data.initialSelectedConversationId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "observationalMemoryWindow" }))
+            }
+            initialSelectedConversationId={
+              typeof data?.initialSelectedConversationId === "string"
+                ? data.initialSelectedConversationId
+                : null
+            }
           />
         );
       })()}
@@ -1834,12 +3231,53 @@ export default function OverlayController() {
       {/* pdfExtractorWindow */}
       {(() => {
         const isOpen = isOpenById.pdfExtractorWindow;
-        const data = dataById.pdfExtractorWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.pdfExtractorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <PdfExtractorWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "pdfExtractorWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "pdfExtractorWindow" }))
+            }
+          />
+        );
+      })()}
+
+      {/* picklistManagerV1Window */}
+      {(() => {
+        const isOpen = isOpenById.picklistManagerV1Window;
+        const data = dataById.picklistManagerV1Window as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <PicklistManagerV1Window
+            title={typeof data?.title === "string" ? data.title : undefined}
+            forcedListId={
+              typeof data?.forcedListId === "string" ? data.forcedListId : null
+            }
+          />
+        );
+      })()}
+
+      {/* picklistManagerV2Window */}
+      {(() => {
+        const isOpen = isOpenById.picklistManagerV2Window;
+        const data = dataById.picklistManagerV2Window as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <PicklistManagerV2Window
+            title={typeof data?.title === "string" ? data.title : undefined}
+            forcedListId={
+              typeof data?.forcedListId === "string" ? data.forcedListId : null
+            }
           />
         );
       })()}
@@ -1847,12 +3285,17 @@ export default function OverlayController() {
       {/* projectsWindow */}
       {(() => {
         const isOpen = isOpenById.projectsWindow;
-        const data = dataById.projectsWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.projectsWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ProjectsWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "projectsWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "projectsWindow" }))
+            }
           />
         );
       })()}
@@ -1860,12 +3303,17 @@ export default function OverlayController() {
       {/* quickChat */}
       {(() => {
         const isOpen = isOpenById.quickChat;
-        const data = dataById.quickChat as Record<string, unknown> | null | undefined;
+        const data = dataById.quickChat as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickChatSheet
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
-            className={typeof data?.className === "string" ? data.className : undefined}
+            className={
+              typeof data?.className === "string" ? data.className : undefined
+            }
           />
         );
       })()}
@@ -1874,14 +3322,25 @@ export default function OverlayController() {
       {/* quickChatHistory */}
       {(() => {
         const isOpen = isOpenById.quickChatHistory;
-        const data = dataById.quickChatHistory as Record<string, unknown> | null | undefined;
+        const data = dataById.quickChatHistory as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ChatHistoryWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickChatHistory" }))}
-            initialSelectedConversationId={typeof data?.initialSelectedConversationId === "string" ? data.initialSelectedConversationId : null}
-            initialGroupBy={data?.initialGroupBy as never}  /* TODO: review — GroupBy is a non-exported local type */
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "quickChatHistory" }))
+            }
+            initialSelectedConversationId={
+              typeof data?.initialSelectedConversationId === "string"
+                ? data.initialSelectedConversationId
+                : null
+            }
+            initialGroupBy={
+              data?.initialGroupBy as never
+            } /* TODO: review — GroupBy is a non-exported local type */
           />
         );
       })()}
@@ -1889,12 +3348,19 @@ export default function OverlayController() {
       {/* quickChatWindow */}
       {(() => {
         const isOpen = isOpenById.quickChatWindow;
-        const data = dataById.quickChatWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.quickChatWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickChatSheet
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickChatWindow" }))}
-            className={typeof data?.className === "string" ? data.className : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "quickChatWindow" }))
+            }
+            className={
+              typeof data?.className === "string" ? data.className : undefined
+            }
           />
         );
       })()}
@@ -1902,13 +3368,22 @@ export default function OverlayController() {
       {/* quickData */}
       {(() => {
         const isOpen = isOpenById.quickData;
-        const data = dataById.quickData as Record<string, unknown> | null | undefined;
+        const data = dataById.quickData as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickDataSheet
             onClose={() => dispatch(closeOverlay({ overlayId: "quickData" }))}
-            className={typeof data?.className === "string" ? data.className : undefined}
-            initialTableId={typeof data?.initialTableId === "string" ? data.initialTableId : null}
+            className={
+              typeof data?.className === "string" ? data.className : undefined
+            }
+            initialTableId={
+              typeof data?.initialTableId === "string"
+                ? data.initialTableId
+                : null
+            }
           />
         );
       })()}
@@ -1916,13 +3391,22 @@ export default function OverlayController() {
       {/* quickDataWindow */}
       {(() => {
         const isOpen = isOpenById.quickDataWindow;
-        const data = dataById.quickDataWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.quickDataWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickDataWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickDataWindow" }))}
-            selectedTable={typeof data?.selectedTable === "string" ? data.selectedTable : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "quickDataWindow" }))
+            }
+            selectedTable={
+              typeof data?.selectedTable === "string"
+                ? data.selectedTable
+                : null
+            }
           />
         );
       })()}
@@ -1931,15 +3415,30 @@ export default function OverlayController() {
       {/* quickNoteSaveWindow */}
       {(() => {
         const isOpen = isOpenById.quickNoteSaveWindow;
-        const data = dataById.quickNoteSaveWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.quickNoteSaveWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickNoteSaveWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickNoteSaveWindow" }))}
-            initialContent={typeof data?.initialContent === "string" ? data.initialContent : undefined}
-            defaultFolder={typeof data?.defaultFolder === "string" ? data.defaultFolder : undefined}
-            initialEditorMode={data?.initialEditorMode as EditorMode | undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "quickNoteSaveWindow" }))
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : undefined
+            }
+            defaultFolder={
+              typeof data?.defaultFolder === "string"
+                ? data.defaultFolder
+                : undefined
+            }
+            initialEditorMode={
+              data?.initialEditorMode as EditorMode | undefined
+            }
           />
         );
       })()}
@@ -1947,12 +3446,17 @@ export default function OverlayController() {
       {/* quickNotes */}
       {(() => {
         const isOpen = isOpenById.quickNotes;
-        const data = dataById.quickNotes as Record<string, unknown> | null | undefined;
+        const data = dataById.quickNotes as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickNotesSheet
             onClose={() => dispatch(closeOverlay({ overlayId: "quickNotes" }))}
-            className={typeof data?.className === "string" ? data.className : undefined}
+            className={
+              typeof data?.className === "string" ? data.className : undefined
+            }
           />
         );
       })()}
@@ -1974,12 +3478,17 @@ export default function OverlayController() {
       {/* quickTasksWindow */}
       {(() => {
         const isOpen = isOpenById.quickTasksWindow;
-        const data = dataById.quickTasksWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.quickTasksWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <QuickTasksWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickTasksWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "quickTasksWindow" }))
+            }
           />
         );
       })()}
@@ -1987,13 +3496,37 @@ export default function OverlayController() {
       {/* quickUtilities */}
       {(() => {
         const isOpen = isOpenById.quickUtilities;
-        const data = dataById.quickUtilities as Record<string, unknown> | null | undefined;
+        const data = dataById.quickUtilities as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <UtilitiesOverlay
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "quickUtilities" }))}
-            initialTab={(["notes", "tasks", "chat", "data", "files", "ai-results"] as ReadonlyArray<unknown>).includes(data?.initialTab) ? (data?.initialTab as "notes" | "tasks" | "chat" | "data" | "files" | "ai-results") : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "quickUtilities" }))
+            }
+            initialTab={
+              (
+                [
+                  "notes",
+                  "tasks",
+                  "chat",
+                  "data",
+                  "files",
+                  "ai-results",
+                ] as ReadonlyArray<unknown>
+              ).includes(data?.initialTab)
+                ? (data?.initialTab as
+                    | "notes"
+                    | "tasks"
+                    | "chat"
+                    | "data"
+                    | "files"
+                    | "ai-results")
+                : undefined
+            }
           />
         );
       })()}
@@ -2002,17 +3535,34 @@ export default function OverlayController() {
       {/* resourcePickerWindow */}
       {(() => {
         const isOpen = isOpenById.resourcePickerWindow;
-        const data = dataById.resourcePickerWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.resourcePickerWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ResourcePickerWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "resourcePickerWindow" }))}
-            onResourceSelected={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            attachmentCapabilities={data?.attachmentCapabilities as never}  /* TODO: review — anonymous inline shape */
-            onSettingsClick={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            onDebugClick={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            showDebugActive={typeof data?.showDebugActive === "boolean" ? data.showDebugActive : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "resourcePickerWindow" }))
+            }
+            onResourceSelected={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            attachmentCapabilities={
+              data?.attachmentCapabilities as never
+            } /* TODO: review — anonymous inline shape */
+            onSettingsClick={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            onDebugClick={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            showDebugActive={
+              typeof data?.showDebugActive === "boolean"
+                ? data.showDebugActive
+                : undefined
+            }
             width={typeof data?.width === "number" ? data.width : undefined}
             height={typeof data?.height === "number" ? data.height : undefined}
             position={data?.position as WindowPosition | undefined}
@@ -2028,14 +3578,41 @@ export default function OverlayController() {
           <QuickSaveCodeDialog
             key={inst.instanceId}
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "saveToCode", instanceId: inst.instanceId }))}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "saveToCode",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
             open={typeof data?.open === "boolean" ? data.open : undefined}
-            onOpenChange={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            initialContent={typeof data?.initialContent === "string" ? data.initialContent : ""}
-            initialLanguage={typeof data?.initialLanguage === "string" ? data.initialLanguage : undefined}
-            suggestedName={typeof data?.suggestedName === "string" ? data.suggestedName : undefined}
-            defaultFolderId={typeof data?.defaultFolderId === "string" ? data.defaultFolderId : null}
-            onSaved={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            onOpenChange={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : ""
+            }
+            initialLanguage={
+              typeof data?.initialLanguage === "string"
+                ? data.initialLanguage
+                : undefined
+            }
+            suggestedName={
+              typeof data?.suggestedName === "string"
+                ? data.suggestedName
+                : undefined
+            }
+            defaultFolderId={
+              typeof data?.defaultFolderId === "string"
+                ? data.defaultFolderId
+                : null
+            }
+            onSaved={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
           />
         );
       })}
@@ -2048,12 +3625,31 @@ export default function OverlayController() {
           <QuickNoteSaveOverlay
             key={inst.instanceId}
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "saveToNotes", instanceId: inst.instanceId }))}
-            initialContent={typeof data?.initialContent === "string" ? data.initialContent : ""}
-            defaultFolder={typeof data?.defaultFolder === "string" ? data.defaultFolder : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "saveToNotes",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : ""
+            }
+            defaultFolder={
+              typeof data?.defaultFolder === "string"
+                ? data.defaultFolder
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
-            initialEditorMode={data?.initialEditorMode as EditorMode | undefined}
-            onSaved={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            initialEditorMode={
+              data?.initialEditorMode as EditorMode | undefined
+            }
+            onSaved={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
           />
         );
       })}
@@ -2066,12 +3662,31 @@ export default function OverlayController() {
           <QuickNoteSaveOverlay
             key={inst.instanceId}
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "saveToNotesFullscreen", instanceId: inst.instanceId }))}
-            initialContent={typeof data?.initialContent === "string" ? data.initialContent : ""}
-            defaultFolder={typeof data?.defaultFolder === "string" ? data.defaultFolder : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "saveToNotesFullscreen",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : ""
+            }
+            defaultFolder={
+              typeof data?.defaultFolder === "string"
+                ? data.defaultFolder
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
-            initialEditorMode={data?.initialEditorMode as EditorMode | undefined}
-            onSaved={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
+            initialEditorMode={
+              data?.initialEditorMode as EditorMode | undefined
+            }
+            onSaved={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
           />
         );
       })}
@@ -2079,12 +3694,17 @@ export default function OverlayController() {
       {/* scraperWindow */}
       {(() => {
         const isOpen = isOpenById.scraperWindow;
-        const data = dataById.scraperWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.scraperWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ScraperWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "scraperWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "scraperWindow" }))
+            }
           />
         );
       })()}
@@ -2097,10 +3717,21 @@ export default function OverlayController() {
           <ShareModal
             key={inst.instanceId}
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "shareModal", instanceId: inst.instanceId }))}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "shareModal",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
             resourceType={data?.resourceType as ResourceType}
-            resourceId={typeof data?.resourceId === "string" ? data.resourceId : ""}
-            resourceName={typeof data?.resourceName === "string" ? data.resourceName : ""}
+            resourceId={
+              typeof data?.resourceId === "string" ? data.resourceId : ""
+            }
+            resourceName={
+              typeof data?.resourceName === "string" ? data.resourceName : ""
+            }
             isOwner={typeof data?.isOwner === "boolean" ? data.isOwner : false}
           />
         );
@@ -2110,15 +3741,24 @@ export default function OverlayController() {
       {/* shareModalWindow */}
       {(() => {
         const isOpen = isOpenById.shareModalWindow;
-        const data = dataById.shareModalWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.shareModalWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <ShareModalWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "shareModalWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "shareModalWindow" }))
+            }
             resourceType={data?.resourceType as ResourceType}
-            resourceId={typeof data?.resourceId === "string" ? data.resourceId : ""}
-            resourceName={typeof data?.resourceName === "string" ? data.resourceName : ""}
+            resourceId={
+              typeof data?.resourceId === "string" ? data.resourceId : ""
+            }
+            resourceName={
+              typeof data?.resourceName === "string" ? data.resourceName : ""
+            }
             isOwner={typeof data?.isOwner === "boolean" ? data.isOwner : false}
           />
         );
@@ -2132,8 +3772,19 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "singleMessageWindow", instanceId: inst.instanceId }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : null}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "singleMessageWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
+            }
           />
         );
       })}
@@ -2145,23 +3796,86 @@ export default function OverlayController() {
         return (
           <SmartCodeEditorWindow
             key={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "smartCodeEditorWindow", instanceId: inst.instanceId }))}
-            windowInstanceId={typeof data?.windowInstanceId === "string" ? data.windowInstanceId : ""}
-            callbackGroupId={typeof data?.callbackGroupId === "string" ? data.callbackGroupId : null}
-            agents={(Array.isArray(data?.agents) || (typeof data?.agents === "object" && data?.agents !== null) ? data.agents : []) as CodeEditorAgentConfig[]}
-            defaultPickerAgentId={typeof data?.defaultPickerAgentId === "string" ? data.defaultPickerAgentId : undefined}
-            initialCode={typeof data?.initialCode === "string" ? data.initialCode : undefined}
-            language={typeof data?.language === "string" ? data.language : undefined}
-            files={(Array.isArray(data?.files) || (typeof data?.files === "object" && data?.files !== null) ? data.files : undefined) as AgentCodeEditorCodeFile[] | undefined}
-            initialActiveFilePath={typeof data?.initialActiveFilePath === "string" ? data.initialActiveFilePath : undefined}
-            filePath={typeof data?.filePath === "string" ? data.filePath : undefined}
-            selection={typeof data?.selection === "string" ? data.selection : undefined}
-            diagnostics={typeof data?.diagnostics === "string" ? data.diagnostics : undefined}
-            workspaceName={typeof data?.workspaceName === "string" ? data.workspaceName : undefined}
-            workspaceFolders={typeof data?.workspaceFolders === "string" ? data.workspaceFolders : undefined}
-            gitBranch={typeof data?.gitBranch === "string" ? data.gitBranch : undefined}
-            gitStatus={typeof data?.gitStatus === "string" ? data.gitStatus : undefined}
-            agentSkills={typeof data?.agentSkills === "string" ? data.agentSkills : undefined}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "smartCodeEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : ""
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            agents={
+              (Array.isArray(data?.agents) ||
+              (typeof data?.agents === "object" && data?.agents !== null)
+                ? data.agents
+                : []) as CodeEditorAgentConfig[]
+            }
+            defaultPickerAgentId={
+              typeof data?.defaultPickerAgentId === "string"
+                ? data.defaultPickerAgentId
+                : undefined
+            }
+            initialCode={
+              typeof data?.initialCode === "string"
+                ? data.initialCode
+                : undefined
+            }
+            language={
+              typeof data?.language === "string" ? data.language : undefined
+            }
+            files={
+              (Array.isArray(data?.files) ||
+              (typeof data?.files === "object" && data?.files !== null)
+                ? data.files
+                : undefined) as AgentCodeEditorCodeFile[] | undefined
+            }
+            initialActiveFilePath={
+              typeof data?.initialActiveFilePath === "string"
+                ? data.initialActiveFilePath
+                : undefined
+            }
+            filePath={
+              typeof data?.filePath === "string" ? data.filePath : undefined
+            }
+            selection={
+              typeof data?.selection === "string" ? data.selection : undefined
+            }
+            diagnostics={
+              typeof data?.diagnostics === "string"
+                ? data.diagnostics
+                : undefined
+            }
+            workspaceName={
+              typeof data?.workspaceName === "string"
+                ? data.workspaceName
+                : undefined
+            }
+            workspaceFolders={
+              typeof data?.workspaceFolders === "string"
+                ? data.workspaceFolders
+                : undefined
+            }
+            gitBranch={
+              typeof data?.gitBranch === "string" ? data.gitBranch : undefined
+            }
+            gitStatus={
+              typeof data?.gitStatus === "string" ? data.gitStatus : undefined
+            }
+            agentSkills={
+              typeof data?.agentSkills === "string"
+                ? data.agentSkills
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : null}
           />
         );
@@ -2171,17 +3885,36 @@ export default function OverlayController() {
       {/* socketAccordion */}
       {(() => {
         const isOpen = isOpenById.socketAccordion;
-        const data = dataById.socketAccordion as Record<string, unknown> | null | undefined;
+        const data = dataById.socketAccordion as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <FullscreenSocketAccordion
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "socketAccordion" }))}
-            triggerClassName={typeof data?.triggerClassName === "string" ? data.triggerClassName : undefined}
-            triggerLabel={typeof data?.triggerLabel === "string" ? data.triggerLabel : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "socketAccordion" }))
+            }
+            triggerClassName={
+              typeof data?.triggerClassName === "string"
+                ? data.triggerClassName
+                : undefined
+            }
+            triggerLabel={
+              typeof data?.triggerLabel === "string"
+                ? data.triggerLabel
+                : undefined
+            }
             taskId={typeof data?.taskId === "string" ? data.taskId : undefined}
-            onOpen={undefined /* fn — pass via callbackGroupId */}  /* TODO: review */
-            showTrigger={typeof data?.showTrigger === "boolean" ? data.showTrigger : undefined}
+            onOpen={
+              undefined /* fn — pass via callbackGroupId */
+            } /* TODO: review */
+            showTrigger={
+              typeof data?.showTrigger === "boolean"
+                ? data.showTrigger
+                : undefined
+            }
           />
         );
       })()}
@@ -2190,14 +3923,31 @@ export default function OverlayController() {
       {/* streamDebug */}
       {(() => {
         const isOpen = isOpenById.streamDebug;
-        const data = dataById.streamDebug as Record<string, unknown> | null | undefined;
+        const data = dataById.streamDebug as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <StreamDebugFloating
             onClose={() => dispatch(closeOverlay({ overlayId: "streamDebug" }))}
-            conversationId={typeof data?.conversationId === "string" ? data.conversationId : ""}
-            defaultPosition={(Array.isArray(data?.defaultPosition) || (typeof data?.defaultPosition === "object" && data?.defaultPosition !== null) ? data.defaultPosition : undefined) as never}  /* TODO: review — anonymous inline { x: number; y: number } */
-            requestIdOverride={typeof data?.requestIdOverride === "string" ? data.requestIdOverride : undefined}
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
+            defaultPosition={
+              (Array.isArray(data?.defaultPosition) ||
+              (typeof data?.defaultPosition === "object" &&
+                data?.defaultPosition !== null)
+                ? data.defaultPosition
+                : undefined) as never
+            } /* TODO: review — anonymous inline { x: number; y: number } */
+            requestIdOverride={
+              typeof data?.requestIdOverride === "string"
+                ? data.requestIdOverride
+                : undefined
+            }
           />
         );
       })()}
@@ -2205,13 +3955,22 @@ export default function OverlayController() {
       {/* streamDebugHistoryWindow */}
       {(() => {
         const isOpen = isOpenById.streamDebugHistoryWindow;
-        const data = dataById.streamDebugHistoryWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.streamDebugHistoryWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <StreamDebugHistoryWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "streamDebugHistoryWindow" }))}
-            initialConversationId={typeof data?.initialConversationId === "string" ? data.initialConversationId : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "streamDebugHistoryWindow" }))
+            }
+            initialConversationId={
+              typeof data?.initialConversationId === "string"
+                ? data.initialConversationId
+                : null
+            }
           />
         );
       })()}
@@ -2220,12 +3979,17 @@ export default function OverlayController() {
       {/* taskQuickCreateWindow */}
       {(() => {
         const isOpen = isOpenById.taskQuickCreateWindow;
-        const data = dataById.taskQuickCreateWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.taskQuickCreateWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <TaskQuickCreateWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "taskQuickCreateWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "taskQuickCreateWindow" }))
+            }
             source={data?.source as TaskSourceInput | undefined}
             prePopulate={data?.prePopulate as TaskPrePopulate | undefined}
           />
@@ -2241,12 +4005,32 @@ export default function OverlayController() {
             key={inst.instanceId}
             isOpen
             instanceId={inst.instanceId}
-            onClose={() => dispatch(closeOverlay({ overlayId: "toolCallWindow", instanceId: inst.instanceId }))}
-            requestId={typeof data?.requestId === "string" ? data.requestId : null}
-            callIds={Array.isArray(data?.callIds) && data.callIds.every((v) => typeof v === "string") ? (data.callIds as string[]) : []}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "toolCallWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            requestId={
+              typeof data?.requestId === "string" ? data.requestId : null
+            }
+            callIds={
+              Array.isArray(data?.callIds) &&
+              data.callIds.every((v) => typeof v === "string")
+                ? (data.callIds as string[])
+                : []
+            }
             entries={data?.entries as ToolLifecycleEntry[] | null}
-            initialCallId={typeof data?.initialCallId === "string" ? data.initialCallId : null}
-            initialTab={typeof data?.initialTab === "string" ? data.initialTab : null}
+            initialCallId={
+              typeof data?.initialCallId === "string"
+                ? data.initialCallId
+                : null
+            }
+            initialTab={
+              typeof data?.initialTab === "string" ? data.initialTab : null
+            }
           />
         );
       })}
@@ -2254,12 +4038,19 @@ export default function OverlayController() {
       {/* transcriptStudioWindow */}
       {(() => {
         const isOpen = isOpenById.transcriptStudioWindow;
-        const data = dataById.transcriptStudioWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.transcriptStudioWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <TranscriptStudioWindow
             title={typeof data?.title === "string" ? data.title : undefined}
-            activeSessionId={typeof data?.activeSessionId === "string" ? data.activeSessionId : null}
+            activeSessionId={
+              typeof data?.activeSessionId === "string"
+                ? data.activeSessionId
+                : null
+            }
           />
         );
       })()}
@@ -2267,7 +4058,10 @@ export default function OverlayController() {
       {/* undoHistory */}
       {(() => {
         const isOpen = isOpenById.undoHistory;
-        const data = dataById.undoHistory as Record<string, unknown> | null | undefined;
+        const data = dataById.undoHistory as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <UndoHistoryOverlay
@@ -2289,12 +4083,7 @@ export default function OverlayController() {
       {/* voicePad — multi-instance */}
       {instancesById.voicePad.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
-        return (
-          <VoicePad
-            key={inst.instanceId}
-            instanceId={inst.instanceId}
-          />
-        );
+        return <VoicePad key={inst.instanceId} instanceId={inst.instanceId} />;
       })}
 
       {/* voicePadAdvanced — multi-instance */}
@@ -2312,10 +4101,7 @@ export default function OverlayController() {
       {instancesById.voicePadAi.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
         return (
-          <VoicePadAi
-            key={inst.instanceId}
-            instanceId={inst.instanceId}
-          />
+          <VoicePadAi key={inst.instanceId} instanceId={inst.instanceId} />
         );
       })}
 
@@ -2323,13 +4109,20 @@ export default function OverlayController() {
       {/* whatsappMedia */}
       {(() => {
         const isOpen = isOpenById.whatsappMedia;
-        const data = dataById.whatsappMedia as Record<string, unknown> | null | undefined;
+        const data = dataById.whatsappMedia as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <WhatsAppMediaWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "whatsappMedia" }))}
-            initialTabId={data?.initialTabId as never}  /* TODO: review — MediaTabId is a non-exported local type */
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "whatsappMedia" }))
+            }
+            initialTabId={
+              data?.initialTabId as never
+            } /* TODO: review — MediaTabId is a non-exported local type */
           />
         );
       })()}
@@ -2337,15 +4130,30 @@ export default function OverlayController() {
       {/* whatsappSettings */}
       {(() => {
         const isOpen = isOpenById.whatsappSettings;
-        const data = dataById.whatsappSettings as Record<string, unknown> | null | undefined;
+        const data = dataById.whatsappSettings as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <WhatsAppSettingsWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "whatsappSettings" }))}
-            userName={typeof data?.userName === "string" ? data.userName : undefined}
-            userAvatarUrl={typeof data?.userAvatarUrl === "string" ? data.userAvatarUrl : null}
-            initialNavId={typeof data?.initialNavId === "string" ? data.initialNavId : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "whatsappSettings" }))
+            }
+            userName={
+              typeof data?.userName === "string" ? data.userName : undefined
+            }
+            userAvatarUrl={
+              typeof data?.userAvatarUrl === "string"
+                ? data.userAvatarUrl
+                : null
+            }
+            initialNavId={
+              typeof data?.initialNavId === "string"
+                ? data.initialNavId
+                : undefined
+            }
           />
         );
       })()}
@@ -2353,18 +4161,28 @@ export default function OverlayController() {
       {/* whatsappShellWindow */}
       {(() => {
         const isOpen = isOpenById.whatsappShellWindow;
-        const data = dataById.whatsappShellWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.whatsappShellWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
         if (!isOpen) return null;
         return (
           <WhatsAppShellWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "whatsappShellWindow" }))}
-            userName={typeof data?.userName === "string" ? data.userName : undefined}
-            userAvatarUrl={typeof data?.userAvatarUrl === "string" ? data.userAvatarUrl : null}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "whatsappShellWindow" }))
+            }
+            userName={
+              typeof data?.userName === "string" ? data.userName : undefined
+            }
+            userAvatarUrl={
+              typeof data?.userAvatarUrl === "string"
+                ? data.userAvatarUrl
+                : null
+            }
           />
         );
       })()}
-
     </>
   );
 }
