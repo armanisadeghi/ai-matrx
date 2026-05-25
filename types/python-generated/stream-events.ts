@@ -26,6 +26,7 @@ export const EventType = {
   STRUCTURED_OUTPUT: "structured_output",
   CONTEXT_STATE: "context_state",
   CONTEXT_TRIMMED: "context_trimmed",
+  INJECTION_CONSUMED: "injection_consumed",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -207,6 +208,21 @@ export interface StructuredOutputPayload {
   match_count?: number;
   agent_name?: string | null;
   operation_id?: string | null;
+}
+
+export interface ConsumedInjection {
+  injection_id: string;
+  kind: string;
+  text?: string | null;
+  is_visible_to_user?: boolean;
+  position?: number | null;
+  message_id?: string | null;
+}
+
+export interface InjectionConsumedPayload {
+  conversation_id: string;
+  items: ConsumedInjection[];
+  count: number;
 }
 
 export interface ContextStatePayload {
@@ -2435,6 +2451,11 @@ export interface ContextTrimmedEvent {
   data: ContextTrimmedPayload;
 }
 
+export interface InjectionConsumedEvent {
+  event: "injection_consumed";
+  data: InjectionConsumedPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -2457,7 +2478,8 @@ export type TypedStreamEvent =
   | ContextAnalysisEvent
   | StructuredOutputEvent
   | ContextStateEvent
-  | ContextTrimmedEvent;
+  | ContextTrimmedEvent
+  | InjectionConsumedEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -2575,6 +2597,10 @@ export function isContextStateEvent(e: TypedStreamEvent): e is { event: "context
 
 export function isContextTrimmedEvent(e: TypedStreamEvent): e is { event: "context_trimmed"; data: ContextTrimmedPayload } {
   return e.event === "context_trimmed";
+}
+
+export function isInjectionConsumedEvent(e: TypedStreamEvent): e is { event: "injection_consumed"; data: InjectionConsumedPayload } {
+  return e.event === "injection_consumed";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

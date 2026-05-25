@@ -35,6 +35,15 @@ export interface CreatorDebugSettings {
   /** Show draft/unpublished entities mixed in with published ones in
    *  listing surfaces. */
   showDrafts: boolean;
+  /** Emergency brake for surface-driven tool injection. When true,
+   *  `buildToolInjection` declares NO `client.surface` (and skips the
+   *  sandbox-fs client stopgap), so the server's surface resolver never runs
+   *  and no surface/default tools are auto-attached — the agent runs with only
+   *  its own saved tools. Global: applies to every agent and every run. This
+   *  is the frontend stopgap for the `matrx-default/default` inheritance that
+   *  currently injects the eight UI-first tools into every matrx-user surface.
+   *  Off by default. */
+  disableToolInjection: boolean;
 }
 
 export interface CreatorDebugState {
@@ -74,6 +83,7 @@ const initialState: CreatorDebugState = {
     showRawIds: false,
     showBuildAffordances: true,
     showDrafts: false,
+    disableToolInjection: false,
   },
 };
 

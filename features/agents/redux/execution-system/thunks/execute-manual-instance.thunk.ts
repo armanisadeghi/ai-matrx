@@ -55,10 +55,10 @@
  *   - Per-instance client tool names (widget + slice) ride through
  *     `buildToolInjection`'s built-in client-tool path as
  *     `RegisteredToolSpec` with `delegate=true`.
- *   - The active capability providers (editor-state, sandbox-fs,
- *     nextjs-surface) populate the `client.capabilities` envelope. The
- *     nextjs-surface capability auto-injects the seven UI-first tools
- *     server-side; we don't ship them by name here.
+ *   - The active capability providers (editor-state, sandbox-fs) populate
+ *     the `client.capabilities` envelope. UI-first tools (user / update_plan
+ *     / …) come from the request's surface (e.g. matrx-user/chat) resolved
+ *     server-side against public.tl_def_surface — not shipped by name here.
  *
  * History: this thunk was deleted in commit 5bcb43380 (the May 2026 tool-
  * injection migration), which rerouted every caller through executeInstance.
@@ -304,8 +304,8 @@ export async function assembleManualRequest(
   // tool_id set so the server's resolved_tool_id() rebinds them through the
   // registry. delegate is left at the default (false) — the server's
   // auto_delegate logic flips it when the active client surface owns a
-  // delegated handler for the tool, and the nextjs-surface capability
-  // already brings the seven UI-first tools online with delegate=True.
+  // delegated handler for the tool. The UI-first tools come from the
+  // request's surface (e.g. matrx-user/chat) via the DB surface resolver.
   //
   // agent.customTools become InlineToolSpec seed entries — same shape as
   // CustomToolDefinition (name + description + input_schema).
@@ -319,6 +319,7 @@ export async function assembleManualRequest(
         kind: "registered",
         name: uuid,
         tool_id: uuid,
+        delegate: false,
       });
     }
   }
@@ -725,9 +726,8 @@ export const executeManualInstance = createAsyncThunk<
       // Pre-persistence failure: clear the hidden input so the message doesn't
       // linger in the box. It survives as the optimistic user bubble + the
       // `lastSubmittedText` re-apply backup, so nothing is lost.
-      const { clearUserInput } = await import(
-        "../instance-user-input/instance-user-input.slice"
-      );
+      const { clearUserInput } =
+        await import("../instance-user-input/instance-user-input.slice");
       dispatch(clearUserInput(conversationId));
 
       return rejectWithValue(

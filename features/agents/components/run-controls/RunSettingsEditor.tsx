@@ -21,6 +21,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
 import { NumberStepper } from "@/components/official-candidate/NumberStepper";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -91,6 +92,31 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   return (
     <>
       <div className="space-y-0.5">
+        <div className="px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+          Tool injection
+        </div>
+        <SettingRow
+          id={`disable-tool-injection-${conversationId}`}
+          label="Disable tool injection (this run)"
+          checked={settings.disableToolInjection ?? false}
+          onChange={(v) =>
+            dispatch(
+              setBuilderAdvancedSettings({
+                conversationId,
+                changes: { disableToolInjection: v },
+              }),
+            )
+          }
+        />
+        <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
+          Sends no surface for this conversation, so the server adds no
+          automatic tools — the agent runs with only its own saved tools.
+        </p>
+
+        <SurfaceSimulatorSelect conversationId={conversationId} />
+
+        <Separator className="!my-1.5" />
+
         <SettingRow
           id={`debug-${conversationId}`}
           label="Debug mode"

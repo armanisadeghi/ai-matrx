@@ -181,6 +181,17 @@ export interface AgentDefinition {
   customTools: CustomToolDefinition[];
   mcpServers: string[]; // uuid[] → mcp_servers catalog
 
+  /**
+   * When true, the server's tool-merge kill switch
+   * (`tool_config.auto_tools_disabled`) drops ALL automatic tool injection for
+   * this agent — surface defaults, capability tools, request tools,
+   * tools_replace, and user overrides — leaving only the agent's own saved
+   * `tools`. The Builder's "Allow automated tool injection" switch is the
+   * inverse of this flag. Persisted in `agx_agent.tool_config`; read by
+   * aidream's agx_manager. Defaults false (injection allowed).
+   */
+  autoToolsDisabled: boolean;
+
   // Ownership & Hierarchy (null on version records)
   userId: string | null;
   organizationId: string | null;

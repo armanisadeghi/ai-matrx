@@ -54,7 +54,12 @@ export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
     origin: "matrx",
     fileId: row.id,
     fileUri: row.storage_uri,
-    canonicalFileUri: row.canonical_storage_uri ?? null,
+    // `cld_files.canonical_storage_uri` was dropped; canonical processed doc id
+    // is a separate dedup column. Legacy rows may still carry the URI in metadata.
+    canonicalFileUri:
+      typeof metadata?.canonical_file_uri === "string"
+        ? metadata.canonical_file_uri
+        : null,
     visibility:
       row.visibility === "public" ||
       row.visibility === "private" ||

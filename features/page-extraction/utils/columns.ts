@@ -18,6 +18,7 @@ import type {
   ColumnSource,
   ColumnType,
   ExtractionColumn,
+  Json,
   PageExtractionResult,
   TemplateColumnsSchema,
 } from "@/features/page-extraction/types";
@@ -96,9 +97,7 @@ function normalizeType(t: string | undefined): ColumnType {
 
 /** Walk a possibly-wrapped JSON schema to the object that describes ONE
  *  result row, and return its `properties` map. */
-function findItemProperties(
-  schema: unknown,
-): Record<string, unknown> | null {
+function findItemProperties(schema: unknown): Record<string, unknown> | null {
   if (!schema || typeof schema !== "object") return null;
   // Unwrap the OpenAI json_schema envelope: { name, schema, strict }.
   const env = schema as { schema?: unknown };
@@ -171,15 +170,13 @@ export function cellValueFor(
  * payloads, plus a map of canonicalId → how many duplicates folded in
  * (for the "+N merged" badge).
  */
-export function buildMergedDuplicateView(
-  results: PageExtractionResult[],
-): {
+export function buildMergedDuplicateView(results: PageExtractionResult[]): {
   rows: PageExtractionResult[];
   mergedCountById: Map<string, number>;
 } {
   const dupesByCanonical = new Map<string, PageExtractionResult[]>();
   for (const r of results) {
-    const p = (r.payload ?? {}) as Record<string, unknown>;
+    const p = r.payload ?? {};
     if (p.is_duplicate && typeof p.canonical_entry === "string") {
       const arr = dupesByCanonical.get(p.canonical_entry) ?? [];
       arr.push(r);
@@ -191,7 +188,7 @@ export function buildMergedDuplicateView(
   const mergedCountById = new Map<string, number>();
 
   for (const r of results) {
-    const p = (r.payload ?? {}) as Record<string, unknown>;
+    const p = r.payload ?? {};
     if (p.is_duplicate) continue; // absorbed into its canonical row
 
     const dupes = dupesByCanonical.get(r.id);
@@ -200,9 +197,9 @@ export function buildMergedDuplicateView(
       continue;
     }
 
-    const merged: Record<string, unknown> = { ...p };
+    const merged: Record<string, Json> = { ...p };
     for (const d of dupes) {
-      const dp = (d.payload ?? {}) as Record<string, unknown>;
+      const dp = d.payload ?? {};
       for (const [k, v] of Object.entries(dp)) {
         if (k === "is_duplicate" || k === "canonical_entry") continue;
         const cur = merged[k];

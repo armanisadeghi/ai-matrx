@@ -35,6 +35,7 @@ import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { withRetry } from "@/lib/net/retry";
 import { ConnectTimeoutError } from "@/lib/net/errors";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { Database } from "@/types/database.types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type {
@@ -451,6 +452,83 @@ export const saveAgentField = createAsyncThunk<
 );
 
 /**
+ * Toggles the agent's `auto_tools_disabled` kill switch — the inverse of the
+ * Builder's "Allow automated tool injection" switch.
+ *
+ * Persists into `agx_agent.tool_config.auto_tools_disabled` via a read-merge-
+ * write so the other tool_config keys (`tools`, `excluded_tools`) are never
+ * clobbered. The server reads this flag from tool_config (agx_manager.py);
+ * there is no legacy column and no DB trigger keeping it in sync, so a
+ * targeted merge is the correct write. Optimistic via mergePartialAgent (which
+ * does NOT mark the field dirty, so it never disturbs unsaved-edit tracking);
+ * reverted on failure.
+ */
+export const setAgentAutoToolsDisabled = createAsyncThunk<
+  void,
+  { agentId: string; disabled: boolean },
+  ThunkApi
+>(
+  "agentDefinition/setAutoToolsDisabled",
+  async ({ agentId, disabled }, { dispatch, getState }) => {
+    const previous =
+      selectAgentById(getState(), agentId)?.autoToolsDisabled ?? false;
+
+    // Optimistic — value updates immediately without being marked dirty.
+    dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: disabled }));
+
+    // Synthetic comparison/variation agents live only in Redux — never persist.
+    if (isSyntheticAgentId(agentId)) return;
+
+    const { data: current, error: readError } = await supabase
+      .from("agx_agent")
+      .select("tool_config")
+      .eq("id", agentId)
+      .single();
+
+    if (readError) {
+      dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: previous }));
+      dispatch(setAgentError({ id: agentId, error: readError.message }));
+      throw pgErrorToError(readError);
+    }
+
+    const existingConfig =
+      current?.tool_config &&
+      typeof current.tool_config === "object" &&
+      !Array.isArray(current.tool_config)
+        ? (current.tool_config as Record<string, unknown>)
+        : {};
+
+    const { data, error } = await supabase
+      .from("agx_agent")
+      .update({
+        tool_config: {
+          ...existingConfig,
+          auto_tools_disabled: disabled,
+        } as Database["public"]["Tables"]["agx_agent"]["Update"]["tool_config"],
+      })
+      .eq("id", agentId)
+      .select("version, updated_at")
+      .single();
+
+    if (error) {
+      dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: previous }));
+      dispatch(setAgentError({ id: agentId, error: error.message }));
+      throw pgErrorToError(error);
+    }
+
+    if (data) {
+      dispatch(
+        mergePartialAgent({
+          id: agentId,
+          version: data.version,
+          updatedAt: data.updated_at,
+        }),
+      );
+    }
+  },
+);
+
+/**
  * Saves all dirty fields for an agent in a single DB update.
  * Reads dirty field values from state — no arg needed beyond agentId.
  *
@@ -557,6 +635,7 @@ export const createAgent = createAsyncThunk<
     modelTiers: partial.modelTiers ?? null,
     outputSchema: partial.outputSchema ?? null,
     customTools: partial.customTools ?? [],
+    autoToolsDisabled: partial.autoToolsDisabled ?? false,
     mcpServers: partial.mcpServers ?? [],
     userId,
     organizationId: partial.organizationId ?? null,

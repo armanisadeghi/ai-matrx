@@ -70,6 +70,29 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
   }));
 }
 
+export interface SurfaceOption {
+  name: string;
+  client_name: string;
+  description: string | null;
+}
+
+/**
+ * Lightweight surface list for pickers (the creator-panel Surface Simulator).
+ * Active surfaces only, ordered by client then name — no per-surface stat
+ * aggregation. Returns every surface across every client so a creator can
+ * mimic anything (matrx-user / matrx-admin / matrx-public / chrome-extension).
+ */
+export async function listSurfaceOptions(): Promise<SurfaceOption[]> {
+  const { data, error } = await sb()
+    .from("ui_surface")
+    .select("name, client_name, description")
+    .eq("is_active", true)
+    .order("client_name", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as SurfaceOption[];
+}
+
 export async function createSurface(
   row: UiSurfaceUpsert,
 ): Promise<UiSurfaceRow> {

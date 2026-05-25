@@ -44,6 +44,7 @@ import {
   isStructuredOutputEvent,
   isContextStateEvent,
   isContextTrimmedEvent,
+  isInjectionConsumedEvent,
   type ConversationIdData,
   type ConversationLabeledData,
   type MemoryBufferSpawnedData,
@@ -1461,6 +1462,22 @@ export async function processStream({
     } else if (isContextTrimmedEvent(event)) {
       otherEvents++;
       dispatch(applyContextTrimmed(event.data));
+    } else if (isInjectionConsumedEvent(event)) {
+      otherEvents++;
+      // Inbox delivery ack — full queued→delivered UI lands with turn-boundary
+      // inbox work; preserve the payload on the timeline until then.
+      dispatch(
+        appendTimeline({
+          requestId,
+          entry: {
+            kind: "unknown",
+            seq: 0,
+            timestamp: now,
+            originalEvent: "injection_consumed",
+            rawData: event.data,
+          },
+        }),
+      );
     } else {
       const _exhaustive: never = event;
       const unhandled = _exhaustive as { event?: string; data?: unknown };

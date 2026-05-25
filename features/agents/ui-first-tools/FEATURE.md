@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-24` (tool↔DB reconciliation)
+**Last updated:** `2026-05-24` (nextjs-surface capability removed; UI-first tools resolve via surface)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -16,9 +16,10 @@ The agent calls a small set of "UI-first" tools (`user`, `update_plan`,
 `request_user_takeover`, `tasks`, `user_todos`, `scratchpad`, `storage`) that
 have no server-side execution — the Next.js client validates the args,
 runs a handler (UI render or Supabase CRUD), and POSTs `tool_results`
-back so the model resumes. Tightly paired with the `nextjs-surface`
-client capability that brings these tools online AND publishes ambient
-context the model templates into prompts.
+back so the model resumes. These tools come online via the request's
+**surface**: they're bound to `matrx-user/chat` in `public.tl_def_surface`
+and resolved server-side (most other surfaces carry none). Ambient context
+(user / route / scope) is seeded separately into the `context` payload.
 
 This feature exists because:
 
@@ -62,10 +63,12 @@ This feature exists because:
   tasks + user todos per conversation. Hydrated on mount, kept fresh by
   Supabase Realtime subscriptions.
 
-**Capability provider**
-- `capability/nextjs-surface.provider.ts` — registers the
-  `nextjs-surface` `ClientCapabilityProvider`. Always active when the
-  user is authenticated. Brings the seven UI-first tools online.
+**Surface binding (server-resolved)**
+- These tools are bound to the `matrx-user/chat` surface in
+  `public.tl_def_surface`. The request declares `client.surface` (route →
+  surface via `features/surfaces/utils/route-to-surface.ts`) and aidream
+  resolves it to this tool set. There is no client capability for this —
+  surfaces are data, not capabilities.
 
 **Dispatcher**
 - `dispatcher/dispatch-ui-first-tool.thunk.ts` — wired into
@@ -158,23 +161,20 @@ Optional FKs for future "elevate to project / task" UX:
 4. Server-side, the agent sees `{{user.name}}`, `{{route_brief.url}}`,
    `{{active_scopes}}`, `{{organization.name}}`, etc.
 
-### Flow 5 — `nextjs-surface` capability publication
+### Flow 5 — UI-first tools come online via the request's surface
 
-1. `buildToolInjection` walks the capability registry (provider
-   registered at boot via `register-all.ts`).
-2. `nextjs-surface` provider returns a `NextjsSurfaceState` with the
-   orchestration envelope (route, route_kind, is_admin, theme,
-   active_scopes, ...).
-3. Because the capability is active, `buildToolInjection` also auto-
-   merges the seven UI-first tool specs (`{kind:'registered', name, delegate:true}`)
-   into `payload.tools`.
-4. The wire request to aidream carries:
+1. `buildToolInjection` sets `client.surface` from the active route
+   (`detectActiveSurface()`) — unless a Surface Simulator override or the
+   disable-injection brake is in effect.
+2. aidream resolves `client.surface` → `public.tl_def_surface` and folds the
+   surface's default tools into the turn's tool set. The seven UI-first tools
+   are bound to `matrx-user/chat`, so chat agents get them; surfaces with no
+   bindings (the now-empty `matrx-default/default` base, `agent-builder`,
+   `agent-run`, …) get none.
+3. The wire request to aidream carries just the surface — no per-client
+   capability, because the server is surface-agnostic:
    ```jsonc
-   "client": {
-     "capabilities": [..., "nextjs-surface"],
-     "state": { "nextjs-surface": {...} }
-   },
-   "tools": [..., { name: "user", delegate: true }, ...]
+   "client": { "surface": "matrx-user/chat" }
    ```
 
 ---
@@ -220,6 +220,14 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-05-24` — Removed the `nextjs-surface` client capability — a
+  frontend-specific name whose payload (route/scope/admin/permission/theme)
+  nothing on the server consumed. The seven UI-first tools now come online
+  purely via the request's `client.surface` → `public.tl_def_surface`, bound
+  to `matrx-user/chat`. The base surface `matrx-default/default` was emptied,
+  so tool-less agents and non-chat surfaces (agent-builder/agent-run) no
+  longer get auto-attached tools. Provider file + Capability removed from
+  both repos; surfaces are now data-only.
 - `2026-05-24` — Tool↔DB reconciliation with matrx-extend (cross-surface
   `tl_def` drift work). Fixed stale `memory` references to `scratchpad`
   (the ephemeral client tool was renamed; `memory` is reserved for the

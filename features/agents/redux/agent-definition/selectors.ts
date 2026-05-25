@@ -51,6 +51,16 @@ export const selectAgentById = createSelector(
 );
 
 /**
+ * Whether automatic tool injection is DISABLED for this agent
+ * (`tool_config.auto_tools_disabled`). The Builder's "Allow automated tool
+ * injection" switch shows the inverse. Defaults false (injection allowed).
+ */
+export const selectAgentAutoToolsDisabled = createSelector(
+  [selectAgentById],
+  (record): boolean => record?.autoToolsDisabled ?? false,
+);
+
+/**
  * Returns the fetch status for a given agent record.
  * undefined when the record does not exist in state.
  * null when the record exists but no fetch has completed.

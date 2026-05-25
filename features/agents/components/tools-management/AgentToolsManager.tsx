@@ -44,6 +44,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
@@ -71,12 +72,14 @@ import {
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentMcpServers,
+  selectAgentAutoToolsDisabled,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,
 } from "@/features/agents/redux/agent-definition/slice";
+import { setAgentAutoToolsDisabled } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectMcpCatalog,
   selectMcpCatalogStatus,
@@ -315,6 +318,10 @@ interface AgentToolsManagerProps {
 }
 
 export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
+  const dispatch = useAppDispatch();
+  const autoToolsDisabled = useAppSelector((state) =>
+    selectAgentAutoToolsDisabled(state, agentId),
+  );
   const reduxTools = useAppSelector(selectAllTools);
   const reduxToolsStatus = useAppSelector(selectToolsStatus);
   const externalTools: DatabaseTool[] | undefined =
@@ -423,6 +430,39 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
           );
         })}
       </div>
+
+      {/* Allow automated tool injection — agent-global; governs every tab.
+          When off, the server's `auto_tools_disabled` kill switch drops ALL
+          surface/automatic tools so the agent runs with only the tools
+          selected here. See tool-injection.types.ts. */}
+      <label
+        htmlFor={`allow-auto-tools-${agentId}`}
+        className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border bg-muted/30 shrink-0 cursor-pointer"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Zap
+            className={`w-3.5 h-3.5 shrink-0 ${autoToolsDisabled ? "text-muted-foreground" : "text-primary"}`}
+          />
+          <div className="min-w-0">
+            <span className="text-xs font-medium text-foreground">
+              Allow automated tool injection
+            </span>
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              {autoToolsDisabled
+                ? "Off — this agent only ever gets the tools selected here. No surface or automatic tools are added."
+                : "On — the active surface may add its default tools on top of your selection."}
+            </p>
+          </div>
+        </div>
+        <Switch
+          id={`allow-auto-tools-${agentId}`}
+          checked={!autoToolsDisabled}
+          onCheckedChange={(allow) =>
+            dispatch(setAgentAutoToolsDisabled({ agentId, disabled: !allow }))
+          }
+          className="shrink-0"
+        />
+      </label>
 
       <div className="flex-1 overflow-hidden min-h-0">
         {activeTab === "server" && (

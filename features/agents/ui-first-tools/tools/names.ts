@@ -4,8 +4,8 @@
  *   - the predicate `isUiFirstToolName` used by `process-stream.ts` to route
  *     `tool_delegated` events to the ui-first dispatcher (parallel to
  *     `isWidgetActionName` for widget actions).
- *   - the `ToolSpec[]` injection in `build-tool-injection.ts` when the
- *     `nextjs-surface` capability is active.
+ *   - delegated dispatch of these tools when the active surface (e.g.
+ *     matrx-user/chat) brings them online via the DB surface resolver.
  *   - the dispatcher registry in `tools/registry.ts`.
  *
  * Keep this in lockstep with the matrx-extend canonical tool names — both

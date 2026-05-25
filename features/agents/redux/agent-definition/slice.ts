@@ -450,6 +450,7 @@ export const agentDefinitionSlice = createSlice({
         modelTiers: data.modelTiers ?? null,
         outputSchema: data.outputSchema ?? null,
         customTools: data.customTools ?? [],
+        autoToolsDisabled: data.autoToolsDisabled ?? false,
         mcpServers: data.mcpServers ?? [],
         userId: data.userId ?? null,
         organizationId: data.organizationId ?? null,

@@ -1058,6 +1058,59 @@
         }
       }
     },
+    "/ai/agents/{agent_id}/invalidate-cache": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Invalidate Agent Cache",
+        "description": "Evict one agent's definition from the server caches.\n\nThe client saves agent edits directly to Supabase, so the server's\nORM ``StateManager`` cache would otherwise keep serving the stale\ndefinition until its TTL expires. Call this right after the save to\ndrop exactly that agent (not every cached agent) so the next\nexecution reloads fresh rows. Surgical — see\n``bust_agent_caches(agent_id=...)``.",
+        "operationId": "invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidateAgentCacheResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/mock-stream/{scenario}": {
       "post": {
         "tags": [
@@ -1874,6 +1927,446 @@
                   },
                   "type": "array",
                   "title": "Response List User Pending Calls Ai User Pending Calls Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversation/{conversation_id}/inbox": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Enqueue Inbox Item",
+        "description": "Queue a message into a conversation without canceling a running agent.\n\nIf a run is in-flight, the running loop drains it at its next natural turn\nboundary (the next tool call / iteration) and the model sees it on the\nfollowing API call. If the conversation is idle, the item waits and is\ndelivered when the next run starts. Ownership-scoped: a caller can only\nenqueue into a conversation they own.",
+        "operationId": "enqueue_inbox_item_ai_conversation__conversation_id__inbox_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxEnqueueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxEnqueueResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "List Inbox Items",
+        "description": "List the caller's queued inbox items for a conversation (FIFO). Lets a\nclient rebuild its \"waiting its turn\" cards after reopening the panel.",
+        "operationId": "list_inbox_items_ai_conversation__conversation_id__inbox_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "pending",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InboxItem"
+                  },
+                  "title": "Response List Inbox Items Ai Conversation  Conversation Id  Inbox Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversations/{conversation_id}/inbox": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Enqueue Inbox Item",
+        "description": "Queue a message into a conversation without canceling a running agent.\n\nIf a run is in-flight, the running loop drains it at its next natural turn\nboundary (the next tool call / iteration) and the model sees it on the\nfollowing API call. If the conversation is idle, the item waits and is\ndelivered when the next run starts. Ownership-scoped: a caller can only\nenqueue into a conversation they own.",
+        "operationId": "enqueue_inbox_item_ai_conversations__conversation_id__inbox_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxEnqueueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxEnqueueResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "List Inbox Items",
+        "description": "List the caller's queued inbox items for a conversation (FIFO). Lets a\nclient rebuild its \"waiting its turn\" cards after reopening the panel.",
+        "operationId": "list_inbox_items_ai_conversations__conversation_id__inbox_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "pending",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InboxItem"
+                  },
+                  "title": "Response List Inbox Items Ai Conversations  Conversation Id  Inbox Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversation/{conversation_id}/inbox/{injection_id}": {
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Cancel Inbox Item",
+        "description": "Retract a still-pending queued message. 409 if it already drained, 404 if\nthere is no such item the caller owns.",
+        "operationId": "cancel_inbox_item_ai_conversation__conversation_id__inbox__injection_id__delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "injection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Injection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxMutationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Edit Inbox Item",
+        "description": "Edit a still-pending queued message's text. 409 if it already drained,\n404 if there is no such item the caller owns.",
+        "operationId": "edit_inbox_item_ai_conversation__conversation_id__inbox__injection_id__patch",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "injection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Injection Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxMutationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversations/{conversation_id}/inbox/{injection_id}": {
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Cancel Inbox Item",
+        "description": "Retract a still-pending queued message. 409 if it already drained, 404 if\nthere is no such item the caller owns.",
+        "operationId": "cancel_inbox_item_ai_conversations__conversation_id__inbox__injection_id__delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "injection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Injection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxMutationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Edit Inbox Item",
+        "description": "Edit a still-pending queued message's text. 409 if it already drained,\n404 if there is no such item the caller owns.",
+        "operationId": "edit_inbox_item_ai_conversations__conversation_id__inbox__injection_id__patch",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "injection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Injection Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxMutationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -7925,6 +8418,185 @@
         }
       }
     },
+    "/admin/tools": {
+      "get": {
+        "tags": [
+          "Admin / Tools"
+        ],
+        "summary": "List Tools",
+        "operationId": "list_tools_admin_tools_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tools/validate": {
+      "post": {
+        "tags": [
+          "Admin / Tools"
+        ],
+        "summary": "Validate All",
+        "operationId": "validate_all_admin_tools_validate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tools/failures": {
+      "get": {
+        "tags": [
+          "Admin / Tools"
+        ],
+        "summary": "Failure Analytics",
+        "operationId": "failure_analytics_admin_tools_failures_get",
+        "parameters": [
+          {
+            "name": "sample",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20000,
+              "minimum": 1,
+              "default": 2000,
+              "title": "Sample"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FailureAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tools/{name}": {
+      "get": {
+        "tags": [
+          "Admin / Tools"
+        ],
+        "summary": "Tool Detail",
+        "operationId": "tool_detail_admin_tools__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin / Tools"
+        ],
+        "summary": "Update Tool",
+        "operationId": "update_tool_admin_tools__name__patch",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/cx-explorer/facets": {
       "get": {
         "tags": [
@@ -8223,14 +8895,66 @@
         }
       }
     },
+    "/api/surfaces/{client_name}/{surface_name}/manifest": {
+      "get": {
+        "tags": [
+          "Tool Routing"
+        ],
+        "summary": "Get Db Surface Manifest",
+        "description": "DB-driven surface manifest. The canonical path — used by frontends\nthat declare a ``client.surface`` from the 60+ rows in\n``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).\n\nIncludes tools inherited from ``matrx-default/default`` so the response\nreflects exactly what ``apply_unified_tools`` would inject. Returns 404\nwhen the name isn't in ``public.ui_surface``.",
+        "operationId": "get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get",
+        "parameters": [
+          {
+            "name": "client_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Name"
+            }
+          },
+          {
+            "name": "surface_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Surface Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurfaceManifest"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/surfaces/{name}/manifest": {
       "get": {
         "tags": [
           "Tool Routing"
         ],
-        "summary": "Get Surface Manifest",
-        "description": "Per TOOL_ROUTING_RULES.md §15 step 6 — surface authors hit this at\nboot to compare their local tool registrations against what the server\nsays they provide. Lookup is by capability name (which is the canonical\nsurface identifier in matrx-ai's registry).\n\nReturns 404 when the name isn't a registered capability.",
-        "operationId": "get_surface_manifest_api_surfaces__name__manifest_get",
+        "summary": "Get Capability Manifest",
+        "description": "Capability-driven manifest. Looks up by short capability name\n(``editor-state``, ``sandbox-fs``, ``browser-dom``) in matrx-ai's\nPython-registered capability registry. Use this for payload-bearing\ncapabilities that extend any surface. Returns 404 when the name isn't\na registered capability — for DB surfaces use the\n``/surfaces/{client}/{surface}/manifest`` form.",
+        "operationId": "get_capability_manifest_api_surfaces__name__manifest_get",
         "parameters": [
           {
             "name": "name",
@@ -18728,6 +19452,224 @@
         }
       }
     },
+    "/templates": {
+      "get": {
+        "tags": [
+          "Workflow Sharing"
+        ],
+        "summary": "List Templates",
+        "description": "Published starter-workflow catalogue, most popular first.",
+        "operationId": "list_templates_templates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TemplateRecord"
+                  },
+                  "type": "array",
+                  "title": "Response List Templates Templates Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/templates/{template_id}/clone": {
+      "post": {
+        "tags": [
+          "Workflow Sharing"
+        ],
+        "summary": "Clone Template",
+        "description": "Clone a template into a fresh workflow owned by the caller.",
+        "operationId": "clone_template_templates__template_id__clone_post",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloneTemplateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/save-as-template": {
+      "post": {
+        "tags": [
+          "Workflow Sharing"
+        ],
+        "summary": "Save As Template",
+        "description": "Snapshot a workflow's current draft into the template catalogue.",
+        "operationId": "save_as_template_workflows__definition_id__save_as_template_post",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAsTemplateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveAsTemplateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/visibility": {
+      "patch": {
+        "tags": [
+          "Workflow Sharing"
+        ],
+        "summary": "Set Workflow Visibility",
+        "description": "Flip a workflow's public read-only flag. Owner only.",
+        "operationId": "set_workflow_visibility_workflows__definition_id__visibility_patch",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibilityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibilityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/workflows/{definition_id}": {
+      "get": {
+        "tags": [
+          "Workflow Sharing"
+        ],
+        "summary": "Get Public Workflow",
+        "description": "Anonymous read of a workflow flagged is_public. NO auth — but the\nrow MUST have is_public=true or we 404 (never leak a private graph).",
+        "operationId": "get_public_workflow_public_workflows__definition_id__get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicWorkflowRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prompts": {
       "get": {
         "tags": [
@@ -25364,6 +26306,48 @@
         }
       }
     },
+    "/admin/db/tables/{table_name}/rows/bulk-delete": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin DB"
+        ],
+        "summary": "Bulk Delete Rows",
+        "description": "Delete many rows in one call. Never fails the whole batch on one bad id —\nreturns a partial-result envelope so the caller can report what landed.",
+        "operationId": "bulk_delete_rows_admin_db_tables__table_name__rows_bulk_delete_post",
+        "parameters": [
+          {
+            "name": "table_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Table Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/db/cache/stats": {
       "get": {
         "tags": [
@@ -26268,6 +27252,215 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PersistenceSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/errors": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "List Errors",
+        "description": "Paginated list of system_error rows. Default: unresolved only.",
+        "operationId": "list_errors_admin_persistence_errors_get",
+        "parameters": [
+          {
+            "name": "resolved",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "any",
+                "yes",
+                "no"
+              ],
+              "type": "string",
+              "default": "no",
+              "title": "Resolved"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemErrorListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/errors/{error_id}": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Get Error Detail",
+        "description": "Full traceback + payload + context for one system_error row.",
+        "operationId": "get_error_detail_admin_persistence_errors__error_id__get",
+        "parameters": [
+          {
+            "name": "error_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Error Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/errors/{error_id}/resolve": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Resolve Error",
+        "description": "Mark a system_error resolved (acknowledged / handled).",
+        "operationId": "resolve_error_admin_persistence_errors__error_id__resolve_post",
+        "parameters": [
+          {
+            "name": "error_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Error Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -33934,7 +35127,7 @@
         },
         "type": "object",
         "title": "CacheBypass",
-        "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tl_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Flush ``AgxAgent`` and ``AgxVersion`` caches in the ORM\n    ``StateManager``. Required after the agent definition has been\n    edited.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``AiModel`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
+        "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tl_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Evict the agent definition from ``AgxAgent`` / ``AgxVersion``\n    caches in the ORM ``StateManager``. Required after the agent\n    definition has been edited. Scoped to the single agent the route\n    is executing when ``apply_cache_bypass`` is given an ``agent_id``;\n    otherwise a whole-model flush.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``AiModel`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
       },
       "CallTimelineResponse": {
         "properties": {
@@ -36574,6 +37767,17 @@
       },
       "ClientContext": {
         "properties": {
+          "surface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface"
+          },
           "capabilities": {
             "items": {
               "type": "string"
@@ -36609,7 +37813,7 @@
         },
         "type": "object",
         "title": "ClientContext",
-        "description": "Request envelope describing the calling client's capabilities + state.\n\nA client declares what it can do via a set of capability names, carries\ntyped state keyed by capability name, may amend its declared manifest\nfor this specific request (see ``SurfaceAmendments``), and may declare\nadditional third-party MCP servers for this session.\n\nWire shape::\n\n    {\n      \"capabilities\": [\"editor-state\", \"sandbox-fs\"],\n      \"state\": {\n        \"editor-state\": {\"active_file\": {\"path\": \"...\", ...}, ...},\n        \"sandbox-fs\":   {\"sandbox_id\": \"...\", ...}\n      },\n      \"amendments\": {\n        \"add\":    [{\"kind\": \"registered\", \"name\": \"...\"}],\n        \"remove\": [\"matrx-extend:foo\"]\n      },\n      \"mcp\": [\"openai-tools\", \"stripe-mcp\"]\n    }\n\nThe ``mcp`` field lists slugs of pre-registered ``public.mcp_servers``\nrows the request wants active for this session in addition to whatever\nMCPs the agent definition already includes. Per TOOL_ROUTING_RULES.md\n§10, MCP tools obey the same name-uniqueness rule (§4) as everything\nelse."
+        "description": "Request envelope describing the calling client's surface + capabilities + state.\n\nTwo orthogonal concepts ride on this envelope:\n\n- ``surface`` — single string naming the UI context the request originated\n  from (e.g. ``matrx-user/chat``, ``chrome-extension/pilot``). The host\n  resolves this against its surface registry (``public.ui_surface`` in\n  aidream) to derive the default tool set + value bindings, with\n  inheritance from ``matrx-default/default``.\n\n- ``capabilities`` — list of payload-bearing capabilities the client is\n  activating (e.g. ``editor-state``, ``sandbox-fs``, ``browser-dom``).\n  Each capability has a Pydantic payload validator registered in the\n  capability registry and may bring extra tools online. Multiple may\n  activate simultaneously (a coding-IDE-on-a-browser-page declares both\n  ``editor-state`` and ``browser-dom``).\n\nWire shape::\n\n    {\n      \"surface\": \"matrx-user/chat\",\n      \"capabilities\": [\"editor-state\"],\n      \"state\": { \"editor-state\": {\"active_file\": {...}, ...} },\n      \"amendments\": { \"add\": [...], \"remove\": [...] },\n      \"mcp\": [\"openai-tools\", \"stripe-mcp\"]\n    }\n\nThe ``surface`` field is host-validated: an unknown name surfaces as a\n422. ``amendments`` apply on top of whatever the surface resolution\nproduced. ``mcp`` adds session-only MCP server slugs."
       },
       "ClientToolResult": {
         "properties": {
@@ -36654,6 +37858,68 @@
           "tool_name"
         ],
         "title": "ClientToolResult"
+      },
+      "CloneTemplateResponse": {
+        "properties": {
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workflow_id"
+        ],
+        "title": "CloneTemplateResponse"
+      },
+      "CodeDeclaration": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "source_app": {
+            "type": "string",
+            "title": "Source App"
+          },
+          "function_path": {
+            "type": "string",
+            "title": "Function Path"
+          },
+          "executor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executor"
+          },
+          "validate_enabled": {
+            "type": "boolean",
+            "title": "Validate Enabled",
+            "default": true
+          },
+          "deprecated": {
+            "type": "boolean",
+            "title": "Deprecated",
+            "default": false
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/JsonValue",
+            "default": {}
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "source_app",
+          "function_path"
+        ],
+        "title": "CodeDeclaration"
       },
       "CombinedRatingItem": {
         "properties": {
@@ -37613,9 +38879,17 @@
                   "type": "object"
                 },
                 "type": "array"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "User Input"
+          },
+          "retry": {
+            "type": "boolean",
+            "title": "Retry",
+            "default": false
           },
           "config_overrides": {
             "anyOf": [
@@ -37793,9 +39067,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "user_input"
-        ],
         "title": "ConversationContinueRequest"
       },
       "ConversationRecord": {
@@ -42269,6 +43540,36 @@
         ],
         "title": "ExtractorSaveRequest"
       },
+      "FailureAnalyticsResponse": {
+        "properties": {
+          "by_domain": {
+            "items": {
+              "$ref": "#/components/schemas/FaultDomainCount"
+            },
+            "type": "array",
+            "title": "By Domain"
+          },
+          "by_tool": {
+            "items": {
+              "$ref": "#/components/schemas/ToolFailureStat"
+            },
+            "type": "array",
+            "title": "By Tool"
+          },
+          "sample_size": {
+            "type": "integer",
+            "title": "Sample Size"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "by_domain",
+          "by_tool",
+          "sample_size"
+        ],
+        "title": "FailureAnalyticsResponse"
+      },
       "FailureDetail": {
         "properties": {
           "id": {
@@ -42560,6 +43861,25 @@
         ],
         "title": "FailureSummary",
         "description": "One ``system_write_failure`` row — list view (payload truncated)."
+      },
+      "FaultDomainCount": {
+        "properties": {
+          "fault_domain": {
+            "type": "string",
+            "title": "Fault Domain"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault_domain",
+          "count"
+        ],
+        "title": "FaultDomainCount"
       },
       "FeedbackIterationRequest": {
         "properties": {
@@ -44533,9 +45853,17 @@
                   "type": "object"
                 },
                 "type": "array"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "User Input"
+          },
+          "retry": {
+            "type": "boolean",
+            "title": "Retry",
+            "default": false
           },
           "config_overrides": {
             "anyOf": [
@@ -44751,9 +46079,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "user_input"
-        ],
         "title": "ForkAndRunRequest",
         "description": "Fork an existing conversation, then run a new turn on the fork.\n\nAll fields from ``ConversationContinueRequest`` apply (user_input,\ntools, client, config_overrides, etc.) — they drive the new turn\nexactly as if the caller had hit ``POST /conversations/{new_id}``.\n\nSelectors (provide at most one — default copies every live message):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy up to and including this message. Set\n  ``exclusive=True`` to fork *before* it (the natural shape for\n  \"edit this message\" — message N is dropped, the new turn replaces it).\n\n``fork_title`` overrides the auto-generated ``\"Fork: <source>\"``\ntitle on the new conversation."
       },
@@ -45653,6 +46978,164 @@
         "title": "ImpairmentsResponse",
         "description": "Full impairment-definitions catalog keyed by definition id (UUID).\n\nSourced from the `wc_impairment_definition` table. The dict key equals\neach value's `id`, so the FE can either iterate `Object.values(...)` or\nlook up directly by UUID."
       },
+      "InboxEditRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "InboxEditRequest"
+      },
+      "InboxEnqueueRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "user_message",
+              "system_message"
+            ],
+            "title": "Kind",
+            "default": "user_message"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text",
+            "description": "The message text to inject."
+          },
+          "is_visible_to_user": {
+            "type": "boolean",
+            "title": "Is Visible To User",
+            "description": "Whether the injected message is shown in the user's transcript.",
+            "default": true
+          },
+          "is_visible_to_model": {
+            "type": "boolean",
+            "title": "Is Visible To Model",
+            "description": "Whether the model sees the injected message (almost always true).",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "InboxEnqueueRequest",
+        "description": "Enqueue an item into a conversation's Turn-Boundary Inbox."
+      },
+      "InboxEnqueueResponse": {
+        "properties": {
+          "injection_id": {
+            "type": "string",
+            "title": "Injection Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "run_active": {
+            "type": "boolean",
+            "title": "Run Active",
+            "description": "True if a run is in-flight (the message drains at its next turn boundary); false if idle (delivered when the next run starts)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "injection_id",
+          "conversation_id",
+          "status",
+          "run_active"
+        ],
+        "title": "InboxEnqueueResponse"
+      },
+      "InboxItem": {
+        "properties": {
+          "injection_id": {
+            "type": "string",
+            "title": "Injection Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "queued_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queued At"
+          },
+          "is_visible_to_user": {
+            "type": "boolean",
+            "title": "Is Visible To User",
+            "default": true
+          },
+          "is_visible_to_model": {
+            "type": "boolean",
+            "title": "Is Visible To Model",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "injection_id",
+          "kind",
+          "status"
+        ],
+        "title": "InboxItem"
+      },
+      "InboxMutationResponse": {
+        "properties": {
+          "injection_id": {
+            "type": "string",
+            "title": "Injection Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "injection_id",
+          "status"
+        ],
+        "title": "InboxMutationResponse"
+      },
       "IndexRepositoryResponse": {
         "properties": {
           "repository_id": {
@@ -46309,6 +47792,30 @@
           "xref"
         ],
         "title": "IntersectingImageOut"
+      },
+      "InvalidateAgentCacheResponse": {
+        "properties": {
+          "cleared": {
+            "type": "boolean",
+            "title": "Cleared"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cleared",
+          "agent_id",
+          "is_version"
+        ],
+        "title": "InvalidateAgentCacheResponse",
+        "description": "Result of evicting one agent definition from the server caches."
       },
       "InvalidateCacheResponse": {
         "properties": {
@@ -52419,6 +53926,23 @@
               }
             ],
             "title": "Last Failure At"
+          },
+          "unresolved_errors": {
+            "type": "integer",
+            "title": "Unresolved Errors",
+            "default": 0
+          },
+          "last_error_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error At"
           }
         },
         "additionalProperties": false,
@@ -53946,6 +55470,60 @@
         },
         "type": "object",
         "title": "PromptWarmRequest"
+      },
+      "PublicWorkflowRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PublicWorkflowRecord",
+        "description": "Read-only public view — only the fields safe to expose anonymously.\nDeliberately omits user_id / project_id / org_id."
       },
       "PublishRequest": {
         "properties": {
@@ -55916,6 +57494,26 @@
         "title": "ResearchTopicSummary",
         "description": "Compact projection of an rs_topic row used by topic-picker UIs.\n\nAvoids round-tripping the heavy `TopicResponse` (progress + cost\nsummary) when the consumer just needs `name` to render a list."
       },
+      "ResolveErrorResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "resolved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resolved At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "resolved_at"
+        ],
+        "title": "ResolveErrorResponse"
+      },
       "ResolvePathArgs": {
         "properties": {
           "path": {
@@ -57395,6 +58993,57 @@
           "access_token"
         ],
         "title": "SandboxBindingRequest"
+      },
+      "SaveAsTemplateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SaveAsTemplateRequest"
+      },
+      "SaveAsTemplateResponse": {
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "template_id"
+        ],
+        "title": "SaveAsTemplateResponse"
       },
       "SaveDraftRequest": {
         "properties": {
@@ -60340,6 +61989,10 @@
             "type": "string",
             "title": "Name"
           },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
           "description": {
             "type": "string",
             "title": "Description"
@@ -60361,18 +62014,32 @@
             },
             "type": "array",
             "title": "Optional Tools"
+          },
+          "inherited_from_base": {
+            "type": "boolean",
+            "title": "Inherited From Base",
+            "default": false
+          },
+          "value_bindings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Value Bindings",
+            "default": []
           }
         },
         "type": "object",
         "required": [
           "name",
+          "source",
           "description",
           "requires_auth",
           "default_tools",
           "optional_tools"
         ],
         "title": "SurfaceManifest",
-        "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11."
+        "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11.\n\nSources can be one of:\n  - ``db_surface`` — resolved from ``public.ui_surface`` +\n    ``public.tl_def_surface`` (the common path; 60+ matrx-user surfaces).\n  - ``capability`` — resolved from a Python-registered ``Capability``\n    in matrx-ai's registry (payload-bearing extras like ``editor-state``,\n    ``sandbox-fs``, ``browser-dom``)."
       },
       "SyncClustersRequest": {
         "properties": {
@@ -60509,6 +62176,319 @@
           "scope"
         ],
         "title": "SynthesisRequest"
+      },
+      "SystemErrorDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_text": {
+            "type": "string",
+            "title": "Error Text"
+          },
+          "traceback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traceback"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolution_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "request_id",
+          "user_id",
+          "conversation_id",
+          "agent_id",
+          "source_app",
+          "route",
+          "error_type",
+          "error_text",
+          "traceback",
+          "payload",
+          "context",
+          "occurred_at",
+          "resolved_at",
+          "resolution_note"
+        ],
+        "title": "SystemErrorDetail"
+      },
+      "SystemErrorListResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SystemErrorSummary"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SystemErrorListResponse"
+      },
+      "SystemErrorSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_text": {
+            "type": "string",
+            "title": "Error Text"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "age_secs": {
+            "type": "number",
+            "title": "Age Secs"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "request_id",
+          "user_id",
+          "conversation_id",
+          "route",
+          "error_type",
+          "error_text",
+          "occurred_at",
+          "age_secs",
+          "resolved_at"
+        ],
+        "title": "SystemErrorSummary"
       },
       "TagCreate": {
         "properties": {
@@ -61004,6 +62984,75 @@
         ],
         "title": "TemplateCreate"
       },
+      "TemplateRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "preview_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Image Url"
+          },
+          "popularity": {
+            "type": "integer",
+            "title": "Popularity",
+            "default": 0
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TemplateRecord"
+      },
       "TestNodeRequest": {
         "properties": {
           "inputs": {
@@ -61091,6 +63140,237 @@
           "spec_type"
         ],
         "title": "TestNodeResponse"
+      },
+      "ToolDetail": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "db": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolRow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CodeDeclaration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ToolFinding"
+            },
+            "type": "array",
+            "title": "Findings",
+            "default": []
+          },
+          "recent_failures": {
+            "items": {
+              "$ref": "#/components/schemas/ToolFailureRow"
+            },
+            "type": "array",
+            "title": "Recent Failures",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ToolDetail"
+      },
+      "ToolFailureRow": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "fault_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fault Domain"
+          },
+          "err_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Err Type"
+          },
+          "err_msg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Err Msg"
+          },
+          "ts": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ts"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_name"
+        ],
+        "title": "ToolFailureRow"
+      },
+      "ToolFailureStat": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "model_error": {
+            "type": "integer",
+            "title": "Model Error"
+          },
+          "tool_defect": {
+            "type": "integer",
+            "title": "Tool Defect"
+          },
+          "infra": {
+            "type": "integer",
+            "title": "Infra"
+          },
+          "user": {
+            "type": "integer",
+            "title": "User"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_name",
+          "total",
+          "model_error",
+          "tool_defect",
+          "infra",
+          "user"
+        ],
+        "title": "ToolFailureStat"
+      },
+      "ToolFinding": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/JsonValue",
+            "default": {}
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "severity",
+          "tool_name",
+          "message"
+        ],
+        "title": "ToolFinding"
+      },
+      "ToolListResponse": {
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/ToolSummary"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ToolRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "import_failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Import Failures",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "summary",
+          "items"
+        ],
+        "title": "ToolListResponse"
       },
       "ToolRecord": {
         "properties": {
@@ -61213,6 +63493,184 @@
         ],
         "title": "ToolResultsResponse"
       },
+      "ToolRow": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "function_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Function Path"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "admin_only": {
+            "type": "boolean",
+            "title": "Admin Only",
+            "default": false
+          },
+          "validation_exempt": {
+            "type": "boolean",
+            "title": "Validation Exempt",
+            "default": false
+          },
+          "surfaces": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Surfaces",
+            "default": []
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/JsonValue",
+            "default": {}
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "declared_in_code": {
+            "type": "boolean",
+            "title": "Declared In Code",
+            "default": false
+          },
+          "drift_count": {
+            "type": "integer",
+            "title": "Drift Count",
+            "default": 0
+          },
+          "drift_severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drift Severity"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ToolRow",
+        "description": "A tl_def row plus its derived drift status, for the list/detail views."
+      },
+      "ToolSummary": {
+        "properties": {
+          "code_count": {
+            "type": "integer",
+            "title": "Code Count"
+          },
+          "db_count": {
+            "type": "integer",
+            "title": "Db Count"
+          },
+          "external_count": {
+            "type": "integer",
+            "title": "External Count"
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors"
+          },
+          "warnings": {
+            "type": "integer",
+            "title": "Warnings"
+          },
+          "exempt": {
+            "type": "integer",
+            "title": "Exempt"
+          },
+          "in_sync": {
+            "type": "integer",
+            "title": "In Sync"
+          },
+          "inactive": {
+            "type": "integer",
+            "title": "Inactive",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code_count",
+          "db_count",
+          "external_count",
+          "errors",
+          "warnings",
+          "exempt",
+          "in_sync"
+        ],
+        "title": "ToolSummary"
+      },
       "ToolTestExecuteRequest": {
         "properties": {
           "tool_name": {
@@ -61242,6 +63700,94 @@
           "arguments"
         ],
         "title": "ToolTestExecuteRequest"
+      },
+      "ToolUpdateRequest": {
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "validation_exempt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Exempt"
+          },
+          "admin_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Only"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ToolUpdateRequest",
+        "description": "Admin-editable tl_def settings. All optional; only provided fields change.\n\n``parameters`` is the tool's argument contract — the same flat shape the\ndrift engine diffs against code: a mapping of argument name → spec object,\ne.g. ``{\"action\": {\"type\": \"string\", \"required\": true, \"enum\": [\"get\",\n\"set\"]}}``. Changing it here is the DB-first path the doctrine prescribes\n(TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line\nuntil the drift gate is quiet. Editing it bumps the row ``version``."
       },
       "TopicCreate": {
         "properties": {
@@ -63319,6 +65865,40 @@
         "title": "ValidationIssue",
         "description": "A single problem with a Definition. Rendered as a badge in the UI."
       },
+      "ValidationReportResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ToolSummary"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ToolFinding"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "import_failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Import Failures",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ok",
+          "summary",
+          "findings"
+        ],
+        "title": "ValidationReportResponse"
+      },
       "ValidationResult": {
         "properties": {
           "valid": {
@@ -63898,6 +66478,49 @@
           "created_at"
         ],
         "title": "VirtualVersion"
+      },
+      "VisibilityRequest": {
+        "properties": {
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "is_public"
+        ],
+        "title": "VisibilityRequest"
+      },
+      "VisibilityResponse": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "definition_id",
+          "is_public"
+        ],
+        "title": "VisibilityResponse"
       },
       "VisionMediaUploadResponse": {
         "properties": {

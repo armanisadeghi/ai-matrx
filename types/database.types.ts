@@ -3543,8 +3543,8 @@ export type Database = {
       }
       cld_files: {
         Row: {
+          _legacy_storage_uri: string | null
           canonical_processed_document_id: string | null
-          canonical_storage_uri: string | null
           checksum: string | null
           created_at: string
           current_version: number
@@ -3570,8 +3570,8 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          _legacy_storage_uri?: string | null
           canonical_processed_document_id?: string | null
-          canonical_storage_uri?: string | null
           checksum?: string | null
           created_at?: string
           current_version?: number
@@ -3597,8 +3597,8 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          _legacy_storage_uri?: string | null
           canonical_processed_document_id?: string | null
-          canonical_storage_uri?: string | null
           checksum?: string | null
           created_at?: string
           current_version?: number
@@ -3735,6 +3735,45 @@ export type Database = {
           migrated_at?: string
           migrated_to?: string
           payload?: Json
+        }
+        Relationships: []
+      }
+      cld_idempotency: {
+        Row: {
+          created_at: string
+          endpoint: string
+          expires_at: string
+          idempotency_key: string
+          owner_id: string
+          request_hash: string
+          resource_id: string | null
+          resource_type: string | null
+          response_body: Json
+          status_code: number
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          expires_at?: string
+          idempotency_key: string
+          owner_id: string
+          request_hash: string
+          resource_id?: string | null
+          resource_type?: string | null
+          response_body: Json
+          status_code: number
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          expires_at?: string
+          idempotency_key?: string
+          owner_id?: string
+          request_hash?: string
+          resource_id?: string | null
+          resource_type?: string | null
+          response_body?: Json
+          status_code?: number
         }
         Relationships: []
       }
@@ -6681,6 +6720,8 @@ export type Database = {
           keywords: string[] | null
           last_context_breakdown: Json | null
           last_model_id: string | null
+          last_request_id: string | null
+          last_request_status: string | null
           message_count: number
           metadata: Json
           organization_id: string | null
@@ -6715,6 +6756,8 @@ export type Database = {
           keywords?: string[] | null
           last_context_breakdown?: Json | null
           last_model_id?: string | null
+          last_request_id?: string | null
+          last_request_status?: string | null
           message_count?: number
           metadata?: Json
           organization_id?: string | null
@@ -6749,6 +6792,8 @@ export type Database = {
           keywords?: string[] | null
           last_context_breakdown?: Json | null
           last_model_id?: string | null
+          last_request_id?: string | null
+          last_request_status?: string | null
           message_count?: number
           metadata?: Json
           organization_id?: string | null
@@ -6828,6 +6873,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "ctx_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_sandbox_instance_id_fkey"
+            columns: ["sandbox_instance_id"]
+            isOneToOne: false
+            referencedRelation: "sandbox_instances"
             referencedColumns: ["id"]
           },
           {
@@ -7154,6 +7206,75 @@ export type Database = {
           },
         ]
       }
+      cx_pending_injection: {
+        Row: {
+          consumed_at: string | null
+          consumed_by_request_id: string | null
+          consumed_message_id: string | null
+          content: Json
+          conversation_id: string
+          created_at: string
+          enqueued_seq: number
+          id: string
+          is_visible_to_model: boolean
+          is_visible_to_user: boolean
+          kind: string
+          metadata: Json
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by_request_id?: string | null
+          consumed_message_id?: string | null
+          content?: Json
+          conversation_id: string
+          created_at?: string
+          enqueued_seq?: never
+          id?: string
+          is_visible_to_model?: boolean
+          is_visible_to_user?: boolean
+          kind: string
+          metadata?: Json
+          source?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by_request_id?: string | null
+          consumed_message_id?: string | null
+          content?: Json
+          conversation_id?: string
+          created_at?: string
+          enqueued_seq?: never
+          id?: string
+          is_visible_to_model?: boolean
+          is_visible_to_user?: boolean
+          kind?: string
+          metadata?: Json
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_pending_injection_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_pending_injection_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cx_request: {
         Row: {
           ai_model_id: string
@@ -7164,6 +7285,7 @@ export type Database = {
           cost: number | null
           created_at: string
           deleted_at: string | null
+          error: Json | null
           finish_reason: string | null
           id: string
           input_tokens: number | null
@@ -7172,6 +7294,7 @@ export type Database = {
           output_tokens: number | null
           raw_usage: Json | null
           response_id: string | null
+          status: string
           tool_calls_count: number | null
           tool_calls_details: Json | null
           tool_duration_ms: number | null
@@ -7189,6 +7312,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           deleted_at?: string | null
+          error?: Json | null
           finish_reason?: string | null
           id?: string
           input_tokens?: number | null
@@ -7197,6 +7321,7 @@ export type Database = {
           output_tokens?: number | null
           raw_usage?: Json | null
           response_id?: string | null
+          status?: string
           tool_calls_count?: number | null
           tool_calls_details?: Json | null
           tool_duration_ms?: number | null
@@ -7214,6 +7339,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           deleted_at?: string | null
+          error?: Json | null
           finish_reason?: string | null
           id?: string
           input_tokens?: number | null
@@ -7222,6 +7348,7 @@ export type Database = {
           output_tokens?: number | null
           raw_usage?: Json | null
           response_id?: string | null
+          status?: string
           tool_calls_count?: number | null
           tool_calls_details?: Json | null
           tool_duration_ms?: number | null
@@ -7323,6 +7450,7 @@ export type Database = {
           error_type: string | null
           execution_events: Json | null
           expires_at: string | null
+          fault_domain: string | null
           file_path: string | null
           id: string
           input_tokens: number | null
@@ -7364,6 +7492,7 @@ export type Database = {
           error_type?: string | null
           execution_events?: Json | null
           expires_at?: string | null
+          fault_domain?: string | null
           file_path?: string | null
           id?: string
           input_tokens?: number | null
@@ -7405,6 +7534,7 @@ export type Database = {
           error_type?: string | null
           execution_events?: Json | null
           expires_at?: string | null
+          fault_domain?: string | null
           file_path?: string | null
           id?: string
           input_tokens?: number | null
@@ -7481,6 +7611,7 @@ export type Database = {
           err_msg: string | null
           err_type: string | null
           event: string
+          fault_domain: string | null
           id: string
           kind: string | null
           metadata: Json
@@ -7500,6 +7631,7 @@ export type Database = {
           err_msg?: string | null
           err_type?: string | null
           event: string
+          fault_domain?: string | null
           id?: string
           kind?: string | null
           metadata?: Json
@@ -7519,6 +7651,7 @@ export type Database = {
           err_msg?: string | null
           err_type?: string | null
           event?: string
+          fault_domain?: string | null
           id?: string
           kind?: string | null
           metadata?: Json
@@ -7544,6 +7677,7 @@ export type Database = {
           finish_reason: string | null
           id: string
           iterations: number
+          last_activity_at: string | null
           metadata: Json
           result_end_position: number | null
           result_start_position: number | null
@@ -7573,6 +7707,7 @@ export type Database = {
           finish_reason?: string | null
           id?: string
           iterations?: number
+          last_activity_at?: string | null
           metadata?: Json
           result_end_position?: number | null
           result_start_position?: number | null
@@ -7602,6 +7737,7 @@ export type Database = {
           finish_reason?: string | null
           id?: string
           iterations?: number
+          last_activity_at?: string | null
           metadata?: Json
           result_end_position?: number | null
           result_start_position?: number | null
@@ -10625,6 +10761,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           archived_at: string | null
+          attach_combined_pdf: boolean
           chunk_overlap: number
           chunk_size: number
           chunking_strategy: string
@@ -10634,6 +10771,7 @@ export type Database = {
           file_id: string
           id: string
           is_saved: boolean
+          kind: string
           latest_run_id: string | null
           max_concurrent: number
           model_overrides: Json | null
@@ -10648,11 +10786,13 @@ export type Database = {
           shortcut_id: string | null
           source_variations: Json
           updated_at: string
+          validates_job_id: string | null
           variable_mapping: Json
         }
         Insert: {
           agent_id?: string | null
           archived_at?: string | null
+          attach_combined_pdf?: boolean
           chunk_overlap?: number
           chunk_size?: number
           chunking_strategy?: string
@@ -10662,6 +10802,7 @@ export type Database = {
           file_id: string
           id?: string
           is_saved?: boolean
+          kind?: string
           latest_run_id?: string | null
           max_concurrent?: number
           model_overrides?: Json | null
@@ -10676,11 +10817,13 @@ export type Database = {
           shortcut_id?: string | null
           source_variations?: Json
           updated_at?: string
+          validates_job_id?: string | null
           variable_mapping?: Json
         }
         Update: {
           agent_id?: string | null
           archived_at?: string | null
+          attach_combined_pdf?: boolean
           chunk_overlap?: number
           chunk_size?: number
           chunking_strategy?: string
@@ -10690,6 +10833,7 @@ export type Database = {
           file_id?: string
           id?: string
           is_saved?: boolean
+          kind?: string
           latest_run_id?: string | null
           max_concurrent?: number
           model_overrides?: Json | null
@@ -10704,6 +10848,7 @@ export type Database = {
           shortcut_id?: string | null
           source_variations?: Json
           updated_at?: string
+          validates_job_id?: string | null
           variable_mapping?: Json
         }
         Relationships: [
@@ -10761,6 +10906,13 @@ export type Database = {
             columns: ["shortcut_id"]
             isOneToOne: false
             referencedRelation: "agx_shortcut"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_jobs_validates_job_id_fkey"
+            columns: ["validates_job_id"]
+            isOneToOne: false
+            referencedRelation: "page_extraction_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -16895,6 +17047,47 @@ export type Database = {
           },
         ]
       }
+      studio_documents: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          kind: string
+          session_id: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          session_id: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          session_id?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_documents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "studio_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       studio_module_segments: {
         Row: {
           block_type: string
@@ -17005,8 +17198,10 @@ export type Database = {
       }
       studio_recording_segments: {
         Row: {
+          archived_at: string | null
           audio_path: string | null
           created_at: string
+          detached_at: string | null
           ended_at: string | null
           id: string
           segment_index: number
@@ -17015,10 +17210,13 @@ export type Database = {
           t_end: number | null
           t_start: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           audio_path?: string | null
           created_at?: string
+          detached_at?: string | null
           ended_at?: string | null
           id?: string
           segment_index: number
@@ -17027,10 +17225,13 @@ export type Database = {
           t_end?: number | null
           t_start: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           audio_path?: string | null
           created_at?: string
+          detached_at?: string | null
           ended_at?: string | null
           id?: string
           segment_index?: number
@@ -17039,6 +17240,7 @@ export type Database = {
           t_end?: number | null
           t_start?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -17909,6 +18111,7 @@ export type Database = {
           tier: string | null
           tool_group: string
           updated_at: string | null
+          validation_exempt: boolean
           version: number
         }
         Insert: {
@@ -17935,6 +18138,7 @@ export type Database = {
           tier?: string | null
           tool_group?: string
           updated_at?: string | null
+          validation_exempt?: boolean
           version?: number
         }
         Update: {
@@ -17961,6 +18165,7 @@ export type Database = {
           tier?: string | null
           tool_group?: string
           updated_at?: string | null
+          validation_exempt?: boolean
           version?: number
         }
         Relationships: []
@@ -18128,6 +18333,7 @@ export type Database = {
       }
       tl_executor_kind: {
         Row: {
+          client_name: string | null
           config: Json
           created_at: string
           description: string
@@ -18139,6 +18345,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_name?: string | null
           config?: Json
           created_at?: string
           description?: string
@@ -18150,6 +18357,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_name?: string | null
           config?: Json
           created_at?: string
           description?: string
@@ -18160,7 +18368,15 @@ export type Database = {
           payload_validator_path?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tl_executor_kind_client_name_fkey"
+            columns: ["client_name"]
+            isOneToOne: false
+            referencedRelation: "ui_client"
+            referencedColumns: ["name"]
+          },
+        ]
       }
       tl_gate: {
         Row: {
@@ -20035,6 +20251,57 @@ export type Database = {
           },
         ]
       }
+      wbx_highlight: {
+        Row: {
+          anchor: Json
+          color: string
+          conversation_id: string | null
+          created_at: string
+          domain: string
+          id: string
+          is_deleted: boolean
+          metadata: Json
+          mode: string
+          page_title: string | null
+          text: string | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          anchor?: Json
+          color?: string
+          conversation_id?: string | null
+          created_at?: string
+          domain: string
+          id?: string
+          is_deleted?: boolean
+          metadata?: Json
+          mode?: string
+          page_title?: string | null
+          text?: string | null
+          updated_at?: string
+          url: string
+          user_id?: string
+        }
+        Update: {
+          anchor?: Json
+          color?: string
+          conversation_id?: string | null
+          created_at?: string
+          domain?: string
+          id?: string
+          is_deleted?: boolean
+          metadata?: Json
+          mode?: string
+          page_title?: string | null
+          text?: string | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wbx_pattern: {
         Row: {
           config: Json
@@ -21162,6 +21429,63 @@ export type Database = {
             columns: ["definition_version_id"]
             isOneToOne: false
             referencedRelation: "wf_definition_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wf_trigger_fire: {
+        Row: {
+          error_message: string | null
+          error_type: string | null
+          fired_at: string
+          fired_by_user_id: string | null
+          id: string
+          request_body_hash: string | null
+          run_id: string | null
+          source_ip: string | null
+          status: string
+          trigger_id: string
+          user_id: string
+        }
+        Insert: {
+          error_message?: string | null
+          error_type?: string | null
+          fired_at?: string
+          fired_by_user_id?: string | null
+          id?: string
+          request_body_hash?: string | null
+          run_id?: string | null
+          source_ip?: string | null
+          status: string
+          trigger_id: string
+          user_id: string
+        }
+        Update: {
+          error_message?: string | null
+          error_type?: string | null
+          fired_at?: string
+          fired_by_user_id?: string | null
+          id?: string
+          request_body_hash?: string | null
+          run_id?: string | null
+          source_ip?: string | null
+          status?: string
+          trigger_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wf_trigger_fire_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "wf_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_trigger_fire_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "wf_trigger"
             referencedColumns: ["id"]
           },
         ]
@@ -23610,6 +23934,7 @@ export type Database = {
         Returns: Json
       }
       cld_hard_delete_file: { Args: { p_file_id: string }; Returns: Json }
+      cld_is_system_path: { Args: { p_path: string }; Returns: boolean }
       cld_list_trash: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: Json

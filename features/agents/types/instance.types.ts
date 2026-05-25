@@ -387,6 +387,23 @@ export interface BuilderAdvancedSettings {
    * via the structured instruction modal.
    */
   structuredInstruction: Partial<SystemInstruction>;
+
+  /**
+   * Creator-only, THIS conversation only: when true, `buildToolInjection`
+   * omits `client.surface` so the server attaches no surface/automatic tools
+   * for this run. The request-scoped twin of the global creator brake
+   * (creatorDebugSlice.settings.disableToolInjection). Default false.
+   */
+  disableToolInjection?: boolean;
+
+  /**
+   * Creator-only "Surface Simulator": when set, `buildToolInjection` sends
+   * this exact `ui_surface.name` as `client.surface` instead of the
+   * route-detected one — letting a creator mimic ANY surface (matrx-user/*,
+   * matrx-admin/*, chrome-extension/*, …). The server resolves it normally
+   * and cannot tell it is simulated. null/empty → use the detected surface.
+   */
+  surfaceOverride?: string | null;
 }
 
 export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
@@ -396,6 +413,8 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   maxRetriesPerIteration: 2,
   useStructuredSystemInstruction: false,
   structuredInstruction: {},
+  disableToolInjection: false,
+  surfaceOverride: null,
 };
 
 // =============================================================================

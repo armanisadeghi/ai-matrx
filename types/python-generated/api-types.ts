@@ -558,6 +558,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/agents/{agent_id}/invalidate-cache": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invalidate Agent Cache
+         * @description Evict one agent's definition from the server caches.
+         *
+         *     The client saves agent edits directly to Supabase, so the server's
+         *     ORM ``StateManager`` cache would otherwise keep serving the stale
+         *     definition until its TTL expires. Call this right after the save to
+         *     drop exactly that agent (not every cached agent) so the next
+         *     execution reloads fresh rows. Surgical — see
+         *     ``bust_agent_caches(agent_id=...)``.
+         */
+        post: operations["invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/mock-stream/{scenario}": {
         parameters: {
             query?: never;
@@ -1005,6 +1032,120 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/ai/conversation/{conversation_id}/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Inbox Items
+         * @description List the caller's queued inbox items for a conversation (FIFO). Lets a
+         *     client rebuild its "waiting its turn" cards after reopening the panel.
+         */
+        get: operations["list_inbox_items_ai_conversation__conversation_id__inbox_get"];
+        put?: never;
+        /**
+         * Enqueue Inbox Item
+         * @description Queue a message into a conversation without canceling a running agent.
+         *
+         *     If a run is in-flight, the running loop drains it at its next natural turn
+         *     boundary (the next tool call / iteration) and the model sees it on the
+         *     following API call. If the conversation is idle, the item waits and is
+         *     delivered when the next run starts. Ownership-scoped: a caller can only
+         *     enqueue into a conversation they own.
+         */
+        post: operations["enqueue_inbox_item_ai_conversation__conversation_id__inbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/conversations/{conversation_id}/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Inbox Items
+         * @description List the caller's queued inbox items for a conversation (FIFO). Lets a
+         *     client rebuild its "waiting its turn" cards after reopening the panel.
+         */
+        get: operations["list_inbox_items_ai_conversations__conversation_id__inbox_get"];
+        put?: never;
+        /**
+         * Enqueue Inbox Item
+         * @description Queue a message into a conversation without canceling a running agent.
+         *
+         *     If a run is in-flight, the running loop drains it at its next natural turn
+         *     boundary (the next tool call / iteration) and the model sees it on the
+         *     following API call. If the conversation is idle, the item waits and is
+         *     delivered when the next run starts. Ownership-scoped: a caller can only
+         *     enqueue into a conversation they own.
+         */
+        post: operations["enqueue_inbox_item_ai_conversations__conversation_id__inbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/conversation/{conversation_id}/inbox/{injection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Inbox Item
+         * @description Retract a still-pending queued message. 409 if it already drained, 404 if
+         *     there is no such item the caller owns.
+         */
+        delete: operations["cancel_inbox_item_ai_conversation__conversation_id__inbox__injection_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit Inbox Item
+         * @description Edit a still-pending queued message's text. 409 if it already drained,
+         *     404 if there is no such item the caller owns.
+         */
+        patch: operations["edit_inbox_item_ai_conversation__conversation_id__inbox__injection_id__patch"];
+        trace?: never;
+    };
+    "/ai/conversations/{conversation_id}/inbox/{injection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Inbox Item
+         * @description Retract a still-pending queued message. 409 if it already drained, 404 if
+         *     there is no such item the caller owns.
+         */
+        delete: operations["cancel_inbox_item_ai_conversations__conversation_id__inbox__injection_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit Inbox Item
+         * @description Edit a still-pending queued message's text. 409 if it already drained,
+         *     404 if there is no such item the caller owns.
+         */
+        patch: operations["edit_inbox_item_ai_conversations__conversation_id__inbox__injection_id__patch"];
         trace?: never;
     };
     "/ai/conversation/{conversation_id}/resume": {
@@ -3281,6 +3422,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tools */
+        get: operations["list_tools_admin_tools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tools/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate All */
+        post: operations["validate_all_admin_tools_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tools/failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Failure Analytics */
+        get: operations["failure_analytics_admin_tools_failures_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tools/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tool Detail */
+        get: operations["tool_detail_admin_tools__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Tool */
+        patch: operations["update_tool_admin_tools__name__patch"];
+        trace?: never;
+    };
     "/admin/cx-explorer/facets": {
         parameters: {
             query?: never;
@@ -3386,6 +3596,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/surfaces/{client_name}/{surface_name}/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Db Surface Manifest
+         * @description DB-driven surface manifest. The canonical path — used by frontends
+         *     that declare a ``client.surface`` from the 60+ rows in
+         *     ``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
+         *
+         *     Includes tools inherited from ``matrx-default/default`` so the response
+         *     reflects exactly what ``apply_unified_tools`` would inject. Returns 404
+         *     when the name isn't in ``public.ui_surface``.
+         */
+        get: operations["get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/surfaces/{name}/manifest": {
         parameters: {
             query?: never;
@@ -3394,15 +3630,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Surface Manifest
-         * @description Per TOOL_ROUTING_RULES.md §15 step 6 — surface authors hit this at
-         *     boot to compare their local tool registrations against what the server
-         *     says they provide. Lookup is by capability name (which is the canonical
-         *     surface identifier in matrx-ai's registry).
-         *
-         *     Returns 404 when the name isn't a registered capability.
+         * Get Capability Manifest
+         * @description Capability-driven manifest. Looks up by short capability name
+         *     (``editor-state``, ``sandbox-fs``, ``browser-dom``) in matrx-ai's
+         *     Python-registered capability registry. Use this for payload-bearing
+         *     capabilities that extend any surface. Returns 404 when the name isn't
+         *     a registered capability — for DB surfaces use the
+         *     ``/surfaces/{client}/{surface}/manifest`` form.
          */
-        get: operations["get_surface_manifest_api_surfaces__name__manifest_get"];
+        get: operations["get_capability_manifest_api_surfaces__name__manifest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7017,6 +7253,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Templates
+         * @description Published starter-workflow catalogue, most popular first.
+         */
+        get: operations["list_templates_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/templates/{template_id}/clone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clone Template
+         * @description Clone a template into a fresh workflow owned by the caller.
+         */
+        post: operations["clone_template_templates__template_id__clone_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/save-as-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save As Template
+         * @description Snapshot a workflow's current draft into the template catalogue.
+         */
+        post: operations["save_as_template_workflows__definition_id__save_as_template_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Workflow Visibility
+         * @description Flip a workflow's public read-only flag. Owner only.
+         */
+        patch: operations["set_workflow_visibility_workflows__definition_id__visibility_patch"];
+        trace?: never;
+    };
+    "/public/workflows/{definition_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Workflow
+         * @description Anonymous read of a workflow flagged is_public. NO auth — but the
+         *     row MUST have is_public=true or we 404 (never leak a private graph).
+         */
+        get: operations["get_public_workflow_public_workflows__definition_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/prompts": {
         parameters: {
             query?: never;
@@ -9214,6 +9551,27 @@ export interface paths {
         patch: operations["update_row_admin_db_tables__table_name__rows__row_id__patch"];
         trace?: never;
     };
+    "/admin/db/tables/{table_name}/rows/bulk-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Delete Rows
+         * @description Delete many rows in one call. Never fails the whole batch on one bad id —
+         *     returns a partial-result envelope so the caller can report what landed.
+         */
+        post: operations["bulk_delete_rows_admin_db_tables__table_name__rows_bulk_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/db/cache/stats": {
         parameters: {
             query?: never;
@@ -9573,6 +9931,66 @@ export interface paths {
         get: operations["get_summary_admin_persistence_summary_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Errors
+         * @description Paginated list of system_error rows. Default: unresolved only.
+         */
+        get: operations["list_errors_admin_persistence_errors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/errors/{error_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Error Detail
+         * @description Full traceback + payload + context for one system_error row.
+         */
+        get: operations["get_error_detail_admin_persistence_errors__error_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/errors/{error_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Error
+         * @description Mark a system_error resolved (acknowledged / handled).
+         */
+        post: operations["resolve_error_admin_persistence_errors__error_id__resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12284,9 +12702,11 @@ export interface components {
          *         caller has written to ``cx_message`` / ``cx_tl_call`` /
          *         ``cx_media`` directly (e.g. via Supabase client).
          *     agent
-         *         Flush ``AgxAgent`` and ``AgxVersion`` caches in the ORM
-         *         ``StateManager``. Required after the agent definition has been
-         *         edited.
+         *         Evict the agent definition from ``AgxAgent`` / ``AgxVersion``
+         *         caches in the ORM ``StateManager``. Required after the agent
+         *         definition has been edited. Scoped to the single agent the route
+         *         is executing when ``apply_cache_bypass`` is given an ``agent_id``;
+         *         otherwise a whole-model flush.
          *     tools
          *         Flush the ``Tools`` model cache in the ORM ``StateManager``.
          *         Required after a tool definition has been edited.
@@ -13011,35 +13431,40 @@ export interface components {
         };
         /**
          * ClientContext
-         * @description Request envelope describing the calling client's capabilities + state.
+         * @description Request envelope describing the calling client's surface + capabilities + state.
          *
-         *     A client declares what it can do via a set of capability names, carries
-         *     typed state keyed by capability name, may amend its declared manifest
-         *     for this specific request (see ``SurfaceAmendments``), and may declare
-         *     additional third-party MCP servers for this session.
+         *     Two orthogonal concepts ride on this envelope:
+         *
+         *     - ``surface`` — single string naming the UI context the request originated
+         *       from (e.g. ``matrx-user/chat``, ``chrome-extension/pilot``). The host
+         *       resolves this against its surface registry (``public.ui_surface`` in
+         *       aidream) to derive the default tool set + value bindings, with
+         *       inheritance from ``matrx-default/default``.
+         *
+         *     - ``capabilities`` — list of payload-bearing capabilities the client is
+         *       activating (e.g. ``editor-state``, ``sandbox-fs``, ``browser-dom``).
+         *       Each capability has a Pydantic payload validator registered in the
+         *       capability registry and may bring extra tools online. Multiple may
+         *       activate simultaneously (a coding-IDE-on-a-browser-page declares both
+         *       ``editor-state`` and ``browser-dom``).
          *
          *     Wire shape::
          *
          *         {
-         *           "capabilities": ["editor-state", "sandbox-fs"],
-         *           "state": {
-         *             "editor-state": {"active_file": {"path": "...", ...}, ...},
-         *             "sandbox-fs":   {"sandbox_id": "...", ...}
-         *           },
-         *           "amendments": {
-         *             "add":    [{"kind": "registered", "name": "..."}],
-         *             "remove": ["matrx-extend:foo"]
-         *           },
+         *           "surface": "matrx-user/chat",
+         *           "capabilities": ["editor-state"],
+         *           "state": { "editor-state": {"active_file": {...}, ...} },
+         *           "amendments": { "add": [...], "remove": [...] },
          *           "mcp": ["openai-tools", "stripe-mcp"]
          *         }
          *
-         *     The ``mcp`` field lists slugs of pre-registered ``public.mcp_servers``
-         *     rows the request wants active for this session in addition to whatever
-         *     MCPs the agent definition already includes. Per TOOL_ROUTING_RULES.md
-         *     §10, MCP tools obey the same name-uniqueness rule (§4) as everything
-         *     else.
+         *     The ``surface`` field is host-validated: an unknown name surfaces as a
+         *     422. ``amendments`` apply on top of whatever the surface resolution
+         *     produced. ``mcp`` adds session-only MCP server slugs.
          */
         ClientContext: {
+            /** Surface */
+            surface?: string | null;
             /** Capabilities */
             capabilities?: string[];
             /** State */
@@ -13066,6 +13491,34 @@ export interface components {
             is_error: boolean;
             /** Error Message */
             error_message?: string | null;
+        };
+        /** CloneTemplateResponse */
+        CloneTemplateResponse: {
+            /** Workflow Id */
+            workflow_id: string;
+        };
+        /** CodeDeclaration */
+        CodeDeclaration: {
+            /** Name */
+            name: string;
+            /** Source App */
+            source_app: string;
+            /** Function Path */
+            function_path: string;
+            /** Executor */
+            executor?: string | null;
+            /**
+             * Validate Enabled
+             * @default true
+             */
+            validate_enabled: boolean;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
+            /** @default {} */
+            parameters: components["schemas"]["JsonValue"];
         };
         /**
          * CombinedRatingItem
@@ -13416,9 +13869,14 @@ export interface components {
              */
             store: boolean;
             /** User Input */
-            user_input: string | {
+            user_input?: string | {
                 [key: string]: unknown;
-            }[];
+            }[] | null;
+            /**
+             * Retry
+             * @default false
+             */
+            retry: boolean;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /**
              * Stream
@@ -15123,6 +15581,15 @@ export interface components {
              */
             scope: string;
         };
+        /** FailureAnalyticsResponse */
+        FailureAnalyticsResponse: {
+            /** By Domain */
+            by_domain: components["schemas"]["FaultDomainCount"][];
+            /** By Tool */
+            by_tool: components["schemas"]["ToolFailureStat"][];
+            /** Sample Size */
+            sample_size: number;
+        };
         /**
          * FailureDetail
          * @description One ``system_write_failure`` row — detail view (full payload).
@@ -15212,6 +15679,13 @@ export interface components {
             recovery_op_id: string | null;
             /** Age Secs */
             age_secs: number;
+        };
+        /** FaultDomainCount */
+        FaultDomainCount: {
+            /** Fault Domain */
+            fault_domain: string;
+            /** Count */
+            count: number;
         };
         /**
          * FeedbackIterationRequest
@@ -15930,9 +16404,14 @@ export interface components {
              */
             store: boolean;
             /** User Input */
-            user_input: string | {
+            user_input?: string | {
                 [key: string]: unknown;
-            }[];
+            }[] | null;
+            /**
+             * Retry
+             * @default false
+             */
+            retry: boolean;
             config_overrides?: components["schemas"]["LLMParams"] | null;
             /**
              * Stream
@@ -16407,6 +16886,84 @@ export interface components {
                 [key: string]: components["schemas"]["WcImpairmentDefinitionRead"];
             };
         };
+        /** InboxEditRequest */
+        InboxEditRequest: {
+            /** Text */
+            text: string;
+        };
+        /**
+         * InboxEnqueueRequest
+         * @description Enqueue an item into a conversation's Turn-Boundary Inbox.
+         */
+        InboxEnqueueRequest: {
+            /**
+             * Kind
+             * @default user_message
+             * @enum {string}
+             */
+            kind: "user_message" | "system_message";
+            /**
+             * Text
+             * @description The message text to inject.
+             */
+            text: string;
+            /**
+             * Is Visible To User
+             * @description Whether the injected message is shown in the user's transcript.
+             * @default true
+             */
+            is_visible_to_user: boolean;
+            /**
+             * Is Visible To Model
+             * @description Whether the model sees the injected message (almost always true).
+             * @default true
+             */
+            is_visible_to_model: boolean;
+        };
+        /** InboxEnqueueResponse */
+        InboxEnqueueResponse: {
+            /** Injection Id */
+            injection_id: string;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Status */
+            status: string;
+            /**
+             * Run Active
+             * @description True if a run is in-flight (the message drains at its next turn boundary); false if idle (delivered when the next run starts).
+             */
+            run_active: boolean;
+        };
+        /** InboxItem */
+        InboxItem: {
+            /** Injection Id */
+            injection_id: string;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text?: string | null;
+            /** Status */
+            status: string;
+            /** Queued At */
+            queued_at?: string | null;
+            /**
+             * Is Visible To User
+             * @default true
+             */
+            is_visible_to_user: boolean;
+            /**
+             * Is Visible To Model
+             * @default true
+             */
+            is_visible_to_model: boolean;
+        };
+        /** InboxMutationResponse */
+        InboxMutationResponse: {
+            /** Injection Id */
+            injection_id: string;
+            /** Status */
+            status: string;
+        };
         /** IndexRepositoryResponse */
         IndexRepositoryResponse: {
             /** Repository Id */
@@ -16640,6 +17197,18 @@ export interface components {
              */
             height: number;
             bbox?: components["schemas"]["BboxInput"] | null;
+        };
+        /**
+         * InvalidateAgentCacheResponse
+         * @description Result of evicting one agent definition from the server caches.
+         */
+        InvalidateAgentCacheResponse: {
+            /** Cleared */
+            cleared: boolean;
+            /** Agent Id */
+            agent_id: string;
+            /** Is Version */
+            is_version: boolean;
         };
         /** InvalidateCacheResponse */
         InvalidateCacheResponse: {
@@ -18745,6 +19314,13 @@ export interface components {
             oldest_unrecovered_failure_age_secs: number | null;
             /** Last Failure At */
             last_failure_at: string | null;
+            /**
+             * Unresolved Errors
+             * @default 0
+             */
+            unresolved_errors: number;
+            /** Last Error At */
+            last_error_at?: string | null;
         };
         /** PicklistCreate */
         PicklistCreate: {
@@ -19271,6 +19847,25 @@ export interface components {
         PromptWarmRequest: {
             /** Source */
             source?: string | null;
+        };
+        /**
+         * PublicWorkflowRecord
+         * @description Read-only public view — only the fields safe to expose anonymously.
+         *     Deliberately omits user_id / project_id / org_id.
+         */
+        PublicWorkflowRecord: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Definition */
+            definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Version */
+            version?: number | null;
         };
         /** PublishRequest */
         PublishRequest: {
@@ -20084,6 +20679,16 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** ResolveErrorResponse */
+        ResolveErrorResponse: {
+            /** Id */
+            id: string;
+            /**
+             * Resolved At
+             * Format: date-time
+             */
+            resolved_at: string;
+        };
         /** ResolvePathArgs */
         ResolvePathArgs: {
             /** Path */
@@ -20618,6 +21223,20 @@ export interface components {
              * @default /home/agent
              */
             root_path: string;
+        };
+        /** SaveAsTemplateRequest */
+        SaveAsTemplateRequest: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: string | null;
+        };
+        /** SaveAsTemplateResponse */
+        SaveAsTemplateResponse: {
+            /** Template Id */
+            template_id: string;
         };
         /** SaveDraftRequest */
         SaveDraftRequest: {
@@ -21735,10 +22354,19 @@ export interface components {
          *     Surface authors compare this against their local tool registrations on
          *     every boot — a drift means either the DB or the surface code is stale
          *     and needs reconciliation per TOOL_ROUTING_RULES.md §11.
+         *
+         *     Sources can be one of:
+         *       - ``db_surface`` — resolved from ``public.ui_surface`` +
+         *         ``public.tl_def_surface`` (the common path; 60+ matrx-user surfaces).
+         *       - ``capability`` — resolved from a Python-registered ``Capability``
+         *         in matrx-ai's registry (payload-bearing extras like ``editor-state``,
+         *         ``sandbox-fs``, ``browser-dom``).
          */
         SurfaceManifest: {
             /** Name */
             name: string;
+            /** Source */
+            source: string;
             /** Description */
             description: string;
             /** Requires Auth */
@@ -21747,6 +22375,16 @@ export interface components {
             default_tools: components["schemas"]["ManifestToolEntry"][];
             /** Optional Tools */
             optional_tools: components["schemas"]["ManifestToolEntry"][];
+            /**
+             * Inherited From Base
+             * @default false
+             */
+            inherited_from_base: boolean;
+            /**
+             * Value Bindings
+             * @default []
+             */
+            value_bindings: string[];
         };
         /** SyncClustersRequest */
         SyncClustersRequest: {
@@ -21798,6 +22436,81 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides: boolean;
+        };
+        /** SystemErrorDetail */
+        SystemErrorDetail: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Request Id */
+            request_id: string | null;
+            /** User Id */
+            user_id: string | null;
+            /** Conversation Id */
+            conversation_id: string | null;
+            /** Agent Id */
+            agent_id: string | null;
+            /** Source App */
+            source_app: string | null;
+            /** Route */
+            route: string | null;
+            /** Error Type */
+            error_type: string | null;
+            /** Error Text */
+            error_text: string;
+            /** Traceback */
+            traceback: string | null;
+            payload: components["schemas"]["JsonValue"] | null;
+            context: components["schemas"]["JsonValue"] | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Resolution Note */
+            resolution_note: string | null;
+        };
+        /** SystemErrorListResponse */
+        SystemErrorListResponse: {
+            /** Rows */
+            rows: components["schemas"]["SystemErrorSummary"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** SystemErrorSummary */
+        SystemErrorSummary: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Request Id */
+            request_id: string | null;
+            /** User Id */
+            user_id: string | null;
+            /** Conversation Id */
+            conversation_id: string | null;
+            /** Route */
+            route: string | null;
+            /** Error Type */
+            error_type: string | null;
+            /** Error Text */
+            error_text: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Age Secs */
+            age_secs: number;
+            /** Resolved At */
+            resolved_at: string | null;
         };
         /** TagCreate */
         TagCreate: {
@@ -21950,6 +22663,30 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** TemplateRecord */
+        TemplateRecord: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Preview Image Url */
+            preview_image_url?: string | null;
+            /**
+             * Popularity
+             * @default 0
+             */
+            popularity: number;
+            /** Definition */
+            definition?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** TestNodeRequest */
         TestNodeRequest: {
             /**
@@ -21987,6 +22724,79 @@ export interface components {
             error_message?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** ToolDetail */
+        ToolDetail: {
+            /** Name */
+            name: string;
+            db?: components["schemas"]["ToolRow"] | null;
+            code?: components["schemas"]["CodeDeclaration"] | null;
+            /**
+             * Findings
+             * @default []
+             */
+            findings: components["schemas"]["ToolFinding"][];
+            /**
+             * Recent Failures
+             * @default []
+             */
+            recent_failures: components["schemas"]["ToolFailureRow"][];
+        };
+        /** ToolFailureRow */
+        ToolFailureRow: {
+            /** Tool Name */
+            tool_name: string;
+            /** Fault Domain */
+            fault_domain?: string | null;
+            /** Err Type */
+            err_type?: string | null;
+            /** Err Msg */
+            err_msg?: string | null;
+            /** Ts */
+            ts?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Call Id */
+            call_id?: string | null;
+        };
+        /** ToolFailureStat */
+        ToolFailureStat: {
+            /** Tool Name */
+            tool_name: string;
+            /** Total */
+            total: number;
+            /** Model Error */
+            model_error: number;
+            /** Tool Defect */
+            tool_defect: number;
+            /** Infra */
+            infra: number;
+            /** User */
+            user: number;
+        };
+        /** ToolFinding */
+        ToolFinding: {
+            /** Kind */
+            kind: string;
+            /** Severity */
+            severity: string;
+            /** Tool Name */
+            tool_name: string;
+            /** Message */
+            message: string;
+            /** @default {} */
+            detail: components["schemas"]["JsonValue"];
+        };
+        /** ToolListResponse */
+        ToolListResponse: {
+            summary: components["schemas"]["ToolSummary"];
+            /** Items */
+            items: components["schemas"]["ToolRow"][];
+            /**
+             * Import Failures
+             * @default []
+             */
+            import_failures: string[];
         };
         /**
          * ToolRecord
@@ -22029,6 +22839,84 @@ export interface components {
             /** Conversation Id */
             conversation_id: string;
         };
+        /**
+         * ToolRow
+         * @description A tl_def row plus its derived drift status, for the list/detail views.
+         */
+        ToolRow: {
+            /** Name */
+            name: string;
+            /** Source App */
+            source_app?: string | null;
+            /** Function Path */
+            function_path?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Tier */
+            tier?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Admin Only
+             * @default false
+             */
+            admin_only: boolean;
+            /**
+             * Validation Exempt
+             * @default false
+             */
+            validation_exempt: boolean;
+            /**
+             * Surfaces
+             * @default []
+             */
+            surfaces: string[];
+            /** @default {} */
+            parameters: components["schemas"]["JsonValue"];
+            /** Version */
+            version?: number | null;
+            /**
+             * Declared In Code
+             * @default false
+             */
+            declared_in_code: boolean;
+            /**
+             * Drift Count
+             * @default 0
+             */
+            drift_count: number;
+            /** Drift Severity */
+            drift_severity?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ToolSummary */
+        ToolSummary: {
+            /** Code Count */
+            code_count: number;
+            /** Db Count */
+            db_count: number;
+            /** External Count */
+            external_count: number;
+            /** Errors */
+            errors: number;
+            /** Warnings */
+            warnings: number;
+            /** Exempt */
+            exempt: number;
+            /** In Sync */
+            in_sync: number;
+            /**
+             * Inactive
+             * @default 0
+             */
+            inactive: number;
+        };
         /** ToolTestExecuteRequest */
         ToolTestExecuteRequest: {
             /** Tool Name */
@@ -22039,6 +22927,35 @@ export interface components {
             };
             /** Conversation Id */
             conversation_id?: string | null;
+        };
+        /**
+         * ToolUpdateRequest
+         * @description Admin-editable tl_def settings. All optional; only provided fields change.
+         *
+         *     ``parameters`` is the tool's argument contract — the same flat shape the
+         *     drift engine diffs against code: a mapping of argument name → spec object,
+         *     e.g. ``{"action": {"type": "string", "required": true, "enum": ["get",
+         *     "set"]}}``. Changing it here is the DB-first path the doctrine prescribes
+         *     (TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line
+         *     until the drift gate is quiet. Editing it bumps the row ``version``.
+         */
+        ToolUpdateRequest: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Validation Exempt */
+            validation_exempt?: boolean | null;
+            /** Admin Only */
+            admin_only?: boolean | null;
+            /** Category */
+            category?: string | null;
+            /** Tier */
+            tier?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Parameters */
+            parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** TopicCreate */
         TopicCreate: {
@@ -22763,6 +23680,19 @@ export interface components {
              */
             severity: string;
         };
+        /** ValidationReportResponse */
+        ValidationReportResponse: {
+            /** Ok */
+            ok: boolean;
+            summary: components["schemas"]["ToolSummary"];
+            /** Findings */
+            findings: components["schemas"]["ToolFinding"][];
+            /**
+             * Import Failures
+             * @default []
+             */
+            import_failures: string[];
+        };
         /** ValidationResult */
         ValidationResult: {
             /** Valid */
@@ -22993,6 +23923,20 @@ export interface components {
             created_by?: string | null;
             /** Change Summary */
             change_summary?: string | null;
+        };
+        /** VisibilityRequest */
+        VisibilityRequest: {
+            /** Is Public */
+            is_public: boolean;
+        };
+        /** VisibilityResponse */
+        VisibilityResponse: {
+            /** Definition Id */
+            definition_id: string;
+            /** Is Public */
+            is_public: boolean;
+            /** Public Url */
+            public_url?: string | null;
         };
         /**
          * VisionMediaUploadResponse
@@ -24345,6 +25289,39 @@ export interface operations {
             };
         };
     };
+    invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post: {
+        parameters: {
+            query?: {
+                is_version?: boolean;
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvalidateAgentCacheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     mock_stream_ai_mock_stream__scenario__post: {
         parameters: {
             query?: never;
@@ -24927,6 +25904,278 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PendingCallSummary"][];
+                };
+            };
+        };
+    };
+    list_inbox_items_ai_conversation__conversation_id__inbox_get: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enqueue_inbox_item_ai_conversation__conversation_id__inbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboxEnqueueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxEnqueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_inbox_items_ai_conversations__conversation_id__inbox_get: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enqueue_inbox_item_ai_conversations__conversation_id__inbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboxEnqueueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxEnqueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_inbox_item_ai_conversation__conversation_id__inbox__injection_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                injection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxMutationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_inbox_item_ai_conversation__conversation_id__inbox__injection_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                injection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboxEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxMutationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_inbox_item_ai_conversations__conversation_id__inbox__injection_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                injection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxMutationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_inbox_item_ai_conversations__conversation_id__inbox__injection_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                injection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboxEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxMutationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -28956,6 +30205,143 @@ export interface operations {
             };
         };
     };
+    list_tools_admin_tools_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolListResponse"];
+                };
+            };
+        };
+    };
+    validate_all_admin_tools_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReportResponse"];
+                };
+            };
+        };
+    };
+    failure_analytics_admin_tools_failures_get: {
+        parameters: {
+            query?: {
+                sample?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FailureAnalyticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tool_detail_admin_tools__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_tool_admin_tools__name__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_facets_admin_cx_explorer_facets_get: {
         parameters: {
             query?: {
@@ -29137,7 +30523,39 @@ export interface operations {
             };
         };
     };
-    get_surface_manifest_api_surfaces__name__manifest_get: {
+    get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_name: string;
+                surface_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurfaceManifest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_capability_manifest_api_surfaces__name__manifest_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -35978,6 +37396,158 @@ export interface operations {
             };
         };
     };
+    list_templates_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateRecord"][];
+                };
+            };
+        };
+    };
+    clone_template_templates__template_id__clone_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloneTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_as_template_workflows__definition_id__save_as_template_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAsTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveAsTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_workflow_visibility_workflows__definition_id__visibility_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_workflow_public_workflows__definition_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicWorkflowRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_user_prompts_prompts_get: {
         parameters: {
             query?: never;
@@ -40190,6 +41760,37 @@ export interface operations {
             };
         };
     };
+    bulk_delete_rows_admin_db_tables__table_name__rows_bulk_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cache_stats_admin_db_cache_stats_get: {
         parameters: {
             query?: never;
@@ -40751,6 +42352,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PersistenceSummary"];
+                };
+            };
+        };
+    };
+    list_errors_admin_persistence_errors_get: {
+        parameters: {
+            query?: {
+                resolved?: "any" | "yes" | "no";
+                kind?: string | null;
+                request_id?: string | null;
+                user_id?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemErrorListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_error_detail_admin_persistence_errors__error_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                error_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemErrorDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_error_admin_persistence_errors__error_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                error_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

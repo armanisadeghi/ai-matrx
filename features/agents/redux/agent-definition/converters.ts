@@ -111,6 +111,15 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     fromToolConfig?.customTools ??
     ((row.custom_tools as unknown as AgentDefinition["customTools"]) ?? []);
 
+  // auto_tools_disabled lives only in tool_config (no legacy column). The
+  // server reads it from there (agx_manager.py); round-trip it so the Builder
+  // toggle reflects the saved value.
+  const tc = row.tool_config;
+  const autoToolsDisabled =
+    tc && typeof tc === "object" && !Array.isArray(tc)
+      ? Boolean((tc as ToolConfigJson).auto_tools_disabled)
+      : false;
+
   return {
     id: row.id,
     name: row.name,
@@ -142,6 +151,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     outputSchema:
       (row.output_schema as unknown as AgentDefinition["outputSchema"]) ?? null,
     customTools,
+    autoToolsDisabled,
     mcpServers: row.mcp_servers ?? [],
 
     userId: row.user_id,
@@ -345,6 +355,10 @@ export function versionSnapshotRowToAgentDefinition(
     modelTiers: row.model_tiers,
     outputSchema: row.output_schema,
     customTools: row.custom_tools ?? [],
+    autoToolsDisabled: Boolean(
+      (row as unknown as { tool_config?: { auto_tools_disabled?: boolean } })
+        .tool_config?.auto_tools_disabled,
+    ),
     mcpServers: row.mcp_servers ?? [],
 
     isOwner: null,

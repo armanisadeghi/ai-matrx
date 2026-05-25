@@ -119,6 +119,18 @@ export default function CreatorSettingsTab() {
             dispatch(setCreatorSetting({ key: "showDrafts", value }))
           }
         />
+
+        <p className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Tool injection
+        </p>
+        <SettingRow
+          label="Disable tool injection"
+          description="Stop surfaces from auto-attaching their default tools. Agents run with only their own saved tools. Affects every agent and run."
+          checked={settings.disableToolInjection}
+          onCheckedChange={(value) =>
+            dispatch(setCreatorSetting({ key: "disableToolInjection", value }))
+          }
+        />
       </div>
     </div>
   );

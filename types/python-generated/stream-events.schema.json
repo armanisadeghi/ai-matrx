@@ -4182,7 +4182,8 @@
           "context_analysis",
           "structured_output",
           "context_state",
-          "context_trimmed"
+          "context_trimmed",
+          "injection_consumed"
         ],
         "title": "EventType",
         "type": "string"
@@ -4228,7 +4229,8 @@
       "context_analysis",
       "structured_output",
       "context_state",
-      "context_trimmed"
+      "context_trimmed",
+      "injection_consumed"
     ]
   }
 }

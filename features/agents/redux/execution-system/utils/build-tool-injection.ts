@@ -31,10 +31,14 @@ import {
   isWidgetActionName,
   type WidgetHandle,
 } from "@/features/agents/types/widget-handle.types";
-import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
+import {
+  selectWidgetHandleIdFor,
+  selectBuilderAdvancedSettings,
+} from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
 import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
+import { selectCreatorSettings } from "@/lib/redux/preferences/creatorDebugSlice";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -75,6 +79,19 @@ export async function buildToolInjection(
   options: BuildOptions = {},
 ): Promise<ToolInjectionResult> {
   const mode = options.mode ?? "additive";
+
+  // Creator brakes on surface-driven tool injection. When on, we declare NO
+  // `client.surface` so the server's surface resolver never runs — nothing is
+  // auto-attached and the agent runs with only its own saved tools. We also
+  // skip the sandbox-fs client stopgap below. Two scopes, OR'd together:
+  //   - global  (creatorDebugSlice.settings.disableToolInjection) — all runs.
+  //   - request (builderAdvancedSettings.disableToolInjection)    — this convo.
+  // The durable per-agent equivalent is `agx_agent.tool_config.auto_tools_disabled`
+  // (the server's kill switch in tool_merge.py §4), set from the agent's Tools tab.
+  const perConversation = selectBuilderAdvancedSettings(conversationId)(state);
+  const disableInjection =
+    (selectCreatorSettings(state)?.disableToolInjection ?? false) ||
+    (perConversation?.disableToolInjection ?? false);
 
   // ── 1. Tools — merge non-widget client tools + widget-derived names ─────
   //
@@ -134,18 +151,25 @@ export async function buildToolInjection(
 
   // STOPGAP: arm the coding toolset client-side while a sandbox is bound.
   // Remove once aidream's `sandbox-fs` capability declares `enabled_tools`.
-  if (activeCapabilities.includes("sandbox-fs")) {
+  // Skipped under the disable-injection brake — it's an automatic injection.
+  if (!disableInjection && activeCapabilities.includes("sandbox-fs")) {
     for (const name of SANDBOX_FS_STOPGAP_TOOL_NAMES) {
       // delegate:false — these run server-side and proxy into the box.
       allTools.push({ kind: "registered", name, delegate: false });
     }
   }
 
-  // The DB-registered surface name from the current pathname (matrx-user/chat,
-  // matrx-user/agent-builder, …). The server resolves it via
-  // public.tl_def_surface with inheritance from matrx-default/default — so
-  // every matrx-user surface picks up the seven UI-first tools automatically.
-  const surface = detectActiveSurface() ?? undefined;
+  // The DB-registered surface name the server resolves to a tool set via
+  // public.tl_def_surface (e.g. matrx-user/chat carries the UI-first tools;
+  // most surfaces carry none — matrx-default/default is intentionally empty).
+  // Resolution order:
+  //   - brake on  → undefined (server attaches nothing; see disableInjection).
+  //   - Surface Simulator set (builderAdvancedSettings.surfaceOverride) → mimic
+  //     ANY surface; the server can't tell it's simulated — same wire field.
+  //   - otherwise → the surface mapped from the current route.
+  const surface = disableInjection
+    ? undefined
+    : perConversation?.surfaceOverride || detectActiveSurface() || undefined;
 
   if (surface || activeCapabilities.length > 0) {
     client = {
@@ -154,17 +178,6 @@ export async function buildToolInjection(
       state: stateMap,
     };
   }
-
-  // The seven UI-first tools (user / update_plan / request_user_takeover /
-  // tasks / user_todos / scratchpad / storage) used to be hardcoded here for
-  // every authenticated user. They now ride into the request as
-  // ``enabled_tools`` on the ``nextjs-surface`` capability registered in
-  // aidream/api/client_capabilities.py — the server auto-injects them
-  // with ``delegate=True`` on every request that declares the capability.
-  // No frontend push needed.
-  //
-  // The capability also ships the orchestration envelope (route, scope,
-  // admin, permission_mode, …) via the provider in nextjs-surface.provider.ts.
 
   // ── 3. Assemble result — only include keys with content ─────────────────
   const result: ToolInjectionResult = {};
