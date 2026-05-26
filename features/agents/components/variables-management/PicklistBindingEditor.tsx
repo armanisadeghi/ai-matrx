@@ -20,6 +20,13 @@ import type { PicklistBinding } from "@/features/agents/types/agent-definition.t
 interface PicklistBindingEditorProps {
   binding: PicklistBinding | undefined;
   onChange: (binding: PicklistBinding | undefined) => void;
+  /**
+   * When true, an "Other" option appears in the rendered input that lets the user type a
+   * free-text value. The envelope is replaced by that plain string for that selection — so
+   * the user is never forced to lie when the list doesn't cover what they need.
+   */
+  allowOther: boolean;
+  onAllowOtherChange: (allowOther: boolean) => void;
   readonly?: boolean;
 }
 
@@ -33,6 +40,8 @@ const ALL_GROUPS = "__all__";
 export function PicklistBindingEditor({
   binding,
   onChange,
+  allowOther,
+  onAllowOtherChange,
   readonly,
 }: PicklistBindingEditorProps) {
   const [lists, setLists] = useState<UserList[]>([]);
@@ -164,6 +173,25 @@ export function PicklistBindingEditor({
               onCheckedChange={(v) =>
                 onChange({ ...binding!, multiple: v || undefined })
               }
+              disabled={readonly}
+            />
+          </div>
+
+          <div className="flex items-start justify-between pt-1 gap-3">
+            <div className="min-w-0">
+              <Label className="text-sm cursor-pointer">
+                Allow &ldquo;Other&rdquo; option
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Adds an &ldquo;Other&rdquo; choice so the user can type a free-text
+                value when nothing in the list fits. The typed text is sent as
+                plain text (no description lookup) so they&rsquo;re never forced to
+                pick something that isn&rsquo;t right.
+              </p>
+            </div>
+            <Switch
+              checked={allowOther}
+              onCheckedChange={onAllowOtherChange}
               disabled={readonly}
             />
           </div>

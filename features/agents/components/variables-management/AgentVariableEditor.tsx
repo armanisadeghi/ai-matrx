@@ -305,6 +305,8 @@ export function AgentVariableEditor({
       <PicklistBindingEditor
         binding={effective.picklist}
         onChange={handlePicklistChange}
+        allowOther={effective.allowOther}
+        onAllowOtherChange={handleAllowOtherChange}
         readonly={readonly}
       />
 
@@ -341,27 +343,8 @@ export function AgentVariableEditor({
         </div>
       )}
 
-      {/* ── Options — static list, hidden when bound to a picklist ───────── */}
-      {isPicklistBound ? (
-        <div className="space-y-1 p-3 bg-muted/30 rounded-lg border border-border">
-          <Label className="text-sm font-medium">Options</Label>
-          <p className="text-xs text-muted-foreground">
-            Options come from the bound picklist.
-          </p>
-          {meta.requiresOptions && (
-            <div className="flex items-center justify-between pt-1.5 border-t border-border">
-              <Label className="text-sm cursor-pointer">
-                Allow &ldquo;Other&rdquo; option
-              </Label>
-              <Switch
-                checked={effective.allowOther}
-                onCheckedChange={handleAllowOtherChange}
-                disabled={readonly}
-              />
-            </div>
-          )}
-        </div>
-      ) : (
+      {/* ── Options — static list editor, replaced by the picklist binding when bound ── */}
+      {!isPicklistBound && (
         <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
           <Label className="text-sm font-medium">Options</Label>
           <OptionsEditor
