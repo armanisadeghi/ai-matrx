@@ -225,7 +225,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           key={index}
           reasoningText={block.content}
           showReasoning={true}
-          isStreaming={isStreamActive && isLastReasoningBlock}
+          isStreaming={
+            isStreamActive &&
+            (isLastReasoningBlock || block.isStreamingBlock === true)
+          }
         />
       );
 

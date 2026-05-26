@@ -552,6 +552,49 @@ export const EnhancedChatMarkdownInternal: React.FC<
                   ) {
                     return null;
                   }
+
+                  // Text render_blocks may carry inline `<thinking>` /
+                  // `<reasoning>` tags (models that emit reasoning in
+                  // regular text instead of as `reasoning_chunk` events).
+                  // Split them through the same pipeline the DB path uses
+                  // (see the `text` segment branch below) so those tags
+                  // become `ThinkingTrace` blocks instead of leaking as
+                  // raw markdown. Mark the last reasoning sub-block as
+                  // streaming so its shimmer/tail animation fires while
+                  // the stream is still depositing tokens into it.
+                  if (rb.type === "text" && rb.content?.trim()) {
+                    const sub = (() => {
+                      try {
+                        return splitContentIntoBlocksV2(rb.content);
+                      } catch {
+                        return null;
+                      }
+                    })();
+                    if (sub && sub.length > 0) {
+                      let lastReasoningIdx = -1;
+                      for (let j = sub.length - 1; j >= 0; j--) {
+                        if (
+                          sub[j].type === "reasoning" ||
+                          sub[j].type === "thinking"
+                        ) {
+                          lastReasoningIdx = j;
+                          break;
+                        }
+                      }
+                      const isStreamingRb = rb.status === "streaming";
+                      return sub.map((b, j) =>
+                        renderBlock(
+                          {
+                            ...b,
+                            isStreamingBlock:
+                              isStreamingRb && j === lastReasoningIdx,
+                          } as RenderBlock,
+                          i * 1000 + j,
+                        ),
+                      );
+                    }
+                  }
+
                   const block = renderBlockToContentBlock(rb);
                   return renderBlock(block, i);
                 }

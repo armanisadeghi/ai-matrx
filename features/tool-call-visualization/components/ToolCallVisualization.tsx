@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { ShimmerText } from "@/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import {
@@ -207,21 +208,37 @@ const ToolCallVisualizationInner: React.FC<{
           ) : (
             <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500 dark:text-blue-400" />
           )}
-          <span className="truncate text-xs font-medium text-foreground">
-            {toolDisplayName}
-          </span>
-          {headerSecondary && (
-            <span
-              className={cn(
-                "truncate text-xs",
-                phase === "error"
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-muted-foreground",
-              )}
-            >
-              · {headerSecondary}
+          {phase === "processing" || phase === "starting" ? (
+            // Running: gradient sweep across the name + message so the row
+            // visibly works. Spinner + shimmer together kill the "is it stuck?"
+            // feeling without adding a heavy box or progress bar.
+            <ShimmerText
+              text={toolDisplayName}
+              className="truncate text-xs font-medium"
+            />
+          ) : (
+            <span className="truncate text-xs font-medium text-foreground">
+              {toolDisplayName}
             </span>
           )}
+          {headerSecondary &&
+            (phase === "processing" || phase === "starting" ? (
+              <ShimmerText
+                text={`· ${headerSecondary}`}
+                className="truncate text-xs"
+              />
+            ) : (
+              <span
+                className={cn(
+                  "truncate text-xs",
+                  phase === "error"
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-muted-foreground",
+                )}
+              >
+                · {headerSecondary}
+              </span>
+            ))}
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0">

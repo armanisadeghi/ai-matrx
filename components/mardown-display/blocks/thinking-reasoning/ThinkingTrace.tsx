@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ShimmerText } from "@/components/loaders/ShimmerText";
 
 export interface ThinkingTraceProps {
   /** A single thinking/reasoning text block. */
@@ -41,10 +42,17 @@ const ThinkingTrace: React.FC<ThinkingTraceProps> = ({
   const [expanded, setExpanded] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  const fullText = (
+  // Models sometimes nest reasoning tags (e.g. `<thinking><reasoning>...
+  // </reasoning></thinking>`). The outer block is consumed by the splitter,
+  // but the inner tags survive as literal text — strip them here so the
+  // expanded body and the streaming tail both read like prose, not markup.
+  const stripReasoningTags = (s: string): string =>
+    s.replace(/<\/?(?:thinking|think|reasoning|reason)>/gi, "");
+
+  const fullText = stripReasoningTags(
     texts && texts.length > 0
       ? texts.filter((t) => t?.trim()).join("\n\n")
-      : (text ?? "")
+      : (text ?? ""),
   ).trim();
 
   // Keep the expanded body pinned to the newest tokens while streaming.
@@ -77,9 +85,19 @@ const ThinkingTrace: React.FC<ThinkingTraceProps> = ({
         {isStreaming && !expanded && (
           <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-muted-foreground/50" />
         )}
-        <span className="truncate italic">
-          {expanded ? "Thought process" : collapsedLabel}
-        </span>
+        {isStreaming && !expanded ? (
+          // Gradient sweep across the streaming tail — the same shimmer used
+          // for "Processing…" / "Planning…" so the running treatment is
+          // identical everywhere thoughts are still arriving.
+          <ShimmerText
+            text={collapsedLabel}
+            className="truncate italic text-xs"
+          />
+        ) : (
+          <span className="truncate italic">
+            {expanded ? "Thought process" : collapsedLabel}
+          </span>
+        )}
       </button>
 
       {expanded && (
