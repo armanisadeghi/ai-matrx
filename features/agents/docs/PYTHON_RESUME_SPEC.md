@@ -1,5 +1,16 @@
 # Python Backend — Failure Recovery & Truncation Spec
 
+> **⚠ NOT the shipped resume.** This spec describes a proposed failure-recovery
+> endpoint `{user_request_id, mode: "last_good_step" | "atomic"}` for
+> recovering after a transient backend failure. It hasn't been built.
+>
+> The resume mechanism that **DOES** ship and is in use today is the
+> durable client-tool resume — `POST /ai/conversations/{id}/resume`
+> after a `continuation_needed: true` response from `/tool_results`.
+> That round-trip is documented in
+> [`CLIENT_TOOL_SUSPEND_RESUME.md`](./CLIENT_TOOL_SUSPEND_RESUME.md).
+> Do not conflate the two.
+>
 > **Audience:** Python backend team.
 > **Status:** Awaiting implementation. Client falls back to per-message
 > soft-delete + atomic restart until the RPCs and resume endpoint ship.

@@ -1,5 +1,23 @@
 # Durable Client-Delegated Tool Calls — Client Integration Brief
 
+> **⚠ SUPERSEDED.** The canonical protocol lives at
+> [`CLIENT_TOOL_SUSPEND_RESUME.md`](./CLIENT_TOOL_SUSPEND_RESUME.md) — read
+> that instead. This document captures useful background on the durable
+> ledger and idempotent `/tool_results` semantics, but its UI-wiring
+> recommendations are STALE: it references a `processStreamEvent` Redux
+> action that does not exist (the canonical reducer is the
+> [`processStream`](../redux/execution-system/thunks/process-stream.ts)
+> async function), and it proposes plumbing resume through `callApi`'s
+> `onStreamEvent` callback — bypassing the heartbeat-monitored
+> `processStream` pipeline that drives every other agent stream.
+>
+> The shipped implementation goes through
+> [`runAiStream`](../redux/execution-system/thunks/run-ai-stream.ts) (the
+> shared runner extracted from `executeInstance`) and
+> [`resumeInstance`](../redux/execution-system/thunks/resume-instance.thunk.ts).
+> Follow the canonical doc — not the recommendations below — for any new
+> wiring.
+
 **Status:** Backend landed; client API wrappers added. UI wiring TBD by React team.
 
 ## What changed on the backend
