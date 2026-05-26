@@ -46,6 +46,7 @@ import brokerSlice from "./brokerSlice/slice";
 import overlaySlice from "./slices/overlaySlice";
 import overlayDataReducer from "./slices/overlayDataSlice";
 import voicePadReducer from "./slices/voicePadSlice";
+import voiceAgentReducer from "@/features/voice-agent/state/voiceAgentSlice";
 import windowManagerReducer from "./slices/windowManagerSlice";
 import dbFunctionNodeSlice from "./workflows/db-function-node/dbFunctionNodeSlice";
 import workflowSlice from "./workflow/slice";
@@ -213,6 +214,7 @@ export const slimReducerMap = {
   overlays: overlaySlice,
   overlayData: overlayDataReducer,
   voicePad: voicePadReducer,
+  voiceAgent: voiceAgentReducer,
   windowManager: windowManagerReducer,
   urlSync: urlSyncReducer,
 
