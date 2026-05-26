@@ -162,3 +162,17 @@ attributable to this page in analytics.
   (re-export removed from `forkAgentForVariant.ts`; System Prompt / Tools /
   Tuning updated to import from source). Mode catalog + mechanics in
   [MODES.md](./MODES.md).
+- 2026-05-26 — **Critical fix:** stop the synthetic `cmp-` agent id from
+  leaking into the `/ai/manual` request body. `assembleManualRequest` in
+  `execute-manual-instance.thunk.ts` was setting `agent_id = parentAgentId ?? id`
+  for synthetics (which have `parentAgentId: null`), so the cmp- string landed
+  on the wire and crashed any server-side consumer expecting a uuid. The
+  thunk now omits `agent_id` and `is_version` entirely when the agent is
+  synthetic — fix protects all 4 synthetic-fork modes (Variations + System
+  Prompt + Tools + Tuning).
+- 2026-05-26 — Added **pause/resume per variation** in Variations mode. A
+  `paused` flag on `VariationColumn` (default false on add) toggled from the
+  column header; paused variations are skipped by Submit All (counted in the
+  "skipped" tally) but stay editable. Persisted in the comparison set's
+  per-entry metadata. Visual: column body dims with a "PAUSED — SKIPPED ON
+  SUBMIT ALL" notice; editor-window tab gets a pause icon + italic label.

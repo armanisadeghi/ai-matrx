@@ -45,6 +45,13 @@ export interface VariationColumn {
   syntheticAgentId: string;
   label: string;
   collapsed: boolean;
+  /**
+   * Paused variations are SKIPPED by Submit All — quick way to A/B a subset
+   * without deleting variations you might still want. Editing, renaming, and
+   * "Save as agent" still work on a paused variation. Default `false` (active)
+   * on add.
+   */
+  paused: boolean;
 }
 
 export interface VariationsLockedSetup {

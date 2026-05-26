@@ -14,16 +14,22 @@ import {
   ChevronsLeftRight,
   ChevronsRightLeft,
   GripVertical,
+  Pause,
   Pencil,
   Check,
+  Play,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { renameVariationColumn } from "../redux/slice";
+import {
+  renameVariationColumn,
+  setVariationColumnPaused,
+} from "../redux/slice";
 import { removeColumnFromVariationsBattle } from "../redux/thunks";
 import type { VariationColumn } from "../types";
 
@@ -154,6 +160,37 @@ export function VariationsColumnHeader({
       >
         <SlidersHorizontal className="w-3 h-3" />
         Edit
+      </button>
+
+      <button
+        type="button"
+        onClick={() =>
+          dispatch(
+            setVariationColumnPaused({
+              columnId: column.columnId,
+              paused: !column.paused,
+            }),
+          )
+        }
+        className={cn(
+          "inline-flex items-center justify-center h-6 w-6 rounded shrink-0 transition-colors",
+          column.paused
+            ? "text-amber-600 dark:text-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+        title={
+          column.paused
+            ? "Resume this variation (currently paused; Submit All is skipping it)"
+            : "Pause this variation (skip it on Submit All without deleting)"
+        }
+        aria-label={column.paused ? "Resume variation" : "Pause variation"}
+        aria-pressed={column.paused}
+      >
+        {column.paused ? (
+          <Play className="w-3.5 h-3.5" />
+        ) : (
+          <Pause className="w-3.5 h-3.5" />
+        )}
       </button>
 
       <button

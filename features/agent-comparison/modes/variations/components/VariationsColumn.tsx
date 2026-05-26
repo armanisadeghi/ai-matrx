@@ -67,7 +67,17 @@ export function VariationsColumn({ column, onToggleCollapse, onEdit }: Props) {
         onToggleCollapse={onToggleCollapse}
         onEdit={onEdit}
       />
-      <div className="flex-1 overflow-hidden flex justify-center min-w-0">
+      {column.paused && (
+        <div className="shrink-0 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-amber-600 dark:text-amber-500 bg-amber-500/10 border-b border-amber-500/30 text-center">
+          Paused — skipped on Submit All
+        </div>
+      )}
+      <div
+        className={cn(
+          "flex-1 overflow-hidden flex justify-center min-w-0 transition-opacity",
+          column.paused && "opacity-50",
+        )}
+      >
         <BoundColumn
           conversationId={column.conversationId}
           surfaceKey={VARIATIONS_SURFACE_KEY}

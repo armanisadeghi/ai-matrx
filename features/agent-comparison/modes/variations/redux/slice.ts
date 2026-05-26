@@ -38,6 +38,7 @@ const slice = createSlice({
         syntheticAgentId: action.payload.syntheticAgentId,
         label: action.payload.label,
         collapsed: false,
+        paused: false,
       });
     },
     removeVariationColumn(state, action: PayloadAction<{ columnId: string }>) {
@@ -78,6 +79,15 @@ const slice = createSlice({
         (c) => c.columnId === action.payload.columnId,
       );
       if (col) col.collapsed = action.payload.collapsed;
+    },
+    setVariationColumnPaused(
+      state,
+      action: PayloadAction<{ columnId: string; paused: boolean }>,
+    ) {
+      const col = state.columns.find(
+        (c) => c.columnId === action.payload.columnId,
+      );
+      if (col) col.paused = action.payload.paused;
     },
     reorderVariationColumns(
       state,
@@ -148,6 +158,7 @@ export const {
   setVariationColumns,
   renameVariationColumn,
   setVariationColumnCollapsed,
+  setVariationColumnPaused,
   reorderVariationColumns,
   setLocked,
   setLockedVariable,

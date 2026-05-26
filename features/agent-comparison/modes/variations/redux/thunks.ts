@@ -423,13 +423,16 @@ export const submitAllVariations = createAsyncThunk<
       const state = getState();
       const { sourceAgentId, variables, userMessage } =
         state.agentComparisonVariations.locked;
-      const columns = state.agentComparisonVariations.columns;
+      const allColumns = state.agentComparisonVariations.columns;
+      // Paused variations are excluded from Submit All — see VariationColumn.paused.
+      const columns = allColumns.filter((c) => !c.paused);
+      const pausedSkipped = allColumns.length - columns.length;
 
       if (!sourceAgentId || columns.length === 0) {
-        return { launched: 0, failed: 0, skipped: columns.length };
+        return { launched: 0, failed: 0, skipped: pausedSkipped };
       }
 
-      // Broadcast the shared test input to every variation's per-instance
+      // Broadcast the shared test input to every ACTIVE variation's per-instance
       // slices before firing.
       for (const col of columns) {
         if (userMessage) {
@@ -479,7 +482,7 @@ export const submitAllVariations = createAsyncThunk<
         }
       }
 
-      return { launched, failed, skipped: 0 };
+      return { launched, failed, skipped: pausedSkipped };
     } finally {
       dispatch(submitAllFinished());
     }
@@ -554,6 +557,7 @@ export const resetAllVariationsConversations = createAsyncThunk<
 
 interface PersistedVariationEntryMeta {
   label: string;
+  paused?: boolean;
   agent: VariationAgentSnapshot;
 }
 
@@ -565,7 +569,11 @@ function buildVariationEntries(state: RootState): UpsertEntryInput[] {
   state.agentComparisonVariations.columns.forEach((col, idx) => {
     const snapshot = extractVariationSnapshot(state, col.syntheticAgentId);
     if (!snapshot) return;
-    const meta: PersistedVariationEntryMeta = { label: col.label, agent: snapshot };
+    const meta: PersistedVariationEntryMeta = {
+      label: col.label,
+      paused: col.paused,
+      agent: snapshot,
+    };
     out.push({
       conversationId: col.conversationId,
       displayOrder: idx,
@@ -763,6 +771,7 @@ export const loadVariationsBattleSet = createAsyncThunk<
         syntheticAgentId: syntheticId,
         label: entryMeta?.label ?? `Variation ${nextColumns.length + 1}`,
         collapsed: false,
+        paused: entryMeta?.paused ?? false,
       });
     }
 

@@ -77,6 +77,7 @@ import type {
 } from "@/features/agents/types/agent-api-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { MessageRecord } from "../messages/messages.slice";
+import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import {
   extractContentBlocks,
   extractFlatText,
@@ -420,8 +421,17 @@ export async function assembleManualRequest(
   // Stable agx_agent.id for server-side logging / linkage. Version snapshots
   // point at their parent agent for cross-reference; live agents use their
   // own id.
-  request.agent_id = agent.parentAgentId ?? agent.id;
-  request.is_version = agent.isVersion;
+  //
+  // CRITICAL: synthetic comparison/variation agents (`cmp-` ids) are NOT
+  // real DB rows — NEVER send their id to the server. Anything expecting a
+  // uuid (logging, FK joins, validators) crashes on the `cmp-` prefix. Omit
+  // both fields entirely so the server treats the request as ephemeral.
+  // Forking sets `parentAgentId = null` so we can't use that as a substitute
+  // either — drop the linkage altogether for synthetics.
+  if (!isSyntheticAgentId(agent.id)) {
+    request.agent_id = agent.parentAgentId ?? agent.id;
+    request.is_version = agent.isVersion;
+  }
 
   return request;
 }

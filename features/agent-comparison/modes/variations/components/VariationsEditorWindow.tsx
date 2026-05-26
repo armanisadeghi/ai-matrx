@@ -19,7 +19,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Save, Trash2 } from "lucide-react";
+import { Pause, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
@@ -120,14 +120,29 @@ export function VariationsEditorWindow({
               key={col.columnId}
               type="button"
               onClick={() => onActiveColumnChange(col.columnId)}
-              title={col.label}
+              title={
+                col.paused
+                  ? `${col.label} — paused (skipped on Submit All)`
+                  : col.label
+              }
               className={cn(
-                "inline-flex items-center h-7 px-2.5 rounded-md text-[11px] font-medium whitespace-nowrap shrink-0 transition-colors max-w-[160px]",
+                "inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-medium whitespace-nowrap shrink-0 transition-colors max-w-[180px]",
                 active?.columnId === col.columnId
                   ? "bg-primary text-primary-foreground"
                   : "text-foreground hover:bg-muted",
+                col.paused && active?.columnId !== col.columnId && "italic opacity-60",
               )}
             >
+              {col.paused && (
+                <Pause
+                  className={cn(
+                    "w-3 h-3 shrink-0",
+                    active?.columnId === col.columnId
+                      ? "opacity-80"
+                      : "text-amber-600 dark:text-amber-500",
+                  )}
+                />
+              )}
               <span className="truncate">{col.label}</span>
             </button>
           ))}
