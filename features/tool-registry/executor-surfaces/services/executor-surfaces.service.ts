@@ -99,10 +99,12 @@ export async function listExecutorSurfacesWithStats(): Promise<
 export async function listBindingsForSurface(
   surface: string,
 ): Promise<ExecutorBindingRow[]> {
+  // FK is named `tool_handlers_tool_id_fkey` (legacy — the table was renamed
+  // from `tool_handlers` to `tl_executor` but the constraint name was kept).
   const { data, error } = await sb()
     .from("tl_executor")
     .select(
-      "id, tool_id, auto_load, is_active, priority, delegated, function_path, source_app, updated_at, tool:tl_def!tl_executor_tool_id_fkey(name, category, description, is_active)",
+      "id, tool_id, auto_load, is_active, priority, delegated, function_path, source_app, updated_at, tool:tl_def!tool_handlers_tool_id_fkey(name, category, description, is_active)",
     )
     .eq("surface", surface)
     .order("priority", { ascending: true });

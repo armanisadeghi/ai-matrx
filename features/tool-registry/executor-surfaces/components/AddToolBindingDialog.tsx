@@ -160,7 +160,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
           {!loading && !error && filtered.length === 0 && (
             <div className="py-8 text-center text-xs text-muted-foreground">
               {tools.length === 0
-                ? "Every active tool is already bound to this surface."
+                ? "Every active tool is already bound to this runtime."
                 : "No tools match your search."}
             </div>
           )}

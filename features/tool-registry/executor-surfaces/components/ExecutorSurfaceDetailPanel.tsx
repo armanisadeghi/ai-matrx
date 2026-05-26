@@ -74,7 +74,7 @@ export function ExecutorSurfaceDetailPanel({
     try {
       await updateBinding(row.id, { auto_load: next });
       toast.success(
-        `${row.tool_name ?? row.tool_id} ${next ? "will auto-load" : "no longer auto-loads"} on ${surface.name}`,
+        `${row.tool_name ?? row.tool_id} ${next ? "will auto-load on" : "no longer auto-loads on"} ${surface.name}`,
       );
       onMutated();
     } catch (e) {
@@ -240,14 +240,14 @@ export function ExecutorSurfaceDetailPanel({
         <SectionHeader
           icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
           title="Auto-load on launch"
-          subtitle="Tools loaded automatically into every agent run on this surface"
+          subtitle="Tools loaded automatically into every agent run on this runtime"
           count={autoLoad.length}
         />
         {autoLoad.length === 0 ? (
           <EmptyState>
             {loading
               ? "Loading…"
-              : "No tools auto-load on this surface yet. Bind a tool below or toggle one from 'Other bound tools' to auto-load."}
+              : "No tools auto-load on this runtime yet. Click 'Add tool' above, or toggle auto-load on a tool below."}
           </EmptyState>
         ) : (
           <BindingList
@@ -263,14 +263,14 @@ export function ExecutorSurfaceDetailPanel({
         <SectionHeader
           icon={<ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />}
           title="Other bound tools"
-          subtitle="Available on this surface but only loaded on demand"
+          subtitle="Available on this runtime but only loaded on demand"
           count={other.length}
         />
         {other.length === 0 ? (
           <EmptyState>
             {loading
               ? "Loading…"
-              : "Every tool bound to this surface is currently set to auto-load."}
+              : "Every tool bound to this runtime is currently set to auto-load."}
           </EmptyState>
         ) : (
           <BindingList

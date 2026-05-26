@@ -343,9 +343,9 @@ export const adminCategories = [
     iconColor: "text-pink-600",
     features: [
       {
-        title: "MCP Tools",
+        title: "Tool Definitions",
         description:
-          "Per-tool admin: identity, parameters, executors, surfaces, bundles, gating, UI components, test samples, incidents. Bulk activate / deactivate / delete across the 380-row catalog.",
+          "The 380-row tl_def catalog — every tool the platform can run (built-in, browser, server, MCP). Per-tool admin: identity, parameters, executors, surfaces, bundles, gating, UI components, test samples, incidents. Bulk activate / deactivate / delete.",
         icon: <IconTestPipe />,
         link: "/administration/mcp-tools",
       },
@@ -374,9 +374,9 @@ export const adminCategories = [
         isNew: true,
       },
       {
-        title: "Executor Surfaces",
+        title: "Tool Runtimes",
         description:
-          "Per-runtime tool bindings: which tools are bound to matrx-extend.browser, mcp.github, server:matrx_ai, etc., and which of them auto-load on launch. Manages tl_executor rows.",
+          "Tools per runtime: pick a runtime (matrx-extend.browser, mcp.github, server:matrx_ai, etc.) and manage which tools are available there and which auto-load on launch. Manages tl_executor rows.",
         icon: <Cpu />,
         link: "/administration/executor-surfaces",
         isNew: true,

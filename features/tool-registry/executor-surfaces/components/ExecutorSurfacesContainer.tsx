@@ -86,12 +86,10 @@ export function ExecutorSurfacesContainer() {
       {/* Header */}
       <div className="shrink-0 px-3 py-1.5 border-b border-border flex items-center gap-2 flex-wrap">
         <Server className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">
-          Tool Registry · Executor Surfaces
-        </h1>
+        <h1 className="text-sm font-medium">Tool Registry · Tool Runtimes</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Badge variant="outline" className="text-[10px]">
-            {surfaces.length} surfaces
+            {surfaces.length} runtimes
           </Badge>
           <Badge variant="outline" className="text-[10px]">
             {totals.bound} bindings
@@ -124,7 +122,7 @@ export function ExecutorSurfacesContainer() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search surface name, client, description…"
+            placeholder="Search runtime name, client, description…"
             className="h-7 pl-7 text-xs"
             style={{ fontSize: "16px" }}
           />
@@ -178,18 +176,15 @@ export function ExecutorSurfacesContainer() {
                 onClose={() => setSelectedName(null)}
               />
             ) : (
-              <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
-                Pick an executor surface on the left to manage its tool
-                bindings.
-                <br />
-                <span className="opacity-60">
-                  The query{" "}
-                  <code className="font-mono">
-                    select tool.name from tl_def join tl_executor on … where
-                    surface=<i>&lt;name&gt;</i> and auto_load is true
-                  </code>{" "}
-                  drives the &quot;Auto-load on launch&quot; section.
-                </span>
+              <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground p-6 text-center max-w-md mx-auto">
+                <div>
+                  <p>Pick a runtime on the left to manage its tool bindings.</p>
+                  <p className="mt-2 opacity-60 text-[11px]">
+                    Each runtime (matrx-extend.browser, mcp.github,
+                    server:matrx_ai…) decides which tools are available on it
+                    and which auto-load on launch.
+                  </p>
+                </div>
               </div>
             )}
           </div>

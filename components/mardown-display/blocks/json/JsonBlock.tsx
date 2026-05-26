@@ -81,7 +81,7 @@ function PaneFallback({ label = "Loading…" }: { label?: string }) {
   );
 }
 
-type ViewMode = "code" | "compact" | "tree" | "table" | "explorer";
+type ViewMode = "code" | "tree" | "table" | "explorer";
 
 interface JsonBlockProps {
   content: string;
@@ -116,13 +116,32 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   const [mode, setMode] = useState<ViewMode>("code");
   const [saveNewOpen, setSaveNewOpen] = useState(false);
   const [appendOpen, setAppendOpen] = useState(false);
+  // Local override for the displayed/edited text when the parent has not
+  // wired up `onCodeChange`. When the parent IS wired up, reformat actions
+  // call `onCodeChange` directly so the change persists wherever the block
+  // is consumed — and this override stays null.
+  const [formatOverride, setFormatOverride] = useState<string | null>(null);
+
+  // The text we actually show / pass through to CodeBlock. Local override
+  // takes precedence; otherwise we use whatever the parent gave us. As
+  // soon as the parent's `content` changes (e.g. external edit / new
+  // payload), the override is dropped on the next render below.
+  const effectiveContent = formatOverride ?? content;
+
+  // Clear the local override whenever the parent ships fresh content so
+  // we don't show stale reformatted text on top of a real update.
+  const lastSeenContentRef = useRef(content);
+  if (lastSeenContentRef.current !== content) {
+    lastSeenContentRef.current = content;
+    if (formatOverride !== null) setFormatOverride(null);
+  }
 
   // One-shot parse + tabular detection per content change. Skipped during
   // streaming since the content is by definition incomplete.
   const parsed = useMemo(() => {
     if (isStreamActive) return { ok: false as const };
-    return parseJsonSafe(content);
-  }, [content, isStreamActive]);
+    return parseJsonSafe(effectiveContent);
+  }, [effectiveContent, isStreamActive]);
 
   const tabular = useMemo(() => {
     if (!parsed.ok) {
@@ -225,6 +244,84 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     return "JSON Data";
   }, [tabular]);
 
+  // Canonical formattings of the current parsed value. `null` when the
+  // payload is unparseable (streaming / invalid) — the early-return below
+  // handles that case, but we still need the hooks unconditionally so the
+  // hook order stays stable.
+  const compactForm = useMemo(() => {
+    if (!parsed.ok) return null;
+    try {
+      return stringifyCompact(parsed.value, { maxWidth: 100, indent: 2 });
+    } catch {
+      return null;
+    }
+  }, [parsed]);
+  const expandedForm = useMemo(() => {
+    if (!parsed.ok) return null;
+    try {
+      return JSON.stringify(parsed.value, null, 2);
+    } catch {
+      return null;
+    }
+  }, [parsed]);
+
+  const isCompactFormatted =
+    compactForm !== null && effectiveContent.trim() === compactForm.trim();
+
+  // Apply a new formatting. Persists upstream via `onCodeChange` when the
+  // parent has wired it up; otherwise updates the local override so the
+  // toggle still works for read-only consumers.
+  const applyFormat = (next: string) => {
+    if (next === effectiveContent) return;
+    if (onCodeChange) {
+      if (formatOverride !== null) setFormatOverride(null);
+      onCodeChange(next);
+    } else {
+      setFormatOverride(next);
+    }
+  };
+
+  const formatMenuItems: MenuItem[] = useMemo(() => {
+    const items: MenuItem[] = [];
+    if (compactForm) {
+      items.push({
+        key: "format-compact",
+        icon: AlignJustify,
+        iconColor: "text-sky-600 dark:text-sky-400",
+        label: "Compact formatting",
+        description:
+          "Inline leaf objects and arrays that fit on one line. Updates the JSON text.",
+        category: "Format",
+        showToast: false,
+        disabled: isCompactFormatted,
+        action: () => applyFormat(compactForm),
+      });
+    }
+    if (expandedForm) {
+      items.push({
+        key: "format-expanded",
+        icon: Code2,
+        iconColor: "text-sky-600 dark:text-sky-400",
+        label: "Standard formatting",
+        description: "Two-space pretty-print. Updates the JSON text.",
+        category: "Format",
+        showToast: false,
+        disabled:
+          !isCompactFormatted &&
+          effectiveContent.trim() === expandedForm.trim(),
+        action: () => applyFormat(expandedForm),
+      });
+    }
+    return items;
+    // applyFormat closes over the latest values via the deps above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compactForm, expandedForm, isCompactFormatted, effectiveContent]);
+
+  const fullMenuItems = useMemo(
+    () => [...formatMenuItems, ...jsonMenuItems],
+    [formatMenuItems, jsonMenuItems],
+  );
+
   // Fallback: streaming or unparseable → original CodeBlock with no extras.
   if (!parsed.ok) {
     return (
@@ -244,23 +341,28 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 
   const data = parsed.value;
 
-  // Pre-compute the compact form only when needed. Cheap for typical
-  // payloads; we still memoize so toggling back and forth is free.
-  const compactCode = useMemo(() => {
-    if (mode !== "compact") return null;
-    try {
-      return stringifyCompact(data, { maxWidth: 100, indent: 2 });
-    } catch {
-      return content;
+  const toggleFormat = () => {
+    if (isCompactFormatted) {
+      if (expandedForm) applyFormat(expandedForm);
+    } else {
+      if (compactForm) applyFormat(compactForm);
     }
-  }, [mode, data, content]);
+  };
 
   const viewToggle = (
-    <ViewToggle
-      mode={mode}
-      onChange={setMode}
-      tabularAvailable={tabular.isTabular}
-    />
+    <div className="flex items-center gap-1">
+      <ViewToggle
+        mode={mode}
+        onChange={setMode}
+        tabularAvailable={tabular.isTabular}
+      />
+      {mode === "code" && compactForm && expandedForm && (
+        <FormatToggleButton
+          isCompact={isCompactFormatted}
+          onToggle={toggleFormat}
+        />
+      )}
+    </div>
   );
 
   const tabularCaption =
@@ -269,18 +371,25 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 
   return (
     <>
-      {mode === "code" || mode === "compact" ? (
+      {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
           <CodeBlock
-            code={mode === "compact" ? (compactCode ?? content) : content}
+            code={effectiveContent}
             language="json"
             className={className}
             isStreamActive={isStreamActive}
-            allowEdit={allowEdit && mode === "code"}
+            allowEdit={allowEdit}
             customBuiltinKeys={customBuiltinKeys}
-            onCodeChange={mode === "code" ? onCodeChange : undefined}
+            onCodeChange={
+              onCodeChange
+                ? (next) => {
+                    if (formatOverride !== null) setFormatOverride(null);
+                    onCodeChange(next);
+                  }
+                : (next) => setFormatOverride(next)
+            }
             headerLeftSlot={viewToggle}
-            extraMenuItems={jsonMenuItems}
+            extraMenuItems={fullMenuItems}
           />
         </Suspense>
       ) : (
@@ -292,9 +401,9 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
         >
           <JsonViewHeader
             toggle={viewToggle}
-            menuItems={jsonMenuItems}
+            menuItems={fullMenuItems}
             caption={mode === "table" ? tabularCaption || "" : ""}
-            content={content}
+            content={effectiveContent}
           />
           <div className="bg-card">
             {mode === "tree" && (
@@ -338,6 +447,57 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   );
 };
 
+interface FormatToggleButtonProps {
+  isCompact: boolean;
+  onToggle: () => void;
+}
+
+/**
+ * Tiny one-shot button that flips the underlying JSON text between
+ * standard 2-space pretty-print and the compact (horizontal-where-it-fits)
+ * formatting. Lives next to the view-mode toggle when in Code view.
+ *
+ * This is an EDIT, not a view change: the new text flows through
+ * `onCodeChange` to the parent (or to local state for read-only blocks),
+ * so wherever the JSON is persisted, the persisted text reflects the
+ * chosen formatting.
+ */
+const FormatToggleButton: React.FC<FormatToggleButtonProps> = ({
+  isCompact,
+  onToggle,
+}) => {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className={cn(
+              "h-6 px-1.5 sm:px-2 flex items-center gap-1 rounded text-xs font-medium transition-colors",
+              "text-muted-foreground hover:text-foreground hover:bg-muted",
+              "border border-border/50 bg-background/50",
+            )}
+          >
+            <AlignJustify className="h-3 w-3" />
+            <span className="hidden sm:inline">
+              {isCompact ? "Expand" : "Compact"}
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">
+          {isCompact
+            ? "Reformat to standard pretty-print (updates the text)"
+            : "Reformat to compact (inlines leaf objects, updates the text)"}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 interface ViewToggleProps {
   mode: ViewMode;
   onChange: (mode: ViewMode) => void;
@@ -361,12 +521,6 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
     tooltip?: string;
   }> = [
     { id: "code", label: "Code", icon: Code2 },
-    {
-      id: "compact",
-      label: "Compact",
-      icon: AlignJustify,
-      tooltip: "Inline leaf objects/arrays that fit on one line",
-    },
     { id: "tree", label: "Tree", icon: ListTree },
     {
       id: "table",

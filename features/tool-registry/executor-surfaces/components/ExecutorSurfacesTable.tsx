@@ -61,7 +61,7 @@ export function ExecutorSurfacesTable({
   if (isLoading && rows.length === 0) {
     return (
       <div className="flex-1 min-h-0 flex items-center justify-center text-xs text-muted-foreground">
-        Loading executor surfaces…
+        Loading runtimes…
       </div>
     );
   }
@@ -69,7 +69,7 @@ export function ExecutorSurfacesTable({
   if (!isLoading && rows.length === 0) {
     return (
       <div className="flex-1 min-h-0 flex items-center justify-center text-xs text-muted-foreground">
-        No executor surfaces match these filters.
+        No runtimes match these filters.
       </div>
     );
   }

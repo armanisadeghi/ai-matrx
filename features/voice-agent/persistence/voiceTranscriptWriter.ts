@@ -85,6 +85,10 @@ export async function ensureConversation(
 
   const metadataVoice: Record<string, Json> = {
     provider: PERSISTENCE_PROVIDER,
+    // Model slug — xAI Realtime models are NOT in the `ai_model` table, so we
+    // record the identifier here instead of in `cx_conversation.last_model_id`
+    // (which is a UUID FK to ai_model.id and would 22P02 with a slug).
+    model: XAI_MODEL_ID,
     voice_id: opts.voiceId,
     tools_enabled: opts.tools,
     region: PERSISTENCE_REGION,
@@ -101,7 +105,9 @@ export async function ensureConversation(
     source_app: PERSISTENCE_SOURCE_APP,
     source_feature: PERSISTENCE_SOURCE_FEATURE,
     system_instruction: opts.instructions,
-    last_model_id: XAI_MODEL_ID,
+    // Intentionally NOT setting last_model_id — it's a UUID FK to ai_model.id,
+    // and the xAI Realtime model isn't registered there. The model slug lives
+    // in metadata.voice.model above.
     metadata: { voice: metadataVoice } as Json,
     overrides: { tools: opts.tools } as unknown as Json,
     message_count: 0,
