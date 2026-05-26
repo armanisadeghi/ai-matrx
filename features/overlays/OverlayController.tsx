@@ -475,17 +475,21 @@ const NewsWindow = dynamic(
   () => import("@/features/window-panels/windows/NewsWindow"),
   { ssr: false },
 );
+// Canonical Notes window (overlay id `notesBetaWindow` kept for session
+// compatibility — see NotesBetaWindow.tsx header).
 const NotesBetaWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/notes/NotesBetaWindow").then(
-      (m) => ({ default: m.NotesBetaWindow }),
+      (m) => ({ default: m.NotesWindow }),
     ),
   { ssr: false },
 );
+// Legacy Notes window — kept until /ssr/demos/window-demo and
+// /administration/persistence-test are retired.
 const NotesWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/notes/NotesWindow").then((m) => ({
-      default: m.NotesWindow,
+      default: m.LegacyNotesWindow,
     })),
   { ssr: false },
 );

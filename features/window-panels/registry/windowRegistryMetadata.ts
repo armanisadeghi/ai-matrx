@@ -122,12 +122,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
-  // ── Notes ─────────────────────────────────────────────────────────────────
+  // ── Notes (canonical — overlayId stays `notesBetaWindow` for session
+  // compatibility; component is now exported as NotesWindow from
+  // NotesBetaWindow.tsx). ─────────────────────────────────────────────────
+  {
+    slug: "notes-beta-window",
+    overlayId: "notesBetaWindow",
+    kind: "window",
+    label: "Notes",
+    defaultData: { openNoteId: null, title: undefined },
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+  },
+
+  // ── Notes (legacy) — kept until window-demo + persistence-test are retired
   {
     slug: "notes-window",
     overlayId: "notesWindow",
     kind: "window",
-    label: "Notes",
+    label: "Notes (legacy)",
     defaultData: {
       initialTabs: [],
       initialActiveTab: null,
@@ -135,17 +148,10 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     },
     mobilePresentation: "fullscreen",
     urlSync: { key: "notes" },
-  },
-
-  // ── Notes Beta ────────────────────────────────────────────────────────────
-  {
-    slug: "notes-beta-window",
-    overlayId: "notesBetaWindow",
-    kind: "window",
-    label: "Notes Beta",
-    defaultData: { openNoteId: null, title: undefined },
-    mobilePresentation: "fullscreen",
-    instanceMode: "multi",
+    deprecated: {
+      replacedBy: "notesBetaWindow",
+      note: "Replaced by the canonical Notes window (overlayId `notesBetaWindow`). Only kept while the window-demo and persistence-test admin pages still reference it.",
+    },
   },
 
   // ── Quick Note Save ───────────────────────────────────────────────────────

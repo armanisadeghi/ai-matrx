@@ -386,12 +386,12 @@ export const OVERLAY_CATALOGUE = {
     isWindow: true,
   },
   notesBetaWindow: {
-    label: "Notes Beta Window",
+    label: "Notes Window",
     instanceMode: "multi",
     isWindow: true,
   },
   notesWindow: {
-    label: "Notes Window",
+    label: "Notes Window (legacy)",
     instanceMode: "singleton",
     isWindow: true,
   },

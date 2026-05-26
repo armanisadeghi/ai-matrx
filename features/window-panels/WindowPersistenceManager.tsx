@@ -27,6 +27,7 @@ import React, {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import {
+  closeOverlay,
   openOverlay,
   pruneStaleInstances,
 } from "@/lib/redux/slices/overlaySlice";
@@ -409,17 +410,32 @@ export function WindowPersistenceManager({
     [userId],
   );
 
-  const closeWindow = useCallback((overlayId: string) => {
-    const sessionId = sessionMapRef.current.get(overlayId);
-    if (!sessionId) return;
-    sessionMapRef.current.delete(overlayId);
-    deleteWindowSession(sessionId).catch((err) => {
-      console.warn(
-        `WindowPersistenceManager: delete failed for overlayId="${overlayId}" session="${sessionId}"`,
-        err,
-      );
-    });
-  }, []);
+  const closeWindow = useCallback(
+    (overlayId: string) => {
+      // Structural close: dispatch the overlay-slice close so OverlayController
+      // unmounts the component. Every unmount-driven cleanup (URL sync,
+      // autosave-on-blur, tray snapshot, popout opener registry) depends on
+      // this firing — without it the X button is silently dead for any
+      // window whose controller block forgot to wire `onClose`. The reducer
+      // is idempotent (no-op when the bucket is missing or already closed)
+      // and defaults to the singleton instance slot, so callers that already
+      // dispatch `closeOverlay` themselves continue to work, and
+      // multi-instance windows are untouched (they pass an explicit
+      // instanceId from their controller block).
+      dispatch(closeOverlay({ overlayId }));
+
+      const sessionId = sessionMapRef.current.get(overlayId);
+      if (!sessionId) return;
+      sessionMapRef.current.delete(overlayId);
+      deleteWindowSession(sessionId).catch((err) => {
+        console.warn(
+          `WindowPersistenceManager: delete failed for overlayId="${overlayId}" session="${sessionId}"`,
+          err,
+        );
+      });
+    },
+    [dispatch],
+  );
 
   const contextValue: WindowPersistenceContextValue = {
     getSessionId,
