@@ -315,7 +315,7 @@ export function AgentAppsGrid({
   return (
     <>
       {/* Controls row */}
-      <div className="mb-4 pt-2 flex items-center gap-2 flex-wrap">
+      <div className="mb-6 pt-8 flex items-center gap-2 flex-wrap">
         {/* Filter popover */}
         <Popover>
           <PopoverTrigger asChild>
@@ -446,7 +446,6 @@ export function AgentAppsGrid({
         <Link href={newAppHref}>
           <Button size="sm" className="h-8 gap-1.5">
             <Plus className="h-3.5 w-3.5" />
-            New app
           </Button>
         </Link>
       </div>
@@ -495,7 +494,7 @@ export function AgentAppsGrid({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {filteredApps.map((app) => (
             <AgentAppCard
               key={app.id}
