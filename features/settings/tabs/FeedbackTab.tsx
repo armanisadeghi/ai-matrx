@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const UserFeedbackPage = lazy(
-  () => import("@/app/(authenticated)/settings/feedback/page"),
+  () => import("@/app/(transitional)/settings/feedback/page"),
 );
 
 export default function FeedbackTab() {

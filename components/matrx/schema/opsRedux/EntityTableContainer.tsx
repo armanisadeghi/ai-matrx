@@ -4,7 +4,7 @@
 
 import React, { Suspense, useCallback, useState } from "react";
 import { MatrxTableLoading } from "@/components/matrx/LoadingComponents";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 import { useEntity } from "@/lib/redux/entity/hooks/useEntity";
 import { EntityKeys } from "@/types/entityTypes";
 import { FlexibleId } from "@/types/FlexibleId";

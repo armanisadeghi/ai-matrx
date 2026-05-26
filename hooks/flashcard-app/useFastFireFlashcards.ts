@@ -3,7 +3,7 @@ import {useToast} from "@/components/ui/use-toast";
 import {FlashcardData} from "@/types/flashcards.types";
 import {useDynamicVoiceAiProcessing} from "@/hooks/ai/useDynamicVoiceAiProcessing";
 import {ApiName, Assistant} from "@/types/voice/voiceAssistantTypes";
-import {getFlashcardSet} from '@/app/(authenticated)/flashcard/app-data';
+import {getFlashcardSet} from '@/app/(transitional)/flashcard/app-data';
 import {getAssistant} from "@/constants/voice-assistants";
 
 interface SessionState {

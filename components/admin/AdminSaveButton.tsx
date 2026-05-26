@@ -53,7 +53,7 @@ export const AdminSaveJsonButton = ({
         filename,
         jsonData: content,
         directoryType: "app",
-        path: ["(authenticated)", "tests", ...path],
+        path: ["(dev)", "demos", "tests", ...path],
       });
 
       if (result.success) {

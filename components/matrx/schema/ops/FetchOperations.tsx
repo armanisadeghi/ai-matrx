@@ -5,9 +5,9 @@ import { useEntity } from "@/lib/redux/entity/hooks/useEntity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MatrxTableLoading } from "@/components/matrx/LoadingComponents";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 import { EntityKeys } from '@/types/entityTypes';
-import PreWiredEntitySelectName from "@/app/(authenticated)/admin/components/entities/PreWiredEntitySelectName";
+import PreWiredEntitySelectName from "@/app/(transitional)/admin/components/entities/PreWiredEntitySelectName";
 
 // A default/fallback entity key, assuming one exists in EntityKeys
 const DEFAULT_ENTITY: EntityKeys = 'systemFunction'; // Replace with an appropriate default entity key

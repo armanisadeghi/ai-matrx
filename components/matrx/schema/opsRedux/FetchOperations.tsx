@@ -4,7 +4,7 @@ import SchemaSelect from "@/components/matrx/schema/ops/SchemaSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MatrxTableLoading } from "@/components/matrx/LoadingComponents";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 import { AutomationTableName } from "@/types/AutomationSchemaTypes";
 import { EntityKeys } from "@/types/entityTypes";
 

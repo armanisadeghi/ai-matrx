@@ -5,7 +5,7 @@
  * 
  * @example
  * ```tsx
- * import { useQuickTask } from '@/app/(authenticated)/demo/task-manager/hooks/useQuickTask';
+ * import { useQuickTask } from '@/app/(dev)/demos/general/task-manager/hooks/useQuickTask';
  * 
  * function MyAIComponent() {
  *   const { createTask, creating } = useQuickTask();

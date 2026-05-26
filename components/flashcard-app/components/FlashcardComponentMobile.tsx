@@ -9,7 +9,7 @@ import EditFlashcardDialog from './EditFlashcardDialog';
 import { Progress } from "@/components/ui/progress";
 
 import { useFlashcard } from "@/hooks/flashcard-app/useFlashcard";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 import {
     SmallComponentLoading,
     MediumComponentLoading,
@@ -17,8 +17,8 @@ import {
     CardLoading
 } from '@/components/matrx/LoadingComponents';
 import { ensureId } from "@/utils/schema/schemaUtils";
-import { getFlashcardSet } from '@/app/(authenticated)/flashcard/app-data';
-import AiAssistModal from '@/app/(authenticated)/flash-cards/ai/AiAssistModal';
+import { getFlashcardSet } from '@/app/(transitional)/flashcard/app-data';
+import AiAssistModal from '@/app/(transitional)/flash-cards/ai/AiAssistModal';
 
 const FlashcardComponentMobile: React.FC<{ dataSetId }> = ({ dataSetId }) => {
     const initialFlashcards = getFlashcardSet(dataSetId);

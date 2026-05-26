@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Check } from "lucide-react";
 import { usePromptBuilder } from "@/features/prompts/services/promptBuilderService";
-import { aiCustomizationConfig } from "@/app/(authenticated)/ai/prompts/experimental/chatbot-customizer/modular/aiCustomizationConfig";
-import { ConfigState, SectionConfig } from "@/app/(authenticated)/ai/prompts/experimental/chatbot-customizer/modular/types";
+import { aiCustomizationConfig } from "@/app/(transitional)/ai/prompts/experimental/chatbot-customizer/modular/aiCustomizationConfig";
+import { ConfigState, SectionConfig } from "@/app/(transitional)/ai/prompts/experimental/chatbot-customizer/modular/types";
 
 interface AICustomizerPromptBuilderProps {
     onClose: () => void;

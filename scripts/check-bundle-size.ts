@@ -49,10 +49,10 @@ interface Baseline {
 
 const TRACKED_ROUTES: Array<{ manifestKey: string; label: string }> = [
   { manifestKey: "/page", label: "/" },
-  { manifestKey: "/(authenticated)/dashboard/page", label: "/dashboard" },
-  { manifestKey: "/(authenticated)/tasks/page", label: "/tasks" },
-  { manifestKey: "/(authenticated)/agents/page", label: "/agents" },
-  { manifestKey: "/(authenticated)/notes/page", label: "/notes" },
+  { manifestKey: "/(transitional)/dashboard/page", label: "/dashboard" },
+  { manifestKey: "/(core)/tasks/page", label: "/tasks" },
+  { manifestKey: "/(core)/agents/page", label: "/agents" },
+  { manifestKey: "/(core)/notes/page", label: "/notes" },
 ];
 
 function die(code: number, msg: string): never {

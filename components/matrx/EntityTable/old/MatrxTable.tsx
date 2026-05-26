@@ -5,12 +5,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTable, useSortBy, useGlobalFilter, usePagination } from 'react-table';
 import { Table } from "@/components/ui/table";
 import { MatrxTableProps, TableInstance, ExtendedTableState } from "@/types/tableTypes";
-import MatrxTableHeader from "@/app/(authenticated)/tests/matrx-table/components/MatrxTableHeader";
-import MatrxTableBody from "@/app/(authenticated)/tests/matrx-table/components/MatrxTableBody";
+import MatrxTableHeader from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTableHeader";
+import MatrxTableBody from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTableBody";
 import { cn } from "@/styles/themes/utils";
 import TableTopOptions from "@/components/matrx/table/TableTopOptions";
 import TableBottomSection from "@/components/matrx/table/TableBottomSection";
-import MatrxColumnSettings from "@/app/(authenticated)/tests/matrx-table/components/MatrxColumnSettings";
+import MatrxColumnSettings from "@/app/(dev)/demos/tests/matrx-table/components/MatrxColumnSettings";
 
 
 const MatrxTable: React.FC<MatrxTableProps> = (

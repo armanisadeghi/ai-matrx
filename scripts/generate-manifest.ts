@@ -26,12 +26,13 @@ async function generateManifest() {
 
         const projectRoot = await findProjectRoot(__dirname);
 
-        // Entity-isolation migration: /tests is mid-audit. Some test routes
+        // Entity-isolation migration: /demos/tests is mid-audit. Some test routes
         // moved to (legacy)/legacy/tests because they actually used the
-        // entity system; the rest will return to (authenticated)/tests.
-        // Look in both locations and merge — drop duplicates by name.
+        // entity system; the rest live under (dev)/demos/tests (the consolidated
+        // /demos/* URL prefix). Look in both locations and merge — drop
+        // duplicates by name.
         const candidatePaths = [
-            { path: path.join(projectRoot, 'app', '(authenticated)', 'tests'), urlPrefix: '/tests' },
+            { path: path.join(projectRoot, 'app', '(dev)', 'demos', 'tests'), urlPrefix: '/demos/tests' },
             { path: path.join(projectRoot, 'app', '(legacy)', 'legacy', 'tests'), urlPrefix: '/legacy/tests' },
         ];
 

@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const SandboxStoragePage = lazy(
-  () => import("@/app/(authenticated)/settings/sandbox-storage/page"),
+  () => import("@/app/(transitional)/settings/sandbox-storage/page"),
 );
 
 export default function SandboxStorageTab() {

@@ -10,7 +10,7 @@ import {
 // @ts-ignore - Constants file may not exist
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - Constants file may not exist
-import {AvailableData, CategoryDetails} from "@/app/(authenticated)/tests/ssr-test/constants";
+import {AvailableData, CategoryDetails} from "@/app/(dev)/demos/tests/ssr-test/constants";
 
 
 // Server Components

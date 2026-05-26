@@ -12,10 +12,10 @@ import {
     MessageSquare
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import AiChatModal from "@/app/(authenticated)/flash-cards/ai/AiChatModal";
+import AiChatModal from "@/app/(transitional)/flash-cards/ai/AiChatModal";
 import { useFlashcard } from "@/hooks/flashcard-app/useFlashcard";
-import {introOutroText} from '@/app/(authenticated)/flashcard/app-data';
-import AiAssistModal from "@/app/(authenticated)/flash-cards/ai/AiAssistModal";
+import {introOutroText} from '@/app/(transitional)/flashcard/app-data';
+import AiAssistModal from "@/app/(transitional)/flash-cards/ai/AiAssistModal";
 
 const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcard> }> = ({ flashcardHook }) => {
     const {

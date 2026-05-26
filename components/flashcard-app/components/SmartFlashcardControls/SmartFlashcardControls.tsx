@@ -2,13 +2,13 @@
 
 import React from 'react';
 
-import AiChatModal from "@/app/(authenticated)/flash-cards/ai/AiChatModal";
+import AiChatModal from "@/app/(transitional)/flash-cards/ai/AiChatModal";
 import { ActionButtonGroup, ActionButton } from './SmartActionButtons';
 import NavigationButton from "./SmartNavigationButtons";
 import FontSizeButton from "./SmartUiButtons";
 import FlashcardSelect from "./FlashcardSelect";
 import {useFlashcard} from "@/hooks/flashcard-app/useFlashcard";
-import AiAssistModal from "@/app/(authenticated)/flash-cards/ai/AiAssistModal";
+import AiAssistModal from "@/app/(transitional)/flash-cards/ai/AiAssistModal";
 
 
 const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcard> }> = ({ flashcardHook }) => {

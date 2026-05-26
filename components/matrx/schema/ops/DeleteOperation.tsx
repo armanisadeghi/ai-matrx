@@ -5,7 +5,7 @@ import { FlexibleId } from '@/types/FlexibleId';
 import useDatabase from "@/lib/hooks/useDatabase";
 import SchemaSelect from "@/components/matrx/schema/ops/SchemaSelect";
 import {MatrxTableLoading} from "@/components/matrx/LoadingComponents";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 
 const DeleteOperation = () => {
     const [selectedSchema, setSelectedSchema] = useState<string | null>(null);

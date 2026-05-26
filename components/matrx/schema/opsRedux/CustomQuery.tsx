@@ -3,7 +3,7 @@ import React, {Suspense, useState} from "react";
 import SchemaSelect from "@/components/matrx/schema/ops/SchemaSelect";
 import { Button } from "@/components/ui/button";
 import {MatrxTableLoading} from "@/components/matrx/LoadingComponents";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 
 const CustomQuery = () => {
     const [selectedSchema, setSelectedSchema] = useState<string | null>(null);

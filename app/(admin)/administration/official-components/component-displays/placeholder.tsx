@@ -27,7 +27,7 @@ export default function PlaceholderDisplay({ component }: ComponentDisplayProps)
           <AlertDescription>
             This component doesn't have a display implementation yet. Create one at:
             <code className="block mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded">
-              app/(authenticated)/(admin-auth)/administration/official-components/component-displays/{component.id}.tsx
+              app/(admin)/administration/official-components/component-displays/{component.id}.tsx
             </code>
           </AlertDescription>
         </Alert>

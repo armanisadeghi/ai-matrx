@@ -5,7 +5,7 @@ import { EntityKeys } from '@/types/entityTypes';
 import { useEntity } from "@/lib/redux/entity/hooks/useEntity";
 import SchemaSelect from "@/components/matrx/schema/ops/SchemaSelect";
 import {MatrxTableLoading} from "@/components/matrx/LoadingComponents";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 
 // Default entity key for initial hook call
 const DEFAULT_ENTITY: EntityKeys = 'systemFunction';

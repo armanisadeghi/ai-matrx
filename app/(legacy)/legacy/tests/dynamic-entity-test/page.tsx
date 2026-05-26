@@ -5,7 +5,7 @@ import { createEntitySelectors } from "@/lib/redux/entity/selectors";
 import { getEntitySlice } from "@/lib/redux/entity/entitySlice";
 import {useAppDispatch, useAppSelector} from "@/lib/redux/hooks";
 import {EntityKeys} from "@/types/entityTypes";
-import MatrxTable from "@/app/(authenticated)/tests/matrx-table/components/MatrxTable";
+import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 
 const entityKey: EntityKeys = 'registeredFunction';
 

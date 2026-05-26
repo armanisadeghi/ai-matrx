@@ -22,7 +22,7 @@ import { AppletLayoutOption } from "@/types/customAppTypes";
 import { fetchAppWithApplets } from "@/lib/redux/app-runner/thunks/appRunnerThunks";
 import { CustomAppHeader } from "@/features/applet/runner/header";
 // @ts-ignore - Module path may not exist, using dynamic import fallback
-// import LayoutSelector from "@/app/(authenticated)/apps/dynamic-layouts/[id]/LayoutSelector";
+// import LayoutSelector from "@/app/(transitional)/apps/dynamic-layouts/[id]/LayoutSelector";
 const LayoutSelector = null as any;
 
 interface AppDemoManagerProps {
