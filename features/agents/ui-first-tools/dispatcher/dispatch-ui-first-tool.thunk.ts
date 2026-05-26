@@ -7,21 +7,25 @@
  *   1. Look up the schema + handler from the registry.
  *   2. Validate args via Zod. On schema failure: POST tool_result error,
  *      mark lifecycle 'error'; do NOT throw.
- *   3. Run the handler. On throw: POST tool_result error + mark lifecycle.
- *   4. On success: POST tool_result with the handler's return value as
+ *   3. Flip the instance to `paused` — this is the honest signal that the
+ *      agent is waiting on a client-tool answer. The backend hard-suspended
+ *      and ended the stream; the /tool_results POST → resumeInstance handoff
+ *      will flip it back to `running` once the user answers.
+ *   4. Run the handler. On throw: POST tool_result error + mark lifecycle.
+ *   5. On success: POST tool_result with the handler's return value as
  *      `output`. Mark lifecycle 'completed'.
  *
  * The handler may take an arbitrary amount of time (the `user` tool waits
  * on the user clicking a button). The stream will not resume until the
- * tool_result POST lands, which is fine — the server has its own per-call
- * timeout. We don't pause the instance status; the agent simply doesn't
- * emit further chunks until the result returns.
+ * tool_result POST lands and `continuation_needed` triggers a fresh /resume
+ * stream — see features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
+import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { getUiFirstToolEntry } from "../tools/registry";
 
@@ -103,6 +107,12 @@ export const dispatchUiFirstTool = createAsyncThunk<
       );
       return;
     }
+
+    // Truthful "waiting on the user" status. Set BEFORE awaiting the handler
+    // so the instance reflects reality the moment the dispatcher takes over.
+    // For fast handlers this is briefly `paused` → `running` (resume sets
+    // running) — a single tick of flicker — which beats lying about state.
+    dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
     try {
       const result = await entry.handler.run(parsed.data, {

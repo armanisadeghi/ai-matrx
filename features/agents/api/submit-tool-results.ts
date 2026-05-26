@@ -1,6 +1,13 @@
 /**
  * submit-tool-results — client for POST /ai/conversations/{id}/tool_results.
  *
+ * This is the SINGLE FUNNEL for client tool results. Every ui-first / widget /
+ * client-delegated tool answer flows through `submitToolResult` → batcher →
+ * `postToolResults`. Do not POST to /tool_results from anywhere else (an
+ * ESLint chokepoint enforces this — see `eslint.config.mjs`); bypassing the
+ * funnel forfeits the `continuation_needed` → `resumeInstance` handoff and
+ * reintroduces the "stream never resumes after ask-user" bug.
+ *
  * Widget actions resolve fast (most are synchronous `setState` calls). When
  * the model issues several widget_* tools in one iteration they all resolve
  * in the same JS tick. To avoid racing the server's resumption logic with
@@ -11,9 +18,19 @@
  *   - On flush, we send one POST per conversationId containing every queued
  *     result (the endpoint accepts `results: ClientToolResult[]` natively).
  *
+ * The server's response includes `continuation_needed: boolean`. When `true`
+ * (the original SSE has ended — hard-suspended after delegating — and no
+ * delegated calls remain outstanding for the user_request), we dispatch
+ * `resumeInstance` to reopen the stream against `/ai/conversations/{id}/resume`.
+ * The batcher already coalesces to one POST per conversation per tick, so at
+ * most one resume fires per coalesce window.
+ *
  * A POST that returns 404 (`not_found`) is logged as a warning, not thrown —
  * the contract in CLIENT_SIDE_TOOLS.md explicitly says duplicate / expired
  * call_ids return 404 and the stream stays alive.
+ *
+ * See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md for the full
+ * suspend → submit → resume round-trip.
  */
 
 import { callApi } from "@/lib/api/call-api";
@@ -25,6 +42,7 @@ type ToolResultsDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
 import type { components } from "@/types/python-generated/api-types";
 
 type ClientToolResult = components["schemas"]["ClientToolResult"];
+type ToolResultsResponse = components["schemas"]["ToolResultsResponse"];
 
 export interface PendingToolResult extends ClientToolResult {
   conversationId: string;
@@ -71,18 +89,42 @@ function postToolResults(
       if (result.error) {
         if (result.error.status === 404) {
           // Duplicate or expired call_id(s). Stream remains alive — log only.
-          // eslint-disable-next-line no-console
           console.warn(
             "[submit-tool-results] 404 not_found — call_id(s) already resolved or expired",
             result.error,
           );
         } else {
-          // eslint-disable-next-line no-console
           console.error("[submit-tool-results] POST failed", result.error);
         }
+        return;
+      }
+
+      // Continuation handshake. When the original stream is gone (hard-suspended
+      // after delegating) AND the last outstanding client-delegated call just
+      // cleared, the server flags `continuation_needed=true` and returns the
+      // owning `user_request_id`. We reopen the agent loop against the resume
+      // endpoint — see features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
+      //
+      // When the live in-memory waiter on the originating stream picked up the
+      // result, `continuation_needed=false` and the existing stream keeps
+      // streaming under us — we do nothing.
+      const data = result.data as ToolResultsResponse | undefined;
+      if (data?.continuation_needed && data.user_request_id) {
+        // Dynamic import breaks the would-be cycle:
+        // submit-tool-results → resume-instance → run-ai-stream → process-stream
+        //   → dispatch-ui-first-tool → submit-tool-results.
+        // executeInstance uses the same pattern for cache-bypass + clearUserInput.
+        const { resumeInstance } = await import(
+          "@/features/agents/redux/execution-system/thunks/resume-instance.thunk"
+        );
+        void dispatch(
+          resumeInstance({
+            conversationId,
+            userRequestId: data.user_request_id,
+          }),
+        );
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error("[submit-tool-results] unexpected error", e);
     }
   };

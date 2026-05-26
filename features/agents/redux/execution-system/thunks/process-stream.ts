@@ -1357,7 +1357,17 @@ export async function processStream({
       const currentRequest = currentState.activeRequests.byRequestId[requestId];
       if (currentRequest?.status !== "error") {
         dispatch(setRequestStatus({ requestId, status: "complete" }));
-        dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+        // Don't overwrite a `paused` instance — the backend hard-suspends and
+        // ends the stream when a client-tool is pending, but the instance is
+        // genuinely still waiting on the user. The /tool_results POST →
+        // resumeInstance handoff flips it back to "running". Keeping the
+        // REQUEST at "complete" is correct (this stream did end); the INSTANCE
+        // tracks the conversation lifecycle, which is still mid-flight.
+        const instStatus =
+          currentState.conversations.byConversationId[conversationId]?.status;
+        if (instStatus !== "paused") {
+          dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+        }
 
         // Widget handle lifecycle: fire onComplete at stream end (success
         // path only). Fires for EVERY display mode — the previous call site
@@ -1532,7 +1542,14 @@ export async function processStream({
     postLoopRequest.status !== "error"
   ) {
     dispatch(setRequestStatus({ requestId, status: "complete" }));
-    dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+    // Same guard as the isEndEvent branch above — don't overwrite a `paused`
+    // instance that ended because the loop hard-suspended awaiting a client
+    // tool answer (see CLIENT_TOOL_SUSPEND_RESUME.md).
+    const postLoopInstStatus =
+      postLoopState.conversations.byConversationId[conversationId]?.status;
+    if (postLoopInstStatus !== "paused") {
+      dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+    }
   }
 
   const streamEndAt = performance.now();

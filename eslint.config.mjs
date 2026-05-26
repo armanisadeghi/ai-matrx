@@ -286,6 +286,33 @@ const scopesChokepointSyntaxRestrictions = [
     },
 ];
 
+// Client tool results MUST be posted through @/features/agents/api/submit-tool-results
+// (the `submitToolResult` thunk → microtask batcher → `postToolResults`). That
+// funnel intrinsically reads `continuation_needed` on the response and fires
+// `resumeInstance` against /ai/conversations/{id}/resume so the agent loop
+// continues after the backend's hard-suspend (`_suspend_for_delegation`).
+//
+// Any direct POST to /tool_results from anywhere else skips the resume handoff
+// and reintroduces the "user submits an ask-user answer → nothing happens" bug.
+//
+// The selectors catch:
+//   - `path: "/ai/conversations/{conversation_id}/tool_results"` (callApi)
+//   - `` `${baseUrl}/ai/conversations/${id}/tool_results` `` (raw fetch)
+//   - `"/tool_results"` string concatenation
+// See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
+const toolResultsChokepointSyntaxRestrictions = [
+    {
+        selector: "Literal[value=/\\/tool_results$/]",
+        message:
+            "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @/features/agents/api/submit-tool-results, which is the single funnel that fires the continuation_needed → resumeInstance handoff. Bypassing it reintroduces the 'stream never resumes after ask-user' bug. See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.",
+    },
+    {
+        selector: "TemplateElement[value.raw=/\\/tool_results/]",
+        message:
+            "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @/features/agents/api/submit-tool-results. See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.",
+    },
+];
+
 // All file flows must funnel through @/features/files. ESLint cannot
 // fully prevent direct supabase.storage member access (no AST rule for that
 // without a custom plugin), but `no-restricted-syntax` catches the canonical
@@ -438,6 +465,8 @@ export default [
                 ...fileHandlerSyntaxRestrictions,
                 // features/scopes chokepoint — only scopesService.ts may touch ctx_* tables.
                 ...scopesChokepointSyntaxRestrictions,
+                // features/agents tool-results chokepoint — only submit-tool-results.ts may POST /tool_results.
+                ...toolResultsChokepointSyntaxRestrictions,
             ],
         },
     },
@@ -465,6 +494,7 @@ export default [
                 ...legacySupabaseKeyBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
                 {
                     selector:
                         "CallExpression[callee.property.name=/^(filter|some)$/]:has(CallExpression[callee.name=/^getControl/])",
@@ -594,6 +624,31 @@ export default [
                 ...legacySupabaseKeyBan,
                 ...fileHandlerSyntaxRestrictions,
                 // scopesChokepointSyntaxRestrictions intentionally omitted.
+                ...toolResultsChokepointSyntaxRestrictions,
+            ],
+        },
+    },
+    // ─── features/agents tool-results chokepoint allowlist ────────────
+    //
+    // submit-tool-results.ts IS the funnel that owns the
+    // continuation_needed → resumeInstance handoff. It's the only file
+    // allowed to construct the /tool_results endpoint string. This override
+    // re-lists the OTHER global bans (flat-config replaces the array per
+    // file rather than merging — see eslint.config.mjs gotcha comments
+    // throughout this file) so all other chokepoints remain enforced here.
+    //
+    // Adding any other file to this list is a Doctrine violation —
+    // bypassing the funnel forfeits the resume handoff. See
+    // features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
+    {
+        files: ['features/agents/api/submit-tool-results.ts'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                // toolResultsChokepointSyntaxRestrictions intentionally omitted.
             ],
         },
     },

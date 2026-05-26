@@ -31,10 +31,18 @@
  * suspend→submit→resume round-trip this runner powers.
  */
 
-import type { ThunkDispatch } from "redux-thunk";
-import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { toast } from "sonner";
+
+/**
+ * Loose dispatch type that matches whatever `createAsyncThunk` hands us at the
+ * call site — RTK doesn't infer the full RootState into a thunk's dispatch
+ * generic, so a tight `AppDispatch` is incompatible. This file only ever
+ * dispatches plain action creators (no thunk results consumed), so the loose
+ * shape doesn't lose anything. Mirrors `processStream`'s `dispatch: (action:
+ * unknown) => unknown` for consistency.
+ */
+export type StreamDispatch = (action: unknown) => unknown;
 
 import { processStream } from "./process-stream";
 import type { JsonExtractionConfig } from "./process-stream";
@@ -100,7 +108,7 @@ export interface RunAiStreamArgs {
   body: Record<string, unknown>;
   /** Backend channel resolved by the caller; recorded for telemetry. */
   channel: BackendChannel;
-  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>;
+  dispatch: StreamDispatch;
   getState: () => RootState;
   /** `performance.now()` at the true submit moment (t=0 for client timing). */
   submitAt: number;
