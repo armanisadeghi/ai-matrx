@@ -41,6 +41,14 @@ export type HistoryStatus =
 export interface ConversationHistoryScopeState {
   /** Agent ids whose conversations should appear in this scope. Empty = all. */
   agentIds: string[];
+  /**
+   * `cx_conversation.source_feature` values to hide from this scope.
+   * Empty = no filtering. Used by `/chat` to hide voice-agent transcripts
+   * (`source_feature='voice-agent'`) from the text-chat history — they
+   * render incorrectly in the chat conversation view and live on a future
+   * dedicated voice-history surface.
+   */
+  excludeSourceFeatures: string[];
   /** Typed-in filter (client-side filter over fetched items). */
   searchTerm: string;
   /** Active grouping. */
@@ -70,6 +78,7 @@ export interface ConversationHistoryState {
 /** Default state shape for a new scope. */
 export const defaultScopeState: ConversationHistoryScopeState = {
   agentIds: [],
+  excludeSourceFeatures: [],
   searchTerm: "",
   grouping: "date",
   pageSize: 30,
