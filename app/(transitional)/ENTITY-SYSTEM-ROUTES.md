@@ -12,14 +12,14 @@
 
 | Route | Layout file | Reason | Date added |
 |-------|------------|--------|------------|
-| `/entity-crud/**` | `app/(authenticated)/entity-crud/layout.tsx` | Core entity CRUD UI — EntityDirectory, EntityRecordServerWrapper, useQuickReference | 2026-03-23 |
-| `/entities/**` | `app/(authenticated)/entities/layout.tsx` | Entity admin — EntityDirectory, ArmaniLayout in EntityPageClient | 2026-03-23 |
-| `/workflow-entity/**` | `app/(authenticated)/workflow-entity/layout.tsx` | Entity-backed workflow — ArmaniLayout | 2026-03-23 |
-| `/chat/**` | `app/(authenticated)/chat/ChatLayoutClient.tsx` | Chat uses createChatSelectors, getChatActionsWithThunks for conversation/message entity state | 2026-03-23 |
-| `/admin/**` | `app/(authenticated)/admin/layout.tsx` | Entity Testing Lab, Entity Browser tabs — useEntity, useQuickReference, createEntitySelectors | 2026-03-23 |
-| `/tests/**` | `app/(authenticated)/tests/layout.tsx` | Multiple entity test pages — MergedEntityLayout, SingleEntityLayout, useEntity, entity JSON builders | 2026-03-23 |
-| `/demo/**` | `app/(authenticated)/demo/layout.tsx` | Many-to-many UI demos, entity select demos — useCreateManyToMany, entity options | 2026-03-23 |
-| `/workflows/**` | `app/(authenticated)/workflows/WorkflowsLayoutClient.tsx` | useCombinedFunctionsWithArgs → useRegisteredFunctionWithFetch → useEntityWithFetch → useEntitySelectors → getEntitySlice | 2026-04-25 |
+| `/legacy/entity-crud/**` | `app/(legacy)/legacy/entity-crud/layout.tsx` | Core entity CRUD UI — EntityDirectory, EntityRecordServerWrapper, useQuickReference | 2026-03-23 |
+| `/legacy/entity-admin/**` | `app/(legacy)/legacy/entity-admin/layout.tsx` | Entity admin — EntityDirectory, ArmaniLayout in EntityPageClient | 2026-03-23 |
+| `/legacy/workflow-entity/**` | `app/(legacy)/legacy/workflow-entity/layout.tsx` | Entity-backed workflow — ArmaniLayout | 2026-03-23 |
+| `/chat/**` | `app/(core)/chat/ChatLayoutClient.tsx` | Chat uses createChatSelectors, getChatActionsWithThunks for conversation/message entity state | 2026-03-23 |
+| `/admin/**` | `app/(transitional)/admin/layout.tsx` | Entity Testing Lab, Entity Browser tabs — useEntity, useQuickReference, createEntitySelectors. Moved to (transitional) 2026-05-26. | 2026-03-23 |
+| `/demos/tests/**` | `app/(dev)/demos/tests/layout.tsx` | Multiple entity test pages — MergedEntityLayout, SingleEntityLayout, useEntity, entity JSON builders. Moved + URL changed 2026-05-26 (was `/tests/**`). | 2026-03-23 |
+| `/demos/general/**` | `app/(dev)/demos/general/layout.tsx` | Many-to-many UI demos, entity select demos — useCreateManyToMany, entity options. Moved + URL changed 2026-05-26 (was `/demo/**`). | 2026-03-23 |
+| `/legacy/workflows/**` | `app/(legacy)/legacy/workflows/WorkflowsLayoutClient.tsx` | useCombinedFunctionsWithArgs → useRegisteredFunctionWithFetch → useEntityWithFetch → useEntitySelectors → getEntitySlice | 2026-04-25 |
 
 ---
 
@@ -67,5 +67,5 @@ These providers depend on the entity system and now only render inside entity ro
 
 ---
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-05-26 (route-group reorg: (a)→(core), (authenticated)→(transitional)+(dev)/demos, admin extracted to (admin))*
 *Reference audit: docs/entities-slice-route-audit.md*

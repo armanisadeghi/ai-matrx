@@ -142,10 +142,12 @@ const nextConfig = {
             // /deprecated/chat moved to /legacy/chat (the "deprecated" prefix dropped)
             { source: '/deprecated/chat/:path*', destination: '/legacy/chat/:path*', permanent: false },
             { source: '/deprecated/chat', destination: '/legacy/chat', permanent: false },
-            // Surgical subroute moves: /admin, /tests, /demo stay slim. ONLY
-            // the entity-using subfolders that ACTUALLY have URL routes moved
-            // to /legacy/*. (admin/components is a helper folder, not URL routes,
-            // so it stays under /admin entirely.)
+            // Surgical subroute moves: entity-using test subfolders that
+            // ACTUALLY had URL routes were moved to /legacy/* during the
+            // entity-isolation work. The remaining /tests/* and /demo/* paths
+            // now redirect to the consolidated /demos/* prefix (see the
+            // 2026-05-26 block below). These per-subfolder /legacy/* redirects
+            // must remain ABOVE that catch-all so the more-specific match wins.
             { source: '/tests/advanced-data-table/:path*', destination: '/legacy/tests/advanced-data-table/:path*', permanent: false },
             { source: '/tests/advanced-data-table', destination: '/legacy/tests/advanced-data-table', permanent: false },
             { source: '/tests/dynamic-entity-test/:path*', destination: '/legacy/tests/dynamic-entity-test/:path*', permanent: false },
@@ -166,6 +168,54 @@ const nextConfig = {
             // moved under /legacy/administration so it boots through the entity store/providers.
             { source: '/administration/schema-manager/:path*', destination: '/legacy/administration/schema-manager/:path*', permanent: false },
             { source: '/administration/schema-manager', destination: '/legacy/administration/schema-manager', permanent: false },
+            // 2026-05-26: Route-group reorganization. All internal demo / test /
+            // experimental surfaces consolidated under a single /demos/* URL
+            // prefix served from (dev) (auth-required) and (public-demos)
+            // (no auth). Originals lived in (authenticated)/tests, (authenticated)/demo,
+            // (authenticated)/settings-*-demo, (authenticated)/layout-tests,
+            // (authenticated)/dynamic-imports, (authenticated)/lists-junk,
+            // (authenticated)/lists-explorer, (authenticated)/preview,
+            // (public)/demos, (public)/google-auth-demo. 307 for now so we can
+            // promote to 308 once internal links are audited.
+            //
+            // IMPORTANT: these are ordered AFTER the entity-isolation redirects
+            // above so the more-specific /tests/advanced-data-table → /legacy/...
+            // moves win before the catch-all /tests/:path* lands here.
+            { source: '/tests/:path*', destination: '/demos/tests/:path*', permanent: false },
+            { source: '/tests', destination: '/demos/tests', permanent: false },
+            { source: '/demo/:path*', destination: '/demos/general/:path*', permanent: false },
+            { source: '/demo', destination: '/demos/general', permanent: false },
+            { source: '/settings-hooks-demo', destination: '/demos/settings-hooks', permanent: false },
+            { source: '/settings-primitives', destination: '/demos/settings-primitives', permanent: false },
+            { source: '/settings-shell-demo', destination: '/demos/settings-shell', permanent: false },
+            { source: '/settings-tree-demo', destination: '/demos/settings-tree', permanent: false },
+            { source: '/layout-tests/:path*', destination: '/demos/layout-tests/:path*', permanent: false },
+            { source: '/layout-tests', destination: '/demos/layout-tests', permanent: false },
+            { source: '/dynamic-imports/:path*', destination: '/demos/dynamic-imports/:path*', permanent: false },
+            { source: '/dynamic-imports', destination: '/demos/dynamic-imports', permanent: false },
+            { source: '/lists-junk/:path*', destination: '/demos/lists-junk/:path*', permanent: false },
+            { source: '/lists-junk', destination: '/demos/lists-junk', permanent: false },
+            { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
+            { source: '/preview', destination: '/demos/preview', permanent: false },
+            { source: '/google-auth-demo', destination: '/demos/google-auth', permanent: false },
+            // Public demos that used to live at /demos/* (under (public)/demos)
+            // shifted one segment deeper to /demos/public/* so the internal
+            // (dev) demos and external public showcase share the prefix without
+            // colliding. Each enumerated by old sub-path; redirects are
+            // intentionally ordered AFTER the /demos/api-tests-style explicit
+            // sub-path redirects above so the more specific entries win.
+            { source: '/demos/api-tests/:path*', destination: '/demos/public/api-tests/:path*', permanent: false },
+            { source: '/demos/api-tests', destination: '/demos/public/api-tests', permanent: false },
+            { source: '/demos/color-test/:path*', destination: '/demos/public/color-test/:path*', permanent: false },
+            { source: '/demos/color-test', destination: '/demos/public/color-test', permanent: false },
+            { source: '/demos/feature-tests/:path*', destination: '/demos/public/feature-tests/:path*', permanent: false },
+            { source: '/demos/feature-tests', destination: '/demos/public/feature-tests', permanent: false },
+            { source: '/demos/local-tools/:path*', destination: '/demos/public/local-tools/:path*', permanent: false },
+            { source: '/demos/local-tools', destination: '/demos/public/local-tools', permanent: false },
+            { source: '/demos/overlay-instances/:path*', destination: '/demos/public/overlay-instances/:path*', permanent: false },
+            { source: '/demos/overlay-instances', destination: '/demos/public/overlay-instances', permanent: false },
+            { source: '/demos/scraper/:path*', destination: '/demos/public/scraper/:path*', permanent: false },
+            { source: '/demos/scraper', destination: '/demos/public/scraper', permanent: false },
         ];
     },
     async rewrites() {

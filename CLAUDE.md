@@ -73,11 +73,34 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 - General: `/components`, `/hooks`, `/utils`, `/constants`, `/types`, `/providers`.
 - Features: `/features/[name]/` with `types.ts`, `components/`, `hooks/`, `service.ts`, `utils.ts`, `constants.ts`, `state/` (or `redux/`).
-- Route → feature: `app/(authenticated)/notes/page.tsx` → `features/notes/`.
+- Route → feature: `app/(core)/notes/page.tsx` → `features/notes/`.
 - Never write to project root. One `README.md` per feature, only after the code is tested.
 - **Barrel files (`index.ts` re-exports) are being eliminated.** Don't create new ones. Import from source. ESLint enforces. Replace existing barrels opportunistically when editing a file.
 
 **Do not invent new top-level features.** A feature is a big, distinct piece of app functionality, usually with multiple routes. Introducing one is the user's call, not yours. Default to extending an existing feature; if a new feature seems genuinely warranted, ask first.
+
+### Route groups — the four buckets (2026-05-26 reorganization)
+
+The `app/` tree is split into clearly-purposed route groups. **Agents working on the core product should default to ignoring `(transitional)`, `(legacy)`, `(ssr)`, and `(dev)` unless the task explicitly involves them.** When in doubt, work in `(core)` and ask before touching the others.
+
+| Group | Purpose | URL prefix | Build profile |
+|---|---|---|---|
+| `app/(core)/` | **Production main app.** Slim modern shell, no entity system. Where new core work goes. | various (`/chat`, `/agents`, `/files`, `/notes`, etc.) | always |
+| `app/(admin)/` | **Production admin.** Super-admin gated at the layout level. | `/administration/*` | always |
+| `app/(transitional)/` | **On the way in or on the way out.** Routes that have been (or will be) replaced by surfaces in `(core)` but aren't ready to delete. Ships in production, lower priority for new work. | `/apps`, `/dashboard`, `/settings`, `/flash-cards`, `/prompt-apps`, `/news`, `/scraper`, `/projects`, `/applets`, `/ai`, `/admin` (old), `/agent-lists`, `/registered-results`, `/local`, `/flashcard` | always |
+| `app/(legacy)/` | **Entity-bound legacy.** Top-level group with its own `EntityProviders` store (full entity system). Sibling of `(transitional)`. | `/legacy/*` | always |
+| `app/(ssr)/` | **SSR shell experiment.** Top-level group with its own `LiteStoreProvider` + glass shell. Sibling of `(transitional)`. | `/ssr/*` | always |
+| `app/(dev)/` | **All internal demos / tests / experimental surfaces.** Auth-required. Consolidated under one URL prefix. Excluded from the prod-core build in Phase 2 via `MATRX_PROFILE`. | `/demos/*` (everything: tests, general, settings-*, layout-tests, dynamic-imports, lists-junk, lists-explorer, preview, google-auth) | `full` only (Phase 2) |
+| `app/(public-demos)/` | **Public showcase demos.** Same `/demos/*` URL space as `(dev)`, but no auth. Routes that used to live at `(public)/demos/*`. | `/demos/public/*` | always |
+| `app/(public)/` | Production marketing / legal / share / education / canvas. | various (`/legal`, `/share`, `/p`, `/education`, etc.) | always |
+| `app/(auth-pages)/` | Login / signup / forgot-password / etc. | `/login`, `/sign-up`, etc. | always |
+| `app/(popup)/` | OAuth popup chrome. | `/popup-window/*` | always |
+
+**The "transitional family"** is `(transitional)` + `(legacy)` + `(ssr)`. Conceptually one bucket (routes on their way in or out); three groups only because each boots a different Redux store. Agents can treat them as one logical area when scoping work.
+
+**Phase 2 build gate (not yet active):** `next.config.js` will read `MATRX_PROFILE=core|full`. When `core`, `pageExtensions` excludes `*.dev.tsx`, eliminating `(dev)` routes from the production-core build. Public demos under `(public-demos)` use plain `*.tsx` and stay in every build.
+
+**URL redirects** for the `/demos/*` consolidation are in `next.config.js` (`/tests/* → /demos/tests/*`, `/demo/* → /demos/general/*`, `/settings-*-demo → /demos/settings-*`, etc.) so existing bookmarks and external links continue to resolve.
 
 ---
 
@@ -209,7 +232,7 @@ Cross-project issue tracker.
 
 ## Official Component Library
 
-- Components: `components/official/` · Demos: `app/(authenticated)/admin/official-components/component-displays/` · Registry: `app/(authenticated)/admin/official-components/parts/component-list.tsx`
+- Components: `components/official/` · Demos: `app/(admin)/administration/official-components/component-displays/` · Registry: `app/(admin)/administration/official-components/parts/component-list.tsx`
 - Must work on import — no local restyling.
 - Never delete existing components.
 
