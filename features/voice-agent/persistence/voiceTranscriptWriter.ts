@@ -188,6 +188,7 @@ export async function finalizeConversation(
 
   const voiceMeta: Record<string, Json> = {
     provider: PERSISTENCE_PROVIDER,
+    model: XAI_MODEL_ID,
     voice_id: opts.voiceId,
     tools_enabled: opts.tools,
     region: PERSISTENCE_REGION,

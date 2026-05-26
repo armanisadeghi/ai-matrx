@@ -59,8 +59,8 @@ standard chat surface and embedded agent apps.
 - `cx_conversation` — one row per voice session.
   - `source_app = 'chat'`, `source_feature = 'voice-agent'` — discriminator (keeps voice in same history as text chat).
   - `system_instruction` — the agent prompt.
-  - `last_model_id = 'grok-voice-latest'`.
-  - `metadata.voice = {provider, voice_id, tools_enabled, region, preset, total_turns, total_interruptions, latency_p50_ms, latency_p95_ms}`.
+  - **`last_model_id` is intentionally left `null`** — that column is a UUID FK to `ai_model.id` and xAI Realtime models are not registered there. The model slug (`grok-voice-latest`) lives in `metadata.voice.model` instead.
+  - `metadata.voice = {provider, model, voice_id, tools_enabled, region, preset, total_turns, total_interruptions, latency_p50_ms, latency_p95_ms}`.
   - `overrides.tools = [...]` — playground tool selections.
   - Standard `user_id` ownership + existing RLS.
 - `cx_message` — one row per turn.
