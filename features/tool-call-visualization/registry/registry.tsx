@@ -8,6 +8,7 @@ import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 
 import type {
   ToolOverlayTabSpec,
+  ToolPhaseLabels,
   ToolRegistry,
   ToolRenderer,
   ToolRendererProps,
@@ -145,6 +146,11 @@ export const toolRendererRegistry: ToolRegistry = {
   web_search: {
     toolName: "web_search",
     displayName: "Web Search",
+    phaseLabels: {
+      running: "Searching the web",
+      complete: "Searched the web",
+      errorPrefix: "Web search failed",
+    },
     resultsLabel: "Search Results",
     InlineComponent: BraveSearchInline,
     OverlayComponent: (props: ToolRendererProps) => {
@@ -162,6 +168,11 @@ export const toolRendererRegistry: ToolRegistry = {
   news_get_headlines: {
     toolName: "news_get_headlines",
     displayName: "News Headlines",
+    phaseLabels: {
+      running: "Fetching news headlines",
+      complete: "Fetched news headlines",
+      errorPrefix: "Failed to fetch news",
+    },
     resultsLabel: "News Results",
     InlineComponent: NewsInline,
     OverlayComponent: NewsOverlay,
@@ -190,6 +201,11 @@ export const toolRendererRegistry: ToolRegistry = {
   seo_check_meta_tags_batch: {
     toolName: "seo_check_meta_tags_batch",
     displayName: "SEO Meta Tags",
+    phaseLabels: {
+      running: "Checking SEO meta tags",
+      complete: "Checked SEO meta tags",
+      errorPrefix: "SEO meta-tag check failed",
+    },
     resultsLabel: "Meta Tags Results",
     InlineComponent: SeoMetaTagsInline,
     OverlayComponent: SeoMetaTagsOverlay,
@@ -200,6 +216,11 @@ export const toolRendererRegistry: ToolRegistry = {
   seo_check_meta_titles: {
     toolName: "seo_check_meta_titles",
     displayName: "SEO Title Checker",
+    phaseLabels: {
+      running: "Checking SEO titles",
+      complete: "Checked SEO titles",
+      errorPrefix: "SEO title check failed",
+    },
     resultsLabel: "Title Results",
     InlineComponent: SeoMetaTitlesInline,
     keepExpandedOnStream: true,
@@ -209,6 +230,11 @@ export const toolRendererRegistry: ToolRegistry = {
   seo_check_meta_descriptions: {
     toolName: "seo_check_meta_descriptions",
     displayName: "SEO Description Checker",
+    phaseLabels: {
+      running: "Checking SEO descriptions",
+      complete: "Checked SEO descriptions",
+      errorPrefix: "SEO description check failed",
+    },
     resultsLabel: "Description Results",
     InlineComponent: SeoMetaDescriptionsInline,
     keepExpandedOnStream: true,
@@ -218,6 +244,11 @@ export const toolRendererRegistry: ToolRegistry = {
   web_search_v1: {
     toolName: "web_search_v1",
     displayName: "Web Research",
+    phaseLabels: {
+      running: "Researching the web",
+      complete: "Researched the web",
+      errorPrefix: "Web research failed",
+    },
     resultsLabel: "Research Results",
     InlineComponent: WebResearchInline,
     OverlayComponent: WebResearchOverlay,
@@ -268,6 +299,11 @@ export const toolRendererRegistry: ToolRegistry = {
   core_web_search: {
     toolName: "core_web_search",
     displayName: "Multi-Query Search",
+    phaseLabels: {
+      running: "Running multi-query search",
+      complete: "Ran multi-query search",
+      errorPrefix: "Multi-query search failed",
+    },
     resultsLabel: "Search Results",
     InlineComponent: CoreWebSearchInline,
     OverlayComponent: CoreWebSearchOverlay,
@@ -277,6 +313,11 @@ export const toolRendererRegistry: ToolRegistry = {
   research_web: {
     toolName: "research_web",
     displayName: "Deep Research",
+    phaseLabels: {
+      running: "Researching",
+      complete: "Researched",
+      errorPrefix: "Research failed",
+    },
     resultsLabel: "Research Results",
     InlineComponent: DeepResearchInline,
     OverlayTabs: deepResearchOverlayTabs,
@@ -303,6 +344,11 @@ export const toolRendererRegistry: ToolRegistry = {
   core_web_search_and_read: {
     toolName: "core_web_search_and_read",
     displayName: "Deep Research",
+    phaseLabels: {
+      running: "Researching",
+      complete: "Researched",
+      errorPrefix: "Research failed",
+    },
     resultsLabel: "Research Results",
     InlineComponent: DeepResearchInline,
     OverlayTabs: deepResearchOverlayTabs,
@@ -329,6 +375,11 @@ export const toolRendererRegistry: ToolRegistry = {
   get_user_lists: {
     toolName: "get_user_lists",
     displayName: "User Lists",
+    phaseLabels: {
+      running: "Loading user lists",
+      complete: "Loaded user lists",
+      errorPrefix: "Failed to load user lists",
+    },
     resultsLabel: "Lists",
     InlineComponent: UserListsInline,
     OverlayComponent: UserListsOverlay,
@@ -361,6 +412,11 @@ export const toolRendererRegistry: ToolRegistry = {
   core_web_read_web_pages: {
     toolName: "core_web_read_web_pages",
     displayName: "Web Page Reader",
+    phaseLabels: {
+      running: "Reading web pages",
+      complete: "Read web pages",
+      errorPrefix: "Failed to read web pages",
+    },
     resultsLabel: "Pages Read",
     InlineComponent: DeepResearchInline,
     OverlayTabs: deepResearchOverlayTabs,
@@ -493,6 +549,118 @@ export function getToolDisplayName(toolName: string | null): string {
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase labels — verb-phrase text shown on the slim collapsed row.
+//
+// The shell does NOT render a status icon (no green check / red X / blue
+// spinner). State is conveyed by tense: "Updating plan" while in flight,
+// "Updated plan" once done, "Failed to update plan: <reason>" on error.
+// The shimmer treatment on the running form supplies the motion cue.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Fallback labels for common widget / built-in tools that aren't in the
+ * static registry. Keyed by toolName first, then by displayName as a
+ * last-resort match for tools whose toolName we don't recognize but whose
+ * displayName we do (e.g. the agent harness's "Tasks" widget).
+ */
+const FALLBACK_PHASE_LABELS_BY_TOOLNAME: Record<string, ToolPhaseLabels> = {
+  update_plan: {
+    running: "Updating plan",
+    complete: "Updated plan",
+    errorPrefix: "Failed to update plan",
+  },
+  update_plan_tasks: {
+    running: "Updating tasks",
+    complete: "Updated tasks",
+    errorPrefix: "Failed to update tasks",
+  },
+  set_tasks: {
+    running: "Updating tasks",
+    complete: "Updated tasks",
+    errorPrefix: "Failed to update tasks",
+  },
+};
+
+const FALLBACK_PHASE_LABELS_BY_DISPLAYNAME: Record<string, ToolPhaseLabels> = {
+  "Update Plan": {
+    running: "Updating plan",
+    complete: "Updated plan",
+    errorPrefix: "Failed to update plan",
+  },
+  Tasks: {
+    running: "Updating tasks",
+    complete: "Updated tasks",
+    errorPrefix: "Failed to update tasks",
+  },
+};
+
+function formatPhaseLabel(
+  labels: ToolPhaseLabels,
+  phase: "starting" | "processing" | "complete" | "error",
+  errorMessage?: string | null,
+): string {
+  if (phase === "error") {
+    const prefix = labels.errorPrefix ?? `${labels.complete} failed`;
+    return errorMessage ? `${prefix}: ${errorMessage}` : prefix;
+  }
+  if (phase === "complete") return labels.complete;
+  return labels.running;
+}
+
+/**
+ * Resolve the verb-phrase label for a tool's slim row.
+ *
+ * Resolution order:
+ *   1. Static registry entry's `phaseLabels` — the most specific, hand-written.
+ *   2. Dynamic (DB-stored) renderer's `phaseLabels`.
+ *   3. Fallback map by `toolName` (covers widget tools not in the registry).
+ *   4. Fallback map by `displayName` (covers tools whose toolName varies but
+ *      whose surface label is known — e.g. the "Tasks" widget).
+ *   5. Plain displayName with a `failed: <message>` suffix on error.
+ */
+export function getToolPhaseLabel(
+  toolName: string | null,
+  displayName: string,
+  phase: "starting" | "processing" | "complete" | "error",
+  errorMessage?: string | null,
+): string {
+  if (toolName) {
+    const reg = toolRendererRegistry[toolName];
+    if (reg?.phaseLabels) {
+      return formatPhaseLabel(reg.phaseLabels, phase, errorMessage);
+    }
+    const dynamic = getCachedRenderer(toolName);
+    if (dynamic && (dynamic as { phaseLabels?: ToolPhaseLabels }).phaseLabels) {
+      return formatPhaseLabel(
+        (dynamic as { phaseLabels: ToolPhaseLabels }).phaseLabels,
+        phase,
+        errorMessage,
+      );
+    }
+    if (FALLBACK_PHASE_LABELS_BY_TOOLNAME[toolName]) {
+      return formatPhaseLabel(
+        FALLBACK_PHASE_LABELS_BY_TOOLNAME[toolName],
+        phase,
+        errorMessage,
+      );
+    }
+  }
+  if (FALLBACK_PHASE_LABELS_BY_DISPLAYNAME[displayName]) {
+    return formatPhaseLabel(
+      FALLBACK_PHASE_LABELS_BY_DISPLAYNAME[displayName],
+      phase,
+      errorMessage,
+    );
+  }
+  if (phase === "error") {
+    return errorMessage
+      ? `${displayName} failed: ${errorMessage}`
+      : `${displayName} failed`;
+  }
+  return displayName;
 }
 
 export function getResultsLabel(toolName: string | null): string {

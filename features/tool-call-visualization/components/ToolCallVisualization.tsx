@@ -17,11 +17,8 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  AlertCircle,
-  CheckCircle,
   ChevronDown,
   ChevronUp,
-  Loader2,
   Maximize2,
   PanelRightOpen,
 } from "lucide-react";
@@ -35,6 +32,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import {
   getInlineRenderer,
   getToolDisplayName,
+  getToolPhaseLabel,
   hasCustomRenderer,
   shouldKeepExpandedOnStream,
 } from "../registry/registry";
@@ -138,14 +136,23 @@ const ToolCallVisualizationInner: React.FC<{
     return null;
   })();
 
-  // The one-line message: what failed, what's happening, or what it ran.
-  const headerSecondary: string | null = !headerTool
-    ? null
-    : phase === "error"
-      ? (headerTool.errorMessage ?? "Failed")
-      : phase !== "complete"
-        ? (headerTool.latestMessage ?? headerSubtitle)
-        : headerSubtitle;
+  // The verb-phrase label that explains what happened. Status is conveyed by
+  // tense ("Updating plan" while running -> "Updated plan" complete -> "Failed
+  // to update plan: <reason>" on error), not by a status icon. Per-tool labels
+  // live in the registry; common widget tools have built-in fallbacks; the
+  // rest fall back to the displayName as-is.
+  const phaseLabel = getToolPhaseLabel(
+    headerTool?.toolName ?? null,
+    toolDisplayName,
+    phase,
+    headerTool?.errorMessage ?? null,
+  );
+
+  // Query subtitle (e.g. "AI lawyers" for a search) — kept ONLY when it adds
+  // information that the verb-phrase label doesn't already convey. Dropped
+  // entirely on error (the error reason is already in the main label).
+  const querySubtitle: string | null =
+    phase === "error" ? null : headerSubtitle;
 
   if (entries.length === 0) return null;
 
@@ -200,43 +207,35 @@ const ToolCallVisualizationInner: React.FC<{
           isExpanded && "border-b border-border/40",
         )}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          {phase === "error" ? (
-            <AlertCircle className="h-3 w-3 shrink-0 text-red-600 dark:text-red-400" />
-          ) : phase === "complete" ? (
-            <CheckCircle className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          ) : (
-            <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500 dark:text-blue-400" />
-          )}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {/* Verb-phrase label. Tense conveys state — no status icon. The
+              shimmer treatment on the running form supplies the motion cue. */}
           {phase === "processing" || phase === "starting" ? (
-            // Running: gradient sweep across the name + message so the row
-            // visibly works. Spinner + shimmer together kill the "is it stuck?"
-            // feeling without adding a heavy box or progress bar.
             <ShimmerText
-              text={toolDisplayName}
+              text={phaseLabel}
               className="truncate text-xs font-medium"
             />
           ) : (
-            <span className="truncate text-xs font-medium text-foreground">
-              {toolDisplayName}
+            <span
+              className={cn(
+                "truncate text-xs font-medium",
+                phase === "error"
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-foreground",
+              )}
+            >
+              {phaseLabel}
             </span>
           )}
-          {headerSecondary &&
+          {querySubtitle &&
             (phase === "processing" || phase === "starting" ? (
               <ShimmerText
-                text={`· ${headerSecondary}`}
+                text={`· ${querySubtitle}`}
                 className="truncate text-xs"
               />
             ) : (
-              <span
-                className={cn(
-                  "truncate text-xs",
-                  phase === "error"
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-muted-foreground",
-                )}
-              >
-                · {headerSecondary}
+              <span className="truncate text-xs text-muted-foreground">
+                · {querySubtitle}
               </span>
             ))}
         </div>

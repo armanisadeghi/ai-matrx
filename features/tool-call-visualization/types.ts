@@ -90,6 +90,25 @@ export interface ToolOverlayTabSpec {
 }
 
 /**
+ * Verb-phrase labels for the slim collapsed row. Status is conveyed by
+ * tense (running -> -ing form; complete -> past tense), not by a status
+ * icon — so the row reads like a transcript line ("Updated plan") rather
+ * than a generic chip with a green check.
+ *
+ * The shimmer treatment runs on the running label; the complete label is
+ * static. Errors use `errorPrefix` (falls back to `${complete} failed`)
+ * and append the entry's `errorMessage` after a colon when present.
+ */
+export interface ToolPhaseLabels {
+  /** Present-continuous form shown while the tool is in flight. */
+  running: string;
+  /** Past-tense form shown once the tool completes successfully. */
+  complete: string;
+  /** Prefix shown on error. Defaults to `${complete} failed`. */
+  errorPrefix?: string;
+}
+
+/**
  * Static registry entry for a tool.
  */
 export interface ToolRenderer {
@@ -98,6 +117,13 @@ export interface ToolRenderer {
 
   /** Human-readable display name. */
   displayName: string;
+
+  /**
+   * Optional verb-phrase labels for the slim row. When omitted, the shell
+   * falls back to a small built-in map (for common widget tools) and then
+   * to `displayName` as-is.
+   */
+  phaseLabels?: ToolPhaseLabels;
 
   /** Custom label for the results/output tab in the overlay. */
   resultsLabel?: string;
