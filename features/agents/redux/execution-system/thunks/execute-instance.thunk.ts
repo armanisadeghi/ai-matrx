@@ -44,18 +44,18 @@ import {
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { resolveBackendForConversation } from "./resolve-base-url";
-import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
-import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import {
   createRequest,
   setRequestStatus,
-  setRequestRouting,
-  failPendingToolLifecycle,
 } from "../active-requests/active-requests.slice";
 import { addOptimisticUserMessage } from "../messages/messages.slice";
 import { selectMessageCount } from "../messages/messages.selectors";
 import { v4 as uuidv4 } from "uuid";
-import { processStream } from "./process-stream";
+import {
+  runAiStream,
+  StreamCancelledError,
+  StreamPhaseError,
+} from "./run-ai-stream";
 import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
 import {
   selectIsBlockMode,
@@ -67,12 +67,6 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
-import {
-  registerAbortController,
-  unregisterAbortController,
-} from "./abort-registry";
-import { assertConversationIdMatches } from "../utils/assert-conversation-id";
-import { toast } from "sonner";
 
 // =============================================================================
 // Assemble Request (pure selector logic, extracted for testability)
@@ -497,211 +491,62 @@ export const executeInstance = createAsyncThunk<
         } as Record<string, unknown>;
       }
 
-      // Stamp the factual routing record — exactly what we're about to send.
-      // Ground truth for the Creator Hub Routing tab: where the turn went and
-      // whether the sandbox binding attached. `sandboxRef` is the sync resolve
-      // (was a box selected); `sandboxAttached` is whether the binding survived
-      // token mint — ref-present-but-not-attached === mint failed.
-      {
-        const routedClient = routedPayload.client as
-          | { capabilities?: string[] }
-          | undefined;
-        const routedTools = (routedPayload.tools ??
-          routedPayload.tools_replace ??
-          []) as Array<{ name?: string }>;
-        dispatch(
-          setRequestRouting({
-            requestId,
-            routing: {
-              url,
-              channel: backend.channel,
-              activeServer: selectActiveServer(state),
-              sandboxRef: resolveAgentSandboxRef(state, conversationId),
-              sandboxAttached: routedPayload.sandbox != null,
-              capabilities: routedClient?.capabilities ?? [],
-              toolNames: routedTools
-                .map((t) => t?.name)
-                .filter((n): n is string => typeof n === "string"),
-              recordedAt: new Date().toISOString(),
-            },
-          }),
-        );
-      }
-
       // Record the true submit moment — this is t=0 for all client timing.
       const submitAt = performance.now();
 
-      // Fire the API call
-      const abortController = new AbortController();
-      registerAbortController(conversationId, abortController);
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(routedPayload),
-        signal: abortController.signal,
-      });
-
-      if (!response.ok) {
-        let serverMessage = `${response.status} ${response.statusText}`;
-        try {
-          const body = await response.json();
-          serverMessage =
-            body?.detail?.message ?? body?.detail ?? serverMessage;
-        } catch {
-          /* non-JSON error body */
-        }
-
-        const code = response.status;
-        if (code === 409) {
-          throw new Error(`Conversation already exists: ${serverMessage}`);
-        } else if (code === 404) {
-          throw new Error(`Conversation not found: ${serverMessage}`);
-        } else if (code === 422) {
-          // 422 covers two distinct shapes from the backend:
-          //   • Tool injection errors — capability resolution failed,
-          //     unknown capability, ToolMergeError. Message starts with
-          //     "client capability" or "tool". Surface as toast so the
-          //     user sees what actually broke instead of a generic banner.
-          //   • Validation errors — bad conversation id, schema mismatch.
-          //     Throw as before.
-          const lower =
-            typeof serverMessage === "string"
-              ? serverMessage.toLowerCase()
-              : "";
-          if (
-            lower.startsWith("client capability") ||
-            lower.includes("toolmergeerror") ||
-            lower.includes("conflicting tool") ||
-            (lower.includes("tool") &&
-              (lower.includes("merge") || lower.includes("capability")))
-          ) {
-            toast.error("Tool injection failed", {
-              description: serverMessage,
-            });
-            throw new Error(`Tool injection failed: ${serverMessage}`);
-          }
-          throw new Error(`Invalid conversation ID: ${serverMessage}`);
-        }
-        throw new Error(`API error: ${serverMessage}`);
-      }
-
-      const headerConversationId = response.headers.get("X-Conversation-ID");
-      assertConversationIdMatches(
-        conversationId,
-        headerConversationId,
-        "x-conversation-id-header",
-      );
-      const conversationIdAt = headerConversationId ? performance.now() : null;
-
-      dispatch(setInstanceStatus({ conversationId, status: "streaming" }));
-      dispatch(setRequestStatus({ requestId, status: "streaming" }));
-
-      const currentUiState = (getState() as RootState).instanceUIState
-        ?.byConversationId[conversationId];
-
-      await processStream({
+      // Fire the API call + drive the stream through the shared runner. All
+      // routing telemetry, heartbeat/abort wiring, status transitions,
+      // failPendingToolLifecycle, and the cancel/heartbeat/total/client error
+      // classification live in `runAiStream` so this thunk and `resumeInstance`
+      // cannot diverge from the stream contract.
+      return await runAiStream({
         requestId,
         conversationId,
-        response,
-        submitAt,
-        conversationIdAt,
+        url,
+        headers,
+        body: routedPayload,
+        channel: backend.channel,
         dispatch,
         getState: getState as () => RootState,
-        jsonExtraction: currentUiState?.jsonExtraction ?? undefined,
+        submitAt,
+        kind: "turn",
+        // A retry sends no input and reads none — leave the box untouched
+        // (it may hold an unrelated draft). Initial sends clear on failure.
+        clearInputOnError: !retry,
         userMessageClientTempId,
-        // Heartbeat-based liveness. The server emits {type:"heartbeat"}
-        // every ~10s independent of tool progress, so a 30s deadline is
-        // ~3 missed beats — long enough to tolerate jitter, short enough
-        // to surface a dead socket fast. monitorStream resets the deadline
-        // on EVERY event (including heartbeat), so a 30-minute shell_execute
-        // is fine as long as heartbeats keep flowing. The absolute lifetime
-        // ceiling is set to 24h so that — by design — heartbeat-loss is the
-        // ONLY way a healthy long-running stream can fail. Tool inactivity
-        // is never a timeout signal here.
-        abortController,
-        heartbeatTimeoutMs: 30_000,
-        maxLifetimeMs: 24 * 60 * 60 * 1000,
       });
-
-      unregisterAbortController(conversationId);
-      return {
-        requestId,
-        conversationId,
-      };
     } catch (error) {
-      unregisterAbortController(conversationId);
-
-      if (error instanceof Error && error.name === "AbortError") {
-        dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
-        // A user-initiated cancel orphans any in-flight tool just as surely
-        // as a heartbeat timeout does — clear the shimmers.
-        dispatch(
-          failPendingToolLifecycle({
-            requestId,
-            errorType: "stream_cancelled",
-            errorMessage: "Stream was cancelled before this tool completed.",
-          }),
-        );
+      // runAiStream owns its own cleanup for stream-phase errors and signals
+      // that via two marker classes. Pre-stream errors (assemble, inject,
+      // payload-build, optimistic-message dispatch) reach here without prior
+      // cleanup — they need their own.
+      if (error instanceof StreamCancelledError) {
         return rejectWithValue("Cancelled");
       }
+      if (error instanceof StreamPhaseError) {
+        return rejectWithValue(error.message);
+      }
 
-      // Client-side error (network failure, abort, etc.) — synthesise the
-      // backend's ErrorPayload shape so all error consumers see one canonical
-      // structure regardless of source. error_type distinguishes the cause:
-      // heartbeat_timeout = the server stopped sending heartbeats (the only
-      // designed-for failure signal for long-running tools); total_timeout =
-      // the 24h absolute ceiling fired (effectively never); client_error =
-      // anything else (fetch failure, parse error, etc.).
-      const isHeartbeat =
-        error instanceof Error && error.name === "HeartbeatTimeoutError";
-      const isTotal =
-        error instanceof Error && error.name === "TotalTimeoutError";
-      const errorType = isHeartbeat
-        ? "heartbeat_timeout"
-        : isTotal
-          ? "total_timeout"
-          : "client_error";
+      // Pre-stream failure path. Some dispatches may already have run
+      // (createRequest, setInstanceStatus("running"), addOptimisticUserMessage)
+      // before this throw; the slice reducers are tolerant of unknown ids, so
+      // setting "error" is safe whether they ran or not.
       const message = error instanceof Error ? error.message : "Unknown error";
+      dispatch(setInstanceStatus({ conversationId, status: "error" }));
       dispatch(
         setRequestStatus({
           requestId,
           status: "error",
-          error: { error_type: errorType, message },
+          error: { error_type: "client_error", message },
         }),
       );
-      dispatch(setInstanceStatus({ conversationId, status: "error" }));
-      // Force-terminal any tool that the stream left mid-flight. Without
-      // this, `LiveToolCallCard` keeps shimmering "Using tool …" forever
-      // because the toolLifecycle entry never receives its terminal event.
-      dispatch(
-        failPendingToolLifecycle({
-          requestId,
-          errorType,
-          errorMessage: isHeartbeat
-            ? "Heartbeat stopped — the stream is no longer alive."
-            : isTotal
-              ? "Stream exceeded its maximum lifetime."
-              : message,
-        }),
-      );
-      // Pre-persistence failure (e.g. "Failed to fetch"): clear the hidden
-      // input so the message doesn't linger in the box. It survives as the
-      // optimistic user bubble + the `lastSubmittedText` re-apply backup, so
-      // nothing is lost. (markInputPersisted, which normally clears it on
-      // success, never ran on this path.)
-      //
-      // A retry sends no input and reads none, so there is nothing of ours to
-      // clear — and the box may hold an unrelated draft the user is typing.
-      // Leave it untouched.
       if (!retry) {
-        const { clearUserInput } =
-          await import("../instance-user-input/instance-user-input.slice");
+        const { clearUserInput } = await import(
+          "../instance-user-input/instance-user-input.slice"
+        );
         dispatch(clearUserInput(conversationId));
       }
-
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Execution failed",
-      );
+      return rejectWithValue(message);
     }
   },
 );
