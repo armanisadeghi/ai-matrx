@@ -3,7 +3,7 @@
 import React, { useCallback } from "react";
 import { useTextCleaner } from "../hooks/useTextCleaner";
 import { useClipboard } from "@/hooks/useClipboard";
-import { textContext } from "@/app/(authenticated)/(admin-auth)/administration/utils/text-cleaner/configs";
+import { textContext } from "@/app/(admin)/administration/utils/text-cleaner/configs";
 import AnimatedSelect from "@/components/matrx/AnimatedForm/AnimatedSelect";
 import { FormField } from "@/types/AnimatedFormTypes";
 import { Copy, RefreshCw } from "lucide-react";

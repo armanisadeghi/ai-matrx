@@ -5,7 +5,7 @@ import { IconChevronRight, IconList, IconSearch } from "@tabler/icons-react";
 import FeatureSectionLinkComponent from "@/components/animated/my-custom-demos/feature-section-link-component";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { adminCategories } from "@/app/(authenticated)/(admin-auth)/administration/categories";
+import { adminCategories } from "@/app/(admin)/administration/categories";
 import { Input } from "@/components/ui/input";
 import { filterAndSortBySearch, matchesSearch } from "@/utils/search-scoring";
 
