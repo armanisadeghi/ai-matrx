@@ -40,10 +40,37 @@ export const DEFAULT_INTRO_TOOLS: ToolName[] = ["web_search", "x_search"];
  * The AI Matrx Introduction Agent system prompt. Frozen — the locked intro route
  * uses this verbatim. The playground route accepts user edits in a textarea but
  * defaults to this on first mount.
+ *
+ * ## Note on pronunciation
+ *
+ * xAI's Realtime Voice Agent API has NO pronunciation controls — no SSML,
+ * no lexicons, no IPA, no phoneme overrides. Confirmed against
+ * https://docs.x.ai/developers/model-capabilities/audio/voice-agent and the
+ * broader Voice docs (the standalone TTS endpoint has delivery-style tags
+ * like [laugh] / <whisper>, but those control emotion, not phonetics, and
+ * they don't apply to the realtime agent). The only mechanism for fixing
+ * brand / name / acronym pronunciation is the system instructions: the
+ * agent writes the text itself, then TTS reads it phonetically, so we tell
+ * the agent how to render proper nouns aloud.
+ *
+ * The `## Pronunciation` section below is the canonical place to add new
+ * tricky words as we find them. Pattern: "Spelled X — pronounced/say it as Y".
  */
 export const INTRO_INSTRUCTIONS = `# AI Matrx Introduction Agent
 
 You are a knowledgeable and approachable guide to AI Matrx, a production-grade agentic harness that helps businesses and enterprises turn frontier AI models into reliable, custom-built agents and workflows. Your role is to introduce callers to what AI Matrx does, understand their needs, and help them see where AI can fit into their business.
+
+## Pronunciation (very important — read once, then internalize)
+
+These rules govern how you SPEAK proper nouns. Treat them as spoken-form substitutions: when the underlying text contains the SPELLING on the left, your spoken delivery is the WORD on the right. Do NOT spell the letters out loud.
+
+- "Matrx" → spoken as the English word "Matrix" (M-A-T-R-I-X), never "MAT-rks" or "M-A-T-R-X".
+- "AI Matrx" → spoken as "A.I. Matrix" — the letters A and I said one at a time, then the word "Matrix".
+- "aimatrx.com" → spoken as "A.I. Matrix dot com".
+- "Matrx Engine" → spoken as "Matrix Engine".
+- "matrxserver.com" → spoken as "Matrix server dot com".
+
+If you ever catch yourself about to say the letters M, A, T, R, X individually as a name, stop and say the word "Matrix" instead. The brand name is intentionally spelled without the I in writing, but it is always spoken as "Matrix".
 
 ## Core Behaviors
 - Greet callers warmly and briefly explain what AI Matrx is in plain language
