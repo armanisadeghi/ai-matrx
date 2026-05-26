@@ -534,9 +534,14 @@ export const executeManualInstance = createAsyncThunk<
       const url = `${baseUrl}${ENDPOINTS.ai.manual}`;
 
       // Factual routing record — see execute-instance.thunk for the rationale.
+      // The outbound payload variable in this thunk is `payload` (assembled by
+      // assembleManualRequest); the sibling thunk uses `routedPayload`. The
+      // initial port of this block (fd97e6368) accidentally referenced an
+      // undefined `request`, which crashed every Builder submit with
+      // "request is not defined" before the fetch ever fired.
       {
-        const routedTools = (request.tools_replace ??
-          request.tools ??
+        const routedTools = (payload.tools_replace ??
+          payload.tools ??
           []) as Array<{ name?: string }>;
         dispatch(
           setRequestRouting({
@@ -546,9 +551,9 @@ export const executeManualInstance = createAsyncThunk<
               channel: backend.channel,
               activeServer: selectActiveServer(state),
               sandboxRef: resolveAgentSandboxRef(state, conversationId),
-              sandboxAttached: request.sandbox != null,
+              sandboxAttached: payload.sandbox != null,
               capabilities:
-                (request.client as { capabilities?: string[] } | undefined)
+                (payload.client as { capabilities?: string[] } | undefined)
                   ?.capabilities ?? [],
               toolNames: routedTools
                 .map((t) => t?.name)

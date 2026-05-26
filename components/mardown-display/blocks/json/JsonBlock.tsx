@@ -14,6 +14,7 @@ import {
   Plus,
   TableProperties,
   MoreHorizontal,
+  AlignJustify,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/styles/themes/utils";
@@ -37,6 +38,7 @@ import {
   downloadText,
   defaultJsonFilename,
 } from "@/components/mardown-display/blocks/json/json-tabular-utils";
+import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-compact-stringify";
 
 // Lazy-loaded — these are heavy and most JSON blocks never reach beyond
 // the default Code view.
@@ -79,7 +81,7 @@ function PaneFallback({ label = "Loading…" }: { label?: string }) {
   );
 }
 
-type ViewMode = "code" | "tree" | "table" | "explorer";
+type ViewMode = "code" | "compact" | "tree" | "table" | "explorer";
 
 interface JsonBlockProps {
   content: string;
@@ -242,6 +244,17 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 
   const data = parsed.value;
 
+  // Pre-compute the compact form only when needed. Cheap for typical
+  // payloads; we still memoize so toggling back and forth is free.
+  const compactCode = useMemo(() => {
+    if (mode !== "compact") return null;
+    try {
+      return stringifyCompact(data, { maxWidth: 100, indent: 2 });
+    } catch {
+      return content;
+    }
+  }, [mode, data, content]);
+
   const viewToggle = (
     <ViewToggle
       mode={mode}
@@ -256,16 +269,16 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
 
   return (
     <>
-      {mode === "code" ? (
+      {mode === "code" || mode === "compact" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
           <CodeBlock
-            code={content}
+            code={mode === "compact" ? (compactCode ?? content) : content}
             language="json"
             className={className}
             isStreamActive={isStreamActive}
-            allowEdit={allowEdit}
+            allowEdit={allowEdit && mode === "code"}
             customBuiltinKeys={customBuiltinKeys}
-            onCodeChange={onCodeChange}
+            onCodeChange={mode === "code" ? onCodeChange : undefined}
             headerLeftSlot={viewToggle}
             extraMenuItems={jsonMenuItems}
           />
@@ -348,6 +361,12 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
     tooltip?: string;
   }> = [
     { id: "code", label: "Code", icon: Code2 },
+    {
+      id: "compact",
+      label: "Compact",
+      icon: AlignJustify,
+      tooltip: "Inline leaf objects/arrays that fit on one line",
+    },
     { id: "tree", label: "Tree", icon: ListTree },
     {
       id: "table",
