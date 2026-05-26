@@ -57,6 +57,13 @@ export interface ChatHistorySidebarProps {
   /** Optional surface rendered between header and list (e.g. pinned agents). */
   topSlot?: React.ReactNode;
   /**
+   * `cx_conversation.source_feature` values to hide. `/chat` passes
+   * `['voice-agent']` so voice transcripts (which can't be replayed in the
+   * text-chat view) don't pollute the history. Stored on the scope so paging
+   * + refresh re-apply automatically.
+   */
+  excludeSourceFeatures?: string[];
+  /**
    * Start with the search field open and focused. Used when this list is
    * summoned specifically to search (e.g. the collapsed-rail "Search chats"
    * popover) rather than as the always-on sidebar where search is quiet.
@@ -73,6 +80,7 @@ export function ChatHistorySidebar({
   onOpenConversation,
   headerSlot,
   topSlot,
+  excludeSourceFeatures,
   initialSearchOpen = false,
   className,
 }: ChatHistorySidebarProps) {
@@ -100,17 +108,23 @@ export function ChatHistorySidebar({
 
   // Initial fetch — sidebar mounts owning the scope, so this is the single
   // source of fetch authority. Idempotent at the slice level.
+  // `excludeSourceFeatures` is keyed in the dep array via JSON.stringify so
+  // re-fetches only happen when the actual set changes (callers passing a
+  // fresh array literal each render shouldn't cause loops).
+  const excludeKey = JSON.stringify(excludeSourceFeatures ?? []);
   useEffect(() => {
     dispatch(setScopeAgentIds({ scopeId, agentIds: [] }));
     void dispatch(
       fetchConversationHistory({
         scopeId,
         agentIds: [],
+        excludeSourceFeatures: excludeSourceFeatures ?? [],
         pageSize: PAGE_SIZE,
         replace: true,
       }),
     );
-  }, [dispatch, scopeId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, scopeId, excludeKey]);
 
   const onLoadMore = useCallback(() => {
     if (!hasMore || status === "loading" || status === "loading-more") return;

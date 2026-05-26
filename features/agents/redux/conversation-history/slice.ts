@@ -49,15 +49,27 @@ const slice = createSlice({
       action: PayloadAction<{
         scopeId: string;
         agentIds?: string[];
+        /** `source_feature` values to hide from this scope. Empty = no filter. */
+        excludeSourceFeatures?: string[];
         grouping?: HistoryGrouping;
         pageSize?: number;
         /** When true, drops items/offset so a fresh fetch repopulates. */
         reset?: boolean;
       }>,
     ) {
-      const { scopeId, agentIds, grouping, pageSize, reset } = action.payload;
+      const {
+        scopeId,
+        agentIds,
+        excludeSourceFeatures,
+        grouping,
+        pageSize,
+        reset,
+      } = action.payload;
       const scope = ensureScope(state, scopeId);
       if (agentIds !== undefined) scope.agentIds = agentIds;
+      if (excludeSourceFeatures !== undefined) {
+        scope.excludeSourceFeatures = excludeSourceFeatures;
+      }
       if (grouping !== undefined) scope.grouping = grouping;
       if (pageSize !== undefined) scope.pageSize = pageSize;
       if (reset) {

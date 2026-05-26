@@ -20,6 +20,13 @@ export interface FetchConversationHistoryArgs {
   scopeId: string;
   /** Overrides the scope's stored agentIds for this fetch. */
   agentIds?: string[];
+  /**
+   * Overrides the scope's stored `excludeSourceFeatures`. Conversations with
+   * `cx_conversation.source_feature` in this list are hidden from the result.
+   * `/chat` uses `['voice-agent']` so voice transcripts don't pollute the
+   * text-chat history.
+   */
+  excludeSourceFeatures?: string[];
   /** Overrides the scope's stored pageSize for this fetch. */
   pageSize?: number;
   /**
@@ -65,12 +72,17 @@ export const fetchConversationHistory = createAsyncThunk<
     if (
       !existing ||
       args.agentIds !== undefined ||
+      args.excludeSourceFeatures !== undefined ||
       args.pageSize !== undefined
     ) {
       dispatch(
         configureScope({
           scopeId: args.scopeId,
           agentIds: args.agentIds ?? existing?.agentIds ?? [],
+          excludeSourceFeatures:
+            args.excludeSourceFeatures ??
+            existing?.excludeSourceFeatures ??
+            [],
           pageSize:
             args.pageSize ?? existing?.pageSize ?? defaultScopeState.pageSize,
         }),
@@ -82,6 +94,8 @@ export const fetchConversationHistory = createAsyncThunk<
     const pageSize = args.pageSize ?? scope.pageSize;
     const offset = replace ? 0 : scope.offset;
     const agentIds = args.agentIds ?? scope.agentIds;
+    const excludeSourceFeatures =
+      args.excludeSourceFeatures ?? scope.excludeSourceFeatures;
 
     dispatch(
       setScopeStatus({
@@ -101,6 +115,13 @@ export const fetchConversationHistory = createAsyncThunk<
 
     if (agentIds.length > 0) {
       query = query.in("initial_agent_id", agentIds);
+    }
+
+    // Per-scope blacklist on `source_feature`. Each value gets its own `.neq`
+    // — Supabase chains them with AND, which is what we want. Used by `/chat`
+    // to drop voice-agent rows from the text-chat history.
+    for (const sf of excludeSourceFeatures) {
+      query = query.neq("source_feature", sf);
     }
 
     const { data, error } = await query;
