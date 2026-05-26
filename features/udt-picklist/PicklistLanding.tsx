@@ -3,6 +3,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Database,
+  FileText,
   Keyboard,
   Layers,
   ListChecks,
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
  *   /lists       → this landing
  *   /lists/v1    → PicklistManagerV1 (sidebar + spreadsheet)
  *   /lists/v2    → PicklistManagerV2 (compact switcher + flat table)
+ *   /lists/v3    → PicklistManager (Notion-style document) — current primary
  */
 
 const FEATURES = [
@@ -98,6 +100,21 @@ const VARIANTS: Array<{
       "Uses the official curated icon picker window",
     ],
     icon: ListChecks,
+  },
+  {
+    href: "/lists/v3",
+    badge: "v3",
+    title: "Notion-style document",
+    tagline:
+      "List as a clean document: inline title + description, items as lines, hover reveals controls.",
+    bullets: [
+      "Document-feel layout, no table chrome",
+      "Items as lines with one-line preview of description/help text",
+      "Click row (or chevron / Cmd+Enter) to expand into a full edit form",
+      "Collapsible, inline-renamable group sections",
+      "Autosave w/ 500ms debounce; undoable destructive actions via toast",
+    ],
+    icon: FileText,
     primary: true,
   },
 ];
@@ -139,7 +156,7 @@ export default function PicklistLanding() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button size="lg" className="gap-2" asChild>
-              <Link href="/lists/v2">
+              <Link href="/lists/v3">
                 Open editor
                 <ArrowRight className="h-4 w-4" />
               </Link>
