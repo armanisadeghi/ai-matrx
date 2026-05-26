@@ -16,11 +16,11 @@ A 4-column live transcription workspace. Users record audio, see raw transcript 
 
 **Routes**
 - `app/(a)/transcription/studio/` — full-page workspace, sidebar + active session view. Public URL: `/transcription/studio` (see `next.config.js` redirects from `/transcript-studio`).
-- `app/(a)/transcription/mobile/` — mobile-first capture + audio-first assistant. Public URL: `/transcription/mobile`. Reuses the same session + segment data layer; SSR-seeds via `StudioHydrator`, resolves/creates an active session in `MobileStudioRoute`, then mounts `MobileStudioScreen`.
+- `app/(a)/transcription/scribe/` — Scribe: voice-first capture + assistant + working-document workspace. Public URL: `/transcription/scribe` (legacy `/transcription/mobile` 308-redirects here). Reuses the same session + segment data layer; SSR-seeds via `StudioHydrator`, mounts `ScribeScreen` per session.
 
-**Mobile capture + assistant** (`components/mobile/`)
-- `MobileStudioScreen.tsx` — controller with a `capture | assistant` screen toggle; activates the session (wires realtime) and loads recording/raw/cleaned segments + documents on mount.
-- `MobileCaptureScreen.tsx` — big record button + audio-reactive ring, pause/resume/stop, live transcript strip, and the recording-card list. Each re-tap of record after stop opens a new cycle.
+**Scribe capture + assistant** (`components/scribe/`)
+- `ScribeScreen.tsx` — controller with a `capture | assistant` screen toggle; activates the session (wires realtime) and loads recording/raw/cleaned segments + documents on mount.
+- `ScribeCaptureScreen.tsx` — big record button + audio-reactive ring, pause/resume/stop, live transcript strip, and the recording-card list. Each re-tap of record after stop opens a new cycle.
 - `RecordingCardList.tsx` / `RecordingCard.tsx` — one card per recording cycle (`studio_recording_segments`). Multi-select (checkbox + long-press) → bottom Keep/Delete bar (`confirm` + `deleteRecordingSegmentThunk`). Tap/long-press → full transcript drawer. Per-card audio playback via `useFileSrc(audio_path)` → HTML5 `<audio>`.
 - `FullTranscriptDrawer.tsx` — Drawer showing one cycle's raw transcript with a `ContentActionBar`.
 - `AssistantScreen.tsx` — the audio-first assistant: working-document panel + "Read aloud" (`useCartesia`), `AgentConversationDisplay` for messages, and an `AgentMicrophoneButton` + textarea + Send input.

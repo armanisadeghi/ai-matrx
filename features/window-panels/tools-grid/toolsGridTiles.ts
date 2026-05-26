@@ -226,11 +226,11 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "aiVoiceWindow",
   },
   {
-    id: "tile.voice-pad-ai",
+    id: "tile.transcription-cleanup",
     label: "Transcription Cleanup",
     icon: CircleDot,
     category: "voice",
-    overlayId: "voicePadAi",
+    overlayId: "transcriptionCleanup",
   },
   {
     id: "tile.voice-pad-advanced",

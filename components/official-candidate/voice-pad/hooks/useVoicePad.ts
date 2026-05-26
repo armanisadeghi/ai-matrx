@@ -37,4 +37,4 @@ function makeHook(overlayId: VoicePadVariant) {
 /** Simple voice pad — defaults to singleton instance. */
 export const useVoicePad = makeHook("voicePad");
 export const useVoicePadAdvanced = makeHook("voicePadAdvanced");
-export const useVoicePadAi = makeHook("voicePadAi");
+export const useTranscriptionCleanup = makeHook("transcriptionCleanup");

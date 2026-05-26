@@ -560,8 +560,8 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
-  voicePadAi: {
-    label: "Voice Pad Ai",
+  transcriptionCleanup: {
+    label: "Transcription Cleanup",
     instanceMode: "multi",
     isWindow: true,
   },

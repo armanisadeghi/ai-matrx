@@ -31,8 +31,10 @@ export function initUrlHydration() {
   });
 
   // Voice Pad — AI
-  registerPanelHydrator("voice-ai", (dispatch, id) => {
-    dispatch(openOverlay({ overlayId: "voicePadAi", instanceId: id }));
+  registerPanelHydrator("transcription-cleanup", (dispatch, id) => {
+    dispatch(
+      openOverlay({ overlayId: "transcriptionCleanup", instanceId: id }),
+    );
   });
 
   // Notes (NotesBetaWindow — primary instance; title stays "Notes" in chrome)

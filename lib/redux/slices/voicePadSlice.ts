@@ -1,9 +1,10 @@
 // lib/redux/slices/voicePadSlice.ts
 //
-// Per-instance voice-pad state. One slice serves all variants
-// ("voicePad" | "voicePadAdvanced" | "voicePadAi"), keyed by
-// `${overlayId}:${instanceId}` so multiple variants AND multiple
-// instances of each variant can coexist without collision.
+// Per-instance voice-pad state. One slice serves all overlays that share
+// the voice-pad slice machinery ("voicePad" | "voicePadAdvanced" |
+// "transcriptionCleanup"), keyed by `${overlayId}:${instanceId}` so
+// multiple overlays AND multiple instances of each can coexist without
+// collision.
 
 import {
   createSelector,
@@ -11,7 +12,10 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 
-export type VoicePadVariant = "voicePad" | "voicePadAdvanced" | "voicePadAi";
+export type VoicePadVariant =
+  | "voicePad"
+  | "voicePadAdvanced"
+  | "transcriptionCleanup";
 
 interface TranscriptEntry {
   id: string;
@@ -47,10 +51,7 @@ export function voicePadKey(
   return `${overlayId}:${instanceId}`;
 }
 
-function getOrInit(
-  state: VoicePadState,
-  key: string,
-): VoicePadInstance {
+function getOrInit(state: VoicePadState, key: string): VoicePadInstance {
   if (!state.instances[key]) {
     state.instances[key] = { entries: [], draftText: null };
   }
@@ -131,7 +132,8 @@ const selectInstance = (
   overlayId: VoicePadVariant,
   instanceId: string,
 ): VoicePadInstance =>
-  state.voicePad.instances[voicePadKey(overlayId, instanceId)] ?? EMPTY_INSTANCE;
+  state.voicePad.instances[voicePadKey(overlayId, instanceId)] ??
+  EMPTY_INSTANCE;
 
 export const selectVoicePadEntries = (
   state: StateWithVoicePad,
@@ -146,10 +148,7 @@ export const selectVoicePadDraftText = (
 ) => selectInstance(state, overlayId, instanceId).draftText;
 
 /** Memoized per-key selector factory for combined text. */
-const _allTextCache = new Map<
-  string,
-  (state: StateWithVoicePad) => string
->();
+const _allTextCache = new Map<string, (state: StateWithVoicePad) => string>();
 
 export const selectVoicePadAllText = (
   state: StateWithVoicePad,
@@ -162,7 +161,8 @@ export const selectVoicePadAllText = (
       key,
       createSelector(
         [
-          (s: StateWithVoicePad) => selectInstance(s, overlayId, instanceId).entries,
+          (s: StateWithVoicePad) =>
+            selectInstance(s, overlayId, instanceId).entries,
           (s: StateWithVoicePad) =>
             selectInstance(s, overlayId, instanceId).draftText,
         ],

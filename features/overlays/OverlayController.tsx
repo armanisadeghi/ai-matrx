@@ -659,9 +659,9 @@ const VoicePadAdvanced = dynamic(
     import("@/components/official-candidate/voice-pad/components/VoicePadAdvanced"),
   { ssr: false },
 );
-const VoicePadAi = dynamic(
+const TranscriptionCleanup = dynamic(
   () =>
-    import("@/components/official-candidate/voice-pad/components/VoicePadAi"),
+    import("@/components/official-candidate/transcription-cleanup/components/TranscriptionCleanup"),
   { ssr: false },
 );
 const WhatsAppMediaWindow = dynamic(
@@ -1236,7 +1236,9 @@ export default function OverlayController() {
     voicePadAdvanced: useAppSelector((s) =>
       selectOpenInstances(s, "voicePadAdvanced"),
     ),
-    voicePadAi: useAppSelector((s) => selectOpenInstances(s, "voicePadAi")),
+    transcriptionCleanup: useAppSelector((s) =>
+      selectOpenInstances(s, "transcriptionCleanup"),
+    ),
   };
 
   return (
@@ -4101,11 +4103,14 @@ export default function OverlayController() {
         );
       })}
 
-      {/* voicePadAi — multi-instance */}
-      {instancesById.voicePadAi.map((inst) => {
+      {/* transcriptionCleanup — multi-instance */}
+      {instancesById.transcriptionCleanup.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
         return (
-          <VoicePadAi key={inst.instanceId} instanceId={inst.instanceId} />
+          <TranscriptionCleanup
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+          />
         );
       })}
 

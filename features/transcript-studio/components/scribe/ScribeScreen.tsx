@@ -25,20 +25,17 @@ import {
 } from "../../redux/thunks";
 import { EditableSessionTitle } from "../EditableSessionTitle";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
-import { MobileCaptureScreen } from "./MobileCaptureScreen";
+import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
 
 type Screen = "capture" | "assistant";
 
-interface MobileStudioScreenProps {
+interface ScribeScreenProps {
   sessionId: string;
   onBack?: () => void;
 }
 
-export function MobileStudioScreen({
-  sessionId,
-  onBack,
-}: MobileStudioScreenProps) {
+export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
   const [screen, setScreen] = useState<Screen>("capture");
@@ -156,7 +153,7 @@ export function MobileStudioScreen({
       {/* Body */}
       <main className="min-h-0 flex-1">
         {screen === "capture" ? (
-          <MobileCaptureScreen sessionId={sessionId} />
+          <ScribeCaptureScreen sessionId={sessionId} />
         ) : (
           <AssistantScreen sessionId={sessionId} />
         )}
@@ -176,7 +173,10 @@ export function MobileStudioScreen({
         confirmLabel="Save"
         onConfirm={(value) => {
           void dispatch(
-            updateSessionThunk({ id: sessionId, patch: { title: value.trim() } }),
+            updateSessionThunk({
+              id: sessionId,
+              patch: { title: value.trim() },
+            }),
           );
         }}
       />

@@ -78,7 +78,7 @@ export type SourceFeature =
   | "notes"
   | "agent-advanced-editor-window"
   | "agent-content-window"
-  | "voice-pad-ai"
+  | "transcription-cleanup"
   | "transcripts"
   | "transcript-studio"
   | "agent-run-window"

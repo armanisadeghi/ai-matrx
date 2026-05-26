@@ -674,8 +674,8 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
   {
-    slug: "voice-pad-ai",
-    overlayId: "voicePadAi",
+    slug: "transcription-cleanup",
+    overlayId: "transcriptionCleanup",
     kind: "window",
     label: "Transcription Cleanup",
     defaultData: { transcript: null },

@@ -1,5 +1,5 @@
 /**
- * AI post-processing agents available in VoicePadAi.
+ * AI post-processing agents available in the TranscriptionCleanup pad.
  *
  * Each agent declares the variable key that should receive the transcribed
  * text and, optionally, either a context slot OR a context variable that

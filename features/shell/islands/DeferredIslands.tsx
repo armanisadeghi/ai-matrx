@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useIdleReady } from "@/utils/idle-scheduler";
 
-// NOTE: Voice-pad variants (`voicePad`, `voicePadAdvanced`, `voicePadAi`)
+// NOTE: Voice-pad-slice overlays (`voicePad`, `voicePadAdvanced`, `transcriptionCleanup`)
 // are mounted exclusively by the unified window registry now. The legacy
 // <VoicePadWrapper /> mount used to live here and double-rendered every
 // open voice-pad instance because the registry was already mounting it.

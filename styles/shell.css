@@ -1078,17 +1078,17 @@
    padding so the route's own h-dvh layout fits exactly. The dock is portaled
    into #glass-layer outside .shell-root, so it needs body:has() to cross the
    portal (same pattern noted in section 11). */
-.shell-root[data-pathname^="/transcription/mobile"] {
+.shell-root[data-pathname^="/transcription/scribe"] {
   grid-template-rows: 0 1fr;
 }
-.shell-root[data-pathname^="/transcription/mobile"] .shell-header {
+.shell-root[data-pathname^="/transcription/scribe"] .shell-header {
   display: none;
 }
-.shell-root[data-pathname^="/transcription/mobile"] .shell-main {
+.shell-root[data-pathname^="/transcription/scribe"] .shell-main {
   margin-top: 0;
   padding-bottom: 0;
 }
-body:has(.shell-root[data-pathname^="/transcription/mobile"]) .shell-dock {
+body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   display: none;
 }
 
