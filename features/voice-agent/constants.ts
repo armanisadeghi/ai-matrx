@@ -106,8 +106,22 @@ export const PERSISTENCE_SOURCE_APP = "chat";
 /** Discriminator used in `cx_conversation.source_feature` for voice rows. */
 export const PERSISTENCE_SOURCE_FEATURE = "voice-agent";
 
-/** Discriminator used in `cx_message.source` for voice turn rows. */
-export const PERSISTENCE_MESSAGE_SOURCE = "xai-voice";
+/**
+ * `cx_message.source` is a strictly enumerated CHECK constraint
+ * (`cx_message_source_check`) — only `'user'` and `'system'` are allowed,
+ * verified by probing the live DB. The column describes the message's
+ * INPUT source (typed by a user vs system-injected), not the feature it
+ * came from. Voice provenance lives in `metadata.voice.provider` instead.
+ *
+ *   - user voice turn  → source='user'   (caller actually spoke it)
+ *   - assistant turn   → source='system' (system generated via xAI Realtime)
+ *
+ * This matches the pattern aidream uses at `cx_data.py:933` for any
+ * system-injected message. Do NOT pass voice-specific strings like
+ * 'xai-voice' here — they will violate the check constraint.
+ */
+export const PERSISTENCE_MESSAGE_SOURCE_USER = "user";
+export const PERSISTENCE_MESSAGE_SOURCE_ASSISTANT = "system";
 
 /** Provider identifier baked into `cx_conversation.metadata.voice.provider`. */
 export const PERSISTENCE_PROVIDER = "xai-realtime";

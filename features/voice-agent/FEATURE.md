@@ -64,11 +64,11 @@ standard chat surface and embedded agent apps.
   - `overrides.tools = [...]` — playground tool selections.
   - Standard `user_id` ownership + existing RLS.
 - `cx_message` — one row per turn.
-  - `source = 'xai-voice'`.
-  - `role = 'user' | 'assistant'`.
+  - `role = 'user' | 'assistant'` — who spoke.
+  - `source` is the message's INPUT mechanism, strictly enumerated by a CHECK constraint (`cx_message_source_check`) — only `'user'` and `'system'` are accepted. User voice turns use `source='user'`; assistant voice turns use `source='system'` (matches aidream's pattern for system-injected messages). The voice provenance — `'xai-realtime'` — lives in `metadata.voice.provider`, NOT in `source`. Do not pass strings like `'xai-voice'` here; they violate the constraint.
   - `content = [{type: 'text', text: <transcript>}]`.
   - `is_visible_to_model = false` on interrupted assistant turns (do not poison future context).
-  - `metadata.voice = {turn_id, item_id, response_id?, started_at_ms, ended_at_ms, was_interrupted, audio_duration_ms?, speech_ttfb_ms?}`.
+  - `metadata.voice = {provider, model, voice_id, turn_id, item_id, response_id?, started_at_ms, ended_at_ms, was_interrupted, audio_duration_ms?, speech_ttfb_ms?}`.
 
 **Raw audio is never persisted.** Contractual.
 
@@ -179,6 +179,7 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-05-26` — Persistence bug fix #2: `cx_message.source` has a CHECK constraint (`cx_message_source_check`) that only allows `'user'` and `'system'` — verified by live probing each candidate against the production DB. The original implementation passed `'xai-voice'` and got `23514 violates check constraint`. Now user turns use `source='user'` and assistant turns use `source='system'` (matching aidream's pattern for system-injected messages); voice provenance moved to `metadata.voice.provider`. Constants split into `PERSISTENCE_MESSAGE_SOURCE_USER` and `PERSISTENCE_MESSAGE_SOURCE_ASSISTANT` with the CHECK rationale documented inline so the next agent doesn't reintroduce the bug.
 - `2026-05-26` — Added a `## Pronunciation` section to `INTRO_INSTRUCTIONS` (`features/voice-agent/constants.ts`). xAI Realtime has no pronunciation API (no SSML, lexicons, IPA, or phoneme overrides — confirmed against the official docs), so brand-name pronunciation is fixed exclusively via system-instruction substitutions. Initial entries: `Matrx → Matrix`, `AI Matrx → A.I. Matrix`, `aimatrx.com → A.I. Matrix dot com`, `Matrx Engine → Matrix Engine`, `matrxserver.com → Matrix server dot com`. New troublesome words get appended to the same section as they're discovered.
 - `2026-05-26` — Sidebar integration: Mic icon on the chat sidebar's collapsed rail (with subtle divider separating it from the text-chat shortcuts above) and a "Voice agent" mode-shortcut at the top of the expanded view (above pinned agents). Voice transcripts (`source_feature='voice-agent'`) are now filtered out of the `/chat` conversation history via a new per-scope `excludeSourceFeatures` filter on `fetchConversationHistory` — voice rows can't be replayed in the text-chat view, so a future dedicated voice-history surface will own their listing.
 - `2026-05-26` — Persistence bug fix: `cx_conversation.last_model_id` is a UUID FK to `ai_model.id` (xAI Realtime models are not registered there); writing the slug `'grok-voice-latest'` was producing Postgres `22P02 invalid input syntax for type uuid` from `ensureConversation`. Now intentionally left null; the slug is stored in `metadata.voice.model` for both `ensureConversation` and `finalizeConversation`.

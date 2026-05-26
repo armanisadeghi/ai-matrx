@@ -16,7 +16,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 import {
-  PERSISTENCE_MESSAGE_SOURCE,
+  PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,
+  PERSISTENCE_MESSAGE_SOURCE_USER,
   PERSISTENCE_PROVIDER,
   PERSISTENCE_REGION,
   PERSISTENCE_SOURCE_APP,
@@ -157,7 +158,12 @@ export async function persistTurns(
       conversation_id: opts.conversationId,
       role: turn.role,
       position: opts.startPosition + idx,
-      source: PERSISTENCE_MESSAGE_SOURCE,
+      // `cx_message.source` only allows 'user' | 'system' (CHECK constraint).
+      // Voice provenance lives in metadata.voice.provider — see constants.ts.
+      source:
+        turn.role === "user"
+          ? PERSISTENCE_MESSAGE_SOURCE_USER
+          : PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,
       content: [
         { type: "text", text: turn.text || "" },
       ] as unknown as Json,
