@@ -699,6 +699,10 @@ export function SystemMessage({
                   content={developerMessage}
                   hideCopyButton
                   className="text-sm"
+                  // Persist in-block edits (JSON reformat, code edits, etc.)
+                  // back to the agent definition so they survive the
+                  // preview ↔ edit toggle and reach the DB.
+                  onContentChange={handleTextChange}
                 />
               ) : (
                 <span className="text-xs text-gray-500 dark:text-gray-500 italic">
@@ -713,7 +717,9 @@ export function SystemMessage({
               getTextarea={() =>
                 textareaRefs.current[systemMessageIndex] || null
               }
-              contextData={contextMenuData as unknown as Record<string, unknown>}
+              contextData={
+                contextMenuData as unknown as Record<string, unknown>
+              }
               enabledPlacements={["ai-action", "content-block", "quick-action"]}
               isEditable={true}
               enableFloatingIcon={true}

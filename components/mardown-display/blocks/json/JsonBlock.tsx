@@ -325,17 +325,22 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   // Fallback: streaming or unparseable → original CodeBlock with no extras.
   if (!parsed.ok) {
     return (
-      <Suspense fallback={<PaneFallback label="Loading code…" />}>
-        <CodeBlock
-          code={content}
-          language="json"
-          className={className}
-          isStreamActive={isStreamActive}
-          allowEdit={allowEdit}
-          customBuiltinKeys={customBuiltinKeys}
-          onCodeChange={onCodeChange}
-        />
-      </Suspense>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <Suspense fallback={<PaneFallback label="Loading code…" />}>
+          <CodeBlock
+            code={content}
+            language="json"
+            className={className}
+            isStreamActive={isStreamActive}
+            allowEdit={allowEdit}
+            customBuiltinKeys={customBuiltinKeys}
+            onCodeChange={onCodeChange}
+          />
+        </Suspense>
+      </div>
     );
   }
 
@@ -369,8 +374,21 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     tabular.isTabular &&
     `${tabular.rows.length} row${tabular.rows.length === 1 ? "" : "s"} × ${tabular.columns.length} col${tabular.columns.length === 1 ? "" : "s"}`;
 
+  // Stop click / mousedown propagation at the block root so interactions
+  // inside the JSON UI (view toggle, format toggle, kebab, editor focus)
+  // don't bubble up to parents that treat a click on their content as
+  // "switch to edit mode" (e.g. agent-builder preview surfaces). The JSON
+  // block is its own self-contained interactive surface — child clicks
+  // belong to it, not to a wrapping container's onClick.
+  const stopBubble = (e: React.SyntheticEvent) => e.stopPropagation();
+
   return (
-    <>
+    <div
+      onClick={stopBubble}
+      onMouseDown={stopBubble}
+      onMouseUp={stopBubble}
+      onDoubleClick={stopBubble}
+    >
       {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
           <CodeBlock
@@ -443,7 +461,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           columns={tabular.columns}
         />
       )}
-    </>
+    </div>
   );
 };
 
@@ -472,20 +490,19 @@ const FormatToggleButton: React.FC<FormatToggleButtonProps> = ({
         <TooltipTrigger asChild>
           <button
             type="button"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onToggle();
             }}
+            aria-label={isCompact ? "Expand JSON" : "Compact JSON"}
             className={cn(
-              "h-6 px-1.5 sm:px-2 flex items-center gap-1 rounded text-xs font-medium transition-colors",
+              "h-6 w-6 flex items-center justify-center rounded transition-colors",
               "text-muted-foreground hover:text-foreground hover:bg-muted",
               "border border-border/50 bg-background/50",
             )}
           >
             <AlignJustify className="h-3 w-3" />
-            <span className="hidden sm:inline">
-              {isCompact ? "Expand" : "Compact"}
-            </span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">

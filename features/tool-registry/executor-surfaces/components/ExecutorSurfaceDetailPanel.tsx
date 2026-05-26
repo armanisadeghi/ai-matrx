@@ -146,7 +146,7 @@ export function ExecutorSurfaceDetailPanel({
   };
 
   return (
-    <div className="h-full flex flex-col bg-card">
+    <div className="h-full w-full min-w-0 flex flex-col bg-card overflow-hidden">
       {/* Header */}
       <div className="shrink-0 px-3 py-2 border-b border-border">
         <div className="flex items-start gap-2">
@@ -235,7 +235,7 @@ export function ExecutorSurfaceDetailPanel({
       )}
 
       {/* Body */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
         {/* Section A — Auto-load on launch */}
         <SectionHeader
           icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
@@ -388,99 +388,104 @@ function BindingRow({
 
   return (
     <div
-      className={`px-3 py-2 flex items-center gap-2 hover:bg-accent/30 ${row.is_active ? "" : "opacity-60"}`}
+      className={`px-3 py-2 min-w-0 ${row.is_active ? "" : "opacity-60"} hover:bg-accent/30`}
     >
-      <div className="flex-1 min-w-0">
-        <Link
-          href={toolHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs font-medium truncate text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full"
-          title={row.tool_name ?? row.tool_id}
-        >
-          <span className="truncate">{row.tool_name ?? "(unnamed tool)"}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-        </Link>
-        <div className="font-mono text-[10px] text-muted-foreground truncate">
-          {row.tool_category ? `${row.tool_category} · ` : ""}
-          {row.tool_id}
-        </div>
-        {row.tool_description && (
-          <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-            {row.tool_description}
-          </div>
-        )}
-      </div>
-
-      {/* Tool flags */}
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        {row.tool_is_active === false && (
-          <Badge
-            variant="outline"
-            className="text-[9px] h-4 px-1 text-muted-foreground"
-            title="The underlying tl_def tool is inactive"
+      {/* Row 1 — tool identity + flags + remove */}
+      <div className="flex items-start gap-2 min-w-0">
+        <div className="flex-1 min-w-0">
+          <Link
+            href={toolHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full"
+            title={row.tool_name ?? row.tool_id}
           >
-            tool inactive
-          </Badge>
-        )}
-        {row.delegated && (
-          <Badge variant="outline" className="text-[9px] h-4 px-1">
-            delegated
-          </Badge>
-        )}
+            <span className="truncate">
+              {row.tool_name ?? "(unnamed tool)"}
+            </span>
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+          </Link>
+          <div className="font-mono text-[10px] text-muted-foreground truncate">
+            {row.tool_category ? `${row.tool_category} · ` : ""}
+            {row.tool_id}
+          </div>
+          {row.tool_description && (
+            <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+              {row.tool_description}
+            </div>
+          )}
+        </div>
+
+        {/* Right cluster: flags + remove. Flags wrap below name on narrow widths. */}
+        <div className="flex items-start gap-1 shrink-0">
+          <div className="flex flex-col items-end gap-0.5">
+            {row.tool_is_active === false && (
+              <Badge
+                variant="outline"
+                className="text-[9px] h-4 px-1 text-muted-foreground"
+                title="The underlying tl_def tool is inactive"
+              >
+                tool inactive
+              </Badge>
+            )}
+            {row.delegated && (
+              <Badge variant="outline" className="text-[9px] h-4 px-1">
+                delegated
+              </Badge>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(row)}
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            title="Remove binding"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
-      {/* Priority */}
-      <div className="flex flex-col items-center gap-0 shrink-0">
-        <Input
-          type="number"
-          value={priorityDraft}
-          onChange={(e) => setPriorityDraft(e.target.value)}
-          onBlur={() => {
-            const n = Number(priorityDraft);
-            if (Number.isFinite(n)) onUpdatePriority(row, n);
-            else setPriorityDraft(String(row.priority));
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          }}
-          className="h-6 w-14 text-[11px] tabular-nums text-center font-mono px-1"
-          style={{ fontSize: "16px" }}
-          title="Priority — lower runs first"
-        />
-        <span className="text-[9px] text-muted-foreground">priority</span>
-      </div>
+      {/* Row 2 — controls. Wraps to a second visual row when the panel is narrow. */}
+      <div className="mt-1.5 flex items-center gap-3 flex-wrap min-w-0">
+        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <span>Priority</span>
+          <Input
+            type="number"
+            value={priorityDraft}
+            onChange={(e) => setPriorityDraft(e.target.value)}
+            onBlur={() => {
+              const n = Number(priorityDraft);
+              if (Number.isFinite(n)) onUpdatePriority(row, n);
+              else setPriorityDraft(String(row.priority));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+            className="h-6 w-14 text-[11px] tabular-nums text-center font-mono px-1"
+            style={{ fontSize: "16px" }}
+            title="Priority — lower runs first"
+          />
+        </label>
 
-      {/* Active */}
-      <div className="flex flex-col items-center gap-0 shrink-0">
-        <Switch
-          checked={row.is_active}
-          onCheckedChange={(v) => onToggleActive(row, v)}
-          className="scale-75"
-        />
-        <span className="text-[9px] text-muted-foreground">active</span>
-      </div>
+        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
+          <Switch
+            checked={row.is_active}
+            onCheckedChange={(v) => onToggleActive(row, v)}
+            className="scale-75"
+          />
+          <span>Active</span>
+        </label>
 
-      {/* Auto-load */}
-      <div className="flex flex-col items-center gap-0 shrink-0">
-        <Switch
-          checked={row.auto_load}
-          onCheckedChange={(v) => onToggleAutoLoad(row, v)}
-          className="scale-75"
-        />
-        <span className="text-[9px] text-muted-foreground">auto-load</span>
+        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
+          <Switch
+            checked={row.auto_load}
+            onCheckedChange={(v) => onToggleAutoLoad(row, v)}
+            className="scale-75"
+          />
+          <span>Auto-load</span>
+        </label>
       </div>
-
-      {/* Remove */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onRemove(row)}
-        className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-        title="Remove binding"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
     </div>
   );
 }

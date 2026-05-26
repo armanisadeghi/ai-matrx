@@ -692,6 +692,10 @@ export function MessageItem({
                 content={currentText}
                 hideCopyButton
                 className="text-sm"
+                // Persist in-block edits (JSON reformat, code edits, etc.)
+                // back to the agent definition so they survive the
+                // preview ↔ edit toggle and reach the DB.
+                onContentChange={handleTextChange}
               />
             ) : (
               <span className="text-xs text-muted-foreground italic">

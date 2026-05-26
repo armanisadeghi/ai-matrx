@@ -145,7 +145,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
           </span>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-auto -mx-6 px-6">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden -mx-6 px-6">
           {loading && (
             <div className="py-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -179,76 +179,80 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
                       return (
                         <div
                           key={tool.id}
-                          className={`px-2 py-2 flex items-center gap-2 hover:bg-accent/30 ${tool.is_active === false ? "opacity-60" : ""}`}
+                          className={`px-2 py-2 min-w-0 ${tool.is_active === false ? "opacity-60" : ""} hover:bg-accent/30`}
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <Link
-                                href={`/administration/mcp-tools/${tool.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 truncate"
-                                title={tool.name}
-                              >
-                                <span className="truncate">{tool.name}</span>
-                                <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-                              </Link>
-                              {tool.is_active === false && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[9px] h-4 px-1 text-muted-foreground"
+                          <div className="flex items-start gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+                            <div className="flex-1 min-w-0 basis-full sm:basis-auto">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Link
+                                  href={`/administration/mcp-tools/${tool.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 min-w-0 max-w-full"
+                                  title={tool.name}
                                 >
-                                  inactive
-                                </Badge>
-                              )}
-                              {wasAdded && (
-                                <Badge
-                                  variant="default"
-                                  className="text-[9px] h-4 px-1"
-                                >
-                                  added
-                                </Badge>
-                              )}
-                            </div>
-                            {tool.description && (
-                              <div className="text-[10px] text-muted-foreground truncate">
-                                {tool.description}
+                                  <span className="truncate">{tool.name}</span>
+                                  <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+                                </Link>
+                                {tool.is_active === false && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] h-4 px-1 text-muted-foreground shrink-0"
+                                  >
+                                    inactive
+                                  </Badge>
+                                )}
+                                {wasAdded && (
+                                  <Badge
+                                    variant="default"
+                                    className="text-[9px] h-4 px-1 shrink-0"
+                                  >
+                                    added
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-                            <div className="font-mono text-[9px] text-muted-foreground/70 truncate">
-                              {tool.id}
+                              {tool.description && (
+                                <div className="text-[10px] text-muted-foreground truncate">
+                                  {tool.description}
+                                </div>
+                              )}
+                              <div className="font-mono text-[9px] text-muted-foreground/70 truncate">
+                                {tool.id}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void handleAdd(tool, false)}
+                                disabled={!!adding}
+                                className="h-7 px-2 text-[11px] gap-1"
+                                title="Bind this tool to the runtime (not auto-load)"
+                              >
+                                {isAddingThis ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Plus className="h-3 w-3" />
+                                )}
+                                Bind
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => void handleAdd(tool, true)}
+                                disabled={!!adding}
+                                className="h-7 px-2 text-[11px] gap-1"
+                                title="Bind and mark as auto-load on launch"
+                              >
+                                {isAddingThis ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Sparkles className="h-3 w-3" />
+                                )}
+                                Auto-load
+                              </Button>
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void handleAdd(tool, false)}
-                            disabled={!!adding}
-                            className="h-7 px-2 text-[11px] gap-1 shrink-0"
-                            title="Bind this tool to the surface (not auto-load)"
-                          >
-                            {isAddingThis ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Plus className="h-3 w-3" />
-                            )}
-                            Bind
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => void handleAdd(tool, true)}
-                            disabled={!!adding}
-                            className="h-7 px-2 text-[11px] gap-1 shrink-0"
-                            title="Bind and mark as auto-load on launch"
-                          >
-                            {isAddingThis ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Sparkles className="h-3 w-3" />
-                            )}
-                            Auto-load
-                          </Button>
                         </div>
                       );
                     })}

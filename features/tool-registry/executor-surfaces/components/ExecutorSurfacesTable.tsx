@@ -75,7 +75,7 @@ export function ExecutorSurfacesTable({
   }
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto">
+    <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
       {GROUP_ORDER.map((key) => {
         const groupRows = grouped.get(key);
         if (!groupRows || groupRows.length === 0) return null;
@@ -94,7 +94,7 @@ export function ExecutorSurfacesTable({
                     key={row.name}
                     type="button"
                     onClick={() => onSelect(row)}
-                    className={`w-full text-left px-2 py-1.5 hover:bg-accent/40 transition-colors flex items-center gap-2 ${
+                    className={`w-full min-w-0 text-left px-2 py-1.5 hover:bg-accent/40 transition-colors flex items-center gap-2 ${
                       isSelected ? "bg-primary/10" : ""
                     } ${row.is_active ? "" : "opacity-60"}`}
                   >
@@ -108,7 +108,7 @@ export function ExecutorSurfacesTable({
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-0.5">
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
                       {row.autoLoadCount > 0 ? (
                         <Badge
                           variant="default"
