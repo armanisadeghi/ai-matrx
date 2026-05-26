@@ -44,6 +44,7 @@ import {
 import React from "react";
 import {
   Container,
+  Cpu,
   Database,
   DatabaseBackup,
   DatabaseZap,
@@ -370,6 +371,14 @@ export const adminCategories = [
           "100+ surfaces grouped by client and tier (Pages / Specialized / Overlays / Editor variants / Debug). Bulk activate / deactivate, inline description edit, FK-aware delete, rename via FK CASCADE, candidate-inventory bulk-add.",
         icon: <Layout />,
         link: "/administration/surfaces",
+        isNew: true,
+      },
+      {
+        title: "Executor Surfaces",
+        description:
+          "Per-runtime tool bindings: which tools are bound to matrx-extend.browser, mcp.github, server:matrx_ai, etc., and which of them auto-load on launch. Manages tl_executor rows.",
+        icon: <Cpu />,
+        link: "/administration/executor-surfaces",
         isNew: true,
       },
       {
