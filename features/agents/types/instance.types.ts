@@ -201,6 +201,15 @@ export interface ExecutionInstance {
     rowId: string;
     proxyUrl: string;
     tier?: "ec2" | "hosted";
+    /**
+     * Compute-target kind. Absent / "ec2" / "hosted" → orchestrator sandbox.
+     * "local-pc" → user's matrx-local PC over Cloudflare tunnel; the
+     * binding payload is resolved server-side at chat-send time and
+     * `proxyUrl` is empty (the URL is built by `/api/compute-targets/resolve`).
+     */
+    kind?: "ec2" | "hosted" | "local-pc";
+    /** Display label latched at selection — rendered without re-fetching. */
+    name?: string;
   } | null;
 }
 

@@ -181,7 +181,19 @@ export interface CodingPreferences {
    */
   activeAgentSandboxBySurface: Record<
     string,
-    { rowId: string; proxyUrl: string; tier?: "ec2" | "hosted" }
+    {
+      rowId: string;
+      proxyUrl: string;
+      tier?: "ec2" | "hosted";
+      /**
+       * Compute-target kind. Undefined / "ec2" / "hosted" → orchestrator
+       * sandbox. "local-pc" → matrx-local PC (proxyUrl is empty; the
+       * binding is server-resolved via /api/compute-targets/resolve).
+       */
+      kind?: "ec2" | "hosted" | "local-pc";
+      /** Display label latched at selection. */
+      name?: string;
+    }
   >;
   /**
    * When true, the code workspace activates per-adapter Monaco type
