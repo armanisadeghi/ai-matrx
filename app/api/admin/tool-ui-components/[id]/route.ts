@@ -10,7 +10,7 @@ export async function GET(
         const supabase = await createClient();
 
         const { data, error } = await supabase
-            .from("tl_ui")
+            .from("tool_ui")
             .select("*")
             .eq("id", id)
             .single();
@@ -64,7 +64,7 @@ export async function PUT(
         }
 
         const { data, error } = await supabase
-            .from("tl_ui")
+            .from("tool_ui")
             .update(updateData)
             .eq("id", id)
             .select()
@@ -95,7 +95,7 @@ export async function DELETE(
         const supabase = await createClient();
 
         const { error } = await supabase
-            .from("tl_ui")
+            .from("tool_ui")
             .delete()
             .eq("id", id);
 

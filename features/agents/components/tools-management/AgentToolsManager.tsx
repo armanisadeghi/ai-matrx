@@ -672,14 +672,13 @@ function ServerToolsTab({
     let active = true;
     setIsListLoading(true);
     const supabase = createClient();
+    // The 2026 tool-system refactor simplified get_tools_list to
+    // (p_active_only boolean) — server-side filter/search/pagination by
+    // category/search/page were dropped. Pull active tools once and filter
+    // client-side from the existing `activeCategory` + `debouncedSearch`
+    // state below.
     supabase
-      .rpc("get_tools_list", {
-        p_category:
-          activeCategory === ALL_CATEGORY ? undefined : activeCategory,
-        p_search: debouncedSearch || undefined,
-        p_page: page,
-        p_page_size: pageSize,
-      })
+      .rpc("get_tools_list", { p_active_only: true })
       .then(({ data, error }) => {
         if (active && !error && data) {
           setToolsList(data as any);
@@ -1333,7 +1332,7 @@ function OrphanedToolsBanner({
     setLookupStatus("loading");
     const supabase = createClient();
     supabase
-      .from("tl_def")
+      .from("tool_def")
       .select("*")
       .in("id", orphanedTools)
       .then(({ data, error }) => {
@@ -3672,7 +3671,9 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
     setLoading(true);
     const supabase = createClient();
     supabase
-      .rpc("get_tool_detail", { p_tool_id: toolId })
+      // get_tool_detail signature changed in the 2026 refactor: now takes
+      // (p_name_or_id text), accepting either a UUID or a tool name.
+      .rpc("get_tool_detail", { p_name_or_id: toolId })
       .then(({ data, error }) => {
         if (active && data) {
           setDetail(data);
@@ -3737,7 +3738,7 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
     });
   };
 
-  const hasMeta = tool.function_path || tool.version;
+  const hasMeta = tool.source_kind || tool.version;
 
   return (
     <div className="px-3 pb-3 border-t border-border/50 pt-2 space-y-3">
@@ -3771,11 +3772,11 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
 
       {/* Metadata */}
       <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
-        {tool.function_path && (
+        {tool.source_kind && (
           <span className="flex items-center gap-1">
             <FileCode2 className="w-3 h-3" />
             <code className="bg-muted/40 px-1 py-0.5 rounded">
-              {tool.function_path}
+              {tool.source_kind}
             </code>
           </span>
         )}

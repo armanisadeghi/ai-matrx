@@ -690,21 +690,21 @@
         }
       }
     },
-    "/ai-tools/app/{source_app}": {
+    "/ai-tools/source-kind/{source_kind}": {
       "get": {
         "tags": [
           "AI Tools"
         ],
-        "summary": "Get Tools By App",
-        "operationId": "get_tools_by_app_ai_tools_app__source_app__get",
+        "summary": "Get Tools By Source Kind",
+        "operationId": "get_tools_by_source_kind_ai_tools_source_kind__source_kind__get",
         "parameters": [
           {
-            "name": "source_app",
+            "name": "source_kind",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Source App"
+              "title": "Source Kind"
             }
           }
         ],
@@ -714,7 +714,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListToolsByAppResponse"
+                  "$ref": "#/components/schemas/ListToolsBySourceKindResponse"
                 }
               }
             }
@@ -732,20 +732,21 @@
         }
       }
     },
-    "/ai-tools/app/matrx_ai/all": {
+    "/ai-tools/native/all": {
       "get": {
         "tags": [
           "AI Tools"
         ],
-        "summary": "Get Matrx Ai Tools",
-        "operationId": "get_matrx_ai_tools_ai_tools_app_matrx_ai_all_get",
+        "summary": "Get Native Tools",
+        "description": "All native (in-repo, @tool-declared) tool rows.",
+        "operationId": "get_native_tools_ai_tools_native_all_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListToolsByAppResponse"
+                  "$ref": "#/components/schemas/ListToolsBySourceKindResponse"
                 }
               }
             }
@@ -753,20 +754,21 @@
         }
       }
     },
-    "/ai-tools/app/matrx_local/all": {
+    "/ai-tools/mcp-discovered/all": {
       "get": {
         "tags": [
           "AI Tools"
         ],
-        "summary": "Get Matrx Local Tools",
-        "operationId": "get_matrx_local_tools_ai_tools_app_matrx_local_all_get",
+        "summary": "Get Mcp Discovered Tools",
+        "description": "All tool rows synced from MCP servers.",
+        "operationId": "get_mcp_discovered_tools_ai_tools_mcp_discovered_all_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListToolsByAppResponse"
+                  "$ref": "#/components/schemas/ListToolsBySourceKindResponse"
                 }
               }
             }
@@ -1714,7 +1716,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tl_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tl_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tool_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tool_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
         "operationId": "submit_tool_results_ai_conversation__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -1767,7 +1769,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tl_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tl_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tool_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tool_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
         "operationId": "submit_tool_results_ai_conversations__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -2380,7 +2382,7 @@
           "AI"
         ],
         "summary": "Resume Conversation",
-        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone (server restart, browser\nclosed, etc.).\n\nPreconditions:\n- The conversation must exist and belong to this user.\n- No cx_tl_call rows can still be in ``status='delegated'`` for this\n  user_request_id. If any remain, 409 CONFLICT is returned with the list —\n  the client should continue prompting the user for the remaining answers.\n\nBehavior:\n- The original ``user_request_id`` is reused (ensure_user_request_exists is\n  idempotent) so tokens/cost continue to aggregate under the same row.\n- ``ConversationResolver.from_conversation_id`` reconstructs the full\n  history from cx_message + cx_tl_call rows (tool results are\n  automatically reassembled).\n- ``run_ai_task`` streams the continued loop like any other turn.",
+        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone (server restart, browser\nclosed, etc.).\n\nPreconditions:\n- The conversation must exist and belong to this user.\n- No cx_tool_call rows can still be in ``status='delegated'`` for this\n  user_request_id. If any remain, 409 CONFLICT is returned with the list —\n  the client should continue prompting the user for the remaining answers.\n\nBehavior:\n- The original ``user_request_id`` is reused (ensure_user_request_exists is\n  idempotent) so tokens/cost continue to aggregate under the same row.\n- ``ConversationResolver.from_conversation_id`` reconstructs the full\n  history from cx_message + cx_tool_call rows (tool results are\n  automatically reassembled).\n- ``run_ai_task`` streams the continued loop like any other turn.",
         "operationId": "resume_conversation_ai_conversation__conversation_id__resume_post",
         "parameters": [
           {
@@ -2431,7 +2433,7 @@
           "AI"
         ],
         "summary": "Resume Conversation",
-        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone (server restart, browser\nclosed, etc.).\n\nPreconditions:\n- The conversation must exist and belong to this user.\n- No cx_tl_call rows can still be in ``status='delegated'`` for this\n  user_request_id. If any remain, 409 CONFLICT is returned with the list —\n  the client should continue prompting the user for the remaining answers.\n\nBehavior:\n- The original ``user_request_id`` is reused (ensure_user_request_exists is\n  idempotent) so tokens/cost continue to aggregate under the same row.\n- ``ConversationResolver.from_conversation_id`` reconstructs the full\n  history from cx_message + cx_tl_call rows (tool results are\n  automatically reassembled).\n- ``run_ai_task`` streams the continued loop like any other turn.",
+        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone (server restart, browser\nclosed, etc.).\n\nPreconditions:\n- The conversation must exist and belong to this user.\n- No cx_tool_call rows can still be in ``status='delegated'`` for this\n  user_request_id. If any remain, 409 CONFLICT is returned with the list —\n  the client should continue prompting the user for the remaining answers.\n\nBehavior:\n- The original ``user_request_id`` is reused (ensure_user_request_exists is\n  idempotent) so tokens/cost continue to aggregate under the same row.\n- ``ConversationResolver.from_conversation_id`` reconstructs the full\n  history from cx_message + cx_tool_call rows (tool results are\n  automatically reassembled).\n- ``run_ai_task`` streams the continued loop like any other turn.",
         "operationId": "resume_conversation_ai_conversations__conversation_id__resume_post",
         "parameters": [
           {
@@ -5088,6 +5090,346 @@
         }
       }
     },
+    "/api/compute-targets/": {
+      "get": {
+        "tags": [
+          "Compute Targets"
+        ],
+        "summary": "List the user's bindable compute targets (sandboxes + local PCs).",
+        "operationId": "list_compute_targets_api_compute_targets__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComputeTargetListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/compute-targets/resolve": {
+      "post": {
+        "tags": [
+          "Compute Targets"
+        ],
+        "summary": "Resolve a compute-target ref into the full sandbox binding payload clients ship on chat requests. Lets clients keep the existing `sandbox: {...}` request field while supporting local-PC targets.",
+        "operationId": "resolve_compute_target_api_compute_targets_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComputeTargetRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingRequest"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/local-proxy/{app_instance_id}/{path}": {
+      "patch": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/on-sign-in": {
+      "post": {
+        "tags": [
+          "Auth Hooks"
+        ],
+        "summary": "Supabase auth webhook — runs ensure_default_sandbox for the user.",
+        "operationId": "on_sign_in_api_auth_on_sign_in_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupabaseAuthWebhookPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnSignInResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utilities/block-processing/process": {
       "post": {
         "tags": [
@@ -5998,6 +6340,90 @@
         }
       }
     },
+    "/scraper/admin/sites/batch-archive": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Batch Archive Sites",
+        "description": "Archive (or un-archive) many sites in one call. Ownership is checked per\nsite — sites the caller can't write are skipped (reported in ``forbidden``).",
+        "operationId": "batch_archive_sites_scraper_admin_sites_batch_archive_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteBatchArchiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteBatchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/sites/batch-delete": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Batch Delete Sites",
+        "description": "Delete (or archive, when ``hard=False``) many sites in one call.\nOwnership is checked per site via ``assert_can_admin_site``.",
+        "operationId": "batch_delete_sites_scraper_admin_sites_batch_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteBatchDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteBatchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scraper/admin/crawl/{run_id}": {
       "delete": {
         "tags": [
@@ -6026,6 +6452,48 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Delete Run Endpoint Scraper Admin Crawl  Run Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/admin/crawl/batch-delete": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Batch Delete Runs",
+        "description": "Hard-delete many crawl runs in one call. Ownership is checked per run —\na run the caller can't write is skipped (reported in ``forbidden``), never\ndeleted. Same CASCADE semantics as the single-run delete.",
+        "operationId": "batch_delete_runs_scraper_admin_crawl_batch_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunBatchDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunBatchDeleteResult"
                 }
               }
             }
@@ -8651,7 +9119,7 @@
           "Admin / Debug Traces"
         ],
         "summary": "By Call",
-        "description": "Forensic deep-dive for one ``call_id`` — both trace events AND the\ncx_tl_call row joined together.\n\nPre-flight rejects (SURFACE_REJECT, NO_EXECUTOR, LOOP_BLOCK) have\ntrace events but no cx_tl_call row; in that case ``tool_call`` is\n``null`` and the caller relies on the events list alone.",
+        "description": "Forensic deep-dive for one ``call_id`` — both trace events AND the\ncx_tool_call row joined together.\n\nPre-flight rejects (SURFACE_REJECT, NO_EXECUTOR, LOOP_BLOCK) have\ntrace events but no cx_tool_call row; in that case ``tool_call`` is\n``null`` and the caller relies on the events list alone.",
         "operationId": "by_call_admin_debug_traces_by_call__call_id__get",
         "parameters": [
           {
@@ -9171,7 +9639,7 @@
           "Tool Routing"
         ],
         "summary": "Get Db Surface Manifest",
-        "description": "DB-driven surface manifest. The canonical path — used by frontends\nthat declare a ``client.surface`` from the 60+ rows in\n``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).\n\nIncludes tools inherited from ``matrx-default/default`` so the response\nreflects exactly what ``apply_unified_tools`` would inject. Returns 404\nwhen the name isn't in ``public.ui_surface``.",
+        "description": "DB-driven surface manifest. The canonical path — used by frontends\nthat declare a ``client.surface`` from the 60+ rows in\n``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).\n\nIncludes tools inherited from every ancestor surface walked via\n``ui_surface.parent_surface_name`` so the response reflects exactly\nwhat ``apply_unified_tools`` would inject. Returns 404 when the name\nisn't in ``public.ui_surface``.",
         "operationId": "get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get",
         "parameters": [
           {
@@ -9266,7 +9734,7 @@
           "Admin / Tool Routing"
         ],
         "summary": "Cache Bust",
-        "description": "Force-reload the tool registry and capability factory caches from\nthe DB. Run after a migration adds/removes tools, edits tool\ndefinitions, or changes ``tl_executor`` bindings.\n\nAdmin-only.",
+        "description": "Force-reload the tool registry and capability factory caches from\nthe DB. Run after a migration adds/removes tools, edits tool\ndefinitions, or changes ``tool_binding`` rows.\n\nAdmin-only.",
         "operationId": "cache_bust_admin_tool_routing_cache_bust_post",
         "responses": {
           "200": {
@@ -17387,6 +17855,223 @@
         }
       }
     },
+    "/rag/admin/data-stores/{store_id}/members/batch-remove": {
+      "post": {
+        "tags": [
+          "RAG Admin"
+        ],
+        "summary": "Admin Batch Remove Data Store Members",
+        "description": "Remove many members from one store in a single call. Composite\n(source_kind, source_id) keys are matched via unnest so it's one DELETE.",
+        "operationId": "admin_batch_remove_data_store_members_rag_admin_data_stores__store_id__members_batch_remove_post",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberBatchRemoveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberBatchRemoveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search-lab/expand": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Expand Endpoint",
+        "operationId": "expand_endpoint_rag_search_lab_expand_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpandResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search-lab/inventory": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Inventory Endpoint",
+        "operationId": "inventory_endpoint_rag_search_lab_inventory_post",
+        "parameters": [
+          {
+            "name": "admin_bypass_acl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Admin Bypass Acl"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search-lab/diagnose": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Diagnose Endpoint",
+        "operationId": "diagnose_endpoint_rag_search_lab_diagnose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnoseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnoseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search-lab/agent/chat": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Agent Chat Stream",
+        "operationId": "agent_chat_stream_rag_search_lab_agent_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflow/node-types": {
       "get": {
         "tags": [
@@ -20152,7 +20837,7 @@
           "Conversations"
         ],
         "summary": "Invalidate Conversation Cache",
-        "description": "Drop every cached artifact for a conversation.\n\nCalled after the client has mutated ``cx_message`` / ``cx_tl_call``\n/ ``cx_media`` directly via Supabase, so the server rebuilds the\n``Agent`` from fresh DB rows on the next AI call. Clears BOTH the\nper-conversation ``AgentCache`` entry AND the ORM ``StateManager``\ncaches for every ``Cx*`` model (StateManager has no FK cascade).",
+        "description": "Drop every cached artifact for a conversation.\n\nCalled after the client has mutated ``cx_message`` / ``cx_tool_call``\n/ ``cx_media`` directly via Supabase, so the server rebuilds the\n``Agent`` from fresh DB rows on the next AI call. Clears BOTH the\nper-conversation ``AgentCache`` entry AND the ORM ``StateManager``\ncaches for every ``Cx*`` model (StateManager has no FK cascade).",
         "operationId": "invalidate_conversation_cache_cx_conversations__conversation_id__invalidate_cache_post",
         "parameters": [
           {
@@ -26618,6 +27303,48 @@
         }
       }
     },
+    "/admin/db/tables/{table_name}/rows/bulk-update": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin DB"
+        ],
+        "summary": "Bulk Update Rows",
+        "description": "Apply the same field changes to many rows in one call. Never fails the\nwhole batch on one bad id — returns a partial-result envelope (same shape\nas bulk-delete) so the caller can report what landed.",
+        "operationId": "bulk_update_rows_admin_db_tables__table_name__rows_bulk_update_post",
+        "parameters": [
+          {
+            "name": "table_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Table Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/db/cache/stats": {
       "get": {
         "tags": [
@@ -26859,6 +27586,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IssueClassRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/ops/issue-classes/batch": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Ops Triage"
+        ],
+        "summary": "Batch Update Issue Classes",
+        "description": "Bulk-apply one disposition (and/or other fields) to many issue classes.\n\nThe \"set all filtered to suppress\" companion to the per-row PATCH — same\nupdate semantics, one call. ``is_active`` is derived from disposition\nexactly as the single-row endpoint does.",
+        "operationId": "batch_update_issue_classes_admin_ops_issue_classes_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueClassBatchUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueClassBatchResult"
                 }
               }
             }
@@ -27506,6 +28276,56 @@
         }
       }
     },
+    "/admin/persistence/failures/dismiss-batch": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Dismiss Batch",
+        "description": "Mark every unrecovered failure matching the filter ``recovered_at = now()``\nwithout replaying. The \"dismiss all\" companion to ``replay-batch`` — use when\na whole class of failures is stale / no longer relevant.\n\nEmpty body dismisses every unrecovered row (capped by ``limit``).",
+        "operationId": "dismiss_batch_admin_persistence_failures_dismiss_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DismissBatchRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DismissBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/persistence/summary": {
       "get": {
         "tags": [
@@ -27721,6 +28541,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResolveErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/persistence/errors/resolve-batch": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Persistence"
+        ],
+        "summary": "Resolve Batch",
+        "description": "Mark every unresolved system_error matching the filter resolved.\n\nThe \"resolve all\" bulk action — use when a whole class of errors\n(one kind, one error substring, an age window) has been acknowledged.\nEmpty body resolves every unresolved row (capped by ``limit``).",
+        "operationId": "resolve_batch_admin_persistence_errors_resolve_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ResolveBatchRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveBatchResponse"
                 }
               }
             }
@@ -31633,6 +32503,86 @@
         "type": "object",
         "title": "AgentBlocksStartRequest"
       },
+      "AgentChatRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/AgentMessage"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "claude-sonnet-4-6"
+          },
+          "data_store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Store Id"
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds"
+          },
+          "admin_bypass_acl": {
+            "type": "boolean",
+            "title": "Admin Bypass Acl",
+            "default": false
+          },
+          "rerank": {
+            "type": "boolean",
+            "title": "Rerank",
+            "default": true
+          },
+          "multi_query": {
+            "type": "integer",
+            "maximum": 4,
+            "minimum": 1,
+            "title": "Multi Query",
+            "default": 1
+          },
+          "use_hyde": {
+            "type": "boolean",
+            "title": "Use Hyde",
+            "default": false
+          },
+          "max_tool_calls": {
+            "type": "integer",
+            "maximum": 12,
+            "minimum": 1,
+            "title": "Max Tool Calls",
+            "default": 6
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AgentChatRequest"
+      },
       "AgentConfigSettings": {
         "properties": {
           "temperature": {
@@ -31673,6 +32623,28 @@
         "type": "object",
         "title": "AgentConfigSettings",
         "description": "Sampling / decode settings on an agent_config."
+      },
+      "AgentMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "AgentMessage"
       },
       "AgentStartRequest": {
         "properties": {
@@ -35397,7 +36369,7 @@
         },
         "type": "object",
         "title": "CacheBypass",
-        "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tl_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Evict the agent definition from ``AgxAgent`` / ``AgxVersion``\n    caches in the ORM ``StateManager``. Required after the agent\n    definition has been edited. Scoped to the single agent the route\n    is executing when ``apply_cache_bypass`` is given an ``agent_id``;\n    otherwise a whole-model flush.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``AiModel`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
+        "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tool_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Evict the agent definition from ``AgxAgent`` / ``AgxVersion``\n    caches in the ORM ``StateManager``. Required after the agent\n    definition has been edited. Scoped to the single agent the route\n    is executing when ``apply_cache_bypass`` is given an ``agent_id``;\n    otherwise a whole-model flush.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``AiModel`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
       },
       "CallTimelineResponse": {
         "properties": {
@@ -35430,7 +36402,7 @@
           "events"
         ],
         "title": "CallTimelineResponse",
-        "description": "Full forensic dump for one ``call_id`` — trace events + cx_tl_call row."
+        "description": "Full forensic dump for one ``call_id`` — trace events + cx_tool_call row."
       },
       "CallToolDetail": {
         "properties": {
@@ -35610,7 +36582,7 @@
           "call_id"
         ],
         "title": "CallToolDetail",
-        "description": "One row from cx_tl_call — the per-call record. Only present when the\ncall made it past pre-flight; pre-flight rejects (SURFACE_REJECT,\nNO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tl_call row."
+        "description": "One row from cx_tool_call — the per-call record. Only present when the\ncall made it past pre-flight; pre-flight rejects (SURFACE_REJECT,\nNO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tool_call row."
       },
       "CancelRunResponse": {
         "properties": {
@@ -38159,10 +39131,6 @@
             "type": "string",
             "title": "Name"
           },
-          "source_app": {
-            "type": "string",
-            "title": "Source App"
-          },
           "function_path": {
             "type": "string",
             "title": "Function Path"
@@ -38197,7 +39165,6 @@
         "type": "object",
         "required": [
           "name",
-          "source_app",
           "function_path"
         ],
         "title": "CodeDeclaration"
@@ -38940,6 +39907,210 @@
           "event_driven"
         ],
         "title": "ComputeNextDueResponse"
+      },
+      "ComputeTarget": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ec2",
+              "hosted",
+              "local-pc"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "running",
+              "starting",
+              "creating",
+              "shutting_down",
+              "stopped",
+              "failed",
+              "expired",
+              "online",
+              "offline"
+            ],
+            "title": "Status"
+          },
+          "is_online": {
+            "type": "boolean",
+            "title": "Is Online"
+          },
+          "is_this_device": {
+            "type": "boolean",
+            "title": "Is This Device",
+            "default": false
+          },
+          "sandbox_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Id"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ec2",
+                  "hosted"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance Id"
+          },
+          "tunnel_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tunnel Url"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "status",
+          "is_online"
+        ],
+        "title": "ComputeTarget",
+        "description": "One bindable compute target, in the shape every client renders."
+      },
+      "ComputeTargetListResponse": {
+        "properties": {
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ComputeTarget"
+            },
+            "type": "array",
+            "title": "Targets"
+          },
+          "max_sandboxes": {
+            "type": "integer",
+            "title": "Max Sandboxes"
+          },
+          "sandbox_count": {
+            "type": "integer",
+            "title": "Sandbox Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "targets",
+          "max_sandboxes",
+          "sandbox_count"
+        ],
+        "title": "ComputeTargetListResponse",
+        "description": "Unified list returned by ``GET /api/compute-targets``."
+      },
+      "ComputeTargetRef": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ec2",
+              "hosted",
+              "local-pc"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "title": "ComputeTargetRef",
+        "description": "Compact reference posted by clients when they bind a target to a\nconversation. The full binding (base_url / access_token / root_path) is\nresolved server-side from this ref."
       },
       "ContentEditRequest": {
         "properties": {
@@ -41950,6 +43121,335 @@
         ],
         "title": "DiagSpawnDetachedResponse"
       },
+      "DiagnoseHit": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "chunk_kind": {
+            "type": "string",
+            "title": "Chunk Kind"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank"
+          },
+          "lexical_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lexical Rank"
+          },
+          "rerank_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank Score"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Number"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "source_kind",
+          "source_id",
+          "chunk_kind",
+          "score",
+          "vector_rank",
+          "lexical_rank",
+          "rerank_score",
+          "snippet",
+          "metadata",
+          "file_name",
+          "page_number"
+        ],
+        "title": "DiagnoseHit"
+      },
+      "DiagnoseRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 20
+          },
+          "multi_query": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Multi Query",
+            "default": 1
+          },
+          "use_hyde": {
+            "type": "boolean",
+            "title": "Use Hyde",
+            "default": false
+          },
+          "rerank": {
+            "type": "boolean",
+            "title": "Rerank",
+            "default": true
+          },
+          "use_mmr": {
+            "type": "boolean",
+            "title": "Use Mmr",
+            "default": true
+          },
+          "only_children": {
+            "type": "boolean",
+            "title": "Only Children",
+            "default": true
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds"
+          },
+          "embedding_models": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Models"
+          },
+          "data_store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Store Id"
+          },
+          "admin_bypass_acl": {
+            "type": "boolean",
+            "title": "Admin Bypass Acl",
+            "default": false
+          },
+          "include_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "DiagnoseRequest"
+      },
+      "DiagnoseResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ScopeContext"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "title": "Elapsed Ms"
+          },
+          "query_variants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Query Variants"
+          },
+          "hyde_passage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hyde Passage"
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model"
+          },
+          "query_vector_preview": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Query Vector Preview"
+          },
+          "visible_chunks_total": {
+            "type": "integer",
+            "title": "Visible Chunks Total"
+          },
+          "candidates_vector": {
+            "type": "integer",
+            "title": "Candidates Vector"
+          },
+          "candidates_lexical": {
+            "type": "integer",
+            "title": "Candidates Lexical"
+          },
+          "candidates_after_fusion": {
+            "type": "integer",
+            "title": "Candidates After Fusion"
+          },
+          "candidates_after_mmr": {
+            "type": "integer",
+            "title": "Candidates After Mmr"
+          },
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnoseHit"
+            },
+            "type": "array",
+            "title": "Hits"
+          },
+          "reranker_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker Model"
+          },
+          "effective_filters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Effective Filters"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "scope",
+          "elapsed_ms",
+          "query_variants",
+          "hyde_passage",
+          "embedding_model",
+          "query_vector_preview",
+          "visible_chunks_total",
+          "candidates_vector",
+          "candidates_lexical",
+          "candidates_after_fusion",
+          "candidates_after_mmr",
+          "hits",
+          "reranker_model",
+          "effective_filters",
+          "notes"
+        ],
+        "title": "DiagnoseResponse"
+      },
       "DirectChatRequest": {
         "properties": {
           "chat_config": {
@@ -41996,6 +43496,75 @@
           "deleted"
         ],
         "title": "DiscardResponse"
+      },
+      "DismissBatchRequest": {
+        "properties": {
+          "table_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Target"
+          },
+          "error_text_contains": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text Contains"
+          },
+          "max_age_secs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Age Secs",
+            "description": "Only dismiss rows whose failed_at is within this many seconds. Defaults to no time limit."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 2000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DismissBatchRequest",
+        "description": "Filter for batch dismiss. Empty body = dismiss every unrecovered row."
+      },
+      "DismissBatchResponse": {
+        "properties": {
+          "dismissed_count": {
+            "type": "integer",
+            "title": "Dismissed Count"
+          },
+          "dismissed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Dismissed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dismissed_count",
+          "dismissed_at"
+        ],
+        "title": "DismissBatchResponse"
       },
       "DismissResponse": {
         "properties": {
@@ -42846,6 +44415,84 @@
         },
         "type": "object",
         "title": "ExcludePageBody"
+      },
+      "ExpandRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "multi_query": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Multi Query",
+            "default": 3
+          },
+          "use_hyde": {
+            "type": "boolean",
+            "title": "Use Hyde",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "ExpandRequest"
+      },
+      "ExpandResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "variants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Variants"
+          },
+          "hyde_passage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hyde Passage"
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model"
+          },
+          "query_vector_preview": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Query Vector Preview",
+            "description": "First 8 dimensions of the embedding for the original query"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "variants",
+          "hyde_passage",
+          "embedding_model",
+          "elapsed_ms"
+        ],
+        "title": "ExpandResponse"
       },
       "ExtensionContentResponse": {
         "properties": {
@@ -48136,6 +49783,177 @@
         ],
         "title": "InvalidateCacheResponse"
       },
+      "InventoryBucket": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "visible_chunks": {
+            "type": "integer",
+            "title": "Visible Chunks"
+          },
+          "distinct_sources": {
+            "type": "integer",
+            "title": "Distinct Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "visible_chunks",
+          "distinct_sources"
+        ],
+        "title": "InventoryBucket"
+      },
+      "InventoryResponse": {
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/ScopeContext"
+          },
+          "total_visible_chunks": {
+            "type": "integer",
+            "title": "Total Visible Chunks"
+          },
+          "total_visible_sources": {
+            "type": "integer",
+            "title": "Total Visible Sources"
+          },
+          "by_source_kind": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryBucket"
+            },
+            "type": "array",
+            "title": "By Source Kind"
+          },
+          "by_visibility_route": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Visibility Route",
+            "description": "How each visible chunk became visible to the caller: owned, org_member, library_doc, library_short_code, note_share, cld_perm_user, cld_perm_group, cld_perm_folder."
+          },
+          "top_sources": {
+            "items": {
+              "$ref": "#/components/schemas/TopSource"
+            },
+            "type": "array",
+            "title": "Top Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scope",
+          "total_visible_chunks",
+          "total_visible_sources",
+          "by_source_kind",
+          "top_sources"
+        ],
+        "title": "InventoryResponse"
+      },
+      "IssueClassBatchResult": {
+        "properties": {
+          "updated_count": {
+            "type": "integer",
+            "title": "Updated Count"
+          },
+          "requested_count": {
+            "type": "integer",
+            "title": "Requested Count"
+          },
+          "failed_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failed Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "updated_count",
+          "requested_count",
+          "failed_ids"
+        ],
+        "title": "IssueClassBatchResult"
+      },
+      "IssueClassBatchUpdate": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ids"
+          },
+          "disposition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposition"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "alert_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Threshold"
+          },
+          "alert_window_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Window Minutes"
+          },
+          "resolution_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "title": "IssueClassBatchUpdate",
+        "description": "Apply the same field changes to many issue classes at once.\n\nPOST (not PATCH) so the path can't collide with PATCH /issue-classes/{class_id}."
+      },
       "IssueClassEmbed": {
         "properties": {
           "key": {
@@ -51230,7 +53048,7 @@
         ],
         "title": "ListRowsResponse"
       },
-      "ListToolsByAppResponse": {
+      "ListToolsBySourceKindResponse": {
         "properties": {
           "tools": {
             "items": {
@@ -51243,18 +53061,18 @@
             "type": "integer",
             "title": "Count"
           },
-          "source_app": {
+          "source_kind": {
             "type": "string",
-            "title": "Source App"
+            "title": "Source Kind"
           }
         },
         "type": "object",
         "required": [
           "tools",
           "count",
-          "source_app"
+          "source_kind"
         ],
-        "title": "ListToolsByAppResponse"
+        "title": "ListToolsBySourceKindResponse"
       },
       "ListToolsResponse": {
         "properties": {
@@ -51727,6 +53545,61 @@
         },
         "type": "object",
         "title": "MediaUpdate"
+      },
+      "MemberBatchRemoveRequest": {
+        "properties": {
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberRef"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "members"
+        ],
+        "title": "MemberBatchRemoveRequest"
+      },
+      "MemberBatchRemoveResult": {
+        "properties": {
+          "removed_count": {
+            "type": "integer",
+            "title": "Removed Count"
+          },
+          "requested_count": {
+            "type": "integer",
+            "title": "Requested Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "removed_count",
+          "requested_count"
+        ],
+        "title": "MemberBatchRemoveResult"
+      },
+      "MemberRef": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id"
+        ],
+        "title": "MemberRef"
       },
       "MemoryCostByEventType": {
         "properties": {
@@ -52486,6 +54359,37 @@
         ],
         "title": "OccupationalCodesResponse",
         "description": "Wrapper around the bundled California job-codes config.\n\nThe shape of `codes` is:\n    Record<JobCode, Record<JobTitle, IndustryCategory>>\ne.g. `{\"230\": {\"Carpenter\": \"Construction\", ...}, ...}`"
+      },
+      "OnSignInResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "sandbox_row_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Row Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ok",
+          "user_id"
+        ],
+        "title": "OnSignInResponse",
+        "description": "Response from the on-sign-in hook — used for operator observability."
       },
       "OpsSummaryResponse": {
         "properties": {
@@ -57806,6 +59710,75 @@
         "title": "ResearchTopicSummary",
         "description": "Compact projection of an rs_topic row used by topic-picker UIs.\n\nAvoids round-tripping the heavy `TopicResponse` (progress + cost\nsummary) when the consumer just needs `name` to render a list."
       },
+      "ResolveBatchRequest": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "error_text_contains": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text Contains"
+          },
+          "max_age_secs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Age Secs",
+            "description": "Only resolve rows whose occurred_at is within this many seconds. Defaults to no time limit."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 2000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ResolveBatchRequest",
+        "description": "Filter for batch resolve. Empty body = resolve every unresolved row."
+      },
+      "ResolveBatchResponse": {
+        "properties": {
+          "resolved_count": {
+            "type": "integer",
+            "title": "Resolved Count"
+          },
+          "resolved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resolved At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resolved_count",
+          "resolved_at"
+        ],
+        "title": "ResolveBatchResponse"
+      },
       "ResolveErrorResponse": {
         "properties": {
           "id": {
@@ -58502,6 +60475,56 @@
           "data"
         ],
         "title": "RowUpdate"
+      },
+      "RunBatchDeleteRequest": {
+        "properties": {
+          "run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Run Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_ids"
+        ],
+        "title": "RunBatchDeleteRequest"
+      },
+      "RunBatchDeleteResult": {
+        "properties": {
+          "deleted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted"
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found"
+          },
+          "forbidden": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Forbidden"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deleted",
+          "not_found",
+          "forbidden"
+        ],
+        "title": "RunBatchDeleteResult"
       },
       "RunCostSummary": {
         "properties": {
@@ -59623,6 +61646,43 @@
         "title": "SchemaTypesResponse",
         "description": "Map of ``field_name -> data_type``."
       },
+      "ScopeContext": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin"
+          },
+          "admin_bypass_acl": {
+            "type": "boolean",
+            "title": "Admin Bypass Acl"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user_id",
+          "organization_id",
+          "is_admin",
+          "admin_bypass_acl"
+        ],
+        "title": "ScopeContext",
+        "description": "Snapshot of who is asking and at what scope."
+      },
       "ScrubRequest": {
         "properties": {
           "output_mode": {
@@ -60522,6 +62582,83 @@
           "expires_in"
         ],
         "title": "SignedUrlResponse"
+      },
+      "SiteBatchArchiveRequest": {
+        "properties": {
+          "site_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Site Ids"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_ids"
+        ],
+        "title": "SiteBatchArchiveRequest"
+      },
+      "SiteBatchDeleteRequest": {
+        "properties": {
+          "site_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Site Ids"
+          },
+          "hard": {
+            "type": "boolean",
+            "title": "Hard",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_ids"
+        ],
+        "title": "SiteBatchDeleteRequest"
+      },
+      "SiteBatchResult": {
+        "properties": {
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Succeeded"
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found"
+          },
+          "forbidden": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Forbidden"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "succeeded",
+          "not_found",
+          "forbidden"
+        ],
+        "title": "SiteBatchResult"
       },
       "SiteCredentialRequest": {
         "properties": {
@@ -62347,6 +64484,84 @@
         "title": "SuggestRequest",
         "description": "Wizard input for the Research Setup Suggest Agent.\n\nThe agent (`prompt_builtins.id = 4f802fd1-…`) takes ONE variable —\n`subject_name_or_description`. The frontend wizard's single textarea\nfeeds this directly. The user can paste a short name (\"Arman Sadeghi\"),\na paragraph (\"everything we know about photosynthesis cycles…\"), or\nanything in between. The agent decides how to title and describe the\nproject from that one string.\n\nThe legacy two-field shape (`topic_name` + `topic_description`) is\naccepted via the validator below so old clients don't 422; they are\nconcatenated with a space. New clients should send only\n`subject_name_or_description`."
       },
+      "SupabaseAuthWebhookPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "INSERT",
+              "UPDATE"
+            ],
+            "title": "Type"
+          },
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "record": {
+            "$ref": "#/components/schemas/SupabaseAuthWebhookUser"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type",
+          "table",
+          "record"
+        ],
+        "title": "SupabaseAuthWebhookPayload",
+        "description": "Supabase Auth webhook envelope.\n\nReference shape (Supabase dashboard → Authentication → Hooks → 'Send HTTP'):\n\n```json\n{\n  \"type\": \"INSERT\" | \"UPDATE\",\n  \"table\": \"users\",\n  \"record\": { \"id\": \"...\", \"email\": \"...\", ... },\n  \"schema\": \"auth\",\n  \"old_record\": { ... } | null\n}\n```"
+      },
+      "SupabaseAuthWebhookUser": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id",
+            "description": "auth.users.id — UUID"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "aud": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aud"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "SupabaseAuthWebhookUser",
+        "description": "Subset of the Supabase ``UserRecord`` payload we actually consume."
+      },
       "SurfaceAmendments": {
         "properties": {
           "add": {
@@ -62442,7 +64657,7 @@
           "optional_tools"
         ],
         "title": "SurfaceManifest",
-        "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11.\n\nSources can be one of:\n  - ``db_surface`` — resolved from ``public.ui_surface`` +\n    ``public.tl_def_surface`` (the common path; 60+ matrx-user surfaces).\n  - ``capability`` — resolved from a Python-registered ``Capability``\n    in matrx-ai's registry (payload-bearing extras like ``editor-state``,\n    ``sandbox-fs``, ``browser-dom``)."
+        "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11.\n\nSources can be one of:\n  - ``db_surface`` — resolved from ``public.ui_surface`` +\n    ``public.tool_surface_defaults`` (the common path; 60+ matrx-user\n    surfaces).\n  - ``capability`` — resolved from a Python-registered ``Capability``\n    in matrx-ai's registry (payload-bearing extras like ``editor-state``,\n    ``sandbox-fs``, ``browser-dom``)."
       },
       "SyncClustersRequest": {
         "properties": {
@@ -63810,7 +66025,7 @@
             ],
             "title": "Description"
           },
-          "source_app": {
+          "source_kind": {
             "anyOf": [
               {
                 "type": "string"
@@ -63819,13 +66034,24 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source Kind"
+          },
+          "managed_by_server_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Managed By Server Id"
           }
         },
         "additionalProperties": true,
         "type": "object",
         "title": "ToolRecord",
-        "description": "Tool definition row as returned by ``ToolDef.to_dict()``.\n\nTool rows carry provider-specific JSON-Schema fragments\n(``input_schema``, ``output_schema``) and free-form metadata, so most\nfields are typed as ``JsonValue``. Extra keys are tolerated because\nthe generated manager's ``to_dict`` can evolve independently."
+        "description": "Tool definition row as returned by ``ToolDef.to_dict()``.\n\nTool rows carry provider-specific JSON-Schema fragments\n(``input_schema``, ``output_schema``) and free-form metadata, so most\nfields are typed as ``JsonValue``. Extra keys are tolerated because\nthe generated manager's ``to_dict`` can evolve independently.\n\n``source_kind`` discriminates row origin: ``native`` /\n``mcp_discovered`` / ``admin_authored`` / ``agent_authored``."
       },
       "ToolResultsRequest": {
         "properties": {
@@ -63902,7 +66128,7 @@
             "type": "string",
             "title": "Name"
           },
-          "source_app": {
+          "source_kind": {
             "anyOf": [
               {
                 "type": "string"
@@ -63911,7 +66137,18 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source Kind"
+          },
+          "managed_by_server_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Managed By Server Id"
           },
           "function_path": {
             "anyOf": [
@@ -64023,7 +66260,7 @@
           "name"
         ],
         "title": "ToolRow",
-        "description": "A tl_def row plus its derived drift status, for the list/detail views."
+        "description": "A tool_def row plus its derived drift status, for the list/detail views.\n\n``source_kind`` discriminates row origin: ``native`` (declared in code by\nmatrx-ai / aidream), ``mcp_discovered`` (synced from an MCP server),\n``admin_authored`` (created via the admin UI), ``agent_authored`` (created\nby an agent tool run). ``managed_by_server_id`` is set for MCP-discovered\nrows to the originating ``tool_mcp_server.id``.\n\n``function_path`` is derived from the code declaration when one exists\nand is purely informational — the schema no longer carries the column."
       },
       "ToolSummary": {
         "properties": {
@@ -64190,7 +66427,79 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ToolUpdateRequest",
-        "description": "Admin-editable tl_def settings. All optional; only provided fields change.\n\n``parameters`` is the tool's argument contract — the same flat shape the\ndrift engine diffs against code: a mapping of argument name → spec object,\ne.g. ``{\"action\": {\"type\": \"string\", \"required\": true, \"enum\": [\"get\",\n\"set\"]}}``. Changing it here is the DB-first path the doctrine prescribes\n(TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line\nuntil the drift gate is quiet. Editing it bumps the row ``version``."
+        "description": "Admin-editable tool_def settings. All optional; only provided fields change.\n\n``parameters`` is the tool's argument contract — the same flat shape the\ndrift engine diffs against code: a mapping of argument name → spec object,\ne.g. ``{\"action\": {\"type\": \"string\", \"required\": true, \"enum\": [\"get\",\n\"set\"]}}``. Changing it here is the DB-first path the doctrine prescribes\n(TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line\nuntil the drift gate is quiet. Editing it bumps the row ``version``."
+      },
+      "TopSource": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "chunk_count": {
+            "type": "integer",
+            "title": "Chunk Count"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id",
+          "chunk_count",
+          "file_name",
+          "organization_id",
+          "owner_id",
+          "processed_document_id"
+        ],
+        "title": "TopSource"
       },
       "TopicCreate": {
         "properties": {
@@ -68315,6 +70624,12 @@
             "type": "boolean",
             "title": "Only Children",
             "default": true
+          },
+          "admin_bypass_acl": {
+            "type": "boolean",
+            "title": "Admin Bypass Acl",
+            "description": "Admin-only: bypass per-user ACL and search every chunk in every tenant. Useful for the admin search-diagnostic UI to answer 'do these chunks even exist?' independent of ownership / org / share grants. Ignored for non-admins.",
+            "default": false
           },
           "data_store_id": {
             "anyOf": [

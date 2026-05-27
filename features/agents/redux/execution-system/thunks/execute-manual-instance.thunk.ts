@@ -58,7 +58,7 @@
  *   - The active capability providers (editor-state, sandbox-fs) populate
  *     the `client.capabilities` envelope. UI-first tools (user / update_plan
  *     / …) come from the request's surface (e.g. matrx-user/chat) resolved
- *     server-side against public.tl_def_surface — not shipped by name here.
+ *     server-side via tool_resolve_for_request — not shipped by name here.
  *
  * History: this thunk was deleted in commit 5bcb43380 (the May 2026 tool-
  * injection migration), which rerouted every caller through executeInstance.

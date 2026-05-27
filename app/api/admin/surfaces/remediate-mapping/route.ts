@@ -93,6 +93,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: args.error }, { status: 400 });
   }
 
+  // The tool-binding branch was removed in the 2026 tool-system refactor:
+  // `tl_def_surface` was dropped entirely. Tool arg-defaults now live as
+  // literal jsonb on `tool_surface_defaults.arg_defaults` — there is no
+  // `surface_value` indirection left to remediate. The agent branch (using
+  // `agx_agent_surface`) is unchanged.
+  if (args.bindingKind === "tool") {
+    return NextResponse.json(
+      {
+        error:
+          "Tool mapping remediation is no longer supported. tl_def_surface was dropped in the 2026 refactor; tool arg-defaults live as literal jsonb in tool_surface_defaults.arg_defaults and don't reference surface_values.",
+      },
+      { status: 410 },
+    );
+  }
+
   try {
     const supabase = await createClient();
     const result = await remediateBrokenMapping(supabase, args);

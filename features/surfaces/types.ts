@@ -7,10 +7,14 @@
  * (agent mapping editors, tool mapping editors, audit views) can pick from
  * the same list the runtime actually emits.
  *
- * The `ValueMapping` discriminated union is the JSONB shape stored in both
- * `agx_agent_surface.value_mappings` and `tl_def_surface.arg_mappings`.
- * A single resolver consumes it for agent variables, agent context slots,
- * and tool args.
+ * The `ValueMapping` discriminated union is the JSONB shape stored in
+ * `agx_agent_surface.value_mappings`. A single resolver consumes it for
+ * agent variables and agent context slots.
+ *
+ * NOTE: Tool arg-defaults moved out of this model in the 2026 tool-system
+ * refactor. They now live as plain literal jsonb in
+ * `tool_surface_defaults.arg_defaults` (no surface_value indirection), so
+ * the tool side of `BrokenMapping` is permanently empty going forward.
  *
  * See:
  *   - `features/surfaces/manifests/registry.ts`   (the registry)
@@ -139,9 +143,9 @@ export interface SurfaceValueDrift {
 
 /** Single broken-mapping entry — a JSONB mapping references a target that no longer exists. */
 export interface BrokenMapping {
-  /** "agent" or "tool". */
+  /** Always "agent" post-2026 refactor; tool-side mappings no longer exist. */
   bindingKind: "agent" | "tool";
-  /** Row id of the binding (`agx_agent_surface.id` or composite key for `tl_def_surface`). */
+  /** Row id of the binding (`agx_agent_surface.id`). */
   bindingId: string;
   /** Surface this binding is for. */
   surfaceName: string;
@@ -162,7 +166,13 @@ export interface SurfaceDriftReport {
   diffs: SurfaceValueDrift[];
   /** Broken `surface_value` mappings in `agx_agent_surface.value_mappings`. */
   brokenAgentMappings: BrokenMapping[];
-  /** Broken `surface_value` mappings in `tl_def_surface.arg_mappings`. */
+  /**
+   * Always empty post-2026 refactor — `tl_def_surface.arg_mappings` was
+   * dropped along with the table. Tool arg-defaults are now literal jsonb
+   * in `tool_surface_defaults.arg_defaults` (no indirection to break).
+   * Kept on the type for back-compat with admin UIs that iterate it.
+   * @deprecated Will be removed once admin UI stops reading this field.
+   */
   brokenToolMappings: BrokenMapping[];
 }
 

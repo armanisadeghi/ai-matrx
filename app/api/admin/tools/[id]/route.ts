@@ -12,7 +12,7 @@ export async function GET(
     const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from('tl_def')
+      .from('tool_def')
       .select('*')
       .eq('id', id)
       .single();
@@ -83,8 +83,13 @@ export async function PUT(
     if (updateData.category === '') updateData.category = null;
     if (updateData.icon === '') updateData.icon = null;
 
+    // Strip dropped columns if the client still sends them.
+    delete updateData.function_path;
+    delete updateData.source_app;
+    delete updateData.privileged;
+
     const { data, error } = await supabase
-      .from('tl_def')
+      .from('tool_def')
       .update(updateData)
       .eq('id', id)
       .select()
@@ -130,7 +135,7 @@ export async function DELETE(
     const supabase = await createClient();
 
     const { error } = await supabase
-      .from('tl_def')
+      .from('tool_def')
       .delete()
       .eq('id', id);
 

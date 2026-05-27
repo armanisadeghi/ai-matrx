@@ -64,14 +64,15 @@ interface GeneratorProps {
     id: string;
     name: string;
     description: string;
-    category?: string;
+    category?: string | null;
     output_schema?: unknown;
     parameters?: unknown;
-    function_path?: string;
-    tags?: string[];
-    icon?: string;
-    is_active?: boolean;
-    /** Matches `tools.version` in the database (integer). */
+    source_kind?: string | null;
+    managed_by_server_id?: string | null;
+    tags?: string[] | null;
+    icon?: string | null;
+    is_active?: boolean | null;
+    /** Matches `tool_def.version` in the database (integer). */
     version?: number;
   }>;
   onComplete?: () => void;
@@ -675,13 +676,13 @@ export function ToolUiComponentGenerator({
       try {
         const [samplesResult, dbResult] = await Promise.all([
           supabase
-            .from("tl_test_sample")
+            .from("tool_test_sample")
             .select("*")
             .or(`tool_name.eq.${toolName},tool_id.eq.${toolId}`)
             .order("created_at", { ascending: false })
             .limit(10),
           supabase
-            .from("cx_tl_call")
+            .from("cx_tool_call")
             .select(
               "id, tool_name, call_id, status, arguments, output, output_type, duration_ms, started_at, completed_at",
             )

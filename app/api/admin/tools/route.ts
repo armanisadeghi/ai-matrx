@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const active_only = searchParams.get('active_only');
 
     let query = supabase
-      .from('tl_def')
+      .from('tool_def')
       .select('*')
       .order('category', { ascending: true })
       .order('name', { ascending: true });
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate required fields
-    const { name, description, parameters, function_path } = body;
-    if (!name || !description || !parameters || !function_path) {
+    const { name, description, parameters } = body;
+    if (!name || !description || !parameters) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, description, parameters, function_path' },
+        { error: 'Missing required fields: name, description, parameters' },
         { status: 400 }
       );
     }
@@ -79,22 +79,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // source_kind: 'native' | 'mcp_discovered' | 'admin_authored' | 'agent_authored'.
+    // Default to 'admin_authored' since these come in via the admin UI.
+    // If 'mcp_discovered', managed_by_server_id must be set.
+    const sourceKind = body.source_kind || 'admin_authored';
+    if (sourceKind === 'mcp_discovered' && !body.managed_by_server_id) {
+      return NextResponse.json(
+        { error: "source_kind 'mcp_discovered' requires managed_by_server_id" },
+        { status: 400 }
+      );
+    }
+
     const toolData = {
       name: body.name,
       description: body.description,
       parameters: body.parameters,
       output_schema: body.output_schema || null,
       annotations: body.annotations || [],
-      function_path: body.function_path,
+      source_kind: sourceKind,
+      managed_by_server_id: body.managed_by_server_id || null,
       category: body.category === '' ? null : (body.category || null),
       tags: body.tags || [],
       icon: body.icon === '' ? null : (body.icon || null),
       is_active: body.is_active !== undefined ? body.is_active : true,
-      version: body.version || '1.0.0'
+      version: body.version || 1,
     };
 
     const { data, error } = await supabase
-      .from('tl_def')
+      .from('tool_def')
       .insert([toolData])
       .select()
       .single();
@@ -115,9 +127,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

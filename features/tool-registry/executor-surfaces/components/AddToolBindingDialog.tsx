@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Loader2, Plus, Search, Sparkles } from "lucide-react";
+import { ExternalLink, Loader2, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,24 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   addBinding,
-  listUnboundToolsForSurface,
+  listUnboundToolsForExecutor,
   type UnboundToolRow,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
+import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 
 interface Props {
-  surface: string;
+  /** The owning `tool_executor.name`. */
+  executorName: string;
   onClose: () => void;
   /** Called after at least one tool was successfully bound. */
   onAdded: () => void;
 }
 
-export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
+export function AddToolBindingDialog({
+  executorName,
+  onClose,
+  onAdded,
+}: Props) {
   const [tools, setTools] = useState<UnboundToolRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +47,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    listUnboundToolsForSurface(surface)
+    listUnboundToolsForExecutor(executorName)
       .then((rows) => {
         if (!cancelled) setTools(rows);
       })
@@ -56,7 +62,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [surface]);
+  }, [executorName]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -83,14 +89,12 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [filtered]);
 
-  const handleAdd = async (tool: UnboundToolRow, autoLoad: boolean) => {
+  const handleAdd = async (tool: UnboundToolRow) => {
     if (adding) return;
     setAdding(tool.id);
     try {
-      await addBinding({ surface, toolId: tool.id, autoLoad });
-      toast.success(
-        `${tool.name} bound to ${surface}${autoLoad ? " (auto-load)" : ""}`,
-      );
+      await addBinding({ executorName, toolId: tool.id, isActive: true });
+      toast.success(`${tool.name} bound to ${executorName}`);
       setTools((cur) => cur.filter((t) => t.id !== tool.id));
       setAddedIds((cur) => {
         const next = new Set(cur);
@@ -115,7 +119,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
       <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-sm">
-            Bind a tool to <span className="font-mono">{surface}</span>
+            Bind a tool to <span className="font-mono">{executorName}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -160,7 +164,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
           {!loading && !error && filtered.length === 0 && (
             <div className="py-8 text-center text-xs text-muted-foreground">
               {tools.length === 0
-                ? "Every active tool is already bound to this runtime."
+                ? "Every active tool is already bound to this executor."
                 : "No tools match your search."}
             </div>
           )}
@@ -183,7 +187,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
                         >
                           <div className="flex items-start gap-2 min-w-0 flex-wrap sm:flex-nowrap">
                             <div className="flex-1 min-w-0 basis-full sm:basis-auto">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                                 <Link
                                   href={`/administration/mcp-tools/${tool.id}`}
                                   target="_blank"
@@ -194,6 +198,7 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
                                   <span className="truncate">{tool.name}</span>
                                   <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
                                 </Link>
+                                <SourceKindBadge kind={tool.source_kind} />
                                 {tool.is_active === false && (
                                   <Badge
                                     variant="outline"
@@ -222,12 +227,12 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
                             </div>
                             <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
                               <Button
-                                variant="outline"
+                                variant="default"
                                 size="sm"
-                                onClick={() => void handleAdd(tool, false)}
+                                onClick={() => void handleAdd(tool)}
                                 disabled={!!adding}
                                 className="h-7 px-2 text-[11px] gap-1"
-                                title="Bind this tool to the runtime (not auto-load)"
+                                title="Bind this tool to the executor"
                               >
                                 {isAddingThis ? (
                                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -235,21 +240,6 @@ export function AddToolBindingDialog({ surface, onClose, onAdded }: Props) {
                                   <Plus className="h-3 w-3" />
                                 )}
                                 Bind
-                              </Button>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => void handleAdd(tool, true)}
-                                disabled={!!adding}
-                                className="h-7 px-2 text-[11px] gap-1"
-                                title="Bind and mark as auto-load on launch"
-                              >
-                                {isAddingThis ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Sparkles className="h-3 w-3" />
-                                )}
-                                Auto-load
                               </Button>
                             </div>
                           </div>

@@ -22,7 +22,10 @@ export interface ToolDefinition {
   parameters: Record<string, ParameterDefinition>;
   output_schema: Record<string, unknown> | null;
   annotations: Record<string, unknown> | null;
-  function_path: string;
+  /** Provenance of the tool — one of native | mcp_discovered | admin_authored | agent_authored. */
+  source_kind: string;
+  /** When source_kind=mcp_discovered, the tool_mcp_server row that owns this tool. */
+  managed_by_server_id: string | null;
   category: string | null;
   tags: string[] | null;
   icon: string | null;

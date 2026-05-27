@@ -16,7 +16,7 @@ import type { Database } from "@/types/database.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ToolRow = Database["public"]["Tables"]["tl_def"]["Row"];
+type ToolRow = Database["public"]["Tables"]["tool_def"]["Row"];
 
 interface GeneratedComponent {
   tool_name: string;

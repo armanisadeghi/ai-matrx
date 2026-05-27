@@ -4,38 +4,42 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
-  ArrowUp,
   ExternalLink,
+  Network,
   Plus,
   RefreshCw,
-  Sparkles,
+  Server,
   Trash2,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
-  listBindingsForSurface,
+  listBindingsForExecutor,
   removeBinding,
   updateBinding,
   type ExecutorBindingRow,
-  type ExecutorSurfaceWithStats,
+  type ExecutorWithStats,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces/components/AddToolBindingDialog";
+import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 
 interface Props {
-  surface: ExecutorSurfaceWithStats;
+  /**
+   * The executor being viewed. Post-2026 refactor: this is a `tool_executor`
+   * row plus aggregate counts — no longer the conflated executor-surface.
+   */
+  executor: ExecutorWithStats;
   /** Called when bindings change so the parent can refresh counts in the master list. */
   onMutated: () => void;
   onClose?: () => void;
 }
 
 export function ExecutorSurfaceDetailPanel({
-  surface,
+  executor,
   onMutated,
   onClose,
 }: Props) {
@@ -48,73 +52,43 @@ export function ExecutorSurfaceDetailPanel({
     setLoading(true);
     setError(null);
     try {
-      const rows = await listBindingsForSurface(surface.name);
+      const rows = await listBindingsForExecutor(executor.name);
       setBindings(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load bindings");
     } finally {
       setLoading(false);
     }
-  }, [surface.name]);
+  }, [executor.name]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const autoLoad = bindings.filter((b) => b.auto_load);
-  const other = bindings.filter((b) => !b.auto_load);
-
-  const handleToggleAutoLoad = async (
+  const handleToggleActive = async (
     row: ExecutorBindingRow,
     next: boolean,
   ) => {
     setBindings((cur) =>
-      cur.map((b) => (b.id === row.id ? { ...b, auto_load: next } : b)),
+      cur.map((b) =>
+        b.tool_id === row.tool_id ? { ...b, is_active: next } : b,
+      ),
     );
     try {
-      await updateBinding(row.id, { auto_load: next });
+      await updateBinding({
+        toolId: row.tool_id,
+        executorName: row.executor_name,
+        isActive: next,
+      });
       toast.success(
-        `${row.tool_name ?? row.tool_id} ${next ? "will auto-load on" : "no longer auto-loads on"} ${surface.name}`,
+        `${row.tool_name ?? row.tool_id} ${next ? "active on" : "deactivated on"} ${executor.name}`,
       );
       onMutated();
     } catch (e) {
       setBindings((cur) =>
-        cur.map((b) => (b.id === row.id ? { ...b, auto_load: !next } : b)),
-      );
-      toast.error(e instanceof Error ? e.message : "Update failed");
-    }
-  };
-
-  const handleToggleActive = async (row: ExecutorBindingRow, next: boolean) => {
-    setBindings((cur) =>
-      cur.map((b) => (b.id === row.id ? { ...b, is_active: next } : b)),
-    );
-    try {
-      await updateBinding(row.id, { is_active: next });
-      onMutated();
-    } catch (e) {
-      setBindings((cur) =>
-        cur.map((b) => (b.id === row.id ? { ...b, is_active: !next } : b)),
-      );
-      toast.error(e instanceof Error ? e.message : "Update failed");
-    }
-  };
-
-  const handleUpdatePriority = async (
-    row: ExecutorBindingRow,
-    value: number,
-  ) => {
-    if (!Number.isFinite(value) || value < 0) return;
-    if (value === row.priority) return;
-    const prev = row.priority;
-    setBindings((cur) =>
-      cur.map((b) => (b.id === row.id ? { ...b, priority: value } : b)),
-    );
-    try {
-      await updateBinding(row.id, { priority: value });
-    } catch (e) {
-      setBindings((cur) =>
-        cur.map((b) => (b.id === row.id ? { ...b, priority: prev } : b)),
+        cur.map((b) =>
+          b.tool_id === row.tool_id ? { ...b, is_active: !next } : b,
+        ),
       );
       toast.error(e instanceof Error ? e.message : "Update failed");
     }
@@ -127,7 +101,7 @@ export function ExecutorSurfaceDetailPanel({
         <>
           Unbind{" "}
           <span className="font-mono">{row.tool_name ?? row.tool_id}</span> from{" "}
-          <span className="font-mono">{surface.name}</span>. The tool stays in
+          <span className="font-mono">{executor.name}</span>. The tool stays in
           the catalog. You can re-add it later.
         </>
       ),
@@ -136,14 +110,20 @@ export function ExecutorSurfaceDetailPanel({
     });
     if (!ok) return;
     try {
-      await removeBinding(row.id);
-      setBindings((cur) => cur.filter((b) => b.id !== row.id));
+      await removeBinding({
+        toolId: row.tool_id,
+        executorName: row.executor_name,
+      });
+      setBindings((cur) => cur.filter((b) => b.tool_id !== row.tool_id));
       toast.success(`Removed ${row.tool_name ?? row.tool_id}`);
       onMutated();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Remove failed");
     }
   };
+
+  const activeBindings = bindings.filter((b) => b.is_active);
+  const inactiveBindings = bindings.filter((b) => !b.is_active);
 
   return (
     <div className="h-full w-full min-w-0 flex flex-col bg-card overflow-hidden">
@@ -153,32 +133,50 @@ export function ExecutorSurfaceDetailPanel({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <h2 className="font-mono text-sm font-medium truncate">
-                {surface.name}
+                {executor.name}
               </h2>
-              {surface.is_client_side ? (
-                <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  client-side
+              {executor.isMcp ? (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-4 px-1 gap-0.5"
+                >
+                  <Network className="h-2.5 w-2.5" />
+                  MCP
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  server-side
+                <Badge variant="outline" className="text-[10px] h-4 px-1 gap-0.5">
+                  <Server className="h-2.5 w-2.5" />
+                  executor
                 </Badge>
               )}
-              {surface.client_name && (
-                <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  {surface.client_name}
+              {executor.parent_executor_name && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-4 px-1"
+                  title="Parent executor"
+                >
+                  parent: {executor.parent_executor_name}
                 </Badge>
               )}
-              {!surface.is_active && (
+              {!executor.is_active && (
                 <Badge variant="secondary" className="text-[10px] h-4 px-1">
                   inactive
                 </Badge>
               )}
             </div>
-            {surface.description && (
+            {executor.description && (
               <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">
-                {surface.description}
+                {executor.description}
               </p>
+            )}
+            {executor.mcp_server_id && (
+              <Link
+                href={`/administration/mcp-servers/${executor.mcp_server_id}`}
+                className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-mono"
+              >
+                <ExternalLink className="h-3 w-3" />
+                MCP server: {executor.mcp_server_id}
+              </Link>
             )}
           </div>
           {onClose && (
@@ -203,8 +201,16 @@ export function ExecutorSurfaceDetailPanel({
             variant="default"
             className="text-[10px] h-4 px-1 tabular-nums"
           >
-            {autoLoad.length} auto-load
+            {activeBindings.length} active
           </Badge>
+          {inactiveBindings.length > 0 && (
+            <Badge
+              variant="secondary"
+              className="text-[10px] h-4 px-1 tabular-nums"
+            >
+              {inactiveBindings.length} inactive
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -236,48 +242,22 @@ export function ExecutorSurfaceDetailPanel({
 
       {/* Body */}
       <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
-        {/* Section A — Auto-load on launch */}
         <SectionHeader
-          icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
-          title="Auto-load on launch"
-          subtitle="Tools loaded automatically into every agent run on this runtime"
-          count={autoLoad.length}
+          icon={<Server className="h-3.5 w-3.5 text-primary" />}
+          title="Bound tools"
+          subtitle="Tools this executor can handle. Toggle active to enable/disable."
+          count={bindings.length}
         />
-        {autoLoad.length === 0 ? (
+        {bindings.length === 0 ? (
           <EmptyState>
             {loading
               ? "Loading…"
-              : "No tools auto-load on this runtime yet. Click 'Add tool' above, or toggle auto-load on a tool below."}
+              : "No tools bound to this executor yet. Click 'Add tool' above to bind one."}
           </EmptyState>
         ) : (
           <BindingList
-            rows={autoLoad}
-            onToggleAutoLoad={handleToggleAutoLoad}
+            rows={bindings}
             onToggleActive={handleToggleActive}
-            onUpdatePriority={handleUpdatePriority}
-            onRemove={handleRemove}
-          />
-        )}
-
-        {/* Section B — Other bound tools */}
-        <SectionHeader
-          icon={<ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />}
-          title="Other bound tools"
-          subtitle="Available on this runtime but only loaded on demand"
-          count={other.length}
-        />
-        {other.length === 0 ? (
-          <EmptyState>
-            {loading
-              ? "Loading…"
-              : "Every tool bound to this runtime is currently set to auto-load."}
-          </EmptyState>
-        ) : (
-          <BindingList
-            rows={other}
-            onToggleAutoLoad={handleToggleAutoLoad}
-            onToggleActive={handleToggleActive}
-            onUpdatePriority={handleUpdatePriority}
             onRemove={handleRemove}
           />
         )}
@@ -285,7 +265,7 @@ export function ExecutorSurfaceDetailPanel({
 
       {addOpen && (
         <AddToolBindingDialog
-          surface={surface.name}
+          executorName={executor.name}
           onClose={() => setAddOpen(false)}
           onAdded={() => {
             setAddOpen(false);
@@ -337,28 +317,18 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 
 interface BindingListProps {
   rows: ExecutorBindingRow[];
-  onToggleAutoLoad: (row: ExecutorBindingRow, next: boolean) => void;
   onToggleActive: (row: ExecutorBindingRow, next: boolean) => void;
-  onUpdatePriority: (row: ExecutorBindingRow, value: number) => void;
   onRemove: (row: ExecutorBindingRow) => void;
 }
 
-function BindingList({
-  rows,
-  onToggleAutoLoad,
-  onToggleActive,
-  onUpdatePriority,
-  onRemove,
-}: BindingListProps) {
+function BindingList({ rows, onToggleActive, onRemove }: BindingListProps) {
   return (
     <div className="divide-y divide-border">
       {rows.map((row) => (
         <BindingRow
-          key={row.id}
+          key={`${row.executor_name}:${row.tool_id}`}
           row={row}
-          onToggleAutoLoad={onToggleAutoLoad}
           onToggleActive={onToggleActive}
-          onUpdatePriority={onUpdatePriority}
           onRemove={onRemove}
         />
       ))}
@@ -368,43 +338,44 @@ function BindingList({
 
 function BindingRow({
   row,
-  onToggleAutoLoad,
   onToggleActive,
-  onUpdatePriority,
   onRemove,
 }: {
   row: ExecutorBindingRow;
-  onToggleAutoLoad: (row: ExecutorBindingRow, next: boolean) => void;
   onToggleActive: (row: ExecutorBindingRow, next: boolean) => void;
-  onUpdatePriority: (row: ExecutorBindingRow, value: number) => void;
   onRemove: (row: ExecutorBindingRow) => void;
 }) {
-  const [priorityDraft, setPriorityDraft] = useState(String(row.priority));
-  useEffect(() => {
-    setPriorityDraft(String(row.priority));
-  }, [row.priority]);
-
   const toolHref = `/administration/mcp-tools/${row.tool_id}`;
-
   return (
     <div
       className={`px-3 py-2 min-w-0 ${row.is_active ? "" : "opacity-60"} hover:bg-accent/30`}
     >
-      {/* Row 1 — tool identity + flags + remove */}
       <div className="flex items-start gap-2 min-w-0">
         <div className="flex-1 min-w-0">
-          <Link
-            href={toolHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full"
-            title={row.tool_name ?? row.tool_id}
-          >
-            <span className="truncate">
-              {row.tool_name ?? "(unnamed tool)"}
-            </span>
-            <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-          </Link>
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            <Link
+              href={toolHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 max-w-full"
+              title={row.tool_name ?? row.tool_id}
+            >
+              <span className="truncate">
+                {row.tool_name ?? "(unnamed tool)"}
+              </span>
+              <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+            </Link>
+            <SourceKindBadge kind={row.tool_source_kind} />
+            {row.tool_is_active === false && (
+              <Badge
+                variant="outline"
+                className="text-[9px] h-4 px-1 text-muted-foreground"
+                title="The underlying tool_def row is inactive"
+              >
+                tool inactive
+              </Badge>
+            )}
+          </div>
           <div className="font-mono text-[10px] text-muted-foreground truncate">
             {row.tool_category ? `${row.tool_category} · ` : ""}
             {row.tool_id}
@@ -416,24 +387,15 @@ function BindingRow({
           )}
         </div>
 
-        {/* Right cluster: flags + remove. Flags wrap below name on narrow widths. */}
-        <div className="flex items-start gap-1 shrink-0">
-          <div className="flex flex-col items-end gap-0.5">
-            {row.tool_is_active === false && (
-              <Badge
-                variant="outline"
-                className="text-[9px] h-4 px-1 text-muted-foreground"
-                title="The underlying tl_def tool is inactive"
-              >
-                tool inactive
-              </Badge>
-            )}
-            {row.delegated && (
-              <Badge variant="outline" className="text-[9px] h-4 px-1">
-                delegated
-              </Badge>
-            )}
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
+            <Switch
+              checked={row.is_active}
+              onCheckedChange={(v) => onToggleActive(row, v)}
+              className="scale-75"
+            />
+            <span>Active</span>
+          </label>
           <Button
             variant="ghost"
             size="sm"
@@ -444,47 +406,6 @@ function BindingRow({
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
-      </div>
-
-      {/* Row 2 — controls. Wraps to a second visual row when the panel is narrow. */}
-      <div className="mt-1.5 flex items-center gap-3 flex-wrap min-w-0">
-        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <span>Priority</span>
-          <Input
-            type="number"
-            value={priorityDraft}
-            onChange={(e) => setPriorityDraft(e.target.value)}
-            onBlur={() => {
-              const n = Number(priorityDraft);
-              if (Number.isFinite(n)) onUpdatePriority(row, n);
-              else setPriorityDraft(String(row.priority));
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            }}
-            className="h-6 w-14 text-[11px] tabular-nums text-center font-mono px-1"
-            style={{ fontSize: "16px" }}
-            title="Priority — lower runs first"
-          />
-        </label>
-
-        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
-          <Switch
-            checked={row.is_active}
-            onCheckedChange={(v) => onToggleActive(row, v)}
-            className="scale-75"
-          />
-          <span>Active</span>
-        </label>
-
-        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
-          <Switch
-            checked={row.auto_load}
-            onCheckedChange={(v) => onToggleAutoLoad(row, v)}
-            className="scale-75"
-          />
-          <span>Auto-load</span>
-        </label>
       </div>
     </div>
   );

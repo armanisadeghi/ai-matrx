@@ -8,7 +8,7 @@
  * latency. For stdio servers, returns a 'skipped' result with a hint that
  * stdio configs must be tested per-variant via their command.
  *
- * Persists the result to the tl_mcp_server row's last_test_* columns so
+ * Persists the result to the tool_mcp_server row's last_test_* columns so
  * the UI's freshness badges can read it without re-running the test.
  *
  * Distinct from /api/mcp/servers/:serverId/refresh, which runs the
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // Load the server row (RLS will gate; the page that calls this is /admin/* anyway)
   const { data: server, error: serverError } = await supabase
-    .from("tl_mcp_server")
+    .from("tool_mcp_server")
     .select("id, slug, name, transport, endpoint_url")
     .eq("id", serverId)
     .single();
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // Persist outcome (best-effort; failure here doesn't fail the test response).
   await supabase
-    .from("tl_mcp_server")
+    .from("tool_mcp_server")
     .update({
       last_tested_at: new Date().toISOString(),
       last_test_ok: result.ok,

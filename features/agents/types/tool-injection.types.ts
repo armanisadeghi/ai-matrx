@@ -83,8 +83,9 @@ export interface ClientCapabilityPayloads {
 export interface ClientContext {
   /**
    * DB-registered surface name (one row in `public.ui_surface`). The server
-   * resolves it to a default tool set via `public.tl_def_surface` with
-   * inheritance from `matrx-default/default`, and to template-substitution
+   * resolves it to a default tool set via `tool_resolve_for_request` +
+   * `tool_surface_defaults.always_include_tools/bundles` with inheritance
+   * from `matrx-default/default`, and to template-substitution
    * variables via `public.ui_surface_value`. Unknown name → 422.
    *
    * Examples: `matrx-user/chat`, `matrx-user/agent-builder`,

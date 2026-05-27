@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data: server, error: serverError } = await supabase
-    .from("tl_mcp_server")
+    .from("tool_mcp_server")
     .select(
       "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes, metadata",
     )
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
 
         // Cache DCR result in catalog so we reuse it on subsequent connects
         await supabase
-          .from("tl_mcp_server")
+          .from("tool_mcp_server")
           .update({
             oauth_client_id: clientId,
             updated_at: new Date().toISOString(),

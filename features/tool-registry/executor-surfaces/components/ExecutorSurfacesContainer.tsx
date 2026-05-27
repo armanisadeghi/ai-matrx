@@ -15,30 +15,30 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExecutorSurfacesTable } from "@/features/tool-registry/executor-surfaces/components/ExecutorSurfacesTable";
 import { ExecutorSurfaceDetailPanel } from "@/features/tool-registry/executor-surfaces/components/ExecutorSurfaceDetailPanel";
 import {
-  listExecutorSurfacesWithStats,
-  type ExecutorSurfaceWithStats,
+  listExecutorsWithStats,
+  type ExecutorWithStats,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 
-type SideFilter = "all" | "client" | "server";
+type KindFilter = "all" | "mcp" | "non-mcp";
 
 export function ExecutorSurfacesContainer() {
   const isMobile = useIsMobile();
-  const [surfaces, setSurfaces] = useState<ExecutorSurfaceWithStats[]>([]);
+  const [executors, setExecutors] = useState<ExecutorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
-  const [side, setSide] = useState<SideFilter>("all");
+  const [kind, setKind] = useState<KindFilter>("all");
   const [selectedName, setSelectedName] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const rows = await listExecutorSurfacesWithStats();
-      setSurfaces(rows);
+      const rows = await listExecutorsWithStats();
+      setExecutors(rows);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load surfaces");
+      setError(e instanceof Error ? e.message : "Failed to load executors");
     } finally {
       setLoading(false);
     }
@@ -50,13 +50,13 @@ export function ExecutorSurfacesContainer() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return surfaces.filter((s) => {
-      if (side === "client" && !s.is_client_side) return false;
-      if (side === "server" && s.is_client_side) return false;
+    return executors.filter((s) => {
+      if (kind === "mcp" && !s.isMcp) return false;
+      if (kind === "non-mcp" && s.isMcp) return false;
       if (q) {
         if (
           !s.name.toLowerCase().includes(q) &&
-          !(s.client_name ?? "").toLowerCase().includes(q) &&
+          !(s.parent_executor_name ?? "").toLowerCase().includes(q) &&
           !(s.description ?? "").toLowerCase().includes(q)
         ) {
           return false;
@@ -64,38 +64,38 @@ export function ExecutorSurfacesContainer() {
       }
       return true;
     });
-  }, [surfaces, query, side]);
+  }, [executors, query, kind]);
 
   const selected = useMemo(
-    () => surfaces.find((s) => s.name === selectedName) ?? null,
-    [surfaces, selectedName],
+    () => executors.find((s) => s.name === selectedName) ?? null,
+    [executors, selectedName],
   );
 
   const totals = useMemo(() => {
     let bound = 0;
-    let auto = 0;
-    for (const s of surfaces) {
+    let active = 0;
+    for (const s of executors) {
       bound += s.boundCount;
-      auto += s.autoLoadCount;
+      active += s.boundCount - s.inactiveBindingCount;
     }
-    return { bound, auto };
-  }, [surfaces]);
+    return { bound, active };
+  }, [executors]);
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background">
       {/* Header */}
       <div className="shrink-0 px-3 py-1.5 border-b border-border flex items-center gap-2 flex-wrap">
         <Server className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Tool Registry · Tool Runtimes</h1>
+        <h1 className="text-sm font-medium">Tool Registry · Executors</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Badge variant="outline" className="text-[10px]">
-            {surfaces.length} runtimes
+            {executors.length} executors
           </Badge>
           <Badge variant="outline" className="text-[10px]">
             {totals.bound} bindings
           </Badge>
           <Badge variant="default" className="text-[10px]">
-            {totals.auto} auto-load
+            {totals.active} active
           </Badge>
         </div>
         {loading && (
@@ -122,24 +122,24 @@ export function ExecutorSurfacesContainer() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search runtime name, client, description…"
+            placeholder="Search executor name, parent, description…"
             className="h-7 pl-7 text-xs"
             style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5 bg-background">
-          {(["all", "client", "server"] as const).map((opt) => (
+          {(["all", "mcp", "non-mcp"] as const).map((opt) => (
             <button
               key={opt}
               type="button"
-              onClick={() => setSide(opt)}
+              onClick={() => setKind(opt)}
               className={`px-2 py-0.5 text-[11px] rounded-sm transition-colors ${
-                side === opt
+                kind === opt
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {opt === "all" ? "All" : opt === "client" ? "Client" : "Server"}
+              {opt === "all" ? "All" : opt === "mcp" ? "MCP" : "Non-MCP"}
             </button>
           ))}
         </div>
@@ -171,18 +171,19 @@ export function ExecutorSurfacesContainer() {
           <div className="flex-1 min-w-0 hidden md:flex">
             {selected ? (
               <ExecutorSurfaceDetailPanel
-                surface={selected}
+                executor={selected}
                 onMutated={() => void load()}
                 onClose={() => setSelectedName(null)}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground p-6 text-center max-w-md mx-auto">
                 <div>
-                  <p>Pick a runtime on the left to manage its tool bindings.</p>
+                  <p>Pick an executor on the left to manage its tool bindings.</p>
                   <p className="mt-2 opacity-60 text-[11px]">
-                    Each runtime (matrx-extend.browser, mcp.github,
-                    server:matrx_ai…) decides which tools are available on it
-                    and which auto-load on launch.
+                    Each executor (matrx-ai-core, aidream, matrx-local,
+                    chrome-extension, matrx-user, or <code>mcp.&lt;slug&gt;</code>)
+                    declares which tools it can handle. A binding is just a
+                    (tool, executor) pair with an `is_active` flag.
                   </p>
                 </div>
               </div>
@@ -207,7 +208,7 @@ export function ExecutorSurfacesContainer() {
                 </DrawerHeader>
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <ExecutorSurfaceDetailPanel
-                    surface={selected}
+                    executor={selected}
                     onMutated={() => void load()}
                     onClose={() => setSelectedName(null)}
                   />

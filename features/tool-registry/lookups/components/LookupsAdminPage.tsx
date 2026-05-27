@@ -41,23 +41,20 @@ import { toast } from "sonner";
 import {
   listUiClients,
   listUiSurfaces,
-  listExecutorKinds,
-  listGates,
+  listToolExecutors,
   upsertUiClient,
   upsertUiSurface,
-  upsertExecutorKind,
+  upsertToolExecutor,
   setUiClientActive,
   setUiSurfaceActive,
-  setExecutorKindActive,
-  setGateActive,
+  setToolExecutorActive,
   dependentSurfaceCount,
   type UiClientRow,
   type UiSurfaceRow,
-  type ExecutorKindRow,
-  type GateRow,
+  type ToolExecutorRow,
 } from "@/features/tool-registry/lookups/services/lookups.service";
 
-type TabKey = "clients" | "surfaces" | "executor-kinds" | "gates";
+type TabKey = "clients" | "surfaces" | "executors";
 
 export function LookupsAdminPage() {
   const [tab, setTab] = useState<TabKey>("clients");
@@ -67,7 +64,7 @@ export function LookupsAdminPage() {
         <DbIcon className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-medium">Tool Registry · Lookups</h1>
         <span className="text-xs text-muted-foreground">
-          ui_client · ui_surface · tl_executor_kind · tl_gate
+          ui_client · ui_surface · tool_executor
         </span>
       </div>
       <Tabs
@@ -83,11 +80,8 @@ export function LookupsAdminPage() {
             <TabsTrigger value="surfaces" className="text-xs">
               UI Surfaces
             </TabsTrigger>
-            <TabsTrigger value="executor-kinds" className="text-xs">
-              Executor Kinds
-            </TabsTrigger>
-            <TabsTrigger value="gates" className="text-xs">
-              Gates
+            <TabsTrigger value="executors" className="text-xs">
+              Tool Executors
             </TabsTrigger>
           </TabsList>
         </div>
@@ -98,11 +92,8 @@ export function LookupsAdminPage() {
           <TabsContent value="surfaces" className="m-0">
             <UiSurfaceCrud />
           </TabsContent>
-          <TabsContent value="executor-kinds" className="m-0">
-            <ExecutorKindCrud />
-          </TabsContent>
-          <TabsContent value="gates" className="m-0">
-            <GateCrud />
+          <TabsContent value="executors" className="m-0">
+            <ToolExecutorCrud />
           </TabsContent>
         </div>
       </Tabs>
@@ -691,22 +682,28 @@ function UiSurfaceDialog({
   );
 }
 
-// ─── Executor Kinds ──────────────────────────────────────────────────────────
+// ─── Tool Executors ──────────────────────────────────────────────────────────
+//
+// Post-2026 refactor: "executor kind" no longer exists. `tool_executor` rows
+// are first-class capability providers. Dropped from the old schema:
+// `is_client_side`, `client_name`, `payload_schema`, `payload_validator_path`.
+// Added: `parent_executor_name` (FK to self), `mcp_server_id` (FK to
+// tool_mcp_server).
 
-function ExecutorKindCrud() {
-  const [rows, setRows] = useState<ExecutorKindRow[]>([]);
+function ToolExecutorCrud() {
+  const [rows, setRows] = useState<ToolExecutorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<ExecutorKindRow | null>(null);
+  const [editing, setEditing] = useState<ToolExecutorRow | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listExecutorKinds());
+      setRows(await listToolExecutors());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load executor kinds");
+      setError(e instanceof Error ? e.message : "Failed to load tool executors");
     } finally {
       setLoading(false);
     }
@@ -716,9 +713,9 @@ function ExecutorKindCrud() {
     void load();
   }, []);
 
-  const onToggleActive = async (row: ExecutorKindRow, next: boolean) => {
+  const onToggleActive = async (row: ToolExecutorRow, next: boolean) => {
     try {
-      await setExecutorKindActive(row.name, next);
+      await setToolExecutorActive(row.name, next);
       await load();
       toast.success(`${row.name} ${next ? "activated" : "deactivated"}`);
     } catch (e) {
@@ -729,7 +726,7 @@ function ExecutorKindCrud() {
   return (
     <>
       <ToolbarCard
-        title="Executor Kinds"
+        title="Tool Executors"
         count={rows.length}
         loading={loading}
         error={error}
@@ -740,7 +737,8 @@ function ExecutorKindCrud() {
             <TableRow>
               <TableHead className="w-[260px]">Name (PK)</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="w-[100px]">Client-side</TableHead>
+              <TableHead className="w-[180px]">Parent</TableHead>
+              <TableHead className="w-[120px]">MCP server</TableHead>
               <TableHead className="w-[100px]">Active</TableHead>
               <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
@@ -748,8 +746,8 @@ function ExecutorKindCrud() {
           <TableBody>
             {rows.length === 0 && !loading && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-6 text-xs">
-                  No executor kinds.
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-6 text-xs">
+                  No tool executors.
                 </TableCell>
               </TableRow>
             )}
@@ -759,10 +757,17 @@ function ExecutorKindCrud() {
                 <TableCell className="text-xs">
                   {row.description ?? <span className="text-muted-foreground italic">—</span>}
                 </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {row.parent_executor_name ?? "—"}
+                </TableCell>
                 <TableCell>
-                  <Badge variant={row.is_client_side ? "default" : "secondary"} className="text-[10px]">
-                    {row.is_client_side ? "client" : "server"}
-                  </Badge>
+                  {row.mcp_server_id ? (
+                    <Badge variant="outline" className="text-[10px] gap-0.5">
+                      MCP
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <ActiveToggle
@@ -781,8 +786,9 @@ function ExecutorKindCrud() {
         </Table>
       </ToolbarCard>
       {(editing || creating) && (
-        <ExecutorKindDialog
+        <ToolExecutorDialog
           row={editing}
+          allRows={rows}
           onClose={() => {
             setEditing(null);
             setCreating(false);
@@ -798,25 +804,26 @@ function ExecutorKindCrud() {
   );
 }
 
-function ExecutorKindDialog({
+function ToolExecutorDialog({
   row,
+  allRows,
   onClose,
   onSaved,
 }: {
-  row: ExecutorKindRow | null;
+  row: ToolExecutorRow | null;
+  allRows: ToolExecutorRow[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const isEdit = !!row;
   const [name, setName] = useState(row?.name ?? "");
   const [description, setDescription] = useState(row?.description ?? "");
-  const [isClientSide, setIsClientSide] = useState(row?.is_client_side ?? false);
+  const [parentExecutorName, setParentExecutorName] = useState<string>(
+    row?.parent_executor_name ?? "__none__",
+  );
   const [isActive, setIsActive] = useState(row?.is_active ?? true);
   const [configJson, setConfigJson] = useState(
     JSON.stringify(row?.config ?? {}, null, 2),
-  );
-  const [payloadJson, setPayloadJson] = useState(
-    JSON.stringify(row?.payload_schema ?? {}, null, 2),
   );
   const [busy, setBusy] = useState(false);
   const [jsonErr, setJsonErr] = useState<string | null>(null);
@@ -824,16 +831,16 @@ function ExecutorKindDialog({
   const NAME_RE = /^[a-z][a-z0-9._-]*$/;
   const nameValid = NAME_RE.test(name);
 
+  const parentChoices = allRows.filter((r) => r.name !== name);
+
   const submit = async () => {
     if (!nameValid) {
       toast.error("Name must be lowercase letters/digits/`._-`, starting with a letter.");
       return;
     }
     let configParsed: unknown;
-    let payloadParsed: unknown;
     try {
       configParsed = JSON.parse(configJson || "{}");
-      payloadParsed = JSON.parse(payloadJson || "{}");
       setJsonErr(null);
     } catch (e) {
       setJsonErr(e instanceof Error ? e.message : "Invalid JSON");
@@ -841,13 +848,16 @@ function ExecutorKindDialog({
     }
     setBusy(true);
     try {
-      await upsertExecutorKind({
+      await upsertToolExecutor({
         name,
-        description: description || null,
-        is_client_side: isClientSide,
+        description: description ?? "",
         is_active: isActive,
         config: configParsed as never,
-        payload_schema: payloadParsed as never,
+        parent_executor_name:
+          parentExecutorName === "__none__" ? null : parentExecutorName,
+        // mcp_server_id stays whatever it was — only the MCP provisioning RPC
+        // should set/clear it. Leaving it unset preserves existing FK.
+        mcp_server_id: row?.mcp_server_id ?? null,
       });
       toast.success(`${name} saved`);
       onSaved();
@@ -862,7 +872,7 @@ function ExecutorKindDialog({
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit ${row.name}` : "New Executor Kind"}</DialogTitle>
+          <DialogTitle>{isEdit ? `Edit ${row.name}` : "New Tool Executor"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
           <div className="space-y-1.5">
@@ -875,6 +885,15 @@ function ExecutorKindDialog({
               className="font-mono text-sm"
               style={{ fontSize: "16px" }}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Convention: <code className="font-mono">mcp.&lt;slug&gt;</code> for
+              MCP-backed executors;{" "}
+              <code className="font-mono">aidream</code>,{" "}
+              <code className="font-mono">matrx-ai-core</code>,{" "}
+              <code className="font-mono">matrx-local</code>,{" "}
+              <code className="font-mono">chrome-extension</code>,{" "}
+              <code className="font-mono">matrx-user</code> for first-party.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
@@ -887,10 +906,23 @@ function ExecutorKindDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Client-side</Label>
-              <div className="flex items-center h-10">
-                <Switch checked={isClientSide} onCheckedChange={setIsClientSide} />
-              </div>
+              <Label className="text-xs">Parent executor</Label>
+              <Select
+                value={parentExecutorName}
+                onValueChange={setParentExecutorName}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {parentChoices.map((p) => (
+                    <SelectItem key={p.name} value={p.name}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Active</Label>
@@ -909,16 +941,14 @@ function ExecutorKindDialog({
               style={{ fontSize: "13px" }}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Payload schema (JSON)</Label>
-            <Textarea
-              value={payloadJson}
-              onChange={(e) => setPayloadJson(e.target.value)}
-              rows={6}
-              className="font-mono text-xs"
-              style={{ fontSize: "13px" }}
-            />
-          </div>
+          {row?.mcp_server_id && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+              This executor is linked to MCP server{" "}
+              <code className="font-mono">{row.mcp_server_id}</code>. The link is
+              managed by the MCP provisioning flow — edit the server, not this
+              row.
+            </div>
+          )}
           {jsonErr && (
             <p className="text-[11px] text-destructive">{jsonErr}</p>
           )}
@@ -933,98 +963,5 @@ function ExecutorKindDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// ─── Gates (read-mostly) ─────────────────────────────────────────────────────
-
-function GateCrud() {
-  const [rows, setRows] = useState<GateRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setRows(await listGates());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load gates");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-  }, []);
-
-  const onToggleActive = async (row: GateRow, next: boolean) => {
-    try {
-      await setGateActive(row.name, next);
-      await load();
-      toast.success(`${row.name} ${next ? "activated" : "deactivated"}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Update failed");
-    }
-  };
-
-  return (
-    <ToolbarCard
-      title="Gates"
-      count={rows.length}
-      loading={loading}
-      error={error}
-    >
-      <div className="px-3 py-2 border-b border-border bg-muted/30 text-[11px] text-muted-foreground">
-        Gates are defined by matrx-ai code. New gates require a code release; this view is read-mostly.
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[220px]">Name (PK)</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="w-[280px]">Function path</TableHead>
-            <TableHead className="w-[140px]">Applies to</TableHead>
-            <TableHead className="w-[100px]">Active</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.length === 0 && !loading && (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-6 text-xs">
-                No gates.
-              </TableCell>
-            </TableRow>
-          )}
-          {rows.map((row) => (
-            <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-              <TableCell className="font-mono text-xs">{row.name}</TableCell>
-              <TableCell className="text-xs">
-                {row.description ?? <span className="text-muted-foreground italic">—</span>}
-              </TableCell>
-              <TableCell className="font-mono text-[11px] text-muted-foreground">
-                {row.function_path}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {(row.applies_to ?? []).map((scope) => (
-                    <Badge key={scope} variant="outline" className="text-[10px]">
-                      {scope}
-                    </Badge>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>
-                <ActiveToggle
-                  active={row.is_active}
-                  onToggle={(next) => void onToggleActive(row, next)}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </ToolbarCard>
   );
 }

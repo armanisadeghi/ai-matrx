@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // Fetch server info
   const { data: server, error: serverError } = await supabase
-    .from("tl_mcp_server")
+    .from("tool_mcp_server")
     .select("endpoint_url, auth_strategy, name, slug")
     .eq("id", serverId)
     .single();
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     // Update last_used_at
     await supabase
-      .from("tl_mcp_user_conn")
+      .from("tool_mcp_user_conn")
       .update({ last_used_at: new Date().toISOString() })
       .eq("server_id", serverId)
       .eq("user_id", user.id);

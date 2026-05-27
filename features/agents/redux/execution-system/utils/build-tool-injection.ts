@@ -176,8 +176,9 @@ export async function buildToolInjection(
   }
 
   // The DB-registered surface name the server resolves to a tool set via
-  // public.tl_def_surface (e.g. matrx-user/chat carries the UI-first tools;
-  // most surfaces carry none — matrx-default/default is intentionally empty).
+  // tool_resolve_for_request + tool_surface_defaults.always_include_tools
+  // (e.g. matrx-user/chat carries the UI-first tools; most surfaces carry
+  // none — matrx-default/default is intentionally empty).
   // Resolution order:
   //   - brake on  → undefined (server attaches nothing; see disableInjection).
   //   - Surface Simulator set (builderAdvancedSettings.surfaceOverride) → mimic

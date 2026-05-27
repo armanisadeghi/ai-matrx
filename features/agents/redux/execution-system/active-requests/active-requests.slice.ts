@@ -544,7 +544,7 @@ const activeRequestsSlice = createSlice({
           callId,
           toolName,
           // Streamed events carry the canonical name; as-called is backfilled
-          // when the conversation is reloaded from cx_tl_call.tool_name_as_called.
+          // when the conversation is reloaded from cx_tool_call.tool_name_as_called.
           displayName: toolName,
           status,
           arguments: args ?? {},
@@ -977,6 +977,11 @@ const activeRequestsSlice = createSlice({
             status: status === "complete" ? "success" : "failed",
             result,
           } as CompletionPayload,
+          // routing is stamped at send-time on live runs; hydrated rows from
+          // history don't have it (the executor decision was made on a past
+          // server process), so we initialize null. Selectors that read it
+          // (selectRequestRouting) tolerate null.
+          routing: null,
           error: null,
           warnings: [],
           infoEvents: [],

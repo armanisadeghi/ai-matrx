@@ -128,7 +128,7 @@ function validateSingle(
  * UserArgs is one big object with everything optional, validated by
  * superRefine. Single-question form fills the top-level fields; batched
  * form fills `questions[]`. The schema is intentionally flat (vs a
- * `z.union`) so the DB `tl_def.parameters` shape mirrors it 1:1 and the
+ * `z.union`) so the DB `tool_def.parameters` shape mirrors it 1:1 and the
  * drift comparator works without special-casing unions.
  */
 export const userArgsSchema = z
@@ -295,7 +295,7 @@ export type UserTodosArgs = z.infer<typeof userTodosArgsSchema>;
 export const scratchpadArgsSchema = z.object({
   action: z.enum(["get", "set", "list", "delete"]),
   key: z.string().min(1).max(120).optional(),
-  // DB declares `value` as a string (tl_def: scratchpad.value.type='string') and
+  // DB declares `value` as a string (tool_def: scratchpad.value.type='string') and
   // the model is told to stringify objects before passing — so the contract is a
   // plain string, matching matrx-extend's `ScratchpadArgs.value` (z.string()).
   value: z.string().optional(),
@@ -305,7 +305,7 @@ export type ScratchpadArgs = z.infer<typeof scratchpadArgsSchema>;
 export const storageArgsSchema = z.object({
   action: z.enum(["get", "set", "list", "delete"]),
   key: z.string().min(1).max(120).optional(),
-  // `storage.value` is intentionally untyped in tl_def ({} — any JSON-serializable
+  // `storage.value` is intentionally untyped in tool_def ({} — any JSON-serializable
   // value), unlike scratchpad above; keep z.unknown() to match the DB exactly.
   value: z.unknown().optional(),
 });

@@ -12,6 +12,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+// NOTE: ToolArgMappingsEditorDialog removed in 2026 refactor — `tl_def_surface`
+// is gone, and the surface-level "Tools" tab is read-only (force-includes
+// derived from `tool_surface_defaults.always_include_tools`).
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -31,8 +34,6 @@ import {
 } from "@/features/surfaces/services/surfaces.service";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@/features/surfaces/types";
-import { ToolArgMappingsEditorDialog } from "@/features/surfaces/components/ToolArgMappingsEditorDialog";
-
 interface Props {
   surface: SurfaceWithStats;
   onClose: () => void;
@@ -152,9 +153,6 @@ export function SurfaceDetailPanel({
   >([]);
   const [loadingTab, setLoadingTab] = useState(false);
   const [tabError, setTabError] = useState<string | null>(null);
-  const [editingToolBinding, setEditingToolBinding] = useState<string | null>(
-    null,
-  );
 
   const manifest = getManifest(surface.name);
   const manifestValues = manifest?.values ?? null;
@@ -263,7 +261,7 @@ export function SurfaceDetailPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-sm truncate">{surface.name}</span>
             <Badge variant="outline" className="text-[10px]">
               {surface.client_name}
@@ -271,6 +269,16 @@ export function SurfaceDetailPanel({
             <Badge variant="outline" className="text-[10px]">
               {tier.label}
             </Badge>
+            {surface.executor_name && (
+              <Badge variant="outline" className="text-[10px]">
+                executor: <code className="ml-1 font-mono">{surface.executor_name}</code>
+              </Badge>
+            )}
+            {surface.parent_surface_name && (
+              <Badge variant="outline" className="text-[10px]">
+                parent: <code className="ml-1 font-mono">{surface.parent_surface_name}</code>
+              </Badge>
+            )}
           </div>
         </div>
         <Button
@@ -599,11 +607,18 @@ export function SurfaceDetailPanel({
           )}
         </TabsContent>
 
-        {/* Tools */}
+        {/* Tools force-included on this surface */}
         <TabsContent
           value="tools"
           className="flex-1 min-h-0 overflow-auto px-3 py-2"
         >
+          <div className="text-[11px] text-muted-foreground mb-2 leading-relaxed">
+            Tools force-included on this surface via{" "}
+            <code className="font-mono bg-muted px-1 py-0.5 rounded">
+              tool_surface_defaults.always_include_tools
+            </code>
+            . Edit the underlying surface defaults to change inclusions.
+          </div>
           {loadingTab && (
             <div className="text-xs text-muted-foreground">Loading…</div>
           )}
@@ -612,19 +627,18 @@ export function SurfaceDetailPanel({
           )}
           {!loadingTab && !tabError && toolBindings.length === 0 && (
             <div className="text-xs text-muted-foreground">
-              No tools bound to this surface.
+              No tools force-included on this surface.
             </div>
           )}
           {!loadingTab && toolBindings.length > 0 && (
             <div className="rounded-md border border-border divide-y divide-border text-xs">
               {toolBindings.map((b) => {
-                const mappingCount =
+                const argDefaultsPresent =
                   b.arg_mappings &&
                   typeof b.arg_mappings === "object" &&
-                  !Array.isArray(b.arg_mappings)
-                    ? Object.keys(b.arg_mappings as Record<string, unknown>)
-                        .length
-                    : 0;
+                  !Array.isArray(b.arg_mappings) &&
+                  Object.keys(b.arg_mappings as Record<string, unknown>).length >
+                    0;
                 const toolHref = `/administration/mcp-tools/${b.tool_id}`;
                 return (
                   <div
@@ -657,21 +671,11 @@ export function SurfaceDetailPanel({
                         inactive
                       </Badge>
                     )}
-                    <Badge
-                      variant={mappingCount > 0 ? "default" : "outline"}
-                      className="text-[10px] tabular-nums"
-                    >
-                      {mappingCount} mapping{mappingCount === 1 ? "" : "s"}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingToolBinding(b.tool_id)}
-                      className="h-6 text-[11px] gap-1"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                      Edit args
-                    </Button>
+                    {argDefaultsPresent && (
+                      <Badge variant="default" className="text-[10px]">
+                        arg defaults
+                      </Badge>
+                    )}
                   </div>
                 );
               })}
@@ -679,19 +683,6 @@ export function SurfaceDetailPanel({
           )}
         </TabsContent>
       </Tabs>
-
-      {editingToolBinding && (
-        <ToolArgMappingsEditorDialog
-          toolId={editingToolBinding}
-          surfaceName={surface.name}
-          onClose={() => setEditingToolBinding(null)}
-          onSaved={() => {
-            setEditingToolBinding(null);
-            // Refresh the tools tab by clearing the cached bindings
-            setToolBindings([]);
-          }}
-        />
-      )}
     </div>
   );
 }

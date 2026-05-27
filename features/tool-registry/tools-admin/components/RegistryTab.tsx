@@ -10,6 +10,7 @@ import {
   Package,
   ShieldCheck,
   AlertCircle,
+  Server,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,21 +36,20 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "sonner";
 import {
-  listToolExecutors,
-  addToolExecutor,
-  updateToolExecutor,
-  removeToolExecutor,
-  listToolSurfaces,
-  addToolSurface,
-  removeToolSurface,
+  listToolBindings,
+  addToolBinding,
+  updateToolBinding,
+  removeToolBinding,
+  listSurfacesIncludingTool,
+  addToolToSurface,
+  removeToolFromSurface,
   listToolBundleMemberships,
   parseGating,
   setToolGating,
   listAllUiSurfaceNames,
-  listAllExecutorKindNames,
-  listAllGateNames,
-  type ToolExecutorRow,
-  type ToolDefSurfaceRow,
+  listAllExecutorNames,
+  type ToolBindingRow,
+  type SurfaceInclusion,
   type BundleMembership,
   type ToolGateEntry,
 } from "@/features/tool-registry/tools-admin/services/dimensions.service";
@@ -63,7 +63,7 @@ interface Props {
 export function RegistryTab({ toolId, toolName, initialGating }: Props) {
   return (
     <div className="space-y-8 max-w-5xl">
-      <ExecutorsSection toolId={toolId} />
+      <BindingsSection toolId={toolId} />
       <SurfacesSection toolId={toolId} />
       <BundlesSection toolId={toolId} />
       <GatingSection toolId={toolId} initialGating={initialGating} />
@@ -124,27 +124,34 @@ function ErrorBox({ msg }: { msg: string }) {
   );
 }
 
-// ─── Executors ───────────────────────────────────────────────────────────────
+// ─── Bindings (was: Executors) ───────────────────────────────────────────────
+//
+// Post-2026 tool-system refactor: bindings are a pure (tool_id, executor_name)
+// join with just `is_active`. The dispatcher applies a single code-level
+// policy (client > MCP > server) — no per-binding priority or auto-load
+// flags. Adding a binding declares the tool runnable on that executor;
+// presence = capability.
 
-function ExecutorsSection({ toolId }: { toolId: string }) {
-  const [rows, setRows] = useState<ToolExecutorRow[]>([]);
-  const [kinds, setKinds] = useState<string[]>([]);
+function BindingsSection({ toolId }: { toolId: string }) {
+  const [rows, setRows] = useState<ToolBindingRow[]>([]);
+  const [executors, setExecutors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [pendingKind, setPendingKind] = useState<string>("");
-  const [pendingPriority, setPendingPriority] = useState<number>(100);
-  const [pendingAutoLoad, setPendingAutoLoad] = useState(false);
+  const [pendingExecutor, setPendingExecutor] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [r, k] = await Promise.all([listToolExecutors(toolId), listAllExecutorKindNames()]);
+      const [r, e] = await Promise.all([
+        listToolBindings(toolId),
+        listAllExecutorNames(),
+      ]);
       setRows(r);
-      setKinds(k);
+      setExecutors(e);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load executors");
+      setError(e instanceof Error ? e.message : "Failed to load bindings");
     } finally {
       setLoading(false);
     }
@@ -154,53 +161,56 @@ function ExecutorsSection({ toolId }: { toolId: string }) {
     void load();
   }, [toolId]);
 
-  const availableKinds = kinds.filter((k) => !rows.some((r) => r.surface === k));
+  const availableExecutors = executors.filter(
+    (e) => !rows.some((r) => r.executor_name === e),
+  );
 
   const onAdd = async () => {
-    if (!pendingKind) return;
+    if (!pendingExecutor) return;
     setAdding(true);
     try {
-      await addToolExecutor({
+      await addToolBinding({
         toolId,
-        surface: pendingKind,
-        priority: pendingPriority,
-        autoLoad: pendingAutoLoad,
+        executorName: pendingExecutor,
+        isActive: true,
       });
-      setPendingKind("");
-      setPendingPriority(100);
-      setPendingAutoLoad(false);
+      setPendingExecutor("");
       await load();
-      toast.success(`Executor ${pendingKind} added`);
+      toast.success(`Bound to ${pendingExecutor}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to add executor");
+      toast.error(e instanceof Error ? e.message : "Failed to add binding");
     } finally {
       setAdding(false);
     }
   };
 
-  const onRemove = async (row: ToolExecutorRow) => {
+  const onRemove = async (row: ToolBindingRow) => {
     const ok = await confirm({
-      title: `Remove executor ${row.surface}?`,
-      description: "The tool will no longer be dispatchable on this runtime.",
-      confirmLabel: "Remove",
+      title: `Unbind from ${row.executor_name}?`,
+      description: "The tool will no longer be runnable on this executor.",
+      confirmLabel: "Unbind",
       variant: "destructive",
     });
     if (!ok) return;
     try {
-      await removeToolExecutor(row.id);
+      await removeToolBinding({
+        toolId: row.tool_id,
+        executorName: row.executor_name,
+      });
       await load();
-      toast.success(`Executor ${row.surface} removed`);
+      toast.success(`Unbound from ${row.executor_name}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Remove failed");
+      toast.error(e instanceof Error ? e.message : "Unbind failed");
     }
   };
 
-  const onTogglePatch = async (
-    row: ToolExecutorRow,
-    patch: Partial<{ priority: number; auto_load: boolean; is_active: boolean }>,
-  ) => {
+  const onToggleActive = async (row: ToolBindingRow, isActive: boolean) => {
     try {
-      await updateToolExecutor(row.id, patch);
+      await updateToolBinding({
+        toolId: row.tool_id,
+        executorName: row.executor_name,
+        isActive,
+      });
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
@@ -211,9 +221,9 @@ function ExecutorsSection({ toolId }: { toolId: string }) {
     <section className="space-y-3">
       <SectionHeader
         icon={<Cpu className="h-4 w-4" />}
-        title="Executors"
+        title="Executor bindings"
         count={rows.length}
-        description="Runtimes this tool can dispatch on. Priority is ascending — lower wins."
+        description="Executors that can run this tool. Dispatch policy: client > MCP > server."
       />
       {loading && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -222,44 +232,37 @@ function ExecutorsSection({ toolId }: { toolId: string }) {
       )}
       {error && <ErrorBox msg={error} />}
       {!loading && rows.length === 0 && (
-        <EmptyHint>No executors registered yet — add one below.</EmptyHint>
+        <EmptyHint>
+          No executor bindings — this tool cannot be dispatched anywhere. Bind
+          one below.
+        </EmptyHint>
       )}
       {rows.length > 0 && (
         <div className="rounded-md border border-border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Executor kind</TableHead>
-                <TableHead className="w-[120px]">Priority</TableHead>
-                <TableHead className="w-[120px]">Auto-load</TableHead>
+                <TableHead>Executor</TableHead>
                 <TableHead className="w-[120px]">Active</TableHead>
                 <TableHead className="w-[80px] text-right">—</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.id} className={row.is_active ? "" : "opacity-50"}>
-                  <TableCell className="font-mono text-xs">{row.surface}</TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={row.priority}
-                      className="h-7 w-20 text-xs"
-                      onChange={(e) =>
-                        void onTogglePatch(row, { priority: Number(e.target.value) || 0 })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={row.auto_load}
-                      onCheckedChange={(v) => void onTogglePatch(row, { auto_load: v })}
-                    />
+                <TableRow
+                  key={`${row.tool_id}-${row.executor_name}`}
+                  className={row.is_active ? "" : "opacity-50"}
+                >
+                  <TableCell className="font-mono text-xs">
+                    <div className="flex items-center gap-2">
+                      <Server className="h-3 w-3 text-muted-foreground" />
+                      {row.executor_name}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={row.is_active}
-                      onCheckedChange={(v) => void onTogglePatch(row, { is_active: v })}
+                      onCheckedChange={(v) => void onToggleActive(row, v)}
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -268,7 +271,7 @@ function ExecutorsSection({ toolId }: { toolId: string }) {
                       size="sm"
                       onClick={() => void onRemove(row)}
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      aria-label="Remove executor"
+                      aria-label="Unbind"
                     >
                       <X className="h-3.5 w-3.5" />
                     </Button>
@@ -281,59 +284,53 @@ function ExecutorsSection({ toolId }: { toolId: string }) {
       )}
       <div className="flex flex-wrap items-end gap-2 pt-1">
         <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Add executor kind</Label>
+          <Label className="text-[11px] text-muted-foreground">
+            Bind to executor
+          </Label>
           <Select
-            value={pendingKind}
-            onValueChange={setPendingKind}
-            disabled={adding || availableKinds.length === 0}
+            value={pendingExecutor}
+            onValueChange={setPendingExecutor}
+            disabled={adding || availableExecutors.length === 0}
           >
-            <SelectTrigger className="h-8 w-[280px] text-xs">
+            <SelectTrigger className="h-8 w-[320px] text-xs">
               <SelectValue
-                placeholder={availableKinds.length === 0 ? "All kinds added" : "Pick a kind…"}
+                placeholder={
+                  availableExecutors.length === 0
+                    ? "All executors bound"
+                    : "Pick an executor…"
+                }
               />
             </SelectTrigger>
             <SelectContent>
-              {availableKinds.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {k}
+              {availableExecutors.map((e) => (
+                <SelectItem key={e} value={e}>
+                  <span className="font-mono text-xs">{e}</span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Priority</Label>
-          <Input
-            type="number"
-            value={pendingPriority}
-            onChange={(e) => setPendingPriority(Number(e.target.value) || 0)}
-            className="h-8 w-24 text-xs"
-            disabled={adding}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Auto-load</Label>
-          <div className="flex items-center h-8">
-            <Switch
-              checked={pendingAutoLoad}
-              onCheckedChange={setPendingAutoLoad}
-              disabled={adding}
-            />
-          </div>
-        </div>
-        <Button size="sm" onClick={() => void onAdd()} disabled={adding || !pendingKind}>
-          {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-          Add
+        <Button
+          size="sm"
+          onClick={() => void onAdd()}
+          disabled={adding || !pendingExecutor}
+        >
+          {adding ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
+          Bind
         </Button>
       </div>
     </section>
   );
 }
 
-// ─── Surfaces ────────────────────────────────────────────────────────────────
+// ─── Surfaces (now derived from tool_surface_defaults.always_include_*) ──────
 
 function SurfacesSection({ toolId }: { toolId: string }) {
-  const [rows, setRows] = useState<ToolDefSurfaceRow[]>([]);
+  const [rows, setRows] = useState<SurfaceInclusion[]>([]);
   const [allSurfaces, setAllSurfaces] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -344,7 +341,10 @@ function SurfacesSection({ toolId }: { toolId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const [r, all] = await Promise.all([listToolSurfaces(toolId), listAllUiSurfaceNames()]);
+      const [r, all] = await Promise.all([
+        listSurfacesIncludingTool(toolId),
+        listAllUiSurfaceNames(),
+      ]);
       setRows(r);
       setAllSurfaces(all);
     } catch (e) {
@@ -358,18 +358,23 @@ function SurfacesSection({ toolId }: { toolId: string }) {
     void load();
   }, [toolId]);
 
-  const available = allSurfaces.filter((s) => !rows.some((r) => r.surface_name === s));
+  // Only direct (always_include_tools) inclusions are editable here; bundle
+  // inclusions are managed from the bundle, not the tool.
+  const directlyIncludedNames = new Set(
+    rows.filter((r) => r.via === "always_include_tools").map((r) => r.surface_name),
+  );
+  const available = allSurfaces.filter((s) => !directlyIncludedNames.has(s));
 
   const onAdd = async () => {
     if (!pendingSurface) return;
     setAdding(true);
     try {
-      await addToolSurface(toolId, pendingSurface);
+      await addToolToSurface({ toolId, surfaceName: pendingSurface });
       setPendingSurface("");
       await load();
-      toast.success(`Surface ${pendingSurface} added`);
+      toast.success(`Force-included on ${pendingSurface}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to add surface");
+      toast.error(e instanceof Error ? e.message : "Failed to add inclusion");
     } finally {
       setAdding(false);
     }
@@ -377,16 +382,17 @@ function SurfacesSection({ toolId }: { toolId: string }) {
 
   const onRemove = async (surfaceName: string) => {
     const ok = await confirm({
-      title: `Remove ${surfaceName}?`,
-      description: "Agents on this surface will no longer see this tool by default.",
+      title: `Remove from ${surfaceName}?`,
+      description:
+        "The tool will no longer be force-included on this surface. It may still resolve through bundle inclusions or executor bindings.",
       confirmLabel: "Remove",
       variant: "destructive",
     });
     if (!ok) return;
     try {
-      await removeToolSurface(toolId, surfaceName);
+      await removeToolFromSurface({ toolId, surfaceName });
       await load();
-      toast.success(`Surface ${surfaceName} removed`);
+      toast.success(`Removed from ${surfaceName}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Remove failed");
     }
@@ -396,9 +402,9 @@ function SurfacesSection({ toolId }: { toolId: string }) {
     <section className="space-y-3">
       <SectionHeader
         icon={<Layers className="h-4 w-4" />}
-        title="Surfaces"
+        title="Surface inclusions"
         count={rows.length}
-        description="Which UIs may expose this tool to an agent. Empty set means available everywhere."
+        description="Surfaces that force-include this tool. Tools NOT in this list still resolve through executor bindings + surface defaults inheritance."
       />
       {loading && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -407,31 +413,48 @@ function SurfacesSection({ toolId }: { toolId: string }) {
       )}
       {error && <ErrorBox msg={error} />}
       {!loading && rows.length === 0 && (
-        <EmptyHint>No surface restrictions — this tool is available on every surface.</EmptyHint>
+        <EmptyHint>
+          Not force-included on any surface. The tool resolves wherever its
+          executor bindings + surface inheritance allow.
+        </EmptyHint>
       )}
       {rows.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {rows.map((row) => (
+          {rows.map((row, idx) => (
             <Badge
-              key={row.surface_name}
-              variant="secondary"
+              key={`${row.surface_name}-${row.via}-${row.bundle_name ?? idx}`}
+              variant={row.via === "always_include_tools" ? "secondary" : "outline"}
               className="text-[11px] gap-1 pr-1 font-mono"
+              title={
+                row.via === "always_include_bundles"
+                  ? `Included via bundle: ${row.bundle_name}`
+                  : "Direct inclusion (always_include_tools)"
+              }
             >
               {row.surface_name}
-              <button
-                onClick={() => void onRemove(row.surface_name)}
-                className="ml-0.5 rounded hover:bg-background/50 p-0.5"
-                aria-label={`Remove ${row.surface_name}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
+              {row.via === "always_include_bundles" && row.bundle_name && (
+                <span className="text-[10px] opacity-70">
+                  ← {row.bundle_name}
+                </span>
+              )}
+              {row.via === "always_include_tools" && (
+                <button
+                  onClick={() => void onRemove(row.surface_name)}
+                  className="ml-0.5 rounded hover:bg-background/50 p-0.5"
+                  aria-label={`Remove ${row.surface_name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </Badge>
           ))}
         </div>
       )}
       <div className="flex items-end gap-2 pt-1">
         <div className="space-y-1 flex-1 max-w-md">
-          <Label className="text-[11px] text-muted-foreground">Add surface</Label>
+          <Label className="text-[11px] text-muted-foreground">
+            Add direct surface inclusion
+          </Label>
           <Select
             value={pendingSurface}
             onValueChange={setPendingSurface}
@@ -439,7 +462,11 @@ function SurfacesSection({ toolId }: { toolId: string }) {
           >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue
-                placeholder={available.length === 0 ? "All active surfaces added" : "Pick a surface…"}
+                placeholder={
+                  available.length === 0
+                    ? "All active surfaces included"
+                    : "Pick a surface…"
+                }
               />
             </SelectTrigger>
             <SelectContent>
@@ -451,9 +478,17 @@ function SurfacesSection({ toolId }: { toolId: string }) {
             </SelectContent>
           </Select>
         </div>
-        <Button size="sm" onClick={() => void onAdd()} disabled={adding || !pendingSurface}>
-          {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-          Add
+        <Button
+          size="sm"
+          onClick={() => void onAdd()}
+          disabled={adding || !pendingSurface}
+        >
+          {adding ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
+          Include
         </Button>
       </div>
     </section>
@@ -547,6 +582,30 @@ function BundlesSection({ toolId }: { toolId: string }) {
 }
 
 // ─── Gating ──────────────────────────────────────────────────────────────────
+//
+// Post-2026 refactor: tl_gate was dropped. Gates live in matrx-ai code
+// (matrx_ai.tools.gates.*). There's no DB list to pick from anymore, so we
+// seed the few known names + accept free-typed names.
+
+const KNOWN_GATE_NAMES: { name: string; description: string }[] = [
+  {
+    name: "has_optional_permission",
+    description:
+      "Pass when the calling user holds the named optional permission.",
+  },
+  {
+    name: "has_role",
+    description: "Pass when the calling user has the named role.",
+  },
+  {
+    name: "feature_flag",
+    description: "Pass when the named feature flag is enabled for the user.",
+  },
+  {
+    name: "admin_only",
+    description: "Pass only for super-admin callers.",
+  },
+];
 
 function GatingSection({
   toolId,
@@ -556,22 +615,22 @@ function GatingSection({
   initialGating: unknown;
 }) {
   const [gates, setGates] = useState<ToolGateEntry[]>(parseGating(initialGating));
-  const [allGates, setAllGates] = useState<{ name: string; description: string | null }[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [argsJson, setArgsJson] = useState<string[]>(
     parseGating(initialGating).map((g) => JSON.stringify(g.args, null, 2)),
   );
-
-  useEffect(() => {
-    void listAllGateNames()
-      .then(setAllGates)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load gates"));
-  }, []);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [customGate, setCustomGate] = useState("");
 
   const onAdd = (gateName: string) => {
-    setGates((prev) => [...prev, { gate: gateName, args: {} }]);
+    if (!gateName.trim()) return;
+    if (gates.some((g) => g.gate === gateName.trim())) {
+      toast.error(`Gate "${gateName.trim()}" is already configured`);
+      return;
+    }
+    setGates((prev) => [...prev, { gate: gateName.trim(), args: {} }]);
     setArgsJson((prev) => [...prev, "{}"]);
+    setCustomGate("");
   };
 
   const onRemove = (idx: number) => {
@@ -589,13 +648,16 @@ function GatingSection({
       await setToolGating(toolId, parsed);
       toast.success("Gating saved");
     } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed");
       toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
       setBusy(false);
     }
   };
 
-  const available = allGates.filter((g) => !gates.some((cur) => cur.gate === g.name));
+  const available = KNOWN_GATE_NAMES.filter(
+    (g) => !gates.some((cur) => cur.gate === g.name),
+  );
 
   return (
     <section className="space-y-3">
@@ -603,7 +665,7 @@ function GatingSection({
         icon={<ShieldCheck className="h-4 w-4" />}
         title="Gating"
         count={gates.length}
-        description="Named gate functions that must pass at dispatch time. ALL must pass (AND)."
+        description="Named gate functions that must pass at dispatch time. ALL must pass (AND). Gates live in matrx-ai code (matrx_ai.tools.gates.*)."
         action={
           <Button size="sm" onClick={() => void onSave()} disabled={busy}>
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save gating"}
@@ -614,7 +676,7 @@ function GatingSection({
       {gates.length === 0 && <EmptyHint>No gating — this tool is unrestricted.</EmptyHint>}
       <div className="space-y-2">
         {gates.map((g, idx) => {
-          const meta = allGates.find((m) => m.name === g.gate);
+          const meta = KNOWN_GATE_NAMES.find((m) => m.name === g.gate);
           return (
             <div key={idx} className="rounded-md border border-border bg-card p-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
@@ -650,30 +712,59 @@ function GatingSection({
           );
         })}
       </div>
-      {available.length > 0 && (
-        <div className="flex items-end gap-2 pt-1">
-          <div className="space-y-1 flex-1 max-w-md">
-            <Label className="text-[11px] text-muted-foreground">Add gate</Label>
-            <Select onValueChange={(v) => onAdd(v)}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Pick a gate to add…" />
-              </SelectTrigger>
-              <SelectContent>
-                {available.map((g) => (
-                  <SelectItem key={g.name} value={g.name}>
-                    <div className="flex flex-col items-start">
-                      <span className="font-mono text-xs">{g.name}</span>
-                      {g.description && (
-                        <span className="text-[10px] text-muted-foreground">{g.description}</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div className="space-y-2 pt-1">
+        {available.length > 0 && (
+          <div className="flex items-end gap-2">
+            <div className="space-y-1 flex-1 max-w-md">
+              <Label className="text-[11px] text-muted-foreground">Add known gate</Label>
+              <Select onValueChange={(v) => onAdd(v)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Pick a gate to add…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {available.map((g) => (
+                    <SelectItem key={g.name} value={g.name}>
+                      <div className="flex flex-col items-start">
+                        <span className="font-mono text-xs">{g.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {g.description}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+        )}
+        <div className="flex items-end gap-2">
+          <div className="space-y-1 flex-1 max-w-md">
+            <Label className="text-[11px] text-muted-foreground">
+              Or add custom gate name (must match a gate function in matrx_ai.tools.gates)
+            </Label>
+            <Input
+              value={customGate}
+              onChange={(e) => setCustomGate(e.target.value)}
+              placeholder="my_custom_gate"
+              className="h-8 text-xs font-mono"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onAdd(customGate);
+                }
+              }}
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onAdd(customGate)}
+            disabled={!customGate.trim()}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
         </div>
-      )}
+      </div>
     </section>
   );
 }

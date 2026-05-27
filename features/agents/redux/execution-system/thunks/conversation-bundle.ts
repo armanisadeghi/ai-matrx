@@ -331,7 +331,7 @@ export async function fetchConversationBundle(
   let toolCalls: CxToolCallRow[] = [];
   if (messageIds.length > 0) {
     const toolsRes = await supabase
-      .from("cx_tl_call")
+      .from("cx_tool_call")
       .select("*")
       .in("message_id", messageIds)
       .is("deleted_at", null)

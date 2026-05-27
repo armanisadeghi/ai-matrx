@@ -11,9 +11,15 @@ type Tables = Database["public"]["Tables"];
 export type UiSurfaceRow = Tables["ui_surface"]["Row"];
 export type UiSurfaceUpsert = Tables["ui_surface"]["Insert"];
 export type UiSurfaceValueRow = Tables["ui_surface_value"]["Row"];
+export type ToolSurfaceDefaultsRow = Tables["tool_surface_defaults"]["Row"];
 
 export interface SurfaceWithStats extends UiSurfaceRow {
-  /** Number of `tl_def_surface` rows for this surface (tools that may appear here). */
+  /**
+   * Tools force-included on this surface (length of
+   * `tool_surface_defaults.always_include_tools` for this surface, plus
+   * tools inside any bundle in `always_include_bundles`). When 0 the
+   * surface has no opinions and inherits everything from its parent chain.
+   */
   toolCount: number;
   /** Number of `agx_agent_surface` rows for this surface (agents visible here). */
   agentCount: number;
@@ -25,28 +31,54 @@ const sb = () => createClient();
 
 export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
   const c = sb();
-  const [surfacesRes, toolCountsRes, agentCountsRes, surfaceValueCountsRes] =
-    await Promise.all([
-      c
-        .from("ui_surface")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true }),
-      c.from("tl_def_surface").select("surface_name"),
-      c.from("agx_agent_surface").select("surface_name"),
-      c.from("ui_surface_value").select("surface_name"),
-    ]);
+  const [
+    surfacesRes,
+    surfaceDefaultsRes,
+    bundleMembersRes,
+    bundlesRes,
+    agentCountsRes,
+    surfaceValueCountsRes,
+  ] = await Promise.all([
+    c
+      .from("ui_surface")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true }),
+    c
+      .from("tool_surface_defaults")
+      .select("surface_name, always_include_tools, always_include_bundles"),
+    c.from("tool_bundle_member").select("bundle_id"),
+    c.from("tool_bundle").select("id, name"),
+    c.from("agx_agent_surface").select("surface_name"),
+    c.from("ui_surface_value").select("surface_name"),
+  ]);
   if (surfacesRes.error) throw surfacesRes.error;
-  if (toolCountsRes.error) throw toolCountsRes.error;
+  if (surfaceDefaultsRes.error) throw surfaceDefaultsRes.error;
+  if (bundleMembersRes.error) throw bundleMembersRes.error;
+  if (bundlesRes.error) throw bundlesRes.error;
   if (agentCountsRes.error) throw agentCountsRes.error;
   if (surfaceValueCountsRes.error) throw surfaceValueCountsRes.error;
 
-  const toolByName = new Map<string, number>();
-  for (const row of toolCountsRes.data ?? []) {
-    toolByName.set(
-      row.surface_name,
-      (toolByName.get(row.surface_name) ?? 0) + 1,
+  // Bundle name → member count, so we can expand always_include_bundles.
+  const bundleIdToName = new Map<string, string>();
+  for (const b of bundlesRes.data ?? []) bundleIdToName.set(b.id, b.name);
+  const bundleNameToMemberCount = new Map<string, number>();
+  for (const m of bundleMembersRes.data ?? []) {
+    const name = bundleIdToName.get(m.bundle_id);
+    if (!name) continue;
+    bundleNameToMemberCount.set(
+      name,
+      (bundleNameToMemberCount.get(name) ?? 0) + 1,
     );
+  }
+
+  const toolByName = new Map<string, number>();
+  for (const row of surfaceDefaultsRes.data ?? []) {
+    let count = row.always_include_tools.length;
+    for (const bundleName of row.always_include_bundles) {
+      count += bundleNameToMemberCount.get(bundleName) ?? 0;
+    }
+    toolByName.set(row.surface_name, count);
   }
   const agentByName = new Map<string, number>();
   for (const row of agentCountsRes.data ?? []) {
@@ -74,6 +106,10 @@ export interface SurfaceOption {
   name: string;
   client_name: string;
   description: string | null;
+  /** Owning executor (post-2026 refactor). Null on surfaces that inherit purely. */
+  executor_name: string | null;
+  /** Parent surface for inheritance chain; null at the root. */
+  parent_surface_name: string | null;
 }
 
 /**
@@ -85,7 +121,7 @@ export interface SurfaceOption {
 export async function listSurfaceOptions(): Promise<SurfaceOption[]> {
   const { data, error } = await sb()
     .from("ui_surface")
-    .select("name, client_name, description")
+    .select("name, client_name, description, executor_name, parent_surface_name")
     .eq("is_active", true)
     .order("client_name", { ascending: true })
     .order("name", { ascending: true });
@@ -111,6 +147,8 @@ export async function updateSurface(
     description: string | null;
     sort_order: number;
     is_active: boolean;
+    executor_name: string | null;
+    parent_surface_name: string | null;
   }>,
 ): Promise<void> {
   const { error } = await sb()
@@ -180,9 +218,10 @@ export async function bulkDeleteSurfaces(names: string[]): Promise<void> {
 }
 
 /**
- * Renames a surface in place. Backed by ON UPDATE CASCADE on the three FK
- * targets (tl_def_surface, agx_agent_surface, tl_ui), so any references
- * follow automatically. Single UPDATE statement.
+ * Renames a surface in place. Backed by ON UPDATE CASCADE on the FK
+ * targets (agx_agent_surface, tool_ui, ui_surface_value, tool_surface_defaults,
+ * and self-FK parent_surface_name), so any references follow automatically.
+ * Single UPDATE statement.
  */
 export async function renameSurface(
   oldName: string,
@@ -196,16 +235,23 @@ export async function renameSurface(
 }
 
 export interface SurfaceUsage {
-  /** Tools whose tl_def_surface row points at this surface. */
+  /**
+   * Tools force-included on this surface. After the 2026 refactor, this is
+   * the set of `tool_def` rows whose names appear in
+   * `tool_surface_defaults.always_include_tools` for this surface — plus
+   * tools resolved through `always_include_bundles`.
+   */
   tools: {
     id: string;
     name: string;
     description: string;
     is_active: boolean | null;
+    via: "always_include_tools" | "always_include_bundles";
+    bundle_name?: string;
   }[];
   /** Agents whose agx_agent_surface row points at this surface. */
   agents: { id: string; name: string }[];
-  /** tl_ui rows scoped to this surface (per-tool UI customizations). */
+  /** tool_ui rows scoped to this surface (per-tool UI customizations). */
   uiComponents: {
     id: string;
     tool_name: string;
@@ -218,40 +264,78 @@ export async function getSurfaceUsage(
   surfaceName: string,
 ): Promise<SurfaceUsage> {
   const c = sb();
-  const [toolsRes, agentsRes, uiRes] = await Promise.all([
+  const [defaultsRes, agentsRes, uiRes] = await Promise.all([
     c
-      .from("tl_def_surface")
-      .select("tool:tl_def(id, name, description, is_active)")
-      .eq("surface_name", surfaceName),
+      .from("tool_surface_defaults")
+      .select("always_include_tools, always_include_bundles")
+      .eq("surface_name", surfaceName)
+      .maybeSingle(),
     c
       .from("agx_agent_surface")
       .select("agent:agx_agent(id, name)")
       .eq("surface_name", surfaceName),
     c
-      .from("tl_ui")
+      .from("tool_ui")
       .select("id, tool_name, display_name, is_active")
       .eq("surface_name", surfaceName)
       .order("tool_name", { ascending: true }),
   ]);
-  if (toolsRes.error) throw toolsRes.error;
+  if (defaultsRes.error) throw defaultsRes.error;
   if (agentsRes.error) throw agentsRes.error;
   if (uiRes.error) throw uiRes.error;
 
-  type ToolJoin = {
-    tool: {
-      id: string;
-      name: string;
-      description: string;
-      is_active: boolean | null;
-    } | null;
-  };
+  // Resolve direct + bundle-included tool names.
+  const includedTools: SurfaceUsage["tools"] = [];
+  if (defaultsRes.data) {
+    if (defaultsRes.data.always_include_tools.length > 0) {
+      const { data: directTools, error } = await c
+        .from("tool_def")
+        .select("id, name, description, is_active")
+        .in("name", defaultsRes.data.always_include_tools);
+      if (error) throw error;
+      for (const t of directTools ?? []) {
+        includedTools.push({ ...t, via: "always_include_tools" });
+      }
+    }
+    if (defaultsRes.data.always_include_bundles.length > 0) {
+      const { data: bundleRows, error: bErr } = await c
+        .from("tool_bundle")
+        .select(
+          "name, members:tool_bundle_member(tool:tool_def(id, name, description, is_active))",
+        )
+        .in("name", defaultsRes.data.always_include_bundles);
+      if (bErr) throw bErr;
+      type BundleJoin = {
+        name: string;
+        members:
+          | {
+              tool: {
+                id: string;
+                name: string;
+                description: string;
+                is_active: boolean | null;
+              } | null;
+            }[]
+          | null;
+      };
+      for (const b of (bundleRows ?? []) as unknown as BundleJoin[]) {
+        for (const m of b.members ?? []) {
+          if (!m.tool) continue;
+          includedTools.push({
+            ...m.tool,
+            via: "always_include_bundles",
+            bundle_name: b.name,
+          });
+        }
+      }
+    }
+  }
+  includedTools.sort((a, b) => a.name.localeCompare(b.name));
+
   type AgentJoin = { agent: { id: string; name: string } | null };
 
   return {
-    tools: ((toolsRes.data ?? []) as ToolJoin[])
-      .map((r) => r.tool)
-      .filter((t): t is NonNullable<ToolJoin["tool"]> => t !== null)
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    tools: includedTools,
     agents: ((agentsRes.data ?? []) as AgentJoin[])
       .map((r) => r.agent)
       .filter((a): a is NonNullable<AgentJoin["agent"]> => a !== null)
@@ -356,30 +440,44 @@ export async function listAgentBindings(surfaceName: string) {
   return data ?? [];
 }
 
-/** List the tool ↔ surface bindings for a surface (admin overview). */
+/**
+ * Tool ↔ surface "bindings" for a surface (admin overview).
+ *
+ * Post-2026 refactor, the per-(tool, surface) `tl_def_surface` row no longer
+ * exists. We reconstruct an equivalent shape by reading
+ * `tool_surface_defaults.always_include_tools` and joining to `tool_def` by
+ * name. `arg_mappings` is the legacy field name; it now carries the
+ * tool-specific entry from `tool_surface_defaults.arg_defaults` (literal
+ * jsonb, no surface_value indirection).
+ */
 export async function listToolBindings(surfaceName: string) {
-  const { data, error } = await sb()
-    .from("tl_def_surface")
-    .select(
-      "tool_id, arg_mappings, tool:tl_def!tl_def_surface_tool_id_fkey(name, category, is_active)",
-    )
-    .eq("surface_name", surfaceName);
-  if (error) throw error;
-  type Row = {
-    tool_id: string;
-    arg_mappings: unknown;
-    tool: {
-      name: string | null;
-      category: string | null;
-      is_active: boolean | null;
-    } | null;
-  };
-  return ((data ?? []) as unknown as Row[]).map((r) => ({
-    tool_id: r.tool_id,
-    arg_mappings: r.arg_mappings,
-    tool_name: r.tool?.name ?? null,
-    tool_category: r.tool?.category ?? null,
-    tool_is_active: r.tool?.is_active ?? null,
+  const defaultsRes = await sb()
+    .from("tool_surface_defaults")
+    .select("always_include_tools, arg_defaults")
+    .eq("surface_name", surfaceName)
+    .maybeSingle();
+  if (defaultsRes.error) throw defaultsRes.error;
+  if (!defaultsRes.data) return [];
+
+  const argDefaultsByTool = (defaultsRes.data.arg_defaults ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const toolNames = defaultsRes.data.always_include_tools;
+  if (toolNames.length === 0) return [];
+
+  const toolsRes = await sb()
+    .from("tool_def")
+    .select("id, name, category, is_active")
+    .in("name", toolNames);
+  if (toolsRes.error) throw toolsRes.error;
+
+  return (toolsRes.data ?? []).map((t) => ({
+    tool_id: t.id,
+    arg_mappings: argDefaultsByTool[t.name] ?? null,
+    tool_name: t.name,
+    tool_category: t.category,
+    tool_is_active: t.is_active,
   }));
 }
 
@@ -442,10 +540,15 @@ export type BrokenMappingRemediation =
 /**
  * Apply a single remediation to a broken mapping.
  * Returns the resulting JSONB column for the modified row.
+ *
+ * Post-2026 refactor: `bindingKind === "tool"` is no longer supported by the
+ * backend because `tl_def_surface.arg_mappings` no longer exists. The
+ * endpoint returns an error in that case; UIs should hide the tool
+ * remediation buttons.
  */
 export async function remediateBrokenMapping(args: {
   bindingKind: "agent" | "tool";
-  /** `agx_agent_surface.id` for agent, or `${tool_id}::${surface_name}` for tool. */
+  /** `agx_agent_surface.id` for agent. (tool variant no longer supported.) */
   bindingId: string;
   mappingKey: string;
   remediation: BrokenMappingRemediation;

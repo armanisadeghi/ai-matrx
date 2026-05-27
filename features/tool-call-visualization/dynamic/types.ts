@@ -17,10 +17,10 @@ import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 // ---------------------------------------------------------------------------
 
 export type ToolUiComponentRow =
-    Database["public"]["Tables"]["tl_ui"]["Row"];
+    Database["public"]["Tables"]["tool_ui"]["Row"];
 
 export type ToolUiIncidentRow =
-    Database["public"]["Tables"]["tl_ui_incident"]["Row"];
+    Database["public"]["Tables"]["tool_ui_incident"]["Row"];
 
 // ---------------------------------------------------------------------------
 // Enums / unions

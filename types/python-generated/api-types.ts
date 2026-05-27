@@ -388,15 +388,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai-tools/app/{source_app}": {
+    "/ai-tools/source-kind/{source_kind}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Tools By App */
-        get: operations["get_tools_by_app_ai_tools_app__source_app__get"];
+        /** Get Tools By Source Kind */
+        get: operations["get_tools_by_source_kind_ai_tools_source_kind__source_kind__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -405,15 +405,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai-tools/app/matrx_ai/all": {
+    "/ai-tools/native/all": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Matrx Ai Tools */
-        get: operations["get_matrx_ai_tools_ai_tools_app_matrx_ai_all_get"];
+        /**
+         * Get Native Tools
+         * @description All native (in-repo, @tool-declared) tool rows.
+         */
+        get: operations["get_native_tools_ai_tools_native_all_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -422,15 +425,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai-tools/app/matrx_local/all": {
+    "/ai-tools/mcp-discovered/all": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Matrx Local Tools */
-        get: operations["get_matrx_local_tools_ai_tools_app_matrx_local_all_get"];
+        /**
+         * Get Mcp Discovered Tools
+         * @description All tool rows synced from MCP servers.
+         */
+        get: operations["get_mcp_discovered_tools_ai_tools_mcp_discovered_all_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -912,13 +918,13 @@ export interface paths {
          *     There are two paths:
          *
          *     1. **Live fast path:** the originating SSE task is still running and holds
-         *        an in-memory asyncio.Future for the call_id. We update the cx_tl_call
+         *        an in-memory asyncio.Future for the call_id. We update the cx_tool_call
          *        row to status='completed'/'error' AND wake the future (resolution_source
          *        = 'inline_waiter'). The existing loop continues streaming on its SSE.
          *
          *     2. **Recovery path:** the originating loop is gone (SSE disconnected, server
          *        restarted, etc.). The in-memory waiter has no future — that's fine; the
-         *        cx_tl_call row is still status='delegated' from log_delegated(). We
+         *        cx_tool_call row is still status='delegated' from log_delegated(). We
          *        update the row to status='completed'/'error' (resolution_source =
          *        'client_post') and return continuation_needed=true so the caller knows
          *        to open a /resume stream to continue the loop.
@@ -949,13 +955,13 @@ export interface paths {
          *     There are two paths:
          *
          *     1. **Live fast path:** the originating SSE task is still running and holds
-         *        an in-memory asyncio.Future for the call_id. We update the cx_tl_call
+         *        an in-memory asyncio.Future for the call_id. We update the cx_tool_call
          *        row to status='completed'/'error' AND wake the future (resolution_source
          *        = 'inline_waiter'). The existing loop continues streaming on its SSE.
          *
          *     2. **Recovery path:** the originating loop is gone (SSE disconnected, server
          *        restarted, etc.). The in-memory waiter has no future — that's fine; the
-         *        cx_tl_call row is still status='delegated' from log_delegated(). We
+         *        cx_tool_call row is still status='delegated' from log_delegated(). We
          *        update the row to status='completed'/'error' (resolution_source =
          *        'client_post') and return continuation_needed=true so the caller knows
          *        to open a /resume stream to continue the loop.
@@ -1165,7 +1171,7 @@ export interface paths {
          *
          *     Preconditions:
          *     - The conversation must exist and belong to this user.
-         *     - No cx_tl_call rows can still be in ``status='delegated'`` for this
+         *     - No cx_tool_call rows can still be in ``status='delegated'`` for this
          *       user_request_id. If any remain, 409 CONFLICT is returned with the list —
          *       the client should continue prompting the user for the remaining answers.
          *
@@ -1173,7 +1179,7 @@ export interface paths {
          *     - The original ``user_request_id`` is reused (ensure_user_request_exists is
          *       idempotent) so tokens/cost continue to aggregate under the same row.
          *     - ``ConversationResolver.from_conversation_id`` reconstructs the full
-         *       history from cx_message + cx_tl_call rows (tool results are
+         *       history from cx_message + cx_tool_call rows (tool results are
          *       automatically reassembled).
          *     - ``run_ai_task`` streams the continued loop like any other turn.
          */
@@ -1201,7 +1207,7 @@ export interface paths {
          *
          *     Preconditions:
          *     - The conversation must exist and belong to this user.
-         *     - No cx_tl_call rows can still be in ``status='delegated'`` for this
+         *     - No cx_tool_call rows can still be in ``status='delegated'`` for this
          *       user_request_id. If any remain, 409 CONFLICT is returned with the list —
          *       the client should continue prompting the user for the remaining answers.
          *
@@ -1209,7 +1215,7 @@ export interface paths {
          *     - The original ``user_request_id`` is reused (ensure_user_request_exists is
          *       idempotent) so tokens/cost continue to aggregate under the same row.
          *     - ``ConversationResolver.from_conversation_id`` reconstructs the full
-         *       history from cx_message + cx_tl_call rows (tool results are
+         *       history from cx_message + cx_tool_call rows (tool results are
          *       automatically reassembled).
          *     - ``run_ai_task`` streams the continued loop like any other turn.
          */
@@ -2191,6 +2197,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/compute-targets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the user's bindable compute targets (sandboxes + local PCs). */
+        get: operations["list_compute_targets_api_compute_targets__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/compute-targets/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve a compute-target ref into the full sandbox binding payload clients ship on chat requests. Lets clients keep the existing `sandbox: {...}` request field while supporting local-PC targets. */
+        post: operations["resolve_compute_target_api_compute_targets_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/local-proxy/{app_instance_id}/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
+        get: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
+        put: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
+        post: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
+        delete: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        options?: never;
+        head?: never;
+        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
+        patch: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        trace?: never;
+    };
+    "/api/auth/on-sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Supabase auth webhook — runs ensure_default_sandbox for the user. */
+        post: operations["on_sign_in_api_auth_on_sign_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilities/block-processing/process": {
         parameters: {
             query?: never;
@@ -2529,6 +2607,48 @@ export interface paths {
         patch: operations["patch_site_scraper_admin_sites__site_id__patch"];
         trace?: never;
     };
+    "/scraper/admin/sites/batch-archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Archive Sites
+         * @description Archive (or un-archive) many sites in one call. Ownership is checked per
+         *     site — sites the caller can't write are skipped (reported in ``forbidden``).
+         */
+        post: operations["batch_archive_sites_scraper_admin_sites_batch_archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/sites/batch-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Delete Sites
+         * @description Delete (or archive, when ``hard=False``) many sites in one call.
+         *     Ownership is checked per site via ``assert_can_admin_site``.
+         */
+        post: operations["batch_delete_sites_scraper_admin_sites_batch_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scraper/admin/crawl/{run_id}": {
         parameters: {
             query?: never;
@@ -2546,6 +2666,28 @@ export interface paths {
          *     ON DELETE CASCADE chain.
          */
         delete: operations["delete_run_endpoint_scraper_admin_crawl__run_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/admin/crawl/batch-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Delete Runs
+         * @description Hard-delete many crawl runs in one call. Ownership is checked per run —
+         *     a run the caller can't write is skipped (reported in ``forbidden``), never
+         *     deleted. Same CASCADE semantics as the single-run delete.
+         */
+        post: operations["batch_delete_runs_scraper_admin_crawl_batch_delete_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3477,10 +3619,10 @@ export interface paths {
         /**
          * By Call
          * @description Forensic deep-dive for one ``call_id`` — both trace events AND the
-         *     cx_tl_call row joined together.
+         *     cx_tool_call row joined together.
          *
          *     Pre-flight rejects (SURFACE_REJECT, NO_EXECUTOR, LOOP_BLOCK) have
-         *     trace events but no cx_tl_call row; in that case ``tool_call`` is
+         *     trace events but no cx_tool_call row; in that case ``tool_call`` is
          *     ``null`` and the caller relies on the events list alone.
          */
         get: operations["by_call_admin_debug_traces_by_call__call_id__get"];
@@ -3679,9 +3821,10 @@ export interface paths {
          *     that declare a ``client.surface`` from the 60+ rows in
          *     ``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
          *
-         *     Includes tools inherited from ``matrx-default/default`` so the response
-         *     reflects exactly what ``apply_unified_tools`` would inject. Returns 404
-         *     when the name isn't in ``public.ui_surface``.
+         *     Includes tools inherited from every ancestor surface walked via
+         *     ``ui_surface.parent_surface_name`` so the response reflects exactly
+         *     what ``apply_unified_tools`` would inject. Returns 404 when the name
+         *     isn't in ``public.ui_surface``.
          */
         get: operations["get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get"];
         put?: never;
@@ -3730,7 +3873,7 @@ export interface paths {
          * Cache Bust
          * @description Force-reload the tool registry and capability factory caches from
          *     the DB. Run after a migration adds/removes tools, edits tool
-         *     definitions, or changes ``tl_executor`` bindings.
+         *     definitions, or changes ``tool_binding`` rows.
          *
          *     Admin-only.
          */
@@ -6419,6 +6562,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rag/admin/data-stores/{store_id}/members/batch-remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Batch Remove Data Store Members
+         * @description Remove many members from one store in a single call. Composite
+         *     (source_kind, source_id) keys are matched via unnest so it's one DELETE.
+         */
+        post: operations["admin_batch_remove_data_store_members_rag_admin_data_stores__store_id__members_batch_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/search-lab/expand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Expand Endpoint */
+        post: operations["expand_endpoint_rag_search_lab_expand_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/search-lab/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inventory Endpoint */
+        post: operations["inventory_endpoint_rag_search_lab_inventory_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/search-lab/diagnose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Diagnose Endpoint */
+        post: operations["diagnose_endpoint_rag_search_lab_diagnose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/search-lab/agent/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent Chat Stream */
+        post: operations["agent_chat_stream_rag_search_lab_agent_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflow/node-types": {
         parameters: {
             query?: never;
@@ -7571,7 +7803,7 @@ export interface paths {
          * Invalidate Conversation Cache
          * @description Drop every cached artifact for a conversation.
          *
-         *     Called after the client has mutated ``cx_message`` / ``cx_tl_call``
+         *     Called after the client has mutated ``cx_message`` / ``cx_tool_call``
          *     / ``cx_media`` directly via Supabase, so the server rebuilds the
          *     ``Agent`` from fresh DB rows on the next AI call. Clears BOTH the
          *     per-conversation ``AgentCache`` entry AND the ORM ``StateManager``
@@ -9642,6 +9874,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/db/tables/{table_name}/rows/bulk-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Update Rows
+         * @description Apply the same field changes to many rows in one call. Never fails the
+         *     whole batch on one bad id — returns a partial-result envelope (same shape
+         *     as bulk-delete) so the caller can report what landed.
+         */
+        post: operations["bulk_update_rows_admin_db_tables__table_name__rows_bulk_update_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/db/cache/stats": {
         parameters: {
             query?: never;
@@ -9752,6 +10006,30 @@ export interface paths {
         head?: never;
         /** Update Issue Class */
         patch: operations["update_issue_class_admin_ops_issue_classes__class_id__patch"];
+        trace?: never;
+    };
+    "/admin/ops/issue-classes/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Update Issue Classes
+         * @description Bulk-apply one disposition (and/or other fields) to many issue classes.
+         *
+         *     The "set all filtered to suppress" companion to the per-row PATCH — same
+         *     update semantics, one call. ``is_active`` is derived from disposition
+         *     exactly as the single-row endpoint does.
+         */
+        post: operations["batch_update_issue_classes_admin_ops_issue_classes_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/admin/ops/issue-classes/{class_id}/events": {
@@ -9987,6 +10265,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/persistence/failures/dismiss-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Batch
+         * @description Mark every unrecovered failure matching the filter ``recovered_at = now()``
+         *     without replaying. The "dismiss all" companion to ``replay-batch`` — use when
+         *     a whole class of failures is stale / no longer relevant.
+         *
+         *     Empty body dismisses every unrecovered row (capped by ``limit``).
+         */
+        post: operations["dismiss_batch_admin_persistence_failures_dismiss_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/persistence/summary": {
         parameters: {
             query?: never;
@@ -10061,6 +10363,30 @@ export interface paths {
          * @description Mark a system_error resolved (acknowledged / handled).
          */
         post: operations["resolve_error_admin_persistence_errors__error_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/persistence/errors/resolve-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Batch
+         * @description Mark every unresolved system_error matching the filter resolved.
+         *
+         *     The "resolve all" bulk action — use when a whole class of errors
+         *     (one kind, one error substring, an age window) has been acknowledged.
+         *     Empty body resolves every unresolved row (capped by ``limit``).
+         */
+        post: operations["resolve_batch_admin_persistence_errors_resolve_batch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11327,6 +11653,47 @@ export interface components {
             /** Is New */
             is_new?: boolean | null;
         };
+        /** AgentChatRequest */
+        AgentChatRequest: {
+            /** Query */
+            query: string;
+            /** History */
+            history?: components["schemas"]["AgentMessage"][];
+            /**
+             * Model
+             * @default claude-sonnet-4-6
+             */
+            model: string;
+            /** Data Store Id */
+            data_store_id?: string | null;
+            /** Source Kinds */
+            source_kinds?: string[] | null;
+            /**
+             * Admin Bypass Acl
+             * @default false
+             */
+            admin_bypass_acl: boolean;
+            /**
+             * Rerank
+             * @default true
+             */
+            rerank: boolean;
+            /**
+             * Multi Query
+             * @default 1
+             */
+            multi_query: number;
+            /**
+             * Use Hyde
+             * @default false
+             */
+            use_hyde: boolean;
+            /**
+             * Max Tool Calls
+             * @default 6
+             */
+            max_tool_calls: number;
+        };
         /**
          * AgentConfigSettings
          * @description Sampling / decode settings on an agent_config.
@@ -11340,6 +11707,16 @@ export interface components {
             top_p?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /** AgentMessage */
+        AgentMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
         };
         /** AgentStartRequest */
         AgentStartRequest: {
@@ -12769,7 +13146,7 @@ export interface components {
          *     conversation
          *         Bust ``AgentCache`` for the current conversation AND flush every
          *         ``Cx*`` model in the ORM ``StateManager``. Required when the
-         *         caller has written to ``cx_message`` / ``cx_tl_call`` /
+         *         caller has written to ``cx_message`` / ``cx_tool_call`` /
          *         ``cx_media`` directly (e.g. via Supabase client).
          *     agent
          *         Evict the agent definition from ``AgxAgent`` / ``AgxVersion``
@@ -12809,7 +13186,7 @@ export interface components {
         };
         /**
          * CallTimelineResponse
-         * @description Full forensic dump for one ``call_id`` — trace events + cx_tl_call row.
+         * @description Full forensic dump for one ``call_id`` — trace events + cx_tool_call row.
          */
         CallTimelineResponse: {
             /** Call Id */
@@ -12820,9 +13197,9 @@ export interface components {
         };
         /**
          * CallToolDetail
-         * @description One row from cx_tl_call — the per-call record. Only present when the
+         * @description One row from cx_tool_call — the per-call record. Only present when the
          *     call made it past pre-flight; pre-flight rejects (SURFACE_REJECT,
-         *     NO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tl_call row.
+         *     NO_EXECUTOR, LOOP_BLOCK) have trace events but no cx_tool_call row.
          */
         CallToolDetail: {
             /** Id */
@@ -13573,8 +13950,6 @@ export interface components {
         CodeDeclaration: {
             /** Name */
             name: string;
-            /** Source App */
-            source_app: string;
             /** Function Path */
             function_path: string;
             /** Executor */
@@ -13832,6 +14207,76 @@ export interface components {
             next_due_at?: string | null;
             /** Event Driven */
             event_driven: boolean;
+        };
+        /**
+         * ComputeTarget
+         * @description One bindable compute target, in the shape every client renders.
+         */
+        ComputeTarget: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "ec2" | "hosted" | "local-pc";
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "running" | "starting" | "creating" | "shutting_down" | "stopped" | "failed" | "expired" | "online" | "offline";
+            /** Is Online */
+            is_online: boolean;
+            /**
+             * Is This Device
+             * @default false
+             */
+            is_this_device: boolean;
+            /** Sandbox Id */
+            sandbox_id?: string | null;
+            /** Tier */
+            tier?: ("ec2" | "hosted") | null;
+            /** Template */
+            template?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Instance Id */
+            instance_id?: string | null;
+            /** Tunnel Url */
+            tunnel_url?: string | null;
+            /** Platform */
+            platform?: string | null;
+            /** Last Seen */
+            last_seen?: string | null;
+        };
+        /**
+         * ComputeTargetListResponse
+         * @description Unified list returned by ``GET /api/compute-targets``.
+         */
+        ComputeTargetListResponse: {
+            /** Targets */
+            targets: components["schemas"]["ComputeTarget"][];
+            /** Max Sandboxes */
+            max_sandboxes: number;
+            /** Sandbox Count */
+            sandbox_count: number;
+        };
+        /**
+         * ComputeTargetRef
+         * @description Compact reference posted by clients when they bind a target to a
+         *     conversation. The full binding (base_url / access_token / root_path) is
+         *     resolved server-side from this ref.
+         */
+        ComputeTargetRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "ec2" | "hosted" | "local-pc";
+            /** Id */
+            id: string;
         };
         /** ContentEditRequest */
         ContentEditRequest: {
@@ -14961,6 +15406,121 @@ export interface components {
             /** Detached Tasks In Set */
             detached_tasks_in_set: number;
         };
+        /** DiagnoseHit */
+        DiagnoseHit: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** Chunk Kind */
+            chunk_kind: string;
+            /** Score */
+            score: number;
+            /** Vector Rank */
+            vector_rank: number | null;
+            /** Lexical Rank */
+            lexical_rank: number | null;
+            /** Rerank Score */
+            rerank_score: number | null;
+            /** Snippet */
+            snippet: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** File Name */
+            file_name: string | null;
+            /** Page Number */
+            page_number: number | null;
+        };
+        /** DiagnoseRequest */
+        DiagnoseRequest: {
+            /** Query */
+            query: string;
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /**
+             * Multi Query
+             * @default 1
+             */
+            multi_query: number;
+            /**
+             * Use Hyde
+             * @default false
+             */
+            use_hyde: boolean;
+            /**
+             * Rerank
+             * @default true
+             */
+            rerank: boolean;
+            /**
+             * Use Mmr
+             * @default true
+             */
+            use_mmr: boolean;
+            /**
+             * Only Children
+             * @default true
+             */
+            only_children: boolean;
+            /** Source Kinds */
+            source_kinds?: string[] | null;
+            /** Embedding Models */
+            embedding_models?: string[] | null;
+            /** Data Store Id */
+            data_store_id?: string | null;
+            /**
+             * Admin Bypass Acl
+             * @default false
+             */
+            admin_bypass_acl: boolean;
+            /** Include Sources */
+            include_sources?: {
+                [key: string]: string;
+            }[] | null;
+        };
+        /** DiagnoseResponse */
+        DiagnoseResponse: {
+            /** Query */
+            query: string;
+            scope: components["schemas"]["ScopeContext"];
+            /** Elapsed Ms */
+            elapsed_ms: number;
+            /** Query Variants */
+            query_variants: string[];
+            /** Hyde Passage */
+            hyde_passage: string | null;
+            /** Embedding Model */
+            embedding_model: string;
+            /** Query Vector Preview */
+            query_vector_preview: number[];
+            /** Visible Chunks Total */
+            visible_chunks_total: number;
+            /** Candidates Vector */
+            candidates_vector: number;
+            /** Candidates Lexical */
+            candidates_lexical: number;
+            /** Candidates After Fusion */
+            candidates_after_fusion: number;
+            /** Candidates After Mmr */
+            candidates_after_mmr: number;
+            /** Hits */
+            hits: components["schemas"]["DiagnoseHit"][];
+            /** Reranker Model */
+            reranker_model: string | null;
+            /** Effective Filters */
+            effective_filters: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes: string[];
+        };
         /** DirectChatRequest */
         DirectChatRequest: {
             /**
@@ -14984,6 +15544,36 @@ export interface components {
             job_id: string;
             /** Deleted */
             deleted: number;
+        };
+        /**
+         * DismissBatchRequest
+         * @description Filter for batch dismiss. Empty body = dismiss every unrecovered row.
+         */
+        DismissBatchRequest: {
+            /** Table Target */
+            table_target?: string | null;
+            /** Error Text Contains */
+            error_text_contains?: string | null;
+            /**
+             * Max Age Secs
+             * @description Only dismiss rows whose failed_at is within this many seconds. Defaults to no time limit.
+             */
+            max_age_secs?: number | null;
+            /**
+             * Limit
+             * @default 2000
+             */
+            limit: number;
+        };
+        /** DismissBatchResponse */
+        DismissBatchResponse: {
+            /** Dismissed Count */
+            dismissed_count: number;
+            /**
+             * Dismissed At
+             * Format: date-time
+             */
+            dismissed_at: string;
         };
         /** DismissResponse */
         DismissResponse: {
@@ -15292,6 +15882,39 @@ export interface components {
         ExcludePageBody: {
             /** Reason */
             reason?: string | null;
+        };
+        /** ExpandRequest */
+        ExpandRequest: {
+            /** Query */
+            query: string;
+            /**
+             * Multi Query
+             * @default 3
+             */
+            multi_query: number;
+            /**
+             * Use Hyde
+             * @default true
+             */
+            use_hyde: boolean;
+        };
+        /** ExpandResponse */
+        ExpandResponse: {
+            /** Query */
+            query: string;
+            /** Variants */
+            variants: string[];
+            /** Hyde Passage */
+            hyde_passage: string | null;
+            /** Embedding Model */
+            embedding_model: string;
+            /**
+             * Query Vector Preview
+             * @description First 8 dimensions of the embedding for the original query
+             */
+            query_vector_preview?: number[];
+            /** Elapsed Ms */
+            elapsed_ms: number;
         };
         /** ExtensionContentResponse */
         ExtensionContentResponse: {
@@ -17291,6 +17914,63 @@ export interface components {
             /** Conversation Id */
             conversation_id: string;
         };
+        /** InventoryBucket */
+        InventoryBucket: {
+            /** Source Kind */
+            source_kind: string;
+            /** Visible Chunks */
+            visible_chunks: number;
+            /** Distinct Sources */
+            distinct_sources: number;
+        };
+        /** InventoryResponse */
+        InventoryResponse: {
+            scope: components["schemas"]["ScopeContext"];
+            /** Total Visible Chunks */
+            total_visible_chunks: number;
+            /** Total Visible Sources */
+            total_visible_sources: number;
+            /** By Source Kind */
+            by_source_kind: components["schemas"]["InventoryBucket"][];
+            /**
+             * By Visibility Route
+             * @description How each visible chunk became visible to the caller: owned, org_member, library_doc, library_short_code, note_share, cld_perm_user, cld_perm_group, cld_perm_folder.
+             */
+            by_visibility_route?: {
+                [key: string]: number;
+            };
+            /** Top Sources */
+            top_sources: components["schemas"]["TopSource"][];
+        };
+        /** IssueClassBatchResult */
+        IssueClassBatchResult: {
+            /** Updated Count */
+            updated_count: number;
+            /** Requested Count */
+            requested_count: number;
+            /** Failed Ids */
+            failed_ids: string[];
+        };
+        /**
+         * IssueClassBatchUpdate
+         * @description Apply the same field changes to many issue classes at once.
+         *
+         *     POST (not PATCH) so the path can't collide with PATCH /issue-classes/{class_id}.
+         */
+        IssueClassBatchUpdate: {
+            /** Ids */
+            ids: string[];
+            /** Disposition */
+            disposition?: string | null;
+            /** Severity */
+            severity?: string | null;
+            /** Alert Threshold */
+            alert_threshold?: number | null;
+            /** Alert Window Minutes */
+            alert_window_minutes?: number | null;
+            /** Resolution Notes */
+            resolution_notes?: string | null;
+        };
         /** IssueClassEmbed */
         IssueClassEmbed: {
             /**
@@ -18206,14 +18886,14 @@ export interface components {
             /** Offset */
             offset: number;
         };
-        /** ListToolsByAppResponse */
-        ListToolsByAppResponse: {
+        /** ListToolsBySourceKindResponse */
+        ListToolsBySourceKindResponse: {
             /** Tools */
             tools: components["schemas"]["ToolRecord"][];
             /** Count */
             count: number;
-            /** Source App */
-            source_app: string;
+            /** Source Kind */
+            source_kind: string;
         };
         /** ListToolsResponse */
         ListToolsResponse: {
@@ -18420,6 +19100,25 @@ export interface components {
         MediaUpdate: {
             /** Is Relevant */
             is_relevant?: boolean | null;
+        };
+        /** MemberBatchRemoveRequest */
+        MemberBatchRemoveRequest: {
+            /** Members */
+            members: components["schemas"]["MemberRef"][];
+        };
+        /** MemberBatchRemoveResult */
+        MemberBatchRemoveResult: {
+            /** Removed Count */
+            removed_count: number;
+            /** Requested Count */
+            requested_count: number;
+        };
+        /** MemberRef */
+        MemberRef: {
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
         };
         /** MemoryCostByEventType */
         MemoryCostByEventType: {
@@ -18717,6 +19416,18 @@ export interface components {
                     [key: string]: string;
                 };
             };
+        };
+        /**
+         * OnSignInResponse
+         * @description Response from the on-sign-in hook — used for operator observability.
+         */
+        OnSignInResponse: {
+            /** Ok */
+            ok: boolean;
+            /** User Id */
+            user_id: string;
+            /** Sandbox Row Id */
+            sandbox_row_id?: string | null;
         };
         /** OpsSummaryResponse */
         OpsSummaryResponse: {
@@ -20755,6 +21466,36 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /**
+         * ResolveBatchRequest
+         * @description Filter for batch resolve. Empty body = resolve every unresolved row.
+         */
+        ResolveBatchRequest: {
+            /** Kind */
+            kind?: string | null;
+            /** Error Text Contains */
+            error_text_contains?: string | null;
+            /**
+             * Max Age Secs
+             * @description Only resolve rows whose occurred_at is within this many seconds. Defaults to no time limit.
+             */
+            max_age_secs?: number | null;
+            /**
+             * Limit
+             * @default 2000
+             */
+            limit: number;
+        };
+        /** ResolveBatchResponse */
+        ResolveBatchResponse: {
+            /** Resolved Count */
+            resolved_count: number;
+            /**
+             * Resolved At
+             * Format: date-time
+             */
+            resolved_at: string;
+        };
         /** ResolveErrorResponse */
         ResolveErrorResponse: {
             /** Id */
@@ -21004,6 +21745,20 @@ export interface components {
             data: {
                 [key: string]: unknown;
             };
+        };
+        /** RunBatchDeleteRequest */
+        RunBatchDeleteRequest: {
+            /** Run Ids */
+            run_ids: string[];
+        };
+        /** RunBatchDeleteResult */
+        RunBatchDeleteResult: {
+            /** Deleted */
+            deleted: string[];
+            /** Not Found */
+            not_found: string[];
+            /** Forbidden */
+            forbidden: string[];
         };
         /**
          * RunCostSummary
@@ -21405,6 +22160,20 @@ export interface components {
             };
             /** Count */
             count: number;
+        };
+        /**
+         * ScopeContext
+         * @description Snapshot of who is asking and at what scope.
+         */
+        ScopeContext: {
+            /** User Id */
+            user_id: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Admin Bypass Acl */
+            admin_bypass_acl: boolean;
         };
         /**
          * ScrubRequest
@@ -21823,6 +22592,35 @@ export interface components {
             url: string;
             /** Expires In */
             expires_in: number;
+        };
+        /** SiteBatchArchiveRequest */
+        SiteBatchArchiveRequest: {
+            /** Site Ids */
+            site_ids: string[];
+            /**
+             * Archived
+             * @default true
+             */
+            archived: boolean;
+        };
+        /** SiteBatchDeleteRequest */
+        SiteBatchDeleteRequest: {
+            /** Site Ids */
+            site_ids: string[];
+            /**
+             * Hard
+             * @default false
+             */
+            hard: boolean;
+        };
+        /** SiteBatchResult */
+        SiteBatchResult: {
+            /** Succeeded */
+            succeeded: string[];
+            /** Not Found */
+            not_found: string[];
+            /** Forbidden */
+            forbidden: string[];
         };
         /** SiteCredentialRequest */
         SiteCredentialRequest: {
@@ -22437,6 +23235,53 @@ export interface components {
             topic_id?: string | null;
         };
         /**
+         * SupabaseAuthWebhookPayload
+         * @description Supabase Auth webhook envelope.
+         *
+         *     Reference shape (Supabase dashboard → Authentication → Hooks → 'Send HTTP'):
+         *
+         *     ```json
+         *     {
+         *       "type": "INSERT" | "UPDATE",
+         *       "table": "users",
+         *       "record": { "id": "...", "email": "...", ... },
+         *       "schema": "auth",
+         *       "old_record": { ... } | null
+         *     }
+         *     ```
+         */
+        SupabaseAuthWebhookPayload: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "INSERT" | "UPDATE";
+            /** Table */
+            table: string;
+            record: components["schemas"]["SupabaseAuthWebhookUser"];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * SupabaseAuthWebhookUser
+         * @description Subset of the Supabase ``UserRecord`` payload we actually consume.
+         */
+        SupabaseAuthWebhookUser: {
+            /**
+             * Id
+             * @description auth.users.id — UUID
+             */
+            id: string;
+            /** Email */
+            email?: string | null;
+            /** Aud */
+            aud?: string | null;
+            /** Role */
+            role?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * SurfaceAmendments
          * @description Per-request delta against the surface's cached/declared manifest.
          *
@@ -22467,7 +23312,8 @@ export interface components {
          *
          *     Sources can be one of:
          *       - ``db_surface`` — resolved from ``public.ui_surface`` +
-         *         ``public.tl_def_surface`` (the common path; 60+ matrx-user surfaces).
+         *         ``public.tool_surface_defaults`` (the common path; 60+ matrx-user
+         *         surfaces).
          *       - ``capability`` — resolved from a Python-registered ``Capability``
          *         in matrx-ai's registry (payload-bearing extras like ``editor-state``,
          *         ``sandbox-fs``, ``browser-dom``).
@@ -22916,6 +23762,9 @@ export interface components {
          *     (``input_schema``, ``output_schema``) and free-form metadata, so most
          *     fields are typed as ``JsonValue``. Extra keys are tolerated because
          *     the generated manager's ``to_dict`` can evolve independently.
+         *
+         *     ``source_kind`` discriminates row origin: ``native`` /
+         *     ``mcp_discovered`` / ``admin_authored`` / ``agent_authored``.
          */
         ToolRecord: {
             /** Id */
@@ -22924,8 +23773,10 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
-            /** Source App */
-            source_app?: string | null;
+            /** Source Kind */
+            source_kind?: string | null;
+            /** Managed By Server Id */
+            managed_by_server_id?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -22951,13 +23802,24 @@ export interface components {
         };
         /**
          * ToolRow
-         * @description A tl_def row plus its derived drift status, for the list/detail views.
+         * @description A tool_def row plus its derived drift status, for the list/detail views.
+         *
+         *     ``source_kind`` discriminates row origin: ``native`` (declared in code by
+         *     matrx-ai / aidream), ``mcp_discovered`` (synced from an MCP server),
+         *     ``admin_authored`` (created via the admin UI), ``agent_authored`` (created
+         *     by an agent tool run). ``managed_by_server_id`` is set for MCP-discovered
+         *     rows to the originating ``tool_mcp_server.id``.
+         *
+         *     ``function_path`` is derived from the code declaration when one exists
+         *     and is purely informational — the schema no longer carries the column.
          */
         ToolRow: {
             /** Name */
             name: string;
-            /** Source App */
-            source_app?: string | null;
+            /** Source Kind */
+            source_kind?: string | null;
+            /** Managed By Server Id */
+            managed_by_server_id?: string | null;
             /** Function Path */
             function_path?: string | null;
             /** Description */
@@ -23040,7 +23902,7 @@ export interface components {
         };
         /**
          * ToolUpdateRequest
-         * @description Admin-editable tl_def settings. All optional; only provided fields change.
+         * @description Admin-editable tool_def settings. All optional; only provided fields change.
          *
          *     ``parameters`` is the tool's argument contract — the same flat shape the
          *     drift engine diffs against code: a mapping of argument name → spec object,
@@ -23066,6 +23928,23 @@ export interface components {
             parameters?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /** TopSource */
+        TopSource: {
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** Chunk Count */
+            chunk_count: number;
+            /** File Name */
+            file_name: string | null;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Owner Id */
+            owner_id: string | null;
+            /** Processed Document Id */
+            processed_document_id: string | null;
         };
         /** TopicCreate */
         TopicCreate: {
@@ -24484,6 +25363,12 @@ export interface components {
              */
             only_children: boolean;
             /**
+             * Admin Bypass Acl
+             * @description Admin-only: bypass per-user ACL and search every chunk in every tenant. Useful for the admin search-diagnostic UI to answer 'do these chunks even exist?' independent of ownership / org / share grants. Ignored for non-admins.
+             * @default false
+             */
+            admin_bypass_acl: boolean;
+            /**
              * Data Store Id
              * @description Scope the search to one curated bucket (rag.data_stores.id). When set, only chunks from that store's members are returned. Combines with include_sources / source_kinds via AND.
              */
@@ -25119,12 +26004,12 @@ export interface operations {
             };
         };
     };
-    get_tools_by_app_ai_tools_app__source_app__get: {
+    get_tools_by_source_kind_ai_tools_source_kind__source_kind__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                source_app: string;
+                source_kind: string;
             };
             cookie?: never;
         };
@@ -25136,7 +26021,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListToolsByAppResponse"];
+                    "application/json": components["schemas"]["ListToolsBySourceKindResponse"];
                 };
             };
             /** @description Validation Error */
@@ -25150,7 +26035,7 @@ export interface operations {
             };
         };
     };
-    get_matrx_ai_tools_ai_tools_app_matrx_ai_all_get: {
+    get_native_tools_ai_tools_native_all_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -25165,12 +26050,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListToolsByAppResponse"];
+                    "application/json": components["schemas"]["ListToolsBySourceKindResponse"];
                 };
             };
         };
     };
-    get_matrx_local_tools_ai_tools_app_matrx_local_all_get: {
+    get_mcp_discovered_tools_ai_tools_mcp_discovered_all_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -25185,7 +26070,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListToolsByAppResponse"];
+                    "application/json": components["schemas"]["ListToolsBySourceKindResponse"];
                 };
             };
         };
@@ -28116,6 +29001,252 @@ export interface operations {
             };
         };
     };
+    list_compute_targets_api_compute_targets__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeTargetListResponse"];
+                };
+            };
+        };
+    };
+    resolve_compute_target_api_compute_targets_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComputeTargetRef"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingRequest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_instance_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_instance_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_instance_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_instance_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_instance_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    on_sign_in_api_auth_on_sign_in_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupabaseAuthWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnSignInResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     process_blocks_utilities_block_processing_process_post: {
         parameters: {
             query?: never;
@@ -28809,6 +29940,72 @@ export interface operations {
             };
         };
     };
+    batch_archive_sites_scraper_admin_sites_batch_archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteBatchArchiveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteBatchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_sites_scraper_admin_sites_batch_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteBatchDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteBatchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_run_endpoint_scraper_admin_crawl__run_id__delete: {
         parameters: {
             query?: never;
@@ -28829,6 +30026,39 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_runs_scraper_admin_crawl_batch_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunBatchDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunBatchDeleteResult"];
                 };
             };
             /** @description Validation Error */
@@ -36277,6 +37507,171 @@ export interface operations {
             };
         };
     };
+    admin_batch_remove_data_store_members_rag_admin_data_stores__store_id__members_batch_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberBatchRemoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberBatchRemoveResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    expand_endpoint_rag_search_lab_expand_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpandRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpandResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inventory_endpoint_rag_search_lab_inventory_post: {
+        parameters: {
+            query?: {
+                admin_bypass_acl?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnose_endpoint_rag_search_lab_diagnose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnoseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnoseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_chat_stream_rag_search_lab_agent_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_node_types_workflow_node_types_get: {
         parameters: {
             query?: never;
@@ -42095,6 +43490,37 @@ export interface operations {
             };
         };
     };
+    bulk_update_rows_admin_db_tables__table_name__rows_bulk_update_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cache_stats_admin_db_cache_stats_get: {
         parameters: {
             query?: never;
@@ -42273,6 +43699,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IssueClassRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_update_issue_classes_admin_ops_issue_classes_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueClassBatchUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueClassBatchResult"];
                 };
             };
             /** @description Validation Error */
@@ -42640,6 +44099,39 @@ export interface operations {
             };
         };
     };
+    dismiss_batch_admin_persistence_failures_dismiss_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DismissBatchRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_summary_admin_persistence_summary_get: {
         parameters: {
             query?: never;
@@ -42745,6 +44237,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResolveErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_batch_admin_persistence_errors_resolve_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ResolveBatchRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveBatchResponse"];
                 };
             };
             /** @description Validation Error */

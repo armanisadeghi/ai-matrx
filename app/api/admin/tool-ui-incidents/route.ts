@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         const offset = parseInt(searchParams.get("offset") || "0", 10);
 
         let query = supabase
-            .from("tl_ui_incident")
+            .from("tool_ui_incident")
             .select("*", { count: "exact" })
             .order("created_at", { ascending: false })
             .range(offset, offset + limit - 1);
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         };
 
         const { data, error } = await supabase
-            .from("tl_ui_incident")
+            .from("tool_ui_incident")
             .insert([incidentData])
             .select()
             .single();

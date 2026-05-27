@@ -123,7 +123,7 @@ export interface ToolLifecycleEntry {
   /**
    * Canonical tool name (e.g. "matrx-extend:take_screenshot"). This is what
    * renderers and registries are keyed by — never use `displayName` for
-   * lookup. Persisted from `cx_tl_call.tool_name`.
+   * lookup. Persisted from `cx_tool_call.tool_name`.
    */
   toolName: string;
   /**

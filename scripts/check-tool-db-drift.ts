@@ -2,11 +2,11 @@
 /**
  * Tool-drift gate — the matrx-frontend half of the unified code↔DB system.
  *
- * The DATABASE (`public.tl_def`) is the single source of truth. This gate proves
+ * The DATABASE (`public.tool_def`) is the single source of truth. This gate proves
  * the ACTUAL CODE matches it: it serializes the REAL Zod `argsSchema` of every
  * UI-first tool — the exact schema the dispatcher validates against at
  * features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk.ts
- * (`entry.schema.safeParse`) — and diffs it against tl_def.parameters. There is
+ * (`entry.schema.safeParse`) — and diffs it against tool_def.parameters. There is
  * NO intermediate file: the schema we check is the schema that runs.
  *
  * What it checks per tool — the shared "what match means" spec across all three
@@ -28,7 +28,7 @@
  *   2  unexpected error / DB fetch failed
  *
  * When it fires: the DB is the source of truth, so bring the handler's Zod
- * (features/agents/ui-first-tools/tools/schemas.ts) to match tl_def — or, if the
+ * (features/agents/ui-first-tools/tools/schemas.ts) to match tool_def — or, if the
  * DB itself is wrong, change it (admin API / migration), then match code. Never
  * push code→DB silently.
  */
@@ -108,7 +108,7 @@ function loadEnv(): { url: string; key: string } | null {
 
 async function fetchDbRows(url: string, key: string, names: string[]): Promise<DbToolRow[]> {
   const inList = names.map((n) => encodeURIComponent(n)).join(",");
-  const endpoint = `${url.replace(/\/$/, "")}/rest/v1/tl_def?name=in.(${inList})&select=name,parameters`;
+  const endpoint = `${url.replace(/\/$/, "")}/rest/v1/tool_def?name=in.(${inList})&select=name,parameters`;
   const res = await fetch(endpoint, {
     headers: {
       apikey: key,
@@ -253,7 +253,7 @@ async function main(): Promise<void> {
   const DIM = isTTY ? "\x1b[2m" : "";
   const RESET = isTTY ? "\x1b[0m" : "";
 
-  console.log(`Tool-DB drift check — matrx-frontend UI-first Zod ↔ public.tl_def`);
+  console.log(`Tool-DB drift check — matrx-frontend UI-first Zod ↔ public.tool_def`);
   console.log(`  code tools (real Zod): ${names.length}   DB rows matched: ${dbByName.size}`);
   console.log("");
 
@@ -269,7 +269,7 @@ async function main(): Promise<void> {
   console.log("");
 
   if (missingInDb.length) {
-    console.log(`${RED}✗ In code but MISSING in tl_def (${missingInDb.length}):${RESET}`);
+    console.log(`${RED}✗ In code but MISSING in tool_def (${missingInDb.length}):${RESET}`);
     for (const n of missingInDb) console.log(`    ${DIM}-${RESET} ${n}`);
     console.log("");
   }
@@ -281,8 +281,8 @@ async function main(): Promise<void> {
     }
     console.log("");
   }
-  console.log(`${DIM}Fix path — the DATABASE (public.tl_def) is the source of truth:${RESET}`);
-  console.log(`${DIM}  - Bring the Zod in features/agents/ui-first-tools/tools/schemas.ts to match tl_def.${RESET}`);
+  console.log(`${DIM}Fix path — the DATABASE (public.tool_def) is the source of truth:${RESET}`);
+  console.log(`${DIM}  - Bring the Zod in features/agents/ui-first-tools/tools/schemas.ts to match tool_def.${RESET}`);
   console.log(`${DIM}  - If the DB itself is wrong, change it (admin API / migration), then match code.${RESET}`);
   process.exit(1);
 }

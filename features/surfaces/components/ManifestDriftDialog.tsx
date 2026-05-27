@@ -168,20 +168,31 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 ))}
               </Section>
 
-              <Section
-                title="Broken tool mappings"
-                count={report.brokenToolMappings.length}
-                tone="rose"
-                description="Tool bindings reference SurfaceValues that no longer exist. Remap, remove, or notify."
-              >
-                {report.brokenToolMappings.map((b) => (
-                  <BrokenRow
-                    key={`tl-${b.bindingId}-${b.mappingKey}`}
-                    broken={b}
-                    onResolved={() => void load()}
-                  />
-                ))}
-              </Section>
+              {/*
+                Post-2026 refactor: `tl_def_surface` (the per-(tool, surface)
+                arg_mappings row) was dropped. Surfaces now declare tools via
+                `tool_surface_defaults.always_include_tools` with literal jsonb
+                arg defaults — there is no surface_value indirection on the
+                tool path. `report.brokenToolMappings` is therefore always
+                empty in the new world. We render the panel conditionally so
+                the dialog auto-hides this section.
+              */}
+              {report.brokenToolMappings.length > 0 && (
+                <Section
+                  title="Broken tool mappings"
+                  count={report.brokenToolMappings.length}
+                  tone="rose"
+                  description="Tool bindings reference SurfaceValues that no longer exist. (Legacy from pre-2026 schema.)"
+                >
+                  {report.brokenToolMappings.map((b) => (
+                    <BrokenRow
+                      key={`tool-${b.bindingId}-${b.mappingKey}`}
+                      broken={b}
+                      onResolved={() => void load()}
+                    />
+                  ))}
+                </Section>
+              )}
             </div>
           )}
         </div>

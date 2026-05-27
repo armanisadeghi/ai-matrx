@@ -69,6 +69,11 @@ import { supabase } from "@/utils/supabase/client";
 import { formatText } from "@/utils/text/text-case-converter";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { cn } from "@/styles/themes/utils";
+import {
+  SourceKindBadge,
+  sourceKindLabel,
+} from "./mcp-tools/source-kind-badge";
+import { ExternalLink } from "lucide-react";
 
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 
@@ -85,11 +90,6 @@ type Tool = Omit<
 interface ToolCounts {
   sampleCount: number;
   uiComponentCount: number;
-}
-
-function sourceAppFromPath(functionPath: string): string {
-  if (!functionPath) return "unknown";
-  return functionPath.split(".")[0] || "unknown";
 }
 
 function hasOutputSchema(tool: Tool): boolean {
@@ -183,7 +183,7 @@ export function McpToolsManager() {
   const [toolCounts, setToolCounts] = useState<Record<string, ToolCounts>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedSourceApp, setSelectedSourceApp] = useState<string>("all");
+  const [selectedSourceKind, setSelectedSourceKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<
     "all" | "active" | "inactive"
   >("all");
@@ -225,10 +225,10 @@ export function McpToolsManager() {
     async function fetchCounts() {
       const [samplesRes, uiRes] = await Promise.all([
         supabase
-          .from("tl_test_sample")
+          .from("tool_test_sample")
           .select("tool_name")
           .in("tool_name", toolNames),
-        supabase.from("tl_ui").select("tool_name").in("tool_name", toolNames),
+        supabase.from("tool_ui").select("tool_name").in("tool_name", toolNames),
       ]);
 
       const counts: Record<string, ToolCounts> = {};
@@ -251,9 +251,11 @@ export function McpToolsManager() {
     return ["all", ...Array.from(cats as Set<string>).sort()];
   }, [tools]);
 
-  const sourceApps = useMemo(() => {
-    const apps = new Set(tools.map((t) => sourceAppFromPath(t.function_path)));
-    return ["all", ...Array.from(apps).sort()];
+  const sourceKinds = useMemo(() => {
+    const kinds = new Set(
+      tools.map((t) => t.source_kind).filter((k): k is string => Boolean(k)),
+    );
+    return ["all", ...Array.from(kinds).sort()];
   }, [tools]);
 
   const allTags = useMemo(() => {
@@ -265,7 +267,7 @@ export function McpToolsManager() {
   const activeFilterCount =
     [
       selectedCategory !== "all",
-      selectedSourceApp !== "all",
+      selectedSourceKind !== "all",
       selectedStatus !== "all",
       selectedTag !== "all",
       selectedTestFilter !== "all",
@@ -275,7 +277,7 @@ export function McpToolsManager() {
 
   const clearFilters = () => {
     setSelectedCategory("all");
-    setSelectedSourceApp("all");
+    setSelectedSourceKind("all");
     setSelectedStatus("all");
     setSelectedTag("all");
     setSelectedTestFilter("all");
@@ -347,37 +349,38 @@ export function McpToolsManager() {
           ),
       },
       {
-        key: "source_app",
-        header: "Source App",
+        key: "source_kind",
+        header: "Source",
         type: "enum",
-        width: "w-[140px]",
-        getValue: (t) => t.source_app ?? sourceAppFromPath(t.function_path),
-        render: (t) => {
-          const app = t.source_app || sourceAppFromPath(t.function_path);
-          return (
-            <Badge
-              variant="secondary"
-              className="text-[10px] h-4 px-1.5 bg-primary/10 text-primary border-primary/20"
-            >
-              {formatText(app)}
-            </Badge>
-          );
-        },
+        width: "w-[110px]",
+        getValue: (t) => t.source_kind ?? "",
+        render: (t) => <SourceKindBadge kind={t.source_kind} />,
       },
       {
-        key: "function_path",
-        header: "Function Path",
-        type: "text",
-        width: "w-[260px]",
-        getValue: (t) => t.function_path,
-        render: (t) => (
-          <span
-            className="font-mono text-[11px] text-muted-foreground truncate block max-w-[260px]"
-            title={t.function_path}
-          >
-            {t.function_path}
-          </span>
-        ),
+        key: "managed_by_server_id",
+        header: "MCP Server",
+        type: "boolean",
+        width: "w-[120px]",
+        getValue: (t) => t.managed_by_server_id !== null,
+        render: (t) =>
+          t.managed_by_server_id ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateTo(
+                  `/administration/mcp-servers/${t.managed_by_server_id}`,
+                );
+              }}
+              className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline"
+              title="Open MCP server"
+            >
+              <ExternalLink className="h-3 w-3" />
+              MCP
+            </button>
+          ) : (
+            <span className="text-muted-foreground text-[10px]">—</span>
+          ),
       },
       {
         key: "tool_group",
@@ -452,14 +455,6 @@ export function McpToolsManager() {
         width: "w-[100px]",
         getValue: (t) => !!t.admin_only,
         render: (t) => <BoolPill value={t.admin_only} />,
-      },
-      {
-        key: "privileged",
-        header: "Privileged",
-        type: "boolean",
-        width: "w-[100px]",
-        getValue: (t) => !!t.privileged,
-        render: (t) => <BoolPill value={t.privileged} />,
       },
       {
         key: "dedupe_exempt",
@@ -688,9 +683,8 @@ export function McpToolsManager() {
       };
       const matchesCategory =
         selectedCategory === "all" || tool.category === selectedCategory;
-      const matchesSourceApp =
-        selectedSourceApp === "all" ||
-        sourceAppFromPath(tool.function_path) === selectedSourceApp;
+      const matchesSourceKind =
+        selectedSourceKind === "all" || tool.source_kind === selectedSourceKind;
       const matchesStatus =
         selectedStatus === "all" ||
         (selectedStatus === "active" && tool.is_active) ||
@@ -719,7 +713,7 @@ export function McpToolsManager() {
       if (
         !(
           matchesCategory &&
-          matchesSourceApp &&
+          matchesSourceKind &&
           matchesStatus &&
           matchesTag &&
           matchesTest
@@ -785,7 +779,7 @@ export function McpToolsManager() {
           { get: (t) => t.description, weight: "body" },
           { get: (t) => t.tags, weight: "tag" },
           { get: (t) => t.category, weight: "tag" },
-          { get: (t) => t.function_path, weight: "meta" },
+          { get: (t) => t.source_kind, weight: "meta" },
         ]);
 
     // Apply column sort. If searchQuery is set, search-scoring already sorted;
@@ -823,7 +817,7 @@ export function McpToolsManager() {
     toolCounts,
     searchQuery,
     selectedCategory,
-    selectedSourceApp,
+    selectedSourceKind,
     selectedStatus,
     selectedTag,
     selectedTestFilter,
@@ -895,7 +889,7 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: updErr } = await supabase
-        .from("tl_def")
+        .from("tool_def")
         .update({ is_active: active })
         .in("id", targetIds);
       if (updErr) throw updErr;
@@ -920,12 +914,12 @@ export function McpToolsManager() {
       .filter((t) => targetIds.includes(t.id))
       .map((t) => t.name);
     const { count: refCount } = await supabase
-      .from("cx_tl_call")
+      .from("cx_tool_call")
       .select("id", { count: "exact", head: true })
       .in("tool_name", targetNames);
     const ok = await confirm({
       title: `Delete ${noun}?`,
-      description: `${refCount ?? 0} historical cx_tl_call rows reference these tool names. Deleting cascades through tl_executor, tl_def_surface, tl_bundle_member, tl_def_version, and tl_ui — but cx_tl_call.tool_name has no FK and will be orphaned. Prefer Deactivate unless you really mean it.`,
+      description: `${refCount ?? 0} historical cx_tool_call rows reference these tool names. Deleting cascades through tool_binding, tool_bundle_member, tool_def_version, and tool_ui — but cx_tool_call.tool_name has no FK and will be orphaned. Prefer Deactivate unless you really mean it.`,
       confirmLabel: "Delete forever",
       variant: "destructive",
     });
@@ -933,7 +927,7 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: delErr } = await supabase
-        .from("tl_def")
+        .from("tool_def")
         .delete()
         .in("id", targetIds);
       if (delErr) throw delErr;
@@ -1197,19 +1191,19 @@ export function McpToolsManager() {
         {/* Toolbar — row 2: top-level quick filters (preserved) */}
         <div className="flex flex-wrap gap-2 items-center">
           <Select
-            value={selectedSourceApp}
-            onValueChange={setSelectedSourceApp}
+            value={selectedSourceKind}
+            onValueChange={setSelectedSourceKind}
           >
             <SelectTrigger
-              className={`h-8 w-40 text-xs ${selectedSourceApp !== "all" ? "border-primary text-primary" : ""}`}
+              className={`h-8 w-40 text-xs ${selectedSourceKind !== "all" ? "border-primary text-primary" : ""}`}
             >
               <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
-              <SelectValue placeholder="Source App" />
+              <SelectValue placeholder="Source Kind" />
             </SelectTrigger>
             <SelectContent>
-              {sourceApps.map((app) => (
-                <SelectItem key={app} value={app} className="text-xs">
-                  {app === "all" ? "All Source Apps" : formatText(app)}
+              {sourceKinds.map((kind) => (
+                <SelectItem key={kind} value={kind} className="text-xs">
+                  {kind === "all" ? "All Sources" : sourceKindLabel(kind)}
                 </SelectItem>
               ))}
             </SelectContent>

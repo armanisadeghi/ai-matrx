@@ -212,7 +212,7 @@ export async function runAiStream(
       const code = response.status;
       if (code === 409) {
         if (kind === "resume") {
-          // Benign: ≥1 cx_tl_call rows are still in status='delegated' for
+          // Benign: ≥1 cx_tool_call rows are still in status='delegated' for
           // this user_request — the user hasn't answered everything. The
           // server returns 409 `outstanding_delegated_calls`. Keep the UI in
           // its waiting-on-user affordance; the next /tool_results POST will

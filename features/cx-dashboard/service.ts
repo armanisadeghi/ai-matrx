@@ -50,7 +50,7 @@ export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewK
     .is("deleted_at", null);
 
   const { data: toolStats } = await supabase
-    .from("cx_tl_call")
+    .from("cx_tool_call")
     .select("id, is_error")
     .is("deleted_at", null);
 
@@ -67,7 +67,7 @@ export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewK
 
   // Tool usage
   const { data: toolUsage } = await supabase
-    .from("cx_tl_call")
+    .from("cx_tool_call")
     .select("tool_name, duration_ms, is_error, cost_usd")
     .is("deleted_at", null);
 
@@ -318,7 +318,7 @@ export async function fetchUserRequestDetail(id: string) {
       .is("deleted_at", null)
       .order("iteration", { ascending: true }),
     supabase
-      .from("cx_tl_call")
+      .from("cx_tool_call")
       .select("*")
       .eq("user_request_id", id)
       .is("deleted_at", null)
@@ -398,7 +398,7 @@ export async function fetchErrors(filters: CxFilters) {
 
   // Tool calls with errors
   const { data: errorToolCalls } = await supabase
-    .from("cx_tl_call")
+    .from("cx_tool_call")
     .select("*")
     .is("deleted_at", null)
     .or("is_error.eq.true,success.eq.false")

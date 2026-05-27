@@ -271,7 +271,7 @@ export function ToolComponentPreview({
     setLoadingSamples(true);
     try {
       const { data, error } = await supabase
-        .from("tl_test_sample")
+        .from("tool_test_sample")
         .select("*")
         .or(`tool_name.eq.${tool.name},tool_id.eq.${tool.id}`)
         .order("created_at", { ascending: false });

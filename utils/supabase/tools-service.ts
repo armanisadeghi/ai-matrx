@@ -4,7 +4,7 @@ import type { Database } from "@/types/database.types";
 import { createClient } from "./client";
 
 // Source of truth: the DB row. Any schema change surfaces here automatically.
-export type DatabaseTool = Database["public"]["Tables"]["tl_def"]["Row"];
+export type DatabaseTool = Database["public"]["Tables"]["tool_def"]["Row"];
 
 export interface Tool {
   id: string;
@@ -30,7 +30,7 @@ export class ToolsService {
   async fetchTools(): Promise<DatabaseTool[]> {
     try {
       const { data, error } = await this.supabase
-        .from("tl_def")
+        .from("tool_def")
         .select("*")
         .eq("is_active", true)
         .order("category", { ascending: true })
@@ -54,7 +54,7 @@ export class ToolsService {
   async fetchToolsByCategory(category: string): Promise<DatabaseTool[]> {
     try {
       const { data, error } = await this.supabase
-        .from("tl_def")
+        .from("tool_def")
         .select("*")
         .eq("is_active", true)
         .eq("category", category)
@@ -80,7 +80,7 @@ export class ToolsService {
 
     try {
       const { data, error } = await this.supabase
-        .from("tl_def")
+        .from("tool_def")
         .select("*")
         .in("id", toolIds)
         .eq("is_active", true);
@@ -108,7 +108,7 @@ export class ToolsService {
 
     try {
       const { data, error } = await this.supabase
-        .from("tl_def")
+        .from("tool_def")
         .select("*")
         .in("id", toolIds);
 
@@ -138,7 +138,7 @@ export class ToolsService {
 
     try {
       const { data, error } = await this.supabase
-        .from("tl_def")
+        .from("tool_def")
         .select("*")
         .eq("is_active", true)
         .or(`name.ilike.%${query}%,description.ilike.%${query}%`)

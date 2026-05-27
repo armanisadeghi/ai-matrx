@@ -249,7 +249,11 @@ function NewBundleDialog({
         description,
         isSystem,
       });
-      toast.success(`Bundle ${result.bundle_name} created (+ lister ${result.lister_name})`);
+      // The 2026 refactor simplified create_bundle_with_lister to return only
+      // the new bundle id; we already know the bundle name from the form, and
+      // the lister tool is only created if a name was passed (we don't pass
+      // one here, so no lister is auto-created — that's an explicit step).
+      toast.success(`Bundle ${name} created`);
       onCreated(result.bundle_id);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");

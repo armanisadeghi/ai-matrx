@@ -1,23 +1,34 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { listServers, type McpServerRow } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
+import {
+  TOOL_SOURCE_KIND_VALUES,
+  sourceKindLabel,
+} from "./source-kind-badge";
 import type { Database } from "@/types/database.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ToolRow = Database["public"]["Tables"]["tl_def"]["Row"];
+type ToolRow = Database["public"]["Tables"]["tool_def"]["Row"];
 
 interface Props {
   tool: ToolRow;
@@ -35,6 +46,15 @@ export function ToolEditPage({ tool }: Props) {
   const [activeTab, setActiveTab] = useState("basic");
   const [isSaving, setIsSaving] = useState(false);
   const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
+  const [mcpServers, setMcpServers] = useState<McpServerRow[]>([]);
+
+  useEffect(() => {
+    listServers()
+      .then(setMcpServers)
+      .catch((err) => {
+        console.error("Failed to load MCP servers", err);
+      });
+  }, []);
 
   const navigateTo = (path: string) => {
     startTransition(() => router.push(path));
@@ -68,6 +88,14 @@ export function ToolEditPage({ tool }: Props) {
       });
       return;
     }
+    if (editedTool.source_kind === "mcp_discovered" && !editedTool.managed_by_server_id) {
+      toast({
+        title: "MCP server required",
+        description: "Tools with source_kind=mcp_discovered must be linked to an MCP server.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (Object.keys(jsonErrors).length > 0) {
       toast({ title: "Fix JSON errors before saving", variant: "destructive" });
       return;
@@ -75,6 +103,10 @@ export function ToolEditPage({ tool }: Props) {
     setIsSaving(true);
     try {
       const { id, created_at, updated_at, ...updateData } = editedTool;
+      // If source_kind is no longer mcp_discovered, null out the server FK.
+      if (updateData.source_kind !== "mcp_discovered") {
+        updateData.managed_by_server_id = null;
+      }
       const response = await fetch(`/api/admin/tools/${tool.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -138,14 +170,49 @@ export function ToolEditPage({ tool }: Props) {
         />
       </div>
 
-      <div className="space-y-1.5">
-        <Label>Function Path</Label>
-        <Input
-          value={editedTool.function_path}
-          onChange={(e) => setField("function_path", e.target.value)}
-          className="font-mono"
-          style={{ fontSize: "16px" }}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>
+            Source Kind <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={editedTool.source_kind ?? "admin_authored"}
+            onValueChange={(v) => setField("source_kind", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TOOL_SOURCE_KIND_VALUES.map((k) => (
+                <SelectItem key={k} value={k}>
+                  {sourceKindLabel(k)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {editedTool.source_kind === "mcp_discovered" ? (
+          <div className="space-y-1.5">
+            <Label>
+              MCP Server <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={editedTool.managed_by_server_id ?? ""}
+              onValueChange={(v) => setField("managed_by_server_id", v || null)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an MCP server…" />
+              </SelectTrigger>
+              <SelectContent>
+                {mcpServers.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} ({s.slug})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -360,19 +427,19 @@ export function ToolEditPage({ tool }: Props) {
                   <TabsTrigger value="parameters">
                     Parameters
                     {jsonErrors.parameters && (
-                      <span className="ml-1 text-destructive">⚠</span>
+                      <span className="ml-1 text-destructive">!</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="output">
                     Output Schema
                     {jsonErrors.output_schema && (
-                      <span className="ml-1 text-destructive">⚠</span>
+                      <span className="ml-1 text-destructive">!</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="advanced">
                     Advanced
                     {jsonErrors.annotations && (
-                      <span className="ml-1 text-destructive">⚠</span>
+                      <span className="ml-1 text-destructive">!</span>
                     )}
                   </TabsTrigger>
                 </TabsList>

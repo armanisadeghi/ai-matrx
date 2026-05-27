@@ -1,170 +1,184 @@
 "use client";
 
+/**
+ * Executors + Bindings service (formerly "executor-surfaces").
+ *
+ * The 2026 tool-system refactor dropped the "executor surface" concept
+ * entirely. There is no longer a `tl_executor_kind` (categorization) nor a
+ * per-(tool, surface) `tl_executor` M2M with `priority`/`auto_load`/`delegated`
+ * flags. The new model:
+ *
+ *   `tool_executor` (PK = name)   — addressable capability provider, equal
+ *                                   citizen (matrx-ai-core, aidream,
+ *                                   matrx-local, chrome-extension, matrx-user,
+ *                                   or `mcp.<slug>`).
+ *   `tool_binding`   (PK = tool_id, executor_name) — pure M2M. The only
+ *                    column besides the keys is `is_active`. No priorities,
+ *                    no delegation flags, no auto-load.
+ *
+ * Routing now collapses to two questions: "Is this executor active for this
+ * request?" and "Does it have a binding to this tool?" See
+ * `aidream/docs/CROSS_TEAM_TOOL_REFACTOR.md`.
+ *
+ * The directory keeps the legacy name `executor-surfaces` for path stability;
+ * the data model below is fully aligned with the new schema.
+ */
+
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
 
-export type ExecutorKindRow = Tables["tl_executor_kind"]["Row"];
-export type ExecutorRow = Tables["tl_executor"]["Row"];
-export type ToolDefRow = Tables["tl_def"]["Row"];
+export type ToolExecutorRow = Tables["tool_executor"]["Row"];
+export type ToolBindingRow = Tables["tool_binding"]["Row"];
+export type ToolDefRow = Tables["tool_def"]["Row"];
 
-/** A tl_executor_kind row plus per-surface counts used in the master list. */
-export interface ExecutorSurfaceWithStats extends ExecutorKindRow {
-  /** Total tl_executor rows pointing at this surface (any auto_load). */
+/** A `tool_executor` row plus aggregate counts used in the master list. */
+export interface ExecutorWithStats extends ToolExecutorRow {
+  /** Total `tool_binding` rows pointing at this executor (active and inactive). */
   boundCount: number;
-  /** Subset where auto_load = true. */
-  autoLoadCount: number;
-  /** Subset where is_active = false (informational). */
-  inactiveCount: number;
+  /** Subset where binding.is_active = false. */
+  inactiveBindingCount: number;
+  /** Whether this is an MCP-backed executor (has mcp_server_id). */
+  isMcp: boolean;
 }
 
-/** A tl_executor row joined to its tl_def parent — the row we render in the detail panel. */
+/** A `tool_binding` row joined to its `tool_def` parent. */
 export interface ExecutorBindingRow {
-  /** tl_executor.id — primary key for the binding. */
-  id: string;
   tool_id: string;
+  executor_name: string;
   tool_name: string | null;
   tool_category: string | null;
   tool_description: string | null;
   tool_is_active: boolean | null;
-  auto_load: boolean;
+  tool_source_kind: ToolDefRow["source_kind"] | null;
   is_active: boolean;
-  priority: number;
-  delegated: boolean;
-  function_path: string | null;
-  source_app: string | null;
   updated_at: string;
 }
 
-/** A tl_def row available to bind to a surface (not yet in tl_executor for that surface). */
+/** A `tool_def` row available to bind (not yet bound to this executor). */
 export interface UnboundToolRow {
   id: string;
   name: string;
   category: string | null;
   description: string;
   is_active: boolean | null;
+  source_kind: ToolDefRow["source_kind"];
 }
 
 const sb = () => createClient();
 
-// ─── Master list: executor surfaces with counts ──────────────────────────────
+// ─── Master list: executors with binding counts ──────────────────────────────
 
 /**
- * List every `tl_executor_kind` row plus aggregate counts of its bindings.
+ * List every `tool_executor` row plus aggregate counts of its bindings.
  *
- * Two parallel queries (kinds + all-executor-rows), then group in-memory. The
- * `tl_executor` table is small (a few hundred rows) and this avoids needing a
- * SQL RPC just for counts.
+ * Two parallel queries (executors + all-bindings), then group in-memory.
+ * The `tool_binding` table is small (~300 rows) and this avoids needing an
+ * RPC just for counts.
  */
-export async function listExecutorSurfacesWithStats(): Promise<
-  ExecutorSurfaceWithStats[]
-> {
-  const [kindsRes, execRes] = await Promise.all([
-    sb()
-      .from("tl_executor_kind")
-      .select("*")
-      .order("name", { ascending: true }),
-    sb().from("tl_executor").select("surface, auto_load, is_active"),
+export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
+  const [execRes, bindRes] = await Promise.all([
+    sb().from("tool_executor").select("*").order("name", { ascending: true }),
+    sb().from("tool_binding").select("executor_name, is_active"),
   ]);
-  if (kindsRes.error) throw kindsRes.error;
   if (execRes.error) throw execRes.error;
+  if (bindRes.error) throw bindRes.error;
 
-  const stats = new Map<
-    string,
-    { bound: number; autoLoad: number; inactive: number }
-  >();
-  for (const row of execRes.data ?? []) {
-    const s = stats.get(row.surface) ?? { bound: 0, autoLoad: 0, inactive: 0 };
+  const stats = new Map<string, { bound: number; inactive: number }>();
+  for (const row of bindRes.data ?? []) {
+    const s = stats.get(row.executor_name) ?? { bound: 0, inactive: 0 };
     s.bound += 1;
-    if (row.auto_load) s.autoLoad += 1;
     if (!row.is_active) s.inactive += 1;
-    stats.set(row.surface, s);
+    stats.set(row.executor_name, s);
   }
 
-  return (kindsRes.data ?? []).map((k) => {
-    const s = stats.get(k.name) ?? { bound: 0, autoLoad: 0, inactive: 0 };
+  return (execRes.data ?? []).map((e) => {
+    const s = stats.get(e.name) ?? { bound: 0, inactive: 0 };
     return {
-      ...k,
+      ...e,
       boundCount: s.bound,
-      autoLoadCount: s.autoLoad,
-      inactiveCount: s.inactive,
+      inactiveBindingCount: s.inactive,
+      isMcp: e.mcp_server_id !== null,
     };
   });
 }
 
-// ─── Per-surface bindings ────────────────────────────────────────────────────
+/**
+ * Legacy alias preserved for UI components that still use the old name.
+ * The new shape returns ExecutorWithStats (no autoLoadCount field, since
+ * auto_load no longer exists).
+ *
+ * @deprecated Use listExecutorsWithStats() instead. The "executor surface"
+ * concept no longer exists post-2026 refactor.
+ */
+export const listExecutorSurfacesWithStats = listExecutorsWithStats;
 
-/** All tl_executor rows for a surface, joined to their parent tl_def row. */
-export async function listBindingsForSurface(
-  surface: string,
+// ─── Per-executor bindings ───────────────────────────────────────────────────
+
+/** All `tool_binding` rows for an executor, joined to their parent `tool_def`. */
+export async function listBindingsForExecutor(
+  executorName: string,
 ): Promise<ExecutorBindingRow[]> {
-  // FK is named `tool_handlers_tool_id_fkey` (legacy — the table was renamed
-  // from `tool_handlers` to `tl_executor` but the constraint name was kept).
   const { data, error } = await sb()
-    .from("tl_executor")
+    .from("tool_binding")
     .select(
-      "id, tool_id, auto_load, is_active, priority, delegated, function_path, source_app, updated_at, tool:tl_def!tool_handlers_tool_id_fkey(name, category, description, is_active)",
+      "tool_id, executor_name, is_active, updated_at, tool:tool_def(name, category, description, is_active, source_kind)",
     )
-    .eq("surface", surface)
-    .order("priority", { ascending: true });
+    .eq("executor_name", executorName)
+    .order("updated_at", { ascending: false });
   if (error) throw error;
 
   type Joined = {
-    id: string;
     tool_id: string;
-    auto_load: boolean;
+    executor_name: string;
     is_active: boolean;
-    priority: number;
-    delegated: boolean;
-    function_path: string | null;
-    source_app: string | null;
     updated_at: string;
     tool: {
       name: string | null;
       category: string | null;
       description: string | null;
       is_active: boolean | null;
+      source_kind: ToolDefRow["source_kind"] | null;
     } | null;
   };
 
   return ((data ?? []) as unknown as Joined[]).map((r) => ({
-    id: r.id,
     tool_id: r.tool_id,
+    executor_name: r.executor_name,
     tool_name: r.tool?.name ?? null,
     tool_category: r.tool?.category ?? null,
     tool_description: r.tool?.description ?? null,
     tool_is_active: r.tool?.is_active ?? null,
-    auto_load: r.auto_load,
+    tool_source_kind: r.tool?.source_kind ?? null,
     is_active: r.is_active,
-    priority: r.priority,
-    delegated: r.delegated,
-    function_path: r.function_path,
-    source_app: r.source_app,
     updated_at: r.updated_at,
   }));
 }
 
-// ─── Per-surface available (unbound) tools ───────────────────────────────────
+/** @deprecated Use listBindingsForExecutor(executorName) instead. */
+export const listBindingsForSurface = listBindingsForExecutor;
+
+// ─── Per-executor available (unbound) tools ──────────────────────────────────
 
 /**
- * tl_def rows that are NOT yet bound to this surface in tl_executor.
+ * `tool_def` rows that are NOT yet bound to this executor.
  *
- * The catalog is ~380 rows and tl_executor is similarly small, so we fetch
- * both, build a Set of bound tool_ids, and filter client-side. Returns ALL
- * tools (active and inactive) so admins can intentionally bind inactive ones;
- * the caller can filter further if desired.
+ * The catalog is ~245 rows and `tool_binding` is ~300, so we fetch both,
+ * build a Set of bound tool_ids, and filter client-side. Returns ALL tools
+ * (active and inactive) so admins can intentionally bind inactive ones; the
+ * caller can filter further if desired.
  */
-export async function listUnboundToolsForSurface(
-  surface: string,
+export async function listUnboundToolsForExecutor(
+  executorName: string,
 ): Promise<UnboundToolRow[]> {
   const [toolsRes, boundRes] = await Promise.all([
     sb()
-      .from("tl_def")
-      .select("id, name, category, description, is_active")
+      .from("tool_def")
+      .select("id, name, category, description, is_active, source_kind")
       .order("category", { ascending: true })
       .order("name", { ascending: true }),
-    sb().from("tl_executor").select("tool_id").eq("surface", surface),
+    sb().from("tool_binding").select("tool_id").eq("executor_name", executorName),
   ]);
   if (toolsRes.error) throw toolsRes.error;
   if (boundRes.error) throw boundRes.error;
@@ -173,22 +187,21 @@ export async function listUnboundToolsForSurface(
   return (toolsRes.data ?? []).filter((t) => !boundIds.has(t.id));
 }
 
+/** @deprecated Use listUnboundToolsForExecutor(executorName) instead. */
+export const listUnboundToolsForSurface = listUnboundToolsForExecutor;
+
 // ─── Mutations ───────────────────────────────────────────────────────────────
 
 export async function addBinding(args: {
-  surface: string;
+  executorName: string;
   toolId: string;
-  autoLoad?: boolean;
-  priority?: number;
   isActive?: boolean;
-}): Promise<ExecutorRow> {
+}): Promise<ToolBindingRow> {
   const { data, error } = await sb()
-    .from("tl_executor")
+    .from("tool_binding")
     .insert({
-      surface: args.surface,
       tool_id: args.toolId,
-      auto_load: args.autoLoad ?? false,
-      priority: args.priority ?? 100,
+      executor_name: args.executorName,
       is_active: args.isActive ?? true,
     })
     .select()
@@ -197,19 +210,27 @@ export async function addBinding(args: {
   return data;
 }
 
-export async function updateBinding(
-  id: string,
-  patch: Partial<{
-    auto_load: boolean;
-    is_active: boolean;
-    priority: number;
-  }>,
-): Promise<void> {
-  const { error } = await sb().from("tl_executor").update(patch).eq("id", id);
+export async function updateBinding(args: {
+  toolId: string;
+  executorName: string;
+  isActive: boolean;
+}): Promise<void> {
+  const { error } = await sb()
+    .from("tool_binding")
+    .update({ is_active: args.isActive })
+    .eq("tool_id", args.toolId)
+    .eq("executor_name", args.executorName);
   if (error) throw error;
 }
 
-export async function removeBinding(id: string): Promise<void> {
-  const { error } = await sb().from("tl_executor").delete().eq("id", id);
+export async function removeBinding(args: {
+  toolId: string;
+  executorName: string;
+}): Promise<void> {
+  const { error } = await sb()
+    .from("tool_binding")
+    .delete()
+    .eq("tool_id", args.toolId)
+    .eq("executor_name", args.executorName);
   if (error) throw error;
 }

@@ -9,7 +9,8 @@
  * `builderAdvancedSettings.surfaceOverride`. `buildToolInjection` then sends it
  * verbatim as `client.surface` instead of the route-detected one, so the
  * available tools for this run match the simulated surface. The server resolves
- * it through the same `public.tl_def_surface` path and cannot tell it is
+ * it through the same `public.tool_surface_defaults.always_include_tools` path
+ * (post-2026 refactor — `tl_def_surface` was dropped) and cannot tell it is
  * simulated — that is the whole point.
  *
  * Caveat: simulating a surface whose tools the current client can't actually

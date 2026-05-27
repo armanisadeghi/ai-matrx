@@ -345,7 +345,7 @@ export const adminCategories = [
       {
         title: "Tool Definitions",
         description:
-          "The 380-row tl_def catalog — every tool the platform can run (built-in, browser, server, MCP). Per-tool admin: identity, parameters, executors, surfaces, bundles, gating, UI components, test samples, incidents. Bulk activate / deactivate / delete.",
+          "The 380-row tool_def catalog — every tool the platform can run (built-in, browser, server, MCP). Per-tool admin: identity, parameters, executors, surfaces, bundles, gating, UI components, test samples, incidents. Bulk activate / deactivate / delete.",
         icon: <IconTestPipe />,
         link: "/administration/mcp-tools",
       },
@@ -376,7 +376,7 @@ export const adminCategories = [
       {
         title: "Tool Runtimes",
         description:
-          "Tools per runtime: pick a runtime (matrx-extend.browser, mcp.github, server:matrx_ai, etc.) and manage which tools are available there and which auto-load on launch. Manages tl_executor rows.",
+          "Tools per executor: pick an executor (matrx-ai-core, aidream, matrx-local, chrome-extension, matrx-user, or mcp.<slug>) and manage which tools it can handle. Manages tool_binding rows (a pure M2M between tool_def and tool_executor).",
         icon: <Cpu />,
         link: "/administration/executor-surfaces",
         isNew: true,
@@ -384,7 +384,7 @@ export const adminCategories = [
       {
         title: "Lookups",
         description:
-          "CRUD for tool-registry lookup tables: ui_client, ui_surface (basic), tl_executor_kind, tl_gate. Foundation tables every other registry feature reads.",
+          "CRUD for tool-registry lookup tables: ui_client, ui_surface (basic), tool_executor. Foundation tables every other registry feature reads.",
         icon: <IconAdjustmentsBolt />,
         link: "/administration/lookups",
         isNew: true,

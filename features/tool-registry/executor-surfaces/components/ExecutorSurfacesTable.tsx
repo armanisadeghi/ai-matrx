@@ -2,42 +2,30 @@
 
 import React, { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Server, Zap } from "lucide-react";
-import type { ExecutorSurfaceWithStats } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
+import { Network, Server } from "lucide-react";
+import type { ExecutorWithStats } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 
 interface Props {
-  rows: ExecutorSurfaceWithStats[];
+  rows: ExecutorWithStats[];
   isLoading: boolean;
   selectedName: string | null;
-  onSelect: (row: ExecutorSurfaceWithStats) => void;
+  onSelect: (row: ExecutorWithStats) => void;
 }
 
-function groupKey(
-  row: ExecutorSurfaceWithStats,
-): "client" | "server" | "mcp" | "other" {
-  if (row.is_client_side) return "client";
-  if (row.name.startsWith("mcp.")) return "mcp";
-  if (row.name.startsWith("server:")) return "server";
+function groupKey(row: ExecutorWithStats): "mcp" | "other" {
+  if (row.isMcp || row.name.startsWith("mcp.")) return "mcp";
   return "other";
 }
 
 const GROUP_LABELS: Record<string, string> = {
-  client: "Client-side runtimes",
-  mcp: "MCP servers",
-  server: "Backend servers",
-  other: "Other",
+  mcp: "MCP-backed executors",
+  other: "Executors",
 };
 
-const GROUP_ORDER: Array<"client" | "mcp" | "server" | "other"> = [
-  "client",
-  "mcp",
-  "server",
-  "other",
-];
+const GROUP_ORDER: Array<"other" | "mcp"> = ["other", "mcp"];
 
 function GroupIcon({ kind }: { kind: ReturnType<typeof groupKey> }) {
-  if (kind === "client") return <Globe className="h-3 w-3" />;
-  if (kind === "mcp") return <Zap className="h-3 w-3" />;
+  if (kind === "mcp") return <Network className="h-3 w-3" />;
   return <Server className="h-3 w-3" />;
 }
 
@@ -48,7 +36,7 @@ export function ExecutorSurfacesTable({
   onSelect,
 }: Props) {
   const grouped = useMemo(() => {
-    const buckets = new Map<string, ExecutorSurfaceWithStats[]>();
+    const buckets = new Map<string, ExecutorWithStats[]>();
     for (const row of rows) {
       const key = groupKey(row);
       const arr = buckets.get(key) ?? [];
@@ -61,7 +49,7 @@ export function ExecutorSurfacesTable({
   if (isLoading && rows.length === 0) {
     return (
       <div className="flex-1 min-h-0 flex items-center justify-center text-xs text-muted-foreground">
-        Loading runtimes…
+        Loading executors…
       </div>
     );
   }
@@ -69,7 +57,7 @@ export function ExecutorSurfacesTable({
   if (!isLoading && rows.length === 0) {
     return (
       <div className="flex-1 min-h-0 flex items-center justify-center text-xs text-muted-foreground">
-        No runtimes match these filters.
+        No executors match these filters.
       </div>
     );
   }
@@ -102,26 +90,20 @@ export function ExecutorSurfacesTable({
                       <div className="font-mono text-xs text-foreground truncate">
                         {row.name}
                       </div>
-                      {row.client_name && (
+                      {row.parent_executor_name && (
                         <div className="font-mono text-[10px] text-muted-foreground truncate">
-                          {row.client_name}
+                          parent: {row.parent_executor_name}
                         </div>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      {row.autoLoadCount > 0 ? (
-                        <Badge
-                          variant="default"
-                          className="text-[10px] tabular-nums h-4 px-1.5"
-                          title="Auto-load tools"
-                        >
-                          {row.autoLoadCount} auto
-                        </Badge>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          —
-                        </span>
-                      )}
+                      <Badge
+                        variant="default"
+                        className="text-[10px] tabular-nums h-4 px-1.5"
+                        title="Active bindings"
+                      >
+                        {row.boundCount - row.inactiveBindingCount} active
+                      </Badge>
                       <span className="text-[10px] tabular-nums text-muted-foreground">
                         {row.boundCount} bound
                       </span>

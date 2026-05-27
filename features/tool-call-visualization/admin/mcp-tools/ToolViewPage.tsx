@@ -16,7 +16,9 @@ import {
   Info,
   Loader2,
   Copy,
-  Check
+  Check,
+  Server,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +30,12 @@ import { mapIcon } from "@/utils/icons/icon-mapper";
 import { ToolTestSamplesViewer } from "@/features/tool-call-visualization/admin/ToolTestSamplesViewer";
 import { RegistryTab } from "@/features/tool-registry/tools-admin/components/RegistryTab";
 import { Network } from "lucide-react";
+import { SourceKindBadge } from "./source-kind-badge";
 import type { Database, Json } from "@/types/database.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ToolRow = Database["public"]["Tables"]["tl_def"]["Row"];
+type ToolRow = Database["public"]["Tables"]["tool_def"]["Row"];
 
 interface Props {
   tool: ToolRow;
@@ -120,12 +123,24 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
         <div className="space-y-3">
           <InfoRow
             icon={<Code className="h-3.5 w-3.5" />}
-            label="Function Path"
+            label="Source Kind"
           >
-            <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
-              {tool.function_path}
-            </code>
+            <SourceKindBadge kind={tool.source_kind} />
           </InfoRow>
+          {tool.managed_by_server_id && (
+            <InfoRow
+              icon={<Server className="h-3.5 w-3.5" />}
+              label="MCP Server"
+            >
+              <a
+                href={`/administration/mcp-servers/${tool.managed_by_server_id}`}
+                className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline font-mono"
+              >
+                {tool.managed_by_server_id}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </InfoRow>
+          )}
           <InfoRow icon={<Tag className="h-3.5 w-3.5" />} label="Category">
             {tool.category ? (
               <Badge variant="outline" className="text-xs">

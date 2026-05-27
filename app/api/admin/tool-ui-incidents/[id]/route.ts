@@ -32,7 +32,7 @@ export async function PUT(
         }
 
         const { data, error } = await supabase
-            .from("tl_ui_incident")
+            .from("tool_ui_incident")
             .update(updateData)
             .eq("id", id)
             .select()
@@ -66,7 +66,7 @@ export async function DELETE(
         const supabase = await createClient();
 
         const { error } = await supabase
-            .from("tl_ui_incident")
+            .from("tool_ui_incident")
             .delete()
             .eq("id", id);
 

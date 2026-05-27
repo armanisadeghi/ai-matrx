@@ -10,6 +10,9 @@ export interface Tool {
 }
 
 // Extended interface for database tools (includes additional fields from database)
+// NOTE: The canonical `DatabaseTool` lives in `utils/supabase/tools-service.ts`
+// (derived from `Database["public"]["Tables"]["tool_def"]["Row"]`). This local
+// copy is retained for historical callers that imported from `@/types/mcp-tools`.
 export interface DatabaseTool {
     id: string;
     name: string;
@@ -17,12 +20,13 @@ export interface DatabaseTool {
     parameters: any;
     output_schema?: any;
     annotations?: any[];
-    function_path: string;
     category?: string;
     tags?: string[];
     icon?: string;
     is_active?: boolean;
     version?: string;
+    source_kind?: "native" | "mcp_discovered" | "admin_authored" | "agent_authored";
+    managed_by_server_id?: string | null;
     created_at?: string;
     updated_at?: string;
 }

@@ -6,12 +6,13 @@ import type { Database } from "@/types/database.types";
 type Tables = Database["public"]["Tables"];
 export type UiClientRow = Tables["ui_client"]["Row"];
 export type UiSurfaceRow = Tables["ui_surface"]["Row"];
-export type ExecutorKindRow = Tables["tl_executor_kind"]["Row"];
-export type GateRow = Tables["tl_gate"]["Row"];
+/** A `tool_executor` row. The legacy `tl_executor_kind` was collapsed into
+ *  this — executors are now first-class, not a "kind" classification. */
+export type ToolExecutorRow = Tables["tool_executor"]["Row"];
 
 export type UiClientUpsert = Tables["ui_client"]["Insert"];
 export type UiSurfaceUpsert = Tables["ui_surface"]["Insert"];
-export type ExecutorKindUpsert = Tables["tl_executor_kind"]["Insert"];
+export type ToolExecutorUpsert = Tables["tool_executor"]["Insert"];
 
 const sb = () => createClient();
 
@@ -36,23 +37,23 @@ export async function listUiSurfaces(): Promise<UiSurfaceRow[]> {
   return data ?? [];
 }
 
-export async function listExecutorKinds(): Promise<ExecutorKindRow[]> {
+export async function listToolExecutors(): Promise<ToolExecutorRow[]> {
   const { data, error } = await sb()
-    .from("tl_executor_kind")
+    .from("tool_executor")
     .select("*")
     .order("name", { ascending: true });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function listGates(): Promise<GateRow[]> {
-  const { data, error } = await sb()
-    .from("tl_gate")
-    .select("*")
-    .order("name", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
-}
+/**
+ * Legacy alias preserved for callers that still ask for "executor kinds".
+ * The concept of an "executor kind" no longer exists — executors are now
+ * equal citizens. Returns the same data as listToolExecutors().
+ *
+ * @deprecated Use listToolExecutors() instead.
+ */
+export const listExecutorKinds = listToolExecutors;
 
 export async function dependentSurfaceCount(clientName: string): Promise<number> {
   const { count, error } = await sb()
@@ -83,17 +84,20 @@ export async function upsertUiSurface(row: UiSurfaceUpsert): Promise<UiSurfaceRo
   return data;
 }
 
-export async function upsertExecutorKind(
-  row: ExecutorKindUpsert,
-): Promise<ExecutorKindRow> {
+export async function upsertToolExecutor(
+  row: ToolExecutorUpsert,
+): Promise<ToolExecutorRow> {
   const { data, error } = await sb()
-    .from("tl_executor_kind")
+    .from("tool_executor")
     .upsert(row, { onConflict: "name" })
     .select()
     .single();
   if (error) throw error;
   return data;
 }
+
+/** @deprecated Use upsertToolExecutor() instead. */
+export const upsertExecutorKind = upsertToolExecutor;
 
 /**
  * Soft-delete: flip is_active=false. Hard DELETE is intentionally not exposed
@@ -122,24 +126,21 @@ export async function setUiSurfaceActive(
   if (error) throw error;
 }
 
-export async function setExecutorKindActive(
+export async function setToolExecutorActive(
   name: string,
   isActive: boolean,
 ): Promise<void> {
   const { error } = await sb()
-    .from("tl_executor_kind")
+    .from("tool_executor")
     .update({ is_active: isActive })
     .eq("name", name);
   if (error) throw error;
 }
 
-export async function setGateActive(
-  name: string,
-  isActive: boolean,
-): Promise<void> {
-  const { error } = await sb()
-    .from("tl_gate")
-    .update({ is_active: isActive })
-    .eq("name", name);
-  if (error) throw error;
-}
+/** @deprecated Use setToolExecutorActive() instead. */
+export const setExecutorKindActive = setToolExecutorActive;
+
+// NOTE: tl_gate is gone. Gates now live in code (matrx_ai.tools.gates.*) and
+// are referenced by name in tool_def.gating (jsonb array). There is no DB
+// table to list/toggle gates against — that's a code-side concern. The legacy
+// listGates / setGateActive / listAllGateNames exports were removed.

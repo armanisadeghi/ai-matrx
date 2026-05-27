@@ -175,7 +175,7 @@ export function AddMcpServerDialog({ existingSlugs, onClose, onCreated }: Props)
             </p>
             <div className="rounded-md border border-border bg-card divide-y divide-border text-xs">
               <ResultRow label="MCP server" value={result.server_slug} subtle={result.server_id} href={`/administration/mcp-servers#${result.server_slug}`} />
-              <ResultRow label="Executor kind" value={result.executor_kind} />
+              <ResultRow label="Executor" value={result.executor} />
               <ResultRow label="System bundle" value={result.bundle_name} subtle={result.bundle_id} href={`/administration/bundles`} />
               <ResultRow label="Lister tool" value={result.lister_name} subtle={result.lister_tool_id} href={`/administration/mcp-tools/${result.lister_tool_id}`} />
             </div>
@@ -359,7 +359,7 @@ export function AddMcpServerDialog({ existingSlugs, onClose, onCreated }: Props)
               <div className="rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs flex items-start gap-2">
                 <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-warning flex-shrink-0" />
                 <div>
-                  stdio servers are configured per-variant in <code>tl_mcp_config</code>{" "}
+                  stdio servers are configured per-variant in <code>tool_mcp_config</code>{" "}
                   (command, args, npm/pip package). Add at least one config row
                   after creation for the server to be usable.
                 </div>

@@ -219,7 +219,7 @@ export interface CxToolExecutionEvent {
 export type CxToolCallStatus = "pending" | "running" | "completed" | "error";
 export type CxToolType = "local" | "external_mcp" | "agent";
 
-export type CxToolCall = PublicSchema["Tables"]["cx_tl_call"]["Row"];
+export type CxToolCall = PublicSchema["Tables"]["cx_tool_call"]["Row"];
 
 // ============================================================================
 // Composite / View Types (for UI convenience)

@@ -3,13 +3,20 @@
  *
  * - Diffs the code-side `SurfaceManifest` registry against
  *   `public.ui_surface_value`.
- * - Scans `agx_agent_surface.value_mappings` and `tl_def_surface.arg_mappings`
- *   for `surface_value` mappings whose target no longer exists in any
- *   manifest. These are the "broken mappings" surfaced to admins.
+ * - Scans `agx_agent_surface.value_mappings` for `surface_value` mappings
+ *   whose target no longer exists in any manifest. These are the "broken
+ *   mappings" surfaced to admins.
  * - Applies the diff (upsert / delete) to bring DB in line with code.
  *
  * Code is the source of truth. The DB is a mirror — nothing in this service
  * ever modifies code or mutates the registry.
+ *
+ * NOTE: Post-2026 tool-system refactor, the tool side of "broken mappings"
+ * is gone. `tl_def_surface.arg_mappings` was dropped along with the table.
+ * Tool arg-defaults are now literal jsonb on `tool_surface_defaults.arg_defaults`
+ * (no surface_value indirection to break). The `brokenToolMappings` field
+ * of `SurfaceDriftReport` is always `[]` from here on, retained for type
+ * back-compat with admin UIs that iterate it.
  *
  * All mutating calls require a super-admin server-side Supabase client.
  * Read calls work with any authenticated server client (RLS keeps things
@@ -20,7 +27,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import {
   ALL_MANIFESTS,
-  getManifest,
   getRegisteredSurfaceNames,
 } from "@/features/surfaces/manifests/registry";
 import type {
@@ -123,21 +129,16 @@ export async function listSurfaceValues(
 
 export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 1. Pull all DB rows we care about.
-  const [allDbRowsRes, agentBindingsRes, toolBindingsRes] = await Promise.all([
+  const [allDbRowsRes, agentBindingsRes] = await Promise.all([
     sb.from("ui_surface_value").select("*"),
     sb
       .from("agx_agent_surface")
       .select("id, surface_name, value_mappings")
       .neq("value_mappings", "{}"),
-    sb
-      .from("tl_def_surface")
-      .select("tool_id, surface_name, arg_mappings")
-      .neq("arg_mappings", "{}"),
   ]);
 
   if (allDbRowsRes.error) throw allDbRowsRes.error;
   if (agentBindingsRes.error) throw agentBindingsRes.error;
-  if (toolBindingsRes.error) throw toolBindingsRes.error;
 
   const dbRows = allDbRowsRes.data ?? [];
 
@@ -217,24 +218,13 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     manifestSurfaceNames,
   );
 
-  const brokenToolMappings = collectBrokenMappings(
-    "tool",
-    (toolBindingsRes.data ?? []).map((b) => ({
-      // composite id for display only; we cannot point at one PK row.
-      id: `${b.tool_id}::${b.surface_name}`,
-      surfaceName: b.surface_name,
-      mappings: b.arg_mappings,
-    })),
-    manifestValuesBySurface,
-    manifestSurfaceNames,
-  );
-
   return {
     manifestsMissingInDb,
     dbValuesNotInManifest,
     diffs,
     brokenAgentMappings,
-    brokenToolMappings,
+    // Permanently empty post-2026 refactor — see file header.
+    brokenToolMappings: [],
   };
 }
 
@@ -314,7 +304,7 @@ export type BrokenMappingAction =
 
 export interface RemediateMappingArgs {
   bindingKind: "agent" | "tool";
-  /** `agx_agent_surface.id` for agent bindings; `${tool_id}::${surface_name}` for tool bindings. */
+  /** `agx_agent_surface.id` for agent bindings. (Tool side gone post-2026 refactor.) */
   bindingId: string;
   /** The JSONB key to remediate. */
   mappingKey: string;
@@ -329,56 +319,32 @@ export interface RemediateMappingResult {
   newMappings: Record<string, unknown>;
 }
 
-/** Rewrite, remove, or audit a single broken `surface_value` mapping. */
+/**
+ * Rewrite, remove, or audit a single broken `surface_value` mapping.
+ *
+ * Post-2026 refactor: only `bindingKind === "agent"` is supported. The tool
+ * side is gone because `tl_def_surface.arg_mappings` no longer exists.
+ * Tool variants throw.
+ */
 export async function remediateBrokenMapping(
   sb: Sb,
   args: RemediateMappingArgs,
 ): Promise<RemediateMappingResult> {
   const { bindingKind, bindingId, mappingKey, remediation } = args;
 
-  if (bindingKind === "agent") {
-    const { data: row, error: readErr } = await sb
-      .from("agx_agent_surface")
-      .select("id, value_mappings")
-      .eq("id", bindingId)
-      .single();
-    if (readErr) throw readErr;
-    const current = (row?.value_mappings ?? {}) as Record<string, unknown>;
-    const next = { ...current };
-
-    if (remediation.action === "notify_only") {
-      return { ok: true, applied: false, newMappings: current };
-    }
-    if (remediation.action === "remove") {
-      delete next[mappingKey];
-    } else {
-      next[mappingKey] = rewriteToSurfaceValue(
-        next[mappingKey],
-        remediation.target,
-      );
-    }
-    const { error: writeErr } = await sb
-      .from("agx_agent_surface")
-      .update({ value_mappings: next as unknown as Json })
-      .eq("id", bindingId);
-    if (writeErr) throw writeErr;
-    return { ok: true, applied: true, newMappings: next };
-  }
-
-  const [toolId, surfaceName] = bindingId.split("::");
-  if (!toolId || !surfaceName) {
+  if (bindingKind === "tool") {
     throw new Error(
-      `Invalid tool binding id "${bindingId}". Expected "<tool_id>::<surface_name>".`,
+      "Tool mapping remediation is no longer supported. tl_def_surface was dropped in the 2026 refactor; tool arg-defaults live as literal jsonb in tool_surface_defaults.arg_defaults and don't reference surface_values.",
     );
   }
+
   const { data: row, error: readErr } = await sb
-    .from("tl_def_surface")
-    .select("tool_id, surface_name, arg_mappings")
-    .eq("tool_id", toolId)
-    .eq("surface_name", surfaceName)
+    .from("agx_agent_surface")
+    .select("id, value_mappings")
+    .eq("id", bindingId)
     .single();
   if (readErr) throw readErr;
-  const current = (row?.arg_mappings ?? {}) as Record<string, unknown>;
+  const current = (row?.value_mappings ?? {}) as Record<string, unknown>;
   const next = { ...current };
 
   if (remediation.action === "notify_only") {
@@ -393,10 +359,9 @@ export async function remediateBrokenMapping(
     );
   }
   const { error: writeErr } = await sb
-    .from("tl_def_surface")
-    .update({ arg_mappings: next as unknown as Json })
-    .eq("tool_id", toolId)
-    .eq("surface_name", surfaceName);
+    .from("agx_agent_surface")
+    .update({ value_mappings: next as unknown as Json })
+    .eq("id", bindingId);
   if (writeErr) throw writeErr;
   return { ok: true, applied: true, newMappings: next };
 }

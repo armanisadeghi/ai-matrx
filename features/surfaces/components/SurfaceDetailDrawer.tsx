@@ -148,7 +148,7 @@ export function SurfaceDetailDrawer({ surface, onClose, onChanged }: Props) {
       title: `Delete ${surface.name}?`,
       description:
         refsTotal > 0
-          ? `This surface has ${usage?.tools.length ?? 0} tool ref${usage?.tools.length === 1 ? "" : "s"}, ${usage?.agents.length ?? 0} agent ref${usage?.agents.length === 1 ? "" : "s"}, and ${usage?.uiComponents.length ?? 0} tl_ui row${usage?.uiComponents.length === 1 ? "" : "s"}. Delete will fail unless those are removed first (FKs do not cascade on delete). Deactivate instead?`
+          ? `This surface has ${usage?.tools.length ?? 0} tool ref${usage?.tools.length === 1 ? "" : "s"}, ${usage?.agents.length ?? 0} agent ref${usage?.agents.length === 1 ? "" : "s"}, and ${usage?.uiComponents.length ?? 0} tool_ui row${usage?.uiComponents.length === 1 ? "" : "s"}. Delete will fail unless those are removed first (FKs do not cascade on delete). Deactivate instead?`
           : "No dependents — safe to delete.",
       confirmLabel: refsTotal > 0 ? "Try delete" : "Delete",
       variant: "destructive",
@@ -187,6 +187,18 @@ export function SurfaceDetailDrawer({ surface, onClose, onChanged }: Props) {
               <span className="text-[11px] text-muted-foreground tabular-nums">
                 sort {surface.sort_order}
               </span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              {surface.executor_name && (
+                <Badge variant="outline" className="text-[10px]">
+                  executor: <code className="ml-1 font-mono">{surface.executor_name}</code>
+                </Badge>
+              )}
+              {surface.parent_surface_name && (
+                <Badge variant="outline" className="text-[10px]">
+                  parent: <code className="ml-1 font-mono">{surface.parent_surface_name}</code>
+                </Badge>
+              )}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Created {new Date(surface.created_at ?? "").toLocaleDateString()} ·
@@ -399,7 +411,7 @@ export function SurfaceDetailDrawer({ surface, onClose, onChanged }: Props) {
             )}
           </section>
 
-          {/* Usage: tl_ui (per-tool UI components scoped to this surface) */}
+          {/* Usage: tool_ui (per-tool UI components scoped to this surface) */}
           {usage && usage.uiComponents.length > 0 && (
             <section className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">

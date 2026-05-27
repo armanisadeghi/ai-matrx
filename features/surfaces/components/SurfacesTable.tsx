@@ -27,6 +27,8 @@ import {
 type SortKey =
   | "name"
   | "client_name"
+  | "executor_name"
+  | "parent_surface_name"
   | "sort_order"
   | "surfaceValueCount"
   | "agentCount"
@@ -148,6 +150,22 @@ export function SurfacesTable({
               </th>
               <th className={headerClass}>
                 <SortHeader
+                  label="Executor"
+                  active={sortKey === "executor_name"}
+                  dir={sortDir}
+                  onClick={() => handleSort("executor_name")}
+                />
+              </th>
+              <th className={headerClass}>
+                <SortHeader
+                  label="Parent"
+                  active={sortKey === "parent_surface_name"}
+                  dir={sortDir}
+                  onClick={() => handleSort("parent_surface_name")}
+                />
+              </th>
+              <th className={headerClass}>
+                <SortHeader
                   label="Tier"
                   active={sortKey === "sort_order"}
                   dir={sortDir}
@@ -197,7 +215,7 @@ export function SurfacesTable({
             {isLoading && sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={10}
                   className="px-3 py-6 text-center text-muted-foreground"
                 >
                   Loading surfaces…
@@ -207,7 +225,7 @@ export function SurfacesTable({
             {!isLoading && sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={10}
                   className="px-3 py-6 text-center text-muted-foreground"
                 >
                   No surfaces match these filters.
@@ -254,6 +272,24 @@ export function SurfacesTable({
                     <span className="font-mono text-muted-foreground">
                       {row.client_name}
                     </span>
+                  </td>
+                  <td className={cellClass}>
+                    {row.executor_name ? (
+                      <span className="font-mono text-muted-foreground text-[10px]">
+                        {row.executor_name}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className={cellClass}>
+                    {row.parent_surface_name ? (
+                      <span className="font-mono text-muted-foreground text-[10px]">
+                        {row.parent_surface_name}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className={cellClass}>
                     <Badge variant="outline" className="text-[10px]">

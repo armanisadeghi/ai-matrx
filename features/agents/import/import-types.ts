@@ -11,14 +11,13 @@ export function buildToolIndex(tools: DatabaseTool[]): ToolIndex {
   const map: ToolIndex = new Map();
   for (const t of tools) {
     map.set(t.name.toLowerCase(), t.id);
-    // Also index by function_path tail in case someone pastes that
-    if (t.function_path) {
-      const tail = t.function_path.split(".").pop() ?? "";
-      if (tail) map.set(tail.toLowerCase(), t.id);
-    }
   }
   return map;
 }
+// NOTE: pre-2026 we also indexed by `function_path` tail (so pastes like
+// `matrx_ai.tools.weather` would resolve). That column was dropped — the
+// executor now owns the implementation path internally. Tools resolve by
+// `name` only.
 
 // ─── Import Source ─────────────────────────────────────────────────────────────
 

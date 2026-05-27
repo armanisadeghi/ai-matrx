@@ -73,7 +73,7 @@ export function AgentToolsModal({ agentId }: AgentToolsModalProps) {
         const parts = [`${tool.id} | ${tool.name}`];
         if (tool.description) parts.push(`  Description: ${tool.description}`);
         if (tool.category) parts.push(`  Category: ${tool.category}`);
-        if (tool.function_path) parts.push(`  Function: ${tool.function_path}`);
+        if (tool.source_kind) parts.push(`  Source: ${tool.source_kind}`);
         if (tool.semver) parts.push(`  Version: ${tool.semver}`);
         return parts.join("\n");
       });
