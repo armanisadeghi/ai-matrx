@@ -37,6 +37,7 @@ import {
   updateSession,
   updateStudioDocumentContent,
   upsertSessionSettings,
+  upsertStudioDocument,
   type ConceptItemPatch,
   type UpsertSessionSettingsInput,
 } from "../service/studioService";
@@ -319,9 +320,7 @@ export const updateSessionSettingsThunk = createAsyncThunk<
   async (input, { dispatch, rejectWithValue }) => {
     try {
       const settings = await upsertSessionSettings(input);
-      dispatch(
-        sessionSettingsLoaded({ sessionId: input.sessionId, settings }),
-      );
+      dispatch(sessionSettingsLoaded({ sessionId: input.sessionId, settings }));
       // Mid-session module switch: also flip the session row's moduleId so
       // Column 4 swaps without losing prior segments.
       if (input.moduleId !== undefined) {
@@ -513,7 +512,10 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
   }
 >(
   "transcriptStudio/uploadRecordingAudio",
-  async ({ sessionId, recordingSegmentId, audioBlob, safetyId }, { dispatch }) => {
+  async (
+    { sessionId, recordingSegmentId, audioBlob, safetyId },
+    { dispatch },
+  ) => {
     dispatch(recordingAudioUploadStarted({ recordingSegmentId }));
     try {
       let blob: Blob | null = audioBlob ?? null;
@@ -569,9 +571,7 @@ export const deleteRecordingSegmentThunk = createAsyncThunk<
       await deleteRecordingSegment(recordingSegmentId);
     } catch (err) {
       const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to delete recording";
+        err instanceof Error ? err.message : "Failed to delete recording";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -709,6 +709,38 @@ export const ensureWorkingDocumentThunk = createAsyncThunk<
   },
 );
 
+/**
+ * Persist the Scribe one-shot cleanup output. Idempotent per session — the
+ * UNIQUE (session_id, kind) constraint coalesces re-runs onto the same row,
+ * and the realtime middleware will echo the upsert back to other open clients.
+ */
+export const upsertScribeCleanupDocumentThunk = createAsyncThunk<
+  StudioDocument,
+  { sessionId: string; content: string; agentName?: string }
+>(
+  "transcriptStudio/upsertScribeCleanupDocument",
+  async ({ sessionId, content, agentName }, { dispatch, rejectWithValue }) => {
+    try {
+      const title = agentName
+        ? `Cleaned transcripts (${agentName})`
+        : "Cleaned transcripts";
+      const document = await upsertStudioDocument(sessionId, "scribe_cleanup", {
+        content,
+        title,
+      });
+      dispatch(studioDocumentUpserted({ sessionId, document }));
+      return document;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to save cleaned transcripts";
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  },
+);
+
 /** Direct user edit of the working document content (Focused Mode editor). */
 export const updateWorkingDocumentContentThunk = createAsyncThunk<
   void,
@@ -783,9 +815,7 @@ export const updateCleanedSegmentTextThunk = createAsyncThunk<
       return updated;
     } catch (err) {
       const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to update cleaned segment";
+        err instanceof Error ? err.message : "Failed to update cleaned segment";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -803,9 +833,7 @@ export const deleteCleanedSegmentThunk = createAsyncThunk<
       await deleteCleanedSegment(segmentId);
     } catch (err) {
       const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to delete cleaned segment";
+        err instanceof Error ? err.message : "Failed to delete cleaned segment";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -885,4 +913,3 @@ export const deleteModuleSegmentThunk = createAsyncThunk<
     }
   },
 );
-

@@ -355,6 +355,16 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  picklistManagerV1Window: {
+    label: "Picklists — v1",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  picklistManagerV2Window: {
+    label: "Picklists — v2",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   markdownEditor: {
     label: "Markdown Editor",
     instanceMode: "singleton",

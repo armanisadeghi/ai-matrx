@@ -2476,6 +2476,276 @@
         }
       }
     },
+    "/ai/conversation/{conversation_id}/sandbox": {
+      "put": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Bind Conversation Sandbox",
+        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.",
+        "operationId": "bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxBindRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Conversation Sandbox",
+        "description": "Read the current sandbox binding for a conversation (ownership-scoped).",
+        "operationId": "get_conversation_sandbox_ai_conversation__conversation_id__sandbox_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Unbind Conversation Sandbox",
+        "description": "Clear the conversation's sandbox binding (ownership-scoped).",
+        "operationId": "unbind_conversation_sandbox_ai_conversation__conversation_id__sandbox_delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/conversations/{conversation_id}/sandbox": {
+      "put": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Bind Conversation Sandbox",
+        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.",
+        "operationId": "bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxBindRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Conversation Sandbox",
+        "description": "Read the current sandbox binding for a conversation (ownership-scoped).",
+        "operationId": "get_conversation_sandbox_ai_conversations__conversation_id__sandbox_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Unbind Conversation Sandbox",
+        "description": "Clear the conversation's sandbox binding (ownership-scoped).",
+        "operationId": "unbind_conversation_sandbox_ai_conversations__conversation_id__sandbox_delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxBindingState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/conversation/{conversation_id}/memory_cost": {
       "get": {
         "tags": [
@@ -35839,6 +36109,17 @@
             ],
             "title": "Internal Url Context"
           },
+          "internal_x_search": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Internal X Search"
+          },
           "aspect_ratio": {
             "anyOf": [
               {
@@ -38993,6 +39274,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/IdeState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sandbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SandboxBindingRequest"
               },
               {
                 "type": "null"
@@ -45973,6 +46264,16 @@
               }
             ]
           },
+          "sandbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SandboxBindingRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "context": {
             "additionalProperties": true,
             "type": "object",
@@ -48777,6 +49078,17 @@
               }
             ],
             "title": "Internal Url Context"
+          },
+          "internal_x_search": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Internal X Search"
           },
           "aspect_ratio": {
             "anyOf": [
@@ -58959,6 +59271,22 @@
         "type": "object",
         "title": "RunWorkflowRequest"
       },
+      "SandboxBindRequest": {
+        "properties": {
+          "sandbox_instance_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Sandbox Instance Id",
+            "description": "The sandbox_instances.id (UUID) to bind to this conversation."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sandbox_instance_id"
+        ],
+        "title": "SandboxBindRequest"
+      },
       "SandboxBindingRequest": {
         "properties": {
           "sandbox_id": {
@@ -58993,6 +59321,81 @@
           "access_token"
         ],
         "title": "SandboxBindingRequest"
+      },
+      "SandboxBindingState": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "sandbox_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Instance Id"
+          },
+          "sandbox_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "armed": {
+            "type": "boolean",
+            "title": "Armed",
+            "default": false
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "title": "SandboxBindingState",
+        "description": "Current sandbox binding for a conversation + whether the next agent run\nwill actually get the sandbox tools. ``armed`` tells the truth so a client\nnever has to guess why tools didn't appear (the failure mode that left users\nwith zero working boxes for days)."
       },
       "SaveAsTemplateRequest": {
         "properties": {

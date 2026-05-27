@@ -689,16 +689,16 @@ const WhatsAppShellWindow = dynamic(
 export default function OverlayController() {
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    if (!_confirmedNewMount) {
-      _confirmedNewMount = true;
-      // eslint-disable-next-line no-console
-      console.info(
-        "[overlays] NEW OverlayController active — every overlay rendered via explicit, type-safe prop wiring. " +
-          "See docs/OVERLAY_WINDOW_OVERHAUL.md.",
-      );
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (!_confirmedNewMount) {
+  //     _confirmedNewMount = true;
+  //     // eslint-disable-next-line no-console
+  //     console.info(
+  //       "[overlays] NEW OverlayController active — every overlay rendered via explicit, type-safe prop wiring. " +
+  //         "See docs/OVERLAY_WINDOW_OVERHAUL.md.",
+  //     );
+  //   }
+  // }, []);
 
   // Per-overlay subscriptions. Each useAppSelector is its own subscription,
   // so a state change in overlay A doesn't re-run the JSX of overlay B beyond

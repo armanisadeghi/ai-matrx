@@ -8,6 +8,7 @@ import {
   Pencil,
   Sparkles,
   Trash2,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -25,8 +26,10 @@ import {
 } from "../../redux/thunks";
 import { EditableSessionTitle } from "../EditableSessionTitle";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
+import { CleanupSheet } from "./CleanupSheet";
 import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
+import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 
 type Screen = "capture" | "assistant";
 
@@ -41,8 +44,21 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const [screen, setScreen] = useState<Screen>("capture");
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [cleanupOpen, setCleanupOpen] = useState(false);
+
+  // The assistant hook is mounted at the screen level so a cleanup run that
+  // completes BEFORE the user switches to the Assistant tab still gets the
+  // refreshed `cleaned_transcripts` named context on the next turn.
+  const { refreshContext } = useStudioAssistant(sessionId);
 
   const menuItems: ActionSheetItem[] = [
+    {
+      key: "cleanup",
+      label: "Clean up transcripts",
+      description: "AI cleanup of every recording in this session",
+      icon: <Wand2 className="h-4 w-4" />,
+      onSelect: () => setCleanupOpen(true),
+    },
     {
       key: "rename",
       label: "Rename session",
@@ -164,6 +180,12 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         onOpenChange={setMenuOpen}
         title={session?.title || "Session"}
         items={menuItems}
+      />
+      <CleanupSheet
+        sessionId={sessionId}
+        open={cleanupOpen}
+        onOpenChange={setCleanupOpen}
+        onPersisted={refreshContext}
       />
       <TextInputDialog
         open={renameOpen}

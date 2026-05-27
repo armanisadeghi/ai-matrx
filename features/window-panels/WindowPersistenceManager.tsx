@@ -43,7 +43,7 @@ import {
   getStaticEntryBySlug,
   type PanelState,
 } from "./registry/windowRegistryMetadata";
-import type { OverlayId } from "./registry/overlay-ids";
+import { isOverlayId, type OverlayId } from "./registry/overlay-ids";
 import type { WindowEntry } from "@/lib/redux/slices/windowManagerSlice";
 import { clampRectToCurrentViewport } from "./utils/rectClamp";
 import {
@@ -113,7 +113,7 @@ export interface WindowPersistenceContextValue {
    * Get the existing DB session id for an overlayId, if one was loaded
    * during hydration. Returns undefined for windows opened fresh this session.
    */
-  getSessionId: (overlayId: string) => string | undefined;
+  getSessionId: (overlayId: OverlayId) => string | undefined;
 
   /**
    * Persist the current state for a window.
@@ -125,7 +125,7 @@ export interface WindowPersistenceContextValue {
    * @param onSaved    Called with the session id after successful save
    */
   saveWindow: (
-    overlayId: string,
+    overlayId: OverlayId,
     panelState: PanelState,
     data: Record<string, unknown>,
     onSaved?: (sessionId: string) => void,
@@ -135,7 +135,7 @@ export interface WindowPersistenceContextValue {
    * Delete the DB row for a window.
    * Called when the user closes a window. No-op if no row exists.
    */
-  closeWindow: (overlayId: string) => void;
+  closeWindow: (overlayId: OverlayId) => void;
 
   /** True once the initial DB hydration completes. */
   hydrated: boolean;
@@ -174,7 +174,7 @@ export function WindowPersistenceManager({
    * Ref (not state) so save/close callbacks always see the latest value
    * without triggering re-renders.
    */
-  const sessionMapRef = useRef<Map<string, string>>(new Map());
+  const sessionMapRef = useRef<Map<OverlayId, string>>(new Map());
 
   // ── Hydrate on mount ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -275,17 +275,19 @@ export function WindowPersistenceManager({
         for (const session of sessions) {
           // window_type column stores the slug (e.g. "notes-window")
           const regEntry = getStaticEntryBySlug(session.window_type);
-          if (!regEntry) continue;
+          if (!regEntry || !isOverlayId(regEntry.overlayId)) continue;
+
+          const overlayId = regEntry.overlayId;
 
           // Track the session id keyed by overlayId (used by WindowPanel)
-          sessionMapRef.current.set(regEntry.overlayId, session.id);
+          sessionMapRef.current.set(overlayId, session.id);
 
           // Re-open the overlay in Redux so OverlayController mounts the
-          // component. regEntry.overlayId is sourced from the registry, so
-          // the cast to OverlayId is sound (verified by check-registry).
+          // component. overlayId is narrowed via isOverlayId (check-registry
+          // keeps registry slugs in sync with OVERLAY_IDS).
           dispatch(
             openOverlay({
-              overlayId: regEntry.overlayId as OverlayId,
+              overlayId,
               data: (session.data ?? {}) as Record<string, unknown>,
             }),
           );
@@ -296,8 +298,8 @@ export function WindowPersistenceManager({
           const ps = session.panel_state as PanelState | null;
           if (ps?.rect) {
             const clamped = clampRectToCurrentViewport(ps.rect);
-            windowEntries[regEntry.overlayId] = {
-              id: regEntry.overlayId,
+            windowEntries[overlayId] = {
+              id: overlayId,
               title: session.label ?? regEntry.label,
               state: ps.windowState ?? "windowed",
               windowed: clamped,
@@ -369,14 +371,14 @@ export function WindowPersistenceManager({
   // ── Context callbacks ───────────────────────────────────────────────────────
 
   const getSessionId = useCallback(
-    (overlayId: string): string | undefined =>
+    (overlayId: OverlayId): string | undefined =>
       sessionMapRef.current.get(overlayId),
     [],
   );
 
   const saveWindow = useCallback(
     (
-      overlayId: string,
+      overlayId: OverlayId,
       panelState: PanelState,
       data: Record<string, unknown>,
       onSaved?: (sessionId: string) => void,
@@ -411,7 +413,7 @@ export function WindowPersistenceManager({
   );
 
   const closeWindow = useCallback(
-    (overlayId: string) => {
+    (overlayId: OverlayId) => {
       // Structural close: dispatch the overlay-slice close so OverlayController
       // unmounts the component. Every unmount-driven cleanup (URL sync,
       // autosave-on-blur, tray snapshot, popout opener registry) depends on

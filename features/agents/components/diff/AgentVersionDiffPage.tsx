@@ -29,18 +29,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Clock, ArrowUpCircle, CheckCircle2, GitCompareArrows, History } from "lucide-react";
+import {
+  Loader2,
+  Clock,
+  ArrowUpCircle,
+  CheckCircle2,
+  GitCompareArrows,
+  History,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { AgentDiffViewer } from "./AgentDiffViewer";
 import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
+import { VersionIdBadge } from "./VersionIdBadge";
 
 interface AgentVersionDiffPageProps {
   agentId: string;
   initialVersion?: number;
 }
 
-export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDiffPageProps) {
+export function AgentVersionDiffPage({
+  agentId,
+  initialVersion,
+}: AgentVersionDiffPageProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
@@ -51,9 +62,13 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
   const [, startTransition] = useTransition();
 
   // Left side (the version being inspected)
-  const [leftVersion, setLeftVersion] = useState<number | null>(initialVersion ?? null);
+  const [leftVersion, setLeftVersion] = useState<number | null>(
+    initialVersion ?? null,
+  );
   // Right side (defaults to "current", can be overridden)
-  const [rightVersion, setRightVersion] = useState<"current" | number>("current");
+  const [rightVersion, setRightVersion] = useState<"current" | number>(
+    "current",
+  );
   const [rightSnapshotLoading, setRightSnapshotLoading] = useState(false);
 
   const [snapshotLoading, setSnapshotLoading] = useState(false);
@@ -82,15 +97,18 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
   }, [activeTab]);
 
   const liveAgent = useAppSelector((state) => selectAgentById(state, agentId));
-  const snapshotRecords = useAppSelector((state) => selectVersionsByParentAgentId(state, agentId));
+  const snapshotRecords = useAppSelector((state) =>
+    selectVersionsByParentAgentId(state, agentId),
+  );
 
   const leftSnapshot = leftVersion
     ? snapshotRecords.find((r) => r.version === leftVersion)
     : null;
 
-  const rightAgent = rightVersion === "current"
-    ? liveAgent
-    : snapshotRecords.find((r) => r.version === rightVersion) ?? null;
+  const rightAgent =
+    rightVersion === "current"
+      ? liveAgent
+      : (snapshotRecords.find((r) => r.version === rightVersion) ?? null);
 
   // Fetch version history on mount
   useEffect(() => {
@@ -108,10 +126,15 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
               // The newest version in history mirrors current, so pick the second one
               // (first version that differs from the live agent's version number)
               const currentVer = liveAgent?.version;
-              const bestDefault = currentVer != null
-                ? data.find((v) => v.version_number !== currentVer)
-                : data.length > 1 ? data[1] : data[0];
-              setLeftVersion(bestDefault?.version_number ?? data[0].version_number);
+              const bestDefault =
+                currentVer != null
+                  ? data.find((v) => v.version_number !== currentVer)
+                  : data.length > 1
+                    ? data[1]
+                    : data[0];
+              setLeftVersion(
+                bestDefault?.version_number ?? data[0].version_number,
+              );
             }
           }
         }
@@ -122,7 +145,9 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
@@ -175,7 +200,10 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
   }));
 
   const rightVersionOptions: Option[] = [
-    { value: "current", label: `Current Version${liveAgent?.version != null ? ` (v${liveAgent.version})` : ""}` },
+    {
+      value: "current",
+      label: `Current Version${liveAgent?.version != null ? ` (v${liveAgent.version})` : ""}`,
+    },
     ...versions.map((v) => ({
       value: v.version_number.toString(),
       label: `v${v.version_number}${v.change_note ? ` — ${v.change_note}` : ""}`,
@@ -197,7 +225,10 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
   };
 
   // Navigate to a diff from the history timeline
-  const handleHistoryCompare = (version: number, compareToVersion: number | "current") => {
+  const handleHistoryCompare = (
+    version: number,
+    compareToVersion: number | "current",
+  ) => {
     setLeftVersion(version);
     setRightVersion(compareToVersion);
     setActiveTab("compare");
@@ -214,7 +245,9 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-destructive text-sm">{error}</div>
+      <div className="flex items-center justify-center h-full text-destructive text-sm">
+        {error}
+      </div>
     );
   }
 
@@ -226,17 +259,25 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
     );
   }
 
-  const selectedVersionItem = versions.find((v) => v.version_number === leftVersion);
+  const selectedVersionItem = versions.find(
+    (v) => v.version_number === leftVersion,
+  );
 
-  const leftLabel = leftSnapshot ? `Version ${leftSnapshot.version}` : "Select a version";
-  const rightLabel = rightVersion === "current"
-    ? `Current Version${liveAgent?.version != null ? ` (v${liveAgent.version})` : ""}`
-    : `Version ${rightVersion}`;
+  const leftLabel = leftSnapshot
+    ? `Version ${leftSnapshot.version}`
+    : "Select a version";
+  const rightLabel =
+    rightVersion === "current"
+      ? `Current Version${liveAgent?.version != null ? ` (v${liveAgent.version})` : ""}`
+      : `Version ${rightVersion}`;
 
   const isAnyLoading = snapshotLoading || rightSnapshotLoading;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ paddingTop: "var(--shell-header-h)" }}>
+    <div
+      className="h-full flex flex-col overflow-hidden"
+      style={{ paddingTop: "var(--shell-header-h)" }}
+    >
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "compare" | "history")}
@@ -245,11 +286,17 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
         {/* Toolbar */}
         <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-border bg-card/50">
           <TabsList className="h-7 p-0.5 bg-muted/50">
-            <TabsTrigger value="compare" className="h-6 px-2 text-xs gap-1 data-[state=active]:bg-background">
+            <TabsTrigger
+              value="compare"
+              className="h-6 px-2 text-xs gap-1 data-[state=active]:bg-background"
+            >
               <GitCompareArrows className="w-3 h-3" />
               Compare
             </TabsTrigger>
-            <TabsTrigger value="history" className="h-6 px-2 text-xs gap-1 data-[state=active]:bg-background">
+            <TabsTrigger
+              value="history"
+              className="h-6 px-2 text-xs gap-1 data-[state=active]:bg-background"
+            >
               <History className="w-3 h-3" />
               History
             </TabsTrigger>
@@ -278,9 +325,12 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
               </div>
 
               {selectedVersionItem && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  {new Date(selectedVersionItem.changed_at).toLocaleString()}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" />
+                    {new Date(selectedVersionItem.changed_at).toLocaleString()}
+                  </div>
+                  <VersionIdBadge versionId={selectedVersionItem.version_id} />
                 </div>
               )}
 
@@ -305,12 +355,16 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
                   </Button>
                 )}
 
-              {liveAgent?.version != null && leftVersion === liveAgent.version && (
-                <Badge variant="secondary" className="gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Current Version
-                </Badge>
-              )}
+              {liveAgent?.version != null &&
+                leftVersion === liveAgent.version && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 text-xs text-emerald-600 dark:text-emerald-400"
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    Current Version
+                  </Badge>
+                )}
             </>
           )}
         </div>
@@ -353,8 +407,9 @@ export function AgentVersionDiffPage({ agentId, initialVersion }: AgentVersionDi
           <AlertDialogHeader>
             <AlertDialogTitle>Promote Version</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace the current agent configuration with the content from v
-              {leftVersion}. The current configuration will be saved as a new version in the history.
+              This will replace the current agent configuration with the content
+              from v{leftVersion}. The current configuration will be saved as a
+              new version in the history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

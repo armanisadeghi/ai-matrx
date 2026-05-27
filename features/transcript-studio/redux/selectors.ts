@@ -55,14 +55,15 @@ export const selectActiveSessionUi = (state: RootState) => {
   return id ? (state.transcriptStudio.ui[id] ?? null) : null;
 };
 
-export const selectCursorTime = (sessionId: string | null) =>
+export const selectCursorTime =
+  (sessionId: string | null) =>
   (state: RootState): number => {
     if (!sessionId) return 0;
     return state.transcriptStudio.ui[sessionId]?.cursorTime ?? 0;
   };
 
-export const selectLeaderColumn = (sessionId: string | null) =>
-  (state: RootState) => {
+export const selectLeaderColumn =
+  (sessionId: string | null) => (state: RootState) => {
     if (!sessionId) return null;
     return state.transcriptStudio.ui[sessionId]?.leaderColumn ?? null;
   };
@@ -103,7 +104,8 @@ export function selectRawSegments(sessionId: string | null) {
   };
 }
 
-export const selectRawSegmentCount = (sessionId: string | null) =>
+export const selectRawSegmentCount =
+  (sessionId: string | null) =>
   (state: RootState): number => {
     if (!sessionId) return 0;
     return state.transcriptStudio.rawIdsBySession[sessionId]?.length ?? 0;
@@ -192,11 +194,13 @@ export function selectArchivedRecordingSegments(sessionId: string | null) {
   };
 }
 
-export const selectRecordingSegmentCount = (sessionId: string | null) =>
+export const selectRecordingSegmentCount =
+  (sessionId: string | null) =>
   (state: RootState): number =>
     selectRecordingSegments(sessionId)(state).length;
 
-export const selectArchivedRecordingCount = (sessionId: string | null) =>
+export const selectArchivedRecordingCount =
+  (sessionId: string | null) =>
   (state: RootState): number =>
     selectArchivedRecordingSegments(sessionId)(state).length;
 
@@ -255,7 +259,27 @@ export function selectWorkingDocument(sessionId: string | null) {
   };
 }
 
-export const selectAssistantConversationId = (sessionId: string | null) =>
+/**
+ * The session's one-shot Scribe cleanup document (kind="scribe_cleanup").
+ * Persists the AI-cleaned version of the session's raw transcripts and is
+ * surfaced to the assistant as the `cleaned_transcripts` named context entry.
+ */
+export function selectScribeCleanupDocument(sessionId: string | null) {
+  return (state: RootState): StudioDocument | null => {
+    if (!sessionId) return null;
+    const ids = state.transcriptStudio.documentIdsBySession[sessionId];
+    const byId = state.transcriptStudio.documentsById[sessionId];
+    if (!ids || !byId) return null;
+    for (const id of ids) {
+      const doc = byId[id];
+      if (doc && doc.kind === "scribe_cleanup") return doc;
+    }
+    return null;
+  };
+}
+
+export const selectAssistantConversationId =
+  (sessionId: string | null) =>
   (state: RootState): string | null => {
     if (!sessionId) return null;
     return (

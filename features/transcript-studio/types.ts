@@ -142,8 +142,26 @@ export interface AgentRun {
  * assistant builds with the user. Edited server-side via `ctx_patch` (backend
  * writeback handler kind="studio_document"). Structurally separate from
  * `studio_cleaned_segments` so the auto-cleanup version is never overwritten.
+ *
+ * Known kinds:
+ *   - "working_document" — the live assistant-edited doc (column 3 / Assistant
+ *     screen). Default; what `getOrCreateWorkingDocument` returns.
+ *   - "scribe_cleanup"   — Scribe one-shot cleanup output. A duplicate of the
+ *     session's raw transcripts, run through a user-picked cleanup agent and
+ *     persisted so the assistant has a single readable copy in context
+ *     (see `assistantContextBuilder` -> `cleaned_transcripts`).
+ *
+ * The `kind` column is free text at the DB level with `UNIQUE (session_id,
+ * kind)`; the type intersection below preserves the open string while
+ * surfacing autocomplete for the two known values.
  */
-export type StudioDocumentKind = "working_document" | string;
+export const SCRIBE_CLEANUP_DOC_KIND = "scribe_cleanup" as const;
+export const WORKING_DOCUMENT_DOC_KIND = "working_document" as const;
+
+export type StudioDocumentKind =
+  | "working_document"
+  | "scribe_cleanup"
+  | (string & {});
 
 export interface StudioDocument {
   id: string;

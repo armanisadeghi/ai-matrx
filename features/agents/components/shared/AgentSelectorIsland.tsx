@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -74,14 +75,28 @@ export function AgentSelectorIsland({
           v{version}
         </span>
       )}
-      {showBuiltin && isBuiltin && (
-        <span
-          className="text-[0.725rem] font-semibold uppercase tracking-wider leading-none px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/10 text-destructive shrink-0"
-          title="System-owned agent — edits affect all users"
-        >
-          Builtin
-        </span>
-      )}
+      {showBuiltin &&
+        isBuiltin &&
+        (() => {
+          const adminBase = "/administration/system-agents/agents";
+          const currentMode = deriveAgentMode(pathname, agentId, basePath);
+          const adminHref = getAgentModeHref(currentMode, agentId, adminBase);
+          const isOnAdmin = basePath === adminBase;
+          const className =
+            "text-[0.725rem] font-semibold uppercase tracking-wider leading-none px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/10 text-destructive shrink-0 transition-colors hover:bg-destructive/20";
+          const title = isOnAdmin
+            ? "System-owned agent — edits affect all users"
+            : "System-owned agent — open in admin (edits affect all users)";
+          return isOnAdmin ? (
+            <span className={className} title={title}>
+              Builtin
+            </span>
+          ) : (
+            <Link href={adminHref} className={className} title={title}>
+              Builtin
+            </Link>
+          );
+        })()}
     </div>
   );
 }

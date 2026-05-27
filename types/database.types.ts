@@ -6704,6 +6704,7 @@ export type Database = {
       }
       cx_conversation: {
         Row: {
+          app_instance_id: string | null
           cache_state: Json
           config: Json
           created_at: string
@@ -6740,6 +6741,7 @@ export type Database = {
           variables: Json
         }
         Insert: {
+          app_instance_id?: string | null
           cache_state?: Json
           config?: Json
           created_at?: string
@@ -6776,6 +6778,7 @@ export type Database = {
           variables?: Json
         }
         Update: {
+          app_instance_id?: string | null
           cache_state?: Json
           config?: Json
           created_at?: string
@@ -6812,6 +6815,13 @@ export type Database = {
           variables?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_conversation_app_instance_id_fkey"
+            columns: ["app_instance_id"]
+            isOneToOne: false
+            referencedRelation: "app_instances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_conversation_forked_from_id_fkey"
             columns: ["forked_from_id"]
