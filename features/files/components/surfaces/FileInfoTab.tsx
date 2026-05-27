@@ -26,6 +26,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -38,6 +39,10 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
+import {
+  fileInfoHumanSummary,
+  type FileInfoSnapshot,
+} from "@/features/files/utils/file-info-format";
 import Link from "next/link";
 
 export interface FileInfoTabProps {
@@ -73,7 +78,28 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
     }
   }, [file]);
 
-  if (!file) {
+  const versionCount = versions.length || file?.currentVersion || 1;
+
+  const infoSnapshot = useMemo<FileInfoSnapshot | null>(() => {
+    if (!file) return null;
+    return {
+      file,
+      typeDisplayName: details.displayName,
+      parentFolderPath: parentFolder?.folderPath ?? null,
+      versionCount,
+      activeShareLinks,
+      ragState: docState.state,
+    };
+  }, [
+    file,
+    details.displayName,
+    parentFolder?.folderPath,
+    versionCount,
+    activeShareLinks,
+    docState.state,
+  ]);
+
+  if (!file || !infoSnapshot) {
     return (
       <div
         className={cn(
@@ -86,7 +112,6 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
     );
   }
 
-  const versionCount = versions.length || file.currentVersion || 1;
   const shareLink = activeShareLinks[0] ?? null;
 
   const formatTs = (iso: string | null | undefined): string =>
@@ -104,171 +129,203 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-2xl space-y-5 pb-6">
-        <Section title="Identity">
-          <Row label="Name" value={file.fileName} />
-          <Row label="Type" value={details.displayName} />
-          <CopyableRow label="File ID" value={file.id} copyValue={file.id} />
-        </Section>
+      <div className="mx-auto w-full max-w-2xl pb-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-foreground">File info</h3>
+          <CopyButtons
+            size="sm"
+            label={file.fileName}
+            human={() => fileInfoHumanSummary(infoSnapshot)}
+            agent={() => ({
+              kind: "cloud-file-info",
+              location: "AI Matrx — Cloud Files — Info tab",
+              description:
+                "Complete metadata for the file currently shown in the Info tab.",
+              data: infoSnapshot,
+              summary: fileInfoHumanSummary(infoSnapshot),
+              attributes: {
+                id: file.id,
+                name: file.fileName,
+                "mime-type": file.mimeType ?? "",
+                visibility: file.visibility,
+              },
+              context: {
+                "file-id": file.id,
+                "parent-folder": parentFolder?.folderPath ?? "(root)",
+                "rag-status": docState.state.status,
+              },
+            })}
+          />
+        </div>
 
-        <Section title="Location">
-          <Row label="Folder" value={parentFolder?.folderPath ?? "(root)"} />
-          <CopyableRow
-            label="Full path"
-            value={file.filePath || "—"}
-            copyValue={file.filePath || ""}
-            disabled={!file.filePath}
-          />
-        </Section>
+        <div className="space-y-5">
+          <Section title="Identity">
+            <Row label="Name" value={file.fileName} />
+            <Row label="Type" value={details.displayName} />
+            <CopyableRow label="File ID" value={file.id} copyValue={file.id} />
+          </Section>
 
-        <Section title="Type & size">
-          <Row
-            label="MIME type"
-            value={file.mimeType || "—"}
-            mono={!!file.mimeType}
-          />
-          <Row
-            label="Size"
-            value={
-              file.fileSize != null
-                ? `${formatFileSize(file.fileSize)} (${file.fileSize.toLocaleString()} bytes)`
-                : "—"
-            }
-          />
-          <Row
-            label="Version"
-            value={`v${file.currentVersion}${
-              versionCount > 1 ? ` · ${versionCount} versions total` : ""
-            }`}
-          />
-          {file.checksum ? (
+          <Section title="Location">
+            <Row label="Folder" value={parentFolder?.folderPath ?? "(root)"} />
             <CopyableRow
-              label="Checksum"
-              value={file.checksum}
-              copyValue={file.checksum}
-              mono
+              label="Full path"
+              value={file.filePath || "—"}
+              copyValue={file.filePath || ""}
+              disabled={!file.filePath}
             />
-          ) : null}
-        </Section>
+          </Section>
 
-        <Section title="Sharing">
-          <Row
-            label="Visibility"
-            value={
-              file.visibility === "public"
-                ? "Public — anyone with a link"
-                : file.visibility === "shared"
-                  ? "Shared — specific grantees + share links"
-                  : "Private — only you"
-            }
-          />
-          {shareLink ? (
-            <CopyableShareLink
-              fileId={fileId}
-              shareToken={shareLink.shareToken}
-              copyShareUrl={() => actions.copyShareUrl()}
-            />
-          ) : (
+          <Section title="Type & size">
             <Row
-              label="Share link"
-              value={`No active share link. Use "Copy link" in the header to create a 7-day signed URL.`}
+              label="MIME type"
+              value={file.mimeType || "—"}
+              mono={!!file.mimeType}
             />
-          )}
-        </Section>
-
-        <Section title="History">
-          <Row label="Created" value={formatTs(file.createdAt)} />
-          <Row label="Last modified" value={formatTs(file.updatedAt)} />
-          <CopyableRow
-            label="Owner ID"
-            value={file.ownerId || "—"}
-            copyValue={file.ownerId || ""}
-            disabled={!file.ownerId}
-            mono
-          />
-          {file.deletedAt ? (
-            <Row label="Soft-deleted" value={formatTs(file.deletedAt)} />
-          ) : null}
-        </Section>
-
-        {/*
-         * RAG status — visible only for real (non-virtual) files.
-         *
-         *   - found        → chunk count, derivation, last ingested + link
-         *   - absent       → "Not yet processed for RAG" hint
-         *   - unavailable  → soft warning, lookup not implemented
-         *
-         * Lineage data (parentFileId / derivationKind) is shown
-         * unconditionally when present; that field comes from the file
-         * row itself and doesn't require a backend probe.
-         */}
-        {file.source.kind === "real" ? (
-          <Section title="RAG / document">
-            {docState.state.status === "found" ? (
-              <>
-                <Row
-                  label="Status"
-                  value={`Indexed · ${docState.state.doc.derivation_kind}`}
-                />
-                <Row
-                  label="Pages"
-                  value={(docState.state.doc.total_pages ?? 0).toLocaleString()}
-                />
-                {docState.state.doc.chunk_count != null ? (
-                  <Row
-                    label="Chunks"
-                    value={docState.state.doc.chunk_count.toLocaleString()}
-                  />
-                ) : null}
-                <Row
-                  label="Last ingested"
-                  value={formatTs(docState.state.doc.updated_at)}
-                />
-                <div className="flex items-center justify-end pt-1">
-                  <Link
-                    href={`/rag/viewer/${docState.state.doc.processed_document_id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] font-medium text-primary hover:underline"
-                  >
-                    Open in document viewer →
-                  </Link>
-                </div>
-              </>
-            ) : docState.state.status === "absent" ? (
-              <Row
-                label="Status"
-                value="Not yet processed for RAG. Use the Document tab or the Reprocess action to index this file."
-              />
-            ) : docState.state.status === "unavailable" ? (
-              <Row
-                label="Status"
-                value="Lookup unavailable (backend endpoint not yet implemented)."
-              />
-            ) : (
-              <Row label="Status" value="Checking…" />
-            )}
-            {file.parentFileId ? (
+            <Row
+              label="Size"
+              value={
+                file.fileSize != null
+                  ? `${formatFileSize(file.fileSize)} (${file.fileSize.toLocaleString()} bytes)`
+                  : "—"
+              }
+            />
+            <Row
+              label="Version"
+              value={`v${file.currentVersion}${
+                versionCount > 1 ? ` · ${versionCount} versions total` : ""
+              }`}
+            />
+            {file.checksum ? (
               <CopyableRow
-                label="Derived from"
-                value={file.parentFileId}
-                copyValue={file.parentFileId}
+                label="Checksum"
+                value={file.checksum}
+                copyValue={file.checksum}
                 mono
               />
             ) : null}
-            {file.derivationKind ? (
-              <Row label="Derivation kind" value={file.derivationKind} />
+          </Section>
+
+          <Section title="Sharing">
+            <Row
+              label="Visibility"
+              value={
+                file.visibility === "public"
+                  ? "Public — anyone with a link"
+                  : file.visibility === "shared"
+                    ? "Shared — specific grantees + share links"
+                    : "Private — only you"
+              }
+            />
+            {shareLink ? (
+              <CopyableShareLink
+                fileId={fileId}
+                shareToken={shareLink.shareToken}
+                copyShareUrl={() => actions.copyShareUrl()}
+              />
+            ) : (
+              <Row
+                label="Share link"
+                value={`No active share link. Use "Copy link" in the header to create a 7-day signed URL.`}
+              />
+            )}
+          </Section>
+
+          <Section title="History">
+            <Row label="Created" value={formatTs(file.createdAt)} />
+            <Row label="Last modified" value={formatTs(file.updatedAt)} />
+            <CopyableRow
+              label="Owner ID"
+              value={file.ownerId || "—"}
+              copyValue={file.ownerId || ""}
+              disabled={!file.ownerId}
+              mono
+            />
+            {file.deletedAt ? (
+              <Row label="Soft-deleted" value={formatTs(file.deletedAt)} />
             ) : null}
           </Section>
-        ) : null}
 
-        {metadataPretty ? (
-          <Section title="Metadata">
-            <pre className="text-[11px] leading-snug text-foreground bg-muted/30 rounded-md p-3 overflow-auto max-h-72 font-mono whitespace-pre-wrap break-words">
-              {metadataPretty}
-            </pre>
-          </Section>
-        ) : null}
+          {/*
+           * RAG status — visible only for real (non-virtual) files.
+           *
+           *   - found        → chunk count, derivation, last ingested + link
+           *   - absent       → "Not yet processed for RAG" hint
+           *   - unavailable  → soft warning, lookup not implemented
+           *
+           * Lineage data (parentFileId / derivationKind) is shown
+           * unconditionally when present; that field comes from the file
+           * row itself and doesn't require a backend probe.
+           */}
+          {file.source.kind === "real" ? (
+            <Section title="RAG / document">
+              {docState.state.status === "found" ? (
+                <>
+                  <Row
+                    label="Status"
+                    value={`Indexed · ${docState.state.doc.derivation_kind}`}
+                  />
+                  <Row
+                    label="Pages"
+                    value={(
+                      docState.state.doc.total_pages ?? 0
+                    ).toLocaleString()}
+                  />
+                  {docState.state.doc.chunk_count != null ? (
+                    <Row
+                      label="Chunks"
+                      value={docState.state.doc.chunk_count.toLocaleString()}
+                    />
+                  ) : null}
+                  <Row
+                    label="Last ingested"
+                    value={formatTs(docState.state.doc.updated_at)}
+                  />
+                  <div className="flex items-center justify-end pt-1">
+                    <Link
+                      href={`/rag/viewer/${docState.state.doc.processed_document_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-medium text-primary hover:underline"
+                    >
+                      Open in document viewer →
+                    </Link>
+                  </div>
+                </>
+              ) : docState.state.status === "absent" ? (
+                <Row
+                  label="Status"
+                  value="Not yet processed for RAG. Use the Document tab or the Reprocess action to index this file."
+                />
+              ) : docState.state.status === "unavailable" ? (
+                <Row
+                  label="Status"
+                  value="Lookup unavailable (backend endpoint not yet implemented)."
+                />
+              ) : (
+                <Row label="Status" value="Checking…" />
+              )}
+              {file.parentFileId ? (
+                <CopyableRow
+                  label="Derived from"
+                  value={file.parentFileId}
+                  copyValue={file.parentFileId}
+                  mono
+                />
+              ) : null}
+              {file.derivationKind ? (
+                <Row label="Derivation kind" value={file.derivationKind} />
+              ) : null}
+            </Section>
+          ) : null}
+
+          {metadataPretty ? (
+            <Section title="Metadata">
+              <pre className="text-[11px] leading-snug text-foreground bg-muted/30 rounded-md p-3 overflow-auto max-h-72 font-mono whitespace-pre-wrap break-words">
+                {metadataPretty}
+              </pre>
+            </Section>
+          ) : null}
+        </div>
       </div>
     </div>
   );

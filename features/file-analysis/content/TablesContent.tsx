@@ -28,7 +28,7 @@ interface Props {
 export function TablesContent({ results, onJumpToPage }: Props) {
   const result = findResult(results, "tables");
   const payload = asObject<TablesPayload>(result?.payload);
-  const tables = payload?.tables ?? [];
+  const tables = Array.isArray(payload?.tables) ? payload.tables : [];
 
   if (!tables.length) {
     return (
@@ -41,7 +41,11 @@ export function TablesContent({ results, onJumpToPage }: Props) {
   return (
     <div className="space-y-3">
       {tables.map((t, idx) => (
-        <TableCard key={`${t.page_number}-${idx}`} table={t} onJumpToPage={onJumpToPage} />
+        <TableCard
+          key={`${t.page_number}-${idx}`}
+          table={t}
+          onJumpToPage={onJumpToPage}
+        />
       ))}
     </div>
   );
@@ -97,9 +101,7 @@ function TableCard({
               {grid.map((row, ri) => (
                 <tr
                   key={ri}
-                  className={cn(
-                    ri === 0 ? "bg-muted/40 font-medium" : "",
-                  )}
+                  className={cn(ri === 0 ? "bg-muted/40 font-medium" : "")}
                 >
                   {row.map((cell, ci) => (
                     <td
@@ -128,19 +130,20 @@ function TableCard({
 }
 
 function useGridFromCells(
-  cells: TableCellPayload[],
-  rowCount: number,
-  colCount: number,
+  cells: TableCellPayload[] | undefined | null,
+  rowCount: number | undefined | null,
+  colCount: number | undefined | null,
 ): (string | null)[][] {
-  if (!cells.length) return [];
-  const r = Math.max(rowCount, 0);
-  const c = Math.max(colCount, 0);
+  const safeCells = Array.isArray(cells) ? cells : [];
+  if (!safeCells.length) return [];
+  const r = Math.max(rowCount ?? 0, 0);
+  const c = Math.max(colCount ?? 0, 0);
   if (!r || !c) {
-    const maxR = cells.reduce((m, x) => Math.max(m, x.row), 0) + 1;
-    const maxC = cells.reduce((m, x) => Math.max(m, x.col), 0) + 1;
-    return _build(cells, maxR, maxC);
+    const maxR = safeCells.reduce((m, x) => Math.max(m, x?.row ?? 0), 0) + 1;
+    const maxC = safeCells.reduce((m, x) => Math.max(m, x?.col ?? 0), 0) + 1;
+    return _build(safeCells, maxR, maxC);
   }
-  return _build(cells, r, c);
+  return _build(safeCells, r, c);
 }
 
 function _build(
