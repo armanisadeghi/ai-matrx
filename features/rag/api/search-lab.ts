@@ -1,0 +1,259 @@
+/**
+ * features/rag/api/search-lab.ts
+ *
+ * Typed client for the /rag/search-lab/* endpoints — diagnostics,
+ * query-expansion preview, content inventory, and the transparent
+ * Claude agent loop.
+ *
+ * Consumed by the multi-tab RAG search experience in
+ * `features/rag/components/search/`.
+ */
+import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+
+// ---------------------------------------------------------------------------
+// /expand — multi-query + HyDE preview
+// ---------------------------------------------------------------------------
+
+export interface ExpandRequest {
+  query: string;
+  multi_query?: number;
+  use_hyde?: boolean;
+}
+
+export interface ExpandResponse {
+  query: string;
+  variants: string[];
+  hyde_passage: string | null;
+  embedding_model: string;
+  query_vector_preview: number[];
+  elapsed_ms: number;
+}
+
+export async function ragExpand(
+  body: ExpandRequest,
+  opts: { signal?: AbortSignal } = {},
+): Promise<ExpandResponse> {
+  const { data } = await postJson<ExpandResponse, ExpandRequest>(
+    `/rag/search-lab/expand`,
+    body,
+    { signal: opts.signal },
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// /inventory — what does this caller have access to?
+// ---------------------------------------------------------------------------
+
+export interface InventoryBucket {
+  source_kind: string;
+  visible_chunks: number;
+  distinct_sources: number;
+}
+
+export interface InventoryTopSource {
+  source_kind: string;
+  source_id: string;
+  chunk_count: number;
+  file_name: string | null;
+  organization_id: string | null;
+  owner_id: string | null;
+  processed_document_id: string | null;
+}
+
+export interface InventoryScope {
+  user_id: string;
+  organization_id: string | null;
+  is_admin: boolean;
+  admin_bypass_acl: boolean;
+}
+
+export interface InventoryResponse {
+  scope: InventoryScope;
+  total_visible_chunks: number;
+  total_visible_sources: number;
+  by_source_kind: InventoryBucket[];
+  by_visibility_route: Record<string, number>;
+  top_sources: InventoryTopSource[];
+}
+
+export async function ragInventory(
+  opts: { adminBypassAcl?: boolean; signal?: AbortSignal } = {},
+): Promise<InventoryResponse> {
+  const qs = opts.adminBypassAcl ? "?admin_bypass_acl=true" : "";
+  const { data } = await postJson<InventoryResponse, Record<string, never>>(
+    `/rag/search-lab/inventory${qs}`,
+    {},
+    { signal: opts.signal },
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// /diagnose — full pipeline trace for one query
+// ---------------------------------------------------------------------------
+
+export interface DiagnoseRequest {
+  query: string;
+  limit?: number;
+  multi_query?: number;
+  use_hyde?: boolean;
+  rerank?: boolean;
+  use_mmr?: boolean;
+  only_children?: boolean;
+  source_kinds?: string[];
+  embedding_models?: string[];
+  data_store_id?: string | null;
+  admin_bypass_acl?: boolean;
+  include_sources?: { source_kind: string; source_id: string }[];
+}
+
+export interface DiagnoseHit {
+  chunk_id: string;
+  source_kind: string;
+  source_id: string;
+  chunk_kind: string;
+  score: number;
+  vector_rank: number | null;
+  lexical_rank: number | null;
+  rerank_score: number | null;
+  snippet: string;
+  metadata: Record<string, unknown>;
+  file_name: string | null;
+  page_number: number | null;
+}
+
+export interface DiagnoseResponse {
+  query: string;
+  scope: InventoryScope;
+  elapsed_ms: number;
+  query_variants: string[];
+  hyde_passage: string | null;
+  embedding_model: string;
+  query_vector_preview: number[];
+  visible_chunks_total: number;
+  candidates_vector: number;
+  candidates_lexical: number;
+  candidates_after_fusion: number;
+  candidates_after_mmr: number;
+  hits: DiagnoseHit[];
+  reranker_model: string | null;
+  effective_filters: Record<string, unknown>;
+  notes: string[];
+}
+
+export async function ragDiagnose(
+  body: DiagnoseRequest,
+  opts: { signal?: AbortSignal } = {},
+): Promise<DiagnoseResponse> {
+  const { data } = await postJson<DiagnoseResponse, DiagnoseRequest>(
+    `/rag/search-lab/diagnose`,
+    body,
+    { signal: opts.signal },
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// /agent/chat — streaming Claude agent that uses rag_search as a tool
+// ---------------------------------------------------------------------------
+
+export interface AgentChatRequest {
+  query: string;
+  history?: { role: "user" | "assistant"; content: string }[];
+  model?: string;
+  data_store_id?: string | null;
+  source_kinds?: string[];
+  admin_bypass_acl?: boolean;
+  rerank?: boolean;
+  multi_query?: number;
+  use_hyde?: boolean;
+  max_tool_calls?: number;
+}
+
+export type AgentEvent =
+  | { kind: "rag.agent.started"; model: string; max_tool_calls: number; admin_bypass_acl: boolean; data_store_id: string | null }
+  | { kind: "rag.agent.turn.started"; turn: number }
+  | { kind: "rag.agent.text"; turn: number; text: string }
+  | { kind: "rag.agent.tool_call"; turn: number; tool_use_id: string; name: string; args: Record<string, unknown> }
+  | {
+      kind: "rag.agent.tool_result";
+      turn: number;
+      tool_use_id: string;
+      n_hits: number;
+      total_candidates: number;
+      latency_ms: number;
+      embedding_model: string;
+      reranker_model: string | null;
+      hits: AgentToolHit[];
+    }
+  | { kind: "rag.agent.tool_error"; turn: number; tool_use_id: string; message: string }
+  | { kind: "rag.agent.warning"; message: string }
+  | { kind: "rag.agent.error"; message: string }
+  | { kind: "rag.agent.complete"; turn: number; stop_reason: string | null; tool_calls_made: number };
+
+export interface AgentToolHit {
+  rank: number;
+  chunk_id: string;
+  source_kind: string;
+  source_id: string;
+  score: number;
+  file_name: string | null;
+  page_number: number | null;
+  snippet: string;
+}
+
+/**
+ * Opens a streaming POST to /rag/search-lab/agent/chat and yields each
+ * parsed event as it arrives. Stream is JSONL — one event per line, each
+ * line a `{event, data}` envelope from matrx-connect's streaming.
+ */
+export async function* ragAgentChatStream(
+  body: AgentChatRequest,
+  opts: { signal?: AbortSignal } = {},
+): AsyncGenerator<AgentEvent, void, void> {
+  const url = `${resolveBaseUrl()}/rag/search-lab/agent/chat`;
+  const { headers } = await buildHeaders({ signal: opts.signal }, true);
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+    signal: opts.signal,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Agent chat stream failed: ${res.status} ${text}`);
+  }
+  if (!res.body) throw new Error("No response body");
+
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += value;
+      let nl = buf.indexOf("\n");
+      while (nl >= 0) {
+        const raw = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        nl = buf.indexOf("\n");
+        if (!raw) continue;
+        try {
+          const env = JSON.parse(raw) as {
+            event?: string;
+            data?: { kind?: string } & Record<string, unknown>;
+          };
+          const payload = env.data;
+          if (payload && typeof payload === "object" && "kind" in payload) {
+            yield payload as AgentEvent;
+          }
+        } catch {
+          // ignore non-JSON lines (heartbeats etc.)
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
