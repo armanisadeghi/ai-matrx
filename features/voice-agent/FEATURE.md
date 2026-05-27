@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-25`
+**Last updated:** `2026-05-27`
 
 ---
 
@@ -30,7 +30,7 @@ standard chat surface and embedded agent apps.
   the orchestrator. The only hook the pages mount.
 - `useAudioCapture()` — mic + AudioWorklet + pre-connect buffer.
 - `useAudioPlayback()` — gapless PCM scheduler + sub-frame interrupt.
-- `useAudioAmplitude('mic' | 'assistant')` — rAF → `useMotionValue<number>` for the visualizer.
+- `useAudioAmplitude('mic' | 'assistant')` — rAF → `useMotionValue<number>` for the ambient glow.
 - `useVoiceAgentInstance(preset)` — per-route instance key + lifecycle.
 - `usePersistVoiceTranscript(instanceId)` — subscribes to slice; writes to Supabase on `response.done`.
 
@@ -164,7 +164,7 @@ standard chat surface and embedded agent apps.
 **Primitives introduced**
 - `voiceAgentSlice` (`features/voice-agent/state/voiceAgentSlice.ts`) — Why a new slice: voice session state has a unique shape (per-turn idempotency for transcript persistence, multi-state status machine, telemetry rollup). Considered: `cx-chat` slices. Rejected: they model server-side conversation runs (managed by the Python backend), not a browser-direct ephemeral session.
 - `useXaiVoiceSession` (`features/voice-agent/hooks/useXaiVoiceSession.ts`) — Why a new hook: orchestrates WebSocket + AudioWorklet + scheduled playback + per-frame interruption — there is no existing primitive that composes all four. Considered: `useAgentLauncher`. Rejected: targets the Python execution system, not direct realtime.
-- `VoiceVisualizer` (`features/voice-agent/components/VoiceVisualizer.tsx`) — Why a new component: needs amplitude-bound transforms across 8 states with rAF-driven motion values. Considered: extending `BreathingOrb`. Rejected: `BreathingOrb` is a fixed-rate SMIL indicator, not amplitude-reactive — wrapping it would distort its purpose. The new component imports `BreathingOrb`'s SMIL trick for idle-state breathing.
+- `VoiceAmbientGlow` (`features/voice-agent/components/VoiceAmbientGlow.tsx`) — Why a new component: needs a fullscreen, non-interactive radial-glow surface bound to mic+assistant amplitude MotionValues across 8 states. Considered: extending `BreathingOrb`. Rejected: `BreathingOrb` is a centered orb — exactly the "looks like a button" UX failure mode we're correcting. The ambient layer is intentionally edge-anchored (bottom = user, top = agent) so the mic button remains the only thing on the surface that invites a tap. Supersedes the v1 `VoiceVisualizer` centered-orb component (deleted 2026-05-27).
 - `pcm-processor-worklet.js` (`public/`) — Why a new file: there is no existing AudioWorklet processor in the repo. Required by xAI's audio spec. Not a candidate for extension.
 
 ---
@@ -179,6 +179,7 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-05-27` — Voice surface UX refactor: replaced the centered "blue animated circle" (`VoiceVisualizer`) with `VoiceAmbientGlow` — a fullscreen, non-interactive radial-glow layer that sits behind every other surface child. Two anchored gradients (warm amber rising from the bottom for LISTENING, cool indigo descending from the top for SPEAKING) plus a screen-rim glow that picks up the active hue and breathes with amplitude. The mic button is now the only thing on the surface that invites a tap, eliminating the recurring user confusion of "is that orb a button?". Token-service-unavailable (503 from `/api/voice-agent/token`, i.e. `XAI_API_KEY` missing on the deployment) now surfaces a dedicated "Voice agent is not configured" toast so the deployment misconfiguration is unmistakable instead of a generic error.
 - `2026-05-26` — Persistence bug fix #2: `cx_message.source` has a CHECK constraint (`cx_message_source_check`) that only allows `'user'` and `'system'` — verified by live probing each candidate against the production DB. The original implementation passed `'xai-voice'` and got `23514 violates check constraint`. Now user turns use `source='user'` and assistant turns use `source='system'` (matching aidream's pattern for system-injected messages); voice provenance moved to `metadata.voice.provider`. Constants split into `PERSISTENCE_MESSAGE_SOURCE_USER` and `PERSISTENCE_MESSAGE_SOURCE_ASSISTANT` with the CHECK rationale documented inline so the next agent doesn't reintroduce the bug.
 - `2026-05-26` — Added a `## Pronunciation` section to `INTRO_INSTRUCTIONS` (`features/voice-agent/constants.ts`). xAI Realtime has no pronunciation API (no SSML, lexicons, IPA, or phoneme overrides — confirmed against the official docs), so brand-name pronunciation is fixed exclusively via system-instruction substitutions. Initial entries: `Matrx → Matrix`, `AI Matrx → A.I. Matrix`, `aimatrx.com → A.I. Matrix dot com`, `Matrx Engine → Matrix Engine`, `matrxserver.com → Matrix server dot com`. New troublesome words get appended to the same section as they're discovered.
 - `2026-05-26` — Sidebar integration: Mic icon on the chat sidebar's collapsed rail (with subtle divider separating it from the text-chat shortcuts above) and a "Voice agent" mode-shortcut at the top of the expanded view (above pinned agents). Voice transcripts (`source_feature='voice-agent'`) are now filtered out of the `/chat` conversation history via a new per-scope `excludeSourceFeatures` filter on `fetchConversationHistory` — voice rows can't be replayed in the text-chat view, so a future dedicated voice-history surface will own their listing.

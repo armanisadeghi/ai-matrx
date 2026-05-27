@@ -6,8 +6,10 @@
 //   • useXaiVoiceSession — the orchestrator hook
 //   • usePersistVoiceTranscript — async Supabase writes
 //
-// Renders the visualizer hero, the single mic control, the transcript
-// stream, and (playground only) a settings sheet trigger.
+// Renders the ambient mood layer (full-screen radial glow that signals
+// listening / speaking), the transcript stream, the single mic control,
+// the status pill, the error banner, and (playground only) a settings
+// sheet trigger.
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +25,7 @@ import {
   selectVoiceStatus,
   selectVoiceTurns,
 } from "../state/selectors";
-import { VoiceVisualizer } from "./VoiceVisualizer";
+import { VoiceAmbientGlow } from "./VoiceAmbientGlow";
 import { VoiceMicButton } from "./VoiceMicButton";
 import { VoiceStatusPill } from "./VoiceStatusPill";
 import { VoiceTranscriptStream } from "./VoiceTranscriptStream";
@@ -67,18 +69,34 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
       toast.error("Sign-in required", {
         description: "Your session expired. Refresh the page and try again.",
       });
+    } else if (liveError.code === "token-service-unavailable") {
+      // Server returned 503 — XAI_API_KEY is missing on the deployment.
+      // Surface a clear message so the deployer (not the end user) sees
+      // exactly what to fix instead of a generic "something went wrong".
+      toast.error("Voice agent is not configured", {
+        description:
+          "This deployment is missing the voice service credentials. Contact support if you keep seeing this.",
+      });
     }
   }, [liveError]);
 
   return (
     <div
       className={cn(
-        "h-dvh flex flex-col overflow-hidden bg-background text-foreground",
+        "relative h-dvh flex flex-col overflow-hidden bg-background text-foreground",
       )}
     >
+      {/* ─── Ambient mood layer ─────────────────────────────────────────
+          Fullscreen, non-interactive. Sits behind every other surface
+          child via stacking order (it's the first sibling and the rest
+          carry `relative z-10`). Replaces the old centered orb so the
+          mic button is the only thing that looks tappable. */}
+      <VoiceAmbientGlow status={liveStatus} />
+
       {/* ─── Header ─────────────────────────────────────────────────── */}
       {/* pr-14 clears the shell's user-menu avatar (44px) that's anchored to the viewport right edge */}
-      <header className="shrink-0 flex items-center justify-between px-4 pr-14 py-3 border-b border-border/40">
+      {/* `relative z-10` lifts all foreground UI above the ambient glow */}
+      <header className="relative z-10 shrink-0 flex items-center justify-between px-4 pr-14 py-3 border-b border-border/40">
         <button
           type="button"
           onClick={() => router.back()}
@@ -114,8 +132,8 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
       {/* ─── Transcript (fades older messages to depth) ────────────── */}
       <section
         className={cn(
-          "flex-1 min-h-0 overflow-y-auto",
-          // Mask older content so the eye is drawn down toward the visualizer.
+          "relative z-10 flex-1 min-h-0 overflow-y-auto",
+          // Mask older content so the eye is drawn down toward the controls.
           "[mask-image:linear-gradient(to_bottom,transparent,#000_15%,#000_85%,transparent)]",
         )}
         aria-label="Voice transcript"
@@ -127,19 +145,17 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
         )}
       </section>
 
-      {/* ─── Hero: visualizer + status + mic + error ──────────────── */}
+      {/* ─── Hero: status + mic + error ─────────────────────────────
+          The old centered orb visualizer was removed — the ambient glow
+          layer behind the surface now carries the "I'm listening / I'm
+          speaking" feedback. This leaves the mic button as the single,
+          unambiguous control. */}
       <section
         className={cn(
-          "shrink-0 flex flex-col items-center justify-end gap-5",
-          "pb-8 pb-safe px-4",
+          "relative z-10 shrink-0 flex flex-col items-center justify-end gap-5",
+          "pb-10 pb-safe px-4",
         )}
       >
-        <VoiceVisualizer
-          status={liveStatus}
-          size={typeof window !== "undefined" && window.innerWidth < 480
-            ? 220
-            : 280}
-        />
         <VoiceStatusPill status={liveStatus} />
         <VoiceMicButton status={liveStatus} onToggle={toggle} />
         <VoiceErrorBanner error={liveError} />
