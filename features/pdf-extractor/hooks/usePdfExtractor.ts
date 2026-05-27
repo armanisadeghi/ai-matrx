@@ -176,6 +176,93 @@ function docFromApi(raw: Record<string, unknown>): PdfDocument {
   };
 }
 
+// ─── Single-doc fetch dedup + short cache ────────────────────────────────────
+//
+// The studio's click-handler navigates the route AND kicks off a doc fetch;
+// the new route mount then fires the SAME fetch on its initial-doc effect.
+// Without dedup the same `processed_documents` row was being read twice per
+// click — and the second response landed AFTER the first, so the PDF.js
+// `<Document>` was being re-mounted with a new doc reference, triggering a
+// second round of byte fetches against `/files/{id}/download`.
+//
+// Both problems collapse to one module-scoped helper: an in-flight map keyed
+// by docId so concurrent callers share a single Promise, and a tiny cache so
+// a fresh result is reused for `FETCH_DOC_CACHE_TTL_MS` after it resolves.
+// The cache key includes userId so a session switch can't reuse the previous
+// user's row.
+
+const FETCH_DOC_CACHE_TTL_MS = 30_000;
+const fetchDocInflight = new Map<string, Promise<PdfDocument | null>>();
+const fetchDocCache = new Map<
+  string,
+  { resolvedAt: number; doc: PdfDocument | null }
+>();
+
+function fetchDocCacheKey(docId: string, userId: string | null): string {
+  return `${userId ?? "<none>"}:${docId}`;
+}
+
+async function fetchProcessedDocument(
+  docId: string,
+  userId: string | null,
+): Promise<PdfDocument | null> {
+  if (!userId) return null;
+  const key = fetchDocCacheKey(docId, userId);
+
+  const cached = fetchDocCache.get(key);
+  if (cached && Date.now() - cached.resolvedAt < FETCH_DOC_CACHE_TTL_MS) {
+    return cached.doc;
+  }
+
+  const existing = fetchDocInflight.get(key);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("processed_documents")
+        .select("*")
+        .eq("id", docId)
+        // RLS already restricts to the owner, but include the predicate
+        // so the planner can use the (owner_id, source_kind, source_id, …)
+        // unique index when present.
+        .eq("owner_id", userId)
+        .single();
+      if (error || !data) return null;
+      return docFromApi(data as unknown as Record<string, unknown>);
+    } catch (err) {
+      console.error("Failed to fetch PDF document:", err);
+      return null;
+    }
+  })()
+    .then((doc) => {
+      fetchDocCache.set(key, { resolvedAt: Date.now(), doc });
+      return doc;
+    })
+    .finally(() => {
+      fetchDocInflight.delete(key);
+    });
+
+  fetchDocInflight.set(key, promise);
+  return promise;
+}
+
+/**
+ * Drop the cached `processed_documents` rows. Call this when something
+ * mutates a doc (rename, re-clean, re-extract) so the next read sees the
+ * fresh state instead of the stale cache. Pass a `docId` to evict one row,
+ * or no args to evict everything.
+ */
+export function invalidateProcessedDocumentCache(docId?: string): void {
+  if (docId == null) {
+    fetchDocCache.clear();
+    return;
+  }
+  for (const key of fetchDocCache.keys()) {
+    if (key.endsWith(`:${docId}`)) fetchDocCache.delete(key);
+  }
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 // Default page size for the history list. Stays under typical Supabase
@@ -183,7 +270,22 @@ function docFromApi(raw: Record<string, unknown>): PdfDocument {
 // page_count and char_count.
 const HISTORY_PAGE_SIZE = 50;
 
-export function usePdfExtractor() {
+export interface UsePdfExtractorOptions {
+  /**
+   * When `false`, the hook skips its `processed_documents` history fetch
+   * on mount. Set this from surfaces that already have a list hook of
+   * their own (e.g. `usePdfStudioDocs` in `PdfStudioShell`) to avoid two
+   * parallel `processed_documents` reads — the duplicate was wired into
+   * every studio mount and produced 2 list fetches per page load.
+   *
+   * Default `true` for back-compat with the legacy workspace which
+   * relies on `extractor.history` + `extractor.historyLoading`.
+   */
+  loadHistory?: boolean;
+}
+
+export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
+  const { loadHistory: shouldLoadHistory = true } = options;
   const { getHeaders, waitForAuth } = useApiAuth();
   const backendUrl = useAppSelector(selectResolvedBaseUrl);
   const userId = useAppSelector(selectUserId);
@@ -243,35 +345,28 @@ export function usePdfExtractor() {
     }
   }, [userId]);
 
-  // Load history on mount (and whenever the auth user changes)
+  // Load history on mount (and whenever the auth user changes), unless
+  // the caller has opted out via `options.loadHistory = false`. The studio
+  // opts out because it pulls the same list through `usePdfStudioDocs` —
+  // keeping both on would double-fetch `processed_documents` per page.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !shouldLoadHistory) return;
     loadHistory();
-  }, [userId, loadHistory]);
+  }, [userId, loadHistory, shouldLoadHistory]);
 
   // ── Fetch a single document (full content, direct from Supabase) ───────────
+  //
+  // Routed through `fetchProcessedDocument` (module-scoped) so concurrent
+  // callers for the same id share one network round-trip and a freshly
+  // resolved doc is reused for 30s without a re-fetch. The studio
+  // previously called this twice per doc-select — once from the
+  // click-handler, once from the `initialDocumentId` effect on the
+  // remounted route — producing two identical `processed_documents`
+  // round-trips and two PDF.js Document loads.
 
   const fetchDocument = useCallback(
-    async (docId: string): Promise<PdfDocument | null> => {
-      if (!userId) return null;
-      try {
-        const { data, error } = await supabase
-          .from("processed_documents")
-          .select("*")
-          .eq("id", docId)
-          // RLS already restricts to the owner, but include the predicate so
-          // the planner can use the (owner_id, source_kind, source_id, …)
-          // unique index when present.
-          .eq("owner_id", userId)
-          .single();
-
-        if (error || !data) return null;
-        return docFromApi(data as unknown as Record<string, unknown>);
-      } catch (err) {
-        console.error("Failed to fetch PDF document:", err);
-        return null;
-      }
-    },
+    (docId: string): Promise<PdfDocument | null> =>
+      fetchProcessedDocument(docId, userId),
     [userId],
   );
 

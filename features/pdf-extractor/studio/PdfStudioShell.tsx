@@ -111,7 +111,10 @@ function summaryToProvisionalDoc(s: StudioDocSummary): PdfDocument {
 export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const router = useRouter();
   const docsState = usePdfStudioDocs();
-  const extractor = usePdfExtractor();
+  // `usePdfStudioDocs` already pulls the `processed_documents` list for the
+  // sidebar — opting out of `usePdfExtractor`'s own history fetch removes
+  // the duplicate Supabase round-trip that was firing on every mount.
+  const extractor = usePdfExtractor({ loadHistory: false });
   const triggerShortcut = useShortcutTrigger();
   const toast = useToastManager("pdf-extractor");
   const { getHeaders, waitForAuth } = useApiAuth();
