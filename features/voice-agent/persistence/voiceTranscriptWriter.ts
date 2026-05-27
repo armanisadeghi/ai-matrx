@@ -158,8 +158,9 @@ export async function persistTurns(
       conversation_id: opts.conversationId,
       role: turn.role,
       position: opts.startPosition + idx,
-      // `cx_message.source` only allows 'user' | 'system' (CHECK constraint).
-      // Voice provenance lives in metadata.voice.provider — see constants.ts.
+      // `cx_message.source` only allows 'user' | 'agent_template' | 'system'
+      // (CHECK constraint `cx_message_source_check`). Voice provenance
+      // lives in metadata.voice.provider — see constants.ts.
       source:
         turn.role === "user"
           ? PERSISTENCE_MESSAGE_SOURCE_USER
@@ -168,8 +169,21 @@ export async function persistTurns(
         { type: "text", text: turn.text || "" },
       ] as unknown as Json,
       metadata: { voice: voiceMeta } as Json,
-      status:
-        turn.status === "interrupted" ? "interrupted" : "completed",
+      // `cx_message.status` is a strictly enumerated CHECK constraint
+      // (`cx_message_status_check`): only 'active' | 'condensed' | 'summary'
+      // | 'deleted' | 'pending' | 'abandoned' | 'failed' are allowed — verified
+      // against the live DB. The canonical chat writer (cx-chat.ts:createCxMessage)
+      // omits status entirely and relies on the column default of 'active';
+      // we set it explicitly so the mapping intent is visible at the callsite.
+      // Production usage (per `SELECT status, count(*) FROM cx_message`):
+      //   • normal completed turn  → 'active'   (the default — same as text chat)
+      //   • user-interrupted turn  → 'abandoned' (closest enum match — the
+      //     turn was cut off mid-flight by the user barging in over the
+      //     assistant; analytics also have `metadata.voice.was_interrupted`)
+      // Do NOT pass voice-specific strings like 'completed' or 'interrupted'
+      // here — they violate the CHECK constraint and the whole insert
+      // (entire batch of turns) is rejected with 23514.
+      status: turn.status === "interrupted" ? "abandoned" : "active",
       // Interrupted assistant turns must NOT poison future model context.
       is_visible_to_model:
         turn.role === "assistant" && turn.status === "interrupted"
