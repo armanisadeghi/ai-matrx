@@ -98,7 +98,9 @@ The `app/` tree is split into clearly-purposed route groups. **Agents working on
 
 **The "transitional family"** is `(transitional)` + `(legacy)` + `(ssr)`. Conceptually one bucket (routes on their way in or out); three groups only because each boots a different Redux store. Agents can treat them as one logical area when scoping work.
 
-**Phase 2 build gate (not yet active):** `next.config.js` will read `MATRX_PROFILE=core|full`. When `core`, `pageExtensions` excludes `*.dev.tsx`, eliminating `(dev)` routes from the production-core build. Public demos under `(public-demos)` use plain `*.tsx` and stay in every build.
+**Build gate (active):** `next.config.js` reads `MATRX_PROFILE=core|full` (default `core`). When `core`, `pageExtensions = ['tsx', 'ts', 'jsx', 'js']` and the 172 route leaves under `(dev)/` — renamed `*.dev.tsx` / `*.dev.ts` — are invisible to the build. When `full`, `pageExtensions` adds `'dev.tsx'` / `'dev.ts'` so the same repo compiles every route. Production deploys to `aimatrx.com` with `MATRX_PROFILE=core`; the internal demos deploy to its own Vercel project with `MATRX_PROFILE=full`. Public demos under `(public-demos)` use plain `*.tsx` and ship in every build.
+
+**Adding a new route under `(dev)/`:** name route leaves `page.dev.tsx`, `layout.dev.tsx`, `loading.dev.tsx`, `route.dev.ts`. Helper components (`components/`, `hooks/`, `utils/`) keep plain `.tsx` / `.ts`. Test the URL works locally (Next dev uses both extensions). Helper components imported by production code still compile into the core build — those are tracked as "fake demos" tech debt; relocate to `components/` over time.
 
 **URL redirects** for the `/demos/*` consolidation are in `next.config.js` (`/tests/* → /demos/tests/*`, `/demo/* → /demos/general/*`, `/settings-*-demo → /demos/settings-*`, etc.) so existing bookmarks and external links continue to resolve.
 

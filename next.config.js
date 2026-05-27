@@ -11,8 +11,27 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
     statsFilename: "stats.json",
 });
 
+// MATRX_PROFILE controls which routes are compiled into the build:
+//   core (default) — production main app: (core), (admin), (transitional),
+//                    (legacy), (ssr), (public), (public-demos), (auth-pages),
+//                    (popup). Internal dev/test surfaces under app/(dev)/ —
+//                    whose route leaves are renamed *.dev.tsx — are NOT
+//                    compiled because `dev.tsx` is not in pageExtensions.
+//   full           — includes everything above PLUS app/(dev)/ routes.
+//                    Used by the internal-demos Vercel project. Set
+//                    `MATRX_PROFILE=full` in that project's environment.
+// Helper .tsx files under (dev) (e.g. (dev)/demos/tests/matrx-table/components/
+// MatrxTable.tsx) keep plain .tsx because production code imports them directly;
+// pageExtensions only filters routes, not arbitrary components.
+const MATRX_PROFILE = process.env.MATRX_PROFILE === "full" ? "full" : "core";
+const pageExtensions =
+    MATRX_PROFILE === "full"
+        ? ["dev.tsx", "dev.ts", "tsx", "ts", "jsx", "js"]
+        : ["tsx", "ts", "jsx", "js"];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    pageExtensions,
     // Vercel Skew Protection: when enabled in the Vercel project settings,
     // Vercel injects NEXT_DEPLOYMENT_ID at build time. Setting `deploymentId`
     // makes Next.js append `?dpl=<id>` to every chunk fetch, and Vercel routes
