@@ -132,11 +132,45 @@ export function createTokenManager(
               ? "service-unavailable"
               : "fetch-failed";
         const text = await resp.text().catch(() => "");
+        // The token route returns JSON like `{ error, xai_status, xai_body }`.
+        // Parse it so the surfaced message is human-readable (the actual
+        // xAI error if xAI rejected) instead of raw JSON in the banner.
+        let message = `Token endpoint returned ${resp.status}`;
+        if (text) {
+          try {
+            const parsed = JSON.parse(text) as {
+              error?: string;
+              xai_status?: number;
+              xai_body?: string;
+            };
+            const primary =
+              typeof parsed.error === "string" ? parsed.error : "";
+            const xaiDetail =
+              typeof parsed.xai_body === "string" && parsed.xai_body.length > 0
+                ? ` — xAI said: ${parsed.xai_body.slice(0, 400)}`
+                : "";
+            if (primary) {
+              message = `${primary}${xaiDetail}`;
+            } else {
+              message = text.slice(0, 500);
+            }
+          } catch {
+            message = text.slice(0, 500);
+          }
+        }
         const err: TokenError = {
           code,
-          message: text || `Token endpoint returned ${resp.status}`,
+          message,
           status: resp.status,
         };
+        // Log once on the browser console so the operator inspecting the
+        // network tab sees the full diagnostic alongside the request.
+        if (typeof console !== "undefined") {
+          console.error("[voice-agent/tokenManager] token mint failed:", {
+            status: resp.status,
+            message,
+          });
+        }
         throw err;
       }
       const data = (await resp.json()) as Partial<VoiceAgentTokenResponse>;

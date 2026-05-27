@@ -54,28 +54,76 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
   // Surface mic-permission errors as a toast (the banner shows the inline
   // version too — toast catches the user's eye while they're looking at the
   // permission prompt).
+  //
+  // Two error code shapes flow into Redux here:
+  //   • Background-refresh failures from tokenManager.onError are dispatched
+  //     with the `token-` prefix (see useXaiVoiceSession.ts:121).
+  //   • Initial-connect failures from `start()` keep the raw TokenError /
+  //     XaiClientError code (see useXaiVoiceSession.ts:512). The raw codes
+  //     are: unauthorized, service-unavailable, fetch-failed, malformed,
+  //     connect-failed, connect-timeout, auth-failed, transport-closed,
+  //     server-error, start-failed.
+  // We handle both prefixed and raw forms so a real failure on the very
+  // first click surfaces a clear toast instead of only the inline banner.
   useEffect(() => {
     if (!liveError) return;
-    if (liveError.code === "mic-permission-denied") {
+    const code = liveError.code;
+    if (code === "mic-permission-denied") {
       toast.error("Microphone access denied", {
         description:
           "Allow microphone access in your browser settings, then tap the mic to try again.",
       });
-    } else if (liveError.code === "mic-no-microphone") {
+    } else if (code === "mic-no-microphone") {
       toast.error("No microphone detected", {
         description: "Plug in a microphone, then tap the mic to try again.",
       });
-    } else if (liveError.code === "token-unauthorized") {
+    } else if (code === "token-unauthorized" || code === "unauthorized") {
       toast.error("Sign-in required", {
         description: "Your session expired. Refresh the page and try again.",
       });
-    } else if (liveError.code === "token-service-unavailable") {
-      // Server returned 503 — XAI_API_KEY is missing on the deployment.
-      // Surface a clear message so the deployer (not the end user) sees
-      // exactly what to fix instead of a generic "something went wrong".
+    } else if (
+      code === "token-service-unavailable" ||
+      code === "service-unavailable"
+    ) {
+      // 503 — XAI_API_KEY missing on the deployment.
       toast.error("Voice agent is not configured", {
         description:
-          "This deployment is missing the voice service credentials. Contact support if you keep seeing this.",
+          "The voice service credentials are missing on this deployment.",
+      });
+    } else if (
+      code === "token-fetch-failed" ||
+      code === "fetch-failed" ||
+      code === "token-malformed" ||
+      code === "malformed"
+    ) {
+      // 502 from our token route — xAI rejected the mint request, OR our
+      // server got an unexpected response shape. liveError.message now
+      // includes xAI's actual response body (see route.ts + tokenManager.ts),
+      // so surface it verbatim — that string is the diagnostic.
+      toast.error("Voice service rejected the request", {
+        description: liveError.message,
+        duration: 12_000,
+      });
+    } else if (code === "auth-failed") {
+      // WebSocket-level rejection from xAI after token mint succeeded —
+      // typically a stale or scoped-out ephemeral secret.
+      toast.error("Voice connection refused", {
+        description: liveError.message,
+        duration: 10_000,
+      });
+    } else if (
+      code === "connect-failed" ||
+      code === "connect-timeout" ||
+      code === "transport-closed"
+    ) {
+      toast.error("Could not connect to the voice service", {
+        description: liveError.message,
+        duration: 8_000,
+      });
+    } else if (code === "server-error") {
+      toast.error("Voice service error", {
+        description: liveError.message,
+        duration: 8_000,
       });
     }
   }, [liveError]);

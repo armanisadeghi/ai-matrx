@@ -8,13 +8,28 @@
 // POST-only by design: keeps this off any prefetch / cache path and signals
 // "side-effectful state mint" to any downstream cache layer.
 //
-// Mirrors the pattern at app/api/cartesia/route.ts.
+// Diagnostics: when xAI rejects the mint request, we pass xAI's status +
+// body straight through to the response (`{ error, xai_status, xai_body }`)
+// and to the structured server log. The browser-side error path surfaces
+// xAI's actual message, not a wrapped opaque one — silent failures here
+// cost hours to debug in production.
 
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/utils/supabase/resolveUser";
 import { TOKEN_TTL_SECONDS } from "@/features/voice-agent/constants";
 
+// Force Node runtime + dynamic — this route mints a secret per request and
+// must never be cached or pre-rendered.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const XAI_TOKEN_URL = "https://api.x.ai/v1/realtime/client_secrets";
+
+/** Mask a secret so logs show "xai-abc…wxyz" instead of the full key. */
+function maskKey(key: string): string {
+  if (key.length <= 12) return "***";
+  return `${key.slice(0, 6)}…${key.slice(-4)}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,25 +77,60 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const xaiResp = await fetch(XAI_TOKEN_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ expires_after: { seconds: ttlSeconds } }),
-      // Token mint is short — keep this snappy.
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!xaiResp.ok) {
-      const text = await xaiResp.text().catch(() => "");
+    let xaiResp: Response;
+    try {
+      xaiResp = await fetch(XAI_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ expires_after: { seconds: ttlSeconds } }),
+        // Token mint is short — keep this snappy.
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch (fetchErr) {
+      // Network-level failure (timeout, DNS, TLS, etc.) — distinct from xAI
+      // returning a non-OK response.
+      const message =
+        fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
       console.error(
-        `[/api/voice-agent/token] xAI ${xaiResp.status}: ${text.slice(0, 500)}`,
+        "[/api/voice-agent/token] xAI fetch failed (network/timeout):",
+        message,
+        "key:",
+        maskKey(apiKey),
       );
       return NextResponse.json(
         {
-          error: `Failed to mint xAI client_secret (status ${xaiResp.status}).`,
+          error: `Could not reach xAI Realtime API: ${message}`,
+          xai_status: 0,
+          xai_body: "",
+        },
+        { status: 504 },
+      );
+    }
+
+    if (!xaiResp.ok) {
+      const text = await xaiResp.text().catch(() => "");
+      // Log structured so Vercel's function log search finds it.
+      console.error(
+        JSON.stringify({
+          at: "/api/voice-agent/token",
+          event: "xai_reject",
+          xai_status: xaiResp.status,
+          xai_body: text.slice(0, 1000),
+          key_masked: maskKey(apiKey),
+        }),
+      );
+      // Pass xAI's actual response through so the browser-side error UI can
+      // show exactly what xAI said — the operator should not have to dig
+      // through Vercel logs to diagnose "invalid key" vs "no Realtime access"
+      // vs "rate limited" vs "wrong region".
+      return NextResponse.json(
+        {
+          error: `xAI rejected the token request (status ${xaiResp.status}).`,
+          xai_status: xaiResp.status,
+          xai_body: text.slice(0, 1000),
         },
         { status: 502 },
       );
