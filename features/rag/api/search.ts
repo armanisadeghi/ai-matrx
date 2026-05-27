@@ -57,6 +57,12 @@ export interface RagSearchRequest {
   data_store_id?: string | null;
   /** Hard-pin to specific (source_kind, source_id) pairs. */
   include_sources?: { source_kind: string; source_id: string }[];
+  /**
+   * Admin-only: bypass per-user ACL and search every chunk in every
+   * tenant. The backend ignores this flag for non-admins. Used by the
+   * Search Lab UI to answer "do these chunks exist at all?".
+   */
+  admin_bypass_acl?: boolean;
 }
 
 /** Run a single RAG search. Throws on non-OK responses. */

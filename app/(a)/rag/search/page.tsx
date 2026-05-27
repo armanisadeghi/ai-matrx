@@ -1,10 +1,18 @@
 /**
- * /rag/search — single-page RAG search.
- * Deep-link params: ?q=<query>&store_id=<uuid>
+ * /rag/search — multi-tab RAG Search Lab.
+ *
+ * Tabs:
+ *   ?tab=search        (default) clean user search
+ *   ?tab=agent-sim     full pipeline trace / score breakdown / prompt preview
+ *   ?tab=agent-chat    Claude agent with rag_search as a tool, fully transparent
+ *   ?tab=diagnostics   per-user content inventory & ACL routes
+ *
+ * Deep-link params:
+ *   ?q=<query>&store_id=<uuid>&tab=<tab>
  */
 
-import { RagSearchPage } from "@/features/rag/components/search/RagSearchPage";
+import { RagSearchExperience } from "@/features/rag/components/search/RagSearchExperience";
 
 export default function Page() {
-  return <RagSearchPage />;
+  return <RagSearchExperience />;
 }
