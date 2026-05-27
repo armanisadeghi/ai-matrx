@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * useAiPostProcess — launches an AI post-processing agent for VoicePadAi
- * and exposes its streaming state.
+ * useAiPostProcess — launches an AI post-processing agent for the
+ * TranscriptionCleanup pad and exposes its streaming state.
  *
  * CRITICAL — variable resolution:
  *   `createManualInstance` snapshots the agent's `variableDefinitions` from
  *   `state.agentDefinition.agents[agentId]` into the instance. If that agent
- *   hasn't been loaded yet (e.g. the user opened VoicePadAi without first
+ *   hasn't been loaded yet (e.g. the user opened TranscriptionCleanup without first
  *   visiting the agent page), the snapshot is EMPTY — and
  *   `selectResolvedVariables` only emits keys that exist in `definitions`.
  *   That means `setUserVariableValues({transcribed_text: "..."})` silently
@@ -87,7 +87,7 @@ export function useAiPostProcess() {
 
   const phase: AiProcessPhase = launching
     ? "launching"
-    : (requestStatus as AiProcessPhase | undefined) ?? "idle";
+    : ((requestStatus as AiProcessPhase | undefined) ?? "idle");
 
   const isBusy =
     phase === "launching" ||
@@ -109,7 +109,7 @@ export function useAiPostProcess() {
         const cid = await dispatch(
           createManualInstance({
             agentId: agent.id,
-            sourceFeature: "voice-pad-ai",
+            sourceFeature: "transcription-cleanup",
             apiEndpointMode: "agent",
             displayMode: "direct",
             autoRun: false,

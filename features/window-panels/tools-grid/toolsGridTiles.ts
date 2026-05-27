@@ -13,8 +13,7 @@
  *
  * This file is the single source of truth for "what appears in the Tools
  * grid" — it does NOT duplicate any registry data (label is usually pulled
- * from the registry unless overridden for a tile-specific name like the
- * legacy "Notes" tile that opens notesBetaWindow).
+ * from the registry unless overridden for a tile-specific name).
  *
  * **Agent-family tiles:** each `label` should match the `label` on the
  * matching entry in `features/window-panels/registry/windowRegistry.ts`
@@ -80,7 +79,7 @@ import {
   TestTube2,
   ToyBrick,
   Upload,
-  Zap
+  Zap,
 } from "lucide-react";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -227,11 +226,11 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "aiVoiceWindow",
   },
   {
-    id: "tile.voice-pad-ai",
+    id: "tile.transcription-cleanup",
     label: "Transcription Cleanup",
     icon: CircleDot,
     category: "voice",
-    overlayId: "voicePadAi",
+    overlayId: "transcriptionCleanup",
   },
   {
     id: "tile.voice-pad-advanced",
@@ -257,8 +256,9 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
 
   // ── Notes ──────────────────────────────────────────────────────────────
   {
-    // Legacy "Notes" tile — pins a default instance of Notes Beta with a
-    // fixed title so it behaves like a singleton home-notes surface.
+    // Pins a default instance of the canonical Notes window so it behaves
+    // like a singleton home-notes surface. (The overlayId `notesBetaWindow`
+    // is a historical name kept for window_sessions compatibility.)
     id: "tile.notes-pinned",
     label: "Notes",
     icon: StickyNote,
@@ -266,15 +266,6 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "notesBetaWindow",
     instanceStrategy: "singleton-default",
     seedData: () => ({ title: "Notes" }),
-  },
-  {
-    // Companion "Notes Beta" tile — opens a fresh instance each click.
-    id: "tile.notes-beta",
-    label: "Notes Beta",
-    icon: StickyNote,
-    category: "notes",
-    overlayId: "notesBetaWindow",
-    instanceStrategy: "fresh-per-click",
   },
 
   // ── Content ────────────────────────────────────────────────────────────

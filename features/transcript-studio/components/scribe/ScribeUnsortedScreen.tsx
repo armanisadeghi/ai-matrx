@@ -8,11 +8,11 @@ import { fetchUnsortedRecordingsThunk } from "../../redux/thunks";
 import { RecordingCard } from "./RecordingCard";
 import { FullTranscriptDrawer } from "./FullTranscriptDrawer";
 
-interface MobileUnsortedScreenProps {
+interface ScribeUnsortedScreenProps {
   onBack: () => void;
 }
 
-export function MobileUnsortedScreen({ onBack }: MobileUnsortedScreenProps) {
+export function ScribeUnsortedScreen({ onBack }: ScribeUnsortedScreenProps) {
   const dispatch = useAppDispatch();
   const recordings = useAppSelector(selectUnsortedRecordings);
   const [openTranscript, setOpenTranscript] = useState<{

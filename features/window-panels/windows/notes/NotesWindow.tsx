@@ -1,9 +1,14 @@
 "use client";
 
-// NotesWindow — Floating notes panel using the 6-layer architecture.
-// Wraps NotesView inside a WindowPanel. No prop drilling.
-// Persists open tabs + active tab to window_sessions via onCollectData.
-// Auto-saves when tabs change so state is always current in the DB.
+// LegacyNotesWindow — DEPRECATED original floating notes panel.
+//
+// The canonical Notes window is now `NotesWindow` exported from
+// NotesBetaWindow.tsx (overlayId `notesBetaWindow`). This file only
+// remains because two surfaces still reference it pending review:
+//   - app/(ssr)/ssr/demos/window-demo/page.tsx
+//   - app/(authenticated)/(admin-auth)/administration/persistence-test
+// Once those are reassessed this file (plus its overlay registry entry,
+// opener, and dynamic import) can be deleted entirely.
 
 import React, { useCallback, useEffect, useRef } from "react";
 import {
@@ -23,7 +28,7 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import { useWindowPersistence } from "@/features/window-panels/WindowPersistenceManager";
 
-export interface NotesWindowProps extends Omit<
+export interface LegacyNotesWindowProps extends Omit<
   WindowPanelProps,
   "children" | "title"
 > {
@@ -40,14 +45,14 @@ const INSTANCE_ID = "window-notes-window";
 const OVERLAY_ID = "notesWindow";
 const WINDOW_ID = "notes-window";
 
-export function NotesWindow({
-  title = "Notes",
+export function LegacyNotesWindow({
+  title = "Notes (legacy)",
   id = WINDOW_ID,
   initialTabs,
   initialActiveTab,
   singleNoteId = null,
   ...windowProps
-}: NotesWindowProps) {
+}: LegacyNotesWindowProps) {
   const openTabs = useAppSelector(selectInstanceTabs(INSTANCE_ID));
   const activeTabId = useAppSelector(selectInstanceActiveTab(INSTANCE_ID));
 

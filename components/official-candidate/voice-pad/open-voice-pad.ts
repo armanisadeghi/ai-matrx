@@ -9,10 +9,13 @@ import type { VoicePadVariant } from "@/lib/redux/slices/voicePadSlice";
 /**
  * Per-instance voice-pad opener helpers.
  *
- * Three variants:
+ * Two variants live here:
  *   - "voicePad"          — simple floating pad
  *   - "voicePadAdvanced"  — full pad with history sidebar, footer actions
- *   - "voicePadAi"        — simple pad + AI post-processing (stub)
+ *
+ * The third overlay that shares the voice-pad slice — "transcriptionCleanup"
+ * (the "Transcription Cleanup" window) — has its own opener at
+ * `features/overlays/openers/transcriptionCleanup.tsx`.
  *
  * Every variant supports multiple coexisting instances. `instanceId` defaults
  * to "default" for toggle-style callers that expect singleton behavior.
@@ -43,15 +46,6 @@ export const toggleVoicePadAdvanced = (
 
 export const openNewVoicePadAdvanced = () =>
   openOverlay({ overlayId: "voicePadAdvanced", instanceId: newId() });
-
-export const openVoicePadAi = (instanceId: string = DEFAULT_INSTANCE_ID) =>
-  openOverlay({ overlayId: "voicePadAi", instanceId });
-
-export const toggleVoicePadAi = (instanceId: string = DEFAULT_INSTANCE_ID) =>
-  toggleOverlay({ overlayId: "voicePadAi", instanceId });
-
-export const openNewVoicePadAi = () =>
-  openOverlay({ overlayId: "voicePadAi", instanceId: newId() });
 
 export const closeVoicePadInstance = (
   overlayId: VoicePadVariant,

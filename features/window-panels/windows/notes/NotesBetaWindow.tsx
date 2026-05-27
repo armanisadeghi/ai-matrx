@@ -1,15 +1,20 @@
 "use client";
 
-// NotesBetaWindow — Improved floating notes panel.
+// NotesWindow — The canonical floating notes panel.
 //
-// Key improvements over NotesWindow:
+// (Previously "NotesBetaWindow" — promoted to official on 2026-05-26.)
+// The overlay id stays `notesBetaWindow` so saved window_sessions rows
+// keep resolving; only the user-facing label and the TS export name
+// changed. File path also intentionally unchanged for the same reason.
+//
+// Features:
 //  1. Sidebar uses WindowPanel's built-in ResizablePanelGroup → collapsible + draggable
 //  2. View mode controls are rendered inline (not portaled to shell PageHeader)
 //  3. Context menus are portaled to document.body → always above the window stacking context
-//  4. Empty state shows a folder quick-pick grid for fast note creation
+//  4. Empty state shows the shared FolderQuickPick grid for fast note creation
 //  5. Supports multiple simultaneous instances (windowInstanceId per instance)
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   WindowPanel,
   type WindowPanelProps,
@@ -17,7 +22,7 @@ import {
 import { NoteSidebar } from "@/features/notes/components/NoteSidebar";
 import { NotesWindowView } from "@/features/notes/components/NotesWindowView";
 
-export interface NotesBetaWindowProps extends Omit<
+export interface NotesWindowProps extends Omit<
   WindowPanelProps,
   "children" | "title" | "sidebar"
 > {
@@ -26,12 +31,12 @@ export interface NotesBetaWindowProps extends Omit<
   windowInstanceId?: string;
 }
 
-export function NotesBetaWindow({
-  title = "Notes Beta",
+export function NotesWindow({
+  title = "Notes",
   id,
   windowInstanceId,
   ...windowProps
-}: NotesBetaWindowProps) {
+}: NotesWindowProps) {
   // Derive stable IDs from the overlay instance ID so multiple windows don't collide.
   const stableKey = windowInstanceId ?? "default";
   const windowId = id ?? `notes-beta-window-${stableKey}`;

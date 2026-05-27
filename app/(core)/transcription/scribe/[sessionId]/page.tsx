@@ -2,19 +2,17 @@
 
 import { useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MobileStudioScreen } from "@/features/transcript-studio/components/mobile/MobileStudioScreen";
+import { ScribeScreen } from "@/features/transcript-studio/components/scribe/ScribeScreen";
 
-export default function MobileSessionPage() {
+export default function ScribeSessionPage() {
   const router = useRouter();
   const params = useParams<{ sessionId: string }>();
   const [, startTransition] = useTransition();
 
   return (
-    <MobileStudioScreen
+    <ScribeScreen
       sessionId={params.sessionId}
-      onBack={() =>
-        startTransition(() => router.push("/transcription/mobile"))
-      }
+      onBack={() => startTransition(() => router.push("/transcription/scribe"))}
     />
   );
 }

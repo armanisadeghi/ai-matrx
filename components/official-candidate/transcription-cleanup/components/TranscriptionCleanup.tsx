@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * VoicePadAi — voice pad with AI post-processing.
+ * TranscriptionCleanup — voice pad with AI post-processing.
  *
  * - Sidebar: agent picker + context textarea + Process button.
  * - Main body: transcript textarea on top, AI response textarea on bottom.
@@ -30,7 +30,7 @@ import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { CustomCleanerAgent } from "@/lib/redux/preferences/userPreferencesSlice";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
-import { VoicePadAiContextPanel } from "./VoicePadAiContextPanel";
+import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {
   AI_POST_PROCESS_AGENTS,
   DEFAULT_AI_POST_PROCESS_AGENT_ID,
@@ -38,13 +38,15 @@ import {
 } from "../ai-agents";
 import { useAiPostProcess } from "../hooks/useAiPostProcess";
 
-const OVERLAY_ID = "voicePadAi" as const;
+const OVERLAY_ID = "transcriptionCleanup" as const;
 
-interface VoicePadAiProps {
+interface TranscriptionCleanupProps {
   instanceId: string;
 }
 
-export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
+export default function TranscriptionCleanup({
+  instanceId,
+}: TranscriptionCleanupProps) {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((s) =>
     selectVoicePadEntries(s, OVERLAY_ID, instanceId),
@@ -57,8 +59,8 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
     DEFAULT_AI_POST_PROCESS_AGENT_ID,
   );
   const [editedResponse, setEditedResponse] = useState<string | null>(null);
-  // No userContext state — context is managed by VoicePadAiContextPanel and
-  // reported back via contextRef (updated synchronously on every block change).
+  // No userContext state — context is managed by TranscriptionCleanupContextPanel
+  // and reported back via contextRef (updated synchronously on every block change).
 
   const ai = useAiPostProcess();
 
@@ -84,7 +86,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
   // callback can read them without stale closures.
   const agentIdRef = useRef(agentId);
   // contextRef is updated synchronously by handleContextChange (called from
-  // VoicePadAiContextPanel on every block mutation). Never stale.
+  // TranscriptionCleanupContextPanel on every block mutation). Never stale.
   const contextRef = useRef("");
   agentIdRef.current = agentId;
 
@@ -93,8 +95,8 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
   const responseRef = useRef<string>("");
   const transcriptDisplayRef = useRef<string>("");
 
-  const windowId = `voice-pad-ai-${instanceId}`;
-  const micId = `voice-pad-ai-mic-${instanceId}`;
+  const windowId = `transcription-cleanup-${instanceId}`;
+  const micId = `transcription-cleanup-mic-${instanceId}`;
 
   const selectedAgent = useMemo<AiPostProcessAgent>(
     () => allAgents.find((a) => a.id === agentId) ?? allAgents[0],
@@ -260,7 +262,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
             >
               <input
                 type="radio"
-                name={`voice-pad-ai-agent-${instanceId}`}
+                name={`transcription-cleanup-agent-${instanceId}`}
                 value={agent.id}
                 checked={agent.id === agentId}
                 onChange={() => setAgentId(agent.id)}
@@ -287,7 +289,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
         <div className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
           Context
         </div>
-        <VoicePadAiContextPanel onChange={handleContextChange} />
+        <TranscriptionCleanupContextPanel onChange={handleContextChange} />
       </div>
 
       <div className="shrink-0 border-t border-border/50 p-2 flex flex-col gap-1.5">
@@ -327,7 +329,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
       minHeight={420}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       onClose={handleClose}
-      urlSyncKey="voice-ai"
+      urlSyncKey="transcription-cleanup"
       urlSyncId={instanceId}
       sidebar={sidebar}
       sidebarDefaultSize={260}
@@ -358,7 +360,7 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
                 <ContentActionBar
                   content={transcriptDisplay}
                   title="Voice Pad Transcript"
-                  instanceKey={`voice-pad-ai-transcript-${instanceId}`}
+                  instanceKey={`transcription-cleanup-transcript-${instanceId}`}
                   hideSpeaker
                   hidePencil
                   onDelete={handleClearAll}
@@ -418,9 +420,9 @@ export default function VoicePadAi({ instanceId }: VoicePadAiProps) {
                   metadata={{
                     agent_id: selectedAgent.id,
                     agent_name: selectedAgent.name,
-                    source: "voice-pad-ai",
+                    source: "transcription-cleanup",
                   }}
-                  instanceKey={`voice-pad-ai-response-${instanceId}`}
+                  instanceKey={`transcription-cleanup-response-${instanceId}`}
                   hideSpeaker
                   hidePencil
                   extras={

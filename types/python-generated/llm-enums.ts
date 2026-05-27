@@ -63,6 +63,7 @@ export const LLM_PARAMS_KEYS = [
     'verbosity',
     'internal_web_search',
     'internal_url_context',
+    'internal_x_search',
     'aspect_ratio',
     'width',
     'height',

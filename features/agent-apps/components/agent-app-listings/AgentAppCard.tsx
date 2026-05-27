@@ -50,13 +50,11 @@ interface AgentAppCardProps {
 }
 
 const STATUS_PILL_STYLES: Record<AgentAppCardModel["status"], string> = {
-  draft:
-    "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300",
+  draft: "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300",
   published:
     "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300",
   archived: "bg-muted text-muted-foreground",
-  suspended:
-    "bg-destructive/15 text-destructive dark:bg-destructive/25",
+  suspended: "bg-destructive/15 text-destructive dark:bg-destructive/25",
 };
 
 function formatNumber(n: number | null | undefined): string {
@@ -150,7 +148,10 @@ export function AgentAppCard({
           </p>
         )}
         <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="truncate" title={`Agent: ${app.agent_name ?? app.agent_id}`}>
+          <span
+            className="truncate"
+            title={`Agent: ${app.agent_name ?? app.agent_id}`}
+          >
             <span className="opacity-70">Agent:</span>{" "}
             <span className="text-foreground font-medium">
               {app.agent_name ?? "—"}
@@ -175,7 +176,7 @@ export function AgentAppCard({
       </div>
 
       <div
-        className="border-t border-border p-1 bg-card rounded-b-lg min-h-[34px]"
+        className="border-t border-border py-1 px-3 bg-card rounded-b-lg min-h-[34px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex gap-1 justify-between items-center">

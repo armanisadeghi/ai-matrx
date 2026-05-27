@@ -1220,6 +1220,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/conversation/{conversation_id}/sandbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conversation Sandbox
+         * @description Read the current sandbox binding for a conversation (ownership-scoped).
+         */
+        get: operations["get_conversation_sandbox_ai_conversation__conversation_id__sandbox_get"];
+        /**
+         * Bind Conversation Sandbox
+         * @description Bind a sandbox to a conversation (server-authoritative, ownership-scoped).
+         *
+         *     Persists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the
+         *     fs/shell/git tools on the next turn. The binding ALWAYS persists when the
+         *     caller owns both the conversation and the box; ``armed`` in the response
+         *     states whether the next run will actually get tools (and ``reason`` why not,
+         *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
+         *     fails the way the old direct-Supabase write did.
+         */
+        put: operations["bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put"];
+        post?: never;
+        /**
+         * Unbind Conversation Sandbox
+         * @description Clear the conversation's sandbox binding (ownership-scoped).
+         */
+        delete: operations["unbind_conversation_sandbox_ai_conversation__conversation_id__sandbox_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/conversations/{conversation_id}/sandbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conversation Sandbox
+         * @description Read the current sandbox binding for a conversation (ownership-scoped).
+         */
+        get: operations["get_conversation_sandbox_ai_conversations__conversation_id__sandbox_get"];
+        /**
+         * Bind Conversation Sandbox
+         * @description Bind a sandbox to a conversation (server-authoritative, ownership-scoped).
+         *
+         *     Persists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the
+         *     fs/shell/git tools on the next turn. The binding ALWAYS persists when the
+         *     caller owns both the conversation and the box; ``armed`` in the response
+         *     states whether the next run will actually get tools (and ``reason`` why not,
+         *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
+         *     fails the way the old direct-Supabase write did.
+         */
+        put: operations["bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put"];
+        post?: never;
+        /**
+         * Unbind Conversation Sandbox
+         * @description Clear the conversation's sandbox binding (ownership-scoped).
+         */
+        delete: operations["unbind_conversation_sandbox_ai_conversations__conversation_id__sandbox_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/conversation/{conversation_id}/memory_cost": {
         parameters: {
             query?: never;
@@ -12927,6 +12997,8 @@ export interface components {
             internal_web_search?: boolean | null;
             /** Internal Url Context */
             internal_url_context?: boolean | null;
+            /** Internal X Search */
+            internal_x_search?: boolean | null;
             /** Aspect Ratio */
             aspect_ratio?: string | null;
             /** Width */
@@ -13898,6 +13970,7 @@ export interface components {
             client?: components["schemas"]["ClientContext"] | null;
             user?: components["schemas"]["UserOverrides"] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
+            sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
              * Context
              * @default {}
@@ -16433,6 +16506,7 @@ export interface components {
             client?: components["schemas"]["ClientContext"] | null;
             user?: components["schemas"]["UserOverrides"] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
+            sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
              * Context
              * @default {}
@@ -17524,6 +17598,8 @@ export interface components {
             internal_web_search?: boolean | null;
             /** Internal Url Context */
             internal_url_context?: boolean | null;
+            /** Internal X Search */
+            internal_x_search?: boolean | null;
             /** Aspect Ratio */
             aspect_ratio?: string | null;
             /** Width */
@@ -21200,6 +21276,14 @@ export interface components {
              */
             mode: "inline" | "queued";
         };
+        /** SandboxBindRequest */
+        SandboxBindRequest: {
+            /**
+             * Sandbox Instance Id
+             * @description The sandbox_instances.id (UUID) to bind to this conversation.
+             */
+            sandbox_instance_id: string;
+        };
         /** SandboxBindingRequest */
         SandboxBindingRequest: {
             /**
@@ -21223,6 +21307,32 @@ export interface components {
              * @default /home/agent
              */
             root_path: string;
+        };
+        /**
+         * SandboxBindingState
+         * @description Current sandbox binding for a conversation + whether the next agent run
+         *     will actually get the sandbox tools. ``armed`` tells the truth so a client
+         *     never has to guess why tools didn't appear (the failure mode that left users
+         *     with zero working boxes for days).
+         */
+        SandboxBindingState: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Sandbox Instance Id */
+            sandbox_instance_id?: string | null;
+            /** Sandbox Id */
+            sandbox_id?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Tier */
+            tier?: string | null;
+            /**
+             * Armed
+             * @default false
+             */
+            armed: boolean;
+            /** Reason */
+            reason?: string | null;
         };
         /** SaveAsTemplateRequest */
         SaveAsTemplateRequest: {
@@ -26237,6 +26347,200 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_sandbox_ai_conversation__conversation_id__sandbox_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SandboxBindRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_conversation_sandbox_ai_conversation__conversation_id__sandbox_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_sandbox_ai_conversations__conversation_id__sandbox_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SandboxBindRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_conversation_sandbox_ai_conversations__conversation_id__sandbox_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxBindingState"];
                 };
             };
             /** @description Validation Error */

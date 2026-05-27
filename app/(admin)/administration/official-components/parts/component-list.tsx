@@ -362,7 +362,7 @@ export const componentList: ComponentEntry[] = [
   {
     id: "images-route",
     name: "Images Route",
-    path: "app/(a)/images/page.tsx",
+    path: "app/(core)/images/page.tsx",
     description:
       "Unified images hub at /images. One sidebar drives every image tool — Manager (browse, upload, branded) and Studio (generate, edit, annotate, avatar, convert). Real Next.js routing for every section.",
     categories: ["media", "navigation", "layout"],

@@ -10,10 +10,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import {
-  NEW_SESSION_DEFAULT_TITLE,
-  DEFAULT_MODULE_ID,
-} from "../constants";
+import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
   CreateSessionInput,
   StudioSession,
@@ -141,7 +138,8 @@ export async function updateSession(
     update.total_duration_ms = patch.totalDurationMs;
   if (patch.audioStoragePath !== undefined)
     update.audio_storage_path = patch.audioStoragePath;
-  if (patch.transcriptId !== undefined) update.transcript_id = patch.transcriptId;
+  if (patch.transcriptId !== undefined)
+    update.transcript_id = patch.transcriptId;
   if (patch.isDeleted !== undefined) update.is_deleted = patch.isDeleted;
 
   const { data, error } = await db
@@ -174,9 +172,9 @@ export async function softDeleteSession(id: string): Promise<void> {
 
 // Server-side fetch for SSR hydration. Pass a server Supabase client built
 // via utils/supabase/server.ts.
-export async function listSessionsServer(
-  serverClient: { from: (table: string) => unknown },
-): Promise<StudioSession[]> {
+export async function listSessionsServer(serverClient: {
+  from: (table: string) => unknown;
+}): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
     .from("studio_sessions")
@@ -281,9 +279,7 @@ export async function listRawSegmentsServer(
     .eq("session_id", sessionId)
     .order("t_start", { ascending: true });
   if (error) {
-    throw new Error(
-      `[studio] listRawSegmentsServer failed: ${error.message}`,
-    );
+    throw new Error(`[studio] listRawSegmentsServer failed: ${error.message}`);
   }
   return ((data ?? []) as RawSegmentRow[]).map(rowToRawSegment);
 }
@@ -590,6 +586,42 @@ export async function getOrCreateWorkingDocument(
 }
 
 /**
+ * Upsert a non-working-document studio_documents row by (session_id, kind).
+ * Used today by the Scribe cleanup flow (kind="scribe_cleanup"): one durable
+ * row per session that the assistantContextBuilder picks up as the
+ * `cleaned_transcripts` named context entry.
+ *
+ * Uses the `UNIQUE (session_id, kind)` constraint so concurrent runs converge
+ * on a single row. `version` is left to its column default on insert; existing
+ * rows keep their version (no auto-bump — we don't need optimistic concurrency
+ * for one-shot cleanup writes).
+ */
+export async function upsertStudioDocument(
+  sessionId: string,
+  kind: import("../types").StudioDocumentKind,
+  patch: { content: string; title?: string },
+): Promise<import("../types").StudioDocument> {
+  const row: Record<string, unknown> = {
+    session_id: sessionId,
+    kind,
+    content: patch.content,
+  };
+  if (patch.title !== undefined) row.title = patch.title;
+
+  const { data, error } = await db
+    .from("studio_documents")
+    .upsert(row, { onConflict: "session_id,kind" })
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(
+      `[studio] upsertStudioDocument failed: ${error?.message ?? "no row"}`,
+    );
+  }
+  return rowToStudioDocument(data as StudioDocumentRow);
+}
+
+/**
  * Direct content write (used by inline edits on the client). The assistant's
  * own edits land server-side via the ctx_patch writeback handler and arrive
  * back through realtime — they do NOT go through this path.
@@ -672,7 +704,8 @@ export async function insertAgentRun(
     status: "running",
     started_at: new Date().toISOString(),
   };
-  if (input.resumeMarker !== undefined) insert.resume_marker = input.resumeMarker;
+  if (input.resumeMarker !== undefined)
+    insert.resume_marker = input.resumeMarker;
   if (input.inputCharRange) {
     insert.input_char_range = `[${input.inputCharRange[0]},${input.inputCharRange[1]})`;
   }
@@ -762,9 +795,7 @@ export async function listCleanedSegments(
     .is("superseded_at", null)
     .order("t_start", { ascending: true });
   if (error) {
-    throw new Error(
-      `[studio] listCleanedSegments failed: ${error.message}`,
-    );
+    throw new Error(`[studio] listCleanedSegments failed: ${error.message}`);
   }
   return ((data ?? []) as CleanedSegmentRow[]).map(rowToCleanedSegment);
 }
@@ -893,7 +924,9 @@ export interface ConceptItemRow {
   confidence: number | null;
 }
 
-export function rowToConceptItem(row: ConceptItemRow): import("../types").ConceptItem {
+export function rowToConceptItem(
+  row: ConceptItemRow,
+): import("../types").ConceptItem {
   return {
     id: row.id,
     sessionId: row.session_id,
@@ -982,9 +1015,7 @@ export async function listConceptItemsServer(
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true });
   if (error) {
-    throw new Error(
-      `[studio] listConceptItemsServer failed: ${error.message}`,
-    );
+    throw new Error(`[studio] listConceptItemsServer failed: ${error.message}`);
   }
   return ((data ?? []) as ConceptItemRow[]).map(rowToConceptItem);
 }
@@ -1022,10 +1053,7 @@ export async function updateConceptItem(
 }
 
 export async function deleteConceptItem(id: string): Promise<void> {
-  const { error } = await db
-    .from("studio_concept_items")
-    .delete()
-    .eq("id", id);
+  const { error } = await db.from("studio_concept_items").delete().eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteConceptItem failed: ${error.message}`);
   }
@@ -1203,16 +1231,16 @@ function rowToSessionSettings(
 
 export async function fetchSessionSettings(
   sessionId: string,
-): Promise<(import("../types").SessionSettings & { showPriorModules: boolean }) | null> {
+): Promise<
+  (import("../types").SessionSettings & { showPriorModules: boolean }) | null
+> {
   const { data, error } = await db
     .from("studio_session_settings")
     .select("*")
     .eq("session_id", sessionId)
     .maybeSingle();
   if (error) {
-    throw new Error(
-      `[studio] fetchSessionSettings failed: ${error.message}`,
-    );
+    throw new Error(`[studio] fetchSessionSettings failed: ${error.message}`);
   }
   return data ? rowToSessionSettings(data as SessionSettingsRow) : null;
 }
@@ -1258,7 +1286,8 @@ export async function upsertSessionSettings(
     update.module_shortcut_id = input.moduleShortcutId;
   if (input.moduleIntervalMs !== undefined)
     update.module_interval_ms = input.moduleIntervalMs;
-  if (input.columnWidths !== undefined) update.column_widths = input.columnWidths;
+  if (input.columnWidths !== undefined)
+    update.column_widths = input.columnWidths;
   if (input.showPriorModules !== undefined)
     update.show_prior_modules = input.showPriorModules;
 

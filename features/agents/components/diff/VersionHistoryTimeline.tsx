@@ -2,11 +2,18 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { GitCompareArrows, ArrowRight, Loader2, ChevronDown, Atom } from "lucide-react";
+import {
+  GitCompareArrows,
+  ArrowRight,
+  Loader2,
+  ChevronDown,
+  Atom,
+} from "lucide-react";
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
 import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
 import type { EnrichedVersion } from "@/features/agents/hooks/useSmartVersionFetch";
 import { formatChangeType } from "@/components/diff/engine/diff-utils";
+import { VersionIdBadge } from "./VersionIdBadge";
 
 interface VersionHistoryTimelineProps {
   agentId: string;
@@ -45,10 +52,12 @@ export function VersionHistoryTimeline({
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <div className="text-center">
           <div className="text-sm font-medium mb-1">
-            {versions.length} version{versions.length !== 1 ? "s" : ""} available
+            {versions.length} version{versions.length !== 1 ? "s" : ""}{" "}
+            available
           </div>
           <p className="text-xs text-muted-foreground max-w-[320px]">
-            Load the full history to see what changed at each version — which fields were modified, added, or removed.
+            Load the full history to see what changed at each version — which
+            fields were modified, added, or removed.
           </p>
         </div>
         <Button
@@ -84,7 +93,9 @@ export function VersionHistoryTimeline({
         <div className="w-48 h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-300"
-            style={{ width: `${progress.total > 0 ? (progress.fetched / progress.total) * 100 : 0}%` }}
+            style={{
+              width: `${progress.total > 0 ? (progress.fetched / progress.total) * 100 : 0}%`,
+            }}
           />
         </div>
       </div>
@@ -96,7 +107,8 @@ export function VersionHistoryTimeline({
     <div className="px-4 py-3">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
         <div className="text-xs text-muted-foreground">
-          {enrichedVersions.filter((v) => v.snapshotLoaded).length} of {versions.length} versions loaded
+          {enrichedVersions.filter((v) => v.snapshotLoaded).length} of{" "}
+          {versions.length} versions loaded
         </div>
       </div>
 
@@ -104,21 +116,34 @@ export function VersionHistoryTimeline({
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-border text-muted-foreground">
-            <th className="text-left py-2 pr-3 font-medium w-[70px]">Version</th>
+            <th className="text-left py-2 pr-3 font-medium w-[70px]">
+              Version
+            </th>
+            <th className="text-left py-2 pr-3 font-medium w-[110px]">ID</th>
             <th className="text-left py-2 pr-3 font-medium w-[140px]">Date</th>
-            <th className="text-left py-2 pr-3 font-medium">Changes from Previous</th>
+            <th className="text-left py-2 pr-3 font-medium">
+              Changes from Previous
+            </th>
             <th className="text-right py-2 font-medium w-[140px]">Compare</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
           {enrichedVersions.map((version, index) => {
-            const prevVersion = index < enrichedVersions.length - 1 ? enrichedVersions[index + 1] : null;
+            const prevVersion =
+              index < enrichedVersions.length - 1
+                ? enrichedVersions[index + 1]
+                : null;
             const isLatest = version.version_number === currentVersion;
             const date = new Date(version.changed_at);
 
             // Check for gap
-            const hasGap = prevVersion && !prevVersion.snapshotLoaded && version.snapshotLoaded;
-            const gapVersions = hasGap ? getGapVersionNumbers(enrichedVersions, index) : [];
+            const hasGap =
+              prevVersion &&
+              !prevVersion.snapshotLoaded &&
+              version.snapshotLoaded;
+            const gapVersions = hasGap
+              ? getGapVersionNumbers(enrichedVersions, index)
+              : [];
 
             return (
               <VersionRow
@@ -162,24 +187,44 @@ function VersionRow({
   onFetchGap: (versions: number[]) => void;
 }) {
   const diff = version.diffSummary;
-  const changedFields = diff?.root.filter((n) => n.changeType !== "unchanged") ?? [];
+  const changedFields =
+    diff?.root.filter((n) => n.changeType !== "unchanged") ?? [];
 
   return (
     <>
-      <tr className={cn("group hover:bg-muted/20 transition-colors", isLatest && "bg-primary/5")}>
+      <tr
+        className={cn(
+          "group hover:bg-muted/20 transition-colors",
+          isLatest && "bg-primary/5",
+        )}
+      >
         {/* Version */}
         <td className="py-2.5 pr-3">
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
                 "w-2 h-2 rounded-full shrink-0",
-                isLatest ? "bg-primary" : version.snapshotLoaded ? "bg-primary/40" : "bg-muted-foreground/30",
+                isLatest
+                  ? "bg-primary"
+                  : version.snapshotLoaded
+                    ? "bg-primary/40"
+                    : "bg-muted-foreground/30",
               )}
             />
-            <span className={cn("font-mono font-medium tabular-nums", isLatest && "text-primary")}>
+            <span
+              className={cn(
+                "font-mono font-medium tabular-nums",
+                isLatest && "text-primary",
+              )}
+            >
               v{version.version_number}
             </span>
           </div>
+        </td>
+
+        {/* Version ID */}
+        <td className="py-2.5 pr-3">
+          <VersionIdBadge versionId={version.version_id} showLabel={false} />
         </td>
 
         {/* Date */}
@@ -191,7 +236,9 @@ function VersionRow({
         {/* Changes */}
         <td className="py-2.5 pr-3">
           {version.change_note && (
-            <div className="text-muted-foreground mb-1">{version.change_note}</div>
+            <div className="text-muted-foreground mb-1">
+              {version.change_note}
+            </div>
           )}
           {diff && changedFields.length > 0 ? (
             <div className="flex flex-wrap gap-1">
@@ -208,7 +255,11 @@ function VersionRow({
                   )}
                 >
                   {n.key}
-                  {n.changeType === "added" ? " +" : n.changeType === "removed" ? " −" : ""}
+                  {n.changeType === "added"
+                    ? " +"
+                    : n.changeType === "removed"
+                      ? " −"
+                      : ""}
                 </span>
               ))}
             </div>
@@ -229,10 +280,12 @@ function VersionRow({
                 variant="ghost"
                 size="sm"
                 className="h-5 px-1.5 text-[0.5625rem] gap-0.5 text-muted-foreground"
-                onClick={() => onCompare(prevVersion.version_number, version.version_number)}
+                onClick={() =>
+                  onCompare(prevVersion.version_number, version.version_number)
+                }
               >
-                <ArrowRight className="w-2.5 h-2.5" />
-                v{prevVersion.version_number}
+                <ArrowRight className="w-2.5 h-2.5" />v
+                {prevVersion.version_number}
               </Button>
             )}
             {!isLatest && currentVersion != null && (
@@ -253,7 +306,7 @@ function VersionRow({
       {/* Gap row */}
       {gapVersions.length > 0 && (
         <tr>
-          <td colSpan={4} className="py-1">
+          <td colSpan={5} className="py-1">
             <Button
               variant="ghost"
               size="sm"
@@ -261,7 +314,8 @@ function VersionRow({
               onClick={() => onFetchGap(gapVersions)}
             >
               <ChevronDown className="w-3 h-3" />
-              Load {gapVersions.length} more version{gapVersions.length !== 1 ? "s" : ""}
+              Load {gapVersions.length} more version
+              {gapVersions.length !== 1 ? "s" : ""}
             </Button>
           </td>
         </tr>
@@ -284,7 +338,10 @@ function BasicTimeline({
     <table className="w-full text-xs">
       <thead>
         <tr className="border-b border-border text-muted-foreground">
-          <th className="text-left py-1.5 pr-3 font-medium w-[70px]">Version</th>
+          <th className="text-left py-1.5 pr-3 font-medium w-[70px]">
+            Version
+          </th>
+          <th className="text-left py-1.5 pr-3 font-medium w-[110px]">ID</th>
           <th className="text-left py-1.5 pr-3 font-medium">Date</th>
           <th className="text-left py-1.5 font-medium">Note</th>
         </tr>
@@ -300,15 +357,28 @@ function BasicTimeline({
               onClick={() => onCompare(v.version_number, "current")}
             >
               <td className="py-1.5 pr-3">
-                <span className={cn("font-mono tabular-nums", isLatest && "text-primary font-medium")}>
+                <span
+                  className={cn(
+                    "font-mono tabular-nums",
+                    isLatest && "text-primary font-medium",
+                  )}
+                >
                   v{v.version_number}
                 </span>
               </td>
+              <td className="py-1.5 pr-3" onClick={(e) => e.stopPropagation()}>
+                <VersionIdBadge versionId={v.version_id} showLabel={false} />
+              </td>
               <td className="py-1.5 pr-3 text-muted-foreground">
                 {date.toLocaleDateString()}{" "}
-                {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {date.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </td>
-              <td className="py-1.5 text-muted-foreground">{v.change_note ?? "—"}</td>
+              <td className="py-1.5 text-muted-foreground">
+                {v.change_note ?? "—"}
+              </td>
             </tr>
           );
         })}
@@ -317,7 +387,10 @@ function BasicTimeline({
   );
 }
 
-function getGapVersionNumbers(versions: EnrichedVersion[], currentIndex: number): number[] {
+function getGapVersionNumbers(
+  versions: EnrichedVersion[],
+  currentIndex: number,
+): number[] {
   const gap: number[] = [];
   for (let i = currentIndex + 1; i < versions.length; i++) {
     if (versions[i].snapshotLoaded) break;

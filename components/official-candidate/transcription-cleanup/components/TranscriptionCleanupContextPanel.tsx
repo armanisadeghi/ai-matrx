@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * VoicePadAiContextPanel
+ * TranscriptionCleanupContextPanel
  *
  * Multi-block context editor for the Transcription Cleanup panel.
  *
@@ -66,7 +66,9 @@ function buildCombined(blocks: ContextBlock[]): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function VoicePadAiContextPanel({ onChange }: ContextBlocksPanelProps) {
+export function TranscriptionCleanupContextPanel({
+  onChange,
+}: ContextBlocksPanelProps) {
   const [blocks, setBlocks] = useState<ContextBlock[]>([makeBlock()]);
   /** null = not yet fetched; array = loaded (may be empty) */
   const [contextNotes, setContextNotes] = useState<Note[] | null>(null);

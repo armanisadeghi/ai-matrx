@@ -127,7 +127,13 @@ const HANDLES: HandleDef[] = [
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-export interface WindowPanelProps extends UseWindowPanelOptions {
+/**
+ * Props that don't participate in the close-binding discrimination.
+ * Kept as an intersection base so the discriminated union below can layer
+ * the close-binding contract on top without losing intellisense on the
+ * common props.
+ */
+interface WindowPanelBaseProps extends UseWindowPanelOptions {
   children: React.ReactNode;
   title?: string;
   /** Rich title rendered in the header. Falls back to `title` (string) when omitted. */
@@ -136,7 +142,6 @@ export interface WindowPanelProps extends UseWindowPanelOptions {
   actions?: React.ReactNode;
   actionsLeft?: React.ReactNode;
   actionsRight?: React.ReactNode;
-  onClose?: () => void;
   bodyClassName?: string;
   className?: string;
   minWidth?: number;
@@ -175,15 +180,6 @@ export interface WindowPanelProps extends UseWindowPanelOptions {
    */
   fitContent?: boolean;
 
-  // ── Persistence ────────────────────────────────────────────────────────────
-  /**
-   * The overlay ID for this window (e.g. "notesWindow").
-   * Used to look up / store the window_sessions row.
-   * When set, WindowPanel will automatically call the persistence context
-   * to save state on explicit user action ("Save Window State") and piggyback
-   * saves triggered by child content via onPiggybackSave.
-   */
-  overlayId?: OverlayId;
   /**
    * Called by WindowPanel before a save so the child component can return
    * its current content state to include in the window_sessions `data` column.
@@ -211,6 +207,54 @@ export interface WindowPanelProps extends UseWindowPanelOptions {
    */
   captureTraySnapshot?: (bodyEl: HTMLElement) => Promise<string | null>;
 }
+
+/**
+ * The close-binding contract — enforced by the type system.
+ *
+ * Every WindowPanel must declare HOW it closes. There are exactly two valid
+ * shapes:
+ *
+ *   1. Overlay-managed:  caller passes `overlayId`. The WindowPersistenceManager
+ *      dispatches `closeOverlay({ overlayId })` from inside `closeWindow`, which
+ *      flips `state.overlays[overlayId].isOpen` to false. OverlayController
+ *      then unmounts the component, which fires the unmount-driven cleanups
+ *      (URL sync unregister, autosave-on-blur flush, tray snapshot clear,
+ *      popout opener unregister). The caller-supplied `onClose` becomes an
+ *      OPTIONAL hook for extra work — it is no longer load-bearing.
+ *
+ *   2. Inline-managed:  caller passes `onClose`. The WindowPanel lives directly
+ *      on a page (not via overlay slice) and the parent controls visibility
+ *      via local state. `onClose` is REQUIRED here because nothing else will
+ *      close the window.
+ *
+ * Passing NEITHER is a compile error. This used to be the silent-failure mode
+ * that broke the Notes / AiVoice / Feedback X buttons — `onClose?` and
+ * `overlayId?` were both optional, so a caller could forget both and the X
+ * would render as a dead button. The Notes incident (Tuesday May 26 2026)
+ * traced to exactly this: NotesWindow's controller block in OverlayController
+ * supplied `overlayId` on WindowPanel but no `onClose`, and the persistence
+ * layer's `closeWindow` only deleted the DB row, so clicking X deleted the
+ * window_sessions row but left `isOpen=true` in Redux → window stayed mounted.
+ *
+ * Do NOT change `overlayId` and `onClose` back to both-optional. The
+ * discriminated union is what makes the close mechanic structurally
+ * unbreakable.
+ */
+type WindowPanelCloseBinding =
+  | {
+      /** Overlay slice id. When set, closing is handled by the persistence
+       *  context which dispatches `closeOverlay({ overlayId })`. */
+      overlayId: OverlayId;
+      /** Optional extra cleanup hook (cancel uploads, save drafts, etc.). */
+      onClose?: () => void;
+    }
+  | {
+      overlayId?: never;
+      /** Required when the panel is rendered inline (no overlay slice). */
+      onClose: () => void;
+    };
+
+export type WindowPanelProps = WindowPanelBaseProps & WindowPanelCloseBinding;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

@@ -121,6 +121,8 @@ const nextConfig = {
             { source: '/transcript-studio', destination: '/transcription/studio', permanent: true },
             { source: '/transcripts/:path*', destination: '/transcription/processor/:path*', permanent: true },
             { source: '/transcripts', destination: '/transcription/processor', permanent: true },
+            { source: '/transcription/mobile/:path*', destination: '/transcription/scribe/:path*', permanent: true },
+            { source: '/transcription/mobile', destination: '/transcription/scribe', permanent: true },
             // Entity-isolation migration (Phase 2+): legacy entity-bound routes
             // moved under /legacy/* so they can boot through the entity-aware
             // store/providers without bloating slim chunks. Old URLs are 307'd
