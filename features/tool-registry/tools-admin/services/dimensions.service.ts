@@ -1,17 +1,10 @@
 "use client";
 
 /**
- * Per-tool "dimensions" — executors it's bound to, bundles it belongs to,
- * surfaces that force-include it, and gating policy.
+ * Per-tool "dimensions" — bindings (which executors run it), bundles it
+ * belongs to, surfaces that force-include it, and gating policy.
  *
- * After the 2026 tool-system refactor:
- *  - `tl_executor` (M2M) is now `tool_binding` (pure join, no priority/auto_load/delegated)
- *  - `tl_def_surface` was DROPPED — surfaces now declare tools via
- *    `tool_surface_defaults.always_include_tools` (text[] of tool names)
- *  - `tl_gate` was DROPPED — gates live in code; `tool_def.gating` is a jsonb
- *    array of `{ gate, args }` entries referencing them by name
- *  - `cx_tl_call` → `cx_tool_call`
- *  - `tl_executor_kind` → `tool_executor`
+ * Authoritative model: see `docs/official/tool_system_rules.md`.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -46,7 +39,7 @@ export interface ToolGateEntry {
 
 const sb = () => createClient();
 
-// ─── Bindings (was: Executors) ───────────────────────────────────────────────
+// ─── Bindings ────────────────────────────────────────────────────────────────
 
 export async function listToolBindings(toolId: string): Promise<ToolBindingRow[]> {
   const { data, error } = await sb()
@@ -57,9 +50,6 @@ export async function listToolBindings(toolId: string): Promise<ToolBindingRow[]
   if (error) throw error;
   return data ?? [];
 }
-
-/** @deprecated Use listToolBindings(toolId) instead. */
-export const listToolExecutors = listToolBindings;
 
 export async function addToolBinding(args: {
   toolId: string;
@@ -79,19 +69,6 @@ export async function addToolBinding(args: {
   return data;
 }
 
-/** @deprecated Use addToolBinding instead. The legacy `surface` param is `executorName`. */
-export async function addToolExecutor(args: {
-  toolId: string;
-  surface: string;
-  isActive?: boolean;
-}): Promise<ToolBindingRow> {
-  return addToolBinding({
-    toolId: args.toolId,
-    executorName: args.surface,
-    isActive: args.isActive,
-  });
-}
-
 export async function updateToolBinding(args: {
   toolId: string;
   executorName: string;
@@ -103,16 +80,6 @@ export async function updateToolBinding(args: {
     .eq("tool_id", args.toolId)
     .eq("executor_name", args.executorName);
   if (error) throw error;
-}
-
-/** @deprecated Use updateToolBinding({toolId, executorName, isActive}). */
-export async function updateToolExecutor(
-  id: string,
-  _patch: Partial<{ priority: number; auto_load: boolean; is_active: boolean }>,
-): Promise<void> {
-  throw new Error(
-    `updateToolExecutor("${id}", ...) is no longer supported. tool_binding has no surrogate id; use updateToolBinding({toolId, executorName, isActive}). priority and auto_load were dropped in the 2026 refactor.`,
-  );
 }
 
 export async function removeToolBinding(args: {
@@ -127,23 +94,16 @@ export async function removeToolBinding(args: {
   if (error) throw error;
 }
 
-/** @deprecated Use removeToolBinding({toolId, executorName}). */
-export async function removeToolExecutor(id: string): Promise<void> {
-  throw new Error(
-    `removeToolExecutor("${id}") is no longer supported. tool_binding has no surrogate id; use removeToolBinding({toolId, executorName}).`,
-  );
-}
-
-// ─── Surfaces (now derived from tool_surface_defaults) ───────────────────────
+// ─── Surfaces (force-inclusions from tool_surface_defaults) ──────────────────
 
 /**
  * Find every surface that force-includes this tool — either directly via
  * `always_include_tools`, or transitively via `always_include_bundles`.
  *
- * The 2026 refactor removed the per-(tool, surface) `tl_def_surface` row.
- * Surfaces instead declare a set of tool names (and bundle names) they want
- * to always include. To answer "where does this tool show up?" we now scan
- * `tool_surface_defaults` looking for the tool's name in those arrays.
+ * Surfaces declare a set of tool names (and bundle names) they force-include.
+ * To answer "where does this tool show up?" we scan `tool_surface_defaults`
+ * looking for the tool's name in those arrays. Surfaces with no entries here
+ * still resolve this tool wherever its executor bindings allow.
  */
 export async function listSurfacesIncludingTool(
   toolId: string,
@@ -204,11 +164,6 @@ export async function listSurfacesIncludingTool(
   return out;
 }
 
-/** @deprecated The `tl_def_surface` table is gone. Use listSurfacesIncludingTool. */
-export async function listToolSurfaces(toolId: string): Promise<SurfaceInclusion[]> {
-  return listSurfacesIncludingTool(toolId);
-}
-
 /**
  * Add a tool to a surface's `always_include_tools` array.
  * Creates the `tool_surface_defaults` row if it doesn't yet exist.
@@ -252,10 +207,6 @@ export async function addToolToSurface(args: {
   }
 }
 
-/** @deprecated Use addToolToSurface(args). */
-export const addToolSurface = (toolId: string, surfaceName: string) =>
-  addToolToSurface({ toolId, surfaceName });
-
 /** Remove a tool from a surface's `always_include_tools` array. */
 export async function removeToolFromSurface(args: {
   toolId: string;
@@ -287,10 +238,6 @@ export async function removeToolFromSurface(args: {
   if (error) throw error;
 }
 
-/** @deprecated Use removeToolFromSurface(args). */
-export const removeToolSurface = (toolId: string, surfaceName: string) =>
-  removeToolFromSurface({ toolId, surfaceName });
-
 // ─── Bundles (reverse view) ──────────────────────────────────────────────────
 
 export async function listToolBundleMemberships(toolId: string): Promise<BundleMembership[]> {
@@ -316,6 +263,10 @@ export async function listToolBundleMemberships(toolId: string): Promise<BundleM
 }
 
 // ─── Gating (jsonb column on tool_def) ───────────────────────────────────────
+//
+// Gate functions live in `matrx_ai.tools.gates.*`. The DB stores only the gate
+// name and arguments to pass. Per doctrine R15, gate names that don't resolve
+// crash the server at startup — no fallback.
 
 export function parseGating(gating: unknown): ToolGateEntry[] {
   if (!Array.isArray(gating)) return [];
@@ -347,9 +298,6 @@ export async function cxToolCallReferenceCount(toolName: string): Promise<number
   return count ?? 0;
 }
 
-/** @deprecated Renamed to cxToolCallReferenceCount (cx_tl_call → cx_tool_call). */
-export const cxTlCallReferenceCount = cxToolCallReferenceCount;
-
 // ─── Reads for picker option lists ───────────────────────────────────────────
 
 export async function listAllUiSurfaceNames(): Promise<string[]> {
@@ -371,11 +319,3 @@ export async function listAllExecutorNames(): Promise<string[]> {
   if (error) throw error;
   return (data ?? []).map((r) => r.name);
 }
-
-/** @deprecated Use listAllExecutorNames(). "Executor kind" no longer exists. */
-export const listAllExecutorKindNames = listAllExecutorNames;
-
-// NOTE: tl_gate is gone. Gates live in code (matrx_ai.tools.gates.*). The
-// authoritative list lives in the matrx-ai package; we no longer expose
-// `listAllGateNames()` from this service. UIs that need a picker should
-// hardcode the small known set or fetch from a code-side registry.

@@ -83,11 +83,6 @@ export async function PUT(
     if (updateData.category === '') updateData.category = null;
     if (updateData.icon === '') updateData.icon = null;
 
-    // Strip dropped columns if the client still sends them.
-    delete updateData.function_path;
-    delete updateData.source_app;
-    delete updateData.privileged;
-
     const { data, error } = await supabase
       .from('tool_def')
       .update(updateData)

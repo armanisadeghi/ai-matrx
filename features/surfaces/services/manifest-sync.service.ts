@@ -11,13 +11,6 @@
  * Code is the source of truth. The DB is a mirror — nothing in this service
  * ever modifies code or mutates the registry.
  *
- * NOTE: Post-2026 tool-system refactor, the tool side of "broken mappings"
- * is gone. `tl_def_surface.arg_mappings` was dropped along with the table.
- * Tool arg-defaults are now literal jsonb on `tool_surface_defaults.arg_defaults`
- * (no surface_value indirection to break). The `brokenToolMappings` field
- * of `SurfaceDriftReport` is always `[]` from here on, retained for type
- * back-compat with admin UIs that iterate it.
- *
  * All mutating calls require a super-admin server-side Supabase client.
  * Read calls work with any authenticated server client (RLS keeps things
  * honest, but this service is admin-gated at the API layer too).
@@ -208,7 +201,6 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 6. brokenAgentMappings: every `surface_value` mapping whose target
   //    doesn't exist in the (effective) manifest for that surface.
   const brokenAgentMappings = collectBrokenMappings(
-    "agent",
     (agentBindingsRes.data ?? []).map((b) => ({
       id: b.id,
       surfaceName: b.surface_name,
@@ -223,13 +215,10 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     dbValuesNotInManifest,
     diffs,
     brokenAgentMappings,
-    // Permanently empty post-2026 refactor — see file header.
-    brokenToolMappings: [],
   };
 }
 
 function collectBrokenMappings(
-  bindingKind: BrokenMapping["bindingKind"],
   rows: { id: string; surfaceName: string; mappings: Json }[],
   manifestValuesBySurface: Map<string, Map<string, SurfaceValue>>,
   manifestSurfaceNames: Set<string>,
@@ -246,7 +235,7 @@ function collectBrokenMappings(
       // If the surface has no manifest at all, every mapping is broken.
       if (!manifestSurfaceNames.has(row.surfaceName)) {
         out.push({
-          bindingKind,
+          bindingKind: "agent",
           bindingId: row.id,
           surfaceName: row.surfaceName,
           mappingKey: key,
@@ -258,7 +247,7 @@ function collectBrokenMappings(
       const mValues = manifestValuesBySurface.get(row.surfaceName);
       if (!mValues || !mValues.has(mapping.target)) {
         out.push({
-          bindingKind,
+          bindingKind: "agent",
           bindingId: row.id,
           surfaceName: row.surfaceName,
           mappingKey: key,
@@ -303,8 +292,8 @@ export type BrokenMappingAction =
   | { action: "notify_only" };
 
 export interface RemediateMappingArgs {
-  bindingKind: "agent" | "tool";
-  /** `agx_agent_surface.id` for agent bindings. (Tool side gone post-2026 refactor.) */
+  bindingKind: "agent";
+  /** `agx_agent_surface.id`. */
   bindingId: string;
   /** The JSONB key to remediate. */
   mappingKey: string;
@@ -321,22 +310,12 @@ export interface RemediateMappingResult {
 
 /**
  * Rewrite, remove, or audit a single broken `surface_value` mapping.
- *
- * Post-2026 refactor: only `bindingKind === "agent"` is supported. The tool
- * side is gone because `tl_def_surface.arg_mappings` no longer exists.
- * Tool variants throw.
  */
 export async function remediateBrokenMapping(
   sb: Sb,
   args: RemediateMappingArgs,
 ): Promise<RemediateMappingResult> {
-  const { bindingKind, bindingId, mappingKey, remediation } = args;
-
-  if (bindingKind === "tool") {
-    throw new Error(
-      "Tool mapping remediation is no longer supported. tl_def_surface was dropped in the 2026 refactor; tool arg-defaults live as literal jsonb in tool_surface_defaults.arg_defaults and don't reference surface_values.",
-    );
-  }
+  const { bindingId, mappingKey, remediation } = args;
 
   const { data: row, error: readErr } = await sb
     .from("agx_agent_surface")

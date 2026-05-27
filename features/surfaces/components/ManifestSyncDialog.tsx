@@ -127,8 +127,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 {result.driftAfter.manifestsMissingInDb.length +
                   result.driftAfter.dbValuesNotInManifest.length +
                   result.driftAfter.diffs.length +
-                  result.driftAfter.brokenAgentMappings.length +
-                  result.driftAfter.brokenToolMappings.length}
+                  result.driftAfter.brokenAgentMappings.length}
               </span>
             </div>
             {result.skippedMissingSurface.length > 0 && (

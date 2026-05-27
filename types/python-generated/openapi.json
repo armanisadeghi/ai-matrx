@@ -5153,7 +5153,7 @@
       }
     },
     "/api/local-proxy/{app_instance_id}/{path}": {
-      "patch": {
+      "get": {
         "tags": [
           "Local Proxy"
         ],
@@ -5247,7 +5247,54 @@
           }
         }
       },
-      "get": {
+      "post": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
         "tags": [
           "Local Proxy"
         ],
@@ -5295,53 +5342,6 @@
         }
       },
       "put": {
-        "tags": [
-          "Local Proxy"
-        ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
-        "parameters": [
-          {
-            "name": "app_instance_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "App Instance Id"
-            }
-          },
-          {
-            "name": "path",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
         "tags": [
           "Local Proxy"
         ],

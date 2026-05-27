@@ -540,15 +540,10 @@ export type BrokenMappingRemediation =
 /**
  * Apply a single remediation to a broken mapping.
  * Returns the resulting JSONB column for the modified row.
- *
- * Post-2026 refactor: `bindingKind === "tool"` is no longer supported by the
- * backend because `tl_def_surface.arg_mappings` no longer exists. The
- * endpoint returns an error in that case; UIs should hide the tool
- * remediation buttons.
  */
 export async function remediateBrokenMapping(args: {
-  bindingKind: "agent" | "tool";
-  /** `agx_agent_surface.id` for agent. (tool variant no longer supported.) */
+  bindingKind: "agent";
+  /** `agx_agent_surface.id`. */
   bindingId: string;
   mappingKey: string;
   remediation: BrokenMappingRemediation;

@@ -12,9 +12,6 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-// NOTE: ToolArgMappingsEditorDialog removed in 2026 refactor — `tl_def_surface`
-// is gone, and the surface-level "Tools" tab is read-only (force-includes
-// derived from `tool_surface_defaults.always_include_tools`).
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

@@ -1,27 +1,25 @@
 "use client";
 
 /**
- * Executors + Bindings service (formerly "executor-surfaces").
+ * Executors + Bindings service.
  *
- * The 2026 tool-system refactor dropped the "executor surface" concept
- * entirely. There is no longer a `tl_executor_kind` (categorization) nor a
- * per-(tool, surface) `tl_executor` M2M with `priority`/`auto_load`/`delegated`
- * flags. The new model:
+ * See `docs/official/tool_system_rules.md` for the authoritative model. The
+ * two relevant tables:
  *
- *   `tool_executor` (PK = name)   — addressable capability provider, equal
- *                                   citizen (matrx-ai-core, aidream,
- *                                   matrx-local, chrome-extension, matrx-user,
- *                                   or `mcp.<slug>`).
- *   `tool_binding`   (PK = tool_id, executor_name) — pure M2M. The only
- *                    column besides the keys is `is_active`. No priorities,
- *                    no delegation flags, no auto-load.
+ *   `tool_executor` (PK = name)     — addressable capability provider, equal
+ *                                     citizen. Names like `matrx-ai-core`,
+ *                                     `aidream`, `matrx-local`,
+ *                                     `chrome-extension`, `matrx-user`, or
+ *                                     `mcp.<slug>`. Hierarchy via
+ *                                     `parent_executor_name` self-FK.
+ *   `tool_binding` (PK = tool_id, executor_name) — pure M2M. Columns are
+ *                  exactly: `tool_id`, `executor_name`, `is_active`,
+ *                  `created_at`, `updated_at`. Doctrine R1: nothing else,
+ *                  ever.
  *
- * Routing now collapses to two questions: "Is this executor active for this
- * request?" and "Does it have a binding to this tool?" See
- * `aidream/docs/CROSS_TEAM_TOOL_REFACTOR.md`.
- *
- * The directory keeps the legacy name `executor-surfaces` for path stability;
- * the data model below is fully aligned with the new schema.
+ * Routing: "active executor + binding = capability." Dispatcher policy lives
+ * in code (client > MCP > server). The DB does not participate in routing
+ * decisions beyond presence/absence of bindings.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -104,16 +102,6 @@ export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
   });
 }
 
-/**
- * Legacy alias preserved for UI components that still use the old name.
- * The new shape returns ExecutorWithStats (no autoLoadCount field, since
- * auto_load no longer exists).
- *
- * @deprecated Use listExecutorsWithStats() instead. The "executor surface"
- * concept no longer exists post-2026 refactor.
- */
-export const listExecutorSurfacesWithStats = listExecutorsWithStats;
-
 // ─── Per-executor bindings ───────────────────────────────────────────────────
 
 /** All `tool_binding` rows for an executor, joined to their parent `tool_def`. */
@@ -156,9 +144,6 @@ export async function listBindingsForExecutor(
   }));
 }
 
-/** @deprecated Use listBindingsForExecutor(executorName) instead. */
-export const listBindingsForSurface = listBindingsForExecutor;
-
 // ─── Per-executor available (unbound) tools ──────────────────────────────────
 
 /**
@@ -186,9 +171,6 @@ export async function listUnboundToolsForExecutor(
   const boundIds = new Set((boundRes.data ?? []).map((r) => r.tool_id));
   return (toolsRes.data ?? []).filter((t) => !boundIds.has(t.id));
 }
-
-/** @deprecated Use listUnboundToolsForExecutor(executorName) instead. */
-export const listUnboundToolsForSurface = listUnboundToolsForExecutor;
 
 // ─── Mutations ───────────────────────────────────────────────────────────────
 

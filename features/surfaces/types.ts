@@ -11,11 +11,6 @@
  * `agx_agent_surface.value_mappings`. A single resolver consumes it for
  * agent variables and agent context slots.
  *
- * NOTE: Tool arg-defaults moved out of this model in the 2026 tool-system
- * refactor. They now live as plain literal jsonb in
- * `tool_surface_defaults.arg_defaults` (no surface_value indirection), so
- * the tool side of `BrokenMapping` is permanently empty going forward.
- *
  * See:
  *   - `features/surfaces/manifests/registry.ts`   (the registry)
  *   - `features/surfaces/utils/value-mapping-resolver.ts` (the resolver)
@@ -143,13 +138,13 @@ export interface SurfaceValueDrift {
 
 /** Single broken-mapping entry — a JSONB mapping references a target that no longer exists. */
 export interface BrokenMapping {
-  /** Always "agent" post-2026 refactor; tool-side mappings no longer exist. */
-  bindingKind: "agent" | "tool";
+  /** The kind of binding whose mapping is broken. */
+  bindingKind: "agent";
   /** Row id of the binding (`agx_agent_surface.id`). */
   bindingId: string;
   /** Surface this binding is for. */
   surfaceName: string;
-  /** Variable / slot / arg name whose mapping is broken. */
+  /** Variable / slot name whose mapping is broken. */
   mappingKey: string;
   /** The bad target. */
   badTarget: string;
@@ -166,14 +161,6 @@ export interface SurfaceDriftReport {
   diffs: SurfaceValueDrift[];
   /** Broken `surface_value` mappings in `agx_agent_surface.value_mappings`. */
   brokenAgentMappings: BrokenMapping[];
-  /**
-   * Always empty post-2026 refactor — `tl_def_surface.arg_mappings` was
-   * dropped along with the table. Tool arg-defaults are now literal jsonb
-   * in `tool_surface_defaults.arg_defaults` (no indirection to break).
-   * Kept on the type for back-compat with admin UIs that iterate it.
-   * @deprecated Will be removed once admin UI stops reading this field.
-   */
-  brokenToolMappings: BrokenMapping[];
 }
 
 // ---------------------------------------------------------------------------
