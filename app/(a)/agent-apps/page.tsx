@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { AppWindow, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppsGrid } from "@/features/agent-apps/components/agent-app-listings/AgentAppsGrid";
 
 export default function AgentAppsListPage() {
   return (
     <>
-      <PageSpecificHeader>
-        <div className="flex items-center justify-between w-full">
+      <PageHeader>
+        <div className="flex items-center justify-between w-full p-3">
           <div className="flex items-center gap-2">
             <AppWindow className="h-5 w-5 text-primary flex-shrink-0" />
             <h1 className="text-base font-bold text-foreground">Agent Apps</h1>
@@ -20,7 +20,7 @@ export default function AgentAppsListPage() {
             </Button>
           </Link>
         </div>
-      </PageSpecificHeader>
+      </PageHeader>
 
       <div className="h-page w-full overflow-auto">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 max-w-[1800px]">

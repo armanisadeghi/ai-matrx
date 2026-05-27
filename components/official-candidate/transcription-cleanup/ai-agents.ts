@@ -1,5 +1,5 @@
 /**
- * AI post-processing agents available in VoicePadAi.
+ * AI post-processing agents available in the TranscriptionCleanup pad.
  *
  * Each agent declares the variable key that should receive the transcribed
  * text and, optionally, either a context slot OR a context variable that
@@ -25,13 +25,13 @@ export interface AiPostProcessAgent {
 export const AI_POST_PROCESS_AGENTS: AiPostProcessAgent[] = [
   {
     id: "9cae3831-9895-4ddb-97cd-2ded3d3f443b",
-    name: "Transcription Cleaner (Context Slots)",
+    name: "Transcription Cleaner Context Slots",
     transcriptVariableKey: "transcribed_text",
     contextSlotKey: "transcription_user_context",
   },
   {
     id: "5840be74-58e9-41c7-ae26-7deced75a5e0",
-    name: "Transcription Cleaner (Context Variable)",
+    name: "Transcription Cleaner Context Variable",
     transcriptVariableKey: "transcribed_text",
     contextVariableKey: "context",
   },

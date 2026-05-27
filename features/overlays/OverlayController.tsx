@@ -475,17 +475,21 @@ const NewsWindow = dynamic(
   () => import("@/features/window-panels/windows/NewsWindow"),
   { ssr: false },
 );
+// Canonical Notes window (overlay id `notesBetaWindow` kept for session
+// compatibility — see NotesBetaWindow.tsx header).
 const NotesBetaWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/notes/NotesBetaWindow").then(
-      (m) => ({ default: m.NotesBetaWindow }),
+      (m) => ({ default: m.NotesWindow }),
     ),
   { ssr: false },
 );
+// Legacy Notes window — kept until /ssr/demos/window-demo and
+// /administration/persistence-test are retired.
 const NotesWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/notes/NotesWindow").then((m) => ({
-      default: m.NotesWindow,
+      default: m.LegacyNotesWindow,
     })),
   { ssr: false },
 );
@@ -655,9 +659,9 @@ const VoicePadAdvanced = dynamic(
     import("@/components/official-candidate/voice-pad/components/VoicePadAdvanced"),
   { ssr: false },
 );
-const VoicePadAi = dynamic(
+const TranscriptionCleanup = dynamic(
   () =>
-    import("@/components/official-candidate/voice-pad/components/VoicePadAi"),
+    import("@/components/official-candidate/transcription-cleanup/components/TranscriptionCleanup"),
   { ssr: false },
 );
 const WhatsAppMediaWindow = dynamic(
@@ -685,16 +689,16 @@ const WhatsAppShellWindow = dynamic(
 export default function OverlayController() {
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    if (!_confirmedNewMount) {
-      _confirmedNewMount = true;
-      // eslint-disable-next-line no-console
-      console.info(
-        "[overlays] NEW OverlayController active — every overlay rendered via explicit, type-safe prop wiring. " +
-          "See docs/OVERLAY_WINDOW_OVERHAUL.md.",
-      );
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (!_confirmedNewMount) {
+  //     _confirmedNewMount = true;
+  //     // eslint-disable-next-line no-console
+  //     console.info(
+  //       "[overlays] NEW OverlayController active — every overlay rendered via explicit, type-safe prop wiring. " +
+  //         "See docs/OVERLAY_WINDOW_OVERHAUL.md.",
+  //     );
+  //   }
+  // }, []);
 
   // Per-overlay subscriptions. Each useAppSelector is its own subscription,
   // so a state change in overlay A doesn't re-run the JSX of overlay B beyond
@@ -1232,7 +1236,9 @@ export default function OverlayController() {
     voicePadAdvanced: useAppSelector((s) =>
       selectOpenInstances(s, "voicePadAdvanced"),
     ),
-    voicePadAi: useAppSelector((s) => selectOpenInstances(s, "voicePadAi")),
+    transcriptionCleanup: useAppSelector((s) =>
+      selectOpenInstances(s, "transcriptionCleanup"),
+    ),
   };
 
   return (
@@ -4097,11 +4103,14 @@ export default function OverlayController() {
         );
       })}
 
-      {/* voicePadAi — multi-instance */}
-      {instancesById.voicePadAi.map((inst) => {
+      {/* transcriptionCleanup — multi-instance */}
+      {instancesById.transcriptionCleanup.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
         return (
-          <VoicePadAi key={inst.instanceId} instanceId={inst.instanceId} />
+          <TranscriptionCleanup
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+          />
         );
       })}
 

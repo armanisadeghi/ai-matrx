@@ -177,6 +177,81 @@ export function invalidateKey<T>(store: Store<T>, key: string): void {
   if (!entry.inflight) startFetch(store, key, entry);
 }
 
+// ─── Burst-coalesced invalidation ────────────────────────────────────────────
+//
+// Realtime subscribers were calling `invalidateKey` once per event. Backend
+// analysis flows update many `file_pages` / `file_analysis_result` rows per
+// second, so the studio was firing dozens of `GET /files/{id}/pages` calls
+// per second — each one re-authenticated and re-queried Postgres, with the
+// FE just throwing away the prior in-flight response.
+//
+// `scheduleInvalidate` runs a **leading-edge fire + cooldown** schedule:
+//   - First call in a quiet period → fire `invalidateKey` immediately so a
+//     lone change still shows up with no lag.
+//   - Any call within `cooldownMs` → mark a trailing refetch as pending; do
+//     not fire yet.
+//   - When the cooldown expires, if a trailing fetch is pending, fire once
+//     and start a fresh cooldown.
+//
+// Net effect: 1 fetch at the start of a write burst + 1 fetch at the end,
+// rather than N fetches across the burst.
+//
+// Each (store × key) gets its own scheduler entry. Timer is global, not
+// React-bound — Realtime callbacks happen outside React's lifecycle.
+
+interface ScheduleEntry {
+  cooldownTimer: ReturnType<typeof setTimeout> | null;
+  pendingTrailing: boolean;
+}
+
+const schedulers = new WeakMap<Store<unknown>, Map<string, ScheduleEntry>>();
+
+function getScheduler<T>(store: Store<T>): Map<string, ScheduleEntry> {
+  let map = schedulers.get(store as Store<unknown>);
+  if (!map) {
+    map = new Map();
+    schedulers.set(store as Store<unknown>, map);
+  }
+  return map;
+}
+
+export function scheduleInvalidate<T>(
+  store: Store<T>,
+  key: string,
+  opts?: { cooldownMs?: number },
+): void {
+  const cooldownMs = opts?.cooldownMs ?? 500;
+  const sched = getScheduler(store);
+  const entry = sched.get(key);
+
+  if (!entry || entry.cooldownTimer == null) {
+    // Quiet period — fire immediately and start the cooldown.
+    invalidateKey(store, key);
+    const next: ScheduleEntry = {
+      pendingTrailing: false,
+      cooldownTimer: setTimeout(() => {
+        const cur = sched.get(key);
+        if (!cur) return;
+        cur.cooldownTimer = null;
+        if (cur.pendingTrailing) {
+          cur.pendingTrailing = false;
+          // Recurse to fire the trailing edge AND start a new cooldown so
+          // a continuous write storm still produces at most one fetch per
+          // cooldown window.
+          scheduleInvalidate(store, key, opts);
+        } else {
+          sched.delete(key);
+        }
+      }, cooldownMs),
+    };
+    sched.set(key, next);
+    return;
+  }
+
+  // Inside the cooldown window — mark a trailing fetch as wanted.
+  entry.pendingTrailing = true;
+}
+
 /** Imperative read of the current cached value (no React subscription). */
 export function peekKey<T>(store: Store<T>, key: string): T | null {
   return store.cache.get(key)?.data ?? null;

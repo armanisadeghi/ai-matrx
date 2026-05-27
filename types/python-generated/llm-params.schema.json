@@ -284,6 +284,18 @@
       "default": null,
       "title": "Internal Url Context"
     },
+    "internal_x_search": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Internal X Search"
+    },
     "aspect_ratio": {
       "anyOf": [
         {

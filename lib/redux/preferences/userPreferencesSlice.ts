@@ -279,8 +279,9 @@ export interface PromptsPreferences {
 
 /**
  * One user-defined transcription cleaner agent. Mirrors
- * `AiPostProcessAgent` so VoicePadAi can drop these straight into its
- * agent picker alongside the system-owned agents in `ai-agents.ts`.
+ * `AiPostProcessAgent` so the Transcription Cleanup pad can drop these
+ * straight into its agent picker alongside the system-owned agents in
+ * `ai-agents.ts`.
  */
 export interface CustomCleanerAgent {
   /** Agent UUID (must exist in the agents system). */
@@ -296,7 +297,7 @@ export interface CustomCleanerAgent {
 }
 
 export interface TranscriptionPreferences {
-  /** User-added cleaner agents merged into the VoicePadAi picker. */
+  /** User-added cleaner agents merged into the Transcription Cleanup picker. */
   customCleanerAgents: CustomCleanerAgent[];
 }
 

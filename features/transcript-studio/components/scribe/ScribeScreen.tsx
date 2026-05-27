@@ -8,6 +8,7 @@ import {
   Pencil,
   Sparkles,
   Trash2,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -25,27 +26,39 @@ import {
 } from "../../redux/thunks";
 import { EditableSessionTitle } from "../EditableSessionTitle";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
-import { MobileCaptureScreen } from "./MobileCaptureScreen";
+import { CleanupSheet } from "./CleanupSheet";
+import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
+import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 
 type Screen = "capture" | "assistant";
 
-interface MobileStudioScreenProps {
+interface ScribeScreenProps {
   sessionId: string;
   onBack?: () => void;
 }
 
-export function MobileStudioScreen({
-  sessionId,
-  onBack,
-}: MobileStudioScreenProps) {
+export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
   const [screen, setScreen] = useState<Screen>("capture");
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [cleanupOpen, setCleanupOpen] = useState(false);
+
+  // The assistant hook is mounted at the screen level so a cleanup run that
+  // completes BEFORE the user switches to the Assistant tab still gets the
+  // refreshed `cleaned_transcripts` named context on the next turn.
+  const { refreshContext } = useStudioAssistant(sessionId);
 
   const menuItems: ActionSheetItem[] = [
+    {
+      key: "cleanup",
+      label: "Clean up transcripts",
+      description: "AI cleanup of every recording in this session",
+      icon: <Wand2 className="h-4 w-4" />,
+      onSelect: () => setCleanupOpen(true),
+    },
     {
       key: "rename",
       label: "Rename session",
@@ -156,7 +169,7 @@ export function MobileStudioScreen({
       {/* Body */}
       <main className="min-h-0 flex-1">
         {screen === "capture" ? (
-          <MobileCaptureScreen sessionId={sessionId} />
+          <ScribeCaptureScreen sessionId={sessionId} />
         ) : (
           <AssistantScreen sessionId={sessionId} />
         )}
@@ -168,6 +181,12 @@ export function MobileStudioScreen({
         title={session?.title || "Session"}
         items={menuItems}
       />
+      <CleanupSheet
+        sessionId={sessionId}
+        open={cleanupOpen}
+        onOpenChange={setCleanupOpen}
+        onPersisted={refreshContext}
+      />
       <TextInputDialog
         open={renameOpen}
         onOpenChange={setRenameOpen}
@@ -176,7 +195,10 @@ export function MobileStudioScreen({
         confirmLabel="Save"
         onConfirm={(value) => {
           void dispatch(
-            updateSessionThunk({ id: sessionId, patch: { title: value.trim() } }),
+            updateSessionThunk({
+              id: sessionId,
+              patch: { title: value.trim() },
+            }),
           );
         }}
       />

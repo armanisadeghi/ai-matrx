@@ -50,10 +50,7 @@ import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useRouter } from "next/navigation";
-import { useApiAuth } from "@/hooks/useApiAuth";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { ENDPOINTS } from "@/lib/api/endpoints";
 import type { PaneKey } from "../state/types";
 import {
   clearActiveDoc,
@@ -111,11 +108,12 @@ function summaryToProvisionalDoc(s: StudioDocSummary): PdfDocument {
 export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const router = useRouter();
   const docsState = usePdfStudioDocs();
-  const extractor = usePdfExtractor();
+  // `usePdfStudioDocs` already pulls the `processed_documents` list for the
+  // sidebar — opting out of `usePdfExtractor`'s own history fetch removes
+  // the duplicate Supabase round-trip that was firing on every mount.
+  const extractor = usePdfExtractor({ loadHistory: false });
   const triggerShortcut = useShortcutTrigger();
   const toast = useToastManager("pdf-extractor");
-  const { getHeaders, waitForAuth } = useApiAuth();
-  const backendUrl = useAppSelector(selectResolvedBaseUrl);
   const dispatch = useAppDispatch();
 
   // Slice-driven state.
@@ -254,20 +252,57 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     [dispatch],
   );
 
+  // Live preview text written by the AI Clean / Pipeline stream so the
+  // cleaned pane can render token-by-token deltas instead of a blank
+  // spinner. Cleared once the run finalizes against Supabase.
+  const [streamingCleanText, setStreamingCleanText] = useState<string | null>(
+    null,
+  );
+
   // ── Pipeline run ──────────────────────────────────────────────────────
+  //
+  // Pipeline creates a NEW child `processed_documents` row (per-page rows
+  // live on the child, not on the parent we started from). The studio
+  // surfaces no parent/child concept, so on success we silently
+  // `router.replace` to the new doc — from the user's POV their data
+  // "refreshed" on the same screen.
 
   const handleRunPipeline = useCallback(async () => {
     if (!activeDoc) return;
     setPipelineRunning(true);
     setLiveStatus("Starting pipeline…");
+    setStreamingCleanText("");
     try {
-      let openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
+      const openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
       if (!openTab) {
         extractor.openDocument(activeDoc);
       }
-      await extractor.runFullPipeline(activeDoc.id, {
-        persist_output: true,
-      });
+      const { success, childDocId } = await extractor.runFullPipeline(
+        activeDoc.id,
+        {
+          persist_output: true,
+          onProgress: setLiveStatus,
+          onTextDelta: setStreamingCleanText,
+        },
+      );
+      if (!success) {
+        toast.error("Pipeline run failed");
+        return;
+      }
+
+      if (childDocId && childDocId !== activeDoc.id) {
+        // Silently swap the URL to the child without pushing history —
+        // the parent is no longer the row carrying the new data and we
+        // don't want a back button to deposit the user on a stale doc.
+        dispatch(setActiveDocId(childDocId));
+        router.replace(`/tools/pdf-extractor/${childDocId}`);
+        await selectDocById(childDocId);
+      } else {
+        // Same-row update (no child created). Refresh in place.
+        const fresh = await extractor.fetchDocument(activeDoc.id);
+        if (fresh) setActiveDoc(fresh);
+        refreshPages();
+      }
       docsState.refresh();
       toast.success("Pipeline run complete");
     } catch (err) {
@@ -275,71 +310,45 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     } finally {
       setPipelineRunning(false);
       setLiveStatus(null);
+      setStreamingCleanText(null);
     }
-  }, [activeDoc, extractor, docsState, toast]);
+  }, [
+    activeDoc,
+    extractor,
+    docsState,
+    toast,
+    dispatch,
+    router,
+    selectDocById,
+    refreshPages,
+  ]);
 
   // ── AI Clean ──────────────────────────────────────────────────────────
+  //
+  // Routes through the hook (`extractor.cleanContent`), which handles the
+  // stream + cache invalidation + Supabase refetch in one place. The
+  // shell just owns the live-status / streaming-preview UI state.
 
   const handleRunAiClean = useCallback(async () => {
     if (!activeDoc) return;
     setAiCleanRunning(true);
     setLiveStatus("Starting AI cleanup…");
+    setStreamingCleanText("");
     try {
-      await waitForAuth();
-      const rawHeaders = getHeaders() as Record<string, string>;
-      const { "Content-Type": _ct, ...headers } = rawHeaders;
-
-      const response = await fetch(
-        `${backendUrl}${ENDPOINTS.pdf.cleanContent(activeDoc.id)}`,
-        { method: "POST", headers },
-      );
-      if (!response.ok) {
-        const errText = await response.text().catch(() => "");
-        throw new Error(
-          `HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`,
-        );
+      const openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
+      if (!openTab) {
+        extractor.openDocument(activeDoc);
       }
-
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let cleanedText: string | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop()!;
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const event = JSON.parse(line) as {
-              event?: string;
-              data?: Record<string, unknown>;
-            };
-            if (event.event === "info") {
-              const msg =
-                (event.data?.user_message as string | undefined) ??
-                (event.data?.message as string | undefined);
-              if (msg) setLiveStatus(msg);
-            } else if (event.event === "data") {
-              const candidate = event.data?.clean_content as string | undefined;
-              if (candidate) cleanedText = candidate;
-            }
-          } catch {
-            // skip malformed lines
-          }
-        }
-      }
-
-      if (!cleanedText) {
-        throw new Error(
-          "AI cleanup completed but no clean_content was returned",
-        );
-      }
-
-      setActiveDoc((d) => (d ? { ...d, cleanContent: cleanedText } : d));
+      await extractor.cleanContent(activeDoc.id, {
+        onProgress: setLiveStatus,
+        onTextDelta: setStreamingCleanText,
+      });
+      // The hook has already invalidated the cache + refetched. Re-read
+      // through the public surface so the active-doc state reflects what
+      // the hook's tab now holds.
+      const fresh = await extractor.fetchDocument(activeDoc.id);
+      if (fresh) setActiveDoc(fresh);
+      refreshPages();
       docsState.refresh();
       toast.success("AI cleanup complete");
     } catch (err) {
@@ -347,8 +356,9 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     } finally {
       setAiCleanRunning(false);
       setLiveStatus(null);
+      setStreamingCleanText(null);
     }
-  }, [activeDoc, backendUrl, getHeaders, waitForAuth, docsState, toast]);
+  }, [activeDoc, extractor, docsState, refreshPages, toast]);
 
   // ── PDF pane edit modes (crop / reorder) ─────────────────────────────
 
@@ -604,6 +614,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             findQuery={findQuery}
             onRunPipeline={handleRunPipeline}
             pipelineRunning={pipelineRunning}
+            aiCleanRunning={aiCleanRunning}
+            streamingCleanText={streamingCleanText}
             onOpenUpload={() => setUploadOpen(true)}
             editMode={pdfPaneEditMode}
             cropPagesInput={cropPagesInput}

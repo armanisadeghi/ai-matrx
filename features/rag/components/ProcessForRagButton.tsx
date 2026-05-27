@@ -20,11 +20,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Rocket } from "lucide-react";
-import {
-  ingestFileStream,
-  type IngestProgress,
-  type IngestRequestBody,
+import type {
+  IngestProgress,
+  IngestRequestBody,
 } from "@/features/rag/api/ingest";
+import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import { cn } from "@/lib/utils";
 
 export interface ProcessForRagButtonProps {
@@ -90,10 +91,11 @@ function useSourceIngest({
       setProgress(null);
       try {
         // The streaming helper in `rag-ingest.ts` is hard-coded to
-        // `cld_file`. We still want streaming for notes/code, but using
-        // the cloud-files helper would mis-tag the source. Re-implement
-        // the line-stream parse against the same endpoint, with the
-        // correct body. Tiny duplicate but clean separation of concerns.
+        // `cld_file`. Notes / code use the same `/rag/ingest/stream`
+        // endpoint with a different `source_kind`. We POST directly and
+        // route the response through `parseNdjsonStream` — the same
+        // platform primitive every other NDJSON consumer uses — instead
+        // of hand-rolling another buffer-and-split loop.
         const { buildHeaders, resolveBaseUrl } =
           await import("@/lib/python-client");
         const { headers } = await buildHeaders({ signal: ac.signal }, true);
@@ -114,42 +116,37 @@ function useSourceIngest({
           setError(`HTTP ${response.status}`);
           return;
         }
-        const reader = response.body
-          .pipeThrough(new TextDecoderStream())
-          .getReader();
-        let buffer = "";
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += value;
-          let nl = buffer.indexOf("\n");
-          while (nl !== -1) {
-            const line = buffer.slice(0, nl).trim();
-            buffer = buffer.slice(nl + 1);
-            if (line.length > 0) {
-              try {
-                const evt = JSON.parse(line) as {
-                  event: string;
-                  data: unknown;
-                };
-                if (evt.event === "rag.ingest.progress") {
-                  setProgress(evt.data as IngestProgress);
-                } else if (evt.event === "rag.ingest.complete") {
-                  setStatus("complete");
-                  setProgress(null);
-                  return;
-                } else if (evt.event === "rag.ingest.error") {
-                  const errData = evt.data as { message?: string };
-                  setStatus("error");
-                  setError(errData.message ?? "Ingest failed");
-                  return;
-                }
-              } catch {
-                /* ignore malformed line, keep reading */
-              }
+
+        // The RAG ingest endpoint emits custom event names
+        // (`rag.ingest.progress` / `.complete` / `.error`) — not the
+        // standard Matrx envelope set — so we walk the raw generator and
+        // narrow the event names by hand. `TypedStreamEvent` only covers
+        // the standard envelopes, hence the cast to the wire shape.
+        const { events } = parseNdjsonStream(response, ac.signal);
+        for await (const typedEvt of events) {
+          const evt = typedEvt as unknown as {
+            event: string;
+            data: unknown;
+          };
+          if (evt.event === "rag.ingest.progress") {
+            setProgress(evt.data as IngestProgress);
+          } else if (evt.event === "rag.ingest.complete") {
+            setStatus("complete");
+            setProgress(null);
+            // Mirror the `useFileIngest` finalize so the next read of
+            // this source's processed-document state goes to Supabase
+            // instead of the file-lookup cache. Without this the editor
+            // would render stale "not processed" state until the cache
+            // TTL expired.
+            if (sourceKind === "cld_file") {
+              clearFileDocumentCache(sourceId);
             }
-            nl = buffer.indexOf("\n");
+            return;
+          } else if (evt.event === "rag.ingest.error") {
+            const errData = evt.data as { message?: string };
+            setStatus("error");
+            setError(errData.message ?? "Ingest failed");
+            return;
           }
         }
       } catch (err) {

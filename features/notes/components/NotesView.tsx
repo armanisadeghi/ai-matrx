@@ -77,6 +77,7 @@ import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteMetadataBar } from "./NoteMetadataBar";
 import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
+import { FolderQuickPick } from "./FolderQuickPick";
 import { cn } from "@/lib/utils";
 
 export interface NotesViewConfig {
@@ -561,14 +562,7 @@ export function NotesView({ config, className }: NotesViewProps) {
                   />
                 )
               ) : (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <p className="text-sm">No note selected</p>
-                    <p className="text-xs mt-1">
-                      Select a note or create a new one
-                    </p>
-                  </div>
-                </div>
+                <FolderQuickPick instanceId={instanceId} />
               )}
 
               {/* Layer 2: Metadata bar (bottom — folder, tags, status) */}

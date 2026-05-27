@@ -8,7 +8,7 @@ import { useStudioSession } from "../../hooks/useStudioSession";
 import { RecordingCardList } from "./RecordingCardList";
 import { FullTranscriptDrawer } from "./FullTranscriptDrawer";
 
-interface MobileCaptureScreenProps {
+interface ScribeCaptureScreenProps {
   sessionId: string;
 }
 
@@ -19,7 +19,7 @@ function formatClock(totalSec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function MobileCaptureScreen({ sessionId }: MobileCaptureScreenProps) {
+export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
   const session = useStudioSession({ sessionId });
   const liveTranscript = useAppSelector((s) => s.recordings.liveTranscript);
   const [openTranscriptId, setOpenTranscriptId] = useState<string | null>(null);
@@ -66,7 +66,9 @@ export function MobileCaptureScreen({ sessionId }: MobileCaptureScreenProps) {
               {formatClock(session.durationSec)}
             </span>
             <span className="text-muted-foreground">
-              {session.isPaused ? "Paused — resume to keep the same recording" : "Recording"}
+              {session.isPaused
+                ? "Paused — resume to keep the same recording"
+                : "Recording"}
             </span>
           </div>
         )}

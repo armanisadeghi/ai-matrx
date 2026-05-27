@@ -607,10 +607,13 @@ function ExtractionTabContent({
   tab: ExtractionTab;
   onClean: (docId: string) => Promise<void>;
   onRefresh: (docId: string) => Promise<boolean>;
+  // `onRunPipeline` returns `{ success, childDocId }` from `usePdfExtractor`.
+  // The legacy workspace doesn't navigate to the child — it stays put and
+  // just relies on the in-place refetch — so it discards the result.
   onRunPipeline: (
     docId: string,
     options?: { force_ocr?: boolean; persist_output?: boolean },
-  ) => Promise<boolean>;
+  ) => Promise<{ success: boolean; childDocId: string | null }>;
   onRunShortcut: (shortcutId: string) => void | Promise<void>;
 }) {
   const [subTab, setSubTab] = useState<ContentSubTab>("text");
@@ -963,13 +966,40 @@ function AiCleanView({
   if (!doc) return <EmptyState message="No document data" />;
 
   if (tab.status === "cleaning") {
+    // While the stream is in flight, render the live-accumulating
+    // `tab.streamingText` in a monospace block — the user can watch the
+    // model fill in the cleaned text token-by-token instead of staring at
+    // a centered spinner. Falls back to the simple loader until the first
+    // delta arrives.
+    const hasStreamingText =
+      typeof tab.streamingText === "string" && tab.streamingText.length > 0;
     return (
-      <div className="flex flex-col items-center justify-center p-6 text-center gap-3 h-full">
-        <Loader2 className="w-6 h-6 text-primary/60 animate-spin" />
-        <p className="text-sm font-medium">Cleaning content...</p>
-        {tab.progressMessage && (
-          <p className="text-xs text-muted-foreground">{tab.progressMessage}</p>
-        )}
+      <div className="flex flex-col h-full min-h-0 p-3 gap-2">
+        <div className="shrink-0 flex items-center gap-2 text-[11px] text-primary">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <span className="font-semibold">Cleaning content…</span>
+          {tab.progressMessage && (
+            <span className="text-muted-foreground truncate">
+              {tab.progressMessage}
+            </span>
+          )}
+          {hasStreamingText && (
+            <span className="ml-auto font-mono text-muted-foreground">
+              {tab.streamingText!.length.toLocaleString()} chars
+            </span>
+          )}
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-primary/30 bg-primary/5 p-3">
+          {hasStreamingText ? (
+            <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+              {tab.streamingText}
+            </pre>
+          ) : (
+            <p className="italic text-xs text-muted-foreground">
+              Waiting for the model…
+            </p>
+          )}
+        </div>
       </div>
     );
   }

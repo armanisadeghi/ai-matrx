@@ -26,6 +26,7 @@ import {
   createSharedStore,
   invalidateKey,
   peekKey,
+  scheduleInvalidate,
   useSharedStore,
   type SharedHookResult,
 } from "./shared-cache";
@@ -55,7 +56,10 @@ function attachRealtime(fileId: string): void {
         table: "file_analysis",
         filter: `file_id=eq.${fileId}`,
       },
-      () => invalidateKey(store, fileId),
+      // Backend analysis flows mutate the same `file_analysis` row many
+      // times per second across detector tiers. Coalesce the burst —
+      // fire once leading, once trailing, drop the middle.
+      () => scheduleInvalidate(store, fileId),
     )
     .on(
       "postgres_changes",
@@ -70,12 +74,12 @@ function attachRealtime(fileId: string): void {
         // DISTINCT ON (kind, tier).
         const next = payload.new as Partial<FileAnalysisResultRow> | undefined;
         if (!next?.id) {
-          invalidateKey(store, fileId);
+          scheduleInvalidate(store, fileId);
           return;
         }
         const current = peekKey(store, fileId);
         if (!current) {
-          invalidateKey(store, fileId);
+          scheduleInvalidate(store, fileId);
           return;
         }
         const merged = {

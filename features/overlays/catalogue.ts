@@ -355,6 +355,16 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  picklistManagerV1Window: {
+    label: "Picklists — v1",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  picklistManagerV2Window: {
+    label: "Picklists — v2",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   markdownEditor: {
     label: "Markdown Editor",
     instanceMode: "singleton",
@@ -386,12 +396,12 @@ export const OVERLAY_CATALOGUE = {
     isWindow: true,
   },
   notesBetaWindow: {
-    label: "Notes Beta Window",
+    label: "Notes Window",
     instanceMode: "multi",
     isWindow: true,
   },
   notesWindow: {
-    label: "Notes Window",
+    label: "Notes Window (legacy)",
     instanceMode: "singleton",
     isWindow: true,
   },
@@ -560,8 +570,8 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
-  voicePadAi: {
-    label: "Voice Pad Ai",
+  transcriptionCleanup: {
+    label: "Transcription Cleanup",
     instanceMode: "multi",
     isWindow: true,
   },

@@ -30,7 +30,7 @@ import {
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { SwipeableRow, type SwipeAction } from "./SwipeableRow";
 
-interface MobileSessionsListProps {
+interface ScribeSessionsListProps {
   onOpenSession: (sessionId: string) => void;
   onOpenUnsorted: () => void;
 }
@@ -47,10 +47,10 @@ function formatWhen(iso: string): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-export function MobileSessionsList({
+export function ScribeSessionsList({
   onOpenSession,
   onOpenUnsorted,
-}: MobileSessionsListProps) {
+}: ScribeSessionsListProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const sessions = useAppSelector(selectAllSessions);
@@ -163,8 +163,8 @@ export function MobileSessionsList({
                 Unsorted
               </span>
               <span className="block text-xs text-muted-foreground">
-                {unsortedCount} recording{unsortedCount === 1 ? "" : "s"} not in a
-                session
+                {unsortedCount} recording{unsortedCount === 1 ? "" : "s"} not in
+                a session
               </span>
             </span>
             <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />

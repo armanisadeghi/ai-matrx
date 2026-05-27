@@ -6,8 +6,14 @@
  *
  * Naming contract (so the model understands the relationships):
  *   - `recording_NN_raw`     — verbatim transcript of recording cycle NN.
- *   - `session_cleaned`      — the AI-cleaned version of the whole session
- *                              (same content as the raw entries, tidied).
+ *   - `session_cleaned`      — Studio auto-cleanup output (column 2) for the
+ *                              whole session. Only present when the desktop
+ *                              4-column Studio has run cleanup on this session.
+ *   - `cleaned_transcripts`  — Scribe one-shot AI-cleaned version of the raw
+ *                              recordings. SAME CONTENT as recording_NN_raw —
+ *                              the model should treat this as a duplicate, not
+ *                              new information. Persisted in studio_documents
+ *                              with kind="scribe_cleanup".
  *   - `working_document`     — the mutable, persisted document the assistant
  *                              builds with the user. Edited via `ctx_patch`;
  *                              writes land in `studio_documents` server-side.
@@ -21,6 +27,7 @@ import {
   selectCleanedSegments,
   selectRawSegmentsForRecording,
   selectRecordingSegments,
+  selectScribeCleanupDocument,
   selectWorkingDocument,
 } from "../redux/selectors";
 
@@ -44,10 +51,7 @@ function pad2(n: number): string {
  * server inject `ctx_patch`; `source` routes writes to the studio_document
  * writeback handler.
  */
-export function buildWorkingDocumentValue(
-  documentId: string,
-  content: string,
-) {
+export function buildWorkingDocumentValue(documentId: string, content: string) {
   return {
     content,
     mutable: true,
@@ -77,7 +81,10 @@ export function buildAssistantContextEntries(
   const recordings = selectRecordingSegments(sessionId)(state);
   recordings.forEach((rec, idx) => {
     const raws = selectRawSegmentsForRecording(sessionId, rec.id)(state);
-    const text = raws.map((r) => r.text).join(" ").trim();
+    const text = raws
+      .map((r) => r.text)
+      .join(" ")
+      .trim();
     if (!text) return;
     const n = pad2(idx + 1);
     entries.push({
@@ -100,6 +107,25 @@ export function buildAssistantContextEntries(
       value: cleanedText,
       type: "text",
       label: "Session — AI-cleaned transcript (same content as recordings)",
+    });
+  }
+
+  // Scribe one-shot cleanup output (`scribe_cleanup` studio_documents row).
+  // This is explicitly named and labeled as a DUPLICATE of the raw recordings
+  // so the model doesn't double-count it as new content. Only attached when
+  // the user has actually run a cleanup pass for this session.
+  const cleanupDoc = selectScribeCleanupDocument(sessionId)(state);
+  const cleanupText = cleanupDoc?.content?.trim() ?? "";
+  if (cleanupText) {
+    entries.push({
+      key: "cleaned_transcripts",
+      value: cleanupText,
+      type: "text",
+      label:
+        "Cleaned transcripts — AI-cleaned DUPLICATE of the recording_NN_raw entries " +
+        "above. Same content, just tidied. Prefer this over the raw versions when " +
+        "quoting or summarizing; only fall back to recording_NN_raw if you need the " +
+        "exact verbatim wording.",
     });
   }
 
