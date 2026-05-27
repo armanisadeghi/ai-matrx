@@ -16,6 +16,7 @@ import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
 import {
   createSharedStore,
   invalidateKey,
+  scheduleInvalidate,
   useSharedStore,
 } from "./shared-cache";
 
@@ -43,7 +44,12 @@ function attachRealtime(fileId: string): void {
         table: "file_pages",
         filter: `file_id=eq.${fileId}`,
       },
-      () => invalidateKey(store, fileId),
+      // Coalesce write bursts. Backend analysis flows update many rows per
+      // second — without this, each Postgres NOTIFY fired a fresh `GET
+      // /files/{id}/pages` and the page hammered the server until the run
+      // completed. `scheduleInvalidate` fires once at the start, once at
+      // the end, and drops the middle.
+      () => scheduleInvalidate(store, fileId),
     )
     .subscribe();
   realtimeRefcount.set(fileId, {

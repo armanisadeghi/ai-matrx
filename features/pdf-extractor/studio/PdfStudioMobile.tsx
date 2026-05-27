@@ -33,7 +33,9 @@ import {
   FileText,
   Lightbulb,
   Layers,
+  Loader2,
   MoreVertical,
+  Sparkles,
   X,
   Plus,
 } from "lucide-react";
@@ -72,8 +74,13 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
   );
   const [uploadOpen, setUploadOpen] = useState(false);
   const [pipelineRunning, setPipelineRunning] = useState(false);
+  const [aiCleanRunning, setAiCleanRunning] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<string | null>(null);
+  const [streamingCleanText, setStreamingCleanText] = useState<string | null>(
+    null,
+  );
 
-  const { pages } = useProcessedDocumentPages({
+  const { pages, refresh: refreshPages } = useProcessedDocumentPages({
     processedDocumentId: activeDoc?.id ?? "",
     enabled: !!activeDoc,
   });
@@ -144,18 +151,81 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
   const handleRunPipeline = useCallback(async () => {
     if (!activeDoc) return;
     setPipelineRunning(true);
+    setLiveStatus("Starting pipeline…");
+    setStreamingCleanText("");
     try {
-      let openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
+      const openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
       if (!openTab) extractor.openDocument(activeDoc);
-      await extractor.runFullPipeline(activeDoc.id, { persist_output: true });
+      const { success, childDocId } = await extractor.runFullPipeline(
+        activeDoc.id,
+        {
+          persist_output: true,
+          onProgress: setLiveStatus,
+          onTextDelta: setStreamingCleanText,
+        },
+      );
+      if (!success) {
+        toast.error("Pipeline run failed");
+        return;
+      }
+      // Pipeline creates a new child row — silently swap the URL so the
+      // mobile shell reads the new per-page data without exposing the
+      // parent/child concept. Same pattern as desktop.
+      if (childDocId && childDocId !== activeDoc.id) {
+        router.replace(`/tools/pdf-extractor/${childDocId}`);
+        await selectDocById(childDocId);
+      } else {
+        const fresh = await extractor.fetchDocument(activeDoc.id);
+        if (fresh) setActiveDoc(fresh);
+        refreshPages();
+      }
       docsState.refresh();
       toast.success("Pipeline run complete");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Pipeline failed");
     } finally {
       setPipelineRunning(false);
+      setLiveStatus(null);
+      setStreamingCleanText(null);
     }
-  }, [activeDoc, extractor, docsState, toast]);
+  }, [
+    activeDoc,
+    extractor,
+    docsState,
+    toast,
+    router,
+    selectDocById,
+    refreshPages,
+  ]);
+
+  // AI Clean — desktop parity. Routes through `extractor.cleanContent` for
+  // the same finalize sequence (invalidate cache → refetch → render).
+  const handleRunAiClean = useCallback(async () => {
+    if (!activeDoc) return;
+    setAiCleanRunning(true);
+    setLiveStatus("Starting AI cleanup…");
+    setStreamingCleanText("");
+    setTab("clean"); // jump the user to the pane that's about to fill
+    try {
+      const openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
+      if (!openTab) extractor.openDocument(activeDoc);
+      await extractor.cleanContent(activeDoc.id, {
+        onProgress: setLiveStatus,
+        onTextDelta: setStreamingCleanText,
+      });
+      const fresh = await extractor.fetchDocument(activeDoc.id);
+      if (fresh) setActiveDoc(fresh);
+      refreshPages();
+      docsState.refresh();
+      toast.success("AI cleanup complete");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI cleanup failed");
+    } finally {
+      setAiCleanRunning(false);
+      setLiveStatus(null);
+      setStreamingCleanText(null);
+    }
+  }, [activeDoc, extractor, docsState, refreshPages, toast]);
 
   const handleRunShortcut = useCallback(
     async (shortcutId: string) => {
@@ -211,6 +281,24 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
         >
           <Plus className="w-4 h-4" />
         </button>
+        {/* AI Clean — mobile parity with desktop toolbar. Disabled while
+            any run is in flight; the spinner doubles as the "is running"
+            signal so we don't need a second status pill in the header. */}
+        {activeDoc && (
+          <button
+            type="button"
+            onClick={handleRunAiClean}
+            disabled={aiCleanRunning || pipelineRunning}
+            className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground disabled:opacity-50"
+            title="AI Clean"
+          >
+            {aiCleanRunning ? (
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setDrawer("inspector")}
@@ -221,6 +309,16 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           <MoreVertical className="w-4 h-4" />
         </button>
       </header>
+
+      {/* Live status strip — visible only while a run is streaming. Mirrors
+          the desktop toolbar pattern so the user has a steady "the model
+          is working" signal that doesn't depend on the toast lifecycle. */}
+      {liveStatus && (
+        <div className="shrink-0 border-b border-border bg-primary/5 px-3 py-1.5 flex items-center gap-2 text-[11px] text-primary">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          <span className="truncate">{liveStatus}</span>
+        </div>
+      )}
 
       {/* Tab strip — only when a doc is open */}
       {activeDoc && (
@@ -280,6 +378,10 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
             fallbackText={
               tab === "clean" ? activeDoc.cleanContent : activeDoc.content
             }
+            streaming={
+              tab === "clean" && (aiCleanRunning || pipelineRunning)
+            }
+            streamingText={tab === "clean" ? streamingCleanText : null}
           />
         )}
       </div>
@@ -437,6 +539,8 @@ function MobileTextScroller({
   activePage,
   onActivePage,
   fallbackText,
+  streaming = false,
+  streamingText = null,
 }: {
   pages: {
     id: string;
@@ -448,12 +552,31 @@ function MobileTextScroller({
   activePage: number | null;
   onActivePage: (n: number) => void;
   fallbackText: string | null;
+  /** True while AI Clean / Pipeline is actively streaming into `streamingText`. */
+  streaming?: boolean;
+  /** Live-accumulating text; rendered as a single block while `streaming`. */
+  streamingText?: string | null;
 }) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const anchorMap = React.useRef<Map<number, HTMLElement>>(new Map());
 
-  // IO observer so the bottom pager reflects the most-visible page.
+  // True when every per-page row in the active field is empty. Same rule
+  // as the desktop reader — per-page `cleaned_text` is only populated by
+  // RAG ingestion, not by the agent-based AI Clean endpoint, so we fall
+  // back to the aggregate column for the cleaned tab.
+  const allEmpty = React.useMemo(
+    () =>
+      pages.length > 0 &&
+      pages.every((p) =>
+        field === "cleaned" ? !p.cleanedText.trim() : !p.rawText.trim(),
+      ),
+    [pages, field],
+  );
+
+  // IO observer so the bottom pager reflects the most-visible page. Skip
+  // when we're showing the aggregate / streaming block (no anchors).
   React.useEffect(() => {
+    if (streaming || allEmpty) return;
     const root = containerRef.current;
     if (!root) return;
     const observer = new IntersectionObserver(
@@ -469,7 +592,7 @@ function MobileTextScroller({
     );
     anchorMap.current.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [pages.length, onActivePage]);
+  }, [pages.length, onActivePage, streaming, allEmpty]);
 
   // Programmatic scroll on activePage change (driven by bottom pager).
   React.useEffect(() => {
@@ -478,6 +601,35 @@ function MobileTextScroller({
     el?.scrollIntoView({ block: "start", behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePage]);
+
+  // While a stream is in flight, show the accumulating text as a single
+  // block — page anchors haven't been written to the DB yet.
+  if (streaming) {
+    return (
+      <div className="h-full overflow-y-auto p-3">
+        <div className="border border-primary/40 bg-primary/5 rounded-md p-3">
+          <div className="flex items-center gap-1.5 mb-2 text-[10px] text-primary">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="font-mono font-semibold">Streaming…</span>
+            {streamingText && streamingText.length > 0 && (
+              <span className="ml-auto font-mono text-muted-foreground">
+                {streamingText.length.toLocaleString()} chars
+              </span>
+            )}
+          </div>
+          <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
+            {streamingText && streamingText.length > 0 ? (
+              streamingText
+            ) : (
+              <span className="italic text-muted-foreground">
+                Waiting for the model…
+              </span>
+            )}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   if (pages.length === 0) {
     return (
@@ -488,6 +640,25 @@ function MobileTextScroller({
         <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
           {fallbackText || "(no extracted text)"}
         </pre>
+      </div>
+    );
+  }
+
+  // Per-page rows exist but the active field is empty across all of them.
+  // Render the aggregate as a single block — same rule as desktop, same
+  // rationale (AI Clean writes only the aggregate column).
+  if (allEmpty) {
+    return (
+      <div className="h-full overflow-y-auto p-3">
+        <div className="border border-border bg-card rounded-md p-3">
+          <div className="text-[10px] font-mono font-semibold text-muted-foreground mb-1.5">
+            Document text (aggregate) ·{" "}
+            {(fallbackText ?? "").length.toLocaleString()} chars
+          </div>
+          <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
+            {fallbackText || "(no extracted text)"}
+          </pre>
+        </div>
       </div>
     );
   }

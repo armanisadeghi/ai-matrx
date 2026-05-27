@@ -25,6 +25,7 @@ import type {
 import {
   createSharedStore,
   invalidateKey,
+  scheduleInvalidate,
   useSharedStore,
 } from "./shared-cache";
 
@@ -52,7 +53,9 @@ function attachRealtime(fileId: string): void {
         table: "file_page_annotations",
         filter: `file_id=eq.${fileId}`,
       },
-      () => invalidateKey(store, fileId),
+      // Coalesce bursts (bulk annotation imports, AI detector batch
+      // INSERTs) into 1 leading + 1 trailing refetch instead of N.
+      () => scheduleInvalidate(store, fileId),
     )
     .subscribe();
   realtimeRefcount.set(fileId, {

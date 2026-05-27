@@ -119,7 +119,15 @@ export const selectConversationSurfaceKey =
  */
 export const selectConversationSandboxOverride =
   (conversationId: string) =>
-  (state: RootState): { rowId: string; proxyUrl: string } | null =>
+  (
+    state: RootState,
+  ): {
+    rowId: string;
+    proxyUrl: string;
+    tier?: "ec2" | "hosted";
+    kind?: "ec2" | "hosted" | "local-pc";
+    name?: string;
+  } | null =>
     state.conversations.byConversationId[conversationId]?.sandboxOverride ??
     null;
 

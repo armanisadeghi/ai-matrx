@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Loader2, X, Check, GitBranch } from "lucide-react";
+import { Plus, Loader2, X, Check, GitBranch, Monitor, Server } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
@@ -25,6 +25,9 @@ import {
 } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { setConversationSandboxOverride } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
+import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
+import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
+import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
 import {
   getEffectiveStatus,
@@ -42,6 +45,17 @@ type SandboxRef = {
   rowId: string;
   proxyUrl: string;
   tier?: "ec2" | "hosted";
+  /**
+   * Discriminator added when binding to a user's local PC (matrx-local,
+   * Cloudflare-tunneled) — undefined / "ec2" / "hosted" for orchestrator
+   * sandboxes. Drives `lib/sandbox/active-binding.ts` to skip the
+   * orchestrator token-mint and instead resolve through
+   * `/api/compute-targets/resolve` (which builds the aidream-proxy URL
+   * and uses the Supabase session JWT).
+   */
+  kind?: "ec2" | "hosted" | "local-pc";
+  /** Display label latched at selection time. */
+  name?: string;
 };
 
 function shortLabel(instance: SandboxInstance): string {
@@ -90,10 +104,28 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const { instances, loading, fetchInstances, createInstance } =
     useSandboxInstances();
 
+  // Unified compute-target list — also pulls the user's matrx-local PCs from
+  // `app_instances`. The local-PC subset is rendered above the sandbox list;
+  // sandbox rendering still uses `useSandboxInstances` so all existing
+  // status / pill / clone behaviour keeps working unchanged.
+  const { data: computeTargets, refetch: refetchTargets } = useComputeTargets();
+  const localPcs = (computeTargets?.targets ?? []).filter(
+    (t) => t.kind === "local-pc",
+  );
+
   // Fetch the user's boxes when the panel mounts (i.e. the Sandbox tab opens).
   useEffect(() => {
     void fetchInstances({ limit: 50 });
   }, [fetchInstances]);
+
+  const handlePickLocalPc = (pc: ComputeTarget) => {
+    applyRef({
+      rowId: pc.id,
+      proxyUrl: "", // server-resolved at chat-send time via resolveComputeTarget
+      kind: "local-pc",
+      name: pc.name,
+    });
+  };
 
   // No useMemo/useCallback in this file — React Compiler memoizes
   // (CLAUDE.md core invariant).
@@ -136,10 +168,35 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     }
   };
 
+  // Sandbox defaults the user configured in Settings → Sandbox. The "New
+  // sandbox" button passes these to the orchestrator so every box the user
+  // creates from chat matches their configured template / tier / env / etc.
+  const sandboxPrefs = useAppSelector(selectSandboxPreferences);
+
   const handleClaimNew = async () => {
     setCreating(true);
     try {
-      const { instance, error } = await createInstance({});
+      const { instance, error } = await createInstance({
+        template: sandboxPrefs.template,
+        tier: sandboxPrefs.tier,
+        ttl_seconds: sandboxPrefs.ttl_seconds ?? undefined,
+        labels: {
+          ...(sandboxPrefs.default_git_repo
+            ? { default_git_repo: sandboxPrefs.default_git_repo }
+            : {}),
+          ...(sandboxPrefs.default_git_branch
+            ? { default_git_branch: sandboxPrefs.default_git_branch }
+            : {}),
+          ...(sandboxPrefs.auto_clone_on_create
+            ? { auto_clone: "true" }
+            : {}),
+        },
+        config: {
+          // Forward env vars so the orchestrator can materialise them on
+          // container start. Coexists with the orchestrator's own defaults.
+          env: sandboxPrefs.env,
+        },
+      });
       if (error || !instance) {
         toast.error(error ?? "Failed to create sandbox");
         return;
@@ -201,6 +258,55 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
                 Detach
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Your computers (matrx-local PCs registered with a Cloudflare tunnel) */}
+        {localPcs.length > 0 && (
+          <div className="border-b border-border">
+            <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Your computers
+            </div>
+            <div className="max-h-32 overflow-y-auto pb-1">
+              {localPcs.map((pc) => {
+                const isBound =
+                  resolved?.rowId === pc.id ||
+                  resolved?.kind === "local-pc" && (resolved as SandboxRef).rowId === pc.id;
+                return (
+                  <button
+                    key={pc.id}
+                    onClick={() => handlePickLocalPc(pc)}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-accent/60 transition-colors"
+                    title={pc.is_online ? "Online" : "Offline — start matrx-local on this device"}
+                  >
+                    <span className="min-w-0 flex items-center gap-2">
+                      {isBound && (
+                        <Check className="h-3 w-3 text-emerald-500 shrink-0" />
+                      )}
+                      <span
+                        className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+                          pc.is_online ? "bg-emerald-500" : "bg-muted-foreground/40"
+                        }`}
+                      />
+                      <Monitor className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="text-xs text-foreground truncate">
+                        {pc.name}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {pc.status}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Sandboxes section header (only when local PCs are also present) */}
+        {localPcs.length > 0 && (
+          <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Sandboxes
           </div>
         )}
 

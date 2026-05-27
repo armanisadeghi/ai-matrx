@@ -7,6 +7,12 @@ import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
+import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import {
+  streamPdfClean,
+  streamPdfFullPipeline,
+  type PdfFullPipelineBody,
+} from "../service/streamPdf";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,51 +86,19 @@ export interface ExtractionTab {
   error: string | null;
   document: PdfDocument | null;
   progressMessage?: string;
+  /**
+   * Live-accumulating clean text written by the AI Clean / Pipeline stream
+   * while `status === "cleaning"`. Cleared on completion (the truth then
+   * lives in `document.cleanContent` after the Supabase refetch). Surfaced
+   * to legacy `AiCleanView` so it can render a token-by-token preview
+   * without re-implementing the stream consumer.
+   */
+  streamingText?: string;
 }
 
 export type ActiveTabId = "new" | string;
 
 export type BatchStatus = "idle" | "extracting";
-
-interface NdjsonEvent {
-  event: "info" | "data" | "end";
-  data: Record<string, unknown>;
-}
-
-// ─── NDJSON streaming helper ──────────────────────────────────────────────────
-
-async function* readNdjsonStream(
-  response: Response,
-): AsyncGenerator<NdjsonEvent> {
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop()!;
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        yield JSON.parse(line) as NdjsonEvent;
-      } catch {
-        // skip malformed lines
-      }
-    }
-  }
-
-  // flush remaining buffer
-  if (buffer.trim()) {
-    try {
-      yield JSON.parse(buffer) as NdjsonEvent;
-    } catch {
-      // skip
-    }
-  }
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -445,12 +419,12 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // Track which placeholder index we're on (results arrive in completion order)
       let resultIndex = 0;
 
-      for await (const event of readNdjsonStream(response)) {
+      const { events } = parseNdjsonStream(response);
+      for await (const event of events) {
         if (event.event === "info") {
-          const code = event.data.code as string | undefined;
-          if (code === "pdf_page_progress") {
+          if (event.data.code === "pdf_page_progress") {
             // Update progress on the currently extracting tab
-            const msg = event.data.user_message as string;
+            const msg = event.data.user_message ?? "";
             setTabs((prev) =>
               prev.map((tab) => {
                 if (
@@ -466,10 +440,12 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         }
 
         if (event.event === "data") {
-          const docId = event.data.doc_id as string | null;
-          const filename = event.data.filename as string;
-          const status = event.data.status as string;
-          const error = event.data.error as string | null;
+          // Batch-extract sends untyped row-per-file results — narrow once.
+          const evtData = event.data as Record<string, unknown>;
+          const docId = evtData.doc_id as string | null;
+          const filename = evtData.filename as string;
+          const status = evtData.status as string;
+          const error = evtData.error as string | null;
 
           // Find the matching placeholder by filename, or use resultIndex
           const placeholderIdx = placeholderTabs.findIndex(
@@ -693,10 +669,33 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   );
 
   // ── AI Content Cleaning ────────────────────────────────────────────────────
+  //
+  // Streams `/utilities/pdf/clean-content/{docId}` via the shared
+  // `streamPdfClean` service (which itself sits on `consumeStream` from
+  // `lib/api/stream-parser` — the platform-wide NDJSON primitive).
+  //
+  // Finalize sequence on success:
+  //   1. Stream emits `data.clean_content` (the agent's whole-doc output) and
+  //      `record_update` (the server's "row changed" signal).
+  //   2. We invalidate the module-scoped doc cache so the next read goes to
+  //      Supabase, not the 30-second stale entry.
+  //   3. Refetch the row, replace the tab's document with the fresh truth.
+  //
+  // **Important:** the AI Clean endpoint only writes the AGGREGATE
+  // `processed_documents.clean_content` column — it does NOT populate
+  // per-page `processed_document_pages.cleaned_text`. That column is owned
+  // by the RAG pipeline (`/rag/ingest/stream`) which uses a different
+  // cleaning algorithm with a per-page section taxonomy. The UI handles
+  // both shapes via the smart-pane rule in `PdfStudioReader`.
+
+  interface CleanContentCallbacks {
+    onProgress?: (message: string) => void;
+    onTextDelta?: (accumulated: string) => void;
+  }
 
   const cleanContent = useCallback(
-    async (docId: string) => {
-      // Set tab to cleaning status; clear any prior error from a previous run
+    async (docId: string, opts: CleanContentCallbacks = {}) => {
+      // Set tab to cleaning status; clear any prior error / stale stream text.
       setTabs((prev) =>
         prev.map((tab) =>
           tab.id === docId
@@ -705,6 +704,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                 status: "cleaning" as const,
                 error: null,
                 progressMessage: "Starting AI cleanup...",
+                streamingText: "",
               }
             : tab,
         ),
@@ -712,70 +712,79 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
       try {
         const headers = await getAuthHeaders();
-        const response = await fetch(
-          `${backendUrl}${ENDPOINTS.pdf.cleanContent(docId)}`,
-          {
-            method: "POST",
-            headers,
-          },
-        );
-
-        if (!response.ok) {
-          const errText = await response.text().catch(() => "");
-          throw new Error(
-            `HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`,
-          );
-        }
-
-        let cleanedText: string | null = null;
-
-        for await (const event of readNdjsonStream(response)) {
-          if (event.event === "info") {
-            const msg =
-              (event.data.user_message as string) ??
-              (event.data.message as string);
-            if (msg) {
+        const { cleanContent: streamedClean } = await streamPdfClean({
+          docId,
+          baseUrl: backendUrl,
+          headers,
+          callbacks: {
+            onProgress: (msg) => {
+              opts.onProgress?.(msg);
               setTabs((prev) =>
                 prev.map((tab) =>
                   tab.id === docId ? { ...tab, progressMessage: msg } : tab,
                 ),
               );
-            }
-          }
+            },
+            onTextDelta: (accumulated) => {
+              opts.onTextDelta?.(accumulated);
+              setTabs((prev) =>
+                prev.map((tab) =>
+                  tab.id === docId
+                    ? { ...tab, streamingText: accumulated }
+                    : tab,
+                ),
+              );
+            },
+            onCleanContent: (text) => {
+              // Mirror the final payload into the live preview field so
+              // legacy consumers (AiCleanView) see the final blob the same
+              // way they saw the deltas.
+              opts.onTextDelta?.(text);
+              setTabs((prev) =>
+                prev.map((tab) =>
+                  tab.id === docId
+                    ? { ...tab, streamingText: text }
+                    : tab,
+                ),
+              );
+            },
+          },
+        });
 
-          if (event.event === "data") {
-            const data = event.data as Record<string, unknown>;
-            const candidate = data.clean_content as string | undefined;
-            if (candidate) cleanedText = candidate;
-          }
-        }
+        // Finalize — invalidate the cache then read the authoritative row.
+        // Even when the stream returned inline `clean_content`, we still
+        // round-trip Supabase so the in-memory tab matches the DB exactly
+        // (rules out drift if a parallel writer touched the row).
+        invalidateProcessedDocumentCache(docId);
+        const fresh = await fetchDocument(docId);
 
-        if (!cleanedText) {
-          // No silent refetch fallback. If the stream produced nothing,
-          // surface that explicitly so the caller can decide whether to
-          // refetch or re-run cleanup. (Reverted per the rebuild plan —
-          // we want every transformation visible, not papered over.)
+        setTabs((prev) =>
+          prev.map((tab) => {
+            if (tab.id !== docId) return tab;
+            // Prefer the freshly-fetched document; fall back to splicing
+            // the streamed text onto whatever's there if the read failed.
+            const document = fresh
+              ?? (tab.document && streamedClean
+                ? { ...tab.document, cleanContent: streamedClean }
+                : tab.document);
+            return {
+              ...tab,
+              status: "done" as const,
+              progressMessage: undefined,
+              streamingText: undefined,
+              document,
+            };
+          }),
+        );
+
+        if (!streamedClean && !fresh?.cleanContent) {
+          // Honest signal — neither path produced content. Surface it so
+          // the caller can decide (toast / retry) instead of pretending
+          // the run worked.
           throw new Error(
-            "AI cleanup stream ended without a clean_content payload",
+            "AI cleanup completed but no clean_content was returned",
           );
         }
-
-        // Update tab with cleaned content
-        setTabs((prev) =>
-          prev.map((tab) =>
-            tab.id === docId && tab.document
-              ? {
-                  ...tab,
-                  status: "done" as const,
-                  progressMessage: undefined,
-                  document: {
-                    ...tab.document,
-                    cleanContent: cleanedText,
-                  },
-                }
-              : tab,
-          ),
-        );
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "AI cleanup failed";
@@ -787,10 +796,12 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                   status: "done" as const,
                   error: msg,
                   progressMessage: undefined,
+                  streamingText: undefined,
                 }
               : tab,
           ),
         );
+        throw err;
       }
     },
     [backendUrl, getAuthHeaders, fetchDocument],
@@ -805,6 +816,11 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   const refreshDocument = useCallback(
     async (docId: string): Promise<boolean> => {
+      // Bust the 30s TTL cache so the read sees writes that landed after
+      // the last fetch. Without this, a refresh inside the cache window
+      // returned the pre-mutation row and the user saw their action "not
+      // working" until they navigated away and back.
+      invalidateProcessedDocumentCache(docId);
       const fresh = await fetchDocument(docId);
       if (!fresh) {
         setTabs((prev) =>
@@ -845,25 +861,38 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   //
   // Calls Python `/utilities/pdf/full-pipeline` which reads the source PDF
   // (looked up via `MediaRef`), runs extract → cleanup → chunk → optional AI,
-  // and writes the result as a NEW `processed_documents` row with
+  // and writes the result as a NEW child `processed_documents` row with
   // `parent_processed_id` pointing back here, plus N
-  // `processed_document_pages` rows. After the stream completes we refresh
-  // the active tab so the new per-page rows show up in Synced View.
-  //
-  // The endpoint streams JSONL — we surface progress messages on the tab.
+  // `processed_document_pages` rows on the child. The new child id arrives
+  // on `result.file_id` in the stream's `data` event — we capture it and
+  // return it to the caller so the route can silently re-route to the new
+  // doc instead of staring at the stale parent.
+
+  interface RunFullPipelineOptions {
+    force_ocr?: boolean;
+    persist_output?: boolean;
+    onProgress?: (message: string) => void;
+    onTextDelta?: (accumulated: string) => void;
+  }
+
+  interface RunFullPipelineResult {
+    success: boolean;
+    /** New child `processed_documents.id`, when persistence ran server-side. */
+    childDocId: string | null;
+  }
 
   const runFullPipeline = useCallback(
     async (
       docId: string,
-      options?: { force_ocr?: boolean; persist_output?: boolean },
-    ): Promise<boolean> => {
+      options?: RunFullPipelineOptions,
+    ): Promise<RunFullPipelineResult> => {
       const tab = tabs.find((t) => t.id === docId);
       const sourceUrl = tab?.document?.source ?? null;
       const sourceKind = tab?.document?.sourceKind ?? null;
       const sourceId = tab?.document?.sourceId ?? null;
 
       // Mark the tab as cleaning (reuses the existing spinner) and clear
-      // any prior error.
+      // any prior error or stale stream preview.
       setTabs((prev) =>
         prev.map((t) =>
           t.id === docId
@@ -872,6 +901,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                 status: "cleaning" as const,
                 error: null,
                 progressMessage: "Starting full pipeline…",
+                streamingText: "",
               }
             : t,
         ),
@@ -881,7 +911,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         const headers = await getAuthHeaders();
         // Build a unified source. Prefer the cld_file id (the canonical
         // pointer); fall back to a public URL if that's all we have.
-        const body: Record<string, unknown> = {
+        const body: PdfFullPipelineBody = {
           options: {
             include_page_metadata: true,
             include_block_metadata: true,
@@ -901,44 +931,57 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         }
 
-        const response = await fetch(
-          `${backendUrl}${ENDPOINTS.pdf.fullPipeline}`,
-          {
-            method: "POST",
-            headers: { ...headers, "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          },
-        );
-
-        if (!response.ok) {
-          const errText = await response.text().catch(() => "");
-          throw new Error(
-            `HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`,
-          );
-        }
-
-        for await (const event of readNdjsonStream(response)) {
-          if (event.event === "info") {
-            const msg =
-              (event.data.user_message as string | undefined) ??
-              (event.data.message as string | undefined);
-            if (msg) {
+        const { childDocId } = await streamPdfFullPipeline({
+          body,
+          baseUrl: backendUrl,
+          headers,
+          callbacks: {
+            onProgress: (msg) => {
+              options?.onProgress?.(msg);
               setTabs((prev) =>
                 prev.map((t) =>
                   t.id === docId ? { ...t, progressMessage: msg } : t,
                 ),
               );
-            }
-          }
-        }
+            },
+            onTextDelta: (accumulated) => {
+              options?.onTextDelta?.(accumulated);
+              setTabs((prev) =>
+                prev.map((t) =>
+                  t.id === docId
+                    ? { ...t, streamingText: accumulated }
+                    : t,
+                ),
+              );
+            },
+          },
+        });
 
-        // Refresh the doc record so any newly-persisted text / structured
-        // JSON fields show up. The per-page rows are scoped to the new
-        // child `processed_documents` row, so the user may want to navigate
-        // to it explicitly — for now, refreshing the current tab is the
-        // safe, transparent default.
-        await refreshDocument(docId);
-        return true;
+        // Finalize on whichever row the server actually wrote to. If a
+        // child was created, refresh THAT — otherwise refresh the parent
+        // we started from. Cache invalidation lives inside
+        // `refreshDocument` (one place, one rule).
+        const finalizeId = childDocId ?? docId;
+        await refreshDocument(finalizeId);
+
+        // Reset the source tab's spinner. If we routed to a child, the
+        // route will mount a new tab; the parent tab just needs to look
+        // calm again. Previously this stayed `"cleaning"` forever — bug
+        // surfaced while reading; fixed in the same change.
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.id === docId
+              ? {
+                  ...t,
+                  status: "done" as const,
+                  progressMessage: undefined,
+                  streamingText: undefined,
+                }
+              : t,
+          ),
+        );
+
+        return { success: true, childDocId };
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "Pipeline run failed";
@@ -950,11 +993,12 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                   status: "done" as const,
                   error: msg,
                   progressMessage: undefined,
+                  streamingText: undefined,
                 }
               : t,
           ),
         );
-        return false;
+        return { success: false, childDocId: null };
       }
     },
     [tabs, backendUrl, getAuthHeaders, refreshDocument],

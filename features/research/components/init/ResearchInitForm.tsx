@@ -202,96 +202,17 @@ function parseStringArray(buffer: string, fieldName: string): string[] {
   return result;
 }
 
-// ── JSONL stream reader ───────────────────────────────────────────────────────
-
-async function readJsonlStream(
-  response: Response,
-  onEvent: (event: Record<string, unknown>) => void,
-): Promise<void> {
-  console.log("[suggest-stream] response received", {
-    ok: response.ok,
-    status: response.status,
-    statusText: response.statusText,
-    contentType: response.headers.get("content-type"),
-    contentLength: response.headers.get("content-length"),
-    transferEncoding: response.headers.get("transfer-encoding"),
-    hasBody: !!response.body,
-    allHeaders: Object.fromEntries(response.headers.entries()),
-  });
-
-  if (!response.body) {
-    console.warn(
-      "[suggest-stream] response has no body — aborting stream read",
-    );
-    return;
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let chunkIndex = 0;
-  let lineIndex = 0;
-  let eventIndex = 0;
-  const startedAt = performance.now();
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      console.log("[suggest-stream] stream done", {
-        totalChunks: chunkIndex,
-        totalLines: lineIndex,
-        totalEvents: eventIndex,
-        leftoverBuffer: buffer,
-        elapsedMs: Math.round(performance.now() - startedAt),
-      });
-      if (buffer.trim()) {
-        console.warn(
-          "[suggest-stream] non-empty buffer at stream end — attempting to parse",
-          buffer,
-        );
-        try {
-          const parsed = JSON.parse(buffer.trim()) as Record<string, unknown>;
-          console.log("[suggest-stream] parsed leftover buffer", parsed);
-          eventIndex += 1;
-          onEvent(parsed);
-        } catch (err) {
-          console.error(
-            "[suggest-stream] failed to parse leftover buffer",
-            err,
-          );
-        }
-      }
-      break;
-    }
-    const text = decoder.decode(value, { stream: true });
-    chunkIndex += 1;
-    console.log(`[suggest-stream] chunk #${chunkIndex}`, {
-      bytes: value?.byteLength ?? 0,
-      text,
-    });
-    buffer += text;
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      lineIndex += 1;
-      const trimmed = line.trim();
-      if (!trimmed) {
-        console.log(`[suggest-stream] line #${lineIndex} (empty, skipped)`);
-        continue;
-      }
-      try {
-        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-        eventIndex += 1;
-        console.log(`[suggest-stream] event #${eventIndex}`, parsed);
-        onEvent(parsed);
-      } catch (err) {
-        console.warn(
-          `[suggest-stream] line #${lineIndex} failed to parse — skipping`,
-          { trimmed, err },
-        );
-      }
-    }
-  }
-}
+// NDJSON stream consumption now goes through `parseNdjsonStream` from
+// `@/lib/api/stream-parser` — the platform-wide primitive. The legacy
+// inline `readJsonlStream` (with verbose debug logging) was replaced
+// because every NDJSON consumer should share the same backpressure-safe
+// reader; per-feature ones are now banned.
+//
+// Key wire-format note: the platform parser auto-expands compact chunk
+// events of the form `{ e: "c", t: "..." }` into the standard envelope
+// `{ event: "chunk", data: { text: "..." } }`. The suggestion consumer
+// below reads chunks via the new envelope.
+import { parseNdjsonStream } from "@/lib/api/stream-parser";
 
 // ── Step dots ─────────────────────────────────────────────────────────────────
 
@@ -1315,29 +1236,25 @@ export default function ResearchInitForm() {
       let appliedDescription: string | null = null;
       let applied: SuggestApplied | null = null;
       let suggestedKeywords: string[] = [];
-      let contentBuffer = ""; // accumulates `{ e: "c", t: "..." }` chunks
-      const allEvents: Record<string, unknown>[] = [];
+      let contentBuffer = ""; // accumulates streaming chunk text
       const eventTypes: Record<string, number> = {};
 
-      await readJsonlStream(suggestRes, (ev) => {
-        allEvents.push(ev);
-        const envelope =
-          typeof ev.event === "string"
-            ? ev.event
-            : typeof ev.e === "string"
-              ? `content(${ev.e})`
-              : "(unknown)";
+      const { events: suggestEvents } = parseNdjsonStream(suggestRes);
+      for await (const ev of suggestEvents) {
+        // The parser already expanded compact `{e:"c", t:"..."}` lines
+        // into `{event: "chunk", data: {text}}` envelopes, so we
+        // dispatch only on `ev.event`.
         const innerKey =
           ev.event === "data" &&
           ev.data &&
           typeof (ev.data as Record<string, unknown>).type === "string"
             ? `data:${(ev.data as Record<string, unknown>).type as string}`
-            : envelope;
+            : ev.event;
         eventTypes[innerKey] = (eventTypes[innerKey] ?? 0) + 1;
 
         // Live-streaming preview from content tokens.
-        if (ev.e === "c" && typeof ev.t === "string") {
-          contentBuffer += ev.t;
+        if (ev.event === "chunk" && typeof ev.data.text === "string") {
+          contentBuffer += ev.data.text;
           const titleField = parsePartialString(contentBuffer, "title");
           const descField = parsePartialString(contentBuffer, "description");
           const kws = parseStringArray(contentBuffer, "suggested_keywords");
@@ -1371,22 +1288,20 @@ export default function ResearchInitForm() {
             applied = inner as unknown as SuggestApplied;
           }
         }
-      });
+      }
 
       console.log("[suggest-stream] aggregation complete", {
-        totalEvents: allEvents.length,
         eventTypes,
         appliedName,
         appliedDescription,
         applied,
         suggestedKeywords,
-        allEvents,
       });
 
       if (!applied) {
         console.error(
           "[suggest-stream] no suggest_applied event was received",
-          { eventTypes, allEvents },
+          { eventTypes },
         );
         throw new Error(
           "AI did not return suggestions. The topic was created — you can find it in your topic list.",

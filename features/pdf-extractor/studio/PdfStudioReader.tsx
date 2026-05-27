@@ -151,6 +151,19 @@ export interface PdfStudioReaderProps {
   /** Called when the user wants to re-run the full pipeline on this doc. */
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
+  /**
+   * True while AI Clean is streaming. The cleaned pane uses this to render
+   * `streamingCleanText` as a single live preview block instead of the
+   * per-page rows (whose `cleaned_text` won't be populated until the
+   * server stream finalizes).
+   */
+  aiCleanRunning?: boolean;
+  /**
+   * Live-accumulating text from the AI Clean stream. Null when not
+   * streaming. Rendered as a single non-anchored block while
+   * `aiCleanRunning` is true.
+   */
+  streamingCleanText?: string | null;
   /** Called when the user wants to open the upload drawer (e.g. to refresh a missing source). */
   onOpenUpload: () => void;
   /** Visual edit mode — 'crop' overlays a selection rect, 'reorder' shows a page-tile grid. */
@@ -181,6 +194,8 @@ export function PdfStudioReader({
   findQuery,
   onRunPipeline,
   pipelineRunning,
+  aiCleanRunning = false,
+  streamingCleanText = null,
   onOpenUpload,
   editMode,
   cropPagesInput,
@@ -190,14 +205,18 @@ export function PdfStudioReader({
   onOpenChunkedRuns,
 }: PdfStudioReaderProps) {
   const hasPages = pages.length > 0;
-  // True when per-page rows exist but every row's text is empty — typically
-  // because an older pipeline run created page stubs without persisting the
-  // extracted text. We fall back to the aggregate `content` / `clean_content`
-  // and surface a re-run CTA.
-  const allPagesEmpty = useMemo(
-    () =>
-      pages.length > 0 &&
-      pages.every((p) => !p.rawText.trim() && !p.cleanedText.trim()),
+  // Per-field emptiness. The raw and cleaned columns are populated by
+  // different pipelines (extract vs RAG-ingest's per-page cleanup), so a
+  // doc can have raw text on every page but no per-page cleaned_text —
+  // exactly the "no text on this page × 7" bug in the AI Clean screenshot.
+  // Compute each one separately so each pane can fall back to its own
+  // aggregate column (`content` for raw, `clean_content` for cleaned).
+  const rawPagesEmpty = useMemo(
+    () => pages.length > 0 && pages.every((p) => !p.rawText.trim()),
+    [pages],
+  );
+  const cleanedPagesEmpty = useMemo(
+    () => pages.length > 0 && pages.every((p) => !p.cleanedText.trim()),
     [pages],
   );
 
@@ -256,7 +275,7 @@ export function PdfStudioReader({
           lastScrolledPaneRef={lastScrolledPaneRef}
           findQuery={findQuery}
           onTogglePane={() => onTogglePane("raw")}
-          allPagesEmpty={allPagesEmpty}
+          allPagesEmpty={rawPagesEmpty}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
           onRefreshPages={onRefreshPages}
@@ -279,10 +298,12 @@ export function PdfStudioReader({
           findQuery={findQuery}
           onTogglePane={() => onTogglePane("clean")}
           highlightSection
-          allPagesEmpty={allPagesEmpty}
+          allPagesEmpty={cleanedPagesEmpty}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
           onRefreshPages={onRefreshPages}
+          streaming={aiCleanRunning}
+          streamingText={streamingCleanText}
         />
       )}
       {visiblePanes.has("chunks") && (
@@ -1081,6 +1102,8 @@ function TextPane({
   onRunPipeline,
   pipelineRunning,
   onRefreshPages,
+  streaming = false,
+  streamingText = null,
 }: {
   paneKey: PaneKey;
   title: string;
@@ -1097,10 +1120,24 @@ function TextPane({
   findQuery: string;
   onTogglePane: () => void;
   highlightSection?: boolean;
+  /**
+   * True when every per-page row in `field` is empty. The pane falls back
+   * to rendering the aggregate doc column (`content` / `clean_content`)
+   * as a single non-anchored block in that case — see `aggregateText`.
+   */
   allPagesEmpty: boolean;
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
   onRefreshPages: () => void;
+  /** True while a clean/pipeline stream is actively writing into `streamingText`. */
+  streaming?: boolean;
+  /**
+   * Live-accumulating text from the active stream. When `streaming` is
+   * true and this is non-empty, we render it as a single block at the top
+   * of the pane (replacing the per-page or aggregate rendering until the
+   * run finalizes). Null otherwise.
+   */
+  streamingText?: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const anchorMap = useRef<Map<number, HTMLElement>>(new Map());
@@ -1234,7 +1271,10 @@ function TextPane({
         copyAllLabel={`Copy all ${field === "cleaned" ? "cleaned" : "raw"} pages`}
       />
 
-      {allPagesEmpty && (
+      {/* Suppress the blank-pages banner while a stream is mid-flight —
+          the user is mid-action and shouldn't be told "run pipeline".
+          The streaming preview below takes over the pane. */}
+      {allPagesEmpty && !streaming && (
         <BlankPagesBanner
           docHasAggregate={!!aggregateText}
           field={field}
@@ -1250,10 +1290,35 @@ function TextPane({
         onWheel={onScrollStart}
         onTouchMove={onScrollStart}
       >
-        {allPagesEmpty && aggregateText && (
-          // Surface the aggregate document text so the user can actually
-          // read what's there. We render it as a single block, NOT as N
-          // empty page rows, since per-page persistence didn't work.
+        {streaming && (
+          // Live stream preview — overrides per-page rendering while a run
+          // is in flight. Single non-anchored block; no page sync. Renders
+          // even with empty text so the user sees the spinner immediately.
+          <div className="border border-primary/40 bg-primary/5 rounded-md p-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin text-primary" />
+              <span className="font-mono font-semibold text-primary">
+                Streaming…
+              </span>
+              {streamingText && streamingText.length > 0 && (
+                <span className="ml-auto font-mono">
+                  {streamingText.length.toLocaleString()} chars
+                </span>
+              )}
+            </div>
+            <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+              {streamingText && streamingText.length > 0
+                ? streamingText
+                : <span className="italic text-muted-foreground">Waiting for the model…</span>}
+            </pre>
+          </div>
+        )}
+
+        {!streaming && allPagesEmpty && aggregateText && (
+          // No per-page rows for this field, but the aggregate column has
+          // text — render it as a single block. This is the AI Clean path
+          // (aggregate `clean_content` written, per-page `cleaned_text`
+          // empty) AND any legacy doc that pre-dates per-page persistence.
           <div className="border border-border bg-card rounded-md p-2.5">
             <div className="flex items-center gap-1.5 mb-1.5 text-[10px] text-muted-foreground">
               <span className="font-mono font-semibold text-foreground/80">
@@ -1270,9 +1335,10 @@ function TextPane({
         )}
 
         {pages.map((p) => {
-          // Skip per-page rows when the whole set is empty — they'd just
-          // print "no text on this page" N times.
-          if (allPagesEmpty) return null;
+          // Skip per-page rows when streaming (the live preview takes
+          // over) or when the whole field is empty (we already rendered
+          // the aggregate fallback above).
+          if (streaming || allPagesEmpty) return null;
           const baseText = field === "cleaned" ? p.cleanedText : p.rawText;
           const text = overrides.get(p.id) ?? baseText;
           const isActive = activePage === p.pageNumber;

@@ -65,6 +65,15 @@ export interface ResolvedSandboxRef {
    * stored before tier was tracked, or for the editor-active source.
    */
   tier?: "ec2" | "hosted";
+  /**
+   * Compute-target kind. Absent / "ec2" / "hosted" → orchestrator sandbox
+   * (existing client-side token-mint path). "local-pc" → matrx-local PC
+   * over Cloudflare tunnel, resolved server-side via
+   * `/api/compute-targets/resolve` (uses Supabase session JWT).
+   */
+  kind?: "ec2" | "hosted" | "local-pc";
+  /** Display label latched at selection (rendered by SandboxPanel chip). */
+  name?: string;
   source: "conversation-override" | "surface-active" | "editor-active";
 }
 
@@ -100,7 +109,10 @@ export function resolveAgentSandboxRef(
   const override = conversationId
     ? selectConversationSandboxOverride(conversationId)(state)
     : null;
-  if (override?.rowId && override.proxyUrl) {
+  if (
+    override?.rowId &&
+    (override.proxyUrl || override.kind === "local-pc")
+  ) {
     return { ...override, source: "conversation-override" };
   }
 
@@ -119,7 +131,10 @@ export function resolveAgentSandboxRef(
   const surfaceBound =
     state.userPreferences?.coding?.activeAgentSandboxBySurface?.[sourceFeature] ??
     null;
-  if (surfaceBound?.rowId && surfaceBound.proxyUrl) {
+  if (
+    surfaceBound?.rowId &&
+    (surfaceBound.proxyUrl || surfaceBound.kind === "local-pc")
+  ) {
     return { ...surfaceBound, source: "surface-active" };
   }
 
@@ -224,6 +239,34 @@ export async function getActiveSandboxBinding(
 
   const ref = resolveAgentSandboxRef(state, conversationId);
   if (!ref) return null;
+
+  // Local-PC binding: server-side resolution via /api/compute-targets/resolve.
+  // The token comes from the Supabase session (not the orchestrator mint
+  // route), and the base_url points at aidream's reverse-proxy which forwards
+  // to the user's matrx-local engine over its Cloudflare tunnel.
+  if (ref.kind === "local-pc") {
+    try {
+      const resp = await fetch("/api/compute-targets/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "local-pc", id: ref.rowId }),
+      });
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "(no body)");
+        console.error(
+          `${LOG} ❌ local-PC resolve FAILED for device ${ref.rowId}: HTTP ${resp.status}. The agent will get NO sandbox tools this turn. Server said: ${body}`,
+        );
+        return null;
+      }
+      return (await resp.json()) as SandboxBindingPayload;
+    } catch (err) {
+      console.error(
+        `${LOG} ❌ local-PC resolve THREW for device ${ref.rowId}.`,
+        err,
+      );
+      return null;
+    }
+  }
 
   // The proxy_url shape is `<orchestrator>/sandboxes/sbx-XXX/proxy`.
   // The orchestrator's structured fs/exec endpoints live one level up at

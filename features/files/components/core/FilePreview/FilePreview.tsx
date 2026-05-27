@@ -295,7 +295,7 @@ export function FilePreview({
             className,
           )}
         >
-          <DebugLayerLabel label="FilePreview" color="blue" />
+          {/* <DebugLayerLabel label="FilePreview" color="blue" /> */}
           {actionBar}
           <div
             className={cn(
@@ -303,7 +303,7 @@ export function FilePreview({
               DEBUG_RING_FILE_PREVIEW_BODY,
             )}
           >
-            <DebugLayerLabel label="FilePreview body" color="cyan" />
+            {/* <DebugLayerLabel label="FilePreview body" color="cyan" /> */}
             <Inline
               id={file.source.virtualId}
               fieldId={file.source.fieldId}
@@ -414,7 +414,7 @@ export function FilePreview({
         className,
       )}
     >
-      <DebugLayerLabel label="FilePreview" color="blue" />
+      {/* <DebugLayerLabel label="FilePreview" color="blue" /> */}
       {actionBar}
       <div
         className={cn(
@@ -422,7 +422,7 @@ export function FilePreview({
           DEBUG_RING_FILE_PREVIEW_BODY,
         )}
       >
-        <DebugLayerLabel label="FilePreview body" color="cyan" />
+        {/* <DebugLayerLabel label="FilePreview body" color="cyan" /> */}
         {body}
       </div>
     </div>
