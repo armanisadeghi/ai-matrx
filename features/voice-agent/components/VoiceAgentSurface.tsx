@@ -51,6 +51,13 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
   const liveError = useAppSelector((s) => selectVoiceError(s, instanceId));
   const liveStatus = useAppSelector((s) => selectVoiceStatus(s, instanceId));
 
+  // Silence "dispatch is unused if no playground" — the dispatch is consumed
+  // by the PlaygroundSettingsSheet through Redux, but we keep the import here
+  // so future surface-level actions are one line away. Placed before the JSX
+  // return so it's reachable (a trailing `void dispatch;` after `return` is
+  // dead code).
+  void dispatch;
+
   // Surface mic-permission errors as a toast (the banner shows the inline
   // version too — toast catches the user's eye while they're looking at the
   // permission prompt).
@@ -210,11 +217,6 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
       </section>
     </div>
   );
-
-  // Silence "dispatch is unused if no playground" — the dispatch is consumed
-  // by the PlaygroundSettingsSheet through Redux, but we keep the import here
-  // so future surface-level actions are one line away.
-  void dispatch;
 }
 
 function EmptyTranscript({ preset }: { preset: VoiceAgentPreset }) {

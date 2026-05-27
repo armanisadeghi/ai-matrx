@@ -38,7 +38,12 @@ export interface AudioPlaybackHandle {
 export function createAudioPlayback(): AudioPlaybackHandle {
   let ctx: AudioContext | null = null;
   let analyser: AnalyserNode | null = null;
-  let analyserData: Uint8Array | null = null;
+  // `Uint8Array<ArrayBuffer>` (NOT the wider `Uint8Array<ArrayBufferLike>`):
+  // TS lib.dom.d.ts in 5.7+ narrowed `AnalyserNode.getByteTimeDomainData` to
+  // the ArrayBuffer-backed variant. `new Uint8Array(length)` returns that
+  // exact variant, but a bare `Uint8Array` annotation widens to
+  // ArrayBufferLike (includes SharedArrayBuffer) and fails the call site.
+  let analyserData: Uint8Array<ArrayBuffer> | null = null;
 
   const queued: AudioBufferSourceNode[] = [];
   let nextPlayTime = 0;

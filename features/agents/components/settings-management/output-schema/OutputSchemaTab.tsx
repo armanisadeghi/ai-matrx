@@ -65,7 +65,13 @@ export function OutputSchemaTab({ agentId, onDirtyChange }: OutputSchemaTabProps
   // Latest successfully-parsed buffer, captured from the editor so the Validate
   // button can inspect exactly what's on screen without applying it.
   const [parsed, setParsed] = useState<Record<string, unknown> | null>(
-    (outputSchema as Record<string, unknown> | null) ?? null,
+    // OutputSchema is a typed envelope ({name, description?, schema, strict?}) —
+    // no string index signature, so it has no structural overlap with
+    // Record<string, unknown>. The editor treats the whole serialized envelope
+    // as a JSON dict (matches `initialText = JSON.stringify(outputSchema, …)`
+    // above), which is safe at runtime; the cast goes through `unknown` as the
+    // compiler requests.
+    (outputSchema as unknown as Record<string, unknown> | null) ?? null,
   );
   const [report, setReport] = useState<OutputSchemaValidation | null>(null);
 

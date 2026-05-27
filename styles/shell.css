@@ -607,6 +607,21 @@
   height: 2rem;
 }
 
+/* Keep the icon at the LEFT (`padding-left`) of the row when the sidebar
+   collapses — don't snap to `justify-content: center` like the main nav
+   does. Without this, the moment the user toggles collapse, the icon
+   jumps to the centre of the still-wide (208px) row, then slides ~80px
+   leftward as the sidebar width animates down to 44px. With this
+   override the icon stays at `iconX=12` (padding-left=0.375rem inside an
+   item that starts at itemX=6) throughout the transition — the
+   shrinking sidebar just trims the empty space to the right of the
+   icon, and the icon never appears to move. (Horizontal padding is
+   already 0.375rem in BOTH states so the icon's x position is naturally
+   identical; only the `justify-content` switch needs neutralizing.) */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item.shell-nav-stable {
+  justify-content: flex-start;
+}
+
 /* Tooltip on collapsed sidebar */
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item[title]:hover::after {
   content: attr(title);

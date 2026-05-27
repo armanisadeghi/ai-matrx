@@ -24,10 +24,18 @@ import {
   type JsonTruncatorTab,
 } from "./JsonTruncator";
 
+/** WindowPanelProps is a discriminated union — one branch requires `overlayId`
+ *  (overlay-managed close), the other requires `onClose` (inline-managed
+ *  close). This dialog always uses the inline branch (callers control
+ *  `isOpen` + `onClose` themselves), so we narrow to that branch before
+ *  Omit-ing. Without the Extract, JSX spread inference flips toward the
+ *  overlay branch and demands `overlayId`. */
+type InlineWindowPanelProps = Extract<WindowPanelProps, { onClose: () => void }>;
+
 export interface JsonTruncatorDialogProps
   extends
     JsonTruncatorProps,
-    Omit<WindowPanelProps, "children" | "title" | "id"> {
+    Omit<InlineWindowPanelProps, "children" | "title" | "id" | "onClose"> {
   isOpen?: boolean;
   onClose: () => void;
   title?: string;

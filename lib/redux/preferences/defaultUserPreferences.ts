@@ -105,6 +105,17 @@ export const defaultUserPreferences: UserPreferences = {
     monacoEnvironmentsEnabled: true,
     activeAgentSandboxBySurface: {},
   },
+  // Matches the in-slice defaults at
+  // lib/redux/preferences/userPreferencesSlice.ts:535 — keep them in sync.
+  sandbox: {
+    template: "bare",
+    tier: "hosted",
+    ttl_seconds: null,
+    default_git_repo: null,
+    default_git_branch: null,
+    env: {},
+    auto_clone_on_create: false,
+  },
   flashcard: {
     fontSize: 16,
     educationLevel: "highSchool",

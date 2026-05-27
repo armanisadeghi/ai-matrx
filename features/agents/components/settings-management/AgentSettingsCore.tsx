@@ -1768,7 +1768,12 @@ export function AgentSettingsCore({
   // only decorate each row (supported vs. caution) — they never decide whether
   // a row appears. See lib/redux/slices/agent-settings/settings-catalogue.ts.
   const settingGroups = buildSettingsRows(
-    normalizedControls as Record<string, unknown> | null,
+    // NormalizedControls has no string index signature (typed optional keys
+    // alongside two required `Record<string, any>` escape-hatch fields), so
+    // it has no structural overlap with `Record<string, unknown>`.
+    // buildSettingsRows takes a loose bag-of-controls contract on purpose; we
+    // use the canonical `as unknown as` two-step the compiler asks for.
+    normalizedControls as unknown as Record<string, unknown> | null,
     currentSettings as Record<string, unknown>,
   );
 

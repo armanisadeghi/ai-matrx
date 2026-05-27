@@ -98,7 +98,12 @@ export function RunAdvancedSettings({
   // with the effective (possibly overridden) model so the rows match what will
   // actually run.
   const { normalizedControls } = useModelControls(models, effectiveModelId);
-  const controls = normalizedControls as Record<
+  // NormalizedControls has typed optional keys + two required `Record<string, any>`
+  // escape-hatch fields (rawControls/unmappedControls), so it has no structural
+  // overlap with `Record<string, ControlDefinition>`. We index by known key here
+  // (CURATED), never by the escape-hatch keys, so the runtime cast is safe —
+  // the `as unknown as` is the canonical TS escape hatch the compiler asks for.
+  const controls = normalizedControls as unknown as Record<
     string,
     ControlDefinition
   > | null;

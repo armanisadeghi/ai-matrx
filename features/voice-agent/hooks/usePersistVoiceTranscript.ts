@@ -93,7 +93,14 @@ export function usePersistVoiceTranscript(
             preset,
           });
           ensureInFlightRef.current = false;
-          if (!ensured.ok) {
+          // The project ships with `strictNullChecks: false`, which breaks
+          // discriminated-union narrowing on the boolean tag `ensured.ok`
+          // (TS treats `ok: true` and `ok: false` as both potentially
+          // `undefined`, so neither `!ensured.ok` nor `if (ensured.ok) … else`
+          // narrows the union). The `in` operator is a STRUCTURAL guard and
+          // narrows correctly regardless of strict-null mode: `'error' in
+          // ensured` selects the union member that has the `error` key.
+          if ("error" in ensured) {
             console.error(
               "[usePersistVoiceTranscript] ensureConversation failed:",
               ensured.error,

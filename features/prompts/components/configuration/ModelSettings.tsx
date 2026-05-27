@@ -680,7 +680,11 @@ export function ModelSettings({
   // section below, and `tools` by the dedicated tool picker, so both are
   // excluded from this generic loop to avoid double-rendering.
   const settingGroups = buildSettingsRows(
-    normalizedControls as Record<string, unknown> | null,
+    // Same `as unknown as` two-step as the other settings callsites:
+    // NormalizedControls has typed optional keys + required `Record<string, any>`
+    // escape-hatch fields, so no structural overlap with the loose
+    // `Record<string, unknown>` shape that buildSettingsRows accepts.
+    normalizedControls as unknown as Record<string, unknown> | null,
     settings as Record<string, unknown>,
   );
 

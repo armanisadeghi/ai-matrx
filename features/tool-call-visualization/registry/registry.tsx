@@ -50,6 +50,7 @@ import {
   DynamicOverlayRenderer,
 } from "../dynamic/DynamicToolRenderer";
 import { getCachedRenderer, isKnownNoDynamic } from "../dynamic/cache";
+import type { CompiledToolRenderer } from "../dynamic/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO header extras helpers
@@ -632,13 +633,15 @@ export function getToolPhaseLabel(
     if (reg?.phaseLabels) {
       return formatPhaseLabel(reg.phaseLabels, phase, errorMessage);
     }
-    const dynamic = getCachedRenderer(toolName);
-    if (dynamic && (dynamic as { phaseLabels?: ToolPhaseLabels }).phaseLabels) {
-      return formatPhaseLabel(
-        (dynamic as { phaseLabels: ToolPhaseLabels }).phaseLabels,
-        phase,
-        errorMessage,
-      );
+    // `CompiledToolRenderer` doesn't formally declare `phaseLabels`, but some
+    // dynamically-compiled renderers attach one (mirrors what the static
+    // `toolRendererRegistry` entries carry). We widen the type once via cast
+    // and then narrow with `?.` — no double-cast or `as { …required: … }`.
+    const dynamic = getCachedRenderer(toolName) as
+      | (CompiledToolRenderer & { phaseLabels?: ToolPhaseLabels })
+      | null;
+    if (dynamic?.phaseLabels) {
+      return formatPhaseLabel(dynamic.phaseLabels, phase, errorMessage);
     }
     if (FALLBACK_PHASE_LABELS_BY_TOOLNAME[toolName]) {
       return formatPhaseLabel(
