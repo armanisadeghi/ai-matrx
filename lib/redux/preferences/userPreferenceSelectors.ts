@@ -14,6 +14,7 @@ import type {
   ImageGenerationPreferences,
   TextGenerationPreferences,
   CodingPreferences,
+  SandboxPreferences,
   FlashcardPreferences,
   AiModelsPreferences,
   SystemPreferences,
@@ -83,6 +84,36 @@ export const selectTextGenerationPreferences = createSelector(
 export const selectCodingPreferences = createSelector(
   selectUserPreferences,
   (state): CodingPreferences => state.coding,
+);
+
+export const selectSandboxPreferences = createSelector(
+  selectUserPreferences,
+  (state): SandboxPreferences => state.sandbox,
+);
+
+export const selectSandboxDefaultTemplate = createSelector(
+  selectSandboxPreferences,
+  (sandbox): string => sandbox.template,
+);
+
+export const selectSandboxDefaultTier = createSelector(
+  selectSandboxPreferences,
+  (sandbox): "ec2" | "hosted" => sandbox.tier,
+);
+
+export const selectSandboxDefaultGitRepo = createSelector(
+  selectSandboxPreferences,
+  (sandbox): string | null => sandbox.default_git_repo,
+);
+
+export const selectSandboxDefaultGitBranch = createSelector(
+  selectSandboxPreferences,
+  (sandbox): string | null => sandbox.default_git_branch,
+);
+
+export const selectSandboxAutoCloneOnCreate = createSelector(
+  selectSandboxPreferences,
+  (sandbox): boolean => sandbox.auto_clone_on_create,
 );
 
 export const selectFlashcardPreferences = createSelector(

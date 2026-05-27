@@ -27,6 +27,7 @@ import {
   Zap,
   BrainCircuit,
   Database,
+  Server,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -143,6 +144,12 @@ const settingsNavItems: SettingsNavItem[] = [
     href: "/settings/integrations",
     icon: <Plug className="h-3.5 w-3.5" />,
     IconComp: Plug,
+  },
+  {
+    title: "Sandbox Defaults",
+    href: "/settings/sandbox",
+    icon: <Server className="h-3.5 w-3.5" />,
+    IconComp: Server,
   },
   {
     title: "Sandbox Storage",

@@ -27,6 +27,7 @@ import { setConversationSandboxOverride } from "@/features/agents/redux/conversa
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
 import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
+import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
 import {
   getEffectiveStatus,
@@ -167,10 +168,35 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     }
   };
 
+  // Sandbox defaults the user configured in Settings → Sandbox. The "New
+  // sandbox" button passes these to the orchestrator so every box the user
+  // creates from chat matches their configured template / tier / env / etc.
+  const sandboxPrefs = useAppSelector(selectSandboxPreferences);
+
   const handleClaimNew = async () => {
     setCreating(true);
     try {
-      const { instance, error } = await createInstance({});
+      const { instance, error } = await createInstance({
+        template: sandboxPrefs.template,
+        tier: sandboxPrefs.tier,
+        ttl_seconds: sandboxPrefs.ttl_seconds ?? undefined,
+        labels: {
+          ...(sandboxPrefs.default_git_repo
+            ? { default_git_repo: sandboxPrefs.default_git_repo }
+            : {}),
+          ...(sandboxPrefs.default_git_branch
+            ? { default_git_branch: sandboxPrefs.default_git_branch }
+            : {}),
+          ...(sandboxPrefs.auto_clone_on_create
+            ? { auto_clone: "true" }
+            : {}),
+        },
+        config: {
+          // Forward env vars so the orchestrator can materialise them on
+          // container start. Coexists with the orchestrator's own defaults.
+          env: sandboxPrefs.env,
+        },
+      });
       if (error || !instance) {
         toast.error(error ?? "Failed to create sandbox");
         return;
