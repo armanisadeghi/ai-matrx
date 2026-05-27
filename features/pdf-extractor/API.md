@@ -230,34 +230,67 @@ GET /utilities/pdf/documents?limit=50&offset=0
 
 ---
 
-## Streaming Tips
+## Streaming — Canonical Frontend Pattern
 
-The batch and clean endpoints use NDJSON streaming. Each line is a complete JSON object terminated by `\n`. The standard way to consume this in the frontend is:
+The batch, clean, and full-pipeline endpoints all emit NDJSON using the standard Matrx stream contract. **Do not hand-roll `response.body.getReader()` loops.** Use the platform primitive `consumeStream` from [`lib/api/stream-parser.ts`](../../lib/api/stream-parser.ts), or the lower-level `parseNdjsonStream` async generator when the endpoint emits custom event names.
 
 ```ts
-const response = await fetch('/utilities/pdf/batch-extract', {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${token}` },
-  body: formData,
+import { consumeStream } from "@/lib/api/stream-parser";
+
+const response = await fetch(`/utilities/pdf/clean-content/${docId}`, {
+  method: "POST",
+  headers,
 });
-
-const reader = response.body!.getReader();
-const decoder = new TextDecoder();
-let buffer = '';
-
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  buffer += decoder.decode(value, { stream: true });
-  const lines = buffer.split('\n');
-  buffer = lines.pop()!; // keep incomplete last line
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    const event = JSON.parse(line);
-    if (event.event === 'data') {
-      const item = event.data; // BatchItemResult
-      console.log(item.doc_id, item.filename, item.status);
-    }
-  }
-}
+await consumeStream(response, {
+  onInfo: (data) => setProgress(data.user_message ?? data.system_message ?? null),
+  onChunk: (data) => appendToken(data.text),
+  onData: (data) => {
+    const candidate = (data as Record<string, unknown>).clean_content;
+    if (typeof candidate === "string") setCleanText(candidate);
+  },
+  onRecordUpdate: (data) => {
+    // server "row changed" signal — refetch from Supabase
+  },
+  onError: (data) => {
+    throw new Error(data.user_message ?? data.message);
+  },
+});
 ```
+
+For PDF endpoints specifically, the higher-level wrappers in [`features/pdf-extractor/service/streamPdf.ts`](./service/streamPdf.ts) are the right entry point — every call site goes through them (`streamPdfClean`, `streamPdfFullPipeline`).
+
+### Events emitted
+
+**`POST /utilities/pdf/clean-content/{doc_id}`** (agent-based whole-document cleanup):
+
+| Event | Payload | When |
+|---|---|---|
+| `record_reserved` | `{ table, record_id }` | server is about to modify the row |
+| `data` | `{ doc_id, clean_content, usage }` (`CleanContentResult`) | final cleaned markdown |
+| `record_update` | `{ table, record_id, status }` | row has been updated — clients may refetch |
+| `end` | `EndPayload` | stream complete |
+
+Writes ONLY the aggregate `processed_documents.clean_content` column. **Does NOT populate per-page `processed_document_pages.cleaned_text`** — that column is owned by the RAG ingest pipeline (`/rag/ingest/stream`), which runs a different per-page cleaning algorithm with a section taxonomy. The two cleaning systems are intentionally separate; both can write the aggregate column (last writer wins).
+
+**`POST /utilities/pdf/full-pipeline`** (extract + optional template-based AI pass):
+
+| Event | Payload | When |
+|---|---|---|
+| `info` | `{ code, user_message }` | progress messages during extraction |
+| `data` | `PdfResult.model_dump()` — carries new `file_id` (the child doc id) | once persistence runs server-side |
+| `end` | `EndPayload` | stream complete |
+
+Creates a **new child** `processed_documents` row (parent set via `parent_processed_id`) plus N `processed_document_pages` rows on the child. The UI's pattern is to capture `file_id` from the `data` event and silently `router.replace` to the child so the user sees their data "refresh" without exposing the parent/child concept.
+
+**`POST /utilities/pdf/batch-extract`**: emits `info` events with `code: "pdf_page_progress"` for per-page progress and one `data` event per file with `{ doc_id, filename, status, error? }`, followed by `end`.
+
+### Finalize pattern (every PDF-mutating stream)
+
+After the stream ends, run this exact sequence in the consumer:
+
+1. `invalidateProcessedDocumentCache(docId)` — bust the 30s TTL cache on the doc fetch (the hook in `usePdfExtractor` does this automatically inside `refreshDocument`).
+2. `await fetchDocument(docId)` — read the authoritative row from Supabase.
+3. `refreshPages()` — re-read `processed_document_pages` (the `useProcessedDocumentPages` hook exposes the function).
+4. For Pipeline only: if the stream returned a `childDocId` different from the request's docId, `router.replace` to the child instead of refreshing the parent in place.
+
+Skipping any step produces user-visible "the data didn't update" bugs.
