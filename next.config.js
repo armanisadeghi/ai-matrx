@@ -12,21 +12,40 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 });
 
 // MATRX_PROFILE controls which routes are compiled into the build:
-//   core (default) — production main app: (core), (admin), (transitional),
+//   core (default in production) — main app: (core), (admin), (transitional),
 //                    (legacy), (ssr), (public), (public-demos), (auth-pages),
 //                    (popup). Internal dev/test surfaces under app/(dev)/ —
 //                    whose route leaves are renamed *.dev.tsx — are NOT
 //                    compiled because `dev.tsx` is not in pageExtensions.
-//   full           — includes everything above PLUS app/(dev)/ routes.
-//                    Used by the internal-demos Vercel project. Set
-//                    `MATRX_PROFILE=full` in that project's environment.
+//   full (default in development) — everything above PLUS app/(dev)/ routes.
+//                    `pnpm dev` defaults to this so /demos/* works locally
+//                    without per-developer env setup. The internal-demos
+//                    Vercel project also runs `full`. To preview the
+//                    production-core build locally, run with
+//                    `MATRX_PROFILE=core pnpm dev`.
 // Helper .tsx files under (dev) (e.g. (dev)/demos/tests/matrx-table/components/
 // MatrxTable.tsx) keep plain .tsx because production code imports them directly;
 // pageExtensions only filters routes, not arbitrary components.
-const MATRX_PROFILE = process.env.MATRX_PROFILE === "full" ? "full" : "core";
+const rawProfile = (process.env.MATRX_PROFILE || "").trim().toLowerCase();
+if (rawProfile && rawProfile !== "full" && rawProfile !== "core") {
+    console.warn(
+        `[matrx] Unknown MATRX_PROFILE="${process.env.MATRX_PROFILE}". ` +
+            `Valid values: "full" | "core". Falling back to NODE_ENV default.`,
+    );
+}
+const MATRX_PROFILE =
+    rawProfile === "full" || rawProfile === "core"
+        ? rawProfile
+        : process.env.NODE_ENV === "production"
+          ? "core"
+          : "full";
+console.log(`[matrx] MATRX_PROFILE=${MATRX_PROFILE} (NODE_ENV=${process.env.NODE_ENV || "undefined"})`);
+// In full mode `tsx` is listed FIRST so any plain page.tsx wins over a
+// page.dev.tsx in the same directory — a guard for stray duplicates from
+// partial renames. No directory currently has both; this is defensive.
 const pageExtensions =
     MATRX_PROFILE === "full"
-        ? ["dev.tsx", "dev.ts", "tsx", "ts", "jsx", "js"]
+        ? ["tsx", "ts", "jsx", "js", "dev.tsx", "dev.ts"]
         : ["tsx", "ts", "jsx", "js"];
 
 /** @type {import('next').NextConfig} */
@@ -85,7 +104,7 @@ const nextConfig = {
         // Node `worker_threads` build (`new Worker(c + workerAdd, { eval: true })`).
         // Turbopack can't resolve that dynamic Worker, so a clean/cold build
         // fails — and because the chat-assistant → jspdf chain is reachable from
-        // the global (a) layout, it breaks EVERY authenticated route, not just
+        // the (core) layout, it breaks EVERY authenticated route, not just
         // chat. jspdf is only ever used client-side (DOM-capture PDF export), so
         // pin it to its browser ES build everywhere.
         resolveAlias: {
@@ -135,7 +154,7 @@ const nextConfig = {
             { source: '/org/:orgId/:path*', destination: '/organizations/:orgId/:path*', permanent: true },
             { source: '/org/:orgId', destination: '/organizations/:orgId', permanent: true },
             { source: '/org', destination: '/organizations', permanent: true },
-            // Transcription hub: legacy transcript URLs → app/(a)/transcription/*
+            // Transcription hub: legacy transcript URLs → app/(core)/transcription/*
             { source: '/transcript-studio/:path*', destination: '/transcription/studio/:path*', permanent: true },
             { source: '/transcript-studio', destination: '/transcription/studio', permanent: true },
             { source: '/transcripts/:path*', destination: '/transcription/processor/:path*', permanent: true },
@@ -196,29 +215,35 @@ const nextConfig = {
             // (authenticated)/settings-*-demo, (authenticated)/layout-tests,
             // (authenticated)/dynamic-imports, (authenticated)/lists-junk,
             // (authenticated)/lists-explorer, (authenticated)/preview,
-            // (public)/demos, (public)/google-auth-demo. 307 for now so we can
+            // (public)/google-auth-demo. 307 for now so we can
             // promote to 308 once internal links are audited.
             //
             // IMPORTANT: these are ordered AFTER the entity-isolation redirects
             // above so the more-specific /tests/advanced-data-table → /legacy/...
             // moves win before the catch-all /tests/:path* lands here.
-            { source: '/tests/:path*', destination: '/demos/tests/:path*', permanent: false },
-            { source: '/tests', destination: '/demos/tests', permanent: false },
-            { source: '/demo/:path*', destination: '/demos/general/:path*', permanent: false },
-            { source: '/demo', destination: '/demos/general', permanent: false },
-            { source: '/settings-hooks-demo', destination: '/demos/settings-hooks', permanent: false },
-            { source: '/settings-primitives', destination: '/demos/settings-primitives', permanent: false },
-            { source: '/settings-shell-demo', destination: '/demos/settings-shell', permanent: false },
-            { source: '/settings-tree-demo', destination: '/demos/settings-tree', permanent: false },
-            { source: '/layout-tests/:path*', destination: '/demos/layout-tests/:path*', permanent: false },
-            { source: '/layout-tests', destination: '/demos/layout-tests', permanent: false },
-            { source: '/dynamic-imports/:path*', destination: '/demos/dynamic-imports/:path*', permanent: false },
-            { source: '/dynamic-imports', destination: '/demos/dynamic-imports', permanent: false },
-            { source: '/lists-junk/:path*', destination: '/demos/lists-junk/:path*', permanent: false },
-            { source: '/lists-junk', destination: '/demos/lists-junk', permanent: false },
-            { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
-            { source: '/preview', destination: '/demos/preview', permanent: false },
-            { source: '/google-auth-demo', destination: '/demos/google-auth', permanent: false },
+            //
+            // GATED on MATRX_PROFILE=full: the destinations are (dev) routes,
+            // which only exist in the full build. In the core build (production
+            // main app) these redirects would 307 → 404; better to 404 directly.
+            ...(MATRX_PROFILE === "full" ? [
+                { source: '/tests/:path*', destination: '/demos/tests/:path*', permanent: false },
+                { source: '/tests', destination: '/demos/tests', permanent: false },
+                { source: '/demo/:path*', destination: '/demos/general/:path*', permanent: false },
+                { source: '/demo', destination: '/demos/general', permanent: false },
+                { source: '/settings-hooks-demo', destination: '/demos/settings-hooks', permanent: false },
+                { source: '/settings-primitives', destination: '/demos/settings-primitives', permanent: false },
+                { source: '/settings-shell-demo', destination: '/demos/settings-shell', permanent: false },
+                { source: '/settings-tree-demo', destination: '/demos/settings-tree', permanent: false },
+                { source: '/layout-tests/:path*', destination: '/demos/layout-tests/:path*', permanent: false },
+                { source: '/layout-tests', destination: '/demos/layout-tests', permanent: false },
+                { source: '/dynamic-imports/:path*', destination: '/demos/dynamic-imports/:path*', permanent: false },
+                { source: '/dynamic-imports', destination: '/demos/dynamic-imports', permanent: false },
+                { source: '/lists-junk/:path*', destination: '/demos/lists-junk/:path*', permanent: false },
+                { source: '/lists-junk', destination: '/demos/lists-junk', permanent: false },
+                { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
+                { source: '/preview', destination: '/demos/preview', permanent: false },
+                { source: '/google-auth-demo', destination: '/demos/google-auth', permanent: false },
+            ] : []),
             // Public demos that used to live at /demos/* (under (public)/demos)
             // shifted one segment deeper to /demos/public/* so the internal
             // (dev) demos and external public showcase share the prefix without

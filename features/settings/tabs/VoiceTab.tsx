@@ -129,7 +129,7 @@ export default function VoiceTab() {
         <SettingsLink
           label="Voice playground"
           description="Preview voices, tune cadence, and test wake-word detection."
-          href="/demo/voice/voice-manager"
+          href="/demos/general/voice/voice-manager"
           actionLabel="Open"
           icon={ExternalLink}
           last

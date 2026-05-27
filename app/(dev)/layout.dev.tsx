@@ -1,18 +1,18 @@
-// app/(dev)/layout.tsx
+// app/(dev)/layout.dev.tsx
 //
 // Top-level layout for development / demo / test surfaces. Everything under
 // (dev) resolves under /demos/* — the single consolidated URL prefix for all
 // internal demos, tests, and showcase pages.
 //
-// Auth policy is set HERE at the (dev) root (not at /demos) so that nested
-// sub-layouts can opt out — specifically (dev)/demos/public/, which must
-// remain accessible without login because it was previously served from
-// (public)/demos and may be linked externally.
+// Auth is required at this layout. Public demos that previously lived at
+// /demos/* (under (public)/demos) moved to a sibling (public-demos) group
+// — they share the /demos/* URL space but use PublicProviders, no auth.
 //
-// Phase 2 (not yet active) will rename leaf files to *.dev.tsx and gate
-// inclusion in the production-core build via MATRX_PROFILE in next.config.js.
-// Public demos under (dev)/demos/public/ will retain a *.tsx extension so
-// they remain in the core build.
+// Build gate: this file and every other route leaf under (dev) is named
+// *.dev.tsx so that, in the production-core build, `pageExtensions` does
+// not match it and Next.js skips the entire (dev) route tree. The internal
+// demos deploy runs with MATRX_PROFILE=full and includes everything here.
+// See next.config.js (top of file) for the MATRX_PROFILE wiring.
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";

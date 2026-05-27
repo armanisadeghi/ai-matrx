@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { Providers } from "@/app/Providers";
 import { mapUserData } from "@/utils/userDataMapper";
-import { getAdminStatus } from "@/utils/supabase/userSessionData";
+import { getAdminStatus, type AdminLevel } from "@/utils/supabase/userSessionData";
 import { getEmptyGlobalCache } from "@/utils/schema/schema-processing/emptyGlobalCache";
 import type { InitialReduxState } from "@/types/reduxTypes";
 // Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
@@ -68,7 +68,10 @@ export default async function AppLayout({
       adminStatus,
     ] = await Promise.all([
       supabase.auth.getSession(),
-      getAdminStatus(supabase, user.id),
+      getAdminStatus(supabase, user.id).catch((err) => {
+        console.error("getAdminStatus failed, defaulting to non-admin:", err);
+        return { isAdmin: false, level: null as AdminLevel | null };
+      }),
     ]);
 
     const { isAdmin, level: adminLevel } = adminStatus;

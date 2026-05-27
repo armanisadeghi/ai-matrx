@@ -8,8 +8,8 @@ import path from "path";
 const ROOT = process.cwd();
 
 const TREES = [
-  { relDir: "app/(authenticated)/demo", baseUrl: "/demo" },
-  { relDir: "app/(public)/demos", baseUrl: "/demos" },
+  { relDir: "app/(dev)/demos/general", baseUrl: "/demos/general" },
+  { relDir: "app/(public-demos)/demos/public", baseUrl: "/demos/public" },
   { relDir: "app/(ssr)/ssr/demos", baseUrl: "/ssr/demos" },
 ];
 
@@ -20,7 +20,7 @@ function walk(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
     const p = path.join(dir, name);
     if (fs.statSync(p).isDirectory()) walk(p, out);
-    else if (name === "page.tsx") out.push(p);
+    else if (name === "page.tsx" || name === "page.dev.tsx") out.push(p);
   }
   return out;
 }

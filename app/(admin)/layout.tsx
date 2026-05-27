@@ -50,7 +50,7 @@ export default async function AdminLayout({
 
   if (!user) {
     // Preserve the intended destination through the login round-trip.
-    const pathname = headersList.get("x-pathname") || "/administration";
+    const pathname = headersList.get("x-pathname") || "/dashboard";
     const searchParams = headersList.get("x-search-params") || "";
     const fullPath = searchParams ? `${pathname}${searchParams}` : pathname;
     return redirect(`/login?redirectTo=${encodeURIComponent(fullPath)}`);

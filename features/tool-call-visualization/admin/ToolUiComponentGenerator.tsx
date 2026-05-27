@@ -1223,7 +1223,7 @@ export function ToolUiComponentGenerator({
                     <p className="text-xs text-muted-foreground">
                       Run this tool on the{" "}
                       <a
-                        href="/demos/api-tests/tool-testing"
+                        href="/demos/public/api-tests/tool-testing"
                         target="_blank"
                         className="underline text-primary"
                       >
