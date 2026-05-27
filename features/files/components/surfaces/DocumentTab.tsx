@@ -38,6 +38,7 @@ import Link from "next/link";
 import {
   AlertCircle,
   ExternalLink,
+  Layers,
   Loader2,
   RotateCw,
   Rainbow,
@@ -180,12 +181,28 @@ export function DocumentTab({
           <button
             type="button"
             onClick={() => void ingest.run({ force: true })}
-            title="Re-run the RAG pipeline (force re-ingest)"
+            title="Force the full RAG pipeline to re-run end-to-end (streaming progress fills this panel below)."
             className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-0.5 text-[11px] font-medium hover:bg-accent"
           >
             <RotateCw className="h-3 w-3" />
             Reprocess
           </button>
+          {/* Quick jump to the Library detail sheet — gives the user
+              per-stage controls (extract / clean / chunk / embed),
+              partial-resume buttons, the live inline ProcessingJobView,
+              and the full Pages / Chunks browsers. The Reprocess
+              button above is the one-shot "redo everything" path; the
+              Library is for surgical re-runs. */}
+          <Link
+            href={`/rag/library?doc_id=${encodeURIComponent(docId)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-0.5 text-[11px] font-medium hover:bg-accent"
+            title="Open per-stage controls in the Library"
+          >
+            <Layers className="h-3 w-3" />
+            Stages
+          </Link>
           <Link
             href={(() => {
               const qs = new URLSearchParams();
