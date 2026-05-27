@@ -1,21 +1,48 @@
 "use client";
 
-// ChatSidebarMenu — conversation history for the `/chat` Large Route, rendered
-// INSIDE the app shell sidebar (registered in `route-menu-registry`). Mirrors
-// AgentRunSidebarMenu: the shell owns the chrome, the switch button, and the
-// "local menu ⇄ main app menu" toggle. It auto-switches to this menu on the
-// chat route. Controls (agent picker, new chat) live in the shell header via
-// `ChatRunHeader`, NOT here.
+// ChatSidebarMenu — conversation history + chat-route actions, rendered INSIDE
+// the app shell sidebar (registered in `route-menu-registry`).
 //
-// Two render modes, driven by the shell's `expanded` flag:
-//   - expanded: the full ChatHistorySidebar (pinned agents + grouped history).
-//   - collapsed: an icon rail offering the SAME core actions the header gives —
-//     new chat, search chats, search agents — so the narrow rail is useful, not
-//     dead space. Search uses portaled popovers (the sidebar is overflow:hidden,
-//     so inline expansion can't escape it).
+// Architecture (load-bearing — do not "invent your own structure"):
+//
+//   1. CHROME ROWS (always rendered, IDENTICAL DOM in both collapsed and
+//      expanded states): New chat · Search chats · Search agents · Voice
+//      agent. Each row uses the EXACT same `.shell-nav-item shell-tactile-
+//      subtle` markup as the main app's `<NavItem>` (see
+//      `features/shell/components/sidebar/NavItem.tsx`). That gives us, for
+//      free and without re-inventing:
+//        · identical icon size / vertical spacing / hover / active to every
+//          other shell nav item
+//        · the icon stays at the EXACT same x/y in both states — the
+//          collapse animation only toggles `.shell-nav-label` opacity and
+//          width, the icon never moves
+//        · the collapsed `[title]:hover::after` tooltip
+//      The chrome positions never shift on toggle, which is the entire point.
+//
+//   2. EXTRAS (pinned agents + grouped history): only rendered when the
+//      shell sidebar is expanded — there is no room in the narrow rail.
+//      The chrome above stays put either way; only what shows BELOW the
+//      chrome differs.
+//
+// Search affordances:
+//   · "Search chats" wraps a chrome row in a Popover whose content is
+//     `<ChatHistorySidebar initialSearchOpen>` — full history with focused
+//     search. Uses its own scope (`chat-route-search`) so its in-popover
+//     search term doesn't silently filter the always-on sidebar list after
+//     the popover closes.
+//   · "Search agents" reuses the canonical `AgentListDropdown` via
+//     `triggerSlot` (no parallel agent picker), with `contentSide="right"`
+//     so the panel opens beside the rail.
+//   · The inner ChatHistorySidebar that renders below the chrome passes
+//     `hideSearchAffordance` so it doesn't double up.
+//
+// Whenever this surface diverges from the main app nav's look or spacing,
+// the fix is to align it back to the shell's canonical `.shell-nav-item`
+// pattern — NOT to add a parallel styling system here.
 
 import { useCallback, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { Mic, Plus, Search, Webhook } from "lucide-react";
 import {
   Popover,
@@ -28,7 +55,11 @@ import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
+/** Sidebar history list scope. Stable, owned by ChatSidebarMenu. */
 const CHAT_HISTORY_SCOPE = "chat-route";
+/** Independent scope for the Search Chats popover — keeps the popover's
+ *  searchTerm from bleeding into the always-on sidebar list when closed. */
+const CHAT_HISTORY_SEARCH_SCOPE = "chat-route-search";
 
 /**
  * `cx_conversation.source_feature` values to hide from the chat history.
@@ -38,13 +69,15 @@ const CHAT_HISTORY_SCOPE = "chat-route";
  */
 const CHAT_HISTORY_EXCLUDE: ReadonlyArray<string> = ["voice-agent"];
 
-/** Voice agent route — both the rail icon and the expanded shortcut link here. */
+/** Voice agent route. */
 const VOICE_AGENT_HREF = "/chat/voice";
 
-/** Shared styling for the collapsed-rail icon buttons. */
-const RAIL_BTN_CLASS =
-  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground " +
-  "transition-colors hover:bg-accent hover:text-foreground shell-tactile-subtle";
+/** Canonical chrome-row class — identical to NavItem.tsx. The label visibility
+ *  and icon centering on collapse are handled entirely by shell.css. */
+const NAV_ITEM_CLASS = "shell-nav-item shell-tactile-subtle";
+/** Lucide size + stroke that match NavItem.tsx exactly. */
+const ICON_SIZE = 18;
+const ICON_STROKE = 1.75;
 
 /** Derive the active conversation + active agent from the chat URL. */
 function parseChatPath(pathname: string): {
@@ -86,9 +119,10 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
     (agentId: string) => router.push(`/chat/a/${encodeURIComponent(agentId)}`),
     [router],
   );
-  // `+` starts a NEW conversation with the ACTIVE agent (the agent route always
-  // mints a fresh one). No active agent → the default greeting landing. Matches
-  // ChatRunHeader's handleNewChat so the rail and the header behave identically.
+  // `+` starts a NEW conversation with the ACTIVE agent (the agent route
+  // always mints a fresh one). No active agent → the default greeting
+  // landing. Matches ChatRunHeader's handleNewChat so the rail and header
+  // behave identically.
   const handleNewChat = useCallback(() => {
     if (activeAgentId) {
       router.push(`/chat/a/${encodeURIComponent(activeAgentId)}`);
@@ -96,166 +130,131 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
       router.push("/chat/new");
     }
   }, [router, activeAgentId]);
-  const openVoiceAgent = useCallback(() => {
-    router.push(VOICE_AGENT_HREF);
-  }, [router]);
-
-  // ── Collapsed rail — icon actions mirroring the header (new / find chat /
-  //    find agent). Popovers are portaled, so they escape the rail's overflow.
-  if (!expanded) {
-    return (
-      <div className="flex flex-col items-center gap-1 py-1">
-        <button
-          type="button"
-          onClick={handleNewChat}
-          className={RAIL_BTN_CLASS}
-          title="New chat"
-          aria-label="New chat"
-        >
-          <Plus className="h-[18px] w-[18px]" />
-        </button>
-
-        <Popover open={chatSearchOpen} onOpenChange={setChatSearchOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={RAIL_BTN_CLASS}
-              title="Search chats"
-              aria-label="Search chats"
-            >
-              <Search className="h-[18px] w-[18px]" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            side="right"
-            align="start"
-            sideOffset={8}
-            className="w-80 overflow-hidden p-0"
-          >
-            <div className="flex h-[min(70vh,560px)] flex-col">
-              <ChatHistorySidebar
-                scopeId={CHAT_HISTORY_SCOPE}
-                activeConversationId={activeConversationId}
-                onOpenConversation={(conv) => {
-                  openConversation(conv);
-                  setChatSearchOpen(false);
-                }}
-                initialSearchOpen
-                className="h-full"
-              />
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Agent search reuses the canonical AgentListDropdown (search built in)
-            via its triggerSlot — no parallel agent-picker. */}
-        <AgentListDropdown
-          onSelect={selectPinnedAgent}
-          contentSide="right"
-          triggerSlot={
-            <button
-              type="button"
-              className={RAIL_BTN_CLASS}
-              title="Search agents"
-              aria-label="Search agents"
-            >
-              {/* Webhook mirrors the app's "Agents" nav icon for a consistent
-                  visual language (Bot is banned as an AI-cliché glyph). */}
-              <Webhook className="h-[18px] w-[18px]" />
-            </button>
-          }
-        />
-
-        {/* Subtle divider — voice is a different MODE, not another shortcut to
-            the same text-chat surface, so we visually separate it. */}
-        <div
-          aria-hidden="true"
-          className="my-1 h-px w-5 bg-border/60"
-        />
-
-        <button
-          type="button"
-          onClick={openVoiceAgent}
-          className={cn(
-            RAIL_BTN_CLASS,
-            isVoiceRoute && "bg-accent text-foreground",
-          )}
-          title="Voice agent"
-          aria-label="Voice agent"
-          aria-current={isVoiceRoute ? "page" : undefined}
-        >
-          <Mic className="h-[18px] w-[18px]" />
-        </button>
-      </div>
-    );
-  }
 
   return (
-    <ChatHistorySidebar
-      scopeId={CHAT_HISTORY_SCOPE}
-      activeConversationId={activeConversationId}
-      onOpenConversation={openConversation}
-      // Voice transcripts can't be replayed in the text-chat view — filter
-      // them out at the query so they never enter this scope's list.
-      excludeSourceFeatures={CHAT_HISTORY_EXCLUDE as string[]}
-      topSlot={
-        <>
-          <VoiceAgentShortcut
-            active={isVoiceRoute}
-            onClick={openVoiceAgent}
-          />
+    // gap-0.5 (= 0.125rem) matches `.shell-sidebar-main-nav` / `route-nav`
+    // gap so the chrome rows sit at the exact same rhythm as the main app
+    // nav items.
+    <div className="flex flex-1 min-h-0 flex-col gap-0.5">
+      {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
+            on collapse/expand. Order is fixed; positions are stable. */}
+
+      {/* New chat */}
+      <button
+        type="button"
+        onClick={handleNewChat}
+        title="New chat"
+        aria-label="New chat"
+        className={NAV_ITEM_CLASS}
+      >
+        <span className="shell-nav-icon">
+          <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+        </span>
+        <span className="shell-nav-label">New chat</span>
+      </button>
+
+      {/* Search chats — popover (independent scope so it doesn't filter
+          the sidebar list after close). */}
+      <Popover open={chatSearchOpen} onOpenChange={setChatSearchOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            title="Search chats"
+            aria-label="Search chats"
+            className={NAV_ITEM_CLASS}
+          >
+            <span className="shell-nav-icon">
+              <Search size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+            </span>
+            <span className="shell-nav-label">Search chats</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="right"
+          align="start"
+          sideOffset={8}
+          className="w-80 overflow-hidden p-0"
+        >
+          <div className="flex h-[min(70vh,560px)] flex-col">
+            <ChatHistorySidebar
+              scopeId={CHAT_HISTORY_SEARCH_SCOPE}
+              activeConversationId={activeConversationId}
+              excludeSourceFeatures={CHAT_HISTORY_EXCLUDE as string[]}
+              onOpenConversation={(conv) => {
+                openConversation(conv);
+                setChatSearchOpen(false);
+              }}
+              initialSearchOpen
+              className="h-full"
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Search agents — reuses the canonical AgentListDropdown via
+          triggerSlot. `contentSide="right"` opens the panel beside the
+          rail (not over it). */}
+      <AgentListDropdown
+        onSelect={selectPinnedAgent}
+        contentSide="right"
+        triggerSlot={
+          <button
+            type="button"
+            title="Search agents"
+            aria-label="Search agents"
+            className={NAV_ITEM_CLASS}
+          >
+            <span className="shell-nav-icon">
+              {/* Webhook mirrors the app's "Agents" nav icon for a
+                  consistent visual language (Bot is banned as an AI-cliché
+                  glyph by matrx/no-banned-lucide-icons). */}
+              <Webhook size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+            </span>
+            <span className="shell-nav-label">Search agents</span>
+          </button>
+        }
+      />
+
+      {/* Voice agent — real route, so a <Link>. Active state via the same
+          `.shell-active-pill` the main nav uses. */}
+      <Link
+        href={VOICE_AGENT_HREF}
+        title="Voice agent"
+        aria-label="Voice agent"
+        aria-current={isVoiceRoute ? "page" : undefined}
+        className={cn(NAV_ITEM_CLASS, isVoiceRoute && "shell-active-pill")}
+      >
+        <span className="shell-nav-icon">
+          <Mic size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+        </span>
+        <span className="shell-nav-label">Voice agent</span>
+      </Link>
+
+      {/* ── EXTRAS ── expanded-only. The chrome above keeps its positions
+            either way; only what shows BELOW the chrome differs. */}
+      {expanded && (
+        <div className="flex flex-1 min-h-0 flex-col">
           <PinnedAgentsSection
             activeAgentId={activeAgentId}
             onSelect={selectPinnedAgent}
           />
-        </>
-      }
-      // `flex-1 min-h-0` (matching AgentRunSidebarMenu) lets the inner list's
-      // `overflow-y-auto` actually scroll inside the shell's flex sidebar /
-      // mobile drawer instead of overflowing it.
-      className="bg-transparent min-h-0 flex-1"
-    />
-  );
-}
-
-/**
- * Voice agent mode-shortcut for the expanded sidebar. Sits ABOVE pinned
- * agents because it's a different modality (realtime voice), not a chat
- * entry. Active when the current route is anywhere under `/chat/voice`.
- */
-function VoiceAgentShortcut({
-  active,
-  onClick,
-}: {
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <div className="px-2 pt-2">
-      <button
-        type="button"
-        onClick={onClick}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "group flex w-full items-center gap-2 rounded-md px-2 py-1.5",
-          "text-sm transition-colors",
-          active
-            ? "bg-accent text-foreground"
-            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-        )}
-      >
-        <span
-          className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-md",
-            active
-              ? "bg-primary/15 text-primary"
-              : "bg-muted/60 text-muted-foreground group-hover:text-foreground",
-          )}
-        >
-          <Mic className="h-3.5 w-3.5" aria-hidden="true" />
-        </span>
-        <span className="flex-1 text-left">Voice agent</span>
-      </button>
+          <ChatHistorySidebar
+            scopeId={CHAT_HISTORY_SCOPE}
+            activeConversationId={activeConversationId}
+            onOpenConversation={openConversation}
+            // Voice transcripts can't be replayed in the text-chat view —
+            // filter them out at the query so they never enter this scope.
+            excludeSourceFeatures={CHAT_HISTORY_EXCLUDE as string[]}
+            // The Search chats chrome above is the single search entry
+            // point — don't ship a second one inline.
+            hideSearchAffordance
+            // `flex-1 min-h-0` (matching AgentRunSidebarMenu) lets the
+            // inner list's `overflow-y-auto` actually scroll inside the
+            // shell's flex sidebar / mobile drawer.
+            className="bg-transparent min-h-0 flex-1"
+          />
+        </div>
+      )}
     </div>
   );
 }

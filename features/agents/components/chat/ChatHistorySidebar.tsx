@@ -69,6 +69,13 @@ export interface ChatHistorySidebarProps {
    * popover) rather than as the always-on sidebar where search is quiet.
    */
   initialSearchOpen?: boolean;
+  /**
+   * Suppress the built-in inline "Search chats" affordance. Used when the
+   * surrounding chrome provides its own search entry point (e.g. the chat
+   * route menu's top-level Search Chats nav item) so we don't ship two
+   * search UIs stacked on top of each other.
+   */
+  hideSearchAffordance?: boolean;
   className?: string;
 }
 
@@ -82,6 +89,7 @@ export function ChatHistorySidebar({
   topSlot,
   excludeSourceFeatures,
   initialSearchOpen = false,
+  hideSearchAffordance = false,
   className,
 }: ChatHistorySidebarProps) {
   const dispatch = useAppDispatch();
@@ -179,7 +187,10 @@ export function ChatHistorySidebar({
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
       {headerSlot}
 
-      {/* Search affordance — quiet by default, expands inline on click. */}
+      {/* Search affordance — quiet by default, expands inline on click.
+          Suppressed via `hideSearchAffordance` when the surrounding chrome
+          already exposes a Search Chats entry point. */}
+      {!hideSearchAffordance && (
       <div className="shrink-0 px-1 pt-2">
         {searchOpen ? (
           <div className="relative flex items-center">
@@ -221,6 +232,7 @@ export function ChatHistorySidebar({
           </button>
         )}
       </div>
+      )}
 
       {topSlot}
 
