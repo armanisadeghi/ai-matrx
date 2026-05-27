@@ -441,14 +441,11 @@ export async function listAgentBindings(surfaceName: string) {
 }
 
 /**
- * Tool ↔ surface "bindings" for a surface (admin overview).
+ * Tools force-included on a surface (admin overview).
  *
- * Post-2026 refactor, the per-(tool, surface) `tl_def_surface` row no longer
- * exists. We reconstruct an equivalent shape by reading
- * `tool_surface_defaults.always_include_tools` and joining to `tool_def` by
- * name. `arg_mappings` is the legacy field name; it now carries the
- * tool-specific entry from `tool_surface_defaults.arg_defaults` (literal
- * jsonb, no surface_value indirection).
+ * Reads `tool_surface_defaults.always_include_tools` and joins to `tool_def`
+ * by name. `arg_defaults` carries the tool-specific literal-jsonb entry from
+ * `tool_surface_defaults.arg_defaults`.
  */
 export async function listToolBindings(surfaceName: string) {
   const defaultsRes = await sb()
@@ -474,7 +471,7 @@ export async function listToolBindings(surfaceName: string) {
 
   return (toolsRes.data ?? []).map((t) => ({
     tool_id: t.id,
-    arg_mappings: argDefaultsByTool[t.name] ?? null,
+    arg_defaults: argDefaultsByTool[t.name] ?? null,
     tool_name: t.name,
     tool_category: t.category,
     tool_is_active: t.is_active,

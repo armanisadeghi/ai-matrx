@@ -13,8 +13,7 @@ interface Props {
 }
 
 function groupKey(row: ExecutorWithStats): "mcp" | "other" {
-  if (row.isMcp || row.name.startsWith("mcp.")) return "mcp";
-  return "other";
+  return row.isMcp ? "mcp" : "other";
 }
 
 const GROUP_LABELS: Record<string, string> = {

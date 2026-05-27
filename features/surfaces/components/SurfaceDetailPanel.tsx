@@ -631,10 +631,10 @@ export function SurfaceDetailPanel({
             <div className="rounded-md border border-border divide-y divide-border text-xs">
               {toolBindings.map((b) => {
                 const argDefaultsPresent =
-                  b.arg_mappings &&
-                  typeof b.arg_mappings === "object" &&
-                  !Array.isArray(b.arg_mappings) &&
-                  Object.keys(b.arg_mappings as Record<string, unknown>).length >
+                  b.arg_defaults &&
+                  typeof b.arg_defaults === "object" &&
+                  !Array.isArray(b.arg_defaults) &&
+                  Object.keys(b.arg_defaults as Record<string, unknown>).length >
                     0;
                 const toolHref = `/administration/mcp-tools/${b.tool_id}`;
                 return (
