@@ -329,6 +329,7 @@ export function LibraryPage() {
     stage: "extract" | "clean" | "chunk" | "embed" | "run_all",
     docId: string,
     docName: string,
+    opts: { skipProgressSheet?: boolean } = {},
   ) => {
     const subtitle =
       stage === "extract"
@@ -342,10 +343,17 @@ export function LibraryPage() {
               : "Full pipeline";
     const jobId = await runner.runStage(docId, stage, docName, subtitle);
     setFocusJobId(jobId);
-    // If the user is already inside the doc-detail sheet for this doc,
-    // the inline ProcessingJobView in the Stages tab will pick up the
-    // new job automatically. Don't open a second sheet — that's what
-    // caused the jarring width-change the user complained about.
+    // Decide whether to open the global ProcessingProgressSheet. We
+    // skip it when the caller has already opened (or is about to open)
+    // the per-doc detail sheet for this doc — the detail sheet's
+    // Stages tab renders the same job inline, so opening a second
+    // sheet stacks two right-side panels and confuses the user.
+    //
+    // The selectedDocId comparison alone is not enough: callers that
+    // setSelectedDocId(d.id) THEN call handleRequestStageRun see the
+    // stale (pre-render) value of selectedDocId here because React
+    // batches state updates. So we let callers opt out explicitly.
+    if (opts.skipProgressSheet) return;
     if (selectedDocId !== docId) {
       setSheetOpen(true);
     }
@@ -635,9 +643,12 @@ export function LibraryPage() {
                   onRunPipeline={() => {
                     // Open the detail sheet so the user sees the live
                     // ProcessingJobView in the Stages tab as the run
-                    // streams progress events.
+                    // streams progress events. skipProgressSheet because
+                    // the detail sheet is already showing inline.
                     setSelectedDocId(d.id);
-                    void handleRequestStageRun("run_all", d.id, d.name);
+                    void handleRequestStageRun("run_all", d.id, d.name, {
+                      skipProgressSheet: true,
+                    });
                   }}
                   onPreview={() => {
                     window.open(
