@@ -588,6 +588,25 @@
   width: 0;
 }
 
+/* Height-stable nav row — used by route-menu CHROME (e.g. the chat route
+   menu's "New chat / Search chats / Search agents / Voice agent" rows in
+   `features/agents/components/chat/ChatSidebarMenu.tsx`).
+
+   `.shell-nav-item`'s vertical padding switches between collapsed (0.375rem)
+   and expanded (0.15rem), which produces ~7px of drift per row across the
+   collapse toggle. That's fine in the main nav — you never see both states
+   at the same time. But in a route menu the chrome MUST stay at the
+   identical y position so the icons don't move when the sidebar opens or
+   closes. Locking `min-height` to a single value makes every item the same
+   height regardless of which padding rule is active. The default
+   `align-items:center` on `.shell-nav-item` keeps the icon vertically
+   centered within that locked height. Using `height` (not `min-height`)
+   so subpixel rounding from the collapsed-state padding can't nudge the
+   row a pixel taller than the expanded-state row. */
+.shell-nav-item.shell-nav-stable {
+  height: 2rem;
+}
+
 /* Tooltip on collapsed sidebar */
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item[title]:hover::after {
   content: attr(title);

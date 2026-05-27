@@ -72,9 +72,13 @@ const CHAT_HISTORY_EXCLUDE: ReadonlyArray<string> = ["voice-agent"];
 /** Voice agent route. */
 const VOICE_AGENT_HREF = "/chat/voice";
 
-/** Canonical chrome-row class — identical to NavItem.tsx. The label visibility
- *  and icon centering on collapse are handled entirely by shell.css. */
-const NAV_ITEM_CLASS = "shell-nav-item shell-tactile-subtle";
+/** Canonical chrome-row class — identical to NavItem.tsx PLUS the
+ *  `shell-nav-stable` height modifier so the row height stays the same
+ *  across collapse/expand (otherwise `.shell-nav-item`'s padding switch
+ *  produces a ~7px-per-row drift visible when the sidebar opens or
+ *  closes). The label visibility and icon centering on collapse are
+ *  handled entirely by shell.css. */
+const NAV_ITEM_CLASS = "shell-nav-item shell-nav-stable shell-tactile-subtle";
 /** Lucide size + stroke that match NavItem.tsx exactly. */
 const ICON_SIZE = 18;
 const ICON_STROKE = 1.75;
