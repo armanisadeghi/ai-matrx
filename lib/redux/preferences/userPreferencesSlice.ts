@@ -211,6 +211,40 @@ export interface CodingPreferences {
   favoriteConversationIds: string[];
 }
 
+/**
+ * Sandbox defaults — drive every "new sandbox" code path so the user gets
+ * the same shape (template + tier + ttl + env + auto-cloned repo) whether
+ * the sandbox is auto-provisioned on sign-in (aidream's
+ * `ensure_default_sandbox`) or created via the SandboxPanel's "New sandbox"
+ * button.
+ *
+ * Read on both sides — the web bumps `lastSandboxTier` / `lastSandboxTemplate`
+ * under `coding` as a 'last used' hint (kept for backward compatibility),
+ * but the auto-provision + explicit-create paths look here first.
+ */
+export interface SandboxPreferences {
+  /** Template id the orchestrator will spawn (e.g. "bare", "node-22"). */
+  template: string;
+  /** "hosted" survives container restart via per-user Docker volume; "ec2"
+   * is ephemeral. */
+  tier: "ec2" | "hosted";
+  /** Server uses its own default when null. Range [60, 86400]. */
+  ttl_seconds: number | null;
+  /** Git URL to clone immediately after the sandbox is ready. Absent / empty
+   * = no clone. The protocol must be `https://` (the orchestrator does not
+   * yet support per-user SSH keys for clone-on-create). */
+  default_git_repo: string | null;
+  /** Branch / tag / sha to check out after clone. Null = repo's default
+   * branch. */
+  default_git_branch: string | null;
+  /** Env vars exposed in the sandbox shell. Forwarded to the orchestrator as
+   * `labels.env_*` and materialised by the entrypoint script. */
+  env: Record<string, string>;
+  /** When true and `default_git_repo` is set, the auto-provision flow + the
+   * "New sandbox" button trigger the clone. Off by default — opt-in. */
+  auto_clone_on_create: boolean;
+}
+
 export interface FlashcardPreferences {
   fontSize: number;
   educationLevel: string;
@@ -343,6 +377,7 @@ export interface UserPreferences {
   imageGeneration: ImageGenerationPreferences;
   textGeneration: TextGenerationPreferences;
   coding: CodingPreferences;
+  sandbox: SandboxPreferences;
   flashcard: FlashcardPreferences;
   playground: PlaygroundPreferences;
   aiModels: AiModelsPreferences;
@@ -496,6 +531,15 @@ export const initializeUserPreferencesState = (
       monacoEnvironmentsEnabled: true,
       activeAgentSandboxBySurface: {},
     },
+    sandbox: {
+      template: "bare",
+      tier: "hosted",
+      ttl_seconds: null,
+      default_git_repo: null,
+      default_git_branch: null,
+      env: {},
+      auto_clone_on_create: false,
+    },
     playground: {
       lastRecipeId: "",
       preferredProvider: "",
@@ -573,6 +617,7 @@ export const initializeUserPreferencesState = (
       ...preferences.textGeneration,
     },
     coding: { ...defaultPreferences.coding, ...preferences.coding },
+    sandbox: { ...defaultPreferences.sandbox, ...preferences.sandbox },
     flashcard: { ...defaultPreferences.flashcard, ...preferences.flashcard },
     playground: { ...defaultPreferences.playground, ...preferences.playground },
     aiModels: { ...defaultPreferences.aiModels, ...preferences.aiModels },
@@ -730,6 +775,8 @@ const userPreferencesSlice = createSlice({
           ...loaded.textGeneration,
         };
       if (loaded.coding) state.coding = { ...state.coding, ...loaded.coding };
+      if (loaded.sandbox)
+        state.sandbox = { ...state.sandbox, ...loaded.sandbox };
       if (loaded.flashcard)
         state.flashcard = { ...state.flashcard, ...loaded.flashcard };
       if (loaded.playground)
