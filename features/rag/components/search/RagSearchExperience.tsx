@@ -21,6 +21,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
   Beaker,
@@ -46,6 +47,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -335,6 +337,44 @@ function RichHitCard({
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Hit card skeleton — shown while a search/diagnose is in-flight so the
+// page doesn't go visually empty between submit and first result render.
+// Sized to match RichHitCard so the layout doesn't jump when real hits land.
+// ---------------------------------------------------------------------------
+
+function HitCardSkeleton() {
+  return (
+    <div className="rounded-md border bg-card p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-5 rounded-full" />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-16 ml-auto" />
+      </div>
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-11/12" />
+      <Skeleton className="h-3 w-9/12" />
+      <div className="flex gap-2 pt-1">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Motion presets — keep entrance animations consistent across tabs so the
+// RAG surfaces share the same UX language as the library motion stack.
+// ---------------------------------------------------------------------------
+
+const FADE_IN_UP = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4 },
+  transition: { duration: 0.18, ease: "easeOut" as const },
+};
 
 // ---------------------------------------------------------------------------
 // JSON inspector — pretty-printed, copyable
@@ -659,37 +699,61 @@ function SearchTab({ scope }: { scope: Scope }) {
           </div>
         )}
 
-        {response && (
-          <div className="p-4 space-y-3">
-            <div className="text-xs text-muted-foreground tabular-nums">
-              {response.hits.length} hits · {response.total_candidates}{" "}
-              candidates ·{" "}
-              {response.latency_ms} ms
-              {response.reranker_model &&
-                ` · reranked by ${response.reranker_model}`}
-            </div>
-            {response.hits.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No hits for{" "}
-                <strong className="text-foreground">
-                  "{response.query}"
-                </strong>
-                . Try the Diagnostics tab to check whether your content was
-                indexed and is visible to you.
-              </div>
-            ) : (
-              response.hits.map((h, i) => (
-                <RichHitCard
-                  key={h.chunk_id}
-                  rank={i + 1}
-                  hit={h}
-                  showFullText
-                  showBreakdown
-                />
-              ))
-            )}
+        {running && !response && (
+          <div className="p-4 space-y-3" aria-busy="true" aria-live="polite">
+            <Skeleton className="h-3 w-64" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <HitCardSkeleton key={i} />
+            ))}
           </div>
         )}
+
+        <AnimatePresence mode="wait">
+          {response && (
+            <motion.div
+              key={response.query}
+              {...FADE_IN_UP}
+              className="p-4 space-y-3"
+            >
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {response.hits.length} hits · {response.total_candidates}{" "}
+                candidates · {response.latency_ms} ms
+                {response.reranker_model &&
+                  ` · reranked by ${response.reranker_model}`}
+              </div>
+              {response.hits.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No hits for{" "}
+                  <strong className="text-foreground">
+                    "{response.query}"
+                  </strong>
+                  . Try the Diagnostics tab to check whether your content
+                  was indexed and is visible to you.
+                </div>
+              ) : (
+                response.hits.map((h, i) => (
+                  <motion.div
+                    key={h.chunk_id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.2,
+                      ease: "easeOut",
+                      delay: Math.min(i * 0.03, 0.3),
+                    }}
+                  >
+                    <RichHitCard
+                      rank={i + 1}
+                      hit={h}
+                      showFullText
+                      showBreakdown
+                    />
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ScrollArea>
     </div>
   );
@@ -827,8 +891,47 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
             </div>
           )}
 
+          {running && !diag && !expand && (
+            <div className="space-y-4" aria-busy="true" aria-live="polite">
+              <div className="rounded-md border bg-card overflow-hidden">
+                <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-3 w-16 ml-auto" />
+                </div>
+                <div className="px-3 py-3 space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-24 mt-3" />
+                  <Skeleton className="h-3 w-11/12" />
+                  <Skeleton className="h-3 w-10/12" />
+                </div>
+              </div>
+              <div className="rounded-md border bg-card overflow-hidden">
+                <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2">
+                  <Beaker className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+                <div className="px-3 py-3 grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <Skeleton className="h-2.5 w-16" />
+                      <Skeleton className="h-5 w-12" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <HitCardSkeleton key={i} />
+              ))}
+            </div>
+          )}
+
           {expand && (
-            <div className="rounded-md border bg-card overflow-hidden">
+            <motion.div
+              {...FADE_IN_UP}
+              className="rounded-md border bg-card overflow-hidden"
+            >
               <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
                 <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-semibold">Query expansion</span>
@@ -888,11 +991,11 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {diag && (
-            <>
+            <motion.div {...FADE_IN_UP} className="space-y-4">
               <div className="rounded-md border bg-card overflow-hidden">
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
                   <Beaker className="h-3.5 w-3.5 text-muted-foreground" />
@@ -983,7 +1086,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 value={diag}
                 collapsed
               />
-            </>
+            </motion.div>
           )}
         </div>
       </ScrollArea>

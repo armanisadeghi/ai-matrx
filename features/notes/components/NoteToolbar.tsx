@@ -2,6 +2,8 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Trash2, RefreshCw, Copy, Share2, Save } from "lucide-react";
 import { Button } from "@/components/ui/ButtonMine";
 import {
@@ -38,6 +40,7 @@ export function NoteToolbar({
   onTranscriptionComplete,
   className,
 }: NoteToolbarProps) {
+  const router = useRouter();
   return (
     <div
       className={cn(
@@ -167,16 +170,20 @@ export function NoteToolbar({
       )}
 
       {activeNote && (
-        // Process this note's content through `/rag/ingest` so it
-        // becomes searchable + citable across data stores. Streams
-        // progress via the same pipeline used by cloud-files; the
-        // button reflects running / complete / error state inline.
         <ProcessForRagButton
           sourceKind="note"
           sourceId={activeNote.id}
           iconOnly
           force
           className="ml-1"
+          onComplete={() => {
+            toast.success("Note indexed for RAG", {
+              action: {
+                label: "View in library",
+                onClick: () => router.push("/rag/library"),
+              },
+            });
+          }}
         />
       )}
 

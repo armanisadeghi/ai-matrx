@@ -8,7 +8,7 @@ Single home for everything Retrieval-Augmented Generation in this app — the do
 - `/rag/library/[id]/preview` and `/rag/viewer/[id]` — preview / full viewer (`components/library/LibraryPreviewPage.tsx`, `components/documents/DocumentViewer.tsx`)
 - `/rag/data-stores` — manage data stores and bind documents to them (`components/data-stores/DataStoresPage.tsx`)
 - `/rag/repositories` — code repositories you can index for RAG (`components/RepositoriesPage.tsx`)
-- `/rag/search` — vector + lexical search across data stores (`components/search/RagSearchPage.tsx`)
+- `/rag/search` — multi-tab Search Lab: clean search, agent simulation, agent chat, diagnostics (`components/search/RagSearchExperience.tsx`)
 
 ---
 
@@ -83,7 +83,7 @@ features/rag/
     │       └── RawTextPane.tsx        raw extracted text per page
     │
     └── search/
-        ├── RagSearchPage.tsx          /rag/search full page
+        ├── RagSearchExperience.tsx    /rag/search — four-tab Search Lab (search, agent sim, agent chat, diagnostics)
         └── RagSearchHits.tsx          embeddable hit list (used by file context menu, omnibox, etc.)
 ```
 
@@ -113,3 +113,4 @@ Splitting them into `features/rag/` would split the cloudFiles slice across two 
 ## Change log
 
 - **2026-05-06** — Feature created via consolidation. Absorbed `features/library/`, `features/data-stores/`, `features/documents/`, and `features/rag-search-ui/` into a single feature; pulled the rag-shaped pieces out of `features/files/` (api: ingest/search; hooks: useFileIngest/useRagSearch; components: ProcessForRagButton/RagSearchHits). Files-table chrome that reads `cloudFiles.ragStatus` (rag-thunks, RagStatusCell, RagFilterPicker) intentionally stayed in `features/files/`. All routes (`/rag`, `/rag/library`, `/rag/data-stores`, `/rag/search`, `/rag/repositories`, `/rag/viewer/[id]`) compile and return 200.
+- **2026-05-28** — `/rag/search` rebuilt as the multi-tab Search Lab (`components/search/RagSearchExperience.tsx`); old single-pane `RagSearchPage.tsx` removed. Added `api/search-lab.ts` typed client for the new `/rag/search-lab/{diagnose,expand,inventory,agent/chat}` endpoints. Search + Agent Simulation tabs now render skeleton loaders + framer-motion entrance animations for parity with the library surfaces. `NoteToolbar`'s "Process for RAG" button surfaces a `View in library` toast on completion.
