@@ -18,7 +18,7 @@
  * provisioned and the SandboxPanel's "New sandbox" button).
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyRound,
   Plus,
@@ -319,7 +319,7 @@ function EnvUploadCard({
           </span>
         </div>
         <Textarea
-          placeholder={`GITHUB_TOKEN=ghp_…\nOPENAI_API_KEY=sk-…\n# comments OK`}
+          placeholder={"GITHUB_TOKEN=ghp_…\nOPENAI_API_KEY=sk-…\n# comments OK"}
           value={text}
           onChange={(e) => setText(e.target.value)}
           className="min-h-32 font-mono text-xs"
@@ -426,7 +426,7 @@ function SecretsListCard({
             secret={s}
             onUpdate={onUpdate}
             onDelete={onDelete}
-            disabled={busy}
+            parentBusy={busy}
           />
         ))}
       </CardContent>
@@ -438,17 +438,30 @@ function SecretRow({
   secret,
   onUpdate,
   onDelete,
-  disabled,
+  parentBusy,
 }: {
   secret: ReturnType<typeof useSecrets>["secrets"][number];
   onUpdate: ReturnType<typeof useUpdateSecret>["run"];
   onDelete: ReturnType<typeof useDeleteSecret>["run"];
-  disabled: boolean;
+  /** True only when ANOTHER row's mutation is in flight — never disables
+   * this row for its own pending work. */
+  parentBusy: boolean;
 }) {
   const [showHint, setShowHint] = useState(false);
   const [editing, setEditing] = useState(false);
   const [newValue, setNewValue] = useState("");
+  // Description state mirrors the prop. When the server returns a fresh
+  // value (after refresh), re-sync — otherwise edits would shadow server
+  // truth indefinitely (verified issue: row state was previously stale
+  // after rotate).
   const [description, setDescription] = useState(secret.description ?? "");
+  useEffect(() => {
+    setDescription(secret.description ?? "");
+  }, [secret.description]);
+  // Per-row in-flight flag so one row's mutation doesn't freeze every
+  // other row's switch. Independent of parentBusy.
+  const [rowBusy, setRowBusy] = useState(false);
+  const busy = rowBusy || parentBusy;
 
   const lastUsed = useMemo(() => {
     if (!secret.last_used_at) return "never";
@@ -458,18 +471,37 @@ function SecretRow({
 
   const onRotate = async () => {
     if (!newValue) return;
-    await onUpdate(secret.key, { value: newValue });
+    setRowBusy(true);
+    try {
+      const patch: { value: string; description?: string } = { value: newValue };
+      // Bundle the description edit into the same PATCH so "Cancel" can
+      // actually undo (no silent onBlur write to fight against).
+      if (description !== (secret.description ?? "")) {
+        patch.description = description;
+      }
+      await onUpdate(secret.key, patch);
+      setNewValue("");
+      setEditing(false);
+    } finally {
+      setRowBusy(false);
+    }
+  };
+
+  const onCancelEdit = () => {
+    // Undo any in-progress edits — both pending value and any unsaved
+    // description tweak — before closing the editor.
     setNewValue("");
+    setDescription(secret.description ?? "");
     setEditing(false);
   };
 
   const onToggleInject = async (next: boolean) => {
-    await onUpdate(secret.key, { inject_into_sandbox: next });
-  };
-
-  const onSaveDescription = async () => {
-    if (description === (secret.description ?? "")) return;
-    await onUpdate(secret.key, { description });
+    setRowBusy(true);
+    try {
+      await onUpdate(secret.key, { inject_into_sandbox: next });
+    } finally {
+      setRowBusy(false);
+    }
   };
 
   return (
@@ -516,7 +548,7 @@ function SecretRow({
           <Switch
             checked={secret.inject_into_sandbox}
             onCheckedChange={onToggleInject}
-            disabled={disabled}
+            disabled={busy}
             id={`inject-${secret.id}`}
           />
           <Label htmlFor={`inject-${secret.id}`} className="cursor-pointer">
@@ -526,8 +558,8 @@ function SecretRow({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setEditing((v) => !v)}
-          disabled={disabled}
+          onClick={() => (editing ? onCancelEdit() : setEditing(true))}
+          disabled={busy}
           type="button"
         >
           <Pencil className="mr-2 h-3.5 w-3.5" />
@@ -536,8 +568,15 @@ function SecretRow({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onDelete(secret.key)}
-          disabled={disabled}
+          onClick={async () => {
+            setRowBusy(true);
+            try {
+              await onDelete(secret.key);
+            } finally {
+              setRowBusy(false);
+            }
+          }}
+          disabled={busy}
           className="text-destructive hover:text-destructive"
           type="button"
         >
@@ -564,11 +603,15 @@ function SecretRow({
               id={`desc-${secret.id}`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onBlur={onSaveDescription}
+              placeholder="What is this secret for?"
             />
+            <p className="text-xs text-muted-foreground">
+              Description and value are saved together when you click
+              "Rotate value". Cancel discards both.
+            </p>
           </div>
           <div className="flex justify-end">
-            <Button size="sm" onClick={onRotate} disabled={!newValue || disabled}>
+            <Button size="sm" onClick={onRotate} disabled={!newValue || busy}>
               Rotate value
             </Button>
           </div>

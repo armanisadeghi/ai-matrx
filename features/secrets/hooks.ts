@@ -24,6 +24,11 @@ import type {
 } from "./types";
 
 export function useSecrets(opts?: { includeInactive?: boolean }) {
+  // Destructure to a primitive so callers can pass inline-object opts
+  // (`useSecrets({ includeInactive: false })`) without the new object
+  // reference re-firing the effect every render. Keeps the dep array
+  // honest under React-Compiler memoization too.
+  const includeInactive = opts?.includeInactive ?? false;
   const [secrets, setSecrets] = useState<UserSecretSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,9 +37,7 @@ export function useSecrets(opts?: { includeInactive?: boolean }) {
     setLoading(true);
     setError(null);
     try {
-      const rows = await fetchSecrets({
-        includeInactive: opts?.includeInactive,
-      });
+      const rows = await fetchSecrets({ includeInactive });
       setSecrets(rows);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -42,7 +45,7 @@ export function useSecrets(opts?: { includeInactive?: boolean }) {
     } finally {
       setLoading(false);
     }
-  }, [opts?.includeInactive]);
+  }, [includeInactive]);
 
   useEffect(() => {
     void refresh();

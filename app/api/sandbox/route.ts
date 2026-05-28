@@ -202,6 +202,21 @@ export async function POST(request: NextRequest) {
     // failure here is non-fatal — the sandbox still creates, just without
     // auto-injected secrets — so a temporary aidream blip doesn't break
     // sandbox creation.
+    //
+    // Doctrine note: per CLAUDE.md, Next.js API routes should NOT sit
+    // between React and Python. This route already exists as the
+    // orchestrator-forwarding shim (per-user sandbox-quota check +
+    // project validation + reconcile happen here in Supabase before
+    // forwarding), so we're not adding a NEW middle tier — just one
+    // extra outbound fetch on a path that already brokers between
+    // clients and Python. If this route is ever refactored to live in
+    // aidream, the secrets-injection step moves with it; until then,
+    // this is the smallest possible patch that gets the vault wired up.
+    //
+    // Merge precedence: vault secrets WIN over caller-supplied
+    // config.env. That's intentional — the user spec is "set once,
+    // never lose it". If a caller passes a stale value for a key the
+    // user has rotated in the vault, the rotated value wins.
     const mergedConfig: SandboxConfig = { ...(config || {}) };
     try {
       const {
