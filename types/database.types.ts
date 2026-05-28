@@ -1402,6 +1402,7 @@ export type Database = {
         Row: {
           api_class: string | null
           capabilities: Json | null
+          capabilities_pre_canonical: Json | null
           common_name: string | null
           constraints: Json | null
           context_window: number | null
@@ -1423,6 +1424,7 @@ export type Database = {
         Insert: {
           api_class?: string | null
           capabilities?: Json | null
+          capabilities_pre_canonical?: Json | null
           common_name?: string | null
           constraints?: Json | null
           context_window?: number | null
@@ -1444,6 +1446,7 @@ export type Database = {
         Update: {
           api_class?: string | null
           capabilities?: Json | null
+          capabilities_pre_canonical?: Json | null
           common_name?: string | null
           constraints?: Json | null
           context_window?: number | null
@@ -19434,6 +19437,7 @@ export type Database = {
           client_name: string
           created_at: string
           description: string
+          execution_mode: string
           executor_name: string | null
           is_active: boolean
           name: string
@@ -19446,6 +19450,7 @@ export type Database = {
           client_name: string
           created_at?: string
           description?: string
+          execution_mode?: string
           executor_name?: string | null
           is_active?: boolean
           name: string
@@ -19458,6 +19463,7 @@ export type Database = {
           client_name?: string
           created_at?: string
           description?: string
+          execution_mode?: string
           executor_name?: string | null
           is_active?: boolean
           name?: string
@@ -27491,6 +27497,7 @@ export type Database = {
           client_name: string
           created_at: string
           description: string
+          execution_mode: string
           executor_name: string | null
           is_active: boolean
           name: string

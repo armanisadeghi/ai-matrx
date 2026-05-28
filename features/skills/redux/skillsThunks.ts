@@ -5,11 +5,9 @@
  * direct reads/writes for owned rows (categories, resources). Each
  * thunk:
  *   1. Marks the slice loading.
- *   2. Dispatches `callApi` with fully-typed paths (the OpenAPI schema
- *      has every public endpoint after `pnpm sync-types`). The only
- *      remaining `as never` casts are for the new admin category
- *      endpoints — they exist server-side but haven't been picked up
- *      by sync-types yet; drop those once the aidream deploy lands.
+ *   2. Dispatches `callApi` with fully-typed paths from the synced
+ *      OpenAPI schema. Bodies are typed via `components["schemas"][...]`
+ *      so the call sites compile-check end-to-end.
  *   3. Converts the wire shape to a view model and dispatches `Received`
  *      / `Upserted` etc.
  *   4. On error, dispatches `Error` and re-throws so call sites can
@@ -35,6 +33,8 @@ type SkillCreateBody = components["schemas"]["SkillCreate"];
 type SkillPatchBody = components["schemas"]["SkillPatch"];
 type IngestRequestBody =
   components["schemas"]["aidream__api__routers__skills__IngestRequest"];
+type CategoryCreateBody = components["schemas"]["CategoryCreate"];
+type CategoryPatchBody = components["schemas"]["CategoryPatch"];
 
 import { skillsActions } from "./skillsSlice";
 import {
@@ -383,25 +383,22 @@ export const createCategoryThunk = createAsyncThunk<
 
   if (wantsSystem) {
     // System category — admin path through the Python router so the
-    // backend's bypass logic + cycle check applies. The new admin
-    // category endpoints exist server-side but haven't been picked up
-    // by `pnpm sync-types` yet (the aidream deploy lands them in the
-    // generated `paths` map). Until that ships, the path key is
-    // typed `as never`. Drop this once sync-types regenerates.
+    // backend's bypass logic + cycle check applies.
+    const body: CategoryCreateBody = {
+      category_key: draft.categoryKey,
+      label: draft.label,
+      description: draft.description ?? null,
+      icon_name: draft.iconName ?? null,
+      color: draft.color ?? null,
+      parent_category_id: draft.parentCategoryId ?? null,
+      sort_order: draft.sortOrder ?? 0,
+      is_system: true,
+    };
     const result = await dispatch(
       callApi({
-        path: "/api/skills/categories" as never,
+        path: "/api/skills/categories",
         method: "POST",
-        body: {
-          category_key: draft.categoryKey,
-          label: draft.label,
-          description: draft.description ?? null,
-          icon_name: draft.iconName ?? null,
-          color: draft.color ?? null,
-          parent_category_id: draft.parentCategoryId ?? null,
-          sort_order: draft.sortOrder ?? 0,
-          is_system: true,
-        } as never,
+        body,
       }),
     );
     if (result.error) throw new Error(result.error.message);
@@ -464,7 +461,7 @@ export const updateCategoryThunk = createAsyncThunk<
     if (!isAdmin) {
       throw new Error("Only admins can edit system categories.");
     }
-    const wireBody: Record<string, unknown> = {};
+    const wireBody: CategoryPatchBody = {};
     if (patch.categoryKey !== undefined) wireBody.category_key = patch.categoryKey;
     if (patch.label !== undefined) wireBody.label = patch.label;
     if (patch.description !== undefined) wireBody.description = patch.description;
@@ -477,12 +474,10 @@ export const updateCategoryThunk = createAsyncThunk<
 
     const result = await dispatch(
       callApi({
-        // PATCH /skills/categories/{category_id} — typed `as never` until
-        // sync-types picks up the new admin endpoint. Drop on next sync.
-        path: "/api/skills/categories/{category_id}" as never,
+        path: "/api/skills/categories/{category_id}",
         method: "PATCH",
-        pathParams: { category_id: id } as never,
-        body: wireBody as never,
+        pathParams: { category_id: id },
+        body: wireBody,
       }),
     );
     if (result.error) throw new Error(result.error.message);
@@ -540,11 +535,9 @@ export const deleteCategoryThunk = createAsyncThunk<
     }
     const result = await dispatch(
       callApi({
-        // DELETE /skills/categories/{category_id} — typed `as never` until
-        // sync-types picks up the new admin endpoint. Drop on next sync.
-        path: "/api/skills/categories/{category_id}" as never,
+        path: "/api/skills/categories/{category_id}",
         method: "DELETE",
-        pathParams: { category_id: id } as never,
+        pathParams: { category_id: id },
       }),
     );
     if (result.error) throw new Error(result.error.message);

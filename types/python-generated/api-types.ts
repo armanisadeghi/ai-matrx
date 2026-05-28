@@ -2268,11 +2268,37 @@ export interface paths {
         /** List Categories */
         get: operations["list_categories_api_skills_categories_get"];
         put?: never;
-        post?: never;
+        /** Create Category */
+        post: operations["create_category_api_skills_categories_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/skills/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Category
+         * @description Soft-deactivate the category. Skills pointing at it are NOT
+         *     cascaded — they stay with the dangling FK reference (`category_id`
+         *     on `skl_definitions` is a SET NULL FK so they become uncategorized
+         *     on the DB side when the row is actually deleted; deactivation just
+         *     hides them from the picker).
+         */
+        delete: operations["delete_category_api_skills_categories__category_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Category */
+        patch: operations["patch_category_api_skills_categories__category_id__patch"];
         trace?: never;
     };
     "/api/skills/{skill_ref}": {
@@ -13442,12 +13468,65 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * CategoryCreate
+         * @description POST /skills/categories body. `user_id` is forced server-side: when
+         *     the caller is admin AND omits all scope fields, the new row lands as a
+         *     system row (user_id IS NULL); otherwise it's stamped with the caller's
+         *     user_id. Only admins can create system rows.
+         */
+        CategoryCreate: {
+            /** Category Key */
+            category_key: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description?: string | null;
+            /** Icon Name */
+            icon_name?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Parent Category Id */
+            parent_category_id?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Is System
+             * @default false
+             */
+            is_system: boolean;
+        };
         /** CategoryList */
         CategoryList: {
             /** Count */
             count: number;
             /** Categories */
             categories: components["schemas"]["CategoryRow"][];
+        };
+        /**
+         * CategoryPatch
+         * @description PATCH /skills/categories/{id} body. All fields optional.
+         */
+        CategoryPatch: {
+            /** Category Key */
+            category_key?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Icon Name */
+            icon_name?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Parent Category Id */
+            parent_category_id?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** CategoryRow */
         CategoryRow: {
@@ -29554,6 +29633,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CategoryList"];
+                };
+            };
+        };
+    };
+    create_category_api_skills_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_category_api_skills_categories__category_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_category_api_skills_categories__category_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

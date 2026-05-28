@@ -211,10 +211,11 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
   `features/agent-connections/redux/skl/`. Render-blocks /
   render-components / render-block-categories / resources stay in the
   old slice until their own future migration.
-- ✅ Type-cast cleanup: only ~7 `as never` casts remain in
-  `skillsThunks.ts`, all scoped to the new admin category endpoints
-  that aren't in the deployed backend's OpenAPI yet. Drop after the
-  next aidream deploy + `pnpm sync-types`.
+- ✅ Type-cast cleanup: zero `as never` casts remain in
+  `skillsThunks.ts`. All endpoints — including the admin category
+  POST/PATCH/DELETE — are fully typed via
+  `components["schemas"][...]` from the synced OpenAPI schema
+  (`CategoryCreate`, `CategoryPatch`).
 
 ---
 
