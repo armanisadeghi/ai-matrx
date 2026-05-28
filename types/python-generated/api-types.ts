@@ -2238,18 +2238,48 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
-        get: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
-        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
-        put: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
-        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
-        post: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
-        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
-        delete: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        /**
+         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         *
+         *     Registered below as 5 separate single-method APIRoutes — see the loop at
+         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         */
+        get: operations["proxy_to_local_pc_GET"];
+        /**
+         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         *
+         *     Registered below as 5 separate single-method APIRoutes — see the loop at
+         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         */
+        put: operations["proxy_to_local_pc_PUT"];
+        /**
+         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         *
+         *     Registered below as 5 separate single-method APIRoutes — see the loop at
+         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         */
+        post: operations["proxy_to_local_pc_POST"];
+        /**
+         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         *
+         *     Registered below as 5 separate single-method APIRoutes — see the loop at
+         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         */
+        delete: operations["proxy_to_local_pc_DELETE"];
         options?: never;
         head?: never;
-        /** Reverse-proxy to the user's matrx-local engine (orchestrator-shape). */
-        patch: operations["proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT"];
+        /**
+         * Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         * @description Reverse-proxy to the user's matrx-local engine (orchestrator-shape).
+         *
+         *     Registered below as 5 separate single-method APIRoutes — see the loop at
+         *     the bottom of this file for why we don't use ``api_route(methods=[…])``.
+         */
+        patch: operations["proxy_to_local_pc_PATCH"];
         trace?: never;
     };
     "/api/auth/on-sign-in": {
@@ -29054,7 +29084,7 @@ export interface operations {
             };
         };
     };
-    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+    proxy_to_local_pc_GET: {
         parameters: {
             query?: never;
             header?: never;
@@ -29086,7 +29116,7 @@ export interface operations {
             };
         };
     };
-    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+    proxy_to_local_pc_PUT: {
         parameters: {
             query?: never;
             header?: never;
@@ -29118,7 +29148,7 @@ export interface operations {
             };
         };
     };
-    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+    proxy_to_local_pc_POST: {
         parameters: {
             query?: never;
             header?: never;
@@ -29150,7 +29180,7 @@ export interface operations {
             };
         };
     };
-    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+    proxy_to_local_pc_DELETE: {
         parameters: {
             query?: never;
             header?: never;
@@ -29182,7 +29212,7 @@ export interface operations {
             };
         };
     };
-    proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT: {
+    proxy_to_local_pc_PATCH: {
         parameters: {
             query?: never;
             header?: never;

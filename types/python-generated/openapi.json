@@ -5158,54 +5158,8 @@
           "Local Proxy"
         ],
         "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
-        "parameters": [
-          {
-            "name": "app_instance_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "App Instance Id"
-            }
-          },
-          {
-            "name": "path",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Local Proxy"
-        ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "operationId": "proxy_to_local_pc_GET",
         "parameters": [
           {
             "name": "app_instance_id",
@@ -5252,54 +5206,8 @@
           "Local Proxy"
         ],
         "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
-        "parameters": [
-          {
-            "name": "app_instance_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "App Instance Id"
-            }
-          },
-          {
-            "name": "path",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Local Proxy"
-        ],
-        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "operationId": "proxy_to_local_pc_POST",
         "parameters": [
           {
             "name": "app_instance_id",
@@ -5346,7 +5254,104 @@
           "Local Proxy"
         ],
         "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
-        "operationId": "proxy_to_local_pc_DELETE_GET_PATCH_POST_PUT",
+        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "operationId": "proxy_to_local_pc_PUT",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "operationId": "proxy_to_local_pc_DELETE",
+        "parameters": [
+          {
+            "name": "app_instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Instance Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Local Proxy"
+        ],
+        "summary": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).",
+        "description": "Reverse-proxy to the user's matrx-local engine (orchestrator-shape).\n\nRegistered below as 5 separate single-method APIRoutes — see the loop at\nthe bottom of this file for why we don't use ``api_route(methods=[…])``.",
+        "operationId": "proxy_to_local_pc_PATCH",
         "parameters": [
           {
             "name": "app_instance_id",

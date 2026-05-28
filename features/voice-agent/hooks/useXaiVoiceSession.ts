@@ -74,7 +74,9 @@ function makeTurnId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
-export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionApi {
+export function useXaiVoiceSession(
+  opts: UseXaiVoiceSessionOpts,
+): VoiceSessionApi {
   const { instanceId, devTokenTtlSeconds } = opts;
   const dispatch = useAppDispatch();
 
@@ -111,6 +113,21 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
   const speechEndedAtMsRef = useRef<number | null>(null);
   const assistantTurnStartedAtMsRef = useRef<number | null>(null);
   const firstAudioReceivedRef = useRef(false);
+
+  // Active xaiClient subscriptions for the current session. Tracked so a clean
+  // `stop()` can tear them down — otherwise every restart layers a new set on
+  // top of the old, producing duplicate transcripts and status flapping.
+  const sessionUnsubsRef = useRef<Array<() => void>>([]);
+  function clearSessionSubscriptions(): void {
+    for (const u of sessionUnsubsRef.current) {
+      try {
+        u();
+      } catch {
+        // ignore
+      }
+    }
+    sessionUnsubsRef.current = [];
+  }
 
   // ─── Module construction (idempotent) ──────────────────────────────────
   const ensureModules = useCallback(() => {
@@ -214,9 +231,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
           // Begin a new user turn.
           const turnId = makeTurnId();
           pendingUserTurnIdRef.current = turnId;
-          dispatch(
-            appendUserTurn({ instanceId, turnId, startedAtMs: now }),
-          );
+          dispatch(appendUserTurn({ instanceId, turnId, startedAtMs: now }));
           dispatch(setStatus({ instanceId, status: "listening" }));
           break;
         }
@@ -431,8 +446,22 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
     firstAudioReceivedRef.current = false;
 
     xaiClientRef.current?.disconnect();
+    clearSessionSubscriptions();
     await captureRef.current?.stop();
     await playbackRef.current?.stop();
+
+    // xAI consumes the ephemeral `client_secret` when the WebSocket handshake
+    // completes — presenting the same secret to a fresh connection within its
+    // TTL fails with an opaque "WebSocket connection error". Drop the cached
+    // token now and warm a fresh one in the background so the next start is
+    // both correct AND fast.
+    const tokens = tokenManagerRef.current;
+    if (tokens) {
+      tokens.invalidate();
+      void tokens.prime().catch(() => {
+        // Errors surface via onError → setError dispatch.
+      });
+    }
 
     dispatch(setStatus({ instanceId, status: "idle" }));
   }, [dispatch, instanceId]);
@@ -471,6 +500,10 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
     dispatch(setError({ instanceId, error: null }));
     dispatch(setStatus({ instanceId, status: "requesting-mic" }));
 
+    // Drop any subscriptions left over from a previous session before adding
+    // the new set — defense in depth alongside stop()'s cleanup.
+    clearSessionSubscriptions();
+
     // Subscribe BEFORE connect so we don't miss session.created.
     const unsubEvent = client.onEvent(handleServerEvent);
     const unsubError = client.onError(handleClientError);
@@ -479,6 +512,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
       // Network close mid-session — flip to idle so the mic button reads "start again".
       void stop();
     });
+    sessionUnsubsRef.current.push(unsubEvent, unsubError, unsubClose);
 
     try {
       const token = await tokens.getCurrent();
@@ -496,9 +530,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
       ]);
       // status flips to 'listening' from inside handleServerEvent on session.updated.
     } catch (err) {
-      unsubEvent();
-      unsubError();
-      unsubClose();
+      clearSessionSubscriptions();
       const message =
         err instanceof Error
           ? err.message

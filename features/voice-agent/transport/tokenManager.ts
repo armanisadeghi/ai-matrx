@@ -12,10 +12,7 @@
 //     surface an error via `onError` and stop scheduling new refreshes — the
 //     orchestrator hook is responsible for showing the user a banner.
 
-import {
-  TOKEN_REFRESH_SKEW_SECONDS,
-  TOKEN_TTL_SECONDS,
-} from "../constants";
+import { TOKEN_REFRESH_SKEW_SECONDS, TOKEN_TTL_SECONDS } from "../constants";
 import type { VoiceAgentTokenResponse } from "../types";
 
 const TOKEN_ENDPOINT = "/api/voice-agent/token";
@@ -33,6 +30,16 @@ export interface TokenManager {
   getCurrent: () => Promise<string>;
   /** Currently cached token value, or null. Cheap, non-async. */
   peek: () => string | null;
+  /**
+   * Drop the cached token and cancel the pending refresh timer.
+   *
+   * xAI's ephemeral `client_secret` is consumed by the WebSocket handshake —
+   * presenting the same secret to a second `wss://api.x.ai/v1/realtime`
+   * connection within its TTL produces an opaque `connect-failed` error. So
+   * after every WebSocket disconnect we invalidate the cache; the next
+   * `getCurrent()` (or background `prime()`) mints a fresh secret.
+   */
+  invalidate: () => void;
   onError: (cb: (err: TokenError) => void) => () => void;
   dispose: () => void;
 }
@@ -95,10 +102,7 @@ export function createTokenManager(
         });
         return;
       }
-      const backoff = Math.min(
-        REFRESH_BACKOFF_MAX_MS,
-        1000 * 2 ** attempt,
-      );
+      const backoff = Math.min(REFRESH_BACKOFF_MAX_MS, 1000 * 2 ** attempt);
       refreshTimer = setTimeout(() => {
         void refreshWithBackoff(attempt + 1);
       }, backoff);
@@ -216,6 +220,14 @@ export function createTokenManager(
     return () => errorCallbacks.delete(cb);
   }
 
+  function invalidate(): void {
+    current = null;
+    if (refreshTimer) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+    }
+  }
+
   function dispose(): void {
     disposed = true;
     if (refreshTimer) {
@@ -226,7 +238,7 @@ export function createTokenManager(
     current = null;
   }
 
-  return { prime, getCurrent, peek, onError, dispose };
+  return { prime, getCurrent, peek, invalidate, onError, dispose };
 }
 
 function isExpired(token: VoiceAgentTokenResponse): boolean {
