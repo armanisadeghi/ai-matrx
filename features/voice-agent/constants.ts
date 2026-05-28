@@ -138,3 +138,11 @@ export const PERSISTENCE_MESSAGE_SOURCE_ASSISTANT = "system";
 export const PERSISTENCE_PROVIDER = "xai-realtime";
 
 export const PERSISTENCE_REGION = "us-east-1";
+
+/**
+ * Built-in `agx_agent.id` for the AI Matrx Introduction Agent. This row
+ * is inserted by `migrations/voice_intro_agent_seed.sql` and locked
+ * (agent_type='builtin', is_public=true). Duplicating it in the Agent
+ * Builder is the supported way to create a custom voice agent.
+ */
+export const VOICE_INTRO_AGENT_ID = "00000000-0000-4000-8000-000000000001";

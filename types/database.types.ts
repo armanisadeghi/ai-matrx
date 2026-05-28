@@ -735,6 +735,7 @@ export type Database = {
           rag_awareness_mode: string
           rag_awareness_refreshed_at: string | null
           settings: Json
+          skill_config: Json
           source_agent_id: string | null
           source_snapshot_at: string | null
           tags: string[]
@@ -771,6 +772,7 @@ export type Database = {
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
           settings?: Json
+          skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
           tags?: string[]
@@ -807,6 +809,7 @@ export type Database = {
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
           settings?: Json
+          skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
           tags?: string[]
@@ -1399,6 +1402,7 @@ export type Database = {
         Row: {
           api_class: string | null
           capabilities: Json | null
+          capabilities_pre_canonical: Json | null
           common_name: string | null
           constraints: Json | null
           context_window: number | null
@@ -1420,6 +1424,7 @@ export type Database = {
         Insert: {
           api_class?: string | null
           capabilities?: Json | null
+          capabilities_pre_canonical?: Json | null
           common_name?: string | null
           constraints?: Json | null
           context_window?: number | null
@@ -1441,6 +1446,7 @@ export type Database = {
         Update: {
           api_class?: string | null
           capabilities?: Json | null
+          capabilities_pre_canonical?: Json | null
           common_name?: string | null
           constraints?: Json | null
           context_window?: number | null
@@ -7446,7 +7452,7 @@ export type Database = {
         }
         Relationships: []
       }
-      cx_tl_call: {
+      cx_tool_call: {
         Row: {
           arguments: Json
           call_id: string
@@ -7606,7 +7612,7 @@ export type Database = {
             foreignKeyName: "fk_cx_tool_call_parent"
             columns: ["parent_call_id"]
             isOneToOne: false
-            referencedRelation: "cx_tl_call"
+            referencedRelation: "cx_tool_call"
             referencedColumns: ["id"]
           },
         ]
@@ -16475,6 +16481,42 @@ export type Database = {
           },
         ]
       }
+      skl_skill_projects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          project_id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          project_id: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          project_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skl_skill_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skl_skill_projects_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skl_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_consent: {
         Row: {
           consent_type: string
@@ -17714,6 +17756,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_personal_org_failures: {
+        Row: {
+          created_at: string
+          email: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          resolved_at: string | null
+          resolved_org_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          resolved_at?: string | null
+          resolved_org_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          resolved_at?: string | null
+          resolved_org_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_prompt_executions: {
         Row: {
           created_at: string | null
@@ -18010,7 +18085,46 @@ export type Database = {
         }
         Relationships: []
       }
-      tl_bundle: {
+      tool_binding: {
+        Row: {
+          created_at: string
+          executor_name: string
+          is_active: boolean
+          tool_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          executor_name: string
+          is_active?: boolean
+          tool_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          executor_name?: string
+          is_active?: boolean
+          tool_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_binding_executor_name_fkey"
+            columns: ["executor_name"]
+            isOneToOne: false
+            referencedRelation: "tool_executor"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "tool_binding_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tool_def"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tool_bundle: {
         Row: {
           created_at: string
           created_by: string | null
@@ -18049,15 +18163,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tl_bundle_lister_tool_id_fkey"
+            foreignKeyName: "tool_bundle_lister_tool_id_fkey"
             columns: ["lister_tool_id"]
             isOneToOne: false
-            referencedRelation: "tl_def"
+            referencedRelation: "tool_def"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_bundle_member: {
+      tool_bundle_member: {
         Row: {
           bundle_id: string
           created_at: string
@@ -18068,7 +18182,7 @@ export type Database = {
         Insert: {
           bundle_id: string
           created_at?: string
-          local_alias: string
+          local_alias?: string
           sort_order?: number
           tool_id: string
         }
@@ -18081,46 +18195,45 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tl_bundle_member_bundle_id_fkey"
+            foreignKeyName: "tool_bundle_member_bundle_id_fkey"
             columns: ["bundle_id"]
             isOneToOne: false
-            referencedRelation: "tl_bundle"
+            referencedRelation: "tool_bundle"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tl_bundle_member_tool_id_fkey"
+            foreignKeyName: "tool_bundle_member_tool_id_fkey"
             columns: ["tool_id"]
             isOneToOne: false
-            referencedRelation: "tl_def"
+            referencedRelation: "tool_def"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_def: {
+      tool_def: {
         Row: {
           admin_only: boolean
           annotations: Json | null
           category: string | null
-          created_at: string | null
+          created_at: string
           deactivated_at: string | null
           dedupe_exempt: boolean
           description: string
-          function_path: string
           gating: Json
           icon: string | null
           id: string
-          is_active: boolean | null
+          is_active: boolean
+          managed_by_server_id: string | null
           max_client_wait_seconds: number | null
           name: string
           output_schema: Json | null
           parameters: Json
-          privileged: boolean
           semver: string | null
-          source_app: string
+          source_kind: string
           tags: string[] | null
           tier: string | null
           tool_group: string
-          updated_at: string | null
+          updated_at: string
           validation_exempt: boolean
           version: number
         }
@@ -18128,26 +18241,25 @@ export type Database = {
           admin_only?: boolean
           annotations?: Json | null
           category?: string | null
-          created_at?: string | null
+          created_at?: string
           deactivated_at?: string | null
           dedupe_exempt?: boolean
           description: string
-          function_path?: string
           gating?: Json
           icon?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
+          managed_by_server_id?: string | null
           max_client_wait_seconds?: number | null
           name: string
           output_schema?: Json | null
           parameters: Json
-          privileged?: boolean
           semver?: string | null
-          source_app?: string
+          source_kind?: string
           tags?: string[] | null
           tier?: string | null
           tool_group?: string
-          updated_at?: string | null
+          updated_at?: string
           validation_exempt?: boolean
           version?: number
         }
@@ -18155,75 +18267,48 @@ export type Database = {
           admin_only?: boolean
           annotations?: Json | null
           category?: string | null
-          created_at?: string | null
+          created_at?: string
           deactivated_at?: string | null
           dedupe_exempt?: boolean
           description?: string
-          function_path?: string
           gating?: Json
           icon?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
+          managed_by_server_id?: string | null
           max_client_wait_seconds?: number | null
           name?: string
           output_schema?: Json | null
           parameters?: Json
-          privileged?: boolean
           semver?: string | null
-          source_app?: string
+          source_kind?: string
           tags?: string[] | null
           tier?: string | null
           tool_group?: string
-          updated_at?: string | null
+          updated_at?: string
           validation_exempt?: boolean
           version?: number
         }
-        Relationships: []
-      }
-      tl_def_surface: {
-        Row: {
-          arg_mappings: Json
-          created_at: string
-          surface_name: string
-          tool_id: string
-        }
-        Insert: {
-          arg_mappings?: Json
-          created_at?: string
-          surface_name: string
-          tool_id: string
-        }
-        Update: {
-          arg_mappings?: Json
-          created_at?: string
-          surface_name?: string
-          tool_id?: string
-        }
         Relationships: [
           {
-            foreignKeyName: "tl_def_surface_surface_name_fkey"
-            columns: ["surface_name"]
+            foreignKeyName: "tool_def_managed_by_server_id_fkey"
+            columns: ["managed_by_server_id"]
             isOneToOne: false
-            referencedRelation: "ui_surface"
-            referencedColumns: ["name"]
-          },
-          {
-            foreignKeyName: "tl_def_surface_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "tl_def"
+            referencedRelation: "tool_mcp_server"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_def_version: {
+      tool_def_version: {
         Row: {
+          admin_only: boolean | null
           annotations: Json | null
           category: string | null
           change_note: string | null
           changed_at: string
+          dedupe_exempt: boolean | null
           description: string | null
-          function_path: string | null
+          gating: Json | null
           icon: string | null
           id: string
           is_active: boolean | null
@@ -18231,18 +18316,23 @@ export type Database = {
           output_schema: Json | null
           parameters: Json | null
           semver: string | null
-          source_app: string | null
+          source_kind: string | null
           tags: string[] | null
+          tier: string | null
+          tool_group: string | null
           tool_id: string
+          validation_exempt: boolean | null
           version_number: number
         }
         Insert: {
+          admin_only?: boolean | null
           annotations?: Json | null
           category?: string | null
           change_note?: string | null
           changed_at?: string
+          dedupe_exempt?: boolean | null
           description?: string | null
-          function_path?: string | null
+          gating?: Json | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
@@ -18250,18 +18340,23 @@ export type Database = {
           output_schema?: Json | null
           parameters?: Json | null
           semver?: string | null
-          source_app?: string | null
+          source_kind?: string | null
           tags?: string[] | null
+          tier?: string | null
+          tool_group?: string | null
           tool_id: string
+          validation_exempt?: boolean | null
           version_number: number
         }
         Update: {
+          admin_only?: boolean | null
           annotations?: Json | null
           category?: string | null
           change_note?: string | null
           changed_at?: string
+          dedupe_exempt?: boolean | null
           description?: string | null
-          function_path?: string | null
+          gating?: Json | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
@@ -18269,159 +18364,76 @@ export type Database = {
           output_schema?: Json | null
           parameters?: Json | null
           semver?: string | null
-          source_app?: string | null
+          source_kind?: string | null
           tags?: string[] | null
+          tier?: string | null
+          tool_group?: string | null
           tool_id?: string
+          validation_exempt?: boolean | null
           version_number?: number
         }
         Relationships: [
           {
-            foreignKeyName: "tool_versions_tool_id_fkey"
+            foreignKeyName: "tool_def_version_tool_id_fkey"
             columns: ["tool_id"]
             isOneToOne: false
-            referencedRelation: "tl_def"
+            referencedRelation: "tool_def"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_executor: {
+      tool_executor: {
         Row: {
-          auto_load: boolean
-          created_at: string
-          delegated: boolean
-          function_path: string | null
-          id: string
-          is_active: boolean
-          priority: number
-          source_app: string | null
-          surface: string
-          tool_id: string
-          updated_at: string
-        }
-        Insert: {
-          auto_load?: boolean
-          created_at?: string
-          delegated?: boolean
-          function_path?: string | null
-          id?: string
-          is_active?: boolean
-          priority?: number
-          source_app?: string | null
-          surface: string
-          tool_id: string
-          updated_at?: string
-        }
-        Update: {
-          auto_load?: boolean
-          created_at?: string
-          delegated?: boolean
-          function_path?: string | null
-          id?: string
-          is_active?: boolean
-          priority?: number
-          source_app?: string | null
-          surface?: string
-          tool_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tool_handlers_surface_fkey"
-            columns: ["surface"]
-            isOneToOne: false
-            referencedRelation: "tl_executor_kind"
-            referencedColumns: ["name"]
-          },
-          {
-            foreignKeyName: "tool_handlers_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "tl_def"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tl_executor_kind: {
-        Row: {
-          client_name: string | null
           config: Json
           created_at: string
           description: string
           is_active: boolean
-          is_client_side: boolean
+          mcp_server_id: string | null
+          metadata: Json
           name: string
-          payload_schema: Json
-          payload_validator_path: string | null
+          parent_executor_name: string | null
           updated_at: string
         }
         Insert: {
-          client_name?: string | null
           config?: Json
           created_at?: string
           description?: string
           is_active?: boolean
-          is_client_side: boolean
+          mcp_server_id?: string | null
+          metadata?: Json
           name: string
-          payload_schema?: Json
-          payload_validator_path?: string | null
+          parent_executor_name?: string | null
           updated_at?: string
         }
         Update: {
-          client_name?: string | null
           config?: Json
           created_at?: string
           description?: string
           is_active?: boolean
-          is_client_side?: boolean
+          mcp_server_id?: string | null
+          metadata?: Json
           name?: string
-          payload_schema?: Json
-          payload_validator_path?: string | null
+          parent_executor_name?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "tl_executor_kind_client_name_fkey"
-            columns: ["client_name"]
+            foreignKeyName: "tool_executor_mcp_server_id_fkey"
+            columns: ["mcp_server_id"]
             isOneToOne: false
-            referencedRelation: "ui_client"
+            referencedRelation: "tool_mcp_server"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_executor_parent_executor_name_fkey"
+            columns: ["parent_executor_name"]
+            isOneToOne: false
+            referencedRelation: "tool_executor"
             referencedColumns: ["name"]
           },
         ]
       }
-      tl_gate: {
-        Row: {
-          applies_to: string[]
-          arg_schema: Json
-          created_at: string
-          description: string
-          function_path: string
-          is_active: boolean
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          applies_to?: string[]
-          arg_schema?: Json
-          created_at?: string
-          description?: string
-          function_path: string
-          is_active?: boolean
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          applies_to?: string[]
-          arg_schema?: Json
-          created_at?: string
-          description?: string
-          function_path?: string
-          is_active?: boolean
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tl_mcp_config: {
+      tool_mcp_config: {
         Row: {
           args: string[]
           command: string
@@ -18475,15 +18487,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mcp_server_configs_server_id_fkey"
+            foreignKeyName: "tool_mcp_config_server_id_fkey"
             columns: ["server_id"]
             isOneToOne: false
-            referencedRelation: "tl_mcp_server"
+            referencedRelation: "tool_mcp_server"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_mcp_server: {
+      tool_mcp_server: {
         Row: {
           auth_strategy: Database["public"]["Enums"]["mcp_auth_strategy"]
           category: Database["public"]["Enums"]["mcp_server_category"]
@@ -18591,7 +18603,7 @@ export type Database = {
         }
         Relationships: []
       }
-      tl_mcp_user_conn: {
+      tool_mcp_user_conn: {
         Row: {
           access_token_encrypted: string | null
           config_id: string | null
@@ -18681,22 +18693,75 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mcp_user_connections_config_id_fkey"
+            foreignKeyName: "tool_mcp_user_conn_config_id_fkey"
             columns: ["config_id"]
             isOneToOne: false
-            referencedRelation: "tl_mcp_config"
+            referencedRelation: "tool_mcp_config"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mcp_user_connections_server_id_fkey"
+            foreignKeyName: "tool_mcp_user_conn_server_id_fkey"
             columns: ["server_id"]
             isOneToOne: false
-            referencedRelation: "tl_mcp_server"
+            referencedRelation: "tool_mcp_server"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_test_sample: {
+      tool_surface_defaults: {
+        Row: {
+          always_include_bundles: string[]
+          always_include_tools: string[]
+          arg_defaults: Json
+          arg_injection: Json
+          created_at: string
+          is_active: boolean
+          metadata: Json
+          never_include_bundles: string[]
+          never_include_tools: string[]
+          notes: string | null
+          surface_name: string
+          updated_at: string
+        }
+        Insert: {
+          always_include_bundles?: string[]
+          always_include_tools?: string[]
+          arg_defaults?: Json
+          arg_injection?: Json
+          created_at?: string
+          is_active?: boolean
+          metadata?: Json
+          never_include_bundles?: string[]
+          never_include_tools?: string[]
+          notes?: string | null
+          surface_name: string
+          updated_at?: string
+        }
+        Update: {
+          always_include_bundles?: string[]
+          always_include_tools?: string[]
+          arg_defaults?: Json
+          arg_injection?: Json
+          created_at?: string
+          is_active?: boolean
+          metadata?: Json
+          never_include_bundles?: string[]
+          never_include_tools?: string[]
+          notes?: string | null
+          surface_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_surface_defaults_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: true
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      tool_test_sample: {
         Row: {
           admin_comments: string | null
           arguments: Json
@@ -18741,15 +18806,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tool_test_samples_tool_id_fkey"
+            foreignKeyName: "tool_test_sample_tool_id_fkey"
             columns: ["tool_id"]
             isOneToOne: false
-            referencedRelation: "tl_def"
+            referencedRelation: "tool_def"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_ui: {
+      tool_ui: {
         Row: {
           allowed_imports: string[]
           contract_version: number
@@ -18824,22 +18889,22 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tool_ui_components_surface_name_fkey"
+            foreignKeyName: "tool_ui_surface_name_fkey"
             columns: ["surface_name"]
             isOneToOne: false
             referencedRelation: "ui_surface"
             referencedColumns: ["name"]
           },
           {
-            foreignKeyName: "tool_ui_components_tool_id_fkey"
+            foreignKeyName: "tool_ui_tool_id_fkey"
             columns: ["tool_id"]
             isOneToOne: false
-            referencedRelation: "tl_def"
+            referencedRelation: "tool_def"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_ui_incident: {
+      tool_ui_incident: {
         Row: {
           browser_info: string | null
           component_id: string | null
@@ -18896,15 +18961,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tool_ui_incidents_component_id_fkey"
+            foreignKeyName: "tool_ui_incident_component_id_fkey"
             columns: ["component_id"]
             isOneToOne: false
-            referencedRelation: "tl_ui"
+            referencedRelation: "tool_ui"
             referencedColumns: ["id"]
           },
         ]
       }
-      tl_ui_version: {
+      tool_ui_version: {
         Row: {
           allowed_imports: string[] | null
           change_note: string | null
@@ -18973,10 +19038,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tool_ui_component_versions_component_id_fkey"
+            foreignKeyName: "tool_ui_version_component_id_fkey"
             columns: ["component_id"]
             isOneToOne: false
-            referencedRelation: "tl_ui"
+            referencedRelation: "tool_ui"
             referencedColumns: ["id"]
           },
         ]
@@ -19372,8 +19437,11 @@ export type Database = {
           client_name: string
           created_at: string
           description: string
+          execution_mode: string
+          executor_name: string | null
           is_active: boolean
           name: string
+          parent_surface_name: string | null
           sort_order: number
           updated_at: string
           url_pattern: string | null
@@ -19382,8 +19450,11 @@ export type Database = {
           client_name: string
           created_at?: string
           description?: string
+          execution_mode?: string
+          executor_name?: string | null
           is_active?: boolean
           name: string
+          parent_surface_name?: string | null
           sort_order?: number
           updated_at?: string
           url_pattern?: string | null
@@ -19392,8 +19463,11 @@ export type Database = {
           client_name?: string
           created_at?: string
           description?: string
+          execution_mode?: string
+          executor_name?: string | null
           is_active?: boolean
           name?: string
+          parent_surface_name?: string | null
           sort_order?: number
           updated_at?: string
           url_pattern?: string | null
@@ -19404,6 +19478,20 @@ export type Database = {
             columns: ["client_name"]
             isOneToOne: false
             referencedRelation: "ui_client"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "ui_surface_executor_name_fkey"
+            columns: ["executor_name"]
+            isOneToOne: false
+            referencedRelation: "tool_executor"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "ui_surface_parent_surface_name_fkey"
+            columns: ["parent_surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
             referencedColumns: ["name"]
           },
         ]
@@ -24177,13 +24265,13 @@ export type Database = {
       }
       create_bundle_with_lister: {
         Args: {
-          p_bundle_name: string
           p_description?: string
           p_is_system?: boolean
-          p_members?: Json
-          p_metadata?: Json
+          p_lister_tool_name?: string
+          p_member_tool_names?: string[]
+          p_name: string
         }
-        Returns: Json
+        Returns: string
       }
       create_component_group: {
         Args: {
@@ -24788,6 +24876,10 @@ export type Database = {
         }[]
       }
       encrypt_mcp_token: { Args: { p_plaintext: string }; Returns: string }
+      ensure_personal_organization: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       execute_admin_query: { Args: { query: string }; Returns: Json }
       execute_complex_save: {
         Args: { operations: Json; options?: Json }
@@ -26431,20 +26523,21 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: Json
       }
-      get_tool_detail: { Args: { p_tool_id: string }; Returns: Json }
+      get_tool_detail: { Args: { p_name_or_id: string }; Returns: Json }
       get_tools_list: {
-        Args: {
-          p_category?: string
-          p_is_active?: boolean
-          p_page?: number
-          p_page_size?: number
-          p_search?: string
-          p_source_app?: string
-          p_tags?: string[]
-        }
-        Returns: Json
+        Args: { p_active_only?: boolean }
+        Returns: {
+          category: string
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          source_kind: string
+          tags: string[]
+          tool_group: string
+        }[]
       }
-      get_tools_metadata: { Args: { p_source_app?: string }; Returns: Json }
+      get_tools_metadata: { Args: never; Returns: Json }
       get_topic_overview: { Args: { p_topic_id: string }; Returns: Json }
       get_triage_batch: { Args: { p_batch_size?: number }; Returns: Json }
       get_untriaged_feedback: {
@@ -27319,6 +27412,107 @@ export type Database = {
         }
       }
       to_snake_case: { Args: { input_text: string }; Returns: string }
+      tool_executor_walk_parents: {
+        Args: { p_name: string }
+        Returns: {
+          config: Json
+          created_at: string
+          description: string
+          is_active: boolean
+          mcp_server_id: string | null
+          metadata: Json
+          name: string
+          parent_executor_name: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tool_executor"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      tool_register: {
+        Args: { p_def: Json; p_executor_names?: string[] }
+        Returns: string
+      }
+      tool_register_mcp_discovered: {
+        Args: { p_server_id: string; p_tool_specs: Json }
+        Returns: number
+      }
+      tool_resolve_bundle: {
+        Args: { p_bundle_name: string }
+        Returns: {
+          admin_only: boolean
+          annotations: Json | null
+          category: string | null
+          created_at: string
+          deactivated_at: string | null
+          dedupe_exempt: boolean
+          description: string
+          gating: Json
+          icon: string | null
+          id: string
+          is_active: boolean
+          managed_by_server_id: string | null
+          max_client_wait_seconds: number | null
+          name: string
+          output_schema: Json | null
+          parameters: Json
+          semver: string | null
+          source_kind: string
+          tags: string[] | null
+          tier: string | null
+          tool_group: string
+          updated_at: string
+          validation_exempt: boolean
+          version: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tool_def"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      tool_resolve_for_request: {
+        Args: {
+          p_active_server_executors?: string[]
+          p_client_executor: string
+          p_surface_name: string
+          p_user_id: string
+        }
+        Returns: {
+          annotations: Json
+          arg_defaults: Json
+          description: string
+          parameters: Json
+          tool_id: string
+          tool_name: string
+        }[]
+      }
+      tool_surface_walk_parents: {
+        Args: { p_surface_name: string }
+        Returns: {
+          client_name: string
+          created_at: string
+          description: string
+          execution_mode: string
+          executor_name: string | null
+          is_active: boolean
+          name: string
+          parent_surface_name: string | null
+          sort_order: number
+          updated_at: string
+          url_pattern: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "ui_surface"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       track_system_prompt_execution: {
         Args: {
           p_error_message?: string

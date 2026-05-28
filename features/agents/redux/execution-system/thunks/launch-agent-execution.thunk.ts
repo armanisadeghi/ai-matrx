@@ -50,6 +50,9 @@ import { selectRequest } from "../active-requests/active-requests.selectors";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { resolveAgentRuntime } from "@/features/agents/runtime/runtime-resolver";
+import { launchRealtimeSession } from "@/features/agents/runtime/realtime/launchRealtimeSession.thunk";
+import { isRealtimeRuntime } from "@/features/agents/runtime/pickRuntime";
 
 export interface LaunchResult {
   /** The conversation id — client-generated, honored by the server end-to-end. */
@@ -305,6 +308,45 @@ export const launchAgentExecution = createAsyncThunk<
     const payload = selectAgentExecutionPayload(preState, agentId);
     if (!payload.isReady) {
       await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
+    }
+  }
+
+  // =========================================================================
+  // Step 0.6: Runtime selection — pick the transport (python-stream by
+  // default, browser-realtime for voice / realtime models on
+  // realtime-capable surfaces). If the model declares
+  // `interaction: "realtime"` AND the surface is `browser-realtime`,
+  // hand off to `launchRealtimeSession` and skip the regular instance
+  // creation + executeInstance path entirely.
+  //
+  // Inert by default — `ui_surface.execution_mode` defaults to
+  // `python-stream` for every existing surface row, so today this path
+  // never fires. The voice migration (Step 4) is what flips the
+  // `/chat/voice` surface to `browser-realtime`.
+  // =========================================================================
+  if (agentId) {
+    const runtimeResult = await resolveAgentRuntime(
+      () => getState() as RootState,
+      { agentId, surfaceName },
+    );
+    if ("error" in runtimeResult) {
+      throw new Error(runtimeResult.error);
+    }
+    if (isRealtimeRuntime(runtimeResult.runtime)) {
+      if (!surfaceName) {
+        throw new Error(
+          "Realtime agents must be launched from a surface with a name.",
+        );
+      }
+      await dispatch(
+        launchRealtimeSession({ agentId, surfaceName }),
+      ).unwrap();
+      // The realtime path mounts the session on the voice surface
+      // rather than creating a cx_conversation here. Return a marker
+      // conversationId so the caller's contract (a string) is honored;
+      // callers that need real ids on the realtime path will key off
+      // the surface's own slice in Step 4.
+      return { conversationId: "" };
     }
   }
 
