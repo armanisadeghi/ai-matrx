@@ -327,6 +327,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           lastSavedAt={activeTab?.lastSavedAt}
           onSendSelectionAsContext={sendSelection}
           canSendSelectionAsContext={canSendSelection}
+          activeCloudFileId={activeTab?.cloudFileId ?? null}
         />
       </div>
       <div className="relative flex-1 min-h-0">

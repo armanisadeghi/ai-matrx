@@ -9,6 +9,7 @@ import {
   selectTerminalOpen,
   setOpen as setTerminalOpen,
 } from "../redux/terminalSlice";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 
 interface EditorToolbarProps {
   rightSlotAvailable: boolean;
@@ -27,6 +28,12 @@ interface EditorToolbarProps {
   /** Disables the selection-context button when there's no chat instance
    *  to publish to (or no active tab). */
   canSendSelectionAsContext?: boolean;
+  /** cld_files UUID for the active tab when it's backed by a cloud-stored
+   *  file. Surfaces the "Process for RAG" affordance so the user can
+   *  index the file from where they're editing it, without round-tripping
+   *  through the files surface. Undefined for purely filesystem-backed
+   *  tabs — there's no DB row to ingest. */
+  activeCloudFileId?: string | null;
   className?: string;
 }
 
@@ -43,6 +50,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   lastSavedAt,
   onSendSelectionAsContext,
   canSendSelectionAsContext = false,
+  activeCloudFileId,
   className,
 }) => {
   const dispatch = useAppDispatch();
@@ -85,6 +93,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
               : "Open a chat to send selection"
           }
           onClick={onSendSelectionAsContext}
+        />
+      )}
+      {activeCloudFileId && (
+        <ProcessForRagButton
+          sourceKind="cld_file"
+          sourceId={activeCloudFileId}
+          iconOnly
+          className="ml-0.5 h-6 w-6 border-0 bg-transparent hover:bg-neutral-200 dark:hover:bg-neutral-800"
         />
       )}
       <ToolbarButton
