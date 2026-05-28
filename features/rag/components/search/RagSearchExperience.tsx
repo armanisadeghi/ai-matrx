@@ -59,8 +59,7 @@ import {
 } from "@/features/rag/api/search";
 import {
   ragAgentChatStream,
-  ragDiagnose,
-  ragExpand,
+  ragDiagnoseStream,
   ragInventory,
   type AgentEvent,
   type AgentToolHit,
@@ -794,23 +793,87 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
     setError(null);
     setDiag(null);
     setExpand(null);
+    const stageStart = performance.now();
+    // Accumulate stream events into a single DiagnoseResponse-shaped
+    // object that gets re-set after every event — the AnimatedKpiCard
+    // count-ups + per-panel motion fade-ins make the progressive fill
+    // feel like a live demo of the retrieval pipeline rather than a
+    // batch wait. The shape stays compatible with the batch
+    // DiagnoseResponse so existing render code keeps working.
+    const partial: DiagnoseResponse = {
+      query: trimmed,
+      scope: {
+        user_id: "",
+        organization_id: null,
+        is_admin: false,
+        admin_bypass_acl: false,
+      },
+      elapsed_ms: 0,
+      query_variants: [],
+      hyde_passage: null,
+      embedding_model: "",
+      query_vector_preview: [],
+      visible_chunks_total: 0,
+      candidates_vector: 0,
+      candidates_lexical: 0,
+      candidates_after_fusion: 0,
+      candidates_after_mmr: 0,
+      hits: [],
+      reranker_model: null,
+      effective_filters: {},
+      notes: [],
+    };
     try {
-      const [exp, dg] = await Promise.all([
-        ragExpand({
-          query: trimmed,
-          multi_query: scope.multiQuery,
-          use_hyde: scope.useHyde,
-        }),
-        ragDiagnose(requestPayload),
-      ]);
-      setExpand(exp);
-      setDiag(dg);
+      for await (const evt of ragDiagnoseStream(requestPayload)) {
+        switch (evt.kind) {
+          case "rag.diagnose.started":
+            partial.query = evt.query;
+            partial.scope = evt.scope;
+            break;
+          case "rag.diagnose.note":
+            partial.notes = [...partial.notes, evt.message];
+            break;
+          case "rag.diagnose.query_expansion":
+            partial.query_variants = evt.query_variants;
+            partial.hyde_passage = evt.hyde_passage;
+            partial.embedding_model = evt.embedding_model;
+            partial.query_vector_preview = evt.query_vector_preview;
+            setExpand({
+              query: trimmed,
+              variants: evt.query_variants,
+              hyde_passage: evt.hyde_passage,
+              embedding_model: evt.embedding_model,
+              query_vector_preview: evt.query_vector_preview,
+              elapsed_ms: Math.round(performance.now() - stageStart),
+            });
+            break;
+          case "rag.diagnose.visibility":
+            partial.visible_chunks_total = evt.visible_chunks_total;
+            break;
+          case "rag.diagnose.fusion":
+            partial.candidates_after_fusion = evt.candidates_after_fusion;
+            partial.candidates_vector = evt.candidates_vector;
+            partial.candidates_lexical = evt.candidates_lexical;
+            break;
+          case "rag.diagnose.hits":
+            partial.hits = evt.hits;
+            partial.reranker_model = evt.reranker_model;
+            partial.candidates_after_mmr = evt.candidates_after_mmr;
+            break;
+          case "rag.diagnose.complete":
+            partial.elapsed_ms = evt.elapsed_ms;
+            partial.effective_filters = evt.effective_filters;
+            partial.notes = evt.notes;
+            break;
+        }
+        setDiag({ ...partial });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Diagnose failed");
     } finally {
       setRunning(false);
     }
-  }, [query, requestPayload, scope]);
+  }, [query, requestPayload]);
 
   const assembledPrompt = useMemo(() => {
     if (!diag || diag.hits.length === 0) return "";
@@ -1001,9 +1064,19 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
                   <Beaker className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="font-semibold">Pipeline counts</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {diag.elapsed_ms} ms total
-                  </Badge>
+                  {diag.elapsed_ms > 0 ? (
+                    <Badge variant="outline" className="text-[10px]">
+                      {diag.elapsed_ms} ms total
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] flex items-center gap-1"
+                    >
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                      streaming…
+                    </Badge>
+                  )}
                 </div>
                 <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-5 gap-2">
                   <AnimatedKpiCard
@@ -1052,22 +1125,34 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 )}
               </div>
 
-              <div>
-                <div className="text-xs font-semibold mb-2">
-                  Hits with full score breakdown ({diag.hits.length})
+              {diag.hits.length > 0 && (
+                <div>
+                  <div className="text-xs font-semibold mb-2">
+                    Hits with full score breakdown ({diag.hits.length})
+                  </div>
+                  <div className="space-y-3">
+                    {diag.hits.map((h, i) => (
+                      <motion.div
+                        key={h.chunk_id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.18,
+                          ease: "easeOut",
+                          delay: Math.min(i * 0.02, 0.2),
+                        }}
+                      >
+                        <RichHitCard
+                          rank={i + 1}
+                          hit={h}
+                          showFullText
+                          showBreakdown
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  {diag.hits.map((h, i) => (
-                    <RichHitCard
-                      key={h.chunk_id}
-                      rank={i + 1}
-                      hit={h}
-                      showFullText
-                      showBreakdown
-                    />
-                  ))}
-                </div>
-              </div>
+              )}
 
               {assembledPrompt && (
                 <div className="rounded-md border bg-card overflow-hidden">
@@ -1096,16 +1181,20 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 </div>
               )}
 
-              <JsonInspector
-                label="Diagnose request body"
-                value={requestPayload}
-                collapsed
-              />
-              <JsonInspector
-                label="Diagnose raw response"
-                value={diag}
-                collapsed
-              />
+              {diag.elapsed_ms > 0 && (
+                <>
+                  <JsonInspector
+                    label="Diagnose request body"
+                    value={requestPayload}
+                    collapsed
+                  />
+                  <JsonInspector
+                    label="Diagnose raw response"
+                    value={diag}
+                    collapsed
+                  />
+                </>
+              )}
             </motion.div>
           )}
         </div>

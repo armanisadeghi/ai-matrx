@@ -155,6 +155,100 @@ export async function ragDiagnose(
 }
 
 // ---------------------------------------------------------------------------
+// /diagnose/stream — same pipeline, streamed per-stage so the FE can fill
+// the Agent Simulation panels progressively. Mirrors the event vocabulary
+// from `aidream/api/routers/rag_search_lab.py` — one Pydantic model per
+// kind on that side maps to one variant of the union below.
+// ---------------------------------------------------------------------------
+
+export interface DiagnoseScope {
+  user_id: string;
+  organization_id: string | null;
+  is_admin: boolean;
+  admin_bypass_acl: boolean;
+}
+
+export type DiagnoseEvent =
+  | { kind: "rag.diagnose.started"; query: string; scope: DiagnoseScope }
+  | { kind: "rag.diagnose.note"; message: string }
+  | {
+      kind: "rag.diagnose.query_expansion";
+      query_variants: string[];
+      hyde_passage: string | null;
+      embedding_model: string;
+      query_vector_preview: number[];
+    }
+  | { kind: "rag.diagnose.visibility"; visible_chunks_total: number }
+  | {
+      kind: "rag.diagnose.fusion";
+      candidates_after_fusion: number;
+      candidates_vector: number;
+      candidates_lexical: number;
+    }
+  | {
+      kind: "rag.diagnose.hits";
+      hits: DiagnoseHit[];
+      reranker_model: string | null;
+      candidates_after_mmr: number;
+    }
+  | {
+      kind: "rag.diagnose.complete";
+      elapsed_ms: number;
+      effective_filters: Record<string, unknown>;
+      notes: string[];
+    };
+
+export async function* ragDiagnoseStream(
+  body: DiagnoseRequest,
+  opts: { signal?: AbortSignal } = {},
+): AsyncGenerator<DiagnoseEvent, void, void> {
+  const url = `${resolveBaseUrl()}/rag/search-lab/diagnose/stream`;
+  const { headers } = await buildHeaders({ signal: opts.signal }, true);
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+    signal: opts.signal,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Diagnose stream failed: ${res.status} ${text}`);
+  }
+  if (!res.body) throw new Error("No response body");
+
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += value;
+      let nl = buf.indexOf("\n");
+      while (nl >= 0) {
+        const raw = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        nl = buf.indexOf("\n");
+        if (!raw) continue;
+        try {
+          const env = JSON.parse(raw) as {
+            event?: string;
+            data?: { kind?: string } & Record<string, unknown>;
+          };
+          const payload = env.data;
+          if (payload && typeof payload === "object" && "kind" in payload) {
+            yield payload as DiagnoseEvent;
+          }
+        } catch {
+          // ignore non-JSON lines (heartbeats etc.)
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // /agent/chat — streaming Claude agent that uses rag_search as a tool
 // ---------------------------------------------------------------------------
 
