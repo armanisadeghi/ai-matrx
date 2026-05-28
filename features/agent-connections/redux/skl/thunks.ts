@@ -4,18 +4,19 @@ import { sklActions } from "./slice";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   rowToShortcutCategory,
-  rowToSklCategory,
-  rowToSklDefinition,
   rowToSklRenderComponent,
   rowToSklRenderDefinition,
   rowToSklResource,
-  sklDefinitionToInsert,
-  sklDefinitionToUpdate,
   sklRenderDefinitionToInsert,
   sklRenderDefinitionToUpdate,
 } from "./converters";
 import type { Scope } from "../../types";
-import type { SklDefinition, SklRenderDefinition, SklSkillType } from "./types";
+import type { SklRenderDefinition } from "./types";
+
+// NOTE — May 2026: skill-definition + category thunks moved to
+// `features/skills/redux/skillsThunks.ts` (Supabase direct + Python
+// admin endpoints). Render-blocks + resources stay here until they
+// migrate.
 
 // ─── Scope filter builder ────────────────────────────────────────────────────
 
@@ -91,130 +92,6 @@ async function stampScopeForWrite<T extends ScopeStampInput>(
   }
   return stamped;
 }
-
-// ─── Skill Definitions ──────────────────────────────────────────────────────
-
-interface FetchSkillsArgs extends ScopedQueryArgs {
-  types?: SklSkillType[];
-}
-
-export const fetchSkillDefinitions = createAsyncThunk(
-  "skl/fetchSkillDefinitions",
-  async (args: FetchSkillsArgs, { dispatch }) => {
-    dispatch(sklActions.definitionsLoading());
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id ?? null;
-
-      let query = supabase
-        .from("skl_definitions")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("label", { ascending: true });
-      query = applyScopeFilter(query, args, userId);
-      if (args.types && args.types.length > 0) {
-        query = query.in("skill_type", args.types);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      const rows = (data ?? []).map(rowToSklDefinition);
-      dispatch(sklActions.definitionsReceived(rows));
-      return rows;
-    } catch (err) {
-      const msg = extractErrorMessage(err);
-      dispatch(sklActions.definitionsError(msg));
-      throw err;
-    }
-  },
-);
-
-export const createSkillDefinition = createAsyncThunk(
-  "skl/createSkillDefinition",
-  async (
-    args: {
-      draft: Partial<SklDefinition> &
-        Pick<SklDefinition, "skillId" | "label" | "description">;
-      scope: Scope;
-      scopeId: string | null;
-    },
-    { dispatch },
-  ) => {
-    const payload = sklDefinitionToInsert(args.draft);
-    const stamped = await stampScopeForWrite(payload, {
-      scope: args.scope,
-      scopeId: args.scopeId,
-    });
-    const { data, error } = await supabase
-      .from("skl_definitions")
-      .insert(stamped)
-      .select()
-      .single();
-    if (error) throw error;
-    const row = rowToSklDefinition(data);
-    dispatch(sklActions.definitionUpserted(row));
-    return row;
-  },
-);
-
-export const updateSkillDefinition = createAsyncThunk(
-  "skl/updateSkillDefinition",
-  async (
-    args: { id: string; patch: Partial<SklDefinition> },
-    { dispatch },
-  ) => {
-    const payload = sklDefinitionToUpdate(args.patch);
-    const { data, error } = await supabase
-      .from("skl_definitions")
-      .update(payload)
-      .eq("id", args.id)
-      .select()
-      .single();
-    if (error) throw error;
-    const row = rowToSklDefinition(data);
-    dispatch(sklActions.definitionUpserted(row));
-    return row;
-  },
-);
-
-export const deleteSkillDefinition = createAsyncThunk(
-  "skl/deleteSkillDefinition",
-  async (args: { id: string }, { dispatch }) => {
-    const { error } = await supabase
-      .from("skl_definitions")
-      .delete()
-      .eq("id", args.id);
-    if (error) throw error;
-    dispatch(sklActions.definitionRemoved(args.id));
-    return args.id;
-  },
-);
-
-export const duplicateSkillDefinition = createAsyncThunk(
-  "skl/duplicateSkillDefinition",
-  async (
-    args: { id: string; scope: Scope; scopeId: string | null },
-    { getState, dispatch },
-  ) => {
-    const state = getState() as { skl: { definitions: { byId: Record<string, SklDefinition> } } };
-    const source = state.skl.definitions.byId[args.id];
-    if (!source) throw new Error(`Skill ${args.id} not found`);
-    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = source;
-    const copy: Partial<SklDefinition> &
-      Pick<SklDefinition, "skillId" | "label" | "description"> = {
-      ...rest,
-      skillId: `${source.skillId}-copy`,
-      label: `${source.label} (copy)`,
-    };
-    const result = await dispatch(
-      createSkillDefinition({
-        draft: copy,
-        scope: args.scope,
-        scopeId: args.scopeId,
-      }),
-    ).unwrap();
-    return result;
-  },
-);
 
 // ─── Render Definitions ─────────────────────────────────────────────────────
 
@@ -319,27 +196,6 @@ export const fetchRenderComponents = createAsyncThunk(
     if (error) throw error;
     const rows = (data ?? []).map(rowToSklRenderComponent);
     dispatch(sklActions.renderComponentsReceived(rows));
-    return rows;
-  },
-);
-
-// ─── Categories (skl_categories) ────────────────────────────────────────────
-
-export const fetchCategories = createAsyncThunk(
-  "skl/fetchCategories",
-  async (args: ScopedQueryArgs, { dispatch }) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id ?? null;
-    let query = supabase
-      .from("skl_categories")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("label", { ascending: true });
-    query = applyScopeFilter(query, args, userId);
-    const { data, error } = await query;
-    if (error) throw error;
-    const rows = (data ?? []).map(rowToSklCategory);
-    dispatch(sklActions.categoriesReceived(rows));
     return rows;
   },
 );

@@ -106,19 +106,22 @@ export interface SkillCreateWire {
   skill_id: string;
   label: string;
   description: string;
-  skill_type?: string;
-  body?: string;
+  // Pydantic defaults make these required-on-the-wire; the converter
+  // always sets them.
+  skill_type: string;
+  body: string;
+  disable_auto_invocation: boolean;
+  is_public: boolean;
+  // Truly optional fields below.
   icon_name?: string | null;
   model_preference?: string | null;
   allowed_tools?: string[];
   trigger_patterns?: string[];
-  disable_auto_invocation?: boolean;
   platform_targets?: string[];
   version?: string | null;
   config?: Record<string, unknown>;
   category_id?: string | null;
   parent_skill_id?: string | null;
-  is_public?: boolean;
 }
 
 export interface SkillPatchWire {

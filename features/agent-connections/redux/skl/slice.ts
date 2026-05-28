@@ -1,14 +1,18 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   initialSklSliceState,
-  type SklCategory,
-  type SklDefinition,
   type SklRenderComponent,
   type SklRenderDefinition,
   type SklResource,
   type SklSliceState,
   type ShortcutCategoryRow,
 } from "./types";
+
+// NOTE — May 2026: skill definitions + categories live at
+// `features/skills/redux/skillsSlice.ts` (backed by /api/skills + Supabase
+// direct). The slot is intentionally absent from this slice — render-
+// blocks, render-components, render-block-categories, and resources
+// remain here until their own migration.
 
 function indexById<T extends { id: string }>(
   rows: T[],
@@ -26,42 +30,6 @@ const sklSlice = createSlice({
   name: "skl",
   initialState: initialSklSliceState,
   reducers: {
-    // ── Definitions ─────────────────────────────────────────────────────────
-    definitionsLoading(state) {
-      state.definitions.status = "loading";
-      state.definitions.error = null;
-    },
-    definitionsReceived(state, action: PayloadAction<SklDefinition[]>) {
-      const { byId, allIds } = indexById(action.payload);
-      state.definitions.byId = byId;
-      state.definitions.allIds = allIds;
-      state.definitions.status = "ready";
-      state.definitions.error = null;
-    },
-    definitionsError(state, action: PayloadAction<string>) {
-      state.definitions.status = "error";
-      state.definitions.error = action.payload;
-    },
-    definitionUpserted(state, action: PayloadAction<SklDefinition>) {
-      const def = action.payload;
-      if (!state.definitions.byId[def.id]) {
-        state.definitions.allIds.push(def.id);
-      }
-      state.definitions.byId[def.id] = def;
-    },
-    definitionRemoved(state, action: PayloadAction<string>) {
-      delete state.definitions.byId[action.payload];
-      state.definitions.allIds = state.definitions.allIds.filter(
-        (id) => id !== action.payload,
-      );
-      if (state.definitions.activeId === action.payload) {
-        state.definitions.activeId = null;
-      }
-    },
-    setActiveDefinitionId(state, action: PayloadAction<string | null>) {
-      state.definitions.activeId = action.payload;
-    },
-
     // ── Render Definitions ──────────────────────────────────────────────────
     renderDefinitionsLoading(state) {
       state.renderDefinitions.status = "loading";
@@ -122,15 +90,6 @@ const sklSlice = createSlice({
       state.renderComponents.error = null;
     },
 
-    // ── Categories (skl_categories) ─────────────────────────────────────────
-    categoriesReceived(state, action: PayloadAction<SklCategory[]>) {
-      const { byId, allIds } = indexById(action.payload);
-      state.categories.byId = byId;
-      state.categories.allIds = allIds;
-      state.categories.status = "ready";
-      state.categories.error = null;
-    },
-
     // ── Render-block categories (shortcut_categories FK target) ────────────
     renderBlockCategoriesReceived(
       state,
@@ -188,12 +147,12 @@ const sklSlice = createSlice({
 
     // ── Cross-cutting reset (e.g. on scope change) ─────────────────────────
     resetSklForScopeChange(state) {
-      state.definitions = initialSklSliceState.definitions;
       state.renderDefinitions = initialSklSliceState.renderDefinitions;
-      state.categories = initialSklSliceState.categories;
       state.renderBlockCategories = initialSklSliceState.renderBlockCategories;
       state.resources = initialSklSliceState.resources;
       // renderComponents is scope-free (registry); do not reset
+      // Skills + categories migrated to features/skills/ — reset that
+      // slice separately if needed (see skillsActions.resetSkills).
     },
   },
 });

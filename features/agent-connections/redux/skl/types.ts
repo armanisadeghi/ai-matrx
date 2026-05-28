@@ -1,39 +1,16 @@
 import type { Database } from "@/types/database.types";
 
 // ─── DB row types (camelCased for Redux state) ───────────────────────────────
+//
+// NOTE — May 2026: the skill *definition* + *category* types moved to
+// `features/skills/redux/` and are now backed by `/api/skills` (the
+// Python backend). Only render-blocks (renderDefinitions /
+// renderComponents / renderBlockCategories) and resources still live
+// in this slice — they're awaiting their own migration. Do not add
+// new skill / category code here.
 
-type Json = Database["public"]["Tables"]["skl_definitions"]["Row"]["config"];
-
-export type SklSkillType = Database["public"]["Enums"]["skl_skill_type"];
-
-export interface SklDefinition {
-  id: string;
-  skillId: string;
-  label: string;
-  description: string;
-  skillType: SklSkillType;
-  body: string | null;
-  iconName: string | null;
-  modelPreference: string | null;
-  allowedTools: unknown[] | null;
-  triggerPatterns: unknown[] | null;
-  disableAutoInvocation: boolean;
-  platformTargets: string[] | null;
-  version: string | null;
-  config: Json | null;
-  categoryId: string | null;
-  parentSkillId: string | null;
-  isSystem: boolean;
-  isPublic: boolean;
-  isActive: boolean;
-  sortOrder: number;
-  userId: string | null;
-  organizationId: string | null;
-  projectId: string | null;
-  taskId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+type Json =
+  Database["public"]["Tables"]["skl_render_components"]["Row"]["parser_config"];
 
 export interface SklRenderDefinition {
   id: string;
@@ -66,25 +43,6 @@ export interface SklRenderComponent {
   importPath: string | null;
   isActive: boolean;
   sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SklCategory {
-  id: string;
-  categoryKey: string;
-  label: string;
-  description: string | null;
-  iconName: string | null;
-  color: string | null;
-  parentCategoryId: string | null;
-  sortOrder: number;
-  isActive: boolean;
-  metadata: Json | null;
-  userId: string | null;
-  organizationId: string | null;
-  projectId: string | null;
-  taskId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,13 +84,6 @@ export interface ShortcutCategoryRow {
 export type SklStatus = "idle" | "loading" | "ready" | "error";
 
 export interface SklSliceState {
-  definitions: {
-    byId: Record<string, SklDefinition>;
-    allIds: string[];
-    status: SklStatus;
-    error: string | null;
-    activeId: string | null;
-  };
   renderDefinitions: {
     byId: Record<string, SklRenderDefinition>;
     allIds: string[];
@@ -144,12 +95,6 @@ export interface SklSliceState {
     byId: Record<string, SklRenderComponent>;
     allIds: string[];
     byRenderDefinitionId: Record<string, string[]>;
-    status: SklStatus;
-    error: string | null;
-  };
-  categories: {
-    byId: Record<string, SklCategory>;
-    allIds: string[];
     status: SklStatus;
     error: string | null;
   };
@@ -169,7 +114,6 @@ export interface SklSliceState {
 }
 
 export const initialSklSliceState: SklSliceState = {
-  definitions: { byId: {}, allIds: [], status: "idle", error: null, activeId: null },
   renderDefinitions: {
     byId: {},
     allIds: [],
@@ -184,7 +128,6 @@ export const initialSklSliceState: SklSliceState = {
     status: "idle",
     error: null,
   },
-  categories: { byId: {}, allIds: [], status: "idle", error: null },
   renderBlockCategories: { byId: {}, allIds: [], status: "idle", error: null },
   resources: {
     byId: {},

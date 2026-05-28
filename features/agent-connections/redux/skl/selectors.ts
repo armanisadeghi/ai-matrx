@@ -2,58 +2,26 @@ import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ShortcutCategoryRow,
-  SklCategory,
-  SklDefinition,
   SklRenderComponent,
   SklRenderDefinition,
   SklResource,
-  SklSkillType,
 } from "./types";
 
 // ─── Base slice selector ────────────────────────────────────────────────────
 
 const selectSkl = (state: RootState) => state.skl;
 
-// ─── Definitions ────────────────────────────────────────────────────────────
-
-export const selectAllSkillDefinitions = createSelector(
-  [selectSkl],
-  (skl): SklDefinition[] =>
-    skl.definitions.allIds
-      .map((id) => skl.definitions.byId[id])
-      .filter((d): d is SklDefinition => Boolean(d)),
-);
-
-export const selectSkillDefinitionsStatus = (state: RootState) =>
-  state.skl.definitions.status;
-
-export const selectSkillDefinitionById =
-  (id: string | null) =>
-  (state: RootState): SklDefinition | null =>
-    id ? (state.skl.definitions.byId[id] ?? null) : null;
-
-export const selectActiveSkillDefinitionId = (state: RootState) =>
-  state.skl.definitions.activeId;
-
-export const selectSkillDefinitionsByType = (types?: SklSkillType[]) =>
-  createSelector([selectAllSkillDefinitions], (all) => {
-    if (!types || types.length === 0) return all;
-    const set = new Set(types);
-    return all.filter((d) => set.has(d.skillType));
-  });
-
-// Group by skill_type for sectioned list UI
-export const selectSkillDefinitionsGrouped = createSelector(
-  [selectAllSkillDefinitions],
-  (all): Record<SklSkillType, SklDefinition[]> => {
-    const groups: Record<string, SklDefinition[]> = {};
-    for (const d of all) {
-      if (!groups[d.skillType]) groups[d.skillType] = [];
-      groups[d.skillType].push(d);
-    }
-    return groups as Record<SklSkillType, SklDefinition[]>;
-  },
-);
+// NOTE — May 2026: skill-definition + category selectors moved to
+// `features/skills/redux/skillsSelectors.ts`. This file now serves
+// render-blocks, render-components, render-block-categories, and
+// resources only. The replacements are:
+//
+//   selectAllSkillDefinitions      → selectAllSkills
+//   selectSkillDefinitionsStatus   → selectSkillsStatus
+//   selectSkillDefinitionsByType   → makeSelectSkillsByType
+//   selectSkillDefinitionsGrouped  → selectSkillsGroupedByType
+//   selectSkillDefinitionsCount    → selectSkillsCount
+//   selectAllCategories            → selectAllCategories (new slice)
 
 // ─── Render Definitions ─────────────────────────────────────────────────────
 
@@ -101,16 +69,6 @@ export const selectRenderComponentsForDefinition =
       .map((id) => state.skl.renderComponents.byId[id])
       .filter((c): c is SklRenderComponent => Boolean(c));
   };
-
-// ─── Categories (skl_categories) ────────────────────────────────────────────
-
-export const selectAllCategories = createSelector(
-  [selectSkl],
-  (skl): SklCategory[] =>
-    skl.categories.allIds
-      .map((id) => skl.categories.byId[id])
-      .filter((c): c is SklCategory => Boolean(c)),
-);
 
 // ─── Render-Block categories (still shortcut_categories) ───────────────────
 
@@ -184,11 +142,6 @@ export const selectResourcesStatus = (state: RootState) =>
   state.skl.resources.status;
 
 // ─── Counts (for the sidebar) ───────────────────────────────────────────────
-
-export const selectSkillDefinitionsCount = createSelector(
-  [selectSkl],
-  (skl) => skl.definitions.allIds.length,
-);
 
 export const selectRenderDefinitionsCount = createSelector(
   [selectSkl],
