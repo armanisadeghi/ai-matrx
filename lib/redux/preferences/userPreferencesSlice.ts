@@ -532,8 +532,13 @@ export const initializeUserPreferencesState = (
       activeAgentSandboxBySurface: {},
     },
     sandbox: {
-      template: "bare",
+      // "slim" = the full coding env without aidream-built-in. Matches what
+      // the Sandbox admin page's "New sandbox" button creates by default
+      // and is the template the auto-provision-on-sign-in flow uses.
+      template: "slim",
       tier: "hosted",
+      // null = use the orchestrator's max (24h); user wants "never auto-stop"
+      // and heartbeats roll expires_at forward while the box is being used.
       ttl_seconds: null,
       default_git_repo: null,
       default_git_branch: null,

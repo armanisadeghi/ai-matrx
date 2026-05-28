@@ -39,10 +39,19 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 
+// Templates the orchestrator actually serves today. Source: `template`
+// distinct values on public.sandbox_instances. Keep this in sync — adding a
+// new template image here without registering it on the orchestrator side
+// would cause auto-provision failures.
 const TEMPLATE_OPTIONS = [
-  { value: "bare", label: "Bare — minimal Ubuntu shell" },
-  { value: "node-22", label: "Node 22 + pnpm" },
-  { value: "python-3.13", label: "Python 3.13 + uv" },
+  {
+    value: "slim",
+    label: "Slim — full coding env (recommended)",
+  },
+  {
+    value: "aidream",
+    label: "AI Dream — coding env + aidream server built in",
+  },
 ] as const;
 
 const TTL_OPTIONS = [
