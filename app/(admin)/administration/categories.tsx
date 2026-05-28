@@ -260,6 +260,37 @@ export const adminCategories = [
     ],
   },
   {
+    name: "Agent Skills",
+    icon: <Brain className="w-6 h-6" />,
+    iconColor: "text-amber-600",
+    features: [
+      {
+        title: "Skills registry",
+        description:
+          "Curate every skill on the platform — system, public, and user-owned. Promote a skill to system, edit metadata, or soft-delete.",
+        icon: <Brain />,
+        link: "/administration/skills",
+        isNew: true,
+      },
+      {
+        title: "Categories",
+        description:
+          "Hierarchical category tree that drives the catalog overview preamble for every agent.",
+        icon: <IconFolder />,
+        link: "/administration/skills/categories",
+        isNew: true,
+      },
+      {
+        title: "Filesystem ingest",
+        description:
+          "Bulk-import SKILL.md files from one or more repo paths or leaf skills directories. Dry-run + apply with body-hash idempotency.",
+        icon: <IconDownload />,
+        link: "/administration/skills/ingest",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Prompt Shortcuts",
     icon: <IconRobot className="w-6 h-6" />,
     iconColor: "text-indigo-600",
