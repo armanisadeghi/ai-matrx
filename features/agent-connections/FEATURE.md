@@ -53,7 +53,7 @@ Agent Connections is the engineer-facing registry surface that governs **which t
 - `McpServerStatus` — `"running" | "stopped" | "error"`
 
 **Mock data source** (`features/agent-connections/data.ts`)
-All sections read from hardcoded exports: `SKILL_GROUPS`, `HOOK_GROUPS`, `MCP_GROUPS`, `AGENT_ENTRIES`, `AGENT_FILE_PREVIEW`. These are placeholders; nothing is fetched.
+Most sections still read from hardcoded exports: `HOOK_GROUPS`, `MCP_GROUPS`, `AGENT_ENTRIES`, `AGENT_FILE_PREVIEW`. These are placeholders; nothing is fetched. **Exception — Skills:** the `SkillsSection` is live as of 2026-05-27. It reads from `features/skills/` (the canonical slice backed by `/api/skills`), supports full CRUD, filesystem ingest (admin), and category browsing. The legacy `SKILL_GROUPS` mock is no longer wired.
 
 ---
 
@@ -121,6 +121,7 @@ Scaffolded UI only. Before adding real behavior:
 
 ## Change log
 
+- `2026-05-27` — claude: SkillsSection promoted from a placeholder to live. Now reads `/api/skills` via the new `features/skills/` slice, supports browse / create / edit / delete / categories / filesystem ingest (admin), and reacts to sandbox auto-discovery events (`RESOURCE_CHANGED kind="skills.ingested"`). The SkillsCount selector also moved from the legacy `skl` slice to the new `skills` slice; render-blocks / resources are still served from `skl`.
 - `2026-05-13` — Promoted to a real Next.js route family under `app/(a)/agent-connections/*` (14 subroutes, persistent sidebar via `layout.tsx`, cookie-persisted resizable shell). Added the `preferences` section + new `agentConnections` module on `UserPreferences` wired through `useSetting()`. Made the sidebar dual-mode (`basePath` for routes, `activeSection + onSelect` for the overlay). Introduced `AgentConnectionsNavContext` so `OverviewSection` works in both surfaces.
 - `2026-04-25` — `AgentConnectionsWindow` imports sidebar/body from `components/*` and `AgentConnectionsSection` from `types` instead of `@/features/agent-connections` barrel.
 - `2026-04-22` — claude: initial doc.

@@ -189,20 +189,38 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
 
 ## Current work / migration state
 
-Phase B of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.claude/plans/immutable-imagining-dove.md):
-1. ✅ New `features/skills/` folder (slice / thunks / converters / hooks / service).
-2. ⏳ Stream-event wire in `process-stream.ts` (next commit).
-3. ⏳ Switch consumers (`SkillsSection`, `AgentConnectionsSidebar`,
-   `OverviewSection`) from the legacy `useSkills` to the new path.
-4. ⏳ Strip `definitions` / `categories` from the legacy `skl` slice —
-   keep `renderDefinitions`, `renderComponents`, `renderBlockCategories`,
-   `resources` intact (the handoff defers render-blocks to a later phase).
+Phases A–F of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.claude/plans/immutable-imagining-dove.md) are landed.
 
-Phase C onwards builds the full management UI inside SkillsSection.
+- ✅ Backend (aidream): `/api/skills` CRUD, `skl_skill_projects` join +
+  endpoints, sandbox auto-discovery (`walk_via_proxy`,
+  `_auto_discover_skills`, `RESOURCE_CHANGED` emit), structural CHECK on
+  `agx_agent.skill_config`.
+- ✅ Frontend foundation: `features/skills/` slice, thunks, converters,
+  selectors, hooks, service.
+- ✅ Frontend UI: full CRUD inside `SkillsSection` (browse / detail /
+  create / categories / ingest), admin registry at
+  `/administration/skills`.
+- ✅ Per-agent picker: `AgentSkillsModal` mounted next to
+  `AgentToolsModal` on the builder; `setAgentSkillConfig` round-trips
+  through Supabase via `agentDefinitionToUpdate`.
+- ⏳ Legacy slice strip: `definitions` / `categories` cleanup in
+  `features/agent-connections/redux/skl/` is deferred until render-blocks
+  + resources also migrate (the handoff defers those to a later phase).
+
+Outstanding follow-ups (out of scope for this build):
+- Drag-to-reparent on `SkillCategoryTreeEditor` (requires backend PATCH
+  on `skl_categories`).
+- Resources CRUD UI (requires backend `/api/skills/{id}/resources`
+  endpoint).
+- OpenAPI types refresh post-deploy → drop the `as never` casts in
+  `skillsThunks.ts`.
 
 ---
 
 ## Change log
 
+- `2026-05-27` — claude: end-to-end build-out. Backend gaps closed
+  (Tracks 2 + 3); frontend slice migration + full CRUD UI; agent-builder
+  picker; admin registry mirror. See plan file for full commit chain.
 - `2026-05-27` — claude: scaffold (types, slice, converters, selectors,
   thunks, hooks, stream handler, FEATURE.md).
