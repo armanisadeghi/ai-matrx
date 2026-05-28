@@ -27,6 +27,7 @@ import {
   Zap,
   BrainCircuit,
   Database,
+  KeyRound,
   Server,
   type LucideIcon,
 } from "lucide-react";
@@ -144,6 +145,12 @@ const settingsNavItems: SettingsNavItem[] = [
     href: "/settings/integrations",
     icon: <Plug className="h-3.5 w-3.5" />,
     IconComp: Plug,
+  },
+  {
+    title: "Secrets",
+    href: "/settings/secrets",
+    icon: <KeyRound className="h-3.5 w-3.5" />,
+    IconComp: KeyRound,
   },
   {
     title: "Sandbox Defaults",

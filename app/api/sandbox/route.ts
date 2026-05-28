@@ -196,10 +196,52 @@ export async function POST(request: NextRequest) {
       tierInput || (config?.tier as SandboxTier) || "ec2";
     const target = resolveOrchestratorByTier(tier);
 
+    // Merge the user's vaulted secrets into config.env before forwarding.
+    // aidream owns the decryption (Fernet key lives there); we authenticate
+    // with the user's Supabase JWT so RLS still pins to this user. Any
+    // failure here is non-fatal — the sandbox still creates, just without
+    // auto-injected secrets — so a temporary aidream blip doesn't break
+    // sandbox creation.
+    const mergedConfig: SandboxConfig = { ...(config || {}) };
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const aidreamUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com";
+        const envResp = await fetch(`${aidreamUrl}/api/user-secrets/sandbox-env`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (envResp.ok) {
+          const secretsEnv = (await envResp.json()) as Record<string, string>;
+          const existingEnv =
+            (mergedConfig as { env?: Record<string, string> }).env || {};
+          (mergedConfig as { env?: Record<string, string> }).env = {
+            ...existingEnv,
+            ...secretsEnv,
+          };
+        } else {
+          console.warn(
+            `[sandbox-create] secrets fetch failed (${envResp.status}); continuing without auto-injected secrets`,
+          );
+        }
+      }
+    } catch (secretsErr) {
+      console.warn(
+        "[sandbox-create] secrets fetch threw; continuing without auto-injection:",
+        secretsErr,
+      );
+    }
+
     // Forward to the matching orchestrator.
     const orchestratorBody: Record<string, unknown> = {
       user_id: user.id,
-      config: config || {},
+      config: mergedConfig,
       tier,
     };
     if (template) orchestratorBody.template = template;
