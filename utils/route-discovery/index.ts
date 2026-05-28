@@ -23,7 +23,13 @@ export async function scanRoutes(
       if (entry.isDirectory()) {
         const subRoutes = await scanRoutes(fullPath, routePath);
         routes.push(...subRoutes);
-      } else if (entry.name === "page.tsx" && baseRoute) {
+      } else if (
+        (entry.name === "page.tsx" ||
+          entry.name === "page.ts" ||
+          entry.name === "page.dev.tsx" ||
+          entry.name === "page.dev.ts") &&
+        baseRoute
+      ) {
         routes.push(baseRoute);
       }
     }
@@ -56,7 +62,12 @@ export async function scanRoutesShallow(dir: string): Promise<string[]> {
       const subDir = join(dir, entry.name);
       try {
         const subEntries = await readdir(subDir);
-        if (subEntries.includes("page.tsx") || subEntries.includes("page.ts")) {
+        if (
+          subEntries.includes("page.tsx") ||
+          subEntries.includes("page.ts") ||
+          subEntries.includes("page.dev.tsx") ||
+          subEntries.includes("page.dev.ts")
+        ) {
           routes.push(entry.name);
         }
       } catch {

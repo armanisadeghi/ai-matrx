@@ -6,7 +6,7 @@
 // Every nav component (sidebar, dock, mobile sheet, any future component)
 // reads active state from this one attribute via CSS selectors:
 //
-//   .shell-root[data-pathname^="/ssr/chat"] [data-nav-href="/ssr/chat"] { ... }
+//   .shell-root[data-pathname^="/demos/ssr/chat"] [data-nav-href="/demos/ssr/chat"] { ... }
 //
 // Zero re-renders. No state. No props. Mounts once, cleans up on unmount.
 // This is the ONLY client-side piece needed for the entire navigation system.

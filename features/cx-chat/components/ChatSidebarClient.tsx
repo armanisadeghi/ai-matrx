@@ -190,7 +190,7 @@ export function ChatPanelContent() {
 
   const handleNewChat = useCallback(() => {
     closeMobilePanel();
-    router.push(agentIdFromUrl ? `/ssr/chat/a/${agentIdFromUrl}` : "/ssr/chat");
+    router.push(agentIdFromUrl ? `/ssr/chat/a/${agentIdFromUrl}` : "/demos/ssr/chat");
   }, [router, agentIdFromUrl]);
 
   const handleAgentSelect = useCallback(
@@ -298,7 +298,7 @@ export function ChatDesktopHeader() {
   const displayName = activeAgentRecord?.name ?? "Matrx Chat";
 
   const handleNewChat = useCallback(() => {
-    router.push(agentIdFromUrl ? `/ssr/chat/a/${agentIdFromUrl}` : "/ssr/chat");
+    router.push(agentIdFromUrl ? `/ssr/chat/a/${agentIdFromUrl}` : "/demos/ssr/chat");
   }, [router, agentIdFromUrl]);
 
   const handleAgentSelect = useCallback(

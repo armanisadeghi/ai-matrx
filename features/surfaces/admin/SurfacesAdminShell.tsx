@@ -1,10 +1,10 @@
 "use client";
 
 import { Panel, type Layout } from "react-resizable-panels";
-import { ClientGroup } from "@/app/(ssr)/ssr/demos/resizables/_lib/ClientGroup";
-import { Handle } from "@/app/(ssr)/ssr/demos/resizables/_lib/Handle";
-import { PanelControlProvider } from "@/app/(ssr)/ssr/demos/resizables/_lib/PanelControlProvider";
-import { RegisteredPanel } from "@/app/(ssr)/ssr/demos/resizables/_lib/RegisteredPanel";
+import { ClientGroup } from "@/app/(ssr)/demos/ssr/resizables/_lib/ClientGroup";
+import { Handle } from "@/app/(ssr)/demos/ssr/resizables/_lib/Handle";
+import { PanelControlProvider } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
+import { RegisteredPanel } from "@/app/(ssr)/demos/ssr/resizables/_lib/RegisteredPanel";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";

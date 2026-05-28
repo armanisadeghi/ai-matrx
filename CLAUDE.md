@@ -81,7 +81,7 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 ### Route groups — the four buckets (2026-05-26 reorganization)
 
-The `app/` tree is split into clearly-purposed route groups. **Agents working on the core product should default to ignoring `(transitional)`, `(legacy)`, `(ssr)`, and `(dev)` unless the task explicitly involves them.** When in doubt, work in `(core)` and ask before touching the others.
+The `app/` tree is split into clearly-purposed route groups. **Agents working on the core product should default to ignoring `(transitional)`, `(legacy)`, `(dev)`, `(ssr)`, and `(public-demos)` unless the task explicitly involves them.** When in doubt, work in `(core)` and ask before touching the others.
 
 | Group | Purpose | URL prefix | Build profile |
 |---|---|---|---|
@@ -89,14 +89,20 @@ The `app/` tree is split into clearly-purposed route groups. **Agents working on
 | `app/(admin)/` | **Production admin.** Super-admin gated at the layout level. | `/administration/*` | always |
 | `app/(transitional)/` | **On the way in or on the way out.** Routes that have been (or will be) replaced by surfaces in `(core)` but aren't ready to delete. Ships in production, lower priority for new work. | `/apps`, `/dashboard`, `/settings`, `/flash-cards`, `/prompt-apps`, `/news`, `/scraper`, `/projects`, `/applets`, `/ai`, `/admin` (old), `/agent-lists`, `/registered-results`, `/local`, `/flashcard` | always |
 | `app/(legacy)/` | **Entity-bound legacy.** Top-level group with its own `EntityProviders` store (full entity system). Sibling of `(transitional)`. | `/legacy/*` | always |
-| `app/(ssr)/` | **SSR shell experiment.** Top-level group with its own `LiteStoreProvider` + glass shell. Sibling of `(transitional)`. | `/ssr/*` | always |
+| `app/(ssr)/` | **SSR shell experiment.** Top-level group with its own `LiteStoreProvider` + glass shell. Holds demos that need the lite-store shell. | `/demos/ssr/*` | always |
 | `app/(dev)/` | **All internal demos / tests / experimental surfaces.** Auth-required. Consolidated under one URL prefix. Excluded from the prod-core build in Phase 2 via `MATRX_PROFILE`. | `/demos/*` (everything: tests, general, settings-*, layout-tests, dynamic-imports, lists-junk, lists-explorer, preview, google-auth) | `full` only (Phase 2) |
 | `app/(public-demos)/` | **Public showcase demos.** Same `/demos/*` URL space as `(dev)`, but no auth. Routes that used to live at `(public)/demos/*`. | `/demos/public/*` | always |
 | `app/(public)/` | Production marketing / legal / share / education / canvas. | various (`/legal`, `/share`, `/p`, `/education`, etc.) | always |
 | `app/(auth-pages)/` | Login / signup / forgot-password / etc. | `/login`, `/sign-up`, etc. | always |
 | `app/(popup)/` | OAuth popup chrome. | `/popup-window/*` | always |
 
-**The "transitional family"** is `(transitional)` + `(legacy)` + `(ssr)`. Conceptually one bucket (routes on their way in or out); three groups only because each boots a different Redux store. Agents can treat them as one logical area when scoping work.
+**The "transitional family"** is `(transitional)` + `(legacy)`. Conceptually one bucket (routes on their way in or out); two groups only because each boots a different Redux store. Agents can treat them as one logical area when scoping work. `(ssr)` is no longer transitional — its routes now exclusively serve demos under `/demos/ssr/*`.
+
+**The unified `/demos` index:** there is one landing page at `/demos` (`app/(dev)/demos/page.dev.tsx`) that auto-discovers and lists every demo/test/experimental route across all three demo groups — `(dev)`, `(ssr)`, `(public-demos)` — plus links to the entity-bound demos under `(legacy)`. Adding a new demo anywhere under those trees automatically shows up on the landing. To add a demo:
+- Standard auth shell (default) → `app/(dev)/demos/<category>/<name>/page.dev.tsx`
+- Needs SSR + glass shell → `app/(ssr)/demos/ssr/<name>/page.tsx`
+- Public (no auth) → `app/(public-demos)/demos/public/<name>/page.tsx`
+- Needs entity slice → `app/(legacy)/legacy/<area>/<name>/page.tsx`
 
 **Build gate (active):** `next.config.js` reads `MATRX_PROFILE=core|full`. Default is **`full` in development** (so `/demos/*` works locally without per-developer env setup) and **`core` in production**. When `core`, `pageExtensions = ['tsx', 'ts', 'jsx', 'js']` and the 172 route leaves under `(dev)/` — renamed `*.dev.tsx` / `*.dev.ts` — are invisible to the build. When `full`, `pageExtensions` also matches `dev.tsx` / `dev.ts` so the same repo compiles every route. The redirects pointing at `(dev)`-only URLs (`/tests/*`, `/demo/*`, `/settings-*-demo`, etc.) are also gated on `full` so the core build returns a clean 404 instead of 307→404. Production deploys to `aimatrx.com` (default `core`); the internal demos run on a separate Vercel project with `MATRX_PROFILE=full`. To preview the production-core build locally, run `MATRX_PROFILE=core pnpm dev`. Public demos under `(public-demos)` use plain `*.tsx` and ship in every build.
 

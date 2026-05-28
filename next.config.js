@@ -132,13 +132,17 @@ const nextConfig = {
     headers: getHeaders,
     async redirects() {
         return [
-            // Static redirect — runs before proxy/auth, eliminates the flash+bounce
-            // that occurred when /ssr/page.tsx did redirect() server-side after auth resolved.
-            {
-                source: '/ssr',
-                destination: '/ssr/dashboard',
-                permanent: false,
-            },
+            // 2026-05-28: SSR experiment consolidation. The (ssr) route group
+            // moved from URL /ssr/* to /demos/ssr/* so every demo/test surface
+            // shares the unified /demos/* prefix. The (ssr) layout (LiteStoreProvider
+            // + glass shell) stays intact — only the inner folder was restructured.
+            { source: '/ssr/demos/:path*', destination: '/demos/ssr/:path*', permanent: false },
+            { source: '/ssr/demos', destination: '/demos/ssr', permanent: false },
+            { source: '/ssr/chat/:path*', destination: '/demos/ssr/chat/:path*', permanent: false },
+            { source: '/ssr/chat', destination: '/demos/ssr/chat', permanent: false },
+            { source: '/ssr/dashboard/:path*', destination: '/demos/ssr/dashboard/:path*', permanent: false },
+            { source: '/ssr/dashboard', destination: '/demos/ssr/dashboard', permanent: false },
+            { source: '/ssr', destination: '/demos/ssr', permanent: false },
             // /cloud-files was renamed to /files (2026-04-27). Permanent redirects
             // so old bookmarks, share links, and external references keep working.
             { source: '/cloud-files/:path*', destination: '/files/:path*', permanent: true },
