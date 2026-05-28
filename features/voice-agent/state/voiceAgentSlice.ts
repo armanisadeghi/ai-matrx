@@ -348,6 +348,31 @@ const voiceAgentSlice = createSlice({
       if (action.payload.tools) inst.tools = action.payload.tools;
     },
 
+    /**
+     * Applies agent-driven config (voice_id / instructions / tools) to
+     * the slice. Used by `useVoiceAgentInstance` once the agent record
+     * has loaded — separate from `updateConfig` because it must work
+     * for the intro preset too (the intro is now agent-driven). The
+     * hook seeds the slice synchronously with fallback constants on
+     * mount, then this action overwrites once the agent row resolves.
+     */
+    applyAgentConfig(
+      state,
+      action: PayloadAction<
+        InstanceIdPayload & {
+          voiceId: VoiceId;
+          instructions: string;
+          tools: ToolName[];
+        }
+      >,
+    ) {
+      const inst = getInstance(state, action.payload.instanceId);
+      if (!inst) return;
+      inst.voiceId = action.payload.voiceId;
+      inst.instructions = action.payload.instructions;
+      inst.tools = action.payload.tools;
+    },
+
     disposeInstance(state, action: PayloadAction<InstanceIdPayload>) {
       delete state.instances[action.payload.instanceId];
     },
@@ -372,6 +397,7 @@ export const {
   addLatencySample,
   markTurnPersisted,
   updateConfig,
+  applyAgentConfig,
   disposeInstance,
 } = voiceAgentSlice.actions;
 

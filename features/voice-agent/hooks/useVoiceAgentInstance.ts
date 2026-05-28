@@ -7,21 +7,28 @@
 // Two configuration sources:
 //
 //   1. `agentId` (intro path) — Step 4 of the agent-system unification.
-//      The hook loads the `agx_agent` row, then extracts voice_id /
-//      instructions / realtime_tools from `settings` + `messages[0]` and
-//      seeds the slice. The voice agent is now a normal agent row;
+//      Loads the `agx_agent` row, then extracts voice_id / instructions /
+//      realtime_tools from `settings` + `messages[0]` and reapplies them
+//      to the slice. The voice agent is now a normal agent row;
 //      duplicating it in the Agent Builder produces a custom voice
 //      agent at zero infra cost.
 //
 //   2. `voiceId` / `instructions` / `tools` props (playground path) —
-//      explicit per-mount overrides, for users iterating on voice
-//      config without writing it back to an agent record. Falls back to
-//      hardcoded intro defaults in `constants.ts` when no agentId and
-//      no override is provided.
+//      explicit per-mount overrides for users iterating on voice
+//      config without writing it back to an agent record. Falls back
+//      to hardcoded intro defaults in `constants.ts` when no agentId
+//      and no override is provided.
 //
-// Init blocks until the agent record arrives (status pulses through the
-// slice's `connecting` so the surface doesn't render a confusingly empty
-// mic before the agent identity is known).
+// Avoiding the async-init race:
+//   `initInstance` runs SYNCHRONOUSLY on mount with hardcoded fallback
+//   values, so consumers like `useXaiVoiceSession` that subscribe to
+//   `voiceId` / `instructions` / `tools` via selectors always see a
+//   real instance. The agent record then loads in the background and
+//   `applyAgentConfig` swaps the values in. Mic-click timing makes the
+//   race largely theoretical (agent load is ~one supabase query while
+//   the user is still reading the surface), but seeding with fallbacks
+//   removes any possibility of a session starting on `EMPTY_INSTANCE`
+//   defaults.
 
 import { useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
@@ -31,6 +38,7 @@ import {
   INTRO_INSTRUCTIONS,
 } from "../constants";
 import {
+  applyAgentConfig,
   disposeInstance,
   initInstance,
 } from "../state/voiceAgentSlice";
@@ -57,12 +65,10 @@ interface UseVoiceAgentInstanceOpts {
   persist?: boolean;
 }
 
-/** Defensive narrower: returns x as string if it is one, otherwise null. */
 function asString(x: unknown): string | null {
   return typeof x === "string" ? x : null;
 }
 
-/** Extract the system-instruction text from an agent's messages[]. */
 function readInstructionsFromAgent(
   messages: unknown,
   fallback: string,
@@ -78,7 +84,6 @@ function readInstructionsFromAgent(
   return asString(text) ?? fallback;
 }
 
-/** Extract voice_id from agent.settings, falling back to DEFAULT_INTRO_VOICE. */
 function readVoiceIdFromAgent(settings: unknown): VoiceId {
   if (settings && typeof settings === "object") {
     const v = (settings as Record<string, unknown>).voice_id;
@@ -89,7 +94,6 @@ function readVoiceIdFromAgent(settings: unknown): VoiceId {
   return DEFAULT_INTRO_VOICE;
 }
 
-/** Extract realtime_tools from agent.settings. */
 function readToolsFromAgent(settings: unknown): ToolName[] {
   const fallback: ToolName[] = [...DEFAULT_INTRO_TOOLS];
   if (settings && typeof settings === "object") {
@@ -121,64 +125,62 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Track the latest opts so the async loader doesn't dispatch stale config.
   const optsRef = useRef(opts);
   optsRef.current = opts;
 
   useEffect(() => {
+    // ── Synchronous seed ────────────────────────────────────────────
+    // Initialize the instance immediately with fallback values so any
+    // downstream consumer (useXaiVoiceSession) sees a populated slice
+    // on its first render. The agent-driven config arrives below.
+    const o = optsRef.current;
+    dispatch(
+      initInstance({
+        instanceId,
+        voiceId: o.voiceId ?? DEFAULT_INTRO_VOICE,
+        instructions: o.instructions ?? INTRO_INSTRUCTIONS,
+        tools: o.tools ?? DEFAULT_INTRO_TOOLS,
+        preset: o.preset,
+        persist: o.persist ?? true,
+      }),
+    );
+
+    // ── Async agent load ────────────────────────────────────────────
     let cancelled = false;
-
-    async function init(): Promise<void> {
-      const o = optsRef.current;
-      let voiceId: VoiceId;
-      let instructions: string;
-      let tools: ToolName[];
-
-      if (o.agentId) {
-        // Ensure the agent row is in Redux before reading config off it.
-        const state = store.getState() as RootState;
-        const existing = state.agentDefinition.agents?.[o.agentId];
-        if (!existing) {
-          await dispatch(fetchFullAgent(o.agentId)).unwrap().catch(() => {
-            // Errors are surfaced via the slice's agent error field; we
-            // continue with hardcoded defaults so the mic never bricks
-            // on a transient fetch failure.
+    if (o.agentId) {
+      void (async () => {
+        const state0 = store.getState() as RootState;
+        if (!state0.agentDefinition.agents?.[o.agentId!]) {
+          await dispatch(fetchFullAgent(o.agentId!)).unwrap().catch(() => {
+            // Errors are surfaced via the agent-definition slice's own
+            // error path; we keep the constants-seeded fallback so the
+            // mic never bricks on a transient fetch failure.
           });
         }
-        const latest = store.getState() as RootState;
-        const agent = latest.agentDefinition.agents?.[o.agentId];
-        voiceId = readVoiceIdFromAgent(agent?.settings);
-        instructions = readInstructionsFromAgent(
-          agent?.messages,
-          INTRO_INSTRUCTIONS,
+        if (cancelled) return;
+        const state1 = store.getState() as RootState;
+        const agent = state1.agentDefinition.agents?.[o.agentId!];
+        if (!agent) return;
+        dispatch(
+          applyAgentConfig({
+            instanceId,
+            voiceId: readVoiceIdFromAgent(agent.settings),
+            instructions: readInstructionsFromAgent(
+              agent.messages,
+              INTRO_INSTRUCTIONS,
+            ),
+            tools: readToolsFromAgent(agent.settings),
+          }),
         );
-        tools = readToolsFromAgent(agent?.settings);
-      } else {
-        voiceId = o.voiceId ?? DEFAULT_INTRO_VOICE;
-        instructions = o.instructions ?? INTRO_INSTRUCTIONS;
-        tools = o.tools ?? DEFAULT_INTRO_TOOLS;
-      }
-
-      if (cancelled) return;
-      dispatch(
-        initInstance({
-          instanceId,
-          voiceId,
-          instructions,
-          tools,
-          preset: o.preset,
-          persist: o.persist ?? true,
-        }),
-      );
+      })();
     }
 
-    void init();
     return () => {
       cancelled = true;
       dispatch(disposeInstance({ instanceId }));
     };
-    // Mount-once init. Config knobs are mutated via updateConfig actions
-    // from the playground UI, not by re-running initInstance.
+    // Mount-once init. Config knobs are mutated via updateConfig /
+    // applyAgentConfig actions, not by re-running this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, instanceId, store]);
 
