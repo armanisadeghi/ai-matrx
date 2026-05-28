@@ -17,6 +17,7 @@ import {
   selectSubmissionPhase,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
 import { cn } from "@/lib/utils";
 
 interface NewChatLandingInputProps {
@@ -76,7 +77,7 @@ export function NewChatLandingInput({
     setIsExpanded(next > 36);
   }, [visibleText]);
 
-  const submit = useCallback(() => {
+  const rawSubmit = useCallback(() => {
     if (isExecuting) {
       dispatch(cancelExecution(conversationId));
       return;
@@ -84,6 +85,14 @@ export function NewChatLandingInput({
     if (charCount === 0) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [dispatch, conversationId, surfaceKey, isExecuting, charCount]);
+
+  // Guests can compose freely — sending opens the AuthGate so they sign up
+  // exactly where the value lands.
+  const submit = useAuthGuardedAction(rawSubmit, {
+    featureName: "Chat",
+    featureDescription:
+      "Sign in to send your message. Your draft will be right here when you get back.",
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter submits; Shift+Enter inserts a newline (ChatGPT convention).

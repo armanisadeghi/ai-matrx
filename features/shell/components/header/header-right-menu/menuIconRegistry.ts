@@ -12,8 +12,11 @@ import {
   Bug,
   Settings,
   LogOut,
+  LogIn,
   Shield,
   Bell,
+  UserPlus,
+  Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -31,8 +34,11 @@ export const MENU_ICON_REGISTRY = {
   Bug,
   Settings,
   LogOut,
+  LogIn,
   Shield,
   Bell,
+  UserPlus,
+  Lock,
 } as const;
 
 export type MenuIconKey = keyof typeof MENU_ICON_REGISTRY;

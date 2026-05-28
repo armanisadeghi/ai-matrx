@@ -7,6 +7,7 @@ import { closeMessaging } from "@/features/messaging/redux/messagingSlice";
 import { ConversationList } from "@/features/messaging/components/ConversationList";
 import { MessagesHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { MessageSquare } from "lucide-react";
+import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
 
 export default function MessagesPage() {
   const dispatch = useAppDispatch();
@@ -21,7 +22,11 @@ export default function MessagesPage() {
   }, [dispatch]);
 
   return (
-    <>
+    <UnauthSurfaceLanding
+      featureName="Messages"
+      icon={MessageSquare}
+      description="Direct messages, mentions, and conversations across your team and agents."
+    >
       {/* Header injected into main layout */}
       <MessagesHeader title="Messages" />
 
@@ -45,6 +50,6 @@ export default function MessagesPage() {
           Choose a conversation from the list or start a new one to begin messaging
         </p>
       </div>
-    </>
+    </UnauthSurfaceLanding>
   );
 }
