@@ -33,6 +33,7 @@ import {
   FlaskConical,
   Loader2,
   MessageSquare,
+  PanelLeftOpen,
   Play,
   Search as SearchIcon,
   Send,
@@ -42,6 +43,11 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +57,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   ragSearch,
@@ -230,8 +237,8 @@ function RichHitCard({
 
   return (
     <div className="rounded-md border bg-card overflow-hidden">
-      {/* Header */}
-      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
+      {/* Header — wraps on phones so chips never overflow horizontally */}
+      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
         <span className="tabular-nums font-mono w-7 text-right text-muted-foreground">
           #{rank}
         </span>
@@ -244,7 +251,7 @@ function RichHitCard({
             library · {libraryShortCode}
           </Badge>
         )}
-        <span className="truncate font-medium text-foreground">
+        <span className="truncate font-medium text-foreground min-w-0 flex-1">
           {fileName ?? `(${hit.source_kind})`}
         </span>
         {pageNumber !== null && (
@@ -431,9 +438,27 @@ function JsonInspector({
 // Tab: Scope sidebar (shared across tabs)
 // ===========================================================================
 
-function ScopeSidebar({ scope }: { scope: Scope }) {
+function ScopeSidebar({
+  scope,
+  variant = "desktop",
+}: {
+  scope: Scope;
+  /**
+   * `desktop` — fixed 16rem column, `border-r`.
+   * `drawer`  — fills the parent Drawer, no border-r, full width.
+   * Same internal layout in both modes so the mobile drawer is a true
+   * port of the desktop sidebar (not a redesigned cousin).
+   */
+  variant?: "desktop" | "drawer";
+}) {
   return (
-    <aside className="w-64 border-r flex flex-col overflow-hidden shrink-0">
+    <aside
+      className={cn(
+        "flex flex-col overflow-hidden",
+        variant === "desktop" && "w-64 border-r shrink-0",
+        variant === "drawer" && "w-full h-full",
+      )}
+    >
       <div className="px-3 py-2 border-b flex items-center gap-2">
         <Database className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-sm font-semibold flex-1">Scope</h2>
@@ -504,7 +529,7 @@ function ScopeSidebar({ scope }: { scope: Scope }) {
                 Math.max(1, Math.min(5, Number(e.target.value) || 1)),
               )
             }
-            className="w-12 px-1.5 py-0.5 text-xs rounded border bg-background"
+            className="w-14 px-1.5 py-1 text-base rounded border bg-background"
           />
         </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer text-amber-700 dark:text-amber-400">
@@ -649,7 +674,7 @@ function SearchTab({ scope }: { scope: Scope }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search indexed content (PDFs, notes, code)…"
-              className="pl-9 h-10"
+              className="pl-9 h-10 text-base"
               autoFocus
             />
             {query && (
@@ -665,7 +690,7 @@ function SearchTab({ scope }: { scope: Scope }) {
               </button>
             )}
           </div>
-          <Button type="submit" disabled={!query.trim() || running}>
+          <Button type="submit" disabled={!query.trim() || running} className="shrink-0">
             {running ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -919,10 +944,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Enter a query and see EVERYTHING an AI agent sees…"
-              className="pl-9 h-10"
+              className="pl-9 h-10 text-base"
             />
           </div>
-          <Button type="submit" disabled={!query.trim() || running}>
+          <Button type="submit" disabled={!query.trim() || running} className="shrink-0">
             {running ? <Loader2 className="h-4 w-4 animate-spin" /> : "Diagnose"}
           </Button>
         </form>
@@ -1425,7 +1450,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
         </div>
       </ScrollArea>
 
-      <div className="border-t p-3">
+      <div className="border-t p-3 pb-safe">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -1443,7 +1468,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
               }
             }}
             placeholder="Ask the agent a question…   (⌘/Ctrl+Enter to send)"
-            className="min-h-[60px] resize-y"
+            className="min-h-[60px] resize-y text-base"
             disabled={streaming}
           />
           {streaming ? (
@@ -1772,40 +1797,78 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 // Top-level experience
 // ===========================================================================
 
+/**
+ * Top-level RAG Search Lab.
+ *
+ * Mobile/desktop responsive shell:
+ *
+ *   Desktop (md+):
+ *     [ ScopeSidebar 16rem │ Tabs(Search | Agent Sim | Agent Chat | Diag) ]
+ *
+ *   Mobile (<md):
+ *     [ Header row: [scope drawer trigger] [horizontal scroll-snap tabs] ]
+ *     [ Active tab body (single scroll area)                              ]
+ *     The Scope sidebar is rendered inside a bottom <Drawer> launched by
+ *     the PanelLeftOpen icon — same component, no shrunk-down sibling.
+ *
+ * Tab-strip design choice (mobile): a horizontal scroll-snap row of the
+ * existing TabsList. Picked over a drawer-based tab picker because there
+ * are exactly four tabs (fits across the viewport with a tiny overflow),
+ * they have icons, and a one-tap switch beats two-tap drawer + select.
+ * If we add a fifth tab, revisit and consider the drawer picker.
+ */
 export function RagSearchExperience() {
   const scope = useScopeControls();
   const params = useSearchParams();
   const initialTab = (params?.get("tab") as string | null) ?? "search";
+  const isMobile = useIsMobile();
+  const [scopeOpen, setScopeOpen] = useState(false);
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] bg-background">
-      <ScopeSidebar scope={scope} />
+    <div className="flex h-dvh flex-col overflow-hidden bg-background md:h-page md:flex-row">
+      {/* Desktop persistent sidebar — collapses out on mobile in favour of the Drawer */}
+      {!isMobile && <ScopeSidebar scope={scope} />}
 
       <Tabs
         defaultValue={initialTab}
-        className="flex-1 flex flex-col overflow-hidden"
+        className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
-        <div className="border-b px-4 pt-2 pb-1 flex items-center gap-3">
-          <TabsList className="h-9">
-            <TabsTrigger value="search" className="gap-1.5">
-              <SearchIcon className="h-3.5 w-3.5" /> Search
-            </TabsTrigger>
-            <TabsTrigger value="agent-sim" className="gap-1.5">
-              <Brain className="h-3.5 w-3.5" /> Agent Simulation
-            </TabsTrigger>
-            <TabsTrigger value="agent-chat" className="gap-1.5">
-              <MessageSquare className="h-3.5 w-3.5" /> Agent Chat
-            </TabsTrigger>
-            <TabsTrigger value="diagnostics" className="gap-1.5">
-              <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
-            </TabsTrigger>
-          </TabsList>
-          <div className="ml-auto text-[11px] text-muted-foreground">
+        <div className="border-b px-2 pt-2 pb-1 flex items-center gap-2 md:px-4 md:gap-3">
+          {/* Mobile-only: scope drawer trigger sits where the sidebar would be */}
+          {isMobile && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              aria-label="Open scope picker"
+              onClick={() => setScopeOpen(true)}
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          )}
+          <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
+            <TabsList className="h-9 inline-flex">
+              <TabsTrigger value="search" className="gap-1.5 shrink-0">
+                <SearchIcon className="h-3.5 w-3.5" /> Search
+              </TabsTrigger>
+              <TabsTrigger value="agent-sim" className="gap-1.5 shrink-0">
+                <Brain className="h-3.5 w-3.5" /> Agent Simulation
+              </TabsTrigger>
+              <TabsTrigger value="agent-chat" className="gap-1.5 shrink-0">
+                <MessageSquare className="h-3.5 w-3.5" /> Agent Chat
+              </TabsTrigger>
+              <TabsTrigger value="diagnostics" className="gap-1.5 shrink-0">
+                <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
             RAG Search Lab · hybrid retrieval + Claude agent
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-h-0">
           <TabsContent value="search" className="h-full mt-0">
             <SearchTab scope={scope} />
           </TabsContent>
@@ -1820,6 +1883,20 @@ export function RagSearchExperience() {
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Mobile-only Drawer holds the SAME ScopeSidebar component — same
+          interactions and same Redux/local state — never a redesigned
+          shrunk-down variant. */}
+      {isMobile && (
+        <Drawer open={scopeOpen} onOpenChange={setScopeOpen}>
+          <DrawerContent className="max-h-[85dvh]">
+            <DrawerTitle className="sr-only">Scope</DrawerTitle>
+            <div className="flex-1 overflow-y-auto overscroll-contain pb-safe">
+              <ScopeSidebar scope={scope} variant="drawer" />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }
