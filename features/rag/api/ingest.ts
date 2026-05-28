@@ -40,7 +40,15 @@ export interface IngestResponse {
 }
 
 export interface IngestRequestBody {
-  source_kind: "cld_file" | "note" | "code_file";
+  /**
+   * Which Python source kind to ingest. Stays in lock-step with the
+   * backend `IngestRequest` enum on aidream — the latter is being
+   * widened with `transcript` and `scraped` in parallel with this UI
+   * change. Adding the literals here lets the new ProcessForRagButton
+   * call sites compile today; if the backend lags, the per-stream
+   * error event will still surface a clear failure in the toolbar.
+   */
+  source_kind: "cld_file" | "note" | "code_file" | "transcript" | "scraped";
   source_id: string;
   field_id?: string | null;
   force?: boolean;

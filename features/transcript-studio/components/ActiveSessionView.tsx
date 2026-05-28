@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Settings2, Trash2 } from "lucide-react";
 import type { Layout } from "react-resizable-panels";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResizablePanel } from "@/components/ui/resizable";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { cn } from "@/lib/utils";
 import {
   deleteSessionThunk,
@@ -115,6 +118,7 @@ export function ActiveSessionView({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isMobile = useIsMobile();
+  const router = useRouter();
 
   const subtitle = useMemo(() => {
     const created = new Date(session.createdAt).toLocaleString(undefined, {
@@ -159,6 +163,20 @@ export function ActiveSessionView({
             />
             <RecordButton sessionId={session.id} />
           </div>
+          <ProcessForRagButton
+            sourceKind="transcript"
+            sourceId={session.id}
+            iconOnly
+            force
+            onComplete={() => {
+              toast.success("Transcript indexed for RAG", {
+                action: {
+                  label: "View in library",
+                  onClick: () => router.push("/rag/library"),
+                },
+              });
+            }}
+          />
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}

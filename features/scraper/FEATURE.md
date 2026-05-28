@@ -178,6 +178,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- `2026-05-28` — claude: **"Process for RAG" added to the scraper floating workspace toolbar** (`parts/ScraperFloatingWorkspace.tsx`). The `<ProcessForRagButton sourceKind="scraped" sourceId={selectedScraped.url} …>` sits next to Copy and Reset in the rightActions cluster; on success the toast offers a "View in library" action. `source_kind: "scraped"` was added to the FE `IngestRequestBody` union in `features/rag/api/ingest.ts` to keep the new affordance compiling in lock-step with aidream's `IngestRequest` widening.
 - `2026-05-07` — Documented transcript processor public URL `/transcription/processor` (studio at `/transcription/studio`; legacy `/transcripts` and `/transcript-studio` redirect in `next.config.js`).
 - `2026-04-22` — claude: initial combined doc for scraper + pdf-extractor + research + transcripts.
 

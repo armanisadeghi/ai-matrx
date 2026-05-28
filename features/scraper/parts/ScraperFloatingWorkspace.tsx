@@ -9,6 +9,8 @@
  */
 
 import React, { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Zap,
   Search,
@@ -25,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   useScraperApi,
@@ -60,6 +63,7 @@ interface ScrapeItemState {
 
 export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const keywordForm = useScraperKeywordSearchForm();
 
   const [mode, setMode] = useState<WorkspaceMode>("web");
@@ -335,6 +339,26 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
             <Copy className="h-3 w-3" />
           )}
         </Button>
+      )}
+      {showScrapeMain && selectedScraped && (
+        // Scraped pages don't have a row id in any FE table — the page URL
+        // is the canonical key the scraper feature already uses, so it
+        // doubles as `source_id` for the RAG ingest (the matching
+        // citationHrefFor("scraped") route reverses this with ?url=…).
+        <ProcessForRagButton
+          sourceKind="scraped"
+          sourceId={selectedScraped.url}
+          iconOnly
+          force
+          onComplete={() => {
+            toast.success("Page indexed for RAG", {
+              action: {
+                label: "View in library",
+                onClick: () => router.push("/rag/library"),
+              },
+            });
+          }}
+        />
       )}
       {(scrapedResults.length > 0 || keywordForm.flatResults.length > 0) && (
         <Button
