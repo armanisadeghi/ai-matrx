@@ -50,6 +50,24 @@ export const dispatchUiFirstTool = createAsyncThunk<
     const state = getState();
     const userId = state.userAuth?.id ?? null;
     if (!userId) {
+      // Mark the lifecycle as terminal-error BEFORE submitting so the
+      // LiveToolCallCard never shimmers waiting on an answer that we
+      // already know can't be produced. Without this, the in-flight
+      // tool card stays in 'started' state until the next tool_event
+      // (which won't arrive — we're submitting error and the stream
+      // has already hard-suspended).
+      dispatch(
+        upsertToolLifecycle({
+          requestId,
+          callId,
+          toolName,
+          status: "error",
+          isDelegated: true,
+          errorType: "unauthenticated",
+          errorMessage: "user not authenticated",
+          result: { ok: false, reason: "unauthenticated" },
+        }),
+      );
       dispatch(
         submitToolResult({
           conversationId,
@@ -65,6 +83,20 @@ export const dispatchUiFirstTool = createAsyncThunk<
 
     const entry = getUiFirstToolEntry(toolName);
     if (!entry) {
+      // Same shape as the unauthenticated branch — close the lifecycle so
+      // the card doesn't shimmer waiting on a tool we've already rejected.
+      dispatch(
+        upsertToolLifecycle({
+          requestId,
+          callId,
+          toolName,
+          status: "error",
+          isDelegated: true,
+          errorType: "unknown_tool",
+          errorMessage: `Unknown ui-first tool: ${toolName}`,
+          result: { ok: false, reason: "unknown_tool" },
+        }),
+      );
       dispatch(
         submitToolResult({
           conversationId,
