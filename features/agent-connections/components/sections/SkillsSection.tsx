@@ -8,10 +8,21 @@ import { SectionToolbar } from "../SectionToolbar";
 import { GroupSection } from "../GroupSection";
 import { ListRow } from "../ListRow";
 import { SectionFooter } from "../SectionFooter";
-import { useSkills } from "../../hooks/useSkills";
+import { useSkills } from "@/features/skills/hooks/useSkills";
 import { SKILL_TYPE_LABELS, SKILL_TYPES } from "../../constants";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
-import type { SklDefinition } from "../../redux/skl/types";
+import type { SkillRow } from "@/features/skills/types";
+
+/** Best-effort label lookup — falls back to a Title-Cased version of the raw
+ * type when the value isn't in the known SKILL_TYPES list (the backend wire
+ * shape is free-string by design). */
+function labelForType(skillType: string): string {
+  const known = SKILL_TYPE_LABELS as unknown as Record<string, string>;
+  if (known[skillType]) return known[skillType];
+  return skillType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export function SkillsSection() {
   const dispatch = useAppDispatch();
@@ -31,13 +42,19 @@ export function SkillsSection() {
   }, [skills, search]);
 
   const groups = useMemo(() => {
-    const map: Record<string, SklDefinition[]> = {};
+    const map: Record<string, SkillRow[]> = {};
     for (const s of filtered) {
       (map[s.skillType] ??= []).push(s);
     }
-    return SKILL_TYPES.filter((t) => map[t]?.length).map((type) => ({
+    // Ordered groups: known types first (in declared SKILL_TYPES order),
+    // then anything else the backend returned, alphabetised.
+    const known = SKILL_TYPES.filter((t) => (map[t]?.length ?? 0) > 0);
+    const unknown = Object.keys(map)
+      .filter((t) => !(SKILL_TYPES as readonly string[]).includes(t))
+      .sort();
+    return [...known, ...unknown].map((type) => ({
       type,
-      label: SKILL_TYPE_LABELS[type],
+      label: labelForType(type),
       items: map[type]!,
     }));
   }, [filtered]);
@@ -105,7 +122,7 @@ function SkillDetail({
   skill,
   onBack,
 }: {
-  skill: SklDefinition;
+  skill: SkillRow;
   onBack: () => void;
 }) {
   return (
@@ -127,13 +144,13 @@ function SkillDetail({
             {skill.label}
           </div>
           <div className="text-xs text-muted-foreground truncate">
-            {skill.skillId} · {SKILL_TYPE_LABELS[skill.skillType]}
+            {skill.skillId} · {labelForType(skill.skillType)}
           </div>
         </div>
       </div>
       <div className="flex-1 overflow-auto scrollbar-thin p-4 space-y-3 text-sm">
         <DetailField label="skill_id" value={skill.skillId} mono />
-        <DetailField label="Type" value={SKILL_TYPE_LABELS[skill.skillType]} />
+        <DetailField label="Type" value={labelForType(skill.skillType)} />
         <DetailField label="Description" value={skill.description} />
         <DetailField
           label="Model preference"

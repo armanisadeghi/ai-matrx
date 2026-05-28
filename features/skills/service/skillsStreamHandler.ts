@@ -10,9 +10,13 @@
  * makes it safe to wire from multiple stream-receiver sites.
  */
 
-import type { AppDispatch } from "@/lib/redux/store";
+import type { Action } from "redux";
 
 import { skillsActions } from "../redux/skillsSlice";
+
+/** Minimal dispatch shape — accepts any thunk dispatch the central stream
+ * pump might pass in. Avoids tight coupling to the full RootState type. */
+type DispatchLike = (action: Action | unknown) => unknown;
 
 interface ResourceChangedPayload {
   kind?: string;
@@ -30,7 +34,7 @@ export function isSkillStreamEvent(kind: string | undefined): boolean {
 /** Dispatch a slice action for a `resource_changed` event whose `kind`
  * matches `isSkillStreamEvent`. No-op otherwise. */
 export function applySkillStreamEvent(
-  dispatch: AppDispatch,
+  dispatch: DispatchLike,
   payload: ResourceChangedPayload,
 ): void {
   const kind = payload.kind;

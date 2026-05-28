@@ -9,8 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { selectMcpCatalog } from "@/features/agents/redux/mcp/mcp.slice";
+import { selectSkillsCount } from "@/features/skills/redux/skillsSelectors";
 import {
-  selectSkillDefinitionsCount,
   selectRenderDefinitionsCount,
   selectResourcesCount,
 } from "../redux/skl/selectors";
@@ -36,7 +36,7 @@ export function AgentConnectionsSidebar({
 
   const agentsCount = useAppSelector(selectLiveAgents).length;
   const mcpCount = useAppSelector(selectMcpCatalog).length;
-  const skillsCount = useAppSelector(selectSkillDefinitionsCount);
+  const skillsCount = useAppSelector(selectSkillsCount);
   const renderBlocksCount = useAppSelector(selectRenderDefinitionsCount);
   const resourcesCount = useAppSelector(selectResourcesCount);
 

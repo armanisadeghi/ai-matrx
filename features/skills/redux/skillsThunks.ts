@@ -51,7 +51,7 @@ export interface FetchSkillsArgs {
 
 export const fetchSkills = createAsyncThunk<
   SkillRow[],
-  FetchSkillsArgs | void,
+  FetchSkillsArgs | undefined,
   { state: RootState }
 >("skills/fetchSkills", async (args, { dispatch }) => {
   dispatch(skillsActions.skillsLoading());
@@ -108,7 +108,7 @@ export const fetchSkillCategories = createAsyncThunk<
   CategoryRow[],
   void,
   { state: RootState }
->("skills/fetchCategories", async (_, { dispatch }) => {
+>("skills/fetchCategories", async (_arg, { dispatch }) => {
   dispatch(skillsActions.categoriesLoading());
 
   const result = await dispatch(
@@ -243,7 +243,7 @@ export const ingestSkills = createAsyncThunk<
   // On a non-dry-run apply, ingested skills are new/updated rows on disk —
   // reload the list so consumers see them.
   if (!dryRun) {
-    dispatch(fetchSkills());
+    dispatch(fetchSkills(undefined));
   }
   return report;
 });

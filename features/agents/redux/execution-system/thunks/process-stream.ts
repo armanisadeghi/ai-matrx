@@ -81,6 +81,10 @@ import {
 } from "../active-requests/active-requests.slice";
 import { confirmServerSync } from "../conversations/conversations.slice";
 import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
+import {
+  applySkillStreamEvent,
+  isSkillStreamEvent,
+} from "@/features/skills/service/skillsStreamHandler";
 import { invalidateActiveTools } from "../active-tools/active-tools.slice";
 import {
   applyContextState,
@@ -1319,6 +1323,19 @@ export async function processStream({
         const removed =
           typeof d.metadata?.removed === "number" ? d.metadata.removed : 0;
         dispatch(invalidateActiveTools({ conversationId, added, removed }));
+      } else if (isSkillStreamEvent(d.kind)) {
+        // `skills.ingested` (sandbox auto-discovery completing) and
+        // future `skill.created` / `skill.modified` / `skill.deleted`
+        // events bump the skills slice's `lastIngestAt`, which the
+        // `useSkills` hook subscribes to (reload + toast). The pump
+        // does NOT refetch directly — keeps the side effect colocated
+        // with the consumer that needs it.
+        applySkillStreamEvent(dispatch, {
+          kind: d.kind,
+          action: d.action,
+          resource_id: d.resource_id,
+          metadata: d.metadata ?? {},
+        });
       } else {
         dispatch(
           receivedFsChange({
