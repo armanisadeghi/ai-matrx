@@ -68,7 +68,9 @@ const TONE_CONFIG: Record<
 export interface AnimatedKpiCardProps {
   icon: React.ReactNode;
   label: string;
-  value: number | undefined;
+  /** Numeric values get a count-up tween + pulse on increase. String
+   *  values render as-is (e.g. a model name or "off" state). */
+  value: number | string | undefined;
   loading?: boolean;
   tone?: KpiTone;
   /** Optional sub-line (e.g. "of 12 total"). */
@@ -109,6 +111,8 @@ export function AnimatedKpiCard({
           <div className="mt-1 text-xl font-semibold leading-tight tabular-nums">
             {loading && value == null ? (
               <Skeleton className="h-6 w-12" />
+            ) : typeof value === "string" ? (
+              <span className="truncate inline-block max-w-full">{value}</span>
             ) : (
               <CountUp value={value ?? 0} />
             )}

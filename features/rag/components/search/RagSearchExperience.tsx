@@ -70,6 +70,7 @@ import {
   type InventoryResponse,
 } from "@/features/rag/api/search-lab";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
+import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 
 // ===========================================================================
 // Shared
@@ -912,11 +913,11 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                   <Beaker className="h-3.5 w-3.5 text-muted-foreground" />
                   <Skeleton className="h-3 w-28" />
                 </div>
-                <div className="px-3 py-3 grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-5 gap-2">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="space-y-1.5">
-                      <Skeleton className="h-2.5 w-16" />
-                      <Skeleton className="h-5 w-12" />
+                    <div key={i} className="rounded-xl border bg-card p-3">
+                      <Skeleton className="h-2.5 w-20" />
+                      <Skeleton className="h-6 w-14 mt-1.5" />
                     </div>
                   ))}
                 </div>
@@ -1004,17 +1005,36 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                     {diag.elapsed_ms} ms total
                   </Badge>
                 </div>
-                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-                  <Stat label="Visible chunks" value={diag.visible_chunks_total} />
-                  <Stat label="After fusion" value={diag.candidates_after_fusion} />
-                  <Stat
+                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-5 gap-2">
+                  <AnimatedKpiCard
+                    icon={<Database className="h-3.5 w-3.5" />}
+                    label="Visible chunks"
+                    value={diag.visible_chunks_total}
+                    tone="info"
+                  />
+                  <AnimatedKpiCard
+                    icon={<Sparkles className="h-3.5 w-3.5" />}
+                    label="After fusion"
+                    value={diag.candidates_after_fusion}
+                    tone="primary"
+                  />
+                  <AnimatedKpiCard
+                    icon={<FlaskConical className="h-3.5 w-3.5" />}
                     label="After MMR/rerank"
                     value={diag.candidates_after_mmr}
+                    tone="warning"
                   />
-                  <Stat label="Returned" value={diag.hits.length} />
-                  <Stat
+                  <AnimatedKpiCard
+                    icon={<Send className="h-3.5 w-3.5" />}
+                    label="Returned"
+                    value={diag.hits.length}
+                    tone="success"
+                  />
+                  <AnimatedKpiCard
+                    icon={<Brain className="h-3.5 w-3.5" />}
                     label="Reranker"
                     value={diag.reranker_model ?? "off"}
+                    tone="neutral"
                   />
                 </div>
                 {diag.notes.length > 0 && (
