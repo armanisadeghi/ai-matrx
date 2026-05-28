@@ -735,6 +735,7 @@ export type Database = {
           rag_awareness_mode: string
           rag_awareness_refreshed_at: string | null
           settings: Json
+          skill_config: Json
           source_agent_id: string | null
           source_snapshot_at: string | null
           tags: string[]
@@ -771,6 +772,7 @@ export type Database = {
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
           settings?: Json
+          skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
           tags?: string[]
@@ -807,6 +809,7 @@ export type Database = {
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
           settings?: Json
+          skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
           tags?: string[]
@@ -16468,6 +16471,42 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "skl_resources_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skl_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skl_skill_projects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          project_id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          project_id: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          project_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skl_skill_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skl_skill_projects_skill_id_fkey"
             columns: ["skill_id"]
             isOneToOne: false
             referencedRelation: "skl_definitions"

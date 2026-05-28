@@ -5090,13 +5090,13 @@
         }
       }
     },
-    "/api/compute-targets/": {
+    "/compute-targets/": {
       "get": {
         "tags": [
           "Compute Targets"
         ],
         "summary": "List the user's bindable compute targets (sandboxes + local PCs).",
-        "operationId": "list_compute_targets_api_compute_targets__get",
+        "operationId": "list_compute_targets_compute_targets__get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5111,13 +5111,13 @@
         }
       }
     },
-    "/api/compute-targets/resolve": {
+    "/compute-targets/resolve": {
       "post": {
         "tags": [
           "Compute Targets"
         ],
         "summary": "Resolve a compute-target ref into the full sandbox binding payload clients ship on chat requests. Lets clients keep the existing `sandbox: {...}` request field while supporting local-PC targets.",
-        "operationId": "resolve_compute_target_api_compute_targets_resolve_post",
+        "operationId": "resolve_compute_target_compute_targets_resolve_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5152,7 +5152,317 @@
         }
       }
     },
-    "/api/local-proxy/{app_instance_id}/{path}": {
+    "/api/skills": {
+      "get": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "List Skills",
+        "description": "List skills visible to the caller (user-owned + system + public).",
+        "operationId": "list_skills_api_skills_get",
+        "parameters": [
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category Id"
+            }
+          },
+          {
+            "name": "is_public_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Public Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillsList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Create Skill",
+        "operationId": "create_skill_api_skills_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/categories": {
+      "get": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "List Categories",
+        "operationId": "list_categories_api_skills_categories_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/{skill_ref}": {
+      "get": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Get Skill",
+        "operationId": "get_skill_api_skills__skill_ref__get",
+        "parameters": [
+          {
+            "name": "skill_ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Skill Ref"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/{skill_id}": {
+      "patch": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Patch Skill",
+        "operationId": "patch_skill_api_skills__skill_id__patch",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Delete Skill",
+        "description": "Soft-deactivate. Hard delete is admin-only and not exposed here.",
+        "operationId": "delete_skill_api_skills__skill_id__delete",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/ingest": {
+      "post": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Admin Ingest Filesystem",
+        "description": "Admin-only: walk one or more directories of SKILL.md files and upsert\ninto ``skl_definitions`` with ``is_system=true``. The body hash is\nrecorded so repeat calls leave unchanged skills alone. When the same\n``skill_id`` appears in multiple roots, the last one wins.",
+        "operationId": "admin_ingest_filesystem_api_skills_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/aidream__api__routers__skills__IngestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-proxy/{app_instance_id}/{path}": {
       "get": {
         "tags": [
           "Local Proxy"
@@ -5394,13 +5704,13 @@
         }
       }
     },
-    "/api/auth/on-sign-in": {
+    "/auth/on-sign-in": {
       "post": {
         "tags": [
           "Auth Hooks"
         ],
         "summary": "Supabase auth webhook — runs ensure_default_sandbox for the user.",
-        "operationId": "on_sign_in_api_auth_on_sign_in_post",
+        "operationId": "on_sign_in_auth_on_sign_in_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -15510,7 +15820,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/IngestRequest"
+                "$ref": "#/components/schemas/aidream__api__routers__rag__IngestRequest"
               }
             }
           },
@@ -15552,7 +15862,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/IngestRequest"
+                "$ref": "#/components/schemas/aidream__api__routers__rag__IngestRequest"
               }
             }
           },
@@ -36709,6 +37019,107 @@
         ],
         "title": "CategorizeResponse"
       },
+      "CategoryList": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryRow"
+            },
+            "type": "array",
+            "title": "Categories"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "count",
+          "categories"
+        ],
+        "title": "CategoryList"
+      },
+      "CategoryRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "category_key": {
+            "type": "string",
+            "title": "Category Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "icon_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Name"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "parent_category_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Category Id"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "category_key",
+          "label"
+        ],
+        "title": "CategoryRow"
+      },
       "ChannelSpec": {
         "properties": {
           "name": {
@@ -49137,44 +49548,60 @@
         ],
         "title": "IndexRepositoryResponse"
       },
-      "IngestRequest": {
+      "IngestReport": {
         "properties": {
-          "source_kind": {
-            "type": "string",
-            "enum": [
-              "note",
-              "code_file",
-              "cld_file"
-            ],
-            "title": "Source Kind"
+          "parsed": {
+            "type": "integer",
+            "title": "Parsed"
           },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
+          "created": {
+            "type": "integer",
+            "title": "Created"
           },
-          "field_id": {
-            "anyOf": [
-              {
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "skills": {
+            "items": {
+              "additionalProperties": {
                 "type": "string"
               },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Id"
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Skills"
           },
-          "force": {
-            "type": "boolean",
-            "title": "Force",
-            "default": false
+          "roots": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Roots"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "source_kind",
-          "source_id"
+          "parsed",
+          "created",
+          "updated",
+          "unchanged",
+          "errors",
+          "skills"
         ],
-        "title": "IngestRequest"
+        "title": "IngestReport"
       },
       "IngestResponse": {
         "properties": {
@@ -62810,6 +63237,551 @@
         ],
         "title": "SiteScheduleCreateRequest"
       },
+      "SkillCreate": {
+        "properties": {
+          "skill_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Skill Id"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description"
+          },
+          "skill_type": {
+            "type": "string",
+            "title": "Skill Type",
+            "default": "reference"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          },
+          "icon_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Name"
+          },
+          "model_preference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Preference"
+          },
+          "allowed_tools": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Allowed Tools"
+          },
+          "trigger_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Trigger Patterns"
+          },
+          "disable_auto_invocation": {
+            "type": "boolean",
+            "title": "Disable Auto Invocation",
+            "default": false
+          },
+          "platform_targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Platform Targets"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "parent_skill_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Skill Id"
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "skill_id",
+          "label",
+          "description"
+        ],
+        "title": "SkillCreate"
+      },
+      "SkillPatch": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "skill_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Type"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "icon_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Name"
+          },
+          "model_preference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Preference"
+          },
+          "allowed_tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Tools"
+          },
+          "trigger_patterns": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Patterns"
+          },
+          "disable_auto_invocation": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disable Auto Invocation"
+          },
+          "platform_targets": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Targets"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "parent_skill_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Skill Id"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SkillPatch"
+      },
+      "SkillRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "skill_id": {
+            "type": "string",
+            "title": "Skill Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "skill_type": {
+            "type": "string",
+            "title": "Skill Type"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "icon_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Name"
+          },
+          "model_preference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Preference"
+          },
+          "allowed_tools": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Allowed Tools"
+          },
+          "trigger_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Trigger Patterns"
+          },
+          "disable_auto_invocation": {
+            "type": "boolean",
+            "title": "Disable Auto Invocation",
+            "default": false
+          },
+          "platform_targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Platform Targets"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "parent_skill_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Skill Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "is_system": {
+            "type": "boolean",
+            "title": "Is System",
+            "default": false
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "default": false
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "skill_id",
+          "label",
+          "description",
+          "skill_type"
+        ],
+        "title": "SkillRow",
+        "description": "Wire shape for skill responses. Mirrors the active fields on\nskl_definitions that the agent / FE consumes."
+      },
+      "SkillsList": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/SkillRow"
+            },
+            "type": "array",
+            "title": "Skills"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "count",
+          "skills"
+        ],
+        "title": "SkillsList"
+      },
       "SkipNodeRequest": {
         "properties": {
           "output": {
@@ -70480,6 +71452,45 @@
         ],
         "title": "FocalPoint"
       },
+      "aidream__api__routers__rag__IngestRequest": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "note",
+              "code_file",
+              "cld_file"
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Id"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id"
+        ],
+        "title": "IngestRequest"
+      },
       "aidream__api__routers__rag__SearchHitOut": {
         "properties": {
           "chunk_id": {
@@ -70781,6 +71792,31 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
+      },
+      "aidream__api__routers__skills__IngestRequest": {
+        "properties": {
+          "roots": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Roots",
+            "description": "Absolute paths to scan. Each can be a leaf skills directory OR a repo root — conventional locations (.claude/skills, .cursor/skills, .agent[s]/skills, .matrx/skills, skills) are auto-discovered inside repo roots."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "When true, parse + report but do not write to the DB.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "roots"
+        ],
+        "title": "IngestRequest"
       },
       "matrx_scheduler__api__schemas__ScannerStatusResponse": {
         "properties": {

@@ -16,7 +16,10 @@ import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { OrgEmailTab } from "./OrgEmailTab";
-import { ScopesGrid } from "@/features/scope-system/components/ScopesGrid";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface OrgSettingsProps {
   organization: Organization;
@@ -78,10 +81,7 @@ export function OrgSettings({
           )}
 
           {canManageSettings && (
-            <TabsTrigger
-              value="scopes"
-              className={orgSettingsTabTriggerClass}
-            >
+            <TabsTrigger value="scopes" className={orgSettingsTabTriggerClass}>
               <FolderTree className="h-3.5 w-3.5 shrink-0" />
               Scopes
             </TabsTrigger>
@@ -137,13 +137,32 @@ export function OrgSettings({
           </TabsContent>
         )}
 
-        {/* Scopes Tab */}
+        {/* Scopes Tab — pointer to the dedicated scopes page. */}
         {canManageSettings && (
           <TabsContent value="scopes">
-            <ScopesGrid
-              orgId={displayOrganization.id}
-              orgSlugOrId={displayOrganization.slug ?? displayOrganization.id}
-            />
+            <Card className="p-6 md:p-8">
+              <div className="flex items-start gap-4">
+                <div className="text-sky-600 dark:text-sky-400 shrink-0">
+                  <FolderTree className="h-7 w-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold mb-1">Scopes</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Scopes are the dimensions your team works in — clients,
+                    products, repos, anything. They live in a dedicated
+                    workspace, not buried in settings.
+                  </p>
+                  <Button asChild size="sm">
+                    <Link
+                      href={`/organizations/${displayOrganization.slug ?? displayOrganization.id}/scopes`}
+                    >
+                      Open scopes
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </Card>
           </TabsContent>
         )}
 

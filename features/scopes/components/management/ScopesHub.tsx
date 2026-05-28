@@ -14,7 +14,7 @@ import {
   FileText,
   FolderKanban,
   Settings as SettingsIcon,
-  Zap
+  Zap,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -169,18 +169,18 @@ export function ScopesHub() {
 
               <div className="flex items-center gap-3 pt-2 border-t border-border/40">
                 <Link
-                  href={`/scopes/manage?org=${org.id}`}
+                  href={`/organizations/${org.slug ?? org.id}/scopes`}
                   className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                 >
                   <FolderKanban className="h-3 w-3" />
-                  Manage
+                  Manage scopes
                 </Link>
                 <Link
-                  href={`/organizations/${org.slug ?? org.id}/scopes`}
+                  href={`/organizations/${org.slug ?? org.id}`}
                   className="text-xs text-muted-foreground hover:text-foreground hover:underline inline-flex items-center gap-1"
                 >
                   <FileText className="h-3 w-3" />
-                  Org view (legacy)
+                  Org overview
                 </Link>
               </div>
             </Card>

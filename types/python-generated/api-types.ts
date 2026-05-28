@@ -2197,7 +2197,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/compute-targets/": {
+    "/compute-targets/": {
         parameters: {
             query?: never;
             header?: never;
@@ -2205,7 +2205,7 @@ export interface paths {
             cookie?: never;
         };
         /** List the user's bindable compute targets (sandboxes + local PCs). */
-        get: operations["list_compute_targets_api_compute_targets__get"];
+        get: operations["list_compute_targets_compute_targets__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2214,7 +2214,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/compute-targets/resolve": {
+    "/compute-targets/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -2224,14 +2224,113 @@ export interface paths {
         get?: never;
         put?: never;
         /** Resolve a compute-target ref into the full sandbox binding payload clients ship on chat requests. Lets clients keep the existing `sandbox: {...}` request field while supporting local-PC targets. */
-        post: operations["resolve_compute_target_api_compute_targets_resolve_post"];
+        post: operations["resolve_compute_target_compute_targets_resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/local-proxy/{app_instance_id}/{path}": {
+    "/api/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Skills
+         * @description List skills visible to the caller (user-owned + system + public).
+         */
+        get: operations["list_skills_api_skills_get"];
+        put?: never;
+        /** Create Skill */
+        post: operations["create_skill_api_skills_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Categories */
+        get: operations["list_categories_api_skills_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/{skill_ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Skill */
+        get: operations["get_skill_api_skills__skill_ref__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/{skill_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Skill
+         * @description Soft-deactivate. Hard delete is admin-only and not exposed here.
+         */
+        delete: operations["delete_skill_api_skills__skill_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Skill */
+        patch: operations["patch_skill_api_skills__skill_id__patch"];
+        trace?: never;
+    };
+    "/api/skills/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Ingest Filesystem
+         * @description Admin-only: walk one or more directories of SKILL.md files and upsert
+         *     into ``skl_definitions`` with ``is_system=true``. The body hash is
+         *     recorded so repeat calls leave unchanged skills alone. When the same
+         *     ``skill_id`` appears in multiple roots, the last one wins.
+         */
+        post: operations["admin_ingest_filesystem_api_skills_ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/local-proxy/{app_instance_id}/{path}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2282,7 +2381,7 @@ export interface paths {
         patch: operations["proxy_to_local_pc_PATCH"];
         trace?: never;
     };
-    "/api/auth/on-sign-in": {
+    "/auth/on-sign-in": {
         parameters: {
             query?: never;
             header?: never;
@@ -2292,7 +2391,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Supabase auth webhook — runs ensure_default_sandbox for the user. */
-        post: operations["on_sign_in_api_auth_on_sign_in_post"];
+        post: operations["on_sign_in_auth_on_sign_in_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13309,6 +13408,43 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** CategoryList */
+        CategoryList: {
+            /** Count */
+            count: number;
+            /** Categories */
+            categories: components["schemas"]["CategoryRow"][];
+        };
+        /** CategoryRow */
+        CategoryRow: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Category Key */
+            category_key: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description?: string | null;
+            /** Icon Name */
+            icon_name?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Parent Category Id */
+            parent_category_id?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
         /**
          * ChannelSpec
          * @description Declarative spec for a channel in a workflow definition.
@@ -17706,22 +17842,24 @@ export interface components {
             /** Errors */
             errors: string[];
         };
-        /** IngestRequest */
-        IngestRequest: {
-            /**
-             * Source Kind
-             * @enum {string}
-             */
-            source_kind: "note" | "code_file" | "cld_file";
-            /** Source Id */
-            source_id: string;
-            /** Field Id */
-            field_id?: string | null;
-            /**
-             * Force
-             * @default false
-             */
-            force: boolean;
+        /** IngestReport */
+        IngestReport: {
+            /** Parsed */
+            parsed: number;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Errors */
+            errors: string[];
+            /** Skills */
+            skills: {
+                [key: string]: string;
+            }[];
+            /** Roots */
+            roots?: string[];
         };
         /** IngestResponse */
         IngestResponse: {
@@ -22692,6 +22830,172 @@ export interface components {
              */
             enabled: boolean;
         };
+        /** SkillCreate */
+        SkillCreate: {
+            /** Skill Id */
+            skill_id: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+            /**
+             * Skill Type
+             * @default reference
+             */
+            skill_type: string;
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Icon Name */
+            icon_name?: string | null;
+            /** Model Preference */
+            model_preference?: string | null;
+            /** Allowed Tools */
+            allowed_tools?: string[];
+            /** Trigger Patterns */
+            trigger_patterns?: string[];
+            /**
+             * Disable Auto Invocation
+             * @default false
+             */
+            disable_auto_invocation: boolean;
+            /** Platform Targets */
+            platform_targets?: string[];
+            /** Version */
+            version?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Category Id */
+            category_id?: string | null;
+            /** Parent Skill Id */
+            parent_skill_id?: string | null;
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+        };
+        /** SkillPatch */
+        SkillPatch: {
+            /** Label */
+            label?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Skill Type */
+            skill_type?: string | null;
+            /** Body */
+            body?: string | null;
+            /** Icon Name */
+            icon_name?: string | null;
+            /** Model Preference */
+            model_preference?: string | null;
+            /** Allowed Tools */
+            allowed_tools?: string[] | null;
+            /** Trigger Patterns */
+            trigger_patterns?: string[] | null;
+            /** Disable Auto Invocation */
+            disable_auto_invocation?: boolean | null;
+            /** Platform Targets */
+            platform_targets?: string[] | null;
+            /** Version */
+            version?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Category Id */
+            category_id?: string | null;
+            /** Parent Skill Id */
+            parent_skill_id?: string | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
+         * SkillRow
+         * @description Wire shape for skill responses. Mirrors the active fields on
+         *     skl_definitions that the agent / FE consumes.
+         */
+        SkillRow: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Skill Id */
+            skill_id: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+            /** Skill Type */
+            skill_type: string;
+            /** Body */
+            body?: string | null;
+            /** Icon Name */
+            icon_name?: string | null;
+            /** Model Preference */
+            model_preference?: string | null;
+            /** Allowed Tools */
+            allowed_tools?: string[];
+            /** Trigger Patterns */
+            trigger_patterns?: string[];
+            /**
+             * Disable Auto Invocation
+             * @default false
+             */
+            disable_auto_invocation: boolean;
+            /** Platform Targets */
+            platform_targets?: string[];
+            /** Version */
+            version?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Category Id */
+            category_id?: string | null;
+            /** Parent Skill Id */
+            parent_skill_id?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Is System
+             * @default false
+             */
+            is_system: boolean;
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+        };
+        /** SkillsList */
+        SkillsList: {
+            /** Count */
+            count: number;
+            /** Skills */
+            skills: components["schemas"]["SkillRow"][];
+        };
         /** SkipNodeRequest */
         SkipNodeRequest: {
             /**
@@ -25339,6 +25643,23 @@ export interface components {
             /** Y */
             y: number;
         };
+        /** IngestRequest */
+        aidream__api__routers__rag__IngestRequest: {
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "note" | "code_file" | "cld_file";
+            /** Source Id */
+            source_id: string;
+            /** Field Id */
+            field_id?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
         /** SearchHitOut */
         aidream__api__routers__rag__SearchHitOut: {
             /** Chunk Id */
@@ -25464,6 +25785,20 @@ export interface components {
             consecutive_errors: number;
             /** Error Message */
             error_message?: string | null;
+        };
+        /** IngestRequest */
+        aidream__api__routers__skills__IngestRequest: {
+            /**
+             * Roots
+             * @description Absolute paths to scan. Each can be a leaf skills directory OR a repo root — conventional locations (.claude/skills, .cursor/skills, .agent[s]/skills, .matrx/skills, skills) are auto-discovered inside repo roots.
+             */
+            roots: string[];
+            /**
+             * Dry Run
+             * @description When true, parse + report but do not write to the DB.
+             * @default false
+             */
+            dry_run: boolean;
         };
         /** ScannerStatusResponse */
         matrx_scheduler__api__schemas__ScannerStatusResponse: {
@@ -29031,7 +29366,7 @@ export interface operations {
             };
         };
     };
-    list_compute_targets_api_compute_targets__get: {
+    list_compute_targets_compute_targets__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -29051,7 +29386,7 @@ export interface operations {
             };
         };
     };
-    resolve_compute_target_api_compute_targets_resolve_post: {
+    resolve_compute_target_compute_targets_resolve_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -29071,6 +29406,220 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SandboxBindingRequest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_skills_api_skills_get: {
+        parameters: {
+            query?: {
+                category_id?: string | null;
+                is_public_only?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillsList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_skill_api_skills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_categories_api_skills_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryList"];
+                };
+            };
+        };
+    };
+    get_skill_api_skills__skill_ref__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_skill_api_skills__skill_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_skill_api_skills__skill_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_ingest_filesystem_api_skills_ingest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__api__routers__skills__IngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestReport"];
                 };
             };
             /** @description Validation Error */
@@ -29244,7 +29793,7 @@ export interface operations {
             };
         };
     };
-    on_sign_in_api_auth_on_sign_in_post: {
+    on_sign_in_auth_on_sign_in_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -36081,7 +36630,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["IngestRequest"];
+                "application/json": components["schemas"]["aidream__api__routers__rag__IngestRequest"];
             };
         };
         responses: {
@@ -36114,7 +36663,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["IngestRequest"];
+                "application/json": components["schemas"]["aidream__api__routers__rag__IngestRequest"];
             };
         };
         responses: {

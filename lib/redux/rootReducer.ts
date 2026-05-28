@@ -93,6 +93,7 @@ import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice"
 import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
 import agentContentBlockReducer from "@/features/agents/redux/agent-content-blocks/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
+import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
@@ -310,6 +311,10 @@ export const slimReducerMap = {
   agentShortcutCategory: agentShortcutCategoryReducer,
   agentContentBlock: agentContentBlockReducer,
   skl: sklReducer,
+  // New skills slice — canonical source going forward. Backed by /api/skills
+  // (the Python backend), not Supabase. The old `skl` key is retained for
+  // render-blocks / render-components / resources until those move too.
+  skills: skillsReducer,
   agentConnectionsUi: agentConnectionsUiReducer,
   agentApp: agentAppReducer,
   agentAppConsumers: agentAppConsumersReducer,
